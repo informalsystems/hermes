@@ -1,0 +1,46 @@
+# This is an IBC relayer sample configuration
+title = "IBC Relayer Config Example"
+
+[global]
+timeout = "10s"
+strategy = "naive"
+
+[[chains]]
+  id = "chain_A"
+  rpc_addr = "http://localhost:26657"
+  account_prefix = "cosmos"
+  key_name = "testkey"
+  client_ids = ["clA1", "clA2"]
+  gas = 200000
+  gas_adjustement = 1.3
+  gas_price = "0.025stake"
+  trusting_period = "336h"
+
+[[chains]]
+  id = "chain-B"
+  rpc_addr = "http://localhost:26557"
+  account_prefix = "cosmos"
+  key_name = "testkey"
+  client_ids = ["clB1"]
+  gas = 200000
+  gas_adjustement = 1.3
+  gas_price = "0.025stake"
+  trusting_period = "336h"
+
+[[connections]]
+
+[connections.src]
+  client_id = "clA1"
+  connection_id = "conn1-idA-clA1"
+[connections.dest]
+  client_id = "clB1"
+  connection_id = "conn1-idB-clB1"
+
+[[connections.paths]]
+  src_port = "app1-port-A"
+  dest_port = "app1-port-B"
+  direction = "unidirectional"
+  [[connections.paths]]
+  src_port = "app2-port-A"
+  dest_port = "app2-port-B"
+  direction = "bidirectional"

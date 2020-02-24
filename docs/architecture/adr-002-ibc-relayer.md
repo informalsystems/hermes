@@ -106,41 +106,43 @@ timeout = "10s"
 strategy = "naive"
 
 [[chains]]
-  id = "chain-A"
-  rpc-addr = "http://localhost:26657"
-  account-prefix = "cosmos"
-  key-name = "testkey"
-  client-ids = ["clA1", "clA2"]
+  id = "chain_A"
+  rpc_addr = "http://localhost:26657"
+  account_prefix = "cosmos"
+  key_name = "testkey"
+  client_ids = ["clA1", "clA2"]
   gas = 200000
-  gas-adjustement = 1.3
-  gas-price = "0.025stake"
-  trusting-period = "336h"
+  gas_adjustement = 1.3
+  gas_price = "0.025stake"
+  trusting_period = "336h"
 
 [[chains]]
   id = "chain-B"
-  rpc-addr = "http://localhost:26557"
-  account-prefix = "cosmos"
-  key-name = "testkey"
-  client-ids = ["clB1"]
+  rpc_addr = "http://localhost:26557"
+  account_prefix = "cosmos"
+  key_name = "testkey"
+  client_ids = ["clB1"]
   gas = 200000
-  gas-adjustement = 1.3
-  gas-price = "0.025stake"
-  trusting-period = "336h"
+  gas_adjustement = 1.3
+  gas_price = "0.025stake"
+  trusting_period = "336h"
 
 [[connections]]
 
 [connections.src]
-  client-id = "clA1"
-  connection-id = "conn1-idA-clA1"
+  client_id = "clA1"
+  connection_id = "conn1-idA-clA1"
 [connections.dest]
-  client-id = "clB1"
-  connection-id = "conn1-idB-clB1"
+  client_id = "clB1"
+  connection_id = "conn1-idB-clB1"
 
 [[connections.paths]]
-  ports = ["app1-port-A", "app1-port-B"]
+  src_port = "app1-port-A"
+  dest_port = "app1-port-B"
   direction = "unidirectional"
-[[connections.paths]]
-  ports = ["app2-port-A", "app2-port-B"]
+  [[connections.paths]]
+  src_port = "app2-port-A"
+  dest_port = "app2-port-B"
   direction = "bidirectional"
 ```
 
@@ -175,17 +177,19 @@ The realyer can be configured to relay between some application ports, over a nu
 [[connections]]
 
 [connections.src]
-  client-id = "clA1"
-  connection-id = "conn1-idA-clA1"
+  client_id = "clA1"
+  connection_id = "conn1-idA-clA1"
 [connections.dest]
-  client-id = "clB1"
-  connection-id = "conn1-idB-clB1"
+  client_id = "clB1"
+  connection_id = "conn1-idB-clB1"
 
 [[connections.paths]]
-  ports = ["app1-port-A", "app1-port-B"]
+  src_port = "app1-port-A"
+  dest_port = "app1-port-B"
   direction = "unidirectional"
-[[connections.paths]]
-  ports = ["app2-port-A", "app2-port-B"]
+  [[connections.paths]]
+  src_port = "app2-port-A"
+  dest_port = "app2-port-B"
   direction = "bidirectional"
 ```
 
