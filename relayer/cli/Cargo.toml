@@ -1,8 +1,11 @@
 [package]
-name = "cli"
+name = "relayer-cli"
 version = "0.1.0"
-authors = ["Anca Zamfir <anca@interchain.io>"]
 edition = "2018"
+authors = [
+  "Anca Zamfir <anca@interchain.io>",
+  "Romain Ruetschi <romain@informal.systems>"
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
