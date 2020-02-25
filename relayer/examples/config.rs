@@ -1,10 +1,46 @@
-#![deny(warnings)]
+#![forbid(unsafe_code)]
+#![deny(
+    warnings,
+    missing_docs,
+    trivial_casts,
+    trivial_numeric_casts,
+    unused_import_braces,
+    unused_qualifications,
+    rust_2018_idioms
+)]
 
-/// Read the relayer configuration into the Config struct, in examples for now
-/// to support ADR validation..should move to relayer/src soon
-use {serde_derive::Deserialize, std::fs::File, std::io::Read, std::path::PathBuf};
+//! Read the relayer configuration into the Config struct, in examples for now
+//! to support ADR validation..should move to relayer/src soon
 
-#[derive(Debug, Deserialize)]
+use serde_derive::Deserialize;
+use std::path::Path;
+
+mod error {
+    use anomaly::{BoxError, Context};
+    use thiserror::Error;
+
+    pub type Error = anomaly::Error<Kind>;
+
+    /// Various errors related to the configuration handling.
+    #[derive(Clone, Debug, Error)]
+    pub enum Kind {
+        /// An I/O error happened when reading the config file
+        #[error("could not read config file")]
+        Io,
+
+        /// The configuration file contains invalid TOML
+        #[error("invalid TOML config")]
+        InvalidConfig,
+    }
+
+    impl Kind {
+        pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
+            Context::new(self, Some(source.into()))
+        }
+    }
+}
+
+#[derive(Debug, Default, Deserialize)]
 struct Config {
     timeout: Option<String>,  // use "10s" as default
     strategy: Option<String>, // use "naive" as default
@@ -43,22 +79,33 @@ struct RelayPath {
 }
 
 /// Attempt to load and parse the config file into the Config struct.
+///
 /// TODO: If a file cannot be found, return a default Config allowing relayer
-/// to relay everything from any to any chain(?)
-/// If we find a file but cannot parse it, panic
-fn parse(path: String) -> Config {
-    let mut file = File::open(&path).expect("Unable to open");
-    let mut config_toml = String::new();
+///       to relay everything from any to any chain(?)
+fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
+    let config_toml = std::fs::read_to_string(&path).map_err(|e| error::Kind::Io.context(e))?;
 
-    file.read_to_string(&mut config_toml)
-        .unwrap_or_else(|err| panic!("Error while reading config: [{}]", err));
-    toml::from_str(&config_toml[..]).unwrap()
+    let config = toml::from_str::<Config>(&config_toml[..])
+        .map_err(|e| error::Kind::InvalidConfig.context(e))?;
+
+    Ok(config)
+}
+
+fn app() -> Result<(), error::Error> {
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/examples/input/relayer_conf_example.toml"
+    );
+
+    let decoded = parse(path)?;
+    println!("{:#?}", decoded);
+
+    Ok(())
 }
 
 fn main() {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("examples/input/relayer_conf_example.toml");
-    let my_str = d.into_os_string().into_string().unwrap();
-    let decoded = parse(my_str);
-    println!("{:#?}", decoded);
+    if let Err(e) = app() {
+        eprintln!("[error] {}", e);
+        std::process::exit(1);
+    };
 }
