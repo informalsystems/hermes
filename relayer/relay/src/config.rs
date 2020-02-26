@@ -1,12 +1,12 @@
 //! Read the relayer configuration into the Config struct, in examples for now
 //! to support ADR validation..should move to relayer/src soon
 
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::path::Path;
 
 use crate::error;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
     pub timeout: Option<String>,  // use "10s" as default
     pub strategy: Option<String>, // use "naive" as default
@@ -14,7 +14,18 @@ pub struct Config {
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 
-#[derive(Debug, Deserialize)]
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            timeout: Some("10s".to_string()),
+            strategy: Some("naive".to_string()),
+            chains: vec![],
+            connections: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
     pub id: String,
     pub rpc_addr: Option<String>, // use "http://localhost:26657" as default
@@ -24,20 +35,20 @@ pub struct ChainConfig {
     pub gas: Option<u64>, // use 200000 as default
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Connection {
     pub src: Option<ConnectionEnd>,    // use any source
     pub dest: Option<ConnectionEnd>,   // use any destination
     pub paths: Option<Vec<RelayPath>>, // use any port, direction bidirectional
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ConnectionEnd {
     pub client_id: String,
     pub connection_id: Option<String>, // use all connections to this client
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
     pub src_port: Option<String>,  // default from any source port
     pub dest_port: Option<String>, // default from any dest port

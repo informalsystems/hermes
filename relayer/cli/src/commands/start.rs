@@ -25,7 +25,7 @@ impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
         let config = app_config();
-        println!("Hello, {}!", &config.hello.recipient);
+        status_ok!("Loaded", "{:#?}", config.relayer_config);
     }
 }
 
@@ -34,9 +34,7 @@ impl config::Override<CliConfig> for StartCmd {
     // a configuration file using explicit flags taken from command-line
     // arguments.
     fn override_config(&self, mut config: CliConfig) -> Result<CliConfig, FrameworkError> {
-        if !self.recipient.is_empty() {
-            config.hello.recipient = self.recipient.join(" ");
-        }
+        config.dummy = ();
 
         Ok(config)
     }

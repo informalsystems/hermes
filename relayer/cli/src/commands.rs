@@ -21,7 +21,7 @@ use abscissa_core::{
 use std::path::PathBuf;
 
 /// Cli Configuration Filename
-pub const CONFIG_FILE: &str = "cli.toml";
+pub const CONFIG_FILE: &str = "relayer.toml";
 
 /// Cli Subcommands
 #[derive(Command, Debug, Options, Runnable)]

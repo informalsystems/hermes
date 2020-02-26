@@ -11,7 +11,10 @@ use serde::{Deserialize, Serialize};
 #[serde(deny_unknown_fields)]
 pub struct CliConfig {
     /// An example configuration section
-    pub hello: ExampleSection,
+    pub relayer_config: relayer::config::Config,
+
+    /// Dummy config option
+    pub dummy: (),
 }
 
 /// Default configuration settings.
@@ -21,25 +24,8 @@ pub struct CliConfig {
 impl Default for CliConfig {
     fn default() -> Self {
         Self {
-            hello: ExampleSection::default(),
-        }
-    }
-}
-
-/// Example configuration section.
-///
-/// Delete this and replace it with your actual configuration structs.
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-pub struct ExampleSection {
-    /// Example configuration value
-    pub recipient: String,
-}
-
-impl Default for ExampleSection {
-    fn default() -> Self {
-        Self {
-            recipient: "world".to_owned(),
+            relayer_config: relayer::config::Config::default(),
+            dummy: (),
         }
     }
 }
