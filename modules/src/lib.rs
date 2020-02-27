@@ -1,4 +1,5 @@
 #![forbid(unsafe_code)]
+#![deny(clippy::all)]
 #![deny(
     warnings,
     // missing_docs,
@@ -19,5 +20,9 @@
 
 pub mod ics02_client;
 pub mod ics07_tendermint;
-// pub mod ics23_commitment;
+pub mod ics23_commitment;
 pub mod ics24_host;
+pub mod keys;
+
+/// Height of a block, same as in `tendermint` crate
+pub type Height = tendermint::lite::Height;

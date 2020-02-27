@@ -4,29 +4,24 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
+use crate::ics02_client::client_type::ClientType;
+use crate::Height;
+
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Header {
-    signed_header: SignedHeader,
-    validator_set: ValidatorSet,
-    next_validator_set: ValidatorSet,
+    pub signed_header: SignedHeader,
+    pub validator_set: ValidatorSet,
+    pub next_validator_set: ValidatorSet,
 }
 
-impl tendermint::lite::Header for Header {
-    type Time = std::time::SystemTime;
-    fn height(&self) -> u64 {
-        unimplemented!()
+impl crate::ics02_client::header::Header for Header {
+    fn client_type(&self) -> ClientType {
+        ClientType::Tendermint
     }
-    fn bft_time(&self) -> Self::Time {
-        unimplemented!()
-    }
-    fn validators_hash(&self) -> tendermint::hash::Hash {
-        unimplemented!()
-    }
-    fn next_validators_hash(&self) -> tendermint::hash::Hash {
-        unimplemented!()
-    }
-    fn hash(&self) -> tendermint::hash::Hash {
-        unimplemented!()
+
+    fn height(&self) -> Height {
+        use tendermint::lite::types::Header;
+        self.signed_header.header.height()
     }
 }
