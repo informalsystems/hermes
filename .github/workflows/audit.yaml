@@ -1,8 +1,5 @@
-on:
-  pull_request:
-    paths:
-      - "**/Cargo.toml"
-      - "**/Cargo.lock"
+name: Rust
+on: [pull_request]
 
 jobs:
   security_audit:
