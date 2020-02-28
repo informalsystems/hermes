@@ -2,6 +2,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::msgs::Msg;
 use crate::ics07_tendermint::header::Header;
 use crate::ics07_tendermint::state::consensus::ConsensusState;
+use crate::ics23_commitment::CommitmentRoot;
 use crate::ics24_host::client::ClientId;
 
 use serde_derive::{Deserialize, Serialize};
@@ -82,13 +83,13 @@ impl crate::ics02_client::msgs::MsgCreateClient for MsgCreateClient {
     }
 
     fn consensus_state(&self) -> Self::ConsensusState {
-        let root = (); // TODO
+        let root = CommitmentRoot; // TODO
         let header = &self.header.signed_header.header;
 
         ConsensusState::new(
-            header.time,
             root,
             header.height.into(),
+            header.time,
             self.header.validator_set.clone(),
         )
     }

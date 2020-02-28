@@ -17,10 +17,12 @@ impl ClientId {
     pub fn as_bytes(&self) -> &[u8] {
         &self.0.as_bytes()
     }
+}
 
-    /// Get this identifier as an owned `String`
-    pub fn to_string(self) -> String {
-        self.0
+/// This implementation provides a `to_string` method.
+impl std::fmt::Display for ClientId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
     }
 }
 

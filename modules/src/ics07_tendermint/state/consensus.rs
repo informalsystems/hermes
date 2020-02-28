@@ -5,23 +5,23 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    timestamp: tendermint::time::Time,
     root: CommitmentRoot,
     height: crate::Height,
+    timestamp: tendermint::time::Time,
     validator_set: tendermint::validator::Set,
 }
 
 impl ConsensusState {
     pub fn new(
-        timestamp: tendermint::time::Time,
         root: CommitmentRoot,
         height: crate::Height,
+        timestamp: tendermint::time::Time,
         validator_set: tendermint::validator::Set,
     ) -> Self {
         Self {
-            timestamp,
             root,
             height,
+            timestamp,
             validator_set,
         }
     }
