@@ -1,5 +1,5 @@
 [package]
-name = "relayer"
+name = "cli"
 version = "0.1.0"
 authors = ["Anca Zamfir <anca@interchain.io>"]
 edition = "2018"
@@ -7,8 +7,3 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anomaly = "0.2.0"
-serde = "1.0.97"
-serde_derive = "1.0"
-thiserror = "1.0.11"
-toml = "0.5"
