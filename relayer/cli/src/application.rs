@@ -1,6 +1,6 @@
 //! Cli Abscissa Application
 
-use crate::{commands::CliCmd, config::CliConfig};
+use crate::{commands::CliCmd, config::Config};
 use abscissa_core::{
     application::{self, AppCell},
     config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
@@ -32,7 +32,7 @@ pub fn app_config() -> config::Reader<CliApp> {
 #[derive(Debug)]
 pub struct CliApp {
     /// Application configuration.
-    config: Option<CliConfig>,
+    config: Option<Config>,
 
     /// Application state.
     state: application::State<Self>,
@@ -56,13 +56,13 @@ impl Application for CliApp {
     type Cmd = EntryPoint<CliCmd>;
 
     /// Application configuration.
-    type Cfg = CliConfig;
+    type Cfg = Config;
 
     /// Paths to resources within the application.
     type Paths = StandardPaths;
 
     /// Accessor for application configuration.
-    fn config(&self) -> &CliConfig {
+    fn config(&self) -> &Config {
         self.config.as_ref().expect("config not loaded")
     }
 

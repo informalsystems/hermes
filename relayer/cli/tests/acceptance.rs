@@ -20,7 +20,7 @@
 
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
-// use relayer_cli::config::CliConfig;
+use relayer_cli::config::Config;
 
 /// Executes your application binary via `cargo run`.
 ///
@@ -30,7 +30,7 @@ use once_cell::sync::Lazy;
 /// invocations as `cargo test` executes tests in parallel by default.
 pub static RUNNER: Lazy<CmdRunner> = Lazy::new(|| CmdRunner::default());
 
-/// Use `CliConfig::default()` value if no config or args
+/// Use `Config::default()` value if no config or args
 #[test]
 #[ignore]
 fn start_no_args() {
@@ -58,7 +58,7 @@ fn start_with_args() {
 #[test]
 #[ignore]
 fn start_with_config_no_args() {
-    // let mut config = CliConfig::default();
+    // let mut config = Config::default();
     // config.hello.recipient = "configured recipient".to_owned();
 
     // let expected_line = format!("Hello, {}!", &config.hello.recipient);
@@ -73,7 +73,7 @@ fn start_with_config_no_args() {
 #[test]
 #[ignore]
 fn start_with_config_and_args() {
-    // let mut config = CliConfig::default();
+    // let mut config = Config::default();
     // config.hello.recipient = "configured recipient".to_owned();
 
     // let mut runner = RUNNER.clone();
