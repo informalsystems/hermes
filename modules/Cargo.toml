@@ -10,7 +10,7 @@ authors = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tendermint = { path = "../../tendermint-rs/tendermint" }
+tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
 anomaly = "0.2.0"
 thiserror = "1.0.11"
 serde_derive = "1.0.104"
