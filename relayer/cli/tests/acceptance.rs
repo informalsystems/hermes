@@ -20,7 +20,8 @@
 
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
-use relayer_cli::config::Config;
+
+// use relayer_cli::config::Config;
 
 /// Executes your application binary via `cargo run`.
 ///
