@@ -12,7 +12,8 @@ const PATH_SEPARATOR: char = '/';
 
 /// Default validator function for identifiers.
 ///
-/// A valid identifier only contain lowercase alphabetic characters, and be of a given min and max length.
+/// A valid identifier only contain lowercase alphabetic characters, and be of a given min and max
+/// length.
 pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), ValidationError> {
     assert!(max >= min);
 

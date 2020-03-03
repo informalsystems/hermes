@@ -3,7 +3,8 @@ use super::header::Header;
 use super::state::ConsensusState;
 use crate::ics24_host::client::ClientId;
 
-// FIXME: Remove Header associated type and use Box<dyn tendermint::lite::Header> instead of Self::Header?
+// FIXME: Remove Header associated type and use Box<dyn tendermint::lite::Header> instead of
+// Self::Header?
 
 pub trait Msg {
     type ValidationError: std::error::Error;
