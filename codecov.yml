@@ -1,6 +1,5 @@
 codecov:
   require_ci_to_pass: yes
-  token: 25eff327-4294-432d-9d82-3a6431adc71f
 
 ignore:
 
