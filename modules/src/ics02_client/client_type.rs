@@ -9,7 +9,7 @@ pub enum ClientType {
 
 impl ClientType {
     /// Yields the identifier of this client type as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_string(self) -> &'static str {
         match self {
             Self::Tendermint => "tendermint",
         }
