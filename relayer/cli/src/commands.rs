@@ -14,7 +14,7 @@ mod start;
 mod version;
 
 use self::{start::StartCmd, version::VersionCmd};
-use crate::config::CliConfig;
+use crate::config::Config;
 use abscissa_core::{
     config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
 };
@@ -40,7 +40,7 @@ pub enum CliCmd {
 }
 
 /// This trait allows you to define how application configuration is loaded.
-impl Configurable<CliConfig> for CliCmd {
+impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
     fn config_path(&self) -> Option<PathBuf> {
         // Check if the config file exists, and if it does not, ignore it.
@@ -60,7 +60,7 @@ impl Configurable<CliConfig> for CliCmd {
     ///
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
-    fn process_config(&self, config: CliConfig) -> Result<CliConfig, FrameworkError> {
+    fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
         match self {
             CliCmd::Start(cmd) => cmd.override_config(config),
             _ => Ok(config),

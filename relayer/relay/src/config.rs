@@ -1,38 +1,73 @@
 //! Read the relayer configuration into the Config struct, in examples for now
 //! to support ADR validation..should move to relayer/src soon
 
-use serde_derive::{Deserialize, Serialize};
 use std::path::Path;
+use std::time::Duration;
+
+use serde_derive::{Deserialize, Serialize};
+use tendermint::chain::Id as ChainId;
+use tendermint::net;
 
 use crate::error;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
-    pub timeout: Option<String>,  // use "10s" as default
-    pub strategy: Option<String>, // use "naive" as default
+    pub global: GlobalConfig,
     pub chains: Vec<ChainConfig>,
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 
-impl Default for Config {
+fn default_timeout() -> Duration {
+    Duration::from_secs(10)
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Strategy {
+    #[serde(rename = "naive")]
+    Naive,
+}
+
+impl Default for Strategy {
     fn default() -> Self {
-        Self {
-            timeout: Some("10s".to_string()),
-            strategy: Some("naive".to_string()),
-            chains: vec![],
-            connections: None,
-        }
+        Self::Naive
     }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct GlobalConfig {
+    #[serde(default = "default_timeout", with = "humantime_serde")]
+    pub timeout: Duration,
+    #[serde(default)]
+    pub strategy: Strategy,
+}
+
+impl Default for GlobalConfig {
+    fn default() -> Self {
+        Self {
+            timeout: default_timeout(),
+            strategy: Strategy::default(),
+        }
+    }
+}
+
+fn default_gas() -> u64 {
+    200_000
+}
+
+fn default_rpc_addr() -> net::Address {
+    "localhost:26657".parse().unwrap()
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
-    pub id: String,
-    pub rpc_addr: Option<String>, // use "http://localhost:26657" as default
+    pub id: ChainId,
+    #[serde(default = "default_rpc_addr")]
+    pub rpc_addr: net::Address,
     pub account_prefix: String,
     pub key_name: String,
     pub client_ids: Vec<String>,
-    pub gas: Option<u64>, // use 200000 as default
+    #[serde(default = "default_gas")]
+    pub gas: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -49,10 +84,25 @@ pub struct ConnectionEnd {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum Direction {
+    #[serde(rename = "unidirectional")]
+    Unidirectional,
+    #[serde(rename = "bidirectional")]
+    Bidirectional,
+}
+
+impl Default for Direction {
+    fn default() -> Self {
+        Self::Bidirectional
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
     pub src_port: Option<String>,  // default from any source port
     pub dest_port: Option<String>, // default from any dest port
-    pub direction: Option<String>, // default bidirectional
+    #[serde(default)]
+    pub direction: Direction, // default bidirectional
 }
 
 /// Attempt to load and parse the config file into the Config struct.
