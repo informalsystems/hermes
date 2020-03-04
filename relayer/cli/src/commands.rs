@@ -2,22 +2,17 @@
 //!
 //! This is where you specify the subcommands of your application.
 //!
-//! The default application comes with two subcommands:
-//!
-//! - `start`: launches the application
-//! - `version`: print application version
-//!
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+mod config;
 mod start;
 mod version;
 
-use self::{start::StartCmd, version::VersionCmd};
+use self::{config::ConfigCmd, start::StartCmd, version::VersionCmd};
+
 use crate::config::Config;
-use abscissa_core::{
-    config::Override, Command, Configurable, FrameworkError, Help, Options, Runnable,
-};
+use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 use std::path::PathBuf;
 
 /// Cli Configuration Filename
@@ -31,8 +26,12 @@ pub enum CliCmd {
     Help(Help<Self>),
 
     /// The `start` subcommand
-    #[options(help = "start the application")]
+    #[options(help = "start the relayer")]
     Start(StartCmd),
+
+    /// The `config` subcommand
+    #[options(help = "manipulate the relayer configuration")]
+    Config(ConfigCmd),
 
     /// The `version` subcommand
     #[options(help = "display version information")]
@@ -62,7 +61,7 @@ impl Configurable<Config> for CliCmd {
     /// settings from command-line options.
     fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
         match self {
-            CliCmd::Start(cmd) => cmd.override_config(config),
+            // CliCmd::Start(cmd) => cmd.override_config(config),
             _ => Ok(config),
         }
     }

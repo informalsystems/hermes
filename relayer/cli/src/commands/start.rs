@@ -1,11 +1,10 @@
-//! `start` subcommand - example of how to write a subcommand
+//! `start` subcommand
 
 /// App-local prelude includes `app_reader()`/`app_writer()`/`app_config()`
 /// accessors along with logging macros. Customize as you see fit.
 use crate::prelude::*;
 
-use crate::config::Config;
-use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
+use abscissa_core::{Command, Options, Runnable};
 
 /// `start` subcommand
 ///
@@ -15,26 +14,11 @@ use abscissa_core::{config, Command, FrameworkError, Options, Runnable};
 ///
 /// <https://docs.rs/gumdrop/>
 #[derive(Command, Debug, Options)]
-pub struct StartCmd {
-    /// To whom are we saying hello?
-    #[options(free)]
-    recipient: Vec<String>,
-}
+pub struct StartCmd {}
 
 impl Runnable for StartCmd {
     /// Start the application.
     fn run(&self) {
-        let config = app_config();
-        status_ok!("Loaded", "{:#?}", *config);
-    }
-}
-
-impl config::Override<Config> for StartCmd {
-    // Process the given command line options, overriding settings from
-    // a configuration file using explicit flags taken from command-line
-    // arguments.
-    #[allow(unused_mut)]
-    fn override_config(&self, mut config: Config) -> Result<Config, FrameworkError> {
-        Ok(config)
+        status_ok!("{}", "Quitting...");
     }
 }
