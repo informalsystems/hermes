@@ -1,7 +1,7 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::msgs::Msg;
+use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
-use crate::ics07_tendermint::state::consensus::ConsensusState;
 use crate::ics23_commitment::CommitmentRoot;
 use crate::ics24_host::client::ClientId;
 

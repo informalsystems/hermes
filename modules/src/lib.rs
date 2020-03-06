@@ -23,6 +23,7 @@ pub mod ics07_tendermint;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
+pub mod path;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::lite::Height;

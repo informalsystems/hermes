@@ -16,6 +16,9 @@ pub enum Kind {
     /// Invalid configuration
     #[error("invalid configuration")]
     Config,
+
+    #[error("RPC error")]
+    Rpc,
 }
 
 impl Kind {

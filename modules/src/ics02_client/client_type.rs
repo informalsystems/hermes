@@ -1,6 +1,8 @@
 use super::error;
 use anomaly::fail;
 
+pub struct Tendermint;
+
 /// Type of the consensus algorithm
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ClientType {
@@ -13,6 +15,12 @@ impl ClientType {
         match self {
             Self::Tendermint => "tendermint",
         }
+    }
+}
+
+impl From<Tendermint> for ClientType {
+    fn from(_: Tendermint) -> Self {
+        Self::Tendermint
     }
 }
 
@@ -35,6 +43,7 @@ mod tests {
     #[test]
     fn parse_tendermint_client_type() {
         let client_type = ClientType::from_str("tendermint");
+
         match client_type {
             Ok(ClientType::Tendermint) => assert!(true),
             Err(_) => assert!(false, "parse failed"),
