@@ -8,11 +8,12 @@ authors = [
 ]
 
 [dependencies]
+relayer = { path = "../relay" }
+
+anomaly = "0.2.0"
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
-anomaly = "0.2.0"
-relayer = { path = "../relay" }
 
 [dependencies.abscissa_core]
 version = "0.5.2"

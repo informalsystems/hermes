@@ -10,7 +10,9 @@ authors = [
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
+relayer-modules = { path = "../../modules" }
+tendermint = { git = "https://github.com/romac/tendermint-rs.git", branch = "rpc-client-new-sync" }
+
 anomaly = "0.2.0"
 humantime-serde = "1.0.0"
 serde = "1.0.97"
