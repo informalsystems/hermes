@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use tendermint::rpc::endpoint::abci_query::AbciQuery;
 
 use tendermint::abci;
 
@@ -14,6 +15,7 @@ use crate::error;
 
 pub struct QueryClientConsensusState<CS> {
     pub height: Height,
+    pub client_id: ClientId,
     pub consensus_state_path: ConsensusStatePath,
     marker: PhantomData<CS>,
 }
@@ -22,7 +24,8 @@ impl<CS> QueryClientConsensusState<CS> {
     pub fn new(height: Height, client_id: ClientId) -> Self {
         Self {
             height,
-            consensus_state_path: ConsensusStatePath { client_id, height },
+            client_id: client_id.clone(),
+            consensus_state_path: ConsensusStatePath::new(client_id, height),
             marker: PhantomData,
         }
     }
@@ -82,9 +85,23 @@ impl<CS> IbcResponse for ConsensusStateResponse<CS>
 where
     CS: ConsensusState,
 {
-    // fn from_bytes(_bytes: &[u8]) -> Result<Self, rpc::Error> {
-    //     todo!()
-    // }
+    type Query = QueryClientConsensusState<CS>;
+
+    fn from_abci_response(query: Self::Query, response: AbciQuery) -> Result<Self, error::Error> {
+        match (response.value, response.proof) {
+            (Some(value), Some(proof)) => {
+                let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
+
+                Ok(ConsensusStateResponse::new(
+                    query.client_id,
+                    consensus_state,
+                    proof,
+                    response.height.into(),
+                ))
+            }
+            _ => todo!(),
+        }
+    }
 }
 
 pub async fn query_client_consensus_state<C>(
@@ -95,21 +112,9 @@ pub async fn query_client_consensus_state<C>(
 where
     C: Chain,
 {
-    let query = QueryClientConsensusState::<C::ConsensusState>::new(height, client_id.clone());
+    let query = QueryClientConsensusState::new(height, client_id);
 
-    let response = ibc_query(chain, query)
-        .await
-        .map_err(|e| error::Kind::Rpc.context(e))?;
-
-    // FIXME: Handle case where there is no value
-    let consensus_state = amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?;
-
-    Ok(ConsensusStateResponse::new(
-        client_id,
-        consensus_state,
-        response.proof.unwrap(), // FIXME: Handle case where there is no proof
-        response.height.into(),
-    ))
+    ibc_query(chain, query).await
 }
 
 fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
