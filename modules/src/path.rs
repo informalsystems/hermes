@@ -3,6 +3,14 @@ use std::fmt;
 use crate::ics24_host::client::ClientId;
 use crate::Height;
 
+mod cosmos;
+mod ics;
+
+#[cfg(feature = "paths-cosmos")]
+use cosmos as paths;
+#[cfg(not(feature = "paths-cosmos"))]
+use ics as paths;
+
 pub struct Key<'a, P>(&'a P);
 
 impl<'a, P> fmt::Display for Key<'a, P>
@@ -37,7 +45,7 @@ pub struct ConnectionPath {
 
 impl Path for ConnectionPath {
     fn to_string(&self) -> String {
-        format!("connection/{}", self.connection_id)
+        paths::connection_path(&self)
     }
 }
 
@@ -54,6 +62,6 @@ impl ConsensusStatePath {
 
 impl Path for ConsensusStatePath {
     fn to_string(&self) -> String {
-        format!("consensusState/{}/{}", self.client_id, self.height)
+        paths::consensus_state_path(&self)
     }
 }
