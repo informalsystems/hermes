@@ -44,7 +44,7 @@ where
         match self.store.get(&height) {
             Some(state) => Ok(state),
             None => fail!(
-                error::Kind::LiteClient,
+                error::Kind::Store,
                 "could not load height {} from store",
                 height
             ),

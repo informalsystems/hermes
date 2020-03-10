@@ -14,6 +14,6 @@
 pub mod chain;
 pub mod config;
 pub mod error;
-pub mod lite;
+pub mod light_client;
 pub mod query;
 pub mod store;

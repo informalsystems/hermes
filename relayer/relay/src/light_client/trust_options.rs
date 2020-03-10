@@ -29,7 +29,7 @@ where
     ) -> Result<Self, error::Error> {
         if period <= Duration::new(0, 0) {
             fail!(
-                error::Kind::LiteClient,
+                error::Kind::LightClient,
                 "trust options period must be greater than zero"
             )
         }

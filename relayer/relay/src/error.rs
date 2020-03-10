@@ -20,8 +20,11 @@ pub enum Kind {
     #[error("RPC error")]
     Rpc,
 
-    #[error("Lite client error")]
-    LiteClient,
+    #[error("light client error")]
+    LightClient,
+
+    #[error("store error")]
+    Store,
 }
 
 impl Kind {
