@@ -19,6 +19,9 @@ pub enum Kind {
 
     #[error("RPC error")]
     Rpc,
+
+    #[error("Lite client error")]
+    LiteClient,
 }
 
 impl Kind {
