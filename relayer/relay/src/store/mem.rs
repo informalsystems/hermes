@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anomaly::fail;
 use tendermint::lite::{types::Header, Height, TrustedState};
 
-use super::Store;
+use super::{Store, StoreHeight};
 use crate::chain::Chain;
 use crate::error;
 
@@ -32,19 +32,21 @@ where
         Ok(())
     }
 
-    fn get(&self, height: Height) -> Result<&TrustedState<C::Commit, C::Header>, error::Error> {
-        let mut h = height;
+    fn get(
+        &self,
+        height: StoreHeight,
+    ) -> Result<&TrustedState<C::Commit, C::Header>, error::Error> {
+        let height = match height {
+            StoreHeight::Current => self.height,
+            StoreHeight::GivenHeight(height) => height,
+        };
 
-        if h == 0 {
-            h = self.height
-        }
-
-        match self.store.get(&h) {
+        match self.store.get(&height) {
             Some(state) => Ok(state),
             None => fail!(
                 error::Kind::LiteClient,
                 "could not load height {} from store",
-                h
+                height
             ),
         }
     }

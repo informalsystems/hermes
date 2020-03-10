@@ -5,7 +5,7 @@ use tendermint::lite::{TrustThreshold, TrustedState};
 
 use crate::chain::Chain;
 use crate::error;
-use crate::store::Store;
+use crate::store::{Store, StoreHeight};
 
 pub mod trust_options;
 use trust_options::TrustOptions;
@@ -66,7 +66,8 @@ where
 
         let last_trusted_height = latest_signed_header.header().height();
 
-        if self.store.has(last_trusted_height) {
+        let store_height = StoreHeight::GivenHeight(last_trusted_height);
+        if self.store.has(store_height) {
             return Ok(self.to());
         }
 
