@@ -8,14 +8,12 @@ use crate::error;
 
 pub mod client_consensus_state;
 
-pub trait IbcResponse: Sized {
-    type Query: IbcQuery<Response = Self>;
-
-    fn from_abci_response(query: Self::Query, response: AbciQuery) -> Result<Self, error::Error>;
+pub trait IbcResponse<Query>: Sized {
+    fn from_abci_response(query: Query, response: AbciQuery) -> Result<Self, error::Error>;
 }
 
 pub trait IbcQuery: Sized {
-    type Response: IbcResponse<Query = Self>;
+    type Response: IbcResponse<Self>;
 
     fn path(&self) -> abci::Path;
     fn height(&self) -> Height;

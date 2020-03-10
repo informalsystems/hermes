@@ -81,13 +81,14 @@ impl<CS> ConsensusStateResponse<CS> {
     }
 }
 
-impl<CS> IbcResponse for ConsensusStateResponse<CS>
+impl<CS> IbcResponse<QueryClientConsensusState<CS>> for ConsensusStateResponse<CS>
 where
     CS: ConsensusState,
 {
-    type Query = QueryClientConsensusState<CS>;
-
-    fn from_abci_response(query: Self::Query, response: AbciQuery) -> Result<Self, error::Error> {
+    fn from_abci_response(
+        query: QueryClientConsensusState<CS>,
+        response: AbciQuery,
+    ) -> Result<Self, error::Error> {
         match (response.value, response.proof) {
             (Some(value), Some(proof)) => {
                 let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
