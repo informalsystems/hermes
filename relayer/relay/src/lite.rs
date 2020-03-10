@@ -1,17 +1,28 @@
 use std::marker::PhantomData;
 
-use tendermint::lite::{
-    types::{Header, Requester},
-    TrustedState,
-};
+use tendermint::lite::types::{Header, Requester};
+use tendermint::lite::{TrustThreshold, TrustedState};
 
 use crate::chain::Chain;
 use crate::error;
 use crate::store::Store;
 
+pub mod trust_options;
+use trust_options::TrustOptions;
+
 pub mod state {
+    trait State {}
+    trait Trusted: State {}
+
     pub struct Uninit;
-    pub struct Init;
+    impl State for Uninit {}
+
+    pub struct InitUntrusted;
+    impl State for InitUntrusted {}
+
+    pub struct InitTrusted;
+    impl State for InitTrusted {}
+    impl Trusted for InitTrusted {}
 }
 
 pub struct LiteClient<'a, Chain, Store, State> {
@@ -44,7 +55,9 @@ where
         }
     }
 
-    pub fn init_without_trust(self) -> Result<LiteClient<'a, C, S, state::Init>, error::Error> {
+    pub fn init_without_trust(
+        self,
+    ) -> Result<LiteClient<'a, C, S, state::InitUntrusted>, error::Error> {
         let req = &self.chain.requester();
 
         let latest_signed_header = req
@@ -80,5 +93,12 @@ where
             .map_err(|e| error::Kind::LiteClient.context(e))?;
 
         Ok(self.to())
+    }
+
+    pub fn init_with_trust(
+        self,
+        _trust_options: TrustOptions<impl TrustThreshold>,
+    ) -> Result<LiteClient<'a, C, S, state::InitTrusted>, error::Error> {
+        todo!()
     }
 }
