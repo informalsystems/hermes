@@ -9,6 +9,7 @@ authors = [
 
 [dependencies]
 relayer = { path = "../relay" }
+tendermint = { git = "https://github.com/romac/tendermint-rs.git", branch = "rpc-client-new-sync" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
