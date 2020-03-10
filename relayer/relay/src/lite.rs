@@ -1,37 +1,28 @@
-use core::marker::PhantomData;
-use tendermint::lite::types::{Header, Requester};
-use tendermint_lite::store::{MemStore, State};
+use std::marker::PhantomData;
 
-use relayer_modules::Height;
+use tendermint::lite::{
+    types::{Header, Requester},
+    TrustedState,
+};
 
-use crate::chain::tendermint::TendermintChain;
 use crate::chain::Chain;
 use crate::error;
-
-trait StoreExt {
-    fn has(&self, height: Height) -> bool;
-}
-
-impl StoreExt for MemStore {
-    fn has(&self, height: Height) -> bool {
-        self.get(height).is_ok()
-    }
-}
+use crate::store::Store;
 
 pub mod state {
     pub struct Uninit;
     pub struct Init;
 }
 
-pub struct LiteClient<'a, C, S> {
-    chain: &'a C,
-    store: &'a mut MemStore,
-    marker: PhantomData<S>,
+pub struct LiteClient<'a, Chain, Store, State> {
+    chain: &'a Chain,
+    store: &'a mut Store,
+    marker: PhantomData<State>,
 }
 
-impl<'a, C, S0> LiteClient<'a, C, S0> {
+impl<'a, C, S, S0> LiteClient<'a, C, S, S0> {
     #[inline(always)]
-    fn to<S>(self) -> LiteClient<'a, C, S> {
+    fn to<S1>(self) -> LiteClient<'a, C, S, S1> {
         LiteClient {
             chain: self.chain,
             store: self.store,
@@ -40,24 +31,20 @@ impl<'a, C, S0> LiteClient<'a, C, S0> {
     }
 }
 
-impl<'a, C> LiteClient<'a, C, state::Uninit>
+impl<'a, C, S> LiteClient<'a, C, S, state::Uninit>
 where
     C: Chain,
+    S: Store<C>,
 {
-    pub fn new(chain: &'a C, store: &'a mut MemStore) -> Self {
+    pub fn new(chain: &'a C, store: &'a mut S) -> Self {
         Self {
             chain,
             store,
             marker: PhantomData,
         }
     }
-}
 
-impl<'a> LiteClient<'a, TendermintChain, state::Uninit> {
-    // TODO: Use generic MemStore and move up into generic LiteClient impl
-    pub fn init_without_trust(
-        self,
-    ) -> Result<LiteClient<'a, TendermintChain, state::Init>, error::Error> {
+    pub fn init_without_trust(self) -> Result<LiteClient<'a, C, S, state::Init>, error::Error> {
         let req = &self.chain.requester();
 
         let latest_signed_header = req
@@ -86,7 +73,7 @@ impl<'a> LiteClient<'a, TendermintChain, state::Uninit> {
         // )
         // .map_err(|e| error::Kind::LiteClient.context(e))?;
 
-        let trusted_state = State::new(&latest_signed_header, &next_validator_set);
+        let trusted_state = TrustedState::new(&latest_signed_header, &next_validator_set);
 
         self.store
             .add(trusted_state)
