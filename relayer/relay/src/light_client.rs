@@ -1,8 +1,7 @@
-use std::marker::PhantomData;
-use std::time::Duration;
+#![allow(dead_code)]
 
 use tendermint::lite::types::{Header, Requester};
-use tendermint::lite::{TrustThreshold, TrustThresholdFraction, TrustedState};
+use tendermint::lite::TrustedState;
 
 use crate::chain::{query_header_at_height, query_latest_height, Chain};
 use crate::error;
@@ -12,6 +11,8 @@ pub mod trust_options;
 use trust_options::TrustOptions;
 
 pub mod state {
+    use super::*;
+
     trait State {}
     trait Trusted: State {}
 
@@ -21,24 +22,32 @@ pub mod state {
     pub struct InitUntrusted;
     impl State for InitUntrusted {}
 
-    pub struct InitTrusted;
+    pub struct InitTrusted {
+        trust_options: TrustOptions,
+    }
+
     impl State for InitTrusted {}
     impl Trusted for InitTrusted {}
+    impl InitTrusted {
+        pub fn new(trust_options: TrustOptions) -> Self {
+            Self { trust_options }
+        }
+    }
 }
 
 pub struct LightClient<'a, Chain, Store, State> {
     chain: &'a Chain,
     store: &'a mut Store,
-    marker: PhantomData<State>,
+    state: State,
 }
 
 impl<'a, C, S, S0> LightClient<'a, C, S, S0> {
     #[inline(always)]
-    fn to<S1>(self) -> LightClient<'a, C, S, S1> {
+    fn to<S1>(self, state: S1) -> LightClient<'a, C, S, S1> {
         LightClient {
             chain: self.chain,
             store: self.store,
-            marker: PhantomData,
+            state,
         }
     }
 }
@@ -52,7 +61,7 @@ where
         Self {
             chain,
             store,
-            marker: PhantomData,
+            state: state::Uninit,
         }
     }
 
@@ -69,8 +78,9 @@ where
         let last_trusted_height = latest_signed_header.header().height();
 
         let store_height = StoreHeight::GivenHeight(last_trusted_height);
+
         if self.store.has(store_height) {
-            return Ok(self.to());
+            return Ok(self.to(state::InitUntrusted));
         }
 
         let _validator_set = req
@@ -97,7 +107,7 @@ where
             .add(trusted_state)
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
-        Ok(self.to())
+        Ok(self.to(state::InitUntrusted))
     }
 
     pub async fn init_with_node_trusted_state(
@@ -108,19 +118,24 @@ where
     {
         let height = query_latest_height(self.chain).await?;
         let header = query_header_at_height(self.chain, height).await?;
-        let period = Duration::from_secs(2);
-        let trust_threshold = TrustThresholdFraction::default();
 
-        let trust_options =
-            TrustOptions::new(period, height, header.header().hash(), trust_threshold)?;
+        let trusting_period = self.chain.trusting_period();
+        let trust_threshold = self.chain.trust_threshold();
 
-        self.init_with_trusted_state(trust_options)
+        let trust_options = TrustOptions::new(
+            trusting_period,
+            height,
+            header.header().hash(),
+            trust_threshold,
+        )?;
+
+        self.init_with_trust(trust_options)
     }
 
-    pub fn init_with_trusted_state(
+    pub fn init_with_trust(
         self,
-        _trust_options: TrustOptions<impl TrustThreshold>,
+        trust_options: TrustOptions,
     ) -> Result<LightClient<'a, C, S, state::InitTrusted>, error::Error> {
-        todo!()
+        Ok(self.to(state::InitTrusted::new(trust_options)))
     }
 }

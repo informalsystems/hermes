@@ -68,6 +68,7 @@ pub struct ChainConfig {
     pub client_ids: Vec<String>,
     #[serde(default = "default_gas")]
     pub gas: u64,
+    pub trusting_period: Duration,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

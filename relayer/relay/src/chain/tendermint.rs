@@ -1,7 +1,9 @@
+use core::time::Duration;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::rpc::Client as RpcClient;
 
+use tendermint::lite::TrustThresholdFraction;
 use tendermint_lite::requester::RPCRequester;
 
 use relayer_modules::ics02_client::client_type::Tendermint;
@@ -49,5 +51,13 @@ impl Chain for TendermintChain {
 
     fn requester(&self) -> &Self::Requester {
         &self.requester
+    }
+
+    fn trusting_period(&self) -> Duration {
+        self.config.trusting_period
+    }
+
+    fn trust_threshold(&self) -> TrustThresholdFraction {
+        TrustThresholdFraction::default()
     }
 }

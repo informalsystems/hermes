@@ -2,30 +2,24 @@ use std::time::Duration;
 
 use anomaly::fail;
 
-use tendermint::lite::{Height, TrustThreshold};
+use tendermint::lite::{Height, TrustThresholdFraction};
 use tendermint::Hash;
 
 use crate::error;
 
-pub struct TrustOptions<TT>
-where
-    TT: TrustThreshold,
-{
+pub struct TrustOptions {
     pub period: Duration,
     pub height: Height,
     pub hash: Hash,
-    pub trust_threshold: TT,
+    pub trust_threshold: TrustThresholdFraction,
 }
 
-impl<TT> TrustOptions<TT>
-where
-    TT: TrustThreshold,
-{
+impl TrustOptions {
     pub fn new(
         period: Duration,
         height: Height,
         hash: Hash,
-        trust_threshold: TT,
+        trust_threshold: TrustThresholdFraction,
     ) -> Result<Self, error::Error> {
         if period <= Duration::new(0, 0) {
             fail!(

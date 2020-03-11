@@ -1,7 +1,9 @@
+use std::time::Duration;
+
 use anomaly::fail;
 
 use ::tendermint::lite::types as tmlite;
-use ::tendermint::lite::{self, Height};
+use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint::rpc::Client as RpcClient;
 
 use relayer_modules::ics02_client::state::ConsensusState;
@@ -21,6 +23,8 @@ pub trait Chain {
     fn config(&self) -> &ChainConfig;
     fn rpc_client(&self) -> &RpcClient;
     fn requester(&self) -> &Self::Requester;
+    fn trusting_period(&self) -> Duration;
+    fn trust_threshold(&self) -> TrustThresholdFraction;
 }
 
 pub async fn query_latest_height(chain: &impl Chain) -> Result<Height, error::Error> {
