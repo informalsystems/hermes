@@ -8,30 +8,30 @@ use tendermint::Hash;
 use crate::error;
 
 pub struct TrustOptions {
-    pub period: Duration,
-    pub height: Height,
     pub hash: Hash,
+    pub height: Height,
+    pub trusting_period: Duration,
     pub trust_threshold: TrustThresholdFraction,
 }
 
 impl TrustOptions {
     pub fn new(
-        period: Duration,
-        height: Height,
         hash: Hash,
+        height: Height,
+        trusting_period: Duration,
         trust_threshold: TrustThresholdFraction,
     ) -> Result<Self, error::Error> {
-        if period <= Duration::new(0, 0) {
+        if trusting_period <= Duration::new(0, 0) {
             fail!(
                 error::Kind::LightClient,
-                "trust options period must be greater than zero"
+                "trusting period must be greater than zero"
             )
         }
 
         Ok(Self {
-            period,
-            height,
             hash,
+            height,
+            trusting_period,
             trust_threshold,
         })
     }

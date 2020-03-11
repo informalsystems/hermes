@@ -6,7 +6,7 @@ use crate::error;
 pub mod mem;
 
 pub enum StoreHeight {
-    Current,
+    Last,
     GivenHeight(Height),
 }
 
@@ -14,7 +14,7 @@ pub trait Store<C>
 where
     C: Chain,
 {
-    fn height(&self) -> Height;
+    fn last_height(&self) -> Option<Height>;
 
     fn add(&mut self, state: TrustedState<C::Commit, C::Header>) -> Result<(), error::Error>;
 

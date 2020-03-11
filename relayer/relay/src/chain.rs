@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use anomaly::fail;
 
+use ::tendermint::chain::Id as ChainId;
 use ::tendermint::lite::types as tmlite;
 use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint::rpc::Client as RpcClient;
@@ -17,8 +18,13 @@ pub trait Chain {
     type Type;
     type Header: tmlite::Header;
     type Commit: tmlite::Commit;
+
     type ConsensusState: ConsensusState;
     type Requester: tmlite::Requester<Self::Commit, Self::Header>;
+
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
 
     fn config(&self) -> &ChainConfig;
     fn rpc_client(&self) -> &RpcClient;
