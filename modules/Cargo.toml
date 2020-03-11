@@ -7,10 +7,15 @@ authors = [
   "Romain Ruetschi <romain@informal.systems>"
 ]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+# Default features
+default = ["paths-cosmos"]
+
+# In IBC queries, use paths as defined in the Cosmos-SDK Go implementation, rather than in the ICS.
+paths-cosmos = []
 
 [dependencies]
-tendermint = { git = "https://github.com/romac/tendermint-rs.git", branch = "rpc-client-new-sync" }
+tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"
