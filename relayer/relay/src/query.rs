@@ -1,25 +1,32 @@
 use tendermint::abci;
-use tendermint::rpc::{self, endpoint::abci_query::AbciQuery};
+use tendermint::rpc::endpoint::abci_query::AbciQuery;
 
 use relayer_modules::Height;
 
 use crate::chain::Chain;
+use crate::error;
 
-mod client_consensus_state;
-pub use client_consensus_state::*;
+pub mod client_consensus_state;
 
-pub trait IbcResponse: Sized {}
+pub trait IbcResponse<Query>: Sized {
+    fn from_abci_response(query: Query, response: AbciQuery) -> Result<Self, error::Error>;
+}
 
-pub trait IbcQuery {
-    type Response: IbcResponse;
+pub trait IbcQuery: Sized {
+    type Response: IbcResponse<Self>;
 
     fn path(&self) -> abci::Path;
     fn height(&self) -> Height;
     fn prove(&self) -> bool;
     fn data(&self) -> Vec<u8>;
+
+    fn build_response(self, response: AbciQuery) -> Result<Self::Response, error::Error> {
+        Self::Response::from_abci_response(self, response)
+    }
 }
 
-pub async fn ibc_query<C, Q>(chain: &C, query: Q) -> Result<AbciQuery, rpc::Error>
+/// Perform an IBC `query` on the given `chain`, and return the corresponding IBC response.
+pub async fn ibc_query<C, Q>(chain: &C, query: Q) -> Result<Q::Response, error::Error>
 where
     C: Chain,
     Q: IbcQuery,
@@ -32,19 +39,19 @@ where
             Some(query.height().into()),
             query.prove(),
         )
-        .await?;
+        .await
+        .map_err(|e| error::Kind::Rpc.context(e))?;
 
     if !abci_response.code.is_ok() {
-        todo!() // fail with response log
+        todo!() // TODO: Fail with response log
     }
 
-    // Data from trusted node or subspace query doesn't need verification
-    if !is_query_store_with_proof(&query.path()) {
-        return Ok(abci_response);
+    // Data that is not from trusted node or subspace query needs verification
+    if is_query_store_with_proof(&query.path()) {
+        todo!() // TODO: Verify proof
     }
 
-    // TODO: Verify proof and return response
-    Ok(abci_response)
+    query.build_response(abci_response)
 }
 
 /// Whether or not this path requires proof verification.
