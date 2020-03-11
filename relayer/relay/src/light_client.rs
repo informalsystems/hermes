@@ -1,9 +1,10 @@
 use std::marker::PhantomData;
+use std::time::Duration;
 
 use tendermint::lite::types::{Header, Requester};
-use tendermint::lite::{TrustThreshold, TrustedState};
+use tendermint::lite::{TrustThreshold, TrustThresholdFraction, TrustedState};
 
-use crate::chain::Chain;
+use crate::chain::{query_header_at_height, query_latest_height, Chain};
 use crate::error;
 use crate::store::{Store, StoreHeight};
 
@@ -55,13 +56,14 @@ where
         }
     }
 
-    pub fn init_without_trust(
+    pub async fn init_without_trusted_state(
         self,
     ) -> Result<LightClient<'a, C, S, state::InitUntrusted>, error::Error> {
         let req = &self.chain.requester();
 
         let latest_signed_header = req
             .signed_header(0)
+            .await
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
         let last_trusted_height = latest_signed_header.header().height();
@@ -73,10 +75,12 @@ where
 
         let _validator_set = req
             .validator_set(last_trusted_height)
+            .await
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
         let next_validator_set = req
             .validator_set(last_trusted_height + 1)
+            .await
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
         // TODO: Make `validate` public in tendermint-rs crate
@@ -96,7 +100,24 @@ where
         Ok(self.to())
     }
 
-    pub fn init_with_trust(
+    pub async fn init_with_node_trusted_state(
+        self,
+    ) -> Result<LightClient<'a, C, S, state::InitTrusted>, error::Error>
+    where
+        C: Chain,
+    {
+        let height = query_latest_height(self.chain).await?;
+        let header = query_header_at_height(self.chain, height).await?;
+        let period = Duration::from_secs(2);
+        let trust_threshold = TrustThresholdFraction::default();
+
+        let trust_options =
+            TrustOptions::new(period, height, header.header().hash(), trust_threshold)?;
+
+        self.init_with_trusted_state(trust_options)
+    }
+
+    pub fn init_with_trusted_state(
         self,
         _trust_options: TrustOptions<impl TrustThreshold>,
     ) -> Result<LightClient<'a, C, S, state::InitTrusted>, error::Error> {
