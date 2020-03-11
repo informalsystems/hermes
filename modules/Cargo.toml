@@ -15,7 +15,7 @@ default = ["paths-cosmos"]
 paths-cosmos = []
 
 [dependencies]
-tendermint = { git = "https://github.com/romac/tendermint-rs.git", branch = "rpc-client-new-sync" }
+tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"
