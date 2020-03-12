@@ -63,7 +63,7 @@ where
             chain,
             trusted_store,
             trusting_period: trust_options.trusting_period,
-            trust_threshold: trust_options.trust_threshold.clone(),
+            trust_threshold: trust_options.trust_threshold,
             last_trusted_state: None,
         };
 
@@ -86,10 +86,30 @@ where
 
     async fn check_trusted_header(
         &self,
-        _trusted_header: &SignedHeader<Chain::Commit, Chain::Header>,
-        _trust_options: &TrustOptions,
+        trusted_header: &SignedHeader<Chain::Commit, Chain::Header>,
+        trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
-        todo!()
+        let primary_hash = if trust_options.height > trusted_header.header().height() {
+            // TODO: Fetch from primary (?)
+            self.chain
+                .requester()
+                .signed_header(trust_options.height)
+                .await
+                .map_err(|e| error::Kind::Rpc.context(e))?
+                .header()
+                .hash()
+        } else if trust_options.height == trusted_header.header().height() {
+            trust_options.hash
+        } else {
+            // TODO: Implement rollback
+            trust_options.hash
+        };
+
+        if primary_hash != trusted_header.header().hash() {
+            // TODO: Implement cleanup
+        }
+
+        Ok(())
     }
 
     async fn init_with_trust_options(
