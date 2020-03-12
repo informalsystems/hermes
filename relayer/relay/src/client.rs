@@ -81,7 +81,7 @@ where
                 let latest_validator_set = self
                     .chain
                     .requester()
-                    .validator_set(0)
+                    .validator_set(latest_header.header().height())
                     .await
                     .map_err(|e| error::Kind::LightClient.context(e))?;
 
@@ -100,7 +100,7 @@ where
 
     // TODO: Cleanup signature
     async fn verify_header(
-        &self,
+        &mut self,
         new_header: &SignedHeader<Chain::Commit, Chain::Header>,
         new_validator_set: &<<Chain as chain::Chain>::Commit as Commit>::ValidatorSet,
         now: SystemTime,
@@ -145,6 +145,13 @@ where
                 now,
             )
             .map_err(|e| error::Kind::LightClient.context(e))?;
+
+            // TODO: Compare new header with witnesses (?)
+
+            let new_trusted_state =
+                TrustedState::new(new_header.clone(), new_validator_set.clone());
+
+            self.update_trusted_state(new_trusted_state)?;
 
             Ok(())
         } else {
