@@ -178,7 +178,12 @@ where
         state: TrustedState<Chain::Commit, Chain::Header>,
     ) -> Result<(), error::Error> {
         if state.last_header().header().validators_hash() != state.validators().hash() {
-            // TODO: Fail
+            fail!(
+                error::Kind::LightClient,
+                "expected validator's hash {}, but got {}",
+                state.last_header().header().validators_hash(),
+                state.validators().hash()
+            )
         }
 
         self.trusted_store.add(state.clone())?;
