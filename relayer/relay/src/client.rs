@@ -122,7 +122,12 @@ where
         }
 
         if let Some(ref last_trusted_state) = self.last_trusted_state {
-            let next_height = new_header.header().height() + 1;
+            let next_height = new_header
+                .header()
+                .height()
+                .checked_add(1)
+                .expect("height overflow");
+
             let new_next_validator_set = self
                 .chain
                 .requester()
