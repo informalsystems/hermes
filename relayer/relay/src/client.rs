@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use anomaly::fail;
+
 use tendermint::lite::types::{Commit as _, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
 
@@ -94,7 +96,7 @@ where
         &mut self,
         trust_options: TrustOptions,
     ) -> Result<(), error::Error> {
-        // TODO: Fetch from primary
+        // TODO: Fetch from primary (?)
         let signed_header = self
             .chain
             .requester()
@@ -104,13 +106,18 @@ where
 
         // TODO: Validate basic
 
-        if signed_header.header().hash() != trust_options.hash {
-            // TODO: Fail
+        if trust_options.hash != signed_header.header().hash() {
+            fail!(
+                error::Kind::LightClient,
+                "expected header's hash {}, but got {}",
+                trust_options.hash,
+                signed_header.header().hash()
+            )
         }
 
-        // TODO: Compare header with witnesses
+        // TODO: Compare header with witnesses (?)
 
-        // TODO: Fetch from primary
+        // TODO: Fetch from primary (?)
         let validator_set = self
             .chain
             .requester()
@@ -118,8 +125,13 @@ where
             .await
             .map_err(|e| error::Kind::Rpc.context(e))?;
 
-        if validator_set.hash() != signed_header.header().validators_hash() {
-            // TODO: Fail
+        if signed_header.header().validators_hash() != validator_set.hash() {
+            fail!(
+                error::Kind::LightClient,
+                "expected header's validators ({}) to match those that were supplied ({})",
+                signed_header.header().validators_hash(),
+                validator_set.hash()
+            )
         }
 
         // FIXME: Is this necessary?
@@ -128,14 +140,14 @@ where
             .validate(&validator_set)
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
-        // TODO: Uncomment when function is made public
-        // tendermint::lite::verifier::verify_commit_trusting(
-        //     &validator_set,
-        //     signed_header.commit(),
-        //     trust_options.trust_threshold
-        // )?;
+        tendermint::lite::verifier::verify_commit_trusting(
+            &validator_set,
+            signed_header.commit(),
+            trust_options.trust_threshold,
+        )
+        .map_err(|e| error::Kind::LightClient.context(e))?;
 
-        let trusted_state = TrustedState::new(&signed_header, &validator_set);
+        let trusted_state = TrustedState::new(signed_header, validator_set);
         self.update_trusted_state(trusted_state)?;
 
         Ok(())
