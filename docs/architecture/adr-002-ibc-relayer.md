@@ -4,19 +4,27 @@
 * {date}: {changelog}
 
 ## Definitions
+These definitions are specific for this document and they may not be consistent with the IBC Specification.
+
+IBC datagram - the transaction payload sent by the relayer over the physical network that includes client, connection, channel and IBC packet data. 
+
+IBC packet - a particular type of IBC datagram that includes the application packet and its commitment proof.
+
+IBC datagram transaction - a transaction that includes an IBC datagram.
+
 On-chain IBC Client (or IBC Client) - client code running on chain, typically only the light client verification related functionality.
 
 Relayer Light Client - full light client functionality, including connecting to at least one provider (full node), storing and verifying headers, etc.
 
 Source chain - the chain from which the relayer reads data to fill an IBC datagram.
 
-Destination chain - the chain where the realyer submits transactions that include the IBC message.
+Destination chain - the chain where the relayer submits transactions that include the IBC datagram.
 
 A and B chains - for connection protocol, A is the "initiating" chain where `MsgConnectionOpenInit` is initially processed and eventually `MsgConnectionOpenAck`. B is the chain where `MsgConnectionOpenTry` and `MsgConnectionOpenConfirm` are processed. 
 Similar for channel handshake protocol.
 
 ## Context
-A relayer is an off-chain process responsible for relaying IBC packet data & metadata between two or more chains by scanning their states and submitting transactions. This is because in the IBC architecture, modules are not directly sending messages to each other over networking infrastructure, but instead they create and store the messages to be retrieved and forwarded by a relayer process. 
+A relayer is an off-chain process responsible for relaying IBC datagrams between two or more chains by scanning their states and submitting transactions. This is because in the IBC architecture, modules are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams. 
 
 This document provides an initial Rust implementation specification of a relayer that interconnects Cosmos-SDK/ Tendermint chains.
 
@@ -34,8 +42,8 @@ The relayer monitors the chain state to determine when packet forwarding is requ
 IBC protocol defines the minimal data set that must be made available to relayers for correct operation of the protocol. The relayer expects the data to be legible, i.e. **data should be serialized** according to the IBC specification format; this includes consensus state, client, connection, channel, and packet information, and any auxiliary state structure necessary to construct proofs of inclusion or exclusion of particular key/value pairs in state. 
  - [IBC Specification] some protobuf specifications can be found under individual ICS-es, for exmple [ICS-03 connection protobufs](https://github.com/cosmos/ics/blob/master/spec/ics-002-client-semantics/data-structures.proto)
 
-#### IBC Querier Module
-IBC host state machines MUST provide query functions for all data available to relayers. For Cosmos/Tendermint chains this means:
+#### Query Functionality 
+IBC host state machines MUST expose an interface for inspecting their state. For Cosmos/Tendermint chains this means:
 - the IBC modules on chain correctly implement and respond to queries
   - [IBC-Modules-Rust] an implementation for some queries currently exist in Cosmos-SDK and same and more need to be implemented in Rust. The full requirements are detailed in section Relayer Queries. 
 - the relayer needs the ability to send rpc/http ABCI queries to and receive replies from Tendermint/Cosmos-SDK
@@ -72,7 +80,7 @@ ports, start handshakes, accept handshakes, send and receive packets, etc. While
 [IBC-Routing-Module-Go] Initial version of the relayer assumes that chains implement the "routing module"
 
 #### Batching
-The relayer may batch transactions if supported by destination chain and allowed by configuration. In this case the relayer  can bundle multiple datagrams into a single transaction and amortise any overhead costs (e.g. signature checks for fee payment).
+The relayer may batch IBC datagrams in a single transaction if supported by destination chain and allowed by configuration. In this case the relayer can  amortise any overhead costs (e.g. signature checks for fee payment).
 Initial version of the relayer assumes batching is supported by all chains. An option may be later included in the configuration file.
 
 ## Relayer Requirements
@@ -183,7 +191,7 @@ Chain level information including account and key name, gas information, trustin
 ```
 
 #### Relay Paths 
-The realyer may be configured to relay between some application ports, over a number of connections and channels, in unidirectional or bidirectional mode.
+The relayer may be configured to relay between some application ports, over a number of connections and channels, in unidirectional or bidirectional mode.
 
 ```$xslt
 [[connections]]
@@ -609,7 +617,7 @@ function packetDatagrams(src: Chain, dest: Chain): Set<Datagram>) {
 ```
 
 ## Inter-relayer Coordination
-Multiple realyers may run in parallel and, while it is expected that they relay over disjoint paths, it could be the case that they may submit same transactions to a destination chain. In this case only the first transaction succeeds while subsequent fail causing loss of fees. Ideally some coordination would be in place to avoid this but this is not adressed here.
+Multiple relayers may run in parallel and, while it is expected that they relay over disjoint paths, it could be the case that they may submit same transactions to a destination chain. In this case only the first transaction succeeds while subsequent fail causing loss of fees. Ideally some coordination would be in place to avoid this but this is not adressed here.
 
 ## Relayer Restarts and Upgrades
 
