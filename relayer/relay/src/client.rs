@@ -1,13 +1,13 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
 
-use tendermint::lite::types::{Commit as _, Header as _, Requester, ValidatorSet as _};
+use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
 
 use crate::chain;
 use crate::error;
-use crate::store;
+use crate::store::{self, StoreHeight};
 
 pub mod trust_options;
 pub use trust_options::TrustOptions;
@@ -51,14 +51,14 @@ where
             client.init_with_trust_options(trust_options).await?;
         }
 
-        let _ = client.update(Instant::now()).await?;
+        let _ = client.update(SystemTime::now()).await?;
 
         Ok(client)
     }
 
     pub async fn update(
         &mut self,
-        time: Instant,
+        now: SystemTime,
     ) -> Result<Option<SignedHeader<Chain::Commit, Chain::Header>>, error::Error> {
         match self.last_trusted_state {
             Some(ref last_trusted_state) => {
@@ -79,13 +79,67 @@ where
                     .map_err(|e| error::Kind::LightClient.context(e))?;
 
                 if latest_header.header().height() > last_trusted_height {
-                    // TODO: Verify latest_header (Go: VerifyHeader in lite2/client.go)
+                    self.verify_header(&latest_header, &latest_validator_set, now)
+                        .await?;
+
                     Ok(Some(latest_header))
                 } else {
                     Ok(None)
                 }
             }
             None => fail!(error::Kind::LightClient, "can't get last trusted state"),
+        }
+    }
+
+    // TODO: Cleanup signature
+    async fn verify_header(
+        &self,
+        new_header: &SignedHeader<Chain::Commit, Chain::Header>,
+        new_validator_set: &<<Chain as chain::Chain>::Commit as Commit>::ValidatorSet,
+        now: SystemTime,
+    ) -> Result<(), error::Error> {
+        let in_store = self
+            .trusted_store
+            .get(StoreHeight::GivenHeight(new_header.header().height()));
+
+        if let Ok(state) = in_store {
+            let stored_header = state.last_header().header();
+            if stored_header.hash() != new_header.header().hash() {
+                fail!(
+                    error::Kind::LightClient,
+                    "existing trusted header {} does not match new header {}",
+                    stored_header.hash(),
+                    new_header.header().hash()
+                )
+            }
+        }
+
+        if let Some(ref last_trusted_state) = self.last_trusted_state {
+            let next_height = new_header.header().height() + 1;
+            let new_next_validator_set = self
+                .chain
+                .requester()
+                .validator_set(next_height)
+                .await
+                .map_err(|e| error::Kind::LightClient.context(e))?;
+
+            tendermint::lite::verifier::verify_single(
+                last_trusted_state.clone(),
+                &new_header,
+                &new_validator_set,
+                &new_next_validator_set,
+                self.trust_threshold,
+                self.trusting_period,
+                now,
+            )
+            .map_err(|e| error::Kind::LightClient.context(e))?;
+
+            Ok(())
+        } else {
+            fail!(
+                error::Kind::LightClient,
+                "no current trusted state to verify new header with"
+            )
         }
     }
 
