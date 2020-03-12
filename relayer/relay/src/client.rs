@@ -59,6 +59,10 @@ where
         Ok(client)
     }
 
+    pub fn last_trusted_state(&self) -> Option<&TrustedState<Chain::Commit, Chain::Header>> {
+        self.last_trusted_state.as_ref()
+    }
+
     pub async fn update(
         &mut self,
         now: SystemTime,

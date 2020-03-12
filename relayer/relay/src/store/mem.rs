@@ -15,6 +15,18 @@ where
     store: HashMap<Height, TrustedState<C::Commit, C::Header>>,
 }
 
+impl<C> MemStore<C>
+where
+    C: Chain,
+{
+    pub fn new() -> Self {
+        Self {
+            last_height: 0,
+            store: Default::default(),
+        }
+    }
+}
+
 impl<C> Store<C> for MemStore<C>
 where
     C: Chain,
