@@ -7,18 +7,12 @@ use super::{Store, StoreHeight};
 use crate::chain::Chain;
 use crate::error;
 
-pub struct MemStore<C>
-where
-    C: Chain,
-{
+pub struct MemStore<C: Chain> {
     last_height: Height,
     store: HashMap<Height, TrustedState<C::Commit, C::Header>>,
 }
 
-impl<C> MemStore<C>
-where
-    C: Chain,
-{
+impl<C: Chain> MemStore<C> {
     pub fn new() -> Self {
         Self {
             last_height: 0,
@@ -27,10 +21,13 @@ where
     }
 }
 
-impl<C> Store<C> for MemStore<C>
-where
-    C: Chain,
-{
+impl<C: Chain> Default for MemStore<C> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<C: Chain> Store<C> for MemStore<C> {
     fn last_height(&self) -> Option<Height> {
         if self.last_height == 0 {
             None

@@ -39,7 +39,7 @@ impl InitCmd {
     fn validate_options(&self) -> Result<InitOptions, &'static str> {
         match (&self.chain_id, &self.hash, self.height) {
             (Some(chain_id), Some(trusted_hash), Some(trusted_height)) => Ok(InitOptions {
-                chain_id: chain_id.clone(),
+                chain_id: *chain_id,
                 trusted_hash: *trusted_hash,
                 trusted_height,
             }),
