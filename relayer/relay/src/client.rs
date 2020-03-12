@@ -22,8 +22,10 @@ where
     trusting_period: Duration,
     trust_threshold: TrustThresholdFraction,
 
-    // FIXME: Use a custom type, because TrustedState requires
-    // header at height H and validator set at height H + 1
+    // FIXME: Use a custom type, because TrustedState states
+    // it holds a header at height H and validator set at height H + 1,
+    // whereas this trusted state holds both header and validator set at
+    // same height H
     last_trusted_state: Option<TrustedState<Chain::Commit, Chain::Header>>,
 }
 
