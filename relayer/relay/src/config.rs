@@ -58,6 +58,10 @@ fn default_rpc_addr() -> net::Address {
     "localhost:26657".parse().unwrap()
 }
 
+fn default_trusting_period() -> Duration {
+    Duration::from_secs(336 * 60 * 60) // 336 hours
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
     pub id: ChainId,
@@ -68,6 +72,7 @@ pub struct ChainConfig {
     pub client_ids: Vec<String>,
     #[serde(default = "default_gas")]
     pub gas: u64,
+    #[serde(default = "default_trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
 }
 
