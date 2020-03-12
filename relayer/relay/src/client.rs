@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
@@ -180,20 +181,22 @@ where
         trusted_header: &SignedHeader<Chain::Commit, Chain::Header>,
         trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
-        let primary_hash = if trust_options.height > trusted_header.header().height() {
-            // TODO: Fetch from primary (?)
-            self.chain
-                .requester()
-                .signed_header(trust_options.height)
-                .await
-                .map_err(|e| error::Kind::Rpc.context(e))?
-                .header()
-                .hash()
-        } else if trust_options.height == trusted_header.header().height() {
-            trust_options.hash
-        } else {
-            // TODO: Implement rollback
-            trust_options.hash
+        let primary_hash = match trust_options.height.cmp(&trusted_header.header().height()) {
+            Ordering::Greater => {
+                // TODO: Fetch from primary (?)
+                self.chain
+                    .requester()
+                    .signed_header(trust_options.height)
+                    .await
+                    .map_err(|e| error::Kind::Rpc.context(e))?
+                    .header()
+                    .hash()
+            }
+            Ordering::Equal => trust_options.hash,
+            Ordering::Less => {
+                // TODO: Implement rollback
+                trust_options.hash
+            }
         };
 
         if primary_hash != trusted_header.header().hash() {
