@@ -10,15 +10,31 @@ use tendermint::net;
 
 use crate::error;
 
+mod default {
+    use super::*;
+
+    pub fn timeout() -> Duration {
+        Duration::from_secs(10)
+    }
+
+    pub fn gas() -> u64 {
+        200_000
+    }
+
+    pub fn rpc_addr() -> net::Address {
+        "localhost:26657".parse().unwrap()
+    }
+
+    pub fn trusting_period() -> Duration {
+        Duration::from_secs(336 * 60 * 60) // 336 hours
+    }
+}
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
     pub chains: Vec<ChainConfig>,
     pub connections: Option<Vec<Connection>>, // use all for default
-}
-
-fn default_timeout() -> Duration {
-    Duration::from_secs(10)
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -35,7 +51,7 @@ impl Default for Strategy {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GlobalConfig {
-    #[serde(default = "default_timeout", with = "humantime_serde")]
+    #[serde(default = "default::timeout", with = "humantime_serde")]
     pub timeout: Duration,
     #[serde(default)]
     pub strategy: Strategy,
@@ -44,35 +60,23 @@ pub struct GlobalConfig {
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self {
-            timeout: default_timeout(),
+            timeout: default::timeout(),
             strategy: Strategy::default(),
         }
     }
 }
 
-fn default_gas() -> u64 {
-    200_000
-}
-
-fn default_rpc_addr() -> net::Address {
-    "localhost:26657".parse().unwrap()
-}
-
-fn default_trusting_period() -> Duration {
-    Duration::from_secs(336 * 60 * 60) // 336 hours
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
     pub id: ChainId,
-    #[serde(default = "default_rpc_addr")]
+    #[serde(default = "default::rpc_addr")]
     pub rpc_addr: net::Address,
     pub account_prefix: String,
     pub key_name: String,
     pub client_ids: Vec<String>,
-    #[serde(default = "default_gas")]
+    #[serde(default = "default::gas")]
     pub gas: u64,
-    #[serde(default = "default_trusting_period", with = "humantime_serde")]
+    #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
 }
 
