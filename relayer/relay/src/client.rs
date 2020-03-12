@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use anomaly::fail;
 
@@ -51,7 +51,42 @@ where
             client.init_with_trust_options(trust_options).await?;
         }
 
+        let _ = client.update(Instant::now()).await?;
+
         Ok(client)
+    }
+
+    pub async fn update(
+        &mut self,
+        time: Instant,
+    ) -> Result<Option<SignedHeader<Chain::Commit, Chain::Header>>, error::Error> {
+        match self.last_trusted_state {
+            Some(ref last_trusted_state) => {
+                let last_trusted_height = last_trusted_state.last_header().header().height();
+
+                let latest_header = self
+                    .chain
+                    .requester()
+                    .signed_header(0)
+                    .await
+                    .map_err(|e| error::Kind::LightClient.context(e))?;
+
+                let latest_validator_set = self
+                    .chain
+                    .requester()
+                    .validator_set(0)
+                    .await
+                    .map_err(|e| error::Kind::LightClient.context(e))?;
+
+                if latest_header.header().height() > last_trusted_height {
+                    // TODO: Verify latest_header (Go: VerifyHeader in lite2/client.go)
+                    Ok(Some(latest_header))
+                } else {
+                    Ok(None)
+                }
+            }
+            None => fail!(error::Kind::LightClient, "can't get last trusted state"),
+        }
     }
 
     fn new_from_trusted_store(
