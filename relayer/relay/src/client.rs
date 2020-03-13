@@ -6,7 +6,7 @@ use anomaly::fail;
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
 
-use crate::chain;
+use crate::chain::{self, ValidatorSet};
 use crate::error;
 use crate::store::{self, StoreHeight};
 
@@ -102,7 +102,7 @@ where
     async fn verify_header(
         &mut self,
         new_header: &SignedHeader<Chain::Commit, Chain::Header>,
-        new_validator_set: &<<Chain as chain::Chain>::Commit as Commit>::ValidatorSet,
+        new_validator_set: &ValidatorSet<Chain>,
         now: SystemTime,
     ) -> Result<(), error::Error> {
         let in_store = self

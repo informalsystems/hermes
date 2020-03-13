@@ -14,6 +14,8 @@ use crate::error;
 
 pub mod tendermint;
 
+pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
+
 pub trait Chain {
     type Type;
     type Header: tmlite::Header;
