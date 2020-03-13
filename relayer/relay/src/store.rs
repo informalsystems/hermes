@@ -7,7 +7,7 @@ pub mod mem;
 
 pub enum StoreHeight {
     Last,
-    GivenHeight(Height),
+    Given(Height),
 }
 
 pub trait Store<C>

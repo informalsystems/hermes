@@ -1,9 +1,10 @@
-use core::time::Duration;
+use std::time::Duration;
+
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
+use tendermint::lite::TrustThresholdFraction;
 use tendermint::rpc::Client as RpcClient;
 
-use tendermint::lite::TrustThresholdFraction;
 use tendermint_lite::requester::RPCRequester;
 
 use relayer_modules::ics02_client::client_type::Tendermint;

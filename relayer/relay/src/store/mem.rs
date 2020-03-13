@@ -51,7 +51,7 @@ impl<C: Chain> Store<C> for MemStore<C> {
     ) -> Result<&TrustedState<C::Commit, C::Header>, error::Error> {
         let height = match height {
             StoreHeight::Last => self.last_height,
-            StoreHeight::GivenHeight(height) => height,
+            StoreHeight::Given(height) => height,
         };
 
         match self.store.get(&height) {

@@ -107,7 +107,7 @@ where
     ) -> Result<(), error::Error> {
         let in_store = self
             .trusted_store
-            .get(StoreHeight::GivenHeight(new_header.header().height()));
+            .get(StoreHeight::Given(new_header.header().height()));
 
         if let Ok(state) = in_store {
             let stored_header = state.last_header().header();
@@ -184,7 +184,7 @@ where
         if let Some(last_height) = self.trusted_store.last_height() {
             let last_trusted_state = self
                 .trusted_store
-                .get(store::StoreHeight::GivenHeight(last_height))?;
+                .get(store::StoreHeight::Given(last_height))?;
 
             self.last_trusted_state = Some(last_trusted_state.clone());
         }
