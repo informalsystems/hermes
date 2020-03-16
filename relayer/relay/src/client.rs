@@ -13,6 +13,9 @@ use crate::store::{self, StoreHeight};
 pub mod trust_options;
 pub use trust_options::TrustOptions;
 
+pub mod rpc_requester;
+pub use rpc_requester::RpcRequester;
+
 pub struct Client<Chain, Store>
 where
     Chain: chain::Chain,

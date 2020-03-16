@@ -10,7 +10,6 @@ authors = [
 [dependencies]
 relayer-modules = { path = "../../modules" }
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
-tendermint-lite = { git = "https://github.com/informalsystems/tendermint-rs.git" }
 
 anomaly = "0.2.0"
 humantime-serde = "1.0.0"
@@ -18,3 +17,4 @@ serde = "1.0.97"
 serde_derive = "1.0"
 thiserror = "1.0.11"
 toml = "0.5"
+async-trait = "0.1.24"
