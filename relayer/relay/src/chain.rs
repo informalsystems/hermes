@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anomaly::fail;
+use serde::{de::DeserializeOwned, Serialize};
 
 use ::tendermint::chain::Id as ChainId;
 use ::tendermint::lite::types as tmlite;
@@ -18,10 +19,10 @@ pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit
 
 pub trait Chain {
     type Type;
-    type Header: tmlite::Header;
-    type Commit: tmlite::Commit;
+    type Header: tmlite::Header + Serialize + DeserializeOwned;
+    type Commit: tmlite::Commit + Serialize + DeserializeOwned;
+    type ConsensusState: ConsensusState + Serialize + DeserializeOwned;
 
-    type ConsensusState: ConsensusState;
     type Requester: tmlite::Requester<Self::Commit, Self::Header>;
 
     fn id(&self) -> &ChainId {

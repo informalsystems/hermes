@@ -1,5 +1,4 @@
 use std::future::Future;
-use std::time::{Duration, SystemTime};
 
 // use crate::application::APPLICATION;
 use crate::prelude::*;
@@ -8,15 +7,12 @@ use abscissa_core::{Command, Options, Runnable};
 
 use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
-use tendermint::lite::types::Header;
 use tendermint::lite::Height;
 
 use relayer::chain::tendermint::TendermintChain;
-use relayer::chain::Chain;
-use relayer::client::{trust_options::TrustOptions, Client};
+use relayer::client::trust_options::TrustOptions;
 use relayer::config::{ChainConfig, Config};
-use relayer::store::mem::MemStore;
-use relayer::store::Store;
+use relayer::store::{sled::SledStore, Store};
 
 #[derive(Command, Debug, Options)]
 pub struct InitCmd {
@@ -43,16 +39,31 @@ struct InitOptions {
 }
 
 impl InitCmd {
-    fn validate_options(&self) -> Result<InitOptions, &'static str> {
+    fn get_chain_config_and_options(
+        &self,
+        config: &Config,
+    ) -> Result<(ChainConfig, InitOptions), String> {
         match (&self.chain_id, &self.hash, self.height) {
-            (Some(chain_id), Some(trusted_hash), Some(trusted_height)) => Ok(InitOptions {
-                chain_id: *chain_id,
-                trusted_hash: *trusted_hash,
-                trusted_height,
-            }),
-            (None, _, _) => Err("missing chain identifier"),
-            (_, None, _) => Err("missing trusted hash"),
-            (_, _, None) => Err("missing trusted height"),
+            (Some(chain_id), Some(trusted_hash), Some(trusted_height)) => {
+                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+
+                match chain_config {
+                    Some(chain_config) => {
+                        let opts = InitOptions {
+                            chain_id: *chain_id,
+                            trusted_hash: *trusted_hash,
+                            trusted_height,
+                        };
+
+                        Ok((chain_config.clone(), opts))
+                    }
+                    None => Err(format!("cannot find chain {} in config", chain_id)),
+                }
+            }
+
+            (None, _, _) => Err("missing chain identifier".to_string()),
+            (_, None, _) => Err("missing trusted hash".to_string()),
+            (_, _, None) => Err("missing trusted height".to_string()),
         }
     }
 }
@@ -60,102 +71,33 @@ impl InitCmd {
 impl Runnable for InitCmd {
     /// Initialize the light client for the given chain
     fn run(&self) {
+        // FIXME: This just hangs and never runs the given future
+        // abscissa_tokio::run(&APPLICATION, ...).unwrap();
+
         let config = app_config();
 
-        let opts = match self.validate_options() {
+        let (chain_config, opts) = match self.get_chain_config_and_options(&config) {
             Err(err) => {
                 status_err!("invalid options: {}", err);
                 return;
             }
-            Ok(opts) => opts,
+            Ok(result) => result,
         };
 
-        // FIXME: This just hangs and never runs the given future
-        // abscissa_tokio::run(&APPLICATION, run_init(&*config, opts)).unwrap();
+        block_on(async {
+            let trust_options = TrustOptions::new(
+                opts.trusted_hash,
+                opts.trusted_height,
+                chain_config.trusting_period,
+                Default::default(),
+            )
+            .unwrap();
 
-        block_on(run_init(config.clone(), opts));
-    }
-}
+            let mut store: SledStore<TendermintChain> = relayer::store::persistent("test");
 
-async fn run_init(config: Config, opts: InitOptions) {
-    status_info!("Options", "{:?}", opts);
-
-    for chain_config in config.chains {
-        let opts = opts.clone();
-
-        status_info!(
-            "Relayer",
-            "Spawning light client for chain {}",
-            chain_config.id
-        );
-
-        let _handle = tokio::spawn(async move {
-            let client = create_client(chain_config, opts).await;
-            let trusted_state = client.last_trusted_state().unwrap();
-
-            status_ok!(
-                client.chain().id(),
-                "Spawned new client now at trusted state: {} at height {}",
-                trusted_state.last_header().header().hash(),
-                trusted_state.last_header().header().height(),
-            );
-
-            update_headers(client).await;
+            store.set_trust_options(trust_options).unwrap(); // FIXME: unwrap
         });
     }
-
-    start_relayer().await
-}
-
-async fn start_relayer() {
-    let mut interval = tokio::time::interval(Duration::from_secs(3));
-
-    loop {
-        status_info!("Relayer", "Relayer is running");
-
-        interval.tick().await;
-    }
-}
-
-async fn update_headers<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
-    let mut interval = tokio::time::interval(Duration::from_secs(3));
-
-    loop {
-        let result = client.update(SystemTime::now()).await;
-
-        match result {
-            Ok(Some(trusted_state)) => status_ok!(
-                client.chain().id(),
-                "Updated to trusted state: {} at height {}",
-                trusted_state.header().hash(),
-                trusted_state.header().height()
-            ),
-
-            Ok(None) => status_info!(client.chain().id(), "Ignoring update to a previous state"),
-            Err(err) => status_info!(client.chain().id(), "Error when updating headers: {}", err),
-        }
-
-        interval.tick().await;
-    }
-}
-
-async fn create_client(
-    chain_config: ChainConfig,
-    opts: InitOptions,
-) -> Client<TendermintChain, MemStore<TendermintChain>> {
-    let store = MemStore::new();
-
-    let trust_options = TrustOptions::new(
-        opts.trusted_hash,
-        opts.trusted_height,
-        chain_config.trusting_period,
-        Default::default(),
-    )
-    .unwrap();
-
-    let chain = TendermintChain::from_config(chain_config).unwrap();
-
-    Client::new(chain, store, trust_options).await.unwrap()
 }
 
 fn block_on<F: Future>(future: F) -> F::Output {

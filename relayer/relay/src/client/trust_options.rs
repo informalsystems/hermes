@@ -1,12 +1,14 @@
 use std::time::Duration;
 
 use anomaly::fail;
+use serde_derive::{Deserialize, Serialize};
 
 use tendermint::lite::{Height, TrustThresholdFraction};
 use tendermint::Hash;
 
 use crate::error;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustOptions {
     pub hash: Hash,
     pub height: Height,
