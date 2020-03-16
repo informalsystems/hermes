@@ -193,7 +193,7 @@ where
                 .trusted_store
                 .get(store::StoreHeight::Given(last_height))?;
 
-            self.last_trusted_state = Some(last_trusted_state.clone());
+            self.last_trusted_state = Some(last_trusted_state);
         }
 
         Ok(())
