@@ -19,7 +19,8 @@ strategy = "naive"
 
 [[chains]]
   id = "chain-B"
-  rpc_addr = "localhost:26557"
+  # rpc_addr = "localhost:26557"
+  rpc_addr = "localhost:26657"
   account_prefix = "cosmos"
   key_name = "testkey"
   client_ids = ["clB1"]

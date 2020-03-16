@@ -63,6 +63,10 @@ where
         self.last_trusted_state.as_ref()
     }
 
+    pub fn chain(&self) -> &Chain {
+        &self.chain
+    }
+
     pub async fn update(
         &mut self,
         now: SystemTime,
