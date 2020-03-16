@@ -91,6 +91,15 @@ async fn run_init(config: Config, opts: InitOptions) {
 
         let _handle = tokio::spawn(async move {
             let client = create_client(chain_config, opts).await;
+            let trusted_state = client.last_trusted_state().unwrap();
+
+            status_ok!(
+                client.chain().id(),
+                "Spawned new client now at trusted state: {} at height {}",
+                trusted_state.last_header().header().hash(),
+                trusted_state.last_header().header().height(),
+            );
+
             update_headers(client).await;
         });
     }
@@ -102,8 +111,9 @@ async fn start_relayer() {
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
+        status_info!("Relayer", "Relayer is running");
+
         interval.tick().await;
-        status_info!("Relayer", "Relayer is running")
     }
 }
 
@@ -112,10 +122,11 @@ async fn update_headers<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
 
     loop {
         let result = client.update(SystemTime::now()).await;
+
         match result {
             Ok(Some(trusted_state)) => status_ok!(
                 client.chain().id(),
-                "Updated to trusted state: {} at {}",
+                "Updated to trusted state: {} at height {}",
                 trusted_state.header().hash(),
                 trusted_state.header().height()
             ),
