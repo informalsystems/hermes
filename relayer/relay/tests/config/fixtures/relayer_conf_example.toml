@@ -18,7 +18,7 @@ strategy = "naive"
   trusting_period = "336h"
 
 [[chains]]
-  id = "chain-B"
+  id = "chain_B"
   # rpc_addr = "localhost:26557"
   rpc_addr = "localhost:26657"
   account_prefix = "cosmos"

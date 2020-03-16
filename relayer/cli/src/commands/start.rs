@@ -89,7 +89,7 @@ async fn create_client(
 ) -> Client<TendermintChain, impl Store<TendermintChain>> {
     let chain = TendermintChain::from_config(chain_config).unwrap();
 
-    let store = relayer::store::persistent("test");
+    let store = relayer::store::persistent(format!("store_{}.db", chain.id()));
     let trust_options = store.get_trust_options().unwrap().clone(); // FIXME: unwrap
 
     Client::new(chain, store, trust_options).await.unwrap()
