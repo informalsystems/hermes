@@ -57,13 +57,15 @@ mod tests {
     use tendermint::rpc;
 
     // TODO: integration test
-    #[tokio::test]
     #[ignore]
+    #[tokio::test]
     async fn test_val_set() {
         let client = rpc::Client::new("localhost:26657".parse().unwrap());
-        let req = RPCRequester::new(client);
+        let req = RpcRequester::new(client);
+
         let r1 = req.validator_set(5).await.unwrap();
         let r2 = req.signed_header(5).await.unwrap();
+
         assert_eq!(r1.hash(), r2.header().validators_hash());
     }
 }
