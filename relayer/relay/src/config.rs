@@ -10,6 +10,7 @@ use tendermint::net;
 
 use crate::error;
 
+/// Defaults for various fields
 mod default {
     use super::*;
 
