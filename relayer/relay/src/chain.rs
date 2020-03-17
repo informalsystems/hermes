@@ -18,7 +18,6 @@ pub mod tendermint;
 pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
 
 pub trait Chain {
-    type Type;
     type Header: tmlite::Header + Serialize + DeserializeOwned;
     type Commit: tmlite::Commit + Serialize + DeserializeOwned;
     type ConsensusState: ConsensusState + Serialize + DeserializeOwned;

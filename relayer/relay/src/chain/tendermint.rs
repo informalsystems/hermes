@@ -5,7 +5,6 @@ use tendermint::block::Header as TMHeader;
 use tendermint::lite::TrustThresholdFraction;
 use tendermint::rpc::Client as RpcClient;
 
-use relayer_modules::ics02_client::client_type::Tendermint;
 use relayer_modules::ics07_tendermint::consensus_state::ConsensusState;
 
 use crate::client::rpc_requester::RpcRequester;
@@ -35,7 +34,6 @@ impl TendermintChain {
 }
 
 impl Chain for TendermintChain {
-    type Type = Tendermint;
     type Header = TMHeader;
     type Commit = TMCommit;
     type ConsensusState = ConsensusState;
