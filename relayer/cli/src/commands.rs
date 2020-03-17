@@ -8,8 +8,9 @@
 mod config;
 mod start;
 mod version;
+mod query;
 
-use self::{config::ConfigCmd, start::StartCmd, version::VersionCmd};
+use self::{config::ConfigCmd, start::StartCmd, version::VersionCmd, query::QueryCmd};
 
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
@@ -36,6 +37,10 @@ pub enum CliCmd {
     /// The `version` subcommand
     #[options(help = "display version information")]
     Version(VersionCmd),
+
+    /// The `query` subcommand
+    #[options(help = "query state from chain")]
+    Query(QueryCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.

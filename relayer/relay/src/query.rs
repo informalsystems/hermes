@@ -59,5 +59,5 @@ where
 /// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
 /// where queryType must be "store" and subpath must be "key" to require a proof.
 fn is_query_store_with_proof(_path: &abci::Path) -> bool {
-    todo!()
+    false
 }

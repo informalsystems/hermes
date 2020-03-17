@@ -18,16 +18,18 @@ pub struct QueryClientConsensusState<CS> {
     pub client_id: ClientId,
     pub consensus_height: Height,
     pub consensus_state_path: ConsensusStatePath,
+    pub prove: bool,
     marker: PhantomData<CS>,
 }
 
 impl<CS> QueryClientConsensusState<CS> {
-    pub fn new(chain_height: Height, client_id: ClientId, consensus_height: Height) -> Self {
+    pub fn new(chain_height: Height, client_id: ClientId, consensus_height: Height, prove: bool) -> Self {
         Self {
             chain_height,
             client_id: client_id.clone(),
             consensus_height,
             consensus_state_path: ConsensusStatePath::new(client_id, consensus_height),
+            prove,
             marker: PhantomData,
         }
     }
@@ -48,7 +50,7 @@ where
     }
 
     fn prove(&self) -> bool {
-        true
+        self.prove
     }
 
     fn data(&self) -> Vec<u8> {
@@ -58,7 +60,7 @@ where
 
 pub struct ConsensusStateResponse<CS> {
     pub consensus_state: CS,
-    pub proof: CommitmentProof,
+    pub proof: Option<CommitmentProof>,
     pub proof_path: CommitmentPath,
     pub proof_height: Height,
 }
@@ -67,17 +69,23 @@ impl<CS> ConsensusStateResponse<CS> {
     pub fn new(
         client_id: ClientId,
         consensus_state: CS,
-        abci_proof: abci::Proof,
+        abci_proof: Option<abci::Proof>,
         proof_height: Height,
     ) -> Self {
-        let proof = CommitmentProof::from_bytes(abci_proof.as_ref());
 
+        let mut proof: CommitmentProof = CommitmentProof;
+        match abci_proof {
+            Some(abci_proof) => {
+                proof = CommitmentProof::from_bytes(abci_proof.as_ref());
+            }
+            None => {}
+        }
         let proof_path =
             CommitmentPath::from_path(ConsensusStatePath::new(client_id, proof_height));
 
         ConsensusStateResponse {
             consensus_state,
-            proof,
+            proof: Option::from(proof),
             proof_path,
             proof_height,
         }
@@ -99,7 +107,17 @@ where
                 Ok(ConsensusStateResponse::new(
                     query.client_id,
                     consensus_state,
-                    proof,
+                    Some(proof),
+                    response.height.into(),
+                ))
+            }
+            (Some(value), _) => {
+                let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
+
+                Ok(ConsensusStateResponse::new(
+                    query.client_id,
+                    consensus_state,
+                    None,
                     response.height.into(),
                 ))
             }
@@ -113,11 +131,12 @@ pub async fn query_client_consensus_state<C>(
     chain_height: Height,
     client_id: ClientId,
     consensus_height: Height,
+    prove: bool,
 ) -> Result<ConsensusStateResponse<C::ConsensusState>, error::Error>
 where
     C: Chain,
 {
-    let query = QueryClientConsensusState::new(chain_height, client_id, consensus_height);
+    let query = QueryClientConsensusState::new(chain_height, client_id, consensus_height, prove);
 
     ibc_query(chain, query).await
 }

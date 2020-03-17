@@ -9,6 +9,10 @@ authors = [
 
 [dependencies]
 relayer = { path = "../relay" }
+relayer-modules = { path = "../../modules" }
+
+tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
+tokio = "0.2"
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
