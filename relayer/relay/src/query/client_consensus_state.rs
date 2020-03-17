@@ -14,18 +14,20 @@ use crate::chain::Chain;
 use crate::error;
 
 pub struct QueryClientConsensusState<CS> {
-    pub height: Height,
+    pub chain_height: Height,
     pub client_id: ClientId,
+    pub consensus_height: Height,
     pub consensus_state_path: ConsensusStatePath,
     marker: PhantomData<CS>,
 }
 
 impl<CS> QueryClientConsensusState<CS> {
-    pub fn new(height: Height, client_id: ClientId) -> Self {
+    pub fn new(chain_height: Height, client_id: ClientId, consensus_height: Height) -> Self {
         Self {
-            height,
+            chain_height,
             client_id: client_id.clone(),
-            consensus_state_path: ConsensusStatePath::new(client_id, height),
+            consensus_height,
+            consensus_state_path: ConsensusStatePath::new(client_id, consensus_height),
             marker: PhantomData,
         }
     }
@@ -42,7 +44,7 @@ where
     }
 
     fn height(&self) -> Height {
-        self.height
+        self.chain_height
     }
 
     fn prove(&self) -> bool {
@@ -69,6 +71,7 @@ impl<CS> ConsensusStateResponse<CS> {
         proof_height: Height,
     ) -> Self {
         let proof = CommitmentProof::from_bytes(abci_proof.as_ref());
+
         let proof_path =
             CommitmentPath::from_path(ConsensusStatePath::new(client_id, proof_height));
 
@@ -107,13 +110,14 @@ where
 
 pub async fn query_client_consensus_state<C>(
     chain: &C,
+    chain_height: Height,
     client_id: ClientId,
-    height: Height,
+    consensus_height: Height,
 ) -> Result<ConsensusStateResponse<C::ConsensusState>, error::Error>
 where
     C: Chain,
 {
-    let query = QueryClientConsensusState::new(height, client_id);
+    let query = QueryClientConsensusState::new(chain_height, client_id, consensus_height);
 
     ibc_query(chain, query).await
 }
