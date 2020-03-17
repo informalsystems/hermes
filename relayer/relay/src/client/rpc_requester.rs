@@ -8,7 +8,9 @@ use tendermint::validator;
 use tendermint::validator::Set;
 use tendermint::{block, lite};
 
-/// RpcRequester wraps the Tendermint rpc::Client.
+/// RpcRequester wraps the Tendermint rpc::Client to provide
+/// a slightly higher-level API to fetch signed headers
+/// and validator sets from the chain.
 pub struct RpcRequester {
     client: rpc::Client,
 }

@@ -13,6 +13,10 @@ use crate::error;
 
 use super::{Store, StoreHeight};
 
+/// Persistent store backed by an on-disk `sled` database.
+///
+/// TODO: Remove this hideous `where` clause, once we enforce in
+/// tendermint-rs that validator sets must be serializable.
 pub struct SledStore<C: Chain>
 where
     <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,

@@ -297,7 +297,7 @@ where
     /// Init this client with the given trust options.
     ///
     /// This pulls the header and validator set at the height specified in
-    /// the trust options, and checks their hashses against the hashes
+    /// the trust options, and checks their hashes against the hashes
     /// specified in the trust options.
     ///
     /// Then validate the commit against its validator set.

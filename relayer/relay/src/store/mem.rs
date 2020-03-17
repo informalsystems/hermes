@@ -9,6 +9,7 @@ use crate::chain::Chain;
 use crate::client::trust_options::TrustOptions;
 use crate::error;
 
+/// Transient in-memory store
 pub struct MemStore<C: Chain> {
     last_height: Height,
     trust_options: Option<TrustOptions>,

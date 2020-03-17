@@ -8,6 +8,7 @@ use tendermint::Hash;
 
 use crate::error;
 
+/// The trust options for a `Client`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustOptions {
     pub hash: Hash,

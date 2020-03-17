@@ -54,10 +54,11 @@ where
     fn set_trust_options(&mut self, trust_options: TrustOptions) -> Result<(), error::Error>;
 }
 
-/// Returns a persistent trusted store whose `sled` database is stored
-/// in the folder specified in the `path` argument.
+/// Returns a persistent trusted store backed by an on-disk `sled` database
+/// stored in sthe folder specified in the `path` argument.
 ///
-/// TODO: Remove this horrible where clause by moving the serialize constraint in tendermint-rs
+/// TODO: Remove this hideous `where` clause, once we enforce in
+/// tendermint-rs that validator sets must be serializable.
 pub fn persistent<C: Chain>(db_path: impl AsRef<Path>) -> sled::SledStore<C>
 where
     <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
@@ -65,7 +66,7 @@ where
     sled::SledStore::new(db_path)
 }
 
-/// Returns a non-persistent in-memory store
+/// Returns a transient in-memory store
 pub fn in_memory<C: Chain>() -> mem::MemStore<C> {
     mem::MemStore::new()
 }
