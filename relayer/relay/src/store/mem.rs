@@ -33,11 +33,11 @@ impl<C: Chain> Default for MemStore<C> {
 }
 
 impl<C: Chain> Store<C> for MemStore<C> {
-    fn last_height(&self) -> Option<Height> {
+    fn last_height(&self) -> Result<Option<Height>, error::Error> {
         if self.last_height == 0 {
-            None
+            Ok(None)
         } else {
-            Some(self.last_height)
+            Ok(Some(self.last_height))
         }
     }
 
@@ -52,7 +52,7 @@ impl<C: Chain> Store<C> for MemStore<C> {
 
     fn get(&self, height: StoreHeight) -> Result<TrustedState<C::Commit, C::Header>, error::Error> {
         let height = match height {
-            StoreHeight::Last => self.last_height,
+            StoreHeight::Last => self.last_height()?.unwrap_or(0),
             StoreHeight::Given(height) => height,
         };
 

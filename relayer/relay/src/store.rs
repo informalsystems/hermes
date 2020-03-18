@@ -32,7 +32,7 @@ where
     C: Chain,
 {
     /// Get the last height to which the light client has synced up to, if any
-    fn last_height(&self) -> Option<Height>;
+    fn last_height(&self) -> Result<Option<Height>, error::Error>;
 
     /// Add a trusted state to the store
     fn add(&mut self, state: TrustedState<C::Commit, C::Header>) -> Result<(), error::Error>;

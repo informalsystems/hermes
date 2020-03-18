@@ -4,6 +4,7 @@ use std::time::{Duration, SystemTime};
 // use crate::application::APPLICATION;
 use crate::prelude::*;
 
+use abscissa_core::tracing::{debug, error, info, warn};
 use abscissa_core::{Command, Options, Runnable};
 
 use tendermint::lite::types::Header;
@@ -24,20 +25,18 @@ impl Runnable for StartCmd {
         // FIXME: This just hangs and never runs the given future
         // abscissa_tokio::run(&APPLICATION, ...).unwrap();
 
+        debug!("launching 'start' command");
+
         block_on(async {
             for chain_config in config.chains {
-                status_info!(
-                    "Relayer",
-                    "Spawning light client for chain {}",
-                    chain_config.id
-                );
+                info!(chain.id = %chain_config.id, "spawning light client");
 
                 let _handle = tokio::spawn(async move {
                     let client = create_client(chain_config).await;
                     let trusted_state = client.last_trusted_state().unwrap();
 
-                    status_ok!(
-                        client.chain().id(),
+                    info!(
+                        chain.id = %client.chain().id(),
                         "Spawned new client now at trusted state: {} at height {}",
                         trusted_state.last_header().header().hash(),
                         trusted_state.last_header().header().height(),
@@ -56,28 +55,33 @@ async fn start_relayer() {
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
-        status_info!("Relayer", "Relayer is running");
-
+        info!(target: "relayer_cli::relayer", "Relayer is running");
         interval.tick().await;
     }
 }
 
 async fn update_headers<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
+    debug!(chain.id = %client.chain().id(), "updating headers");
+
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
         let result = client.update(SystemTime::now()).await;
 
         match result {
-            Ok(Some(trusted_state)) => status_ok!(
-                client.chain().id(),
+            Ok(Some(trusted_state)) => info!(
+                chain.id = %client.chain().id(),
                 "Updated to trusted state: {} at height {}",
                 trusted_state.header().hash(),
                 trusted_state.header().height()
             ),
 
-            Ok(None) => status_info!(client.chain().id(), "Ignoring update to a previous state"),
-            Err(err) => status_info!(client.chain().id(), "Error when updating headers: {}", err),
+            Ok(None) => {
+                warn!(chain.id = %client.chain().id(), "Ignoring update to a previous state")
+            }
+            Err(err) => {
+                error!(chain.id = %client.chain().id(), "Error when updating headers: {}", err)
+            }
         }
 
         interval.tick().await;
