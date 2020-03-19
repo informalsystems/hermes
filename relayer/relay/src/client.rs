@@ -149,9 +149,9 @@ where
     /// If the given header is already in the store, but it does not match
     /// the stored hash, we fail with an error.
     ///
-    /// Otherwise, if we already have a trusted state, we then pull the header right after
-    /// the header we were given to verify, fetch its validator set,
-    /// and attempt to verify the new header against its next validator set.
+    /// Otherwise, and only if we already have a trusted state,
+    /// we then pull the next validator set (w.r.t to the given header)
+    /// and attempt to verify the new header against it.
     /// If that succeeds we update the trusted store and our last trusted state.
     ///
     /// If there is no current trusted state, we fail with an error.
@@ -180,9 +180,9 @@ where
             }
         }
 
-        // If we already have a trusted state, we then pull the header right after
-        // the header we were given to verify, fetch its validator set,
-        // and attempt to verify the new header against its next validator set.
+        // If we already have a trusted state, we then pull the next validator set of
+        // the header we were given to verify, and attempt to verify the new
+        // header against it.
         if let Some(ref last_trusted_state) = self.last_trusted_state {
             let next_height = new_header
                 .header()
