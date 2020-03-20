@@ -9,11 +9,14 @@ authors = [
 
 [dependencies]
 relayer = { path = "../relay" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
+abscissa_tokio = "0.5.1"
+tokio = "0.2.13"
 
 [dependencies.abscissa_core]
 version = "0.5.2"

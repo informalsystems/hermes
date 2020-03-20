@@ -1,8 +1,6 @@
 use super::error;
 use anomaly::fail;
 
-pub struct Tendermint;
-
 /// Type of the consensus algorithm
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ClientType {
@@ -15,12 +13,6 @@ impl ClientType {
         match self {
             Self::Tendermint => "tendermint",
         }
-    }
-}
-
-impl From<Tendermint> for ClientType {
-    fn from(_: Tendermint) -> Self {
-        Self::Tendermint
     }
 }
 

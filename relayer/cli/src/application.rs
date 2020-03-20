@@ -82,7 +82,11 @@ impl Application for CliApp {
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        let components = self.framework_components(command)?;
+        use abscissa_tokio::TokioComponent;
+
+        let mut components = self.framework_components(command)?;
+        components.push(Box::new(TokioComponent::new()?));
+
         self.state.components.register(components)
     }
 
