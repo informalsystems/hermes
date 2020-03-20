@@ -24,7 +24,7 @@ $ curl -s http://localhost:26657/status | jq '.result.sync_info|.latest_block_ha
 2. Initialize a light client for chain A with the trusted height and hash fetched in step 1:
 
 ```bash
-ibc-rs > cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x HASH -h HEIGHT chain_A
+ibc-rs > cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x HASH -h HEIGHT chain_A
 ```
 > Replace `HASH` and `HEIGHT` with the appropriate values.
 
@@ -35,7 +35,7 @@ ibc-rs > cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/
 4. Start the light clients and a dummy relayer thread:
 
 ```bash
-ibc-rs > cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run
+ibc-rs > cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run
 ```
 
 ## License
