@@ -97,6 +97,13 @@ impl Runnable for InitCmd {
                 relayer::store::persistent(format!("store_{}.db", chain_config.id));
 
             store.set_trust_options(trust_options).unwrap(); // FIXME: unwrap
+
+            status_ok!(
+                chain_config.id,
+                "Set trusted options: hash={} height={}",
+                opts.trusted_hash,
+                opts.trusted_height
+            );
         });
     }
 }
