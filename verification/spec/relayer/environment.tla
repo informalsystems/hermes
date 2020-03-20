@@ -153,7 +153,7 @@ ReceiveDatagrams ==
         /\ pendingDatagrams' = [pendingDatagrams EXCEPT
                                     ![chainID] = {}
                                ]
-\* Initial value if the chain: 
+\* Initial value of the chain: 
 \*      - height is initialized to 1
 \*      - all the light clients are uninitialized
 InitChain ==
