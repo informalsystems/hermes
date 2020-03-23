@@ -19,6 +19,7 @@ Env == INSTANCE environment
             NrChains <- NrChains
                                
 vars == <<chains, pendingDatagrams, relayer, turn>>            
+envVars == <<chains>>
 
 ChainIDs == 1..NrChains
 ClientIDs == 1..(NrChains * NrChains)
@@ -31,31 +32,35 @@ nullHeight == 0
 (***************
 Client ID operators
 ***************)
-
+\* given a clientID, translate back to srcChainID and dstChainID
 GetChainIDs(clientID) == Env!GetChainIDs(clientID)
-    
+
+\* get the clientID of the client on the chain onChainID, for the chain forChainID    
 GetClientID(onChainID, forChainID) == Env!GetClientID(onChainID, forChainID)
-    
+
+\* check if the clientID is a valid client ID w.r.t. chainID      
 ValidClientID(chainID, clientID) == Env!ValidClientID(chainID, clientID) 
  
 (***************
+Chain helper operators
+***************) 
+\* get the latest height of the chainID
+GetLatestHeight(chainID) == Env!GetLatestHeight(chainID)
+
+\* get the client height of the client on chain srcChainID for chain dstChainID    
+GetClientHeight(srcChainID, dstChainID) == Env!GetClientHeight(srcChainID, dstChainID)
+
+(***************
 Client datagrams
 ****************) 
- 
-\* get the latest height of the chainID
-GetLatestHeight(chainID) ==
-    chains[chainID].height    
-    
-\* get the client height of the client on chain srcChainID for chain dstChainID    
-GetClientHeight(srcChainID, dstChainID) ==
-    chains[srcChainID].clientHeights[dstChainID]
 
+\* Compute client datagrams for clients on srcChainID for dstChainID
 ClientDatagrams(srcChainID, dstChainID) ==
     LET dstChainHeight == GetLatestHeight(dstChainID) IN    
     LET dstClientHeight == GetClientHeight(srcChainID, dstChainID) IN
     LET srcDatagrams == 
         IF dstClientHeight = nullHeight
-        THEN \* the dst client does not exist at the src chain 
+        THEN \* the dst client does not exist on the src chain 
             {[type |-> "CreateClient", 
               height |-> relayer.clientHeights[dstChainID],
               clientID |-> GetClientID(srcChainID, dstChainID)]} 
@@ -65,39 +70,56 @@ ClientDatagrams(srcChainID, dstChainID) ==
                 {[type |-> "ClientUpdate",
                   height |-> relayer.clientHeights[dstChainID],
                   clientID |-> GetClientID(srcChainID, dstChainID)]} 
-            ELSE {} IN
+            ELSE {} IN                   
                     
-    LET srcChainHeight == GetLatestHeight(srcChainID) IN    
-    LET srcClientHeight == GetClientHeight(dstChainID, srcChainID) IN
-    LET dstDatagrams == 
-        IF srcClientHeight = nullHeight
-        THEN \* the src client does not exist at the dst chain 
-            {[type |-> "CreateClient", 
-              height |-> relayer.clientHeights[srcChainID],
-              clientID |-> GetClientID(dstChainID, srcChainID)]} 
-        ELSE \* the src chain exists at the dst chain
-            IF srcClientHeight < srcChainHeight
-            THEN \* the height of the src client is smaller than the height of the src chain
-                {[type |-> "ClientUpdate",
-                  height |-> relayer.clientHeights[srcChainID],
-                  clientID |-> GetClientID(dstChainID, srcChainID)]} 
-            ELSE {} IN                    
-                    
-    [src |-> srcDatagrams, dst |-> dstDatagrams]
+    srcDatagrams
+    
+(***************
+Connection datagrams
+****************)
+
+ConnectionDatagrams(srcChainID, dstChainID) ==
+    \* TODO
+    [src |-> {}, dst |-> {}]
+
+(***************
+Channel datagrams
+****************)
+
+ChannelDatagrams(srcChainID, dstChainID) ==
+    \* TODO
+    [src |-> {}, dst |-> {}]    
 
 (****************
 Compute pending datagrams
 ****************)
 
-\* Currently, only supporting ICS2: Client updates
+\* Currently, only supporting ICS 002: Client updates
 \* TODO: Support the remaining datagrams
 PendingDatagrams(srcChainID, dstChainID) ==
-    \* ICS2 : Clients
+    \* ICS 002 : Clients
     \* - Determine if light clients needs to be updated 
-    LET clientDatagrams == ClientDatagrams(srcChainID, dstChainID) IN
+    LET clientDatagrams == [src |-> ClientDatagrams(srcChainID, dstChainID),
+                            dst |-> ClientDatagrams(dstChainID, srcChainID)] IN
     
-   [src |-> clientDatagrams.src,
-    dst |-> clientDatagrams.dst] 
+    \* ICS3 : Connections
+    \* - Determine if any connection handshakes are in progress
+    LET connectionDatagrams == ConnectionDatagrams(srcChainID, dstChainID) IN
+    
+    \* ICS4 : Channels & Packets
+    \* - Determine if any packets, acknowledgements, or timeouts need to be relayed
+    LET channelDatagrams == ChannelDatagrams(srcChainID, dstChainID) IN
+    
+    [src |-> clientDatagrams.src 
+             \union 
+             connectionDatagrams.src
+             \union 
+             channelDatagrams.src, 
+     dst |-> clientDatagrams.dst
+             \union 
+             connectionDatagrams.dst
+             \union 
+             channelDatagrams.dst] 
 
     
   
@@ -108,10 +130,10 @@ Relayer actions
 \* Update the height of the relayer client for some chainID
 UpdateRelayerClients ==
     \E chainID \in ChainIDs : 
-        /\ relayer.clientHeights[chainID] < chains[chainID].height
+        /\ relayer.clientHeights[chainID] < GetLatestHeight(chainID)
         /\ relayer' = [relayer EXCEPT 
                          !.clientHeights = [relayer.clientHeights EXCEPT 
-                                                ![chainID] = chains[chainID].height
+                                                ![chainID] = GetLatestHeight(chainID)
                                            ]
                       ]
         /\ UNCHANGED <<chains, pendingDatagrams>>  
@@ -218,8 +240,14 @@ ClientUpdateInv ==
         [type |-> "ClientUpdate", clientID |-> clID, height |-> h] \in pendingDatagrams[chainID] 
             => ValidClientID(chainID, clID)
 
+\* Inv
+\* A conjunction of all invariants                            
+Inv ==
+    /\ TypeOK
+    /\ CreateClientInv
+    /\ ClientUpdateInv                            
                                  
 =============================================================================
 \* Modification History
-\* Last modified Tue Mar 17 17:27:03 CET 2020 by ilinastoilkovska
+\* Last modified Mon Mar 23 16:34:31 CET 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
