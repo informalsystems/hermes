@@ -26,6 +26,7 @@ where
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct KeyValueDb<K, V> {
     prefix: Vec<u8>,
     marker: PhantomData<(K, V)>,

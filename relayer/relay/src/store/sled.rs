@@ -1,10 +1,8 @@
-use std::marker::PhantomData;
 use std::path::Path;
 
 use anomaly::fail;
-use serde::{de::DeserializeOwned, Serialize};
 
-use tendermint::lite::types::{self as tmlite, Header as _};
+use tendermint::lite::types::Header as _;
 use tendermint::lite::{Height, TrustedState};
 
 use crate::chain::Chain;
@@ -18,45 +16,32 @@ use super::{Store, StoreHeight};
 ///
 /// TODO: Remove this hideous `where` clause, once we enforce in
 /// tendermint-rs that validator sets must be serializable.
-pub struct SledStore<C: Chain>
-where
-    <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
-{
+#[derive(Debug)]
+pub struct SledStore<C: Chain> {
     db: sled::Db,
     last_height_db: SingleDb<Height>,
     trust_options_db: SingleDb<TrustOptions>,
     trusted_state_db: KeyValueDb<Height, TrustedState<C::Commit, C::Header>>,
-    marker: PhantomData<C>,
 }
 
-impl<C: Chain> SledStore<C>
-where
-    <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
-{
+impl<C: Chain> SledStore<C> {
     pub fn new(path: impl AsRef<Path>) -> Self {
         Self {
             db: sled::open(path).unwrap(), // FIXME: Unwrap
             last_height_db: sled_util::single("last_height/"),
             trust_options_db: sled_util::single("trust_options/"),
             trusted_state_db: sled_util::key_value("trusted_state/"),
-            marker: PhantomData,
         }
     }
 }
 
-impl<C: Chain> SledStore<C>
-where
-    <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
-{
+impl<C: Chain> SledStore<C> {
     fn set_last_height(&self, height: Height) -> Result<(), error::Error> {
         self.last_height_db.set(&self.db, &height)
     }
 }
 
-impl<C: Chain> Store<C> for SledStore<C>
-where
-    <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
-{
+impl<C: Chain> Store<C> for SledStore<C> {
     fn last_height(&self) -> Option<Height> {
         self.last_height_db.get(&self.db).unwrap() // FIXME
     }

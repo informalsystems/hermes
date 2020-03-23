@@ -1,8 +1,5 @@
 use std::path::Path;
 
-use serde::{de::DeserializeOwned, Serialize};
-
-use tendermint::lite::types as tmlite;
 use tendermint::lite::{Height, TrustedState};
 
 use crate::chain::Chain;
@@ -16,6 +13,7 @@ pub mod mem;
 pub mod sled;
 
 /// Either the last stored height or a given one
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum StoreHeight {
     /// The last stored height
     Last,
@@ -56,13 +54,7 @@ where
 
 /// Returns a persistent trusted store backed by an on-disk `sled` database
 /// stored in sthe folder specified in the `path` argument.
-///
-/// TODO: Remove this hideous `where` clause, once we enforce in
-/// tendermint-rs that validator sets must be serializable.
-pub fn persistent<C: Chain>(db_path: impl AsRef<Path>) -> sled::SledStore<C>
-where
-    <<C as Chain>::Commit as tmlite::Commit>::ValidatorSet: Serialize + DeserializeOwned,
-{
+pub fn persistent<C: Chain>(db_path: impl AsRef<Path>) -> sled::SledStore<C> {
     sled::SledStore::new(db_path)
 }
 
