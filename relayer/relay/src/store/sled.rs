@@ -25,13 +25,15 @@ pub struct SledStore<C: Chain> {
 }
 
 impl<C: Chain> SledStore<C> {
-    pub fn new(path: impl AsRef<Path>) -> Self {
-        Self {
-            db: sled::open(path).unwrap(), // FIXME: Unwrap
+    pub fn new(path: impl AsRef<Path>) -> Result<Self, error::Error> {
+        let db = sled::open(path).map_err(|e| error::Kind::Store.context(e))?;
+
+        Ok(Self {
+            db,
             last_height_db: sled_util::single("last_height/"),
             trust_options_db: sled_util::single("trust_options/"),
             trusted_state_db: sled_util::key_value("trusted_state/"),
-        }
+        })
     }
 }
 
