@@ -7,15 +7,20 @@ authors = [
   "Romain Ruetschi <romain@informal.systems>"
 ]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 relayer-modules = { path = "../../modules" }
-tendermint = { git = "https://github.com/interchainio/tendermint-rs.git" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
 
 anomaly = "0.2.0"
+async-trait = "0.1.24"
 humantime-serde = "1.0.0"
 serde = "1.0.97"
+serde_cbor = "0.11.1"
 serde_derive = "1.0"
+sled = { version = "0.31.0", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.11"
 toml = "0.5"
+tracing = "0.1.13"
+
+[dev-dependencies]
+tokio = { version = "0.2.13", features = ["macros"] }

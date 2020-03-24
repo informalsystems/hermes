@@ -6,11 +6,12 @@
 //! application's configuration file.
 
 mod config;
+mod light;
 mod start;
 mod version;
 mod query;
 
-use self::{config::ConfigCmd, start::StartCmd, version::VersionCmd, query::QueryCmd};
+use self::{config::ConfigCmd, light::LightCmd, start::StartCmd, version::VersionCmd, query::QueryCmd};
 
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
@@ -41,6 +42,10 @@ pub enum CliCmd {
     /// The `query` subcommand
     #[options(help = "query state from chain")]
     Query(QueryCmd),
+
+    /// The `light` subcommand
+    #[options(help = "basic functionality for managing the lite clients")]
+    Light(LightCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.

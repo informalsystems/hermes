@@ -42,6 +42,7 @@ use std::str::FromStr;
 use relayer::chain::tendermint::TendermintChain;
 use relayer::config::ChainConfig;
 use tendermint::chain::Id as ChainId;
+use std::time::Duration;
 
 impl Runnable for QueryClientsCmd {
     fn run(&self) {
@@ -77,7 +78,9 @@ impl Runnable for QueryClientsCmd {
         let chain_height = 0 as u64;
 
         let chain = TendermintChain::from_config(ChainConfig {
-            id: chain_id, rpc_addr: opts.rpc_addr.clone(), account_prefix: "".to_string(), key_name: "".to_string(), client_ids: vec![], gas: 0 }).unwrap();
+            id: chain_id, rpc_addr: opts.rpc_addr.clone(), account_prefix: "".to_string(),
+            key_name: "".to_string(), client_ids: vec![], gas: 0,
+            trusting_period: Duration::from_secs(336 * 60 * 60)}).unwrap();
 
         let res = block_on(
             query_client_consensus_state(&chain, chain_height, client_id, consensus_height, opts.proof)).unwrap();
