@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
+use tracing::debug;
 
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
@@ -66,14 +67,25 @@ where
 
         // If we managed to pull and verify a header from the chain already
         if let Some(ref trusted_state) = client.last_trusted_state {
+            debug!("found last trusted state");
+
             // Check that this header can be trusted with the given trust options
             client
                 .check_trusted_header(trusted_state.last_header(), &trust_options)
                 .await?;
 
+            debug!("trusted header was valid");
+
             // If the last header we trust is below the given trusted height, we need
             // to fetch and verify the header at the given trusted height instead.
-            if trusted_state.last_header().header().height() < trust_options.height {
+            let last_header_height = trusted_state.last_header().header().height();
+
+            if last_header_height < trust_options.height {
+                debug!(
+                    last_header.height = last_header_height,
+                    trust_options.height, "last header height below trust options height"
+                );
+
                 client.init_with_trust_options(trust_options).await?;
             }
         } else {
@@ -231,6 +243,11 @@ where
         trusted_store: Store,
         trust_options: &TrustOptions,
     ) -> Result<Self, error::Error> {
+        debug!(
+            chain.id = %chain.id(),
+            "initializing client from trusted store",
+        );
+
         let mut client = Self {
             chain,
             trusted_store,
@@ -247,12 +264,28 @@ where
     /// Restore the last trusted state from the state, by asking for
     /// its last stored height, without any verification.
     fn restore_trusted_state(&mut self) -> Result<(), error::Error> {
-        if let Some(last_height) = self.trusted_store.last_height() {
+        if let Some(last_height) = self.trusted_store.last_height()? {
+            debug!(
+                chain.id = %self.chain.id(),
+                "restoring trusted state from store",
+            );
+
             let last_trusted_state = self
                 .trusted_store
                 .get(store::StoreHeight::Given(last_height))?;
 
+            debug!(
+                chain.id = %self.chain.id(),
+                last_height = last_height,
+                "found trusted state in store",
+            );
+
             self.last_trusted_state = Some(last_trusted_state);
+        } else {
+            debug!(
+                chain.id = %self.chain.id(),
+                "no last height recorded in trusted store",
+            );
         }
 
         Ok(())
@@ -269,8 +302,20 @@ where
         trusted_header: &SignedHeader<Chain::Commit, Chain::Header>,
         trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
+        debug!(
+            chain.id = %self.chain.id(),
+            "restoring trusted state from store",
+        );
+
         let primary_hash = match trust_options.height.cmp(&trusted_header.header().height()) {
             Ordering::Greater => {
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is greater than header height in trust store",
+                );
+
                 // TODO: Fetch from primary (?)
                 self.chain
                     .requester()
@@ -280,16 +325,54 @@ where
                     .header()
                     .hash()
             }
-            Ordering::Equal => trust_options.hash,
+            Ordering::Equal => {
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is equal to header height in trust store",
+                );
+
+                trust_options.hash
+            }
             Ordering::Less => {
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is lesser than header height in trust store. TODO: rollback",
+                );
+
                 // TODO: Implement rollback
+                //
                 trust_options.hash
             }
         };
 
+        debug!(
+            chain.id = %self.chain.id(),
+            primary.hash = %primary_hash,
+            trusted_header.hash = %trusted_header.header().hash(),
+            "comparing trusted_header.hash against primary.hash",
+        );
+
         if primary_hash != trusted_header.header().hash() {
             // TODO: Implement cleanup
+
+            debug!(
+                chain.id = %self.chain.id(),
+                primary.hash = %primary_hash,
+                trusted_header.hash = %trusted_header.header().hash(),
+                "hash do not match! TODO: cleanup",
+            );
         }
+
+        debug!(
+            chain.id = %self.chain.id(),
+            primary.hash = %primary_hash,
+            trusted_header.hash = %trusted_header.header().hash(),
+            "headers hashes match",
+        );
 
         Ok(())
     }
@@ -310,6 +393,8 @@ where
         &mut self,
         trust_options: TrustOptions,
     ) -> Result<(), error::Error> {
+        debug!("initialize client with given trust_options");
+
         // TODO: Fetch from primary (?)
         let signed_header = self
             .chain
@@ -317,6 +402,12 @@ where
             .signed_header(trust_options.height)
             .await
             .map_err(|e| error::Kind::Rpc.context(e))?;
+
+        debug!(
+            trust_options.height,
+            header.hash = %signed_header.header().hash(),
+            "fetched header at height {}", trust_options.height
+        );
 
         // TODO: Validate basic
 
@@ -331,6 +422,8 @@ where
 
         // TODO: Compare header with witnesses (?)
 
+        debug!("TODO: compare header with witnesses");
+
         // TODO: Fetch from primary (?)
         let validator_set = self
             .chain
@@ -338,6 +431,12 @@ where
             .validator_set(trust_options.height)
             .await
             .map_err(|e| error::Kind::Rpc.context(e))?;
+
+        debug!(
+            trust_options.height,
+            validator_set.hash = %validator_set.hash(),
+            header.validators_hash = %signed_header.header().validators_hash(),
+            "fetched validator set at height {}", trust_options.height);
 
         if signed_header.header().validators_hash() != validator_set.hash() {
             fail!(
@@ -348,11 +447,15 @@ where
             )
         }
 
+        debug!("validator set hashes match");
+
         // FIXME: Is this necessary?
         signed_header
             .commit()
             .validate(&validator_set)
             .map_err(|e| error::Kind::LightClient.context(e))?;
+
+        debug!("header is valid");
 
         tendermint::lite::verifier::verify_commit_trusting(
             &validator_set,
@@ -360,6 +463,8 @@ where
             trust_options.trust_threshold,
         )
         .map_err(|e| error::Kind::LightClient.context(e))?;
+
+        debug!("verify_commit_trusting result is valid");
 
         let trusted_state = TrustedState::new(signed_header, validator_set);
         self.update_trusted_state(trusted_state)?;
@@ -389,6 +494,12 @@ where
         self.trusted_store.add(state.clone())?;
 
         // TODO: Pruning
+
+        debug!(
+            state.header.hash = %state.last_header().header().hash(),
+            state.header.height = state.last_header().header().height(),
+            "updated trusted store"
+        );
 
         self.last_trusted_state = Some(state);
 

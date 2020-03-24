@@ -44,8 +44,8 @@ impl<C: Chain> SledStore<C> {
 }
 
 impl<C: Chain> Store<C> for SledStore<C> {
-    fn last_height(&self) -> Option<Height> {
-        self.last_height_db.get(&self.db).unwrap() // FIXME
+    fn last_height(&self) -> Result<Option<Height>, error::Error> {
+        self.last_height_db.get(&self.db)
     }
 
     fn add(
@@ -64,7 +64,7 @@ impl<C: Chain> Store<C> for SledStore<C> {
 
     fn get(&self, height: StoreHeight) -> Result<TrustedState<C::Commit, C::Header>, error::Error> {
         let height = match height {
-            StoreHeight::Last => self.last_height().unwrap_or(0),
+            StoreHeight::Last => self.last_height()?.unwrap_or(0),
             StoreHeight::Given(height) => height,
         };
 
