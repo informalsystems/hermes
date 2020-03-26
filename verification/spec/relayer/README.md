@@ -10,8 +10,8 @@ To import the specification in the TLA+ toolbox and run TLC:
   - add the spec `relayer.tla` in TLA+ toolbox
   - add `environment.tla` as a module in the spec
   - create a model
-  - assign values to the constants `MaxHeight` and `NrChains` (I used 3 and 2, respectively)
+  - assign a value to the constant `MaxHeight` 
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
-  - add the invariants `TypeOK`, `CreateClientInv`, `ClientUpdateInv`
-  - add the properties `Env!ClientCreated`, `Env!ClientUpdated`, `Env!HeightsDontDecrease`
+  - add the invariants `Inv` (a conjunction of the invariants `TypeOK`, `CreateClientInv`, `ClientUpdateInv`)
+  - add the properties `CreateClientIsGenerated`, `Env!ClientCreated`, `Env!ClientUpdated`, `Env!HeightsDontDecrease`
   - run TLC on the model
