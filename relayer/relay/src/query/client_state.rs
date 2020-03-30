@@ -58,7 +58,7 @@ where
 
 pub struct ClientStateResponse<CLS> {
     pub client_state: CLS,
-    pub proof: CommitmentProof,
+    pub proof: Option<CommitmentProof>,
     pub proof_path: CommitmentPath,
     pub proof_height: Height,
 }
@@ -67,15 +67,22 @@ impl<CLS> ClientStateResponse<CLS> {
     pub fn new(
         client_id: ClientId,
         client_state: CLS,
-        abci_proof: Proof,
+        abci_proof: Option<abci::Proof>,
         proof_height: Height,
     ) -> Self {
-        let proof = CommitmentProof::from_bytes(abci_proof.as_ref());
-        let proof_path = CommitmentPath::from_path(ClientStatePath::new(client_id));
+        let mut proof: CommitmentProof = CommitmentProof;
+        match abci_proof {
+            Some(abci_proof) => {
+                proof = CommitmentProof::from_bytes(abci_proof.as_ref());
+            }
+            None => {}
+        }
+        let proof_path =
+            CommitmentPath::from_path(ClientStatePath::new(client_id));
 
         ClientStateResponse {
             client_state,
-            proof,
+            proof: Option::from(proof),
             proof_path,
             proof_height,
         }
@@ -97,7 +104,7 @@ where
                 Ok(ClientStateResponse::new(
                     query.client_id,
                     consensus_state,
-                    proof,
+                    Some(proof),
                     response.height.into(),
                 ))
             }
@@ -105,8 +112,6 @@ where
         }
     }
 }
-
-use tendermint::abci::Proof;
 
 pub async fn query_client_latest_state<C>(
     chain: &C,
