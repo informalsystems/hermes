@@ -11,6 +11,7 @@ pub struct QueryClientsCmd {
     #[options(free, help = "rpc address")]
     // TODO replace this with the chain-id string and retrieve the rpc_addr from `Chain`
     rpc_addr: Option<net::Address>,
+    height: Option<u64>,
     proof: Option<bool>,
 }
 
@@ -18,21 +19,21 @@ pub struct QueryClientsCmd {
 struct QueryOptions<'a> {
     /// identifier of chain for which to query the light client
     rpc_addr: &'a net::Address,
+    height: u64,
     proof: bool,
 }
 
 impl QueryClientsCmd {
-    fn validate_options(&self) -> Result<QueryOptions<'_>, &'static str> {
-        let proof = match self.proof {
-            Some(proof) => proof,
-            None => true,
-        };
+    fn validate_options(&self) -> Result<QueryOptions<'_>, String> {
+        match (&self.rpc_addr, self.height, self.proof) {
+            (Some(rpc_addr), Some(height), Some(proof)) => {
+                Ok(QueryOptions {rpc_addr, height, proof})
+            }
 
-        match &self.rpc_addr {
-            Some(rpc_addr) => Ok(QueryOptions {
-                rpc_addr, proof
-            }),
-            None => Err("missing rpc address"),
+            (None, _, _) => Err(format!("missing rpc address")),
+            (Some(rpc_addr), None, Some(proof)) => Ok(QueryOptions {rpc_addr, height: 0 as u64, proof}),
+            (Some(rpc_addr), Some(height), None) => Ok(QueryOptions {rpc_addr, height, proof: false}),
+            (Some(rpc_addr), None, None) => Ok(QueryOptions {rpc_addr, height: 0 as u64, proof: false}),
         }
     }
 }
@@ -70,7 +71,7 @@ impl Runnable for QueryClientsCmd {
         // Proper way is to query client state (not yet implemented), get the consensus_height from
         // the response and then query the consensus state. In the absence of this, look at logs
         // and check the height :(
-        let consensus_height = 22 as u64;
+        let consensus_height = opts.height;
 
         // Also, the relayer should have been started with config, chain information parsed and
         // the `Chain` already created. This also is not implemented therefore the weird sequence
@@ -84,7 +85,7 @@ impl Runnable for QueryClientsCmd {
             key_name: "".to_string(), client_ids: vec![], gas: 0,
             trusting_period: Duration::from_secs(336 * 60 * 60)}).unwrap();
 
-        if false {
+        if true {
             let _res = block_on(
                 query_client_consensus_state(&chain, chain_height, client_id.clone(), consensus_height, opts.proof)).unwrap();
         }
