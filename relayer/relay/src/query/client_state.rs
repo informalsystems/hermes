@@ -71,8 +71,7 @@ impl<CLS> ClientStateResponse<CLS> {
         proof_height: Height,
     ) -> Self {
         let proof = CommitmentProof::from_bytes(abci_proof.as_ref());
-        let proof_path =
-            CommitmentPath::from_path(ClientStatePath::new(client_id));
+        let proof_path = CommitmentPath::from_path(ClientStatePath::new(client_id));
 
         ClientStateResponse {
             client_state,

@@ -1,8 +1,8 @@
 use super::client_type::ClientType;
 
 use crate::ics23_commitment::CommitmentRoot;
-use crate::Height;
 use crate::ics24_host::client::ClientId;
+use crate::Height;
 
 pub trait ConsensusState {
     type ValidationError: std::error::Error;
@@ -35,5 +35,8 @@ pub trait ClientState {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
-    fn verify_client_consensus_state(&self, root: &CommitmentRoot) -> Result<(), Self::ValidationError>;
+    fn verify_client_consensus_state(
+        &self,
+        root: &CommitmentRoot,
+    ) -> Result<(), Self::ValidationError>;
 }

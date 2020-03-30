@@ -1,10 +1,10 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::CommitmentRoot;
 
+use crate::ics07_tendermint::header::Header;
+use crate::ics24_host::client::ClientId;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
-use crate::ics24_host::client::ClientId;
-use crate::ics07_tendermint::header::Header;
 use tendermint::lite::Header as liteHeader;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -49,17 +49,22 @@ impl crate::ics02_client::state::ClientState for ClientState {
         self.latest_header.signed_header.header.height()
     }
 
-    fn is_frozen(&self) -> bool { false }
+    fn is_frozen(&self) -> bool {
+        false
+    }
 
-    fn verify_client_consensus_state(&self, _root: &CommitmentRoot) -> Result<(), Self::ValidationError> {
+    fn verify_client_consensus_state(
+        &self,
+        _root: &CommitmentRoot,
+    ) -> Result<(), Self::ValidationError> {
         unimplemented!()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use tendermint::rpc::endpoint::abci_query::AbciQuery;
     use crate::test::test_serialization_roundtrip;
+    use tendermint::rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

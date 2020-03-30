@@ -72,7 +72,7 @@ pub struct ClientStatePath {
 
 impl ClientStatePath {
     pub fn new(client_id: ClientId) -> Self {
-        Self { client_id}
+        Self { client_id }
     }
 }
 

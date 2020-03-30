@@ -7,11 +7,13 @@
 
 mod config;
 mod light;
+mod query;
 mod start;
 mod version;
-mod query;
 
-use self::{config::ConfigCmd, light::LightCmd, start::StartCmd, version::VersionCmd, query::QueryCmd};
+use self::{
+    config::ConfigCmd, light::LightCmd, query::QueryCmd, start::StartCmd, version::VersionCmd,
+};
 
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};

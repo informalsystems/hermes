@@ -8,8 +8,8 @@ use std::fmt::Debug;
 /// - parsed back from the serialized JSON of the previous step
 /// - that the two parsed structs are equal according to their `PartialEq` impl
 pub fn test_serialization_roundtrip<T>(json_data: &str)
-    where
-        T: Debug + Serialize + DeserializeOwned,
+where
+    T: Debug + Serialize + DeserializeOwned,
 {
     let parsed0 = serde_json::from_str::<T>(json_data);
     assert!(parsed0.is_ok());

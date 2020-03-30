@@ -23,7 +23,12 @@ pub struct QueryClientConsensusState<CS> {
 }
 
 impl<CS> QueryClientConsensusState<CS> {
-    pub fn new(chain_height: Height, client_id: ClientId, consensus_height: Height, prove: bool) -> Self {
+    pub fn new(
+        chain_height: Height,
+        client_id: ClientId,
+        consensus_height: Height,
+        prove: bool,
+    ) -> Self {
         Self {
             chain_height,
             client_id: client_id.clone(),
@@ -72,7 +77,6 @@ impl<CS> ConsensusStateResponse<CS> {
         abci_proof: Option<abci::Proof>,
         proof_height: Height,
     ) -> Self {
-
         let mut proof: CommitmentProof = CommitmentProof;
         match abci_proof {
             Some(abci_proof) => {

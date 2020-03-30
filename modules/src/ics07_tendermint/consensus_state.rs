@@ -49,8 +49,8 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
 
 #[cfg(test)]
 mod tests {
-    use tendermint::rpc::endpoint::abci_query::AbciQuery;
     use crate::test::test_serialization_roundtrip;
+    use tendermint::rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

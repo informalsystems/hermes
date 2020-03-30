@@ -1,10 +1,10 @@
 use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
-use tendermint::net;
 use core::future::Future;
-use tokio::runtime::Builder;
 use relayer_modules::ics24_host::client::ClientId;
+use tendermint::net;
+use tokio::runtime::Builder;
 
 #[derive(Command, Debug, Options)]
 pub struct QueryClientsCmd {
@@ -26,14 +26,28 @@ struct QueryOptions<'a> {
 impl QueryClientsCmd {
     fn validate_options(&self) -> Result<QueryOptions<'_>, String> {
         match (&self.rpc_addr, self.height, self.proof) {
-            (Some(rpc_addr), Some(height), Some(proof)) => {
-                Ok(QueryOptions {rpc_addr, height, proof})
-            }
+            (Some(rpc_addr), Some(height), Some(proof)) => Ok(QueryOptions {
+                rpc_addr,
+                height,
+                proof,
+            }),
 
             (None, _, _) => Err(format!("missing rpc address")),
-            (Some(rpc_addr), None, Some(proof)) => Ok(QueryOptions {rpc_addr, height: 0 as u64, proof}),
-            (Some(rpc_addr), Some(height), None) => Ok(QueryOptions {rpc_addr, height, proof: false}),
-            (Some(rpc_addr), None, None) => Ok(QueryOptions {rpc_addr, height: 0 as u64, proof: false}),
+            (Some(rpc_addr), None, Some(proof)) => Ok(QueryOptions {
+                rpc_addr,
+                height: 0 as u64,
+                proof,
+            }),
+            (Some(rpc_addr), Some(height), None) => Ok(QueryOptions {
+                rpc_addr,
+                height,
+                proof: false,
+            }),
+            (Some(rpc_addr), None, None) => Ok(QueryOptions {
+                rpc_addr,
+                height: 0 as u64,
+                proof: false,
+            }),
         }
     }
 }
@@ -41,11 +55,11 @@ impl QueryClientsCmd {
 use relayer::query::client_consensus_state::query_client_consensus_state;
 use relayer::query::client_state::query_client_latest_state;
 
-use std::str::FromStr;
 use relayer::chain::tendermint::TendermintChain;
 use relayer::config::ChainConfig;
-use tendermint::chain::Id as ChainId;
+use std::str::FromStr;
 use std::time::Duration;
+use tendermint::chain::Id as ChainId;
 
 impl Runnable for QueryClientsCmd {
     fn run(&self) {
@@ -81,17 +95,34 @@ impl Runnable for QueryClientsCmd {
         let chain_height = 0 as u64;
 
         let chain = TendermintChain::from_config(ChainConfig {
-            id: chain_id, rpc_addr: opts.rpc_addr.clone(), account_prefix: "".to_string(),
-            key_name: "".to_string(), client_ids: vec![], gas: 0,
-            trusting_period: Duration::from_secs(336 * 60 * 60)}).unwrap();
+            id: chain_id,
+            rpc_addr: opts.rpc_addr.clone(),
+            account_prefix: "".to_string(),
+            key_name: "".to_string(),
+            client_ids: vec![],
+            gas: 0,
+            trusting_period: Duration::from_secs(336 * 60 * 60),
+        })
+        .unwrap();
 
         if true {
-            let _res = block_on(
-                query_client_consensus_state(&chain, chain_height, client_id.clone(), consensus_height, opts.proof)).unwrap();
+            let _res = block_on(query_client_consensus_state(
+                &chain,
+                chain_height,
+                client_id.clone(),
+                consensus_height,
+                opts.proof,
+            ))
+            .unwrap();
         }
 
-        let _res = block_on(
-            query_client_latest_state(&chain, chain_height, client_id.clone(), opts.proof)).unwrap();
+        let _res = block_on(query_client_latest_state(
+            &chain,
+            chain_height,
+            client_id.clone(),
+            opts.proof,
+        ))
+        .unwrap();
         // end remove soon
     }
 }
