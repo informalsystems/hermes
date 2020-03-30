@@ -2,6 +2,7 @@ use super::client_type::ClientType;
 
 use crate::ics23_commitment::CommitmentRoot;
 use crate::Height;
+use crate::ics24_host::client::ClientId;
 
 pub trait ConsensusState {
     type ValidationError: std::error::Error;
@@ -17,4 +18,22 @@ pub trait ConsensusState {
 
     /// Performs basic validation of the consensus state
     fn validate_basic(&self) -> Result<(), Self::ValidationError>;
+}
+
+pub trait ClientState {
+    type ValidationError: std::error::Error;
+
+    /// Client ID of this state
+    fn client_id(&self) -> ClientId;
+
+    /// Type of client associated with this state (eg. Tendermint)
+    fn client_type(&self) -> ClientType;
+
+    /// Height of consensus state
+    fn get_latest_height(&self) -> Height;
+
+    /// Freeze status of the client
+    fn is_frozen(&self) -> bool;
+
+    fn verify_client_consensus_state(&self, root: &CommitmentRoot) -> Result<(), Self::ValidationError>;
 }

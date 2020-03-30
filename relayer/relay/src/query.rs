@@ -7,6 +7,7 @@ use crate::chain::Chain;
 use crate::error;
 
 pub mod client_consensus_state;
+pub mod client_state;
 
 /// The type of IBC response sent back for a given IBC `Query`.
 pub trait IbcResponse<Query>: Sized {

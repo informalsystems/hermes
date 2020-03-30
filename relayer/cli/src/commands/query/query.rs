@@ -16,7 +16,7 @@ pub struct QueryClientsCmd {
 
 #[derive(Debug)]
 struct QueryOptions<'a> {
-    /// identifier of chain to initialize light client for
+    /// identifier of chain for which to query the light client
     rpc_addr: &'a net::Address,
     proof: bool,
 }
@@ -38,6 +38,8 @@ impl QueryClientsCmd {
 }
 
 use relayer::query::client_consensus_state::query_client_consensus_state;
+use relayer::query::client_state::query_client_latest_state;
+
 use std::str::FromStr;
 use relayer::chain::tendermint::TendermintChain;
 use relayer::config::ChainConfig;
@@ -68,7 +70,7 @@ impl Runnable for QueryClientsCmd {
         // Proper way is to query client state (not yet implemented), get the consensus_height from
         // the response and then query the consensus state. In the absence of this, look at logs
         // and check the height :(
-        let consensus_height = 17 as u64;
+        let consensus_height = 22 as u64;
 
         // Also, the relayer should have been started with config, chain information parsed and
         // the `Chain` already created. This also is not implemented therefore the weird sequence
@@ -82,9 +84,13 @@ impl Runnable for QueryClientsCmd {
             key_name: "".to_string(), client_ids: vec![], gas: 0,
             trusting_period: Duration::from_secs(336 * 60 * 60)}).unwrap();
 
+        if false {
+            let res = block_on(
+                query_client_consensus_state(&chain, chain_height, client_id.clone(), consensus_height, opts.proof)).unwrap();
+        }
+
         let res = block_on(
-            query_client_consensus_state(&chain, chain_height, client_id, consensus_height, opts.proof)).unwrap();
-        println!("abci response: {:?}", res.proof_height);
+            query_client_latest_state(&chain, chain_height, client_id.clone(), opts.proof)).unwrap();
         // end remove soon
     }
 }
