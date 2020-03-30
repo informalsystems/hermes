@@ -85,11 +85,11 @@ impl Runnable for QueryClientsCmd {
             trusting_period: Duration::from_secs(336 * 60 * 60)}).unwrap();
 
         if false {
-            let res = block_on(
+            let _res = block_on(
                 query_client_consensus_state(&chain, chain_height, client_id.clone(), consensus_height, opts.proof)).unwrap();
         }
 
-        let res = block_on(
+        let _res = block_on(
             query_client_latest_state(&chain, chain_height, client_id.clone(), opts.proof)).unwrap();
         // end remove soon
     }
