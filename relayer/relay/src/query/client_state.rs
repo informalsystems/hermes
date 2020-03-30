@@ -48,7 +48,7 @@ where
     }
 
     fn prove(&self) -> bool {
-        true
+        self.prove
     }
 
     fn data(&self) -> Vec<u8> {
