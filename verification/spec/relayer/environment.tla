@@ -52,6 +52,10 @@ GetLatestHeight(chainID) ==
 \* get the client height of the client for the counterparty chain    
 GetCounterpartyClientHeight(chainID) ==
     chains[chainID].counterpartyClientHeight
+    
+\* get the ID of the counterparty chain of chainID           
+GetCounterpartyChainID(chainID) ==
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"   
  
 \* get the client ID of the client for chainID 
 GetClientID(chainID) ==
@@ -59,8 +63,16 @@ GetClientID(chainID) ==
         
 \* get the client ID of the client for the counterparty of chainID           
 GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN "clB" ELSE "clA"       
+    IF chainID = "chainA" THEN "clB" ELSE "clA"   
+    
+\* returns true if the counterparty client is initialized on chainID
+IsCounterpartyClientOnChain(chainID) ==
+    chains[chainID].counterpartyClientHeight /= nullHeight
 
+\* returns true if the counterparty client height on chainID is greater or equal than height
+CounterpartyClientHeightUpdated(chainID, height) ==
+    chains[chainID].counterpartyClientHeight >= height
+        
 (***************
 Light client update operators
 ***************)
@@ -273,71 +285,9 @@ Invariants
 \* Type invariant           
 TypeOK ==    
     /\ chains \in [ChainIDs -> Chains]
-    /\ pendingDatagrams \in [ChainIDs -> SUBSET Datagrams]     
-
-(************
-Helper operators used in properties
-************)
-
-\* returns true if there is a "CreateClient" datagram
-\* in the pending datagrams for chainID
-IsCreateClientInPendingDatagrams(chainID) ==
-    \E h \in Heights:
-        [type |-> "CreateClient", clientID |-> GetCounterpartyClientID(chainID), height |-> h] 
-            \in pendingDatagrams[chainID]
-
-\* returns true if there is a "ClientUpdate" datagram
-\* in the pending datagrams for chainID and height h           
-IsClientUpdateInPendingDatagrams(chainID, h) ==
-    [type |-> "ClientUpdate", clientID |-> GetCounterpartyClientID(chainID), height |-> h] 
-        \in pendingDatagrams[chainID]
-            
-
-\* returns true if the counterparty client is initialized on chainID
-IsCounterpartyClientOnChain(chainID) ==
-    chains[chainID].counterpartyClientHeight /= nullHeight
-
-\* returns true if the counterparty client height on chainID is greater or equal than height
-CounterpartyClientHeightUpdated(chainID, height) ==
-    chains[chainID].counterpartyClientHeight >= height
-
-(************
-Properties
-************)
-
-\* it ALWAYS holds that, for every chainID:
-\*    - if   
-\*        * there is a "CreateClient" datagram in pending datagrams of chainID 
-\*        * a counterparty client does not exist on chainID
-\*    - then 
-\*        * the counterparty client is EVENTUALLY created on chainID 
-ClientCreated ==
-    [](\A chainID \in ChainIDs :  
-        (/\ IsCreateClientInPendingDatagrams(chainID) 
-         /\ ~IsCounterpartyClientOnChain(chainID))
-           => (<>(IsCounterpartyClientOnChain(chainID))))  
-
-\* it ALWAYS holds that, for every chainID:
-\*    - if   
-\*        * there is a "ClientUpdate" datagram in pending datagrams of chainID 
-\*          for height h
-\*        * the counterparty client height is smaller than h
-\*    - then 
-\*        * the counterparty client height is EVENTUALLY udpated to at least h  
-ClientUpdated ==
-    [](\A chainID \in ChainIDs : \A h \in Heights : 
-        (/\ IsClientUpdateInPendingDatagrams(chainID, h) 
-         /\ GetCounterpartyClientHeight(chainID) < h)
-           => (<>(CounterpartyClientHeightUpdated(chainID, h))))
-
-\* for every chainID, it is always the case that the height of the chain
-\* does not decrease                      
-HeightsDontDecrease ==
-    [](\A chainID \in ChainIDs : \A h \in Heights :
-        (chains[chainID].height = h) 
-            => <>(chains[chainID].height >= h))                       
+    /\ pendingDatagrams \in [ChainIDs -> SUBSET Datagrams]         
                         
 =============================================================================
 \* Modification History
-\* Last modified Wed Mar 25 17:34:23 CET 2020 by ilinastoilkovska
+\* Last modified Thu Apr 02 18:27:47 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 13 19:48:22 CET 2020 by ilinastoilkovska
