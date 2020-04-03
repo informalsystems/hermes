@@ -11,12 +11,47 @@ vars == <<chains, pendingDatagrams>>
 
 ChainIDs == {"chainA", "chainB"}
 ClientIDs == {"clA", "clB"}
+ConnectionIDs == {"connAtoB", "connBtoA"}
 Heights == 1..MaxHeight
 
-nullClientID == 0
+nullClientID == "none"
+nullConnectionID == "none"
 nullHeight == 0
 
+ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
+
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x    
+
+(*** ConnectionEnds ***
+    A set of connection end records. 
+    A connection end record contains the following fields:
+    
+    - state -- a string 
+      Stores the current state of this connection end. It has one of the 
+      following values: "UNINIT", "INIT", "TRYOPEN", "OPEN".
+    
+    - connectionID -- a connection identifier
+      Stores the connection identifier of this connection end.
+    
+    - counterpartyConnectionID -- a connection identifier
+      Stores the connection identifier of the counterparty connection end.
+    
+    - clientID -- a client identifier
+      Stores the client identifier associated with this connection end. 
+      
+    - counterpartyClientID -- a client identifier
+      Stores the counterparty client identifier associated with this connection end.
+      
+    - TODO: add channel 
+**************)    
+ConnectionEnds ==
+    [
+        state : ConnectionStates,
+        connectionID : ConnectionIDs \union {nullConnectionID},
+        clientID : ClientIDs \union {nullClientID},
+        counterpartyConnectionID : ConnectionIDs \union {nullConnectionID},
+        counterpartyClientID : ClientIDs \union {nullClientID}  
+    ]      
 
 (*** Chains ***
     A set of chain records. 
@@ -27,11 +62,15 @@ Max(S) == CHOOSE x \in S: \A y \in S: y <= x
     
     - counterpartyClientHeight : an integer between nullHeight and MaxHeight
       Stores the height of the client for the counterparty chain.
+
+    - connectionEnd : a connection end record 
+      Stores data about the connection with the counterparty chain
 **************)
 Chains ==    
     [
         height : Heights \union {nullHeight},
-        counterpartyClientHeight : Heights \union {nullHeight}
+        counterpartyClientHeight : Heights \union {nullHeight},
+        connectionEnd : ConnectionEnds
     ]
     
 (*** Datagrams ***
@@ -40,18 +79,31 @@ Chains ==
 Datagrams ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
-    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]    
+    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
+    \union
+    [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs, counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
+    \union
+    [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs, counterpartyConnectionID : ConnectionIDs, 
+     counterpartyClientID : ClientIDs, clientID : ClientIDs, proofHeight : Heights, consensusHeight : Heights]
+    \union
+    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs, proofHeight : Heights, consensusHeight : Heights ]
+    \union
+    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs, proofHeight : Heights] 
 
 (***************
 Chain helper operators
 ***************)    
 \* get the latest height of the chainID
 GetLatestHeight(chainID) ==
-    chains[chainID].height     
-    
-\* get the client height of the client for the counterparty chain    
+    chains[chainID].height   
+      
+\* get the height of the client for chainID's counterparty chain    
 GetCounterpartyClientHeight(chainID) ==
     chains[chainID].counterpartyClientHeight
+
+\* get the chain identifier of chainID's counterparty chain    
+GetCounterpartyChainID(chainID) ==
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"    
  
 \* get the client ID of the client for chainID 
 GetClientID(chainID) ==
@@ -59,60 +111,106 @@ GetClientID(chainID) ==
         
 \* get the client ID of the client for the counterparty of chainID           
 GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN "clB" ELSE "clA"       
+    IF chainID = "chainA" THEN "clB" ELSE "clA"     
+
+\* returns true if the counterparty client is initialized on chainID
+IsCounterpartyClientOnChain(chainID) ==
+    chains[chainID].counterpartyClientHeight /= nullHeight
+
+\* returns true if the counterparty client height on chainID is greater or equal than height
+CounterpartyClientHeightUpdated(chainID, height) ==
+    chains[chainID].counterpartyClientHeight >= height
+
+\* get the connection ID of the connection end at chainID
+GetConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "connBtoA"
+         ELSE nullConnectionID      
+
+\* get the connection ID of the connection end at the counterparty of chainID
+GetCounterpartyConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "connAtoB"
+         ELSE nullConnectionID      
+
+\* get the connection end at chainID
+GetConnectionEnd(chainID) == 
+    chains[chainID].connectionEnd
+
+\* returns true if the connection end on chainID is UNINIT
+IsConnectionUninit(chainID) ==
+    chains[chainID].connectionEnd.state = "UNINIT"
+    
+\* returns true if the connection end on chainID is OPEN
+IsConnectionOpen(chainID) ==
+    chains[chainID].connectionEnd.state = "OPEN"
+          
 
 (***************
-Light client update operators
+Client update operators
 ***************)
 
 \* Handle "CreateClient" datagrams
 HandleCreateClient(chainID, chain, datagrams) == 
-    \* get "CreateClient" datagrams
-    LET createClients == {dgr \in datagrams : dgr.type = "CreateClient"} IN
+    \* get "CreateClient" datagrams with valid clientID
+    LET createClientDgrs == {dgr \in datagrams : 
+                            /\ dgr.type = "CreateClient"
+                            /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET createClientHeights == 
-            {h \in Heights : \E dgr \in createClients : 
-                /\ dgr.clientID = GetCounterpartyClientID(chainID) 
-                /\ dgr.height = h} IN  
+    LET createClientHeights == {h \in Heights : \E dgr \in createClientDgrs : dgr.height = h} IN  
     
     \* new chain record with clients created
-    LET clientsCreated == [
+    LET clientCreateChain == [
             height |-> chain.height,
             counterpartyClientHeight |-> IF createClientHeights /= {}
                                          THEN Max(createClientHeights)
-                                         ELSE chain.counterpartyClientHeight
+                                         ELSE chain.counterpartyClientHeight,
+            connectionEnd |-> chain.connectionEnd
          ] IN
-    clientsCreated     
+
+    IF chain.counterpartyClientHeight = nullHeight
+    \* if the counterparty client height is null, create the client   
+    THEN clientCreateChain
+    \* otherwise, do not update the chain  
+    ELSE chain 
 
 \* Handle "ClientUpdate" datagrams
 HandleUpdateClient(chainID, chain, datagrams) ==      
-    \* get "ClientUpdate" datagrams
-    LET updateClients == {dgr \in datagrams : dgr.type = "ClientUpdate"} IN
+    \* get "ClientUpdate" datagrams with valid clientID
+    LET updateClientDgrs == {dgr \in datagrams : 
+                            /\ dgr.type = "ClientUpdate"
+                            /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET updateClientHeights == 
-            {h \in Heights : \E dgr \in updateClients : 
-                /\ dgr.clientID = GetCounterpartyClientID(chainID) 
-                /\ dgr.height = h} IN    
+    LET updateClientHeights == {h \in Heights : \E dgr \in updateClientDgrs : dgr.height = h} IN    
 
     \* new chain record with clients updated
-    LET clientsUpdated == [
+    LET clientUpdatedChain == [
             height |-> chain.height,
             counterpartyClientHeight |-> IF updateClientHeights /= {}
                                          THEN Max(updateClientHeights)
-                                         ELSE chain.counterpartyClientHeight
+                                         ELSE chain.counterpartyClientHeight,
+            connectionEnd |-> chain.connectionEnd
          ] IN
     
-    clientsUpdated
+    IF chain.counterpartyClientHeight < clientUpdatedChain.counterpartyClientHeight
+    \* if the current height of the counterparty client is smaller than the new height, update it
+    THEN clientUpdatedChain 
+    \* otherwise, do not update the chain
+    ELSE chain 
 
 \* Update the clients on chain with chainID, 
 \* using the client datagrams generated by the relayer      
 LightClientUpdate(chainID, chain, datagrams) == 
     \* create clients
-    LET clientsCreated == HandleCreateClient(chainID, chain, datagrams) IN
+    LET clientCreatedChain == HandleCreateClient(chainID, chain, datagrams) IN
     \* update clients
-    LET clientsUpdated == HandleUpdateClient(chainID, clientsCreated, datagrams) IN
+    LET clientUpdatedChain == HandleUpdateClient(chainID, clientCreatedChain, datagrams) IN
 
-    clientsUpdated
+    clientUpdatedChain
     
 (***************
 Connection update operators
@@ -120,37 +218,155 @@ Connection update operators
 
 \* Handle "ConnOpenInit" datagrams
 HandleConnOpenInit(chainID, chain, datagrams) ==
-    \* TODO
-    chain
+    \* get "ConnOpenInit" datagrams, with a valid connection ID
+    LET connOpenInitDgrs == {dgr \in datagrams : 
+                            /\ dgr.type = "ConnOpenInit"
+                            /\ dgr.connectionID = GetConnectionID(chainID)} IN
+    
+    IF connOpenInitDgrs /= {} 
+    \* if there are valid "ConnOpenInit" datagrams, create a new connection end and update the chain
+    THEN LET connOpenInitDgr == CHOOSE dgr \in connOpenInitDgrs : TRUE IN
+         LET connOpenInitConnectionEnd == [
+             state |-> "INIT",
+             connectionID |-> connOpenInitDgr.connectionID,
+             clientID |-> connOpenInitDgr.clientID,
+             counterpartyConnectionID |-> connOpenInitDgr.counterpartyConnectionID,
+             counterpartyClientID |-> connOpenInitDgr.counterpartyClientID 
+         ] IN 
+         LET connOpenInitChain == [
+            height |-> chain.height,
+            counterpartyClientHeight |-> chain.counterpartyClientHeight,
+            connectionEnd |-> connOpenInitConnectionEnd
+         ] IN
+        
+         \* TODO: check here if connection is already in INIT?
+         connOpenInitChain
+    \* otherwise, do not update the chain     
+    ELSE chain
 
+\* TODO height check
 \* Handle "ConnOpenTry" datagrams
 HandleConnOpenTry(chainID, chain, datagrams) ==
-    \* TODO
-    chain
+    \* get "ConnOpenTry" datagrams, with a valid connection ID and valid height
+    LET connOpenTryDgrs == {dgr \in datagrams : 
+                            /\ dgr.type = "ConnOpenTry"
+                            /\ dgr.desiredConnectionID = GetConnectionID(chainID)
+                            /\ dgr.consensusHeight <= chain.height
+                            /\ dgr.proofHeight <= chain.counterpartyClientHeight} IN
+    
+    IF connOpenTryDgrs /= {}
+    \* if there are valid "ConnOpenTry" datagrams, update the connection end 
+    THEN LET connOpenTryDgr == CHOOSE dgr \in connOpenTryDgrs : TRUE IN
+         LET connOpenTryConnectionEnd == [
+                state |-> "TRYOPEN",
+                connectionID |-> connOpenTryDgr.desiredConnectionID,
+                clientID |-> connOpenTryDgr.clientID,
+                counterpartyConnectionID |-> connOpenTryDgr.counterpartyConnectionID,
+                counterpartyClientID |-> connOpenTryDgr.counterpartyClientID 
+            ] IN 
+       
+         IF \/ chain.connectionEnd.state = "UNINIT"
+            \/ /\ chain.connectionEnd.state = "INIT"
+               /\ chain.connectionEnd.counterpartyConnectionID = connOpenTryConnectionEnd.counterpartyConnectionID
+               /\ chain.connectionEnd.clientID = connOpenTryConnectionEnd.clientID
+               /\ chain.connectionEnd.counterpartyClientID = connOpenTryConnectionEnd.counterpartyClientID 
+         \* if the connection end on the chain is in "UNINIT" or it is in "INIT",  
+         \* but the fields are the same as in the datagram, update the connection end     
+         THEN LET connOpenTryChain == [
+                     height |-> chain.height,
+                     counterpartyClientHeight |-> chain.counterpartyClientHeight,
+                     connectionEnd |-> connOpenTryConnectionEnd
+                ] IN
+                
+              \* TODO: check here if connection is already in TRYOPEN?  
+              connOpenTryChain
+         \* otherwise, do not update the chain
+         ELSE chain
+    \* otherwise, do not update the chain     
+    ELSE chain
 
+\* TODO look at code for height check
 \* Handle "ConnOpenAck" datagrams
 HandleConnOpenAck(chainID, chain, datagrams) ==
-    \* TODO
-    chain
+    \* get "ConnOpenAck" datagrams, with a valid connection ID and valid height
+    LET connOpenAckDgrs == {dgr \in datagrams : 
+                            /\ dgr.type = "ConnOpenAck"
+                            /\ dgr.connectionID = GetConnectionID(chainID)
+                            /\ dgr.consensusHeight <= chain.height} IN
+    
+    IF connOpenAckDgrs /= {}
+    \* if there are valid "ConnOpenAck" datagrams, update the connection end 
+    THEN IF \/ chain.connectionEnd.state = "INIT"
+            \/ chain.connectionEnd.state = "TRYOPEN"
+         \* if the connection end on the chain is in "INIT" or it is in "TRYOPEN",   
+         \* update the connection end       
+         THEN LET connOpenAckDgr == CHOOSE dgr \in connOpenAckDgrs : TRUE IN
+              LET connOpenAckConnectionEnd == [ 
+                     state |-> "OPEN",
+                     connectionID |-> connOpenAckDgr.connectionID,
+                     clientID |-> chain.connectionEnd.clientID,
+                     counterpartyConnectionID |-> chain.connectionEnd.counterpartyConnectionID, 
+                     counterpartyClientID |-> chain.connectionEnd.counterpartyClientID          
+                ] IN
+              LET connOpenAckChain == [
+                     height |-> chain.height,
+                     counterpartyClientHeight |-> chain.counterpartyClientHeight,
+                     connectionEnd |-> connOpenAckConnectionEnd
+                ] IN
+              
+              \* TODO: check here if connection is already in OPEN?
+              connOpenAckChain                
+         \* otherwise, do not update the chain
+         ELSE chain
+    \* otherwise, do not update the chain     
+    ELSE chain
 
+\* TODO look at code for height check
 \* Handle "ConnOpenConfirm" datagrams
 HandleConnOpenConfirm(chainID, chain, datagrams) ==
-    \* TODO
-    chain
+    \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
+    LET connOpenConfirmDgrs == {dgr \in datagrams : 
+                                /\ dgr.type = "ConnOpenConfirm"
+                                /\ dgr.connectionID = GetConnectionID(chainID)} IN
+    
+    IF connOpenConfirmDgrs /= {}
+    \* if there are valid "connOpenConfirmDgrs" datagrams, update the connection end 
+    THEN IF chain.connectionEnd.state = "TRYOPEN"
+         \* if the connection end on the chain is in "TRYOPEN", update the connection end       
+         THEN LET connOpenConfirmDgr == CHOOSE dgr \in connOpenConfirmDgrs : TRUE IN
+              LET connOpenConfirmConnectionEnd == [ 
+                     state |-> "OPEN",
+                     connectionID |-> connOpenConfirmDgr.connectionID,
+                     clientID |-> chain.connectionEnd.clientID,
+                     counterpartyConnectionID |-> chain.connectionEnd.counterpartyConnectionID, 
+                     counterpartyClientID |-> chain.connectionEnd.counterpartyClientID          
+                ] IN
+              LET connOpenConfirmChain == [
+                     height |-> chain.height,
+                     counterpartyClientHeight |-> chain.counterpartyClientHeight,
+                     connectionEnd |-> connOpenConfirmConnectionEnd
+                ] IN
+              
+              \* TODO: check here if connection is already in OPEN?
+              connOpenConfirmChain                
+         \* otherwise, do not update the chain
+         ELSE chain
+    \* otherwise, do not update the chain     
+    ELSE chain
 
 \* Update the connections on chain with chainID, 
 \* using the connection datagrams generated by the relayer
 ConnectionUpdate(chainID, chain, datagrams) ==
     \* update chain with "ConnOpenInit" datagrams
-    LET connInit == HandleConnOpenInit(chainID, chain, datagrams) IN
+    LET connOpenInitChain == HandleConnOpenInit(chainID, chain, datagrams) IN
     \* update chain with "ConnOpenTry" datagrams
-    LET connTry == HandleConnOpenTry(chainID, connInit, datagrams) IN
+    LET connOpenTryChain == HandleConnOpenTry(chainID, connOpenInitChain, datagrams) IN
     \* update chain with "ConnOpenAck" datagrams
-    LET connAck == HandleConnOpenAck(chainID, connTry, datagrams) IN
+    LET connOpenAckChain == HandleConnOpenAck(chainID, connOpenTryChain, datagrams) IN
     \* update chain with "ConnOpenConfirm" datagrams
-    LET connConfirm == HandleConnOpenConfirm(chainID, connAck, datagrams) IN
+    LET connOpenConfirmChain == HandleConnOpenConfirm(chainID, connOpenAckChain, datagrams) IN
     
-    connConfirm
+    connOpenConfirmChain
 
 (***************
 Channel update operators
@@ -233,12 +449,27 @@ ReceiveDatagrams ==
         /\ pendingDatagrams' = [pendingDatagrams EXCEPT
                                     ![chainID] = {}
                                ]
+
+
+\* Initial value of a connection end:
+\*      - state is "UNINIT"
+\*      - connectionID, counterpartyConnectionID are uninitialized
+\*      - clientID, counterpartyClientID are uninitialized                             
+InitConnectionEnd ==
+    [state |-> "UNINIT",
+     connectionID |-> nullConnectionID,
+     clientID |-> nullClientID,
+     counterpartyConnectionID |-> nullConnectionID,
+     counterpartyClientID |-> nullClientID]  
+
 \* Initial value of the chain: 
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
+\*      - the connection end is initialized to InitConnectionEnd 
 InitChain ==
     [height |-> 1,
-     counterpartyClientHeight |-> nullHeight]
+     counterpartyClientHeight |-> nullHeight, 
+     connectionEnd |-> InitConnectionEnd]
 
 (***************
 Specification
@@ -275,69 +506,7 @@ TypeOK ==
     /\ chains \in [ChainIDs -> Chains]
     /\ pendingDatagrams \in [ChainIDs -> SUBSET Datagrams]     
 
-(************
-Helper operators used in properties
-************)
-
-\* returns true if there is a "CreateClient" datagram
-\* in the pending datagrams for chainID
-IsCreateClientInPendingDatagrams(chainID) ==
-    \E h \in Heights:
-        [type |-> "CreateClient", clientID |-> GetCounterpartyClientID(chainID), height |-> h] 
-            \in pendingDatagrams[chainID]
-
-\* returns true if there is a "ClientUpdate" datagram
-\* in the pending datagrams for chainID and height h           
-IsClientUpdateInPendingDatagrams(chainID, h) ==
-    [type |-> "ClientUpdate", clientID |-> GetCounterpartyClientID(chainID), height |-> h] 
-        \in pendingDatagrams[chainID]
-            
-
-\* returns true if the counterparty client is initialized on chainID
-IsCounterpartyClientOnChain(chainID) ==
-    chains[chainID].counterpartyClientHeight /= nullHeight
-
-\* returns true if the counterparty client height on chainID is greater or equal than height
-CounterpartyClientHeightUpdated(chainID, height) ==
-    chains[chainID].counterpartyClientHeight >= height
-
-(************
-Properties
-************)
-
-\* it ALWAYS holds that, for every chainID:
-\*    - if   
-\*        * there is a "CreateClient" datagram in pending datagrams of chainID 
-\*        * a counterparty client does not exist on chainID
-\*    - then 
-\*        * the counterparty client is EVENTUALLY created on chainID 
-ClientCreated ==
-    [](\A chainID \in ChainIDs :  
-        (/\ IsCreateClientInPendingDatagrams(chainID) 
-         /\ ~IsCounterpartyClientOnChain(chainID))
-           => (<>(IsCounterpartyClientOnChain(chainID))))  
-
-\* it ALWAYS holds that, for every chainID:
-\*    - if   
-\*        * there is a "ClientUpdate" datagram in pending datagrams of chainID 
-\*          for height h
-\*        * the counterparty client height is smaller than h
-\*    - then 
-\*        * the counterparty client height is EVENTUALLY udpated to at least h  
-ClientUpdated ==
-    [](\A chainID \in ChainIDs : \A h \in Heights : 
-        (/\ IsClientUpdateInPendingDatagrams(chainID, h) 
-         /\ GetCounterpartyClientHeight(chainID) < h)
-           => (<>(CounterpartyClientHeightUpdated(chainID, h))))
-
-\* for every chainID, it is always the case that the height of the chain
-\* does not decrease                      
-HeightsDontDecrease ==
-    [](\A chainID \in ChainIDs : \A h \in Heights :
-        (chains[chainID].height = h) 
-            => <>(chains[chainID].height >= h))                       
-                        
 =============================================================================
 \* Modification History
-\* Last modified Wed Mar 25 17:34:23 CET 2020 by ilinastoilkovska
+\* Last modified Fri Apr 03 16:36:29 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 13 19:48:22 CET 2020 by ilinastoilkovska
