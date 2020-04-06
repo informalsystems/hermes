@@ -14,11 +14,11 @@ struct ClientState {
     #[prost_amino(int64, tag = "3")]
     pub unbonding_period: i64,
 
-    #[prost_amino(uint64, tag = "4")]
-    pub frozen_height: crate::Height,
+    #[prost_amino(int64, tag = "4")]
+    pub frozen_height: i64,
 
     // TODO: remove `amino_name` annotation as soon as this is actually protobuf
-    #[prost_amino(message, tag = "5", amino_name = "ibc/client/tendermint/Header")]
+    #[prost_amino(message, amino_name = "ibc/client/tendermint/Header")]
     pub latest_header: Option<Header>,
 }
 // ---------------------------------------------------------------------
@@ -32,7 +32,8 @@ struct ClientState {
 pub struct Header {
     #[prost_amino(message, tag = "1")]
     pub signed_header: Option<SignedHeader>,
-    // pub validator_set: ValidatorSet,
+    #[prost_amino(message)]
+    pub validator_set: Option<ValidatorSet>,
     // pub next_validator_set: ValidatorSet,
 }
 
@@ -44,6 +45,24 @@ pub struct SignedHeader {
     /// Commit containing signatures for the header
     #[prost_amino(message, tag = "2")]
     pub commit: Option<BlockCommit>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct ValidatorSet {
+    #[prost_amino(message, repeated, tag = "1")]
+    validators: Vec<Validator>,
+}
+#[derive(Clone, PartialEq, Message)]
+pub struct Validator {
+    #[prost_amino(bytes, tag = "1")]
+    address: Vec<u8>,
+    #[prost_amino(bytes, tag = "2")]
+    pub_key: Vec<u8>,
+    #[prost_amino(int64, tag = "3")]
+    voting_power: i64,
+
+    #[prost_amino(int64, tag = "4")]
+    proposer_priority: i64,
 }
 
 // v0.33:
@@ -162,4 +181,26 @@ pub struct Version {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use crate::ics07_tendermint::amino_types::ClientState;
+    use prost_amino::Message;
+
+    #[test]
+    fn roundtrip_test_vector() {
+        // payload dumped in test TestVerifyClientConsensusState from ibc-alpha branch
+        // https://github.com/cosmos/cosmos-sdk/blob/df5badaf4c2bffde370d7cdee95ff9c1d15e7577/x/ibc/07-tendermint/types/client_state_test.go#L49
+        // by dumping the `bz` of `bz, err := suite.cdc.MarshalBinaryLengthPrefixed(tc.clientState)`
+        // Note: there is no reason for this to be length prefixed and this will likely change
+        //
+        // There are also decode_length_delimited() / encode_length_delimited but these are not
+        // necessary as registered types are always length encoded
+        let payload = vec![
+            0x13, 0x21, 0xa1, 0x88, 0x96, 0xa, 0x4, 0x67, 0x61, 0x69, 0x61, 0x10, 0x80, 0x80, 0xc8, 0x92, 0xff, 0x83, 0x93, 0x2,
+
+    ];
+        let got_cs = ClientState::decode(payload.as_ref()).expect("could not decode");
+        let mut got_back = vec![];
+        got_cs.encode(&mut got_back).expect("encoding failed");
+        assert_eq!(payload, got_back);
+    }
+}
