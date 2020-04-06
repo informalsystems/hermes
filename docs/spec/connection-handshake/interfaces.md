@@ -3,12 +3,8 @@
 We present three versions of the `connOpenTry` handler:
 
 1. original
-2. using abstraction (ConnectionEnd)
-3. using abstraction + no flipping at relayer
-
-Bonus version:
-
-4. using new abstraction (Party)
+2. using new abstraction (Party)
+3. using new abstraction + no flipping at relayer
 
 
 ### 1. Original
@@ -57,17 +53,25 @@ function connOpenTry(
 
 ### 2. Using abstractions
 
-We will use the following two abstractions to parametrize the `connOpenTry` handler:
+We will use the following three abstractions to parametrize the `connOpenTry` handler:
 
-- the `ConnectionEnd` interface (cf. ICS 003):
+- The `Party` type:
 
 ```typescript
-interface ConnectionEnd {
-  state: ConnectionState
-  counterpartyConnectionIdentifier: Identifier
-  counterpartyPrefix: CommitmentPrefix
+interface Party {
+  connectionIdentifier: Identifier
   clientIdentifier: Identifier
-  counterpartyClientIdentifier: Identifier
+  prefix: CommitmentPrefix
+}
+```
+
+- A `Connection` type:
+
+```typescript
+interface Connection {
+  state: ConnectionState
+  localParty: Party
+  remoteParty: Party
   version: string | []string
 }
 ```
@@ -81,125 +85,58 @@ interface Proof {
 }
 ```
 
-##### New Handler version
-
-Now we redefine `connOpenTry` handler:
-
-
-```typescript
-function connOpenTry(
-  localConnEnd: ConnectionEnd,
-  remoteConnEnd: ConnectionEnd,
-  proofInit: Proof,
-  proofConsensus: Proof) {
-    localConnId := remoteConnEnd.counterpartyConnectionIdentifier
-    abortTransactionUnless(validateConnectionIdentifier(localConnId))
-    abortTransactionUnless(proofConsensus.height <= getCurrentHeight())
-    expectedConsensusState = getConsensusState(proofConsensus.height)
-
-    // basic validation of connection ends
-    abortTransactionUnless(remoteConnEnd.state === INIT && localConnEnd.state === INIT)
-    abortTransactionUnless(remoteConnEnd.counterpartyPrefix === getCommitmentPrefix())
-
-    // verify the proofs
-    abortTransactionUnless(localConnEnd.verifyConnectionState(proofInit,  remoteConnEnd))
-    abortTransactionUnless(localConnEnd.verifyClientConsensusState(
-      proofConsensus, proofConsensus.height, expectedConsensusState))
-    previous = provableStore.get(connectionPath(localConnId))
-    abortTransactionUnless(
-      (previous === null) ||
-      (previous.state === INIT && previous === localConnEnd))
-    state = TRYOPEN
-    provableStore.set(connectionPath(localConnEnd), connection)
-    addConnectionToClient(clientIdentifier, localConnEnd)
-}
-```
-
-### 3. Abstraction + no flipping
-
-In this version, the relayer does not do any "flipping" of the parameters.
-By flipping we mean the reversal of the order of parameters, which the relayer does as follows (this snippet is from [pendingDatagrams](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms)):
-
-```typescript
-counterpartyDatagrams.push(ConnOpenTry{
-        desiredIdentifier: localEnd.counterpartyConnectionIdentifier,
-        counterpartyConnectionIdentifier: localEnd.identifier,
-        counterpartyClientIdentifier: localEnd.clientIdentifier,
-        ...
-      })
-```
-
-Notice that fields that are called `local*` become `counterparty*`, so they go from being local to being remote (and vice versa).
-
-If we parametrize the handler to accept `ConnectionEnd` objects (like we do in version 2 above), then the relayer would act as follows:
-
-```typescript
-counterpartyDatagrams.push(ConnOpenTry{
-        localConnEnd: remoteEnd,
-        remoteConnEnd: localEnd
-        ...
-      })
-```
-Notice the flipping.
-
-
-##### New Handler definition (Version 3)
-
-If we avoid flipping of parameters, the relayer would do:
-
-```typescript
-counterpartyDatagrams.push(ConnOpenTry{
-        localConnEnd: localEnd,
-        remoteConnEnd: remoteEnd
-        ...
-      })
-```
+##### New Handler (version 2)
 
 Now we redefine `connOpenTry` handler as follows:
 
 ```typescript
 function connOpenTry(
-  remoteConnEnd: ConnectionEnd,
-  localConnEnd: ConnectionEnd,
+  e: Connection,
   proofInit: Proof,
   proofConsensus: Proof) {
-    // function body is the same as version 2
-  }
-```
-Notice that now call 'remote' what the relayer called 'local' (first parameter of this handler) -- and the other way around.
+    abortTransactionUnless(validateConnectionIdentifier(e.remoteParty.connectionIdentifier))
+    abortTransactionUnless(proofConsensus.height <= getCurrentHeight())
+    expectedConsensusState = getConsensusState(proofConsensus.height)
 
+    // basic validation of connection parties
+    abortTransactionUnless(e.state === INIT)
+    abortTransactionUnless(e.remoteParty.prefix === getCommitmentPrefix())
 
-### 4. Using new abstractions
-
-###### Preliminary declaration:
-
-Let's introduce a `Party` type:
-
-```typescript
-interface Party {
-  connectionIdentifier: Identifier
-  clientIdentifier: Identifier
-  prefix: CommitmentPrefix
+    abortTransactionUnless(e.remoteParty.verifyConnectionState(proofInit, e))
+    abortTransactionUnless(e.remoteParty.verifyClientConsensusState(
+      proofConsensus, proofConsensus.height, expectedConsensusState))
+    previous = provableStore.get(connectionPath(e.remoteParty.connectionIdentifier))
+    abortTransactionUnless(
+      (previous === null) ||
+      (previous === e))
+    identifier = e.remoteParty.connectionIdentifier
+    state = TRYOPEN
+    provableStore.set(connectionPath(identifier), connection)
+    addConnectionToClient(e.remoteParty.clientIdentifier, identifier)
 }
 ```
 
-A `Connection` type:
+Notice that this handler accesses predominantly the `remoteParty` fields. This happens because the relayer does not perform any "flipping" of parameters, so the perspective on this object is the one of the counterparty module. This can make it difficult to reason about, so below we discuss a version with flipping.
+
+### 3. Abstraction + flipping
+
+In this version, the relayer performs parameter flipping.
+By flipping we mean the reversal of the order of parameters, which the relayer does as follows (this snippet is from [pendingDatagrams](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms)):
 
 ```typescript
-interface Connection {
-  state: ConnectionState
-  localParty: Party
-  remoteParty: Party
-  version: string | []string
-}
+counterpartyDatagrams.push(ConnOpenTry{
+        connection.localParty: originalConnection.remoteParty
+        connection.remoteParty: originalConnection.localParty
+        ...
+      })
 ```
 
-The `Proof` type is the same as above.
+Notice that fields that are called `local` become `remote`, so they go from being _local_ to being _remote_ (and vice versa).
 
 
-##### New Handler definition (Version 4)
+##### New Handler definition (Version 3)
 
-**FIX: this needs more thinkering.**
+With parameter flipping, the `connOpenTry` handler looks follows:
 
 ```typescript
 function connOpenTry(
