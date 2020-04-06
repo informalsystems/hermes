@@ -4,7 +4,7 @@ We present three versions of the `connOpenTry` handler:
 
 1. original
 2. using new abstraction (Party)
-3. using new abstraction + no flipping at relayer
+3. using new abstraction + parameter flipping at relayer
 
 
 ### 1. Original
@@ -121,22 +121,24 @@ Notice that this handler accesses predominantly the `remoteParty` fields. This h
 ### 3. Abstraction + flipping
 
 In this version, the relayer performs parameter flipping.
-By flipping we mean the reversal of the order of parameters, which the relayer does as follows (this snippet is from [pendingDatagrams](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms)):
+By flipping we mean the reversal of the order of parameters, which the relayer does as follows (this snippet would be placed in [pendingDatagrams](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms)):
 
 ```typescript
 counterpartyDatagrams.push(ConnOpenTry{
-        connection.localParty: originalConnection.remoteParty
-        connection.remoteParty: originalConnection.localParty
-        ...
+        Connection{ // create a new Connection object
+          connection.localParty: originalConnection.remoteParty,
+          connection.remoteParty: originalConnection.localParty,
+          ...
+        }
       })
 ```
 
-Notice that fields that are called `local` become `remote`, so they go from being _local_ to being _remote_ (and vice versa).
+Notice that fields that are called `local` become `remote`, so the perspective on the Connection flips.
 
 
 ##### New Handler definition (Version 3)
 
-With parameter flipping, the `connOpenTry` handler looks follows:
+With parameter flipping, the `connOpenTry` handler would look more intuitive:
 
 ```typescript
 function connOpenTry(
