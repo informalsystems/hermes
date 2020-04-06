@@ -1,4 +1,4 @@
-use prost_amino_derive::Message;
+use prost_amino_derive::{Enumeration, Message};
 use tendermint::amino_types::TimeMsg;
 
 #[derive(Clone, PartialEq, Message)]
@@ -103,7 +103,36 @@ pub struct BlockHeader {
 
 #[derive(Clone, PartialEq, Message)]
 pub struct BlockCommit {
-    // TODO
+    #[prost_amino(int64, tag = "1")]
+    pub height: i64,
+    #[prost_amino(int64, tag = "2")]
+    pub round: i64,
+    #[prost_amino(message, tag = "3")]
+    pub block_id: Option<BlockId>,
+    #[prost_amino(message, repeated, tag = "4")]
+    pub signatures: Vec<CommitSig>,
+}
+
+#[derive(Clone, PartialEq, Message)]
+pub struct CommitSig {
+    #[prost_amino(enumeration = "BlockIDFlag", tag = "1")]
+    block_id_flag: i32,
+    #[prost_amino(bytes, tag = "2")]
+    validator_address: Vec<u8>,
+    #[prost_amino(message, tag = "3")]
+    time_stamp: Option<TimeMsg>,
+    #[prost_amino(bytes, tag = "4")]
+    signature: Vec<u8>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Enumeration)]
+pub enum BlockIDFlag {
+    /// BlockIDFlagAbsent - no vote was received from a validator.
+    BlockIDFlagAbsent = 1,
+    /// BlockIDFlagCommit - voted for the Commit.BlockID.
+    BlockIDFlagCommit = 2,
+    /// BlockIDFlagNil - voted for nil.
+    BlockIDFlagNil = 3,
 }
 
 #[derive(Clone, PartialEq, Message)]
