@@ -24,8 +24,8 @@ serde = "1.0.104"
 
 # This can be replaced with the vanilla prost library as soon as the SDK team is done
 # with removing amino from the ibc implementation.
-prost-amino = "0.5"
-prost-amino-derive = "0.5"
+prost-amino = {version = "0.5", path = "../../amino_rs/"}
+prost-amino-derive = {version = "0.5", path = "../../amino_rs/prost-amino-derive"}
 
 [dev-dependencies]
 serde_json = "1"
