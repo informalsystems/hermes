@@ -77,8 +77,7 @@ impl<CLS> ClientStateResponse<CLS> {
             }
             None => {}
         }
-        let proof_path =
-            CommitmentPath::from_path(ClientStatePath::new(client_id));
+        let proof_path = CommitmentPath::from_path(ClientStatePath::new(client_id));
 
         ClientStateResponse {
             client_state,
