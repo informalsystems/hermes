@@ -10,7 +10,7 @@ authors = [
 [dependencies]
 relayer = { path = "../relay" }
 relayer-modules = { path = "../../modules" }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "tendermint/v0.33" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"

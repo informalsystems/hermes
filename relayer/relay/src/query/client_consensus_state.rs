@@ -77,19 +77,12 @@ impl<CS> ConsensusStateResponse<CS> {
         abci_proof: Option<abci::Proof>,
         proof_height: Height,
     ) -> Self {
-        let mut proof: CommitmentProof = CommitmentProof;
-        match abci_proof {
-            Some(abci_proof) => {
-                proof = CommitmentProof::from_bytes(abci_proof.as_ref());
-            }
-            None => {}
-        }
         let proof_path =
             CommitmentPath::from_path(ConsensusStatePath::new(client_id, proof_height));
 
         ConsensusStateResponse {
             consensus_state,
-            proof: Option::from(proof),
+            proof: abci_proof,
             proof_path,
             proof_height,
         }
