@@ -77,13 +77,16 @@ impl Runnable for QueryClientStateCmd {
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let _res = block_on(query_client_full_state(
+        let res = block_on(query_client_full_state(
             &chain,
             opts.height,
             opts.client_id.clone(),
             opts.proof,
-        ))
-        .unwrap();
+        ));
+        match res {
+            Ok(cs) => status_info!("client state query result: ", "{:?}", cs.client_state),
+            Err(e) => status_info!("client state query error: ", "{:?}", e),
+        }
     }
 }
 
@@ -164,14 +167,21 @@ impl Runnable for QueryClientConsensusCmd {
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let _res = block_on(query_client_consensus_state(
+        let res = block_on(query_client_consensus_state(
             &chain,
             opts.height,
             opts.client_id,
             opts.consensus_height,
             opts.proof,
-        ))
-        .unwrap();
+        ));
+        match res {
+            Ok(cs) => status_info!(
+                "client consensus state query result: ",
+                "{:?}",
+                cs.consensus_state
+            ),
+            Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
+        }
     }
 }
 

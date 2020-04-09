@@ -97,28 +97,18 @@ where
         query: QueryClientConsensusState<CS>,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        match (response.value, response.proof) {
-            (Some(value), Some(proof)) => {
-                let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
-
-                Ok(ConsensusStateResponse::new(
-                    query.client_id,
-                    consensus_state,
-                    Some(proof),
-                    response.height.into(),
-                ))
-            }
+        match (response.value, &response.proof) {
             (Some(value), _) => {
                 let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
 
                 Ok(ConsensusStateResponse::new(
                     query.client_id,
                     consensus_state,
-                    None,
+                    response.proof,
                     response.height.into(),
                 ))
             }
-            _ => todo!(),
+            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
         }
     }
 }
