@@ -74,7 +74,7 @@ impl<CS> ConsensusStateResponse<CS> {
     pub fn new(
         client_id: ClientId,
         consensus_state: CS,
-        abci_proof: Option<abci::Proof>,
+        abci_proof: Option<CommitmentProof>,
         proof_height: Height,
     ) -> Self {
         let proof_path =

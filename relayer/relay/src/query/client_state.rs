@@ -37,7 +37,7 @@ impl<CLS> IbcQuery for QueryClientFullState<CLS>
 where
     CLS: ClientState,
 {
-    type Response = ClientStateResponse<CLS>;
+    type Response = ClientFullStateResponse<CLS>;
 
     fn path(&self) -> abci::Path {
         "/store/ibc/key".parse().unwrap()
@@ -56,23 +56,23 @@ where
     }
 }
 
-pub struct ClientStateResponse<CLS> {
+pub struct ClientFullStateResponse<CLS> {
     pub client_state: CLS,
     pub proof: Option<CommitmentProof>,
     pub proof_path: CommitmentPath,
     pub proof_height: Height,
 }
 
-impl<CLS> ClientStateResponse<CLS> {
+impl<CLS> ClientFullStateResponse<CLS> {
     pub fn new(
         client_id: ClientId,
         client_state: CLS,
-        abci_proof: Option<abci::Proof>,
+        abci_proof: Option<CommitmentProof>,
         proof_height: Height,
     ) -> Self {
         let proof_path = CommitmentPath::from_path(ClientStatePath::new(client_id));
 
-        ClientStateResponse {
+        ClientFullStateResponse {
             client_state,
             proof: abci_proof,
             proof_path,
@@ -81,7 +81,7 @@ impl<CLS> ClientStateResponse<CLS> {
     }
 }
 
-impl<CLS> IbcResponse<QueryClientFullState<CLS>> for ClientStateResponse<CLS>
+impl<CLS> IbcResponse<QueryClientFullState<CLS>> for ClientFullStateResponse<CLS>
 where
     CLS: ClientState,
 {
@@ -93,7 +93,7 @@ where
             (Some(value), _) => {
                 let client_state = amino_unmarshal_binary_length_prefixed(&value)?;
 
-                Ok(ClientStateResponse::new(
+                Ok(ClientFullStateResponse::new(
                     query.client_id,
                     client_state,
                     response.proof,
@@ -110,7 +110,7 @@ pub async fn query_client_full_state<C>(
     chain_height: Height,
     client_id: ClientId,
     prove: bool,
-) -> Result<ClientStateResponse<C::ClientState>, error::Error>
+) -> Result<ClientFullStateResponse<C::ClientState>, error::Error>
 where
     C: Chain,
 {
