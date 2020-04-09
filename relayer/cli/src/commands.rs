@@ -9,6 +9,7 @@ mod config;
 mod light;
 mod query;
 mod start;
+mod utils;
 mod version;
 
 use self::{

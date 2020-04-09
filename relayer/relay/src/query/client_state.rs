@@ -13,7 +13,7 @@ use super::{ibc_query, IbcQuery, IbcResponse};
 use crate::chain::Chain;
 use crate::error;
 
-pub struct QueryClientLatestState<CLS> {
+pub struct QueryClientFullState<CLS> {
     pub chain_height: Height,
     pub client_id: ClientId,
     pub client_state_path: ClientStatePath,
@@ -21,7 +21,7 @@ pub struct QueryClientLatestState<CLS> {
     marker: PhantomData<CLS>,
 }
 
-impl<CLS> QueryClientLatestState<CLS> {
+impl<CLS> QueryClientFullState<CLS> {
     pub fn new(chain_height: Height, client_id: ClientId, prove: bool) -> Self {
         Self {
             chain_height,
@@ -33,7 +33,7 @@ impl<CLS> QueryClientLatestState<CLS> {
     }
 }
 
-impl<CLS> IbcQuery for QueryClientLatestState<CLS>
+impl<CLS> IbcQuery for QueryClientFullState<CLS>
 where
     CLS: ClientState,
 {
@@ -81,12 +81,12 @@ impl<CLS> ClientStateResponse<CLS> {
     }
 }
 
-impl<CLS> IbcResponse<QueryClientLatestState<CLS>> for ClientStateResponse<CLS>
+impl<CLS> IbcResponse<QueryClientFullState<CLS>> for ClientStateResponse<CLS>
 where
     CLS: ClientState,
 {
     fn from_abci_response(
-        query: QueryClientLatestState<CLS>,
+        query: QueryClientFullState<CLS>,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
         match (response.value, response.proof) {
@@ -105,7 +105,7 @@ where
     }
 }
 
-pub async fn query_client_latest_state<C>(
+pub async fn query_client_full_state<C>(
     chain: &C,
     chain_height: Height,
     client_id: ClientId,
@@ -114,9 +114,7 @@ pub async fn query_client_latest_state<C>(
 where
     C: Chain,
 {
-    let query = QueryClientLatestState::new(chain_height, client_id, prove);
-    println!("XXX Query: {:?}", query.client_state_path.to_string());
-
+    let query = QueryClientFullState::new(chain_height, client_id, prove);
     ibc_query(chain, query).await
 }
 

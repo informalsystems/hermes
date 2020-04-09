@@ -1,13 +1,13 @@
 use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
-use core::future::Future;
 use relayer::config::{ChainConfig, Config};
 use relayer::query::client_consensus_state::query_client_consensus_state;
-use relayer::query::client_state::query_client_latest_state;
-use relayer_modules::ics24_host::client::ClientId;
-use tokio::runtime::Builder;
+use relayer::query::client_state::query_client_full_state;
 
+use relayer_modules::ics24_host::client::ClientId;
+
+use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use tendermint::chain::Id as ChainId;
 
@@ -38,42 +38,20 @@ impl QueryClientStateCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryClientStateOptions), String> {
-        match (&self.chain_id, &self.client_id) {
-            (Some(chain_id), Some(client_id)) => {
-                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
-
-                match chain_config {
-                    Some(chain_config) => {
-                        // check that the client_id is specified in one of the chain configurations
-                        match config
-                            .chains
-                            .iter()
-                            .find(|c| c.client_ids.contains(&client_id))
-                        {
-                            Some(_) => {
-                                let opts = QueryClientStateOptions {
-                                    client_id: client_id.parse().unwrap(),
-                                    height: match self.height {
-                                        Some(h) => h,
-                                        None => 0 as u64,
-                                    },
-                                    proof: match self.proof {
-                                        Some(proof) => proof,
-                                        None => true,
-                                    },
-                                };
-                                Ok((chain_config.clone(), opts))
-                            }
-                            None => Err(format!("cannot find client {} in config", client_id)),
-                        }
-                    }
-                    None => Err(format!("cannot find chain {} in config", chain_id)),
-                }
-            }
-
-            (None, _) => Err("missing chain identifier".to_string()),
-            (_, None) => Err("missing client identifier".to_string()),
-        }
+        let (chain_config, client_id) =
+            validate_common_options(&self.chain_id, &self.client_id, config)?;
+        let opts = QueryClientStateOptions {
+            client_id: client_id.parse().unwrap(),
+            height: match self.height {
+                Some(h) => h,
+                None => 0 as u64,
+            },
+            proof: match self.proof {
+                Some(proof) => proof,
+                None => true,
+            },
+        };
+        Ok((chain_config.clone(), opts))
     }
 }
 
@@ -92,15 +70,14 @@ impl Runnable for QueryClientStateCmd {
 
         // run with proof:
         // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient
-        // this causes earlier error in ibc_query(): `.map_err(|e| error::Kind::Rpc.context(e))?;:`
         //
         // run without proof:
         // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient -p false
-        // this one fails in amino_unmarshal_binary_length_prefixed() as expected
         //
+        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
+        // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        // To test this start a Gaia node and configure a client with the go relayer.
-        let _res = block_on(query_client_latest_state(
+        let _res = block_on(query_client_full_state(
             &chain,
             opts.height,
             opts.client_id.clone(),
@@ -141,43 +118,26 @@ impl QueryClientConsensusCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryClientConsensusOptions), String> {
-        match (&self.chain_id, &self.client_id, self.consensus_height) {
-            (Some(chain_id), Some(client_id), Some(consensus_height)) => {
-                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+        let (chain_config, client_id) =
+            validate_common_options(&self.chain_id, &self.client_id, config)?;
 
-                match chain_config {
-                    Some(chain_config) => {
-                        // check that the client_id is specified in one of the chain configurations
-                        match config
-                            .chains
-                            .iter()
-                            .find(|c| c.client_ids.contains(&client_id))
-                        {
-                            Some(_) => {
-                                let opts = QueryClientConsensusOptions {
-                                    client_id: client_id.parse().unwrap(),
-                                    consensus_height,
-                                    height: match self.height {
-                                        Some(h) => h,
-                                        None => 0 as u64,
-                                    },
-                                    proof: match self.proof {
-                                        Some(proof) => proof,
-                                        None => true,
-                                    },
-                                };
-                                Ok((chain_config.clone(), opts))
-                            }
-                            None => Err(format!("cannot find client {} in config", client_id)),
-                        }
-                    }
-                    None => Err(format!("cannot find chain {} in config", chain_id)),
-                }
+        match self.consensus_height {
+            Some(consensus_height) => {
+                let opts = QueryClientConsensusOptions {
+                    client_id: client_id.parse().unwrap(),
+                    consensus_height,
+                    height: match self.height {
+                        Some(h) => h,
+                        None => 0 as u64,
+                    },
+                    proof: match self.proof {
+                        Some(proof) => proof,
+                        None => true,
+                    },
+                };
+                Ok((chain_config.clone(), opts))
             }
-
-            (None, _, _) => Err("missing chain identifier".to_string()),
-            (_, None, _) => Err("missing client identifier".to_string()),
-            (_, _, None) => Err("missing client consensus height".to_string()),
+            None => Err("missing client consensus height".to_string()),
         }
     }
 }
@@ -197,12 +157,12 @@ impl Runnable for QueryClientConsensusCmd {
 
         // run with proof:
         // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
-        // this causes earlier error in ibc_query(): `.map_err(|e| error::Kind::Rpc.context(e))?;:`
         //
         // run without proof:
         // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
-        // this one fails in amino_unmarshal_binary_length_prefixed() as expected
         //
+        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
+        // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
         let _res = block_on(query_client_consensus_state(
             &chain,
@@ -215,11 +175,32 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-fn block_on<F: Future>(future: F) -> F::Output {
-    Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+fn validate_common_options(
+    chain_id: &Option<ChainId>,
+    client_id: &Option<String>,
+    config: &Config,
+) -> Result<(ChainConfig, String), String> {
+    match (&chain_id, &client_id) {
+        (Some(chain_id), Some(client_id)) => {
+            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+
+            match chain_config {
+                Some(chain_config) => {
+                    // check that the client_id is specified in one of the chain configurations
+                    match config
+                        .chains
+                        .iter()
+                        .find(|c| c.client_ids.contains(client_id))
+                    {
+                        Some(_) => Ok((chain_config.clone(), client_id.parse().unwrap())),
+                        None => Err(format!("cannot find client {} in config", client_id)),
+                    }
+                }
+                None => Err(format!("cannot find chain {} in config", chain_id)),
+            }
+        }
+
+        (None, _) => Err("missing chain identifier".to_string()),
+        (_, None) => Err("missing client identifier".to_string()),
+    }
 }

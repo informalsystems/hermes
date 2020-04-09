@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::time::{Duration, SystemTime};
 
 // use crate::application::APPLICATION;
@@ -9,6 +8,7 @@ use abscissa_core::{Command, Options, Runnable};
 
 use tendermint::lite::types::Header;
 
+use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use relayer::chain::Chain;
 use relayer::client::Client;
@@ -97,13 +97,4 @@ async fn create_client(
     let trust_options = store.get_trust_options().unwrap(); // FIXME: unwrap
 
     Client::new(chain, store, trust_options).await.unwrap()
-}
-
-fn block_on<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }

@@ -134,8 +134,6 @@ where
     C: Chain,
 {
     let query = QueryClientConsensusState::new(chain_height, client_id, consensus_height, prove);
-    println!("XXX Query: {:?}", query.consensus_state_path.to_string());
-
     ibc_query(chain, query).await
 }
 
