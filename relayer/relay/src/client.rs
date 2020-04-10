@@ -7,7 +7,7 @@ use tracing::debug;
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
 
-use crate::chain::{self, ValidatorSet};
+use crate::chain;
 use crate::error;
 use crate::store::{self, StoreHeight};
 
@@ -135,16 +135,8 @@ where
                     .await
                     .map_err(|e| error::Kind::LightClient.context(e))?;
 
-                let latest_validator_set = self
-                    .chain
-                    .requester()
-                    .validator_set(latest_header.header().height())
-                    .await
-                    .map_err(|e| error::Kind::LightClient.context(e))?;
-
                 if latest_header.header().height() > last_trusted_height {
-                    self.verify_header(&latest_header, &latest_validator_set, now)
-                        .await?;
+                    self.verify_header(&latest_header, now).await?;
 
                     Ok(Some(latest_header))
                 } else {
@@ -162,15 +154,14 @@ where
     /// the stored hash, we fail with an error.
     ///
     /// Otherwise, and only if we already have a trusted state,
-    /// we then pull the next validator set (w.r.t to the given header)
-    /// and attempt to verify the new header against it.
-    /// If that succeeds we update the trusted store and our last trusted state.
+    /// we attempt bisection for the new header at the given height.
+    /// If this succeeds, we add the new trusted states to the store and
+    /// update our last trusted state.
     ///
-    /// If there is no current trusted state, we fail with an error.
+    /// In any other case, we fail with an error.
     async fn verify_header(
         &mut self,
         new_header: &SignedHeader<Chain::Commit, Chain::Header>,
-        new_validator_set: &ValidatorSet<Chain>,
         now: SystemTime,
     ) -> Result<(), error::Error> {
         let in_store = self
@@ -192,40 +183,26 @@ where
             }
         }
 
-        // If we already have a trusted state, we then pull the next validator set of
-        // the header we were given to verify, and attempt to verify the new
-        // header against it.
+        // If we already have a trusted state, we attempt bisection for the
+        // new header at the given height. If it succeeds, we add the new
+        // trusted states to the store and update our last trusted state.
         if let Some(ref last_trusted_state) = self.last_trusted_state {
-            let next_height = new_header
-                .header()
-                .height()
-                .checked_add(1)
-                .expect("height overflow");
+            let new_header_height = new_header.header().height();
 
-            let new_next_validator_set = self
-                .chain
-                .requester()
-                .validator_set(next_height)
-                .await
-                .map_err(|e| error::Kind::LightClient.context(e))?;
-
-            tendermint::lite::verifier::verify_single(
+            let new_trusted_states = tendermint::lite::verifier::verify_bisection(
                 last_trusted_state.clone(),
-                &new_header,
-                &new_validator_set,
-                &new_next_validator_set,
+                new_header_height,
                 self.trust_threshold,
                 self.trusting_period,
                 now,
+                self.chain.requester(),
             )
+            .await
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
-            // TODO: Compare new header with witnesses (?)
-
-            let new_trusted_state =
-                TrustedState::new(new_header.clone(), new_validator_set.clone());
-
-            self.update_trusted_state(new_trusted_state)?;
+            for new_trusted_state in new_trusted_states {
+                self.update_trusted_state(new_trusted_state)?;
+            }
 
             Ok(())
         } else {

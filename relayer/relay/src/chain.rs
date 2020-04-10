@@ -21,14 +21,15 @@ pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
     /// Type of headers for this chain
-    type Header: tmlite::Header + Serialize + DeserializeOwned;
+    type Header: tmlite::Header + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of commits for this chain
-    type Commit: tmlite::Commit + Serialize + DeserializeOwned;
+    type Commit: tmlite::Commit + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState + Serialize + DeserializeOwned;
-    type Type;
+    type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
+
+    /// Type of the client state for this chain
     type ClientState: ClientState;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
