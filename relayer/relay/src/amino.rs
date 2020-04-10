@@ -86,13 +86,13 @@ fn hash(h: tendermint::Hash) -> Vec<u8> {
 #[derive(Clone, Message)]
 pub struct CommitSig {
     #[prost_amino(uint32, tag = "1")]
-    block_id_flag: u32,
+    pub block_id_flag: u32,
     #[prost_amino(bytes)]
-    validator_address: Vec<u8>,
+    pub validator_address: Vec<u8>,
     #[prost_amino(message)]
-    timestamp: Option<amino_types::time::TimeMsg>,
+    pub timestamp: Option<amino_types::time::TimeMsg>,
     #[prost_amino(bytes)]
-    signature: Vec<u8>,
+    pub signature: Vec<u8>,
 }
 
 impl From<&block::CommitSig> for CommitSig {
@@ -115,13 +115,13 @@ impl From<&block::CommitSig> for CommitSig {
 #[derive(Clone, Message)]
 pub struct Commit {
     #[prost_amino(int64, tag = "1")]
-    height: i64,
+    pub height: i64,
     #[prost_amino(int64)]
-    round: i64,
+    pub round: i64,
     #[prost_amino(message)]
-    block_id: Option<amino_types::BlockId>,
+    pub block_id: Option<amino_types::BlockId>,
     #[prost_amino(message, repeated)]
-    signatures: Vec<CommitSig>,
+    pub signatures: Vec<CommitSig>,
 }
 
 impl From<&block::Commit> for Commit {
@@ -142,85 +142,77 @@ impl From<&block::Commit> for Commit {
 #[derive(Clone, Message)]
 pub struct Validator {
     #[prost_amino(bytes, tag = "1")]
-    address: Vec<u8>,
+    pub address: Vec<u8>,
     #[prost_amino(bytes)]
-    pub_key: Vec<u8>,
-    #[prost_amino(int64)] 
-    voting_power: i64,
-
+    pub pub_key: Vec<u8>,
+    #[prost_amino(int64)]
+    pub voting_power: i64,
     // XXX: the Go version also has ProposerPriority!
 }
 
-impl From<&validator::Info> for Validator{
+impl From<&validator::Info> for Validator {
     fn from(val: &validator::Info) -> Self {
-        Validator{
+        Validator {
             address: val.address.as_bytes().to_vec(),
-            pub_key: val.pub_key.as_bytes(),
+            pub_key: val.pub_key.to_amino_bytes(),
             voting_power: val.voting_power.value() as i64, // XXX
         }
     }
 }
 
-
 #[derive(Clone, Message)]
 pub struct ValidatorSet {
     #[prost_amino(message, repeated, tag = "1")]
-    validators: Vec<Validator>,
-
+    pub validators: Vec<Validator>,
     // XXX: the Go version also has the proposer
 }
 
 impl From<&validator::Set> for ValidatorSet {
     fn from(valset: &validator::Set) -> Self {
         let mut vals = Vec::new();
-        for val in valset.validators().iter(){
+        for val in valset.validators().iter() {
             vals.push(Validator::from(val));
         }
-        ValidatorSet{
-            validators: vals,
-        }
+        ValidatorSet { validators: vals }
     }
-
 }
-
-
 
 #[derive(Clone, Message)]
 pub struct SignedHeader {
     #[prost_amino(message, tag = "1")]
-    header: Option<Header>,
+    pub header: Option<Header>,
     #[prost_amino(message)]
-    commit: Option<Commit>,
+    pub commit: Option<Commit>,
 }
 
 #[derive(Clone, Message)]
 pub struct SignedHeaderVals {
     #[prost_amino(message, tag = "1")]
-    SignedHeader: Option<SignedHeader>,
+    pub SignedHeader: Option<SignedHeader>,
     #[prost_amino(message)]
-    validator_set: Option<ValidatorSet>,
+    pub validator_set: Option<ValidatorSet>,
 }
 
 #[derive(Clone, Message)]
 pub struct MsgCreateClient {
     #[prost_amino(string, tag = "1")]
-    client_id: String,
+    pub client_id: String,
     #[prost_amino(message)]
-    header: Option<SignedHeaderVals>,
+    pub header: Option<SignedHeaderVals>,
     #[prost_amino(message)]
-    trusting_period: Option<amino_types::time::TimeMsg>,
+    pub trusting_period: Option<amino_types::time::TimeMsg>,
     #[prost_amino(message)]
-    unbonding_period:  Option<amino_types::time::TimeMsg>,
+    pub unbonding_period: Option<amino_types::time::TimeMsg>,
     #[prost_amino(bytes)]
-    address: Vec<u8>,
+    pub address: Vec<u8>,
 }
 
 impl From<&tx::MsgCreateClientInner> for MsgCreateClient {
     fn from(msg: &tx::MsgCreateClientInner) -> Self {
         MsgCreateClient {
             client_id: msg.client_id.clone(),
-            header: Some(SignedHeaderVals{
-                SignedHeader: Some(SignedHeader{
+            header: Some(SignedHeaderVals {
+                SignedHeader: Some(SignedHeader {
                     header: Some(Header::from(&msg.header.SignedHeader.header)),
                     commit: Some(Commit::from(&msg.header.SignedHeader.commit)),
                 }),
@@ -230,14 +222,11 @@ impl From<&tx::MsgCreateClientInner> for MsgCreateClient {
             unbonding_period: Some(duration(msg.unbonding_period)),
             address: msg.address.as_ref().to_vec(),
         }
-
     }
 }
 
-fn duration(d: Duration) -> amino_types::time::TimeMsg{
-        let seconds = d.as_secs() as i64;
-        let nanos = d.subsec_nanos() as i32;
-        amino_types::time::TimeMsg { seconds, nanos }
+fn duration(d: Duration) -> amino_types::time::TimeMsg {
+    let seconds = d.as_secs() as i64;
+    let nanos = d.subsec_nanos() as i32;
+    amino_types::time::TimeMsg { seconds, nanos }
 }
-
-

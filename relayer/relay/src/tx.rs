@@ -111,6 +111,13 @@ mod tests {
 
     use prost_amino::Message;
 
+    use subtle_encoding::hex;
+
+    fn to_hex(bytes: &[u8]) -> String {
+        let hex_bytes = hex::encode(bytes);
+        String::from_utf8(hex_bytes).unwrap()
+    }
+
     fn msg_create_client() -> MsgCreateClientInner {
         let rpc_client = RpcClient::new("localhost:26657".parse().unwrap());
         let commit = block_on(rpc_client.latest_commit())
@@ -153,7 +160,7 @@ mod tests {
         amino_msg
             .encode(&mut amino_bytes)
             .expect("LEB128 encoding error");
-        println!("{:?}", amino_bytes);
+        println!("{:?}", to_hex(&amino_bytes));
     }
 
     // make a StdTx with MsgCreateClient from a local node.
@@ -176,6 +183,15 @@ mod tests {
         file.write_all(j.as_bytes());
     }
 
+    fn printer(name: &str, o: impl Message) {
+        // let type_name = TypeName::new("ibc/client/MsgCreateClient").unwrap();
+        // let mut amino_bytes = type_name.amino_prefix();
+        let mut amino_bytes = Vec::new();
+        o.encode(&mut amino_bytes).expect("LEB128 encoding error");
+        println!("{} -----------------------------", name);
+        println!("{:?}", to_hex(&amino_bytes));
+    }
+
     // load signed.json from file and unmarshal it.
     // the unmarshalling works.
     #[test]
@@ -185,6 +201,28 @@ mod tests {
         let contents = fs::read_to_string("signed.json").unwrap();
         let tx: StdTx<MsgCreateClient> = serde_json::from_str(&contents).unwrap(); // TODO generalize
         println!("{:?}", tx);
+
+        let msg = &tx.value.msg[0].value;
+        let msg = &amino::MsgCreateClient::from(msg);
+
+        let hcv = msg.header.as_ref().unwrap();
+        let sh = hcv.SignedHeader.as_ref().unwrap();
+
+        let header = sh.header.as_ref().unwrap();
+        let commit = sh.commit.as_ref().unwrap();
+        let vals = hcv.validator_set.as_ref().unwrap();
+        printer("header", header.clone());
+        printer("commit", commit.clone());
+        printer("vals", vals.clone());
+
+        printer("hcv", hcv.clone());
+        printer("sh", sh.clone());
+
+        let type_name = TypeName::new("ibc/client/MsgCreateClient").unwrap();
+        let mut amino_bytes = type_name.amino_prefix();
+        msg.encode(&mut amino_bytes).expect("LEB128 encoding error");
+        println!("MSG--------------------------");
+        println!("{:?}", to_hex(&amino_bytes));
     }
 }
 
