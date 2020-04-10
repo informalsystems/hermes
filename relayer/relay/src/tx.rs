@@ -8,6 +8,7 @@ use tendermint::{account, serializers, validator};
 
 use stdtx::amino_types::{StdFee, StdSignature};
 use stdtx::type_name::TypeName;
+use stdtx::Address;
 
 // Work in progress for Amino and AminoJSON encoding of a CreateClient transaction.
 //
@@ -54,7 +55,7 @@ pub struct MsgCreateClientInner {
         deserialize_with = "serializers::parse_duration"
     )]
     unbonding_period: Duration,
-    address: String, // account::Id,
+    address: Address, // account::Id,
 }
 
 impl MsgCreateClientInner {
@@ -139,14 +140,15 @@ mod tests {
 
         let tp = Duration::new(10000, 0);
         let up = Duration::new(1000000, 0);
-        let address = "cosmos1q6zae0v7jx5lq9ucu9qclls05enya987n684cd".to_string();
+        let (_hrp, address) =
+            Address::from_bech32("cosmos1q6zae0v7jx5lq9ucu9qclls05enya987n684cd").unwrap();
 
         let msg = MsgCreateClientInner {
             client_id: "someclient".to_string(),
             header: shv,
             trusting_period: tp,
             unbonding_period: up,
-            address: address, //id,
+            address: address,
         };
 
         let tx = msg.std_tx(3000, "mymemo");
