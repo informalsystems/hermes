@@ -11,6 +11,7 @@
 
 //! IBC Relayer implementation
 
+pub mod amino;
 pub mod chain;
 pub mod client;
 pub mod config;

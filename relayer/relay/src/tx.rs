@@ -1,10 +1,9 @@
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use serde_json;
 use std::time::Duration;
 
 use tendermint::block::{Commit, Header};
-use tendermint::time::Time;
-use tendermint::{account, serializers, validator};
+use tendermint::{serializers, validator};
 
 use stdtx;
 use stdtx::amino_types::{StdFee, StdSignature};
@@ -23,38 +22,38 @@ use stdtx::type_name::TypeName;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignedHeaderVals {
-    SignedHeader: SignedHeader, // XXX: this should be unrolled in the Go ...
-    validator_set: validator::Set,
+    pub SignedHeader: SignedHeader, // XXX: this should be unrolled in the Go ...
+    pub validator_set: validator::Set,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignedHeader {
-    header: Header,
-    commit: Commit,
+    pub header: Header,
+    pub commit: Commit,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MsgCreateClient {
     #[serde(rename = "type")]
-    name: String,
-    value: MsgCreateClientInner,
+    pub name: String,
+    pub value: MsgCreateClientInner,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MsgCreateClientInner {
-    client_id: String,
-    header: SignedHeaderVals,
+    pub client_id: String,
+    pub header: SignedHeaderVals,
     #[serde(
         serialize_with = "serializers::serialize_duration",
         deserialize_with = "serializers::parse_duration"
     )]
-    trusting_period: Duration,
+    pub trusting_period: Duration,
     #[serde(
         serialize_with = "serializers::serialize_duration",
         deserialize_with = "serializers::parse_duration"
     )]
-    unbonding_period: Duration,
-    address: stdtx::Address,
+    pub unbonding_period: Duration,
+    pub address: stdtx::Address,
 }
 
 impl MsgCreateClientInner {
@@ -99,33 +98,28 @@ pub struct StdTxInner<M> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use crate::amino;
     use crate::error;
+
     use std::fs;
     use std::fs::File;
     use std::io::prelude::*;
     use std::path::Path;
-    use std::str::FromStr;
 
-    use subtle_encoding::hex;
-
-    use tendermint::account::Id;
     use tendermint::rpc::Client as RpcClient;
 
-    // make a StdTx with MsgCreateClient from a local node.
-    // save it to "unsigned.json".
-    // this file can be successfully signed with gaiacli!
-    #[test]
-    fn test_create_client() {
+    use prost_amino::Message;
+
+    fn msg_create_client() -> MsgCreateClientInner {
         let rpc_client = RpcClient::new("localhost:26657".parse().unwrap());
         let commit = block_on(rpc_client.latest_commit())
             .map_err(|e| error::Kind::Rpc.context(e))
             .unwrap();
-        println!("{:?}", commit);
 
         let validators = block_on(rpc_client.validators(commit.signed_header.header.height))
             .map_err(|e| error::Kind::Rpc.context(e))
             .unwrap();
-        println!("{:?}", validators);
 
         let shv = SignedHeaderVals {
             SignedHeader: SignedHeader {
@@ -140,13 +134,34 @@ mod tests {
         let (_hrp, address) =
             stdtx::Address::from_bech32("cosmos1q6zae0v7jx5lq9ucu9qclls05enya987n684cd").unwrap();
 
-        let msg = MsgCreateClientInner {
+        MsgCreateClientInner {
             client_id: "someclient".to_string(),
             header: shv,
             trusting_period: tp,
             unbonding_period: up,
             address: address,
-        };
+        }
+    }
+
+    // amino encode msg
+    #[test]
+    fn test_amino() {
+        let msg = msg_create_client();
+        let amino_msg = amino::MsgCreateClient::from(&msg);
+        let type_name = TypeName::new("ibc/client/MsgCreateClient").unwrap();
+        let mut amino_bytes = type_name.amino_prefix();
+        amino_msg
+            .encode(&mut amino_bytes)
+            .expect("LEB128 encoding error");
+        println!("{:?}", amino_bytes);
+    }
+
+    // make a StdTx with MsgCreateClient from a local node.
+    // save it to "unsigned.json".
+    // this file can be successfully signed with gaiacli!
+    #[test]
+    fn test_create_client() {
+        let msg = msg_create_client();
 
         let tx = std_tx(msg.typed_msg(), 3000, "mymemo");
         println!("{:?}", tx);
