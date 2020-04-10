@@ -27,3 +27,6 @@ pub mod path;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::lite::Height;
+
+#[cfg(test)]
+mod test;

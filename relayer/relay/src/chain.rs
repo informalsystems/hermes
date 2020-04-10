@@ -8,7 +8,7 @@ use ::tendermint::lite::types as tmlite;
 use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint::rpc::Client as RpcClient;
 
-use relayer_modules::ics02_client::state::ConsensusState;
+use relayer_modules::ics02_client::state::{ClientState, ConsensusState};
 
 use crate::config::ChainConfig;
 use crate::error;
@@ -28,6 +28,8 @@ pub trait Chain {
 
     /// Type of consensus state for this chain
     type ConsensusState: ConsensusState + Serialize + DeserializeOwned;
+    type Type;
+    type ClientState: ClientState;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type Requester: tmlite::Requester<Self::Commit, Self::Header>;
