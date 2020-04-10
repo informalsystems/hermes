@@ -70,7 +70,7 @@ impl<CS> ConsensusStateResponse<CS> {
         abci_proof: abci::Proof,
         proof_height: Height,
     ) -> Self {
-        let proof = CommitmentProof::from_bytes(abci_proof.as_ref());
+        let proof = CommitmentProof::from_bytes(&vec![]); // .as_ref());
 
         let proof_path =
             CommitmentPath::from_path(ConsensusStatePath::new(client_id, proof_height));

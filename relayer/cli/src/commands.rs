@@ -8,6 +8,7 @@
 mod config;
 mod light;
 mod start;
+mod tx;
 mod version;
 
 use self::{config::ConfigCmd, light::LightCmd, start::StartCmd, version::VersionCmd};

@@ -17,4 +17,5 @@ pub mod config;
 pub mod error;
 pub mod query;
 pub mod store;
+pub mod tx;
 pub mod util;
