@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
 use serde_json;
 use std::time::Duration;
 
@@ -6,20 +6,19 @@ use tendermint::block::{Commit, Header};
 use tendermint::time::Time;
 use tendermint::{account, serializers, validator};
 
+use stdtx;
 use stdtx::amino_types::{StdFee, StdSignature};
 use stdtx::type_name::TypeName;
-use stdtx::Address;
 
 // Work in progress for Amino and AminoJSON encoding of a CreateClient transaction.
 //
 // Current State:
-// - Uses hard coded types - only MsgCreateClient
 // - Only works for JSON
 // - JSON marshalled StdTx can be signed by gaiacli (!)
 // - Signed StdTx JSON can be unmarshalled
 //
 // TODO:
-// - Generalize JSON to more Msg types
+// - Generalize JSON decoding
 // - Marshal to Amino (make better use of Iqlusion's StdTx?)
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -55,7 +54,7 @@ pub struct MsgCreateClientInner {
         deserialize_with = "serializers::parse_duration"
     )]
     unbonding_period: Duration,
-    address: Address, // account::Id,
+    address: stdtx::Address,
 }
 
 impl MsgCreateClientInner {
@@ -66,34 +65,32 @@ impl MsgCreateClientInner {
             value: self,
         }
     }
+}
 
-    // turn it into a tx wrapped with the amino name
-    fn std_tx(self, gas: u64, memo: &str) -> StdTx {
-        let msg = self.typed_msg();
-        let mut msgs = Vec::new();
-        msgs.push(msg);
-        StdTx {
-            name: "cosmos-sdk/StdTx".to_string(),
-            value: StdTxInner {
-                msg: msgs,
-                fee: StdFee::for_gas(gas),
-                memo: memo.to_owned(),
-                signatures: Vec::new(),
-            },
-        }
+fn std_tx<M>(msg: M, gas: u64, memo: &str) -> StdTx<M> {
+    let mut msgs = Vec::new();
+    msgs.push(msg);
+    StdTx {
+        name: "cosmos-sdk/StdTx".to_string(),
+        value: StdTxInner {
+            msg: msgs,
+            fee: StdFee::for_gas(gas),
+            memo: memo.to_owned(),
+            signatures: Vec::new(),
+        },
     }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StdTx {
+pub struct StdTx<M> {
     #[serde(rename = "type")]
     name: String,
-    value: StdTxInner,
+    value: StdTxInner<M>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct StdTxInner {
-    pub msg: Vec<MsgCreateClient>, // TODO generalize to Msgs. also the name should be msgs ...
+pub struct StdTxInner<M> {
+    pub msg: Vec<M>, // XXX name should be msgs ...
     pub fee: StdFee,
     pub signatures: Vec<StdSignature>,
     pub memo: String,
@@ -141,7 +138,7 @@ mod tests {
         let tp = Duration::new(10000, 0);
         let up = Duration::new(1000000, 0);
         let (_hrp, address) =
-            Address::from_bech32("cosmos1q6zae0v7jx5lq9ucu9qclls05enya987n684cd").unwrap();
+            stdtx::Address::from_bech32("cosmos1q6zae0v7jx5lq9ucu9qclls05enya987n684cd").unwrap();
 
         let msg = MsgCreateClientInner {
             client_id: "someclient".to_string(),
@@ -151,7 +148,7 @@ mod tests {
             address: address,
         };
 
-        let tx = msg.std_tx(3000, "mymemo");
+        let tx = std_tx(msg.typed_msg(), 3000, "mymemo");
         println!("{:?}", tx);
 
         let j = serde_json::to_string_pretty(&tx).unwrap();
@@ -171,7 +168,7 @@ mod tests {
         //let rpc_client = RpcClient::new("localhost:26657".parse().unwrap());
 
         let contents = fs::read_to_string("signed.json").unwrap();
-        let tx: StdTx = serde_json::from_str(&contents).unwrap();
+        let tx: StdTx<MsgCreateClient> = serde_json::from_str(&contents).unwrap(); // TODO generalize
         println!("{:?}", tx);
     }
 }
