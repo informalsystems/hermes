@@ -23,7 +23,7 @@ use stdtx::type_name::TypeName;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignedHeaderVals {
-    pub SignedHeader: SignedHeader, // XXX: this should be unrolled in the Go ...
+    pub SignedHeader: SignedHeader, // XXX: matches the go. should be unrolled and camel cased
     pub validator_set: validator::Set,
 }
 
@@ -114,6 +114,18 @@ mod tests {
 
     use subtle_encoding::hex;
 
+    use std::future::Future;
+    use tokio;
+
+    fn block_on<F: Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new()
+            .basic_scheduler()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
+
     fn to_hex(bytes: &[u8]) -> String {
         let hex_bytes = hex::encode(bytes);
         String::from_utf8(hex_bytes).unwrap()
@@ -197,7 +209,6 @@ mod tests {
     // the unmarshalling works.
     #[test]
     fn test_broadcast_create_client() {
-
         let contents = fs::read_to_string("signed.json").unwrap();
         let tx: StdTx<MsgCreateClient> = serde_json::from_str(&contents).unwrap(); // TODO generalize
         println!("{:?}", tx);
@@ -218,12 +229,11 @@ mod tests {
         printer("hcv", hcv.clone());
         printer("sh", sh.clone());
 
-        // these dont yet match 
+        // these dont yet match
         printer("client", msg.client_id.clone());
         printer("trusting", msg.trusting_period.as_ref().unwrap().clone());
         printer("unbonding", msg.unbonding_period.as_ref().unwrap().clone());
         printer("address", msg.address.clone());
-
 
         // this doesn't yet match the Go either
         let type_name = TypeName::new("ibc/client/MsgCreateClient").unwrap();
@@ -232,15 +242,4 @@ mod tests {
         println!("MSG--------------------------");
         println!("{:?}", to_hex(&amino_bytes));
     }
-}
-
-use std::future::Future;
-
-fn block_on<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
