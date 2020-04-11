@@ -186,6 +186,7 @@ pub struct SignedHeader {
 }
 
 #[derive(Clone, Message)]
+#[amino_name = "ibc/client/tendermint/Header"]
 pub struct SignedHeaderVals {
     #[prost_amino(message, tag = "1")]
     pub SignedHeader: Option<SignedHeader>,

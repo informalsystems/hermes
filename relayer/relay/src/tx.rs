@@ -12,13 +12,14 @@ use stdtx::type_name::TypeName;
 // Work in progress for Amino and AminoJSON encoding of a CreateClient transaction.
 //
 // Current State:
-// - Only works for JSON
 // - JSON marshalled StdTx can be signed by gaiacli (!)
 // - Signed StdTx JSON can be unmarshalled
+// - MsgCreateClient can be almost properly Amino encoded
 //
 // TODO:
 // - Generalize JSON decoding
-// - Marshal to Amino (make better use of Iqlusion's StdTx?)
+// - Fix Amino encoding for the Msg
+// - Amino encode the StdTx (make better use of Iqlusion's StdTx?)
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SignedHeaderVals {
@@ -196,7 +197,6 @@ mod tests {
     // the unmarshalling works.
     #[test]
     fn test_broadcast_create_client() {
-        //let rpc_client = RpcClient::new("localhost:26657".parse().unwrap());
 
         let contents = fs::read_to_string("signed.json").unwrap();
         let tx: StdTx<MsgCreateClient> = serde_json::from_str(&contents).unwrap(); // TODO generalize
@@ -208,16 +208,24 @@ mod tests {
         let hcv = msg.header.as_ref().unwrap();
         let sh = hcv.SignedHeader.as_ref().unwrap();
 
+        // these all encode perfectly matching the Go
         let header = sh.header.as_ref().unwrap();
         let commit = sh.commit.as_ref().unwrap();
         let vals = hcv.validator_set.as_ref().unwrap();
         printer("header", header.clone());
         printer("commit", commit.clone());
         printer("vals", vals.clone());
-
         printer("hcv", hcv.clone());
         printer("sh", sh.clone());
 
+        // these dont yet match 
+        printer("client", msg.client_id.clone());
+        printer("trusting", msg.trusting_period.as_ref().unwrap().clone());
+        printer("unbonding", msg.unbonding_period.as_ref().unwrap().clone());
+        printer("address", msg.address.clone());
+
+
+        // this doesn't yet match the Go either
         let type_name = TypeName::new("ibc/client/MsgCreateClient").unwrap();
         let mut amino_bytes = type_name.amino_prefix();
         msg.encode(&mut amino_bytes).expect("LEB128 encoding error");
