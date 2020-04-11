@@ -46,3 +46,23 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
         unimplemented!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test::test_serialization_roundtrip;
+    use tendermint::rpc::endpoint::abci_query::AbciQuery;
+
+    #[test]
+    fn serialization_roundtrip_no_proof() {
+        let json_data = include_str!("../tests/query/serialization/consensus_state.json");
+        println!("json_data: {:?}", json_data);
+        test_serialization_roundtrip::<AbciQuery>(json_data);
+    }
+
+    #[test]
+    fn serialization_roundtrip_with_proof() {
+        let json_data = include_str!("../tests/query/serialization/consensus_state_proof.json");
+        println!("json_data: {:?}", json_data);
+        test_serialization_roundtrip::<AbciQuery>(json_data);
+    }
+}

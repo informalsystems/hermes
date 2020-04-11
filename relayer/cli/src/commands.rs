@@ -7,11 +7,15 @@
 
 mod config;
 mod light;
+mod query;
 mod start;
 mod tx;
+mod utils;
 mod version;
 
-use self::{config::ConfigCmd, light::LightCmd, start::StartCmd, version::VersionCmd};
+use self::{
+    config::ConfigCmd, light::LightCmd, query::QueryCmd, start::StartCmd, version::VersionCmd,
+};
 
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
@@ -27,10 +31,6 @@ pub enum CliCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `version` subcommand
-    #[options(help = "display version information")]
-    Version(VersionCmd),
-
     /// The `start` subcommand
     #[options(help = "start the relayer")]
     Start(StartCmd),
@@ -38,6 +38,14 @@ pub enum CliCmd {
     /// The `config` subcommand
     #[options(help = "manipulate the relayer configuration")]
     Config(ConfigCmd),
+
+    /// The `version` subcommand
+    #[options(help = "display version information")]
+    Version(VersionCmd),
+
+    /// The `query` subcommand
+    #[options(help = "query state from chain")]
+    Query(QueryCmd),
 
     /// The `light` subcommand
     #[options(help = "basic functionality for managing the lite clients")]

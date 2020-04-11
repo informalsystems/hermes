@@ -7,6 +7,7 @@ use crate::chain::Chain;
 use crate::error;
 
 pub mod client_consensus_state;
+pub mod client_state;
 
 /// The type of IBC response sent back for a given IBC `Query`.
 pub trait IbcResponse<Query>: Sized {
@@ -72,5 +73,5 @@ where
 /// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
 /// where queryType must be "store" and subpath must be "key" to require a proof.
 fn is_query_store_with_proof(_path: &abci::Path) -> bool {
-    todo!()
+    false
 }
