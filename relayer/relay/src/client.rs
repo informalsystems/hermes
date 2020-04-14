@@ -93,10 +93,6 @@ where
             client.init_with_trust_options(trust_options).await?;
         }
 
-        // Perform an update already, to make sure the client is up-to-date.
-        // TODO: Should we leave this up to the responsibility of the caller?
-        let _ = client.update(SystemTime::now()).await?;
-
         Ok(client)
     }
 
