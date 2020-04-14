@@ -35,7 +35,7 @@ configure and spawn two light clients for this chain with the following commands
 4. Start the light clients and a dummy relayer thread:
 
     ```bash
-    ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run
+    ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml start
     ```
 
 **Note:** Add a `-v` flag to the commands above to see detailed log output, eg. `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run`

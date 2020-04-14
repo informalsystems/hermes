@@ -27,64 +27,85 @@ impl Runnable for StartCmd {
 
         debug!("launching 'start' command");
 
-        block_on(async {
+        // Spawn all tasks on the same thread that calls `block_on`, ie. the main thread.
+        // This allows us to spawn tasks which do not implement `Send`,
+        // like the light client task.
+        let local = tokio::task::LocalSet::new();
+
+        block_on(local.run_until(async move {
             for chain_config in config.chains {
                 info!(chain.id = %chain_config.id, "spawning light client");
-
-                let _handle = tokio::spawn(async move {
-                    let client = create_client(chain_config).await;
-                    let trusted_state = client.last_trusted_state().unwrap();
-
-                    info!(
-                        chain.id = %client.chain().id(),
-                        "Spawned new client now at trusted state: {} at height {}",
-                        trusted_state.last_header().header().hash(),
-                        trusted_state.last_header().header().height(),
-                    );
-
-                    update_headers(client).await;
-                });
+                tokio::task::spawn_local(spawn_client(chain_config));
             }
 
-            start_relayer().await
-        })
+            info!("starting relayer");
+            relayer_task().await
+        }));
     }
 }
 
-async fn start_relayer() {
+async fn spawn_client(chain_config: ChainConfig) {
+    status_info!(
+        "Relayer",
+        "spawning light client for chain {}",
+        chain_config.id
+    );
+
+    let client = create_client(chain_config).await;
+    tokio::task::spawn_local(client_task(client))
+        .await
+        .expect("could not spawn client task")
+}
+
+async fn client_task(client: Client<TendermintChain, impl Store<TendermintChain>>) {
+    let trusted_state = client.last_trusted_state().unwrap();
+
+    status_ok!(
+        client.chain().id(),
+        "spawned new client now at trusted state: {} at height {}",
+        trusted_state.last_header().header().hash(),
+        trusted_state.last_header().header().height(),
+    );
+
+    update_client(client).await;
+}
+
+async fn relayer_task() {
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
-        info!(target: "relayer_cli::relayer", "Relayer is running");
+        info!(target: "relayer_cli::relayer", "relayer is running");
         interval.tick().await;
     }
 }
 
-async fn update_headers<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
+async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
     debug!(chain.id = %client.chain().id(), "updating headers");
 
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
+        interval.tick().await;
+
+        info!(chain.id = %client.chain().id(), "updating client");
+
         let result = client.update(SystemTime::now()).await;
 
         match result {
             Ok(Some(trusted_state)) => info!(
                 chain.id = %client.chain().id(),
-                "Updated to trusted state: {} at height {}",
+                "client updated to trusted state: {} at height {}",
                 trusted_state.header().hash(),
                 trusted_state.header().height()
             ),
 
             Ok(None) => {
-                warn!(chain.id = %client.chain().id(), "Ignoring update to a previous state")
+                warn!(chain.id = %client.chain().id(), "ignoring update to a previous state")
             }
             Err(err) => {
-                error!(chain.id = %client.chain().id(), "Error when updating headers: {}", err)
+                error!(chain.id = %client.chain().id(), "error when updating headers: {}", err)
             }
         }
-
-        interval.tick().await;
     }
 }
 
