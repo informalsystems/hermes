@@ -85,6 +85,8 @@ async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
     let mut interval = tokio::time::interval(Duration::from_secs(3));
 
     loop {
+        interval.tick().await;
+
         info!(chain.id = %client.chain().id(), "updating client");
 
         let result = client.update(SystemTime::now()).await;
@@ -104,8 +106,6 @@ async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
                 error!(chain.id = %client.chain().id(), "error when updating headers: {}", err)
             }
         }
-
-        interval.tick().await;
     }
 }
 
