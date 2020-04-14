@@ -16,7 +16,10 @@ use relayer::config::ChainConfig;
 use relayer::store::Store;
 
 #[derive(Command, Debug, Options)]
-pub struct StartCmd {}
+pub struct StartCmd {
+    #[options(help = "reset state from trust options", short = "r")]
+    reset: bool,
+}
 
 impl Runnable for StartCmd {
     fn run(&self) {
@@ -35,7 +38,7 @@ impl Runnable for StartCmd {
         block_on(local.run_until(async move {
             for chain_config in config.chains {
                 info!(chain.id = %chain_config.id, "spawning light client");
-                tokio::task::spawn_local(spawn_client(chain_config));
+                tokio::task::spawn_local(spawn_client(chain_config, self.reset));
             }
 
             info!("starting relayer");
@@ -44,14 +47,14 @@ impl Runnable for StartCmd {
     }
 }
 
-async fn spawn_client(chain_config: ChainConfig) {
+async fn spawn_client(chain_config: ChainConfig, reset: bool) {
     status_info!(
         "Relayer",
         "spawning light client for chain {}",
-        chain_config.id
+        chain_config.id,
     );
 
-    let client = create_client(chain_config).await;
+    let client = create_client(chain_config, reset).await;
     tokio::task::spawn_local(client_task(client))
         .await
         .expect("could not spawn client task")
@@ -111,11 +114,24 @@ async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
 
 async fn create_client(
     chain_config: ChainConfig,
+    reset: bool,
 ) -> Client<TendermintChain, impl Store<TendermintChain>> {
+    let id = chain_config.id;
     let chain = TendermintChain::from_config(chain_config).unwrap();
 
     let store = relayer::store::persistent(format!("store_{}.db", chain.id())).unwrap(); //FIXME: unwrap
     let trust_options = store.get_trust_options().unwrap(); // FIXME: unwrap
 
-    Client::new(chain, store, trust_options).await.unwrap()
+    if reset {
+        info!(chain.id = %id, "resetting client to trust options state");
+        let client = Client::new_from_trust_options(chain, store, &trust_options);
+        client.await.unwrap() // FIXME: unwrap
+    } else {
+        info!(chain.id = %chain.id(), "starting client from stored trusted state");
+        let client = Client::new_from_trusted_store(chain, store, &trust_options).unwrap(); // FIXME: unwrap
+        if client.last_trusted_state().is_none() {
+            error!(chain.id = %id, "cannot find stored trusted state, unable to start client");
+        }
+        client
+    }
 }
