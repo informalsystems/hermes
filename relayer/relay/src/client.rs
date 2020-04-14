@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
-use tracing::debug;
+use tracing::{debug, info};
 
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
@@ -286,10 +286,9 @@ where
                     chain.id = %self.chain.id(),
                     trust_options.height,
                     trusted_header.height = trusted_header.header().height(),
-                    "trusted options height is greater than header height in trust store",
+                    "trusted options height is greater than trusted header height",
                 );
 
-                // TODO: Fetch from primary (?)
                 self.chain
                     .requester()
                     .signed_header(trust_options.height)
@@ -303,7 +302,7 @@ where
                     chain.id = %self.chain.id(),
                     trust_options.height,
                     trusted_header.height = trusted_header.header().height(),
-                    "trusted options height is equal to header height in trust store",
+                    "trusted options height is equal to trusted header height",
                 );
 
                 trust_options.hash
@@ -313,11 +312,19 @@ where
                     chain.id = %self.chain.id(),
                     trust_options.height,
                     trusted_header.height = trusted_header.header().height(),
-                    "trusted options height is lesser than header height in trust store. TODO: rollback",
+                    "trusted options height is lesser than trusted header height",
                 );
 
-                // TODO: Implement rollback
-                //
+                info!(
+                    chain.id = %self.chain.id(),
+                    old = %trust_options.height,
+                    trusted_header.height = %trusted_header.header().height(),
+                    trusted_header.hash = %trusted_header.header().hash(),
+                    "client initialized with old header (trusted header is more recent)",
+                );
+
+                // TODO: Rollback: Remove all headers in (trust_options.height, trusted_header.height]
+
                 trust_options.hash
             }
         };
@@ -336,16 +343,16 @@ where
                 chain.id = %self.chain.id(),
                 primary.hash = %primary_hash,
                 trusted_header.hash = %trusted_header.header().hash(),
-                "hash do not match! TODO: cleanup",
+                "hashes do not match",
+            );
+        } else {
+            debug!(
+                chain.id = %self.chain.id(),
+                primary.hash = %primary_hash,
+                trusted_header.hash = %trusted_header.header().hash(),
+                "hashes match",
             );
         }
-
-        debug!(
-            chain.id = %self.chain.id(),
-            primary.hash = %primary_hash,
-            trusted_header.hash = %trusted_header.header().hash(),
-            "headers hashes match",
-        );
 
         Ok(())
     }
