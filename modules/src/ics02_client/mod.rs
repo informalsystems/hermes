@@ -4,4 +4,5 @@ pub mod client_type;
 pub mod error;
 pub mod header;
 pub mod msgs;
+pub mod query;
 pub mod state;

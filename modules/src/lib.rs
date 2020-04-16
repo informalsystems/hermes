@@ -18,12 +18,14 @@
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 
+pub mod error;
 pub mod ics02_client;
 pub mod ics07_tendermint;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
 pub mod path;
+pub mod query;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::lite::Height;
