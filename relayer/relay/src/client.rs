@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
-use tracing::{debug, info};
+use tracing::{debug, info, warn};
 
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
@@ -52,24 +52,49 @@ where
     Chain: chain::Chain,
     Store: store::Store<Chain>,
 {
-    /// Creates a new `Client` for the given `chain`, storing headers
+    /// Create a new `Client` for the given `Chain` with the given trusted store
+    /// and trust options, and try to restore the last trusted state from the trusted store.
+    pub fn new_from_trusted_store(
+        chain: Chain,
+        trusted_store: Store,
+        trust_options: &TrustOptions,
+    ) -> Result<Self, error::Error> {
+        debug!(
+            chain.id = %chain.id(),
+            "initializing client from trusted store",
+        );
+
+        let mut client = Self {
+            chain,
+            trusted_store,
+            trusting_period: trust_options.trusting_period,
+            trust_threshold: trust_options.trust_threshold,
+            last_trusted_state: None,
+        };
+
+        client.restore_trusted_state()?;
+
+        Ok(client)
+    }
+
+    /// Create a new `Client` for the given `chain`, storing headers
     /// in the given `trusted_store`, and verifying them with the
     /// given `trust_options`.
     ///
     /// This method is async because it needs to pull the latest header
     /// from the chain, verify it, and store it.
-    pub async fn new(
+    pub async fn new_from_trust_options(
         chain: Chain,
         trusted_store: Store,
-        trust_options: TrustOptions,
+        trust_options: &TrustOptions,
     ) -> Result<Self, error::Error> {
         let mut client = Self::new_from_trusted_store(chain, trusted_store, &trust_options)?;
 
-        // If we managed to pull and verify a header from the chain already
+        // If we already have a last trusted state
         if let Some(ref trusted_state) = client.last_trusted_state {
             debug!("found last trusted state");
 
-            // Check that this header can be trusted with the given trust options
+            // Check that the last trusted header can actually be trusted with the given trust options
             client
                 .check_trusted_header(trusted_state.last_header(), &trust_options)
                 .await?;
@@ -209,31 +234,6 @@ where
         }
     }
 
-    /// Create a new client with the given trusted store and trust options,
-    /// and try to restore the last trusted state from the trusted store.
-    fn new_from_trusted_store(
-        chain: Chain,
-        trusted_store: Store,
-        trust_options: &TrustOptions,
-    ) -> Result<Self, error::Error> {
-        debug!(
-            chain.id = %chain.id(),
-            "initializing client from trusted store",
-        );
-
-        let mut client = Self {
-            chain,
-            trusted_store,
-            trusting_period: trust_options.trusting_period,
-            trust_threshold: trust_options.trust_threshold,
-            last_trusted_state: None,
-        };
-
-        client.restore_trusted_state()?;
-
-        Ok(client)
-    }
-
     /// Restore the last trusted state from the state, by asking for
     /// its last stored height, without any verification.
     fn restore_trusted_state(&mut self) -> Result<(), error::Error> {
@@ -339,25 +339,25 @@ where
         if primary_hash != trusted_header.header().hash() {
             // TODO: Implement cleanup
 
-            debug!(
+            warn!(
                 chain.id = %self.chain.id(),
                 primary.hash = %primary_hash,
                 trusted_header.hash = %trusted_header.header().hash(),
-                "hashes do not match",
+                "trusted header hash and primary header hash do not match, rolling back (TODO)",
             );
         } else {
             debug!(
                 chain.id = %self.chain.id(),
                 primary.hash = %primary_hash,
                 trusted_header.hash = %trusted_header.header().hash(),
-                "hashes match",
+                "trusted header hash and primary header hash match",
             );
         }
 
         Ok(())
     }
 
-    /// Init this client with the given trust options.
+    /// Initialize this client with the given trust options.
     ///
     /// This pulls the header and validator set at the height specified in
     /// the trust options, and checks their hashes against the hashes
@@ -371,7 +371,7 @@ where
     /// update the last trusted state with it.
     async fn init_with_trust_options(
         &mut self,
-        trust_options: TrustOptions,
+        trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
         debug!("initialize client with given trust_options");
 
