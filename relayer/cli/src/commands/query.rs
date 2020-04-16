@@ -2,7 +2,7 @@
 
 use abscissa_core::{Command, Options, Runnable};
 
-mod query_client;
+mod client;
 
 /// `query` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -16,8 +16,8 @@ pub enum QueryCmd {
 pub enum QueryClientCmds {
     /// The `query client` subcommand
     #[options(help = "query client state")]
-    State(query_client::QueryClientStateCmd),
+    State(client::QueryClientStateCmd),
 
     #[options(help = "query client consensus")]
-    Consensus(query_client::QueryClientConsensusCmd),
+    Consensus(client::QueryClientConsensusCmd),
 }
