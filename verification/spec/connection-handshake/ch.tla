@@ -1,5 +1,6 @@
 --------------------------------- MODULE CH ---------------------------------
 
+EXTENDS Naturals, FiniteSets
 
 \* ----- ASSUMPTIONS -----
 \* To be refined and reconsidered as this module evolves:
@@ -13,7 +14,7 @@
 VARIABLES
     partyState,         \* For each party (A & B), we capture their state. This effectively captures the state of the connection.
     pendingDatagrams    \* Incoming messages to each party; cf. ibc-rs#55
-\*    relayerState,       \* Relayer is stateless for the moment. 
+\*    relayerState,       \* Relayer is stateless for the moment.
 
 
 NullParty == "none"
@@ -31,8 +32,8 @@ Datagrams ==
     \union
     [type : {"ConnOpenAck"}, connectionID : ConnectionIDs ]
     \union
-    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs ] 
-    \union 
+    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs ]
+    \union
     [type : {"NullMsg"} ] \* Unclear if we're going to need this.
 
 
@@ -44,7 +45,7 @@ getConnectionID(p) ==
     THEN "connAtoB"
     ELSE IF p = "chainB"
          THEN "connBtoA"
-         ELSE NullConnectionID      
+         ELSE NullConnectionID
 
 \* get the connection ID of the connection end at chainID's counterparty chain
 getCounterpartyConnectionID(p) ==
@@ -53,7 +54,7 @@ getCounterpartyConnectionID(p) ==
     ELSE IF p = "chainB"
          THEN "connAtoB"
          ELSE NullConnectionID
-         
+
 getCounterparty(p) ==
     IF p = "chainA"
     THEN "chainB"
@@ -64,11 +65,11 @@ getCounterparty(p) ==
 isPartyInState(p, state) ==
     partyState[p] = state
 
-    
-\*    
+
+\*
 \* Helper procedures for constructing datagrams
 getInitDatagram(p) ==
-    [ type |-> "ConnOpenInit", 
+    [ type |-> "ConnOpenInit",
       connectionID |-> getConnectionID(p),
       counterpartyConnectionID |-> getCounterpartyConnectionID(p) ]
 
@@ -80,28 +81,30 @@ getTryDatagram(p) ==
 
 \*
 \* Relayer state transitions
-    
+
 RelayerSendInit(targetParty) ==
-    \* TODO: handle the case where party was already INIT! 
+    \* TODO: handle the case where party was already INIT!
     /\ \A p \in Parties : isPartyInState(p, "UNINIT")   \* Both parties have to be UNINIT
-    /\ pendingDatagrams' = [pendingDatagrams EXCEPT
-                                ![targetParty] = pendingDatagrams[targetParty] \union { getInitDatagram(targetParty) } 
+    /\ pendingDatagrams' = [
+                                pendingDatagrams EXCEPT
+                                ![targetParty] = pendingDatagrams[targetParty] \union { getInitDatagram(targetParty) }
                            ]
     /\ UNCHANGED <<partyState>>
 
-
+\*
 RelayerSendTry(targetParty) ==
     /\ isPartyInState(targetParty, "UNINIT")
     /\ isPartyInState(getCounterparty(targetParty), "INIT")
-    /\ pendingDatagrams' = [pendingDatagrams EXCEPT
-                                ![targetParty] = pendingDatagrams[targetParty] \union { getTryDatagram(targetParty) } 
+    /\ pendingDatagrams' = [
+                                pendingDatagrams EXCEPT
+                                ![targetParty] = pendingDatagrams[targetParty] \union { getTryDatagram(targetParty) }
                            ]
     /\ UNCHANGED <<partyState>>
 
 RelayerStep ==
-    \E targetParty \in Parties : 
+    \E targetParty \in Parties :
         RelayerSendInit(targetParty)
-        \/ RelayerSendTry(targetParty) 
+        \/ RelayerSendTry(targetParty)
       \*\/ RelayerSendAck \/ RelayerSendConfirm /\ RelayerSendNoMsg
 
 
@@ -109,27 +112,36 @@ RelayerStep ==
 \*
 \* Party state transitions
 
+\* TODO: allow this handler to be replayed?
 PartyHandleInit(party) ==
-    /\ isPartyInState(party, "UNINIT")     \* TODO: allow this handler to be replayed?
+    /\ isPartyInState(party, "UNINIT")
     /\ isPartyInState(getCounterparty(party), "UNINIT") \* TODO: can a party read the state of the other party?
     /\ getInitDatagram(party) \in pendingDatagrams[party]
-    /\ partyState' = "INIT"
-    /\ pendingDatagrams' = [pendingDatagrams EXCEPT     \* inspired from ibc-rs#55
+    /\ partyState' = [
+                        partyState EXCEPT
+                        ![party] = "INIT"
+                      ]
+    /\ pendingDatagrams' = [
+                                pendingDatagrams EXCEPT     \* inspired from ibc-rs#55
                                 ![party] = {}           \* TODO: empty or just \minus the datagram??
                            ]
 
 
+\* TODO: same as for 'PartyHandleInit'.
 PartyHandleTry(party) ==
-    /\ isPartyInState(party, "UNINIT")     \* TODO: same as for 'PartyHandleInit'.
+    /\ isPartyInState(party, "UNINIT")
     /\ isPartyInState(getCounterparty(party), "INIT")
     /\ getTryDatagram(party) \in pendingDatagrams[party]
-    /\ partyState' = "INIT"
+    /\ partyState' = [
+                        partyState EXCEPT
+                        ![party] = "TRYOPEN"
+                     ]
     /\ pendingDatagrams' = [pendingDatagrams EXCEPT
                                 ![party] = {}
                            ]
 
-PartyStep(p) ==
-    \E party \in Parties : 
+PartyStep ==
+    \E party \in Parties :
         PartyHandleInit(party)
         \/ PartyHandleTry(party)
 
@@ -138,18 +150,24 @@ PartyStep(p) ==
 Init ==
     \* Associate to each party & relayer an initial state.
     /\ partyState = [ p \in Parties |-> "UNINIT" ]
-    /\ pendingDatagrams = {}
-    
-Next == 
+    /\ pendingDatagrams = [ p \in Parties |-> {} ]
+
+Next ==
     \/ RelayerStep
-    \/ \E p \in Parties : PartyStep(p) 
+    \/ PartyStep
 
 Spec ==
     Init /\ [][Next]_<<partyState, pendingDatagrams>>
 
 
+TypeInvariant ==
+    /\ partyState \in [ Parties -> { "UNINIT", "INIT", "TRYOPEN", "OPEN" } ]
+    /\ pendingDatagrams \subseteq Datagrams
+
+THEOREM Spec => []TypeInvariant
+
+
 =============================================================================
 \* Modification History
-\* Last modified Fri Apr 17 12:47:34 CEST 2020 by adi
+\* Last modified Mon Apr 20 11:08:32 CEST 2020 by adi
 \* Created Fri Apr 17 10:28:22 CEST 2020 by adi
-
