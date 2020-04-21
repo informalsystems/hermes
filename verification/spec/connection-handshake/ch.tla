@@ -1,173 +1,188 @@
 --------------------------------- MODULE CH ---------------------------------
 
-EXTENDS Naturals, FiniteSets
-
-\* ----- ASSUMPTIONS -----
-\* To be refined and reconsidered as this module evolves:
-\*  - there is only 1 relayer and it is correct.
-\*  - there are only 2 parties and they are both correct.
-\*  - Datagrams are simpler (have less fields) than defined in ICS 033.
-\*  - Parties (i.e., each chain) have a fixed, predefined height.
-\*  - Relayer is stateless: has no clients, doesn't create proofs.
-
 
 VARIABLES
-    partyState,         \* For each party (A & B), we capture their state. This effectively captures the state of the connection.
-    pendingDatagrams    \* Incoming messages to each party; cf. ibc-rs#55
-\*    relayerState,       \* Relayer is stateless for the moment.
+    parties,            \* The state of each party.
+    inboundDatagrams    \* For each party, a buffer with any incoming datagrams. 
 
 
-NullParty == "none"
-Parties == {"chainA", "chainB"}
+Parties == {"A", "B"}
 
-NullConnectionID == "none"
+ConnectionStates == { "UNINIT" }
+
+Null == "none"
+
 ConnectionIDs == {"connAtoB", "connBtoA"}
 
-ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
-Datagrams ==
-    [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, counterpartyConnectionID : ConnectionIDs ]
-    \union
-    [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs, counterpartyConnectionID : ConnectionIDs ]
-    \union
-    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs ]
-    \union
-    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs ]
-    \union
-    [type : {"NullMsg"} ] \* Unclear if we're going to need this.
+ClientIDs == { "clientA", "clientB" }
 
 
-\* Helper procedures
+(***************************** ConnectionEnds *****************************
+    Ref.: https://github.com/informalsystems/ibc-rs/pull/55.
+    
+    A set of connection end records. 
+    A connection end record contains the following fields:
+    
+    - state -- a string 
+      Stores the current state of this connection end. It has one of the 
+      following values: "UNINIT", "INIT", "TRYOPEN", "OPEN".
+    
+    - connectionID -- a connection identifier
+      Stores the connection identifier of this connection end.
+    
+    - counterpartyConnectionID -- a connection identifier
+      Stores the connection identifier of the counterparty connection end.
+    
+    - clientID -- a client identifier
+      Stores the client identifier associated with this connection end. 
+      
+    - counterpartyClientID -- a client identifier
+      Stores the counterparty client identifier associated with this connection end.
+ ***************************************************************************)
+ConnectionEnd ==
+    [
+        state : ConnectionStates,
+        connectionID : ConnectionIDs \union {Null},
+        clientID : ClientIDs \union {Null},
+        counterpartyConnectionID : ConnectionIDs \union {Null},
+        counterpartyClientID : ClientIDs \union {Null}
+    ]      
 
-\* Would be ideal to import the following two functions, cf. ibc-rs#55 (file: ConnectionHandlers.tla)
-getConnectionID(p) ==
-    IF p = "chainA"
-    THEN "connAtoB"
-    ELSE IF p = "chainB"
-         THEN "connBtoA"
-         ELSE NullConnectionID
+(********************************** Helper functions
+ ***************************************************************************)
 
-\* get the connection ID of the connection end at chainID's counterparty chain
-getCounterpartyConnectionID(p) ==
-    IF p = "chainA"
-    THEN "connBtoA"
-    ELSE IF p = "chainB"
-         THEN "connAtoB"
-         ELSE NullConnectionID
+\* Constructs a ConnectionEnd object for the given party in state UNINIT.
+getConnectioEnd(targetParty) ==
+    IF targetParty = "A"
+    THEN 
+        [   state |-> "UNINIT",
+            connectionID |-> "connAtoB",
+            clientID |-> "clientA",
+            counterpartyConnectionID |-> "connBtoA",
+            counterpartyClientID |-> "clientB" ]
+    ELSE IF targetParty = "B"
+         THEN
+            [   state |-> "UNINIT",
+                connectionID |-> "connBtoA",
+                clientID |-> "clientB",
+                counterpartyConnectionID |-> "connAtoB",
+                counterpartyClientID |-> "clientA" ]
+         ELSE Null    
 
-getCounterparty(p) ==
-    IF p = "chainA"
-    THEN "chainB"
-    ELSE IF p = "chainB"
-         THEN "chainA"
-         ELSE NullParty
+
+\* Constructs a 'Init' Datagram.
+\* Fields are hardcoded for the moment
+getInitDatagram(targetParty) ==
+    [ type |-> "ConnOpenInit", 
+      connectionEnd |-> getConnectioEnd(targetParty) ]
+
 
 isPartyInState(p, state) ==
-    partyState[p] = state
+    parties[p].connectionEnd.state = state
 
 
-\*
-\* Helper procedures for constructing datagrams
-getInitDatagram(p) ==
-    [ type |-> "ConnOpenInit",
-      connectionID |-> getConnectionID(p),
-      counterpartyConnectionID |-> getCounterpartyConnectionID(p) ]
-
-getTryDatagram(p) ==
-    [ type |-> "ConnOpenTry",
-      desiredConnectionID |-> getConnectionID(p),
-      counterpartyConnectionID |-> getCounterpartyConnectionID(p) ]
+\* Would be ideal to import the following function.
+\* Cf. ibc-rs#55 (file: ConnectionHandlers.tla)
+getConnectionID(p) ==
+    IF p = "A"
+    THEN "connAtoB"
+    ELSE IF p = "B"
+         THEN "connBtoA"
+         ELSE Null  
 
 
-\*
-\* Relayer state transitions
+(********************************** Environment functions
+ ***************************************************************************)
 
-RelayerSendInit(targetParty) ==
-    \* TODO: handle the case where party was already INIT!
-    /\ \A p \in Parties : isPartyInState(p, "UNINIT")   \* Both parties have to be UNINIT
-    /\ pendingDatagrams' = [
-                                pendingDatagrams EXCEPT
-                                ![targetParty] = pendingDatagrams[targetParty] \union { getInitDatagram(targetParty) }
+    
+\* The environment generates the ConnOpenInit datagram, sending it to 'party'
+GenerateConnOpenInit(targetParty) ==
+    LET initDatagram == getInitDatagram(targetParty)
+    IN inboundDatagrams' = [
+                                inboundDatagrams EXCEPT
+                                ![targetParty] = inboundDatagrams[targetParty] \union { initDatagram } 
                            ]
-    /\ UNCHANGED <<partyState>>
+    /\ UNCHANGED <<parties>>
 
-\*
-RelayerSendTry(targetParty) ==
-    /\ isPartyInState(targetParty, "UNINIT")
-    /\ isPartyInState(getCounterparty(targetParty), "INIT")
-    /\ pendingDatagrams' = [
-                                pendingDatagrams EXCEPT
-                                ![targetParty] = pendingDatagrams[targetParty] \union { getTryDatagram(targetParty) }
-                           ]
-    /\ UNCHANGED <<partyState>>
 
-RelayerStep ==
+EnvStep ==
     \E targetParty \in Parties :
-        RelayerSendInit(targetParty)
-        \/ RelayerSendTry(targetParty)
-      \*\/ RelayerSendAck \/ RelayerSendConfirm /\ RelayerSendNoMsg
+        GenerateConnOpenInit(targetParty)
 
 
+(**************************** Party functions
+ ***************************************************************************)
 
-\*
-\* Party state transitions
+ConnectionEndInit ==
+    [state |-> "UNINIT",
+     connectionID |-> Null,
+     clientID |-> Null,
+     counterpartyConnectionID |-> Null,
+     counterpartyClientID |-> Null ] 
 
-\* TODO: allow this handler to be replayed?
-PartyHandleInit(party) ==
+
+(**
+ * Connection Handshake Module handlers
+ **)
+
+CHModuleHandleInit(party) ==
     /\ isPartyInState(party, "UNINIT")
-    /\ isPartyInState(getCounterparty(party), "UNINIT") \* TODO: can a party read the state of the other party?
-    /\ getInitDatagram(party) \in pendingDatagrams[party]
-    /\ partyState' = [
-                        partyState EXCEPT
-                        ![party] = "INIT"
-                      ]
-    /\ pendingDatagrams' = [
-                                pendingDatagrams EXCEPT     \* inspired from ibc-rs#55
-                                ![party] = {}           \* TODO: empty or just \minus the datagram??
-                           ]
+    /\  LET connOpenInitDgrs == {dgr \in inboundDatagrams[party] : 
+                                /\ dgr.type = "ConnOpenInit"
+                                /\ dgr.connectionID = getConnectionID(party)}
+        IN IF connOpenInitDgrs /= {} 
+           THEN LET connOpenInitDgr == CHOOSE dgr \in connOpenInitDgrs : TRUE 
+                IN LET connOpenInitConnectionEnd == [
+                     state |-> "INIT",
+                     connectionID |-> connOpenInitDgr.connectionID,
+                     clientID |-> connOpenInitDgr.clientID,
+                     counterpartyConnectionID |-> connOpenInitDgr.counterpartyConnectionID,
+                     counterpartyClientID |-> connOpenInitDgr.counterpartyClientID ] 
+                  IN parties' = [ parties EXCEPT
+                                        ![party] = [ connectionEnd |-> connOpenInitConnectionEnd ] 
+                                    ]
+                     /\ inboundDatagrams' = [ 
+                                inboundDatagrams EXCEPT
+                                ![party] = {} ]
+           ELSE Null    \* TODO: no return value? unclear.
 
 
-\* TODO: same as for 'PartyHandleInit'.
-PartyHandleTry(party) ==
-    /\ isPartyInState(party, "UNINIT")
-    /\ isPartyInState(getCounterparty(party), "INIT")
-    /\ getTryDatagram(party) \in pendingDatagrams[party]
-    /\ partyState' = [
-                        partyState EXCEPT
-                        ![party] = "TRYOPEN"
-                     ]
-    /\ pendingDatagrams' = [pendingDatagrams EXCEPT
-                                ![party] = {}
-                           ]
+PartyInit ==
+    [ connectionEnd |-> ConnectionEndInit ]
 
 PartyStep ==
     \E party \in Parties :
-        PartyHandleInit(party)
-        \/ PartyHandleTry(party)
+        \/ CHModuleHandleInit(party)
+    
+
+(**************************** Main spec
+ ***************************************************************************)
 
 
-\* The initial predicate defining the CH protocol.
 Init ==
-    \* Associate to each party & relayer an initial state.
-    /\ partyState = [ p \in Parties |-> "UNINIT" ]
-    /\ pendingDatagrams = [ p \in Parties |-> {} ]
-
-Next ==
-    \/ RelayerStep
+    \* Associate to each party an initial state.
+    /\ parties = [ p \in Parties |-> PartyInit ]
+    /\ inboundDatagrams = [ p \in Parties |-> {} ]
+    
+Next == 
     \/ PartyStep
+    \/ EnvStep
 
 Spec ==
-    Init /\ [][Next]_<<partyState, pendingDatagrams>>
+    Init /\ [][Next]_<<parties, inboundDatagrams>>
 
 
 TypeInvariant ==
-    /\ partyState \in [ Parties -> { "UNINIT", "INIT", "TRYOPEN", "OPEN" } ]
-    /\ pendingDatagrams \subseteq Datagrams
+    /\ parties \in [ Parties -> { "UNINIT", "INIT", "TRYOPEN", "OPEN" } ]
+\*    /\ inboundDatagrams \subseteq Datagrams
 
+\* Model check it!
 THEOREM Spec => []TypeInvariant
 
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Apr 20 11:08:32 CEST 2020 by adi
+\* Last modified Tue Apr 21 19:17:35 CEST 2020 by adi
 \* Created Fri Apr 17 10:28:22 CEST 2020 by adi
+
