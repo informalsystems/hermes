@@ -9,7 +9,7 @@ authors = [
 
 [dependencies]
 relayer-modules = { path = "../../modules" }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "tendermint/v0.33" }
+tendermint = { git = "https://github.com/iqlusioninc/tendermint-rs.git", branch = "zaki-event-subscribe" }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
