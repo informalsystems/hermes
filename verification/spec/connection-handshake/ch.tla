@@ -1,181 +1,204 @@
 --------------------------------- MODULE CH ---------------------------------
 
+EXTENDS Naturals, FiniteSets
+
+
+CONSTANT MaxHeight     \* Maximum height of all the chains in the system.
+
 
 VARIABLES
-    parties,            \* The state of each party.
-    inboundDatagrams    \* For each party, a buffer with any incoming datagrams. 
+    turn,    \* Keep track of who takes a step: either connection module or environment.
+    chain,   \* The state of this (local) chain.
+    inMsg,   \* A buffer holding any message incoming to the chain.
+    outMsg   \* A buffer holding any message outbound from the chain.
 
 
-Parties == {"A", "B"}
+vars == <<turn, chain, inMsg, outMsg>>
 
-ConnectionStates == { "UNINIT" }
+Heights == 1..MaxHeight
 
-Null == "none"
+ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
 ConnectionIDs == {"connAtoB", "connBtoA"}
-
-
 ClientIDs == { "clientA", "clientB" }
+
+Null == "none"
+noMsg == [ type |-> "none" ]
+noErr == "errNone"
 
 
 (***************************** ConnectionEnds *****************************
-    Ref.: https://github.com/informalsystems/ibc-rs/pull/55.
-    
-    A set of connection end records. 
+    A set of connection end records.
     A connection end record contains the following fields:
-    
-    - state -- a string 
-      Stores the current state of this connection end. It has one of the 
+
+    - state -- a string
+      Stores the current state of this connection end. It has one of the
       following values: "UNINIT", "INIT", "TRYOPEN", "OPEN".
-    
+
     - connectionID -- a connection identifier
       Stores the connection identifier of this connection end.
-    
+
     - counterpartyConnectionID -- a connection identifier
       Stores the connection identifier of the counterparty connection end.
-    
+
     - clientID -- a client identifier
-      Stores the client identifier associated with this connection end. 
-      
+      Stores the client identifier associated with this connection end.
+
     - counterpartyClientID -- a client identifier
       Stores the counterparty client identifier associated with this connection end.
  ***************************************************************************)
-ConnectionEnd ==
+ConnectionEnds ==
     [
         state : ConnectionStates,
         connectionID : ConnectionIDs \union {Null},
         clientID : ClientIDs \union {Null},
         counterpartyConnectionID : ConnectionIDs \union {Null},
         counterpartyClientID : ClientIDs \union {Null}
-    ]      
+    ]
 
-(********************************** Helper functions
+(******************************** Datagrams ********************************
+Specify the connection-handshake specific datagrams.
+TODO: Unclear if we should insist on calling these 'datagrams' or more
+generally just 'messages' (@Zarko).
+
+TODO: @Zarko: In my view this abstraction should be called ConnectionEnd
+and what is currently called ConnectionEnd should be Connection.
+ ***************************************************************************)
+ConnectionDatagrams ==
+    [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs,
+     counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
+    \union
+    [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs,
+     counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs,
+     clientID : ClientIDs, proofHeight : Heights, consensusHeight : Heights]
+
+
+
+(***************************************************************************
+Connection datagram handlers
+***************************************************************************)
+
+\* Handle "ConnOpenInit" datagrams
+connectionOpenInit(ch, datagram) ==
+  IF ch.connectionEnd.state = "UNINIT" THEN
+       LET connOpenInitConnectionEnd == [
+           state |-> "INIT",
+           connectionID |-> datagram.connectionID,
+           clientID |-> datagram.clientID,
+           counterpartyConnectionID |-> datagram.counterpartyConnectionID,
+           counterpartyClientID |-> datagram.counterpartyClientID]
+       IN
+       [ chain |-> [ch EXCEPT !.connectionEnd = connOpenInitConnectionEnd],
+         msg |-> [
+           type |-> "ConnOpenTry",
+           connectionID |-> connOpenInitConnectionEnd.counterpartyConnectionID,
+           clientID |-> connOpenInitConnectionEnd.counterpartyClientID,
+           counterpartyConnectionID |-> connOpenInitConnectionEnd.connectionID,
+           counterpartyClientID |-> connOpenInitConnectionEnd.clientID ] ]
+   \* otherwise, do not update the chain
+   ELSE [  chain |-> ch,
+           msg |-> noMsg ]
+
+handleMsgConnectionOpenInit ==
+ /\ inMsg.type = "ConnOpenInit"
+ /\ LET res == connectionOpenInit(chain, inMsg) IN
+      /\ chain' = res.chain
+      /\ outMsg' = res.msg
+
+
+
+(***************************************************************************
+ Chain actions
  ***************************************************************************)
 
-\* Constructs a ConnectionEnd object for the given party in state UNINIT.
-getConnectioEnd(targetParty) ==
-    IF targetParty = "A"
-    THEN 
-        [   state |-> "UNINIT",
-            connectionID |-> "connAtoB",
-            clientID |-> "clientA",
-            counterpartyConnectionID |-> "connBtoA",
-            counterpartyClientID |-> "clientB" ]
-    ELSE IF targetParty = "B"
-         THEN
-            [   state |-> "UNINIT",
-                connectionID |-> "connBtoA",
-                clientID |-> "clientB",
-                counterpartyConnectionID |-> "connAtoB",
-                counterpartyClientID |-> "clientA" ]
-         ELSE Null    
+\* Advance the height of the chain until MaxHeight is reached
+advanceChain ==
+    /\ chain.height < MaxHeight
+    /\ chain' = [chain EXCEPT
+                    !.height = chain.height + 1
+                 ]
+    /\ UNCHANGED outMsg
 
-
-\* Constructs a 'Init' Datagram.
-\* Fields are hardcoded for the moment
-getInitDatagram(targetParty) ==
-    [ type |-> "ConnOpenInit", 
-      connectionEnd |-> getConnectioEnd(targetParty) ]
-
-
-isPartyInState(p, state) ==
-    parties[p].connectionEnd.state = state
-
-
-\* Would be ideal to import the following function.
-\* Cf. ibc-rs#55 (file: ConnectionHandlers.tla)
-getConnectionID(p) ==
-    IF p = "A"
-    THEN "connAtoB"
-    ELSE IF p = "B"
-         THEN "connBtoA"
-         ELSE Null  
-
-
-(********************************** Environment functions
- ***************************************************************************)
-
-    
-\* The environment generates the ConnOpenInit datagram, sending it to 'party'
-GenerateConnOpenInit(targetParty) ==
-    LET initDatagram == getInitDatagram(targetParty)
-    IN inboundDatagrams' = [
-                                inboundDatagrams EXCEPT
-                                ![targetParty] = inboundDatagrams[targetParty] \union { initDatagram } 
-                           ]
-    /\ UNCHANGED <<parties>>
-
-
-EnvStep ==
-    \E targetParty \in Parties :
-        GenerateConnOpenInit(targetParty)
-
-
-(**************************** Party functions
- ***************************************************************************)
-
-ConnectionEndInit ==
+(***
+  * Initial values for the chain.
+  **)
+InitConnectionEnd ==
     [state |-> "UNINIT",
      connectionID |-> Null,
      clientID |-> Null,
      counterpartyConnectionID |-> Null,
-     counterpartyClientID |-> Null ] 
+     counterpartyClientID |-> Null]
 
+InitChain ==
+    [height |-> 1,
+     connectionEnd |-> InitConnectionEnd]
 
-(**
- * Connection Handshake Module handlers
- **)
+InitCh ==
+    /\ chain = InitChain
+    /\ outMsg = noMsg
 
-CHModuleHandleInit(party) ==
-    /\ isPartyInState(party, "UNINIT")
-    /\  LET connOpenInitDgrs == {dgr \in inboundDatagrams[party] : 
-                                /\ dgr.type = "ConnOpenInit"
-                                /\ dgr.connectionID = getConnectionID(party)}
-        IN IF connOpenInitDgrs /= {} 
-           THEN LET connOpenInitDgr == CHOOSE dgr \in connOpenInitDgrs : TRUE 
-                IN LET connOpenInitConnectionEnd == [
-                     state |-> "INIT",
-                     connectionID |-> connOpenInitDgr.connectionID,
-                     clientID |-> connOpenInitDgr.clientID,
-                     counterpartyConnectionID |-> connOpenInitDgr.counterpartyConnectionID,
-                     counterpartyClientID |-> connOpenInitDgr.counterpartyClientID ] 
-                  IN parties' = [ parties EXCEPT
-                                        ![party] = [ connectionEnd |-> connOpenInitConnectionEnd ] 
-                                    ]
-                     /\ inboundDatagrams' = [ 
-                                inboundDatagrams EXCEPT
-                                ![party] = {} ]
-           ELSE Null    \* TODO: no return value? unclear.
+NextCh ==
+    \/ advanceChain
+    \/ handleMsgConnectionOpenInit
 
-
-PartyInit ==
-    [ connectionEnd |-> ConnectionEndInit ]
-
-PartyStep ==
-    \E party \in Parties :
-        \/ CHModuleHandleInit(party)
-    
-
-(**************************** Main spec
+(***************************************************************************
+ Environment actions
  ***************************************************************************)
 
+ InitEnv ==
+   /\ inMsg = noMsg
+
+ OnConnInitMsg ==
+   /\ inMsg' \in [type: {"ConnOpenInit"},
+                  connectionID : ConnectionIDs,
+                  clientID : ClientIDs,
+                  counterpartyConnectionID : ConnectionIDs,
+                  counterpartyClientID : ClientIDs]
+
+ NextEnv ==
+     \/ OnConnInitMsg
+
+
+(******************************************************************************
+ Main spec.
+ The system comprises the connection handshake module & environment.
+ *****************************************************************************)
 
 Init ==
-    \* Associate to each party an initial state.
-    /\ parties = [ p \in Parties |-> PartyInit ]
-    /\ inboundDatagrams = [ p \in Parties |-> {} ]
-    
-Next == 
-    \/ PartyStep
-    \/ EnvStep
+    turn = "env" \* Initially, the environment takes a turn.
+    /\ InitEnv
+    /\ InitCh
+
+\* Turn-flipping mechanism.
+FlipTurn ==
+  turn' = (
+    IF turn = "ch" THEN
+      "env"
+    ELSE
+      "ch"
+  )
+
+\* chModule and environment alternate their steps
+Next ==
+/\ FlipTurn
+/\ IF turn = "ch" THEN
+     /\ NextCh
+     /\ inMsg' = noMsg
+   ELSE
+     /\ NextEnv
+     /\ outMsg' = noMsg
+     /\ UNCHANGED chain
+     \* Handle the exceptional case when turn is neither of ch or env?
 
 Spec ==
-    Init /\ [][Next]_<<parties, inboundDatagrams>>
+    Init
+    /\ [][Next]_<<vars>>
+    /\ WF_turn(FlipTurn)
 
 
 TypeInvariant ==
-    /\ parties \in [ Parties -> { "UNINIT", "INIT", "TRYOPEN", "OPEN" } ]
-\*    /\ inboundDatagrams \subseteq Datagrams
+    /\ inMsg \in ConnectionDatagrams
+
 
 \* Model check it!
 THEOREM Spec => []TypeInvariant
@@ -183,6 +206,7 @@ THEOREM Spec => []TypeInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 21 19:17:35 CEST 2020 by adi
+\* Last modified Wed Apr 22 16:19:44 CEST 2020 by adi
+\* Wed Apr 22 10:42:14 CEST 2020 improvements & suggestions by anca & zarko
 \* Created Fri Apr 17 10:28:22 CEST 2020 by adi
 
