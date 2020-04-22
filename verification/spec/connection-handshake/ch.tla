@@ -7,13 +7,13 @@ CONSTANT MaxHeight     \* Maximum height of all the chains in the system.
 
 
 VARIABLES
-    turn,    \* Keep track of who takes a step: either connection module or environment.
-    chain,   \* The state of this (local) chain.
-    inMsg,   \* A buffer holding any message incoming to the chain.
-    outMsg   \* A buffer holding any message outbound from the chain.
+    chModule,   \* The state of this connection handshake module (chm).
+    turn,       \* Keep track of who takes a step: either chModule or environment.
+    inMsg,      \* A buffer holding any message incoming to the chModule.
+    outMsg      \* A buffer holding any message outbound from the chModule.
 
 
-vars == <<turn, chain, inMsg, outMsg>>
+vars == <<turn, chModule, inMsg, outMsg>>
 
 Heights == 1..MaxHeight
 
@@ -31,113 +31,142 @@ noErr == "errNone"
     A set of connection end records.
     A connection end record contains the following fields:
 
-    - state -- a string
-      Stores the current state of this connection end. It has one of the
-      following values: "UNINIT", "INIT", "TRYOPEN", "OPEN".
-
     - connectionID -- a connection identifier
-      Stores the connection identifier of this connection end.
-
-    - counterpartyConnectionID -- a connection identifier
-      Stores the connection identifier of the counterparty connection end.
+      Stores the connection identifier for this connection end.
 
     - clientID -- a client identifier
       Stores the client identifier associated with this connection end.
 
-    - counterpartyClientID -- a client identifier
-      Stores the counterparty client identifier associated with this connection end.
+    Optional, add later:
+    - prefix
+    
  ***************************************************************************)
 ConnectionEnds ==
     [
-        state : ConnectionStates,
         connectionID : ConnectionIDs \union {Null},
-        clientID : ClientIDs \union {Null},
-        counterpartyConnectionID : ConnectionIDs \union {Null},
-        counterpartyClientID : ClientIDs \union {Null}
+        clientID : ClientIDs \union {Null}
     ]
 
-(******************************** Datagrams ********************************
-Specify the connection-handshake specific datagrams.
-TODO: Unclear if we should insist on calling these 'datagrams' or more
-generally just 'messages' (@Zarko).
 
-TODO: @Zarko: In my view this abstraction should be called ConnectionEnd
-and what is currently called ConnectionEnd should be Connection.
+(***************************** Connections *****************************
+    A set of connection records.
+    A connection record contains the following fields:
+
+    - localEnd -- a connection end
+      Stores the connection end for the local chain.
+
+    - remoteEnd -- a connection end
+      Stores the connection end for the remote chain.
  ***************************************************************************)
-ConnectionDatagrams ==
-    [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs,
-     counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
-    \union
-    [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs,
-     counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs,
-     clientID : ClientIDs, proofHeight : Heights, consensusHeight : Heights]
+Connections ==
+    [
+        localEnd : ConnectionEnds,
+        remoteEnd : ConnectionEnds
+    ]
+
+
+(***************************** ConnectionHandshakeModules ******************
+    A set of records defining the CHM.
+    A CHM record contains the following fields:
+
+    - connectionState -- a string
+      Stores the current state of this connection. It has one of the
+      following values: "UNINIT", "INIT", "TRYOPEN", "OPEN".
+
+    - connection -- a connection with two ends
+      Stores the connection.
+
+    - chainHeight -- a height
+      Stores the height of the chain running alongside the CHM.
+ ***************************************************************************)
+ConnectionHandshakeModules ==
+    [
+        connectionState : ConnectionStates,
+        connection : Connections,
+        chainHeight : Heights
+        \* light client, consensus state, etc.. 
+    ]
+
+
+
+(******************************** Messages ********************************
+These messages are connection handshake specific.
+ ***************************************************************************)
+ConnectionHandshakeMessages ==
+    [type : {"ConnOpenInit"}, 
+     connection : Connections]
+\*    \union
+\*    [type : {"ConnOpenTry"},
+\*        connection : Connections,
+\*        stateProof : Proofs, 
+\*        consensusHeight : Proofs]
 
 
 
 (***************************************************************************
-Connection datagram handlers
+ Connection handshake message handlers.
 ***************************************************************************)
 
-\* Handle "ConnOpenInit" datagrams
-connectionOpenInit(ch, datagram) ==
-  IF ch.connectionEnd.state = "UNINIT" THEN
-       LET connOpenInitConnectionEnd == [
-           state |-> "INIT",
-           connectionID |-> datagram.connectionID,
-           clientID |-> datagram.clientID,
-           counterpartyConnectionID |-> datagram.counterpartyConnectionID,
-           counterpartyClientID |-> datagram.counterpartyClientID]
-       IN
-       [ chain |-> [ch EXCEPT !.connectionEnd = connOpenInitConnectionEnd],
-         msg |-> [
-           type |-> "ConnOpenTry",
-           connectionID |-> connOpenInitConnectionEnd.counterpartyConnectionID,
-           clientID |-> connOpenInitConnectionEnd.counterpartyClientID,
-           counterpartyConnectionID |-> connOpenInitConnectionEnd.connectionID,
-           counterpartyClientID |-> connOpenInitConnectionEnd.clientID ] ]
-   \* otherwise, do not update the chain
-   ELSE [  chain |-> ch,
-           msg |-> noMsg ]
+\* The chModule handles a "ConnOpenInit" message.
+connectionOpenInit(chm, initMsg) ==
+  \* If we're in the right state.
+  IF chm.connectionState = "UNINIT" THEN
+         [initCHM |-> [chm EXCEPT !.connection = initMsg.connection,
+                                  !.connectionState = "INIT"],
+          msg |-> [type |-> "ConnOpenTry",
+                   connection |-> initMsg.connection]]
+                   \* TODO: Proofs go here.                   
+   \* Otherwise, do not update the chain
+   ELSE [initCHM |-> chm,
+         msg |-> noMsg ]
 
 handleMsgConnectionOpenInit ==
  /\ inMsg.type = "ConnOpenInit"
- /\ LET res == connectionOpenInit(chain, inMsg) IN
-      /\ chain' = res.chain
+ /\ LET res == connectionOpenInit(chModule, inMsg) IN
+      /\ chModule' = res.initCHM
       /\ outMsg' = res.msg
+      /\ UNCHANGED <<inMsg>>
 
 
 
 (***************************************************************************
- Chain actions
+ Connection Handshake Module actions.
  ***************************************************************************)
 
-\* Advance the height of the chain until MaxHeight is reached
+\* Advance the height of the chain if MaxHeight is not yet reached.
 advanceChain ==
-    /\ chain.height < MaxHeight
-    /\ chain' = [chain EXCEPT
-                    !.height = chain.height + 1
+    /\ chModule.chainHeight < MaxHeight
+    /\ chModule' = [chModule EXCEPT
+                    !.chainHeight = chModule.chainHeight + 1
                  ]
-    /\ UNCHANGED outMsg
+    /\ UNCHANGED <<outMsg, inMsg>>
+
 
 (***
-  * Initial values for the chain.
+  * Initial value for a connection end.
   **)
-InitConnectionEnd ==
-    [state |-> "UNINIT",
-     connectionID |-> Null,
-     clientID |-> Null,
-     counterpartyConnectionID |-> Null,
-     counterpartyClientID |-> Null]
+ConnectionEndInitValue ==
+    [connectionID |-> Null,
+     clientID |-> Null]
 
-InitChain ==
-    [height |-> 1,
-     connectionEnd |-> InitConnectionEnd]
 
-InitCh ==
-    /\ chain = InitChain
+(***
+  * Initial values for a connection.
+  **)
+ConnectionInitValue ==
+    [localEnd |-> ConnectionEndInitValue,
+     remoteEnd |-> ConnectionEndInitValue]
+
+CHModuleInitValue ==
+    [chainHeight |-> 1,
+     connectionState |-> "UNINT",
+     connection |-> ConnectionInitValue ]
+
+InitCHModule ==
+    /\ chModule = CHModuleInitValue
     /\ outMsg = noMsg
 
-NextCh ==
+NextCHModule ==
     \/ advanceChain
     \/ handleMsgConnectionOpenInit
 
@@ -150,10 +179,7 @@ NextCh ==
 
  OnConnInitMsg ==
    /\ inMsg' \in [type: {"ConnOpenInit"},
-                  connectionID : ConnectionIDs,
-                  clientID : ClientIDs,
-                  counterpartyConnectionID : ConnectionIDs,
-                  counterpartyClientID : ClientIDs]
+                  connection : Connections]
 
  NextEnv ==
      \/ OnConnInitMsg
@@ -167,28 +193,30 @@ NextCh ==
 Init ==
     turn = "env" \* Initially, the environment takes a turn.
     /\ InitEnv
-    /\ InitCh
+    /\ InitCHModule
+
 
 \* Turn-flipping mechanism.
 FlipTurn ==
   turn' = (
-    IF turn = "ch" THEN
+    IF turn = "chm" THEN
       "env"
     ELSE
-      "ch"
+      "chm"
   )
+
 
 \* chModule and environment alternate their steps
 Next ==
 /\ FlipTurn
-/\ IF turn = "ch" THEN
-     /\ NextCh
+/\ IF turn = "chm" THEN
+     /\ NextCHModule
      /\ inMsg' = noMsg
    ELSE
      /\ NextEnv
      /\ outMsg' = noMsg
-     /\ UNCHANGED chain
-     \* Handle the exceptional case when turn is neither of ch or env?
+     /\ UNCHANGED chModule
+     \* Handle the exceptional case when turn is neither of chm or env?
 
 Spec ==
     Init
@@ -197,7 +225,7 @@ Spec ==
 
 
 TypeInvariant ==
-    /\ inMsg \in ConnectionDatagrams
+    /\ inMsg \in ConnectionHandshakeMessages \union { noMsg }
 
 
 \* Model check it!
@@ -206,7 +234,8 @@ THEOREM Spec => []TypeInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 22 16:19:44 CEST 2020 by adi
+\* Last modified Wed Apr 22 17:43:57 CEST 2020 by adi
 \* Wed Apr 22 10:42:14 CEST 2020 improvements & suggestions by anca & zarko
 \* Created Fri Apr 17 10:28:22 CEST 2020 by adi
+
 
