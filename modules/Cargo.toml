@@ -24,4 +24,5 @@ serde = "1.0.104"
 serde_json = "1"
 
 [dev-dependencies]
+tokio = { version = "0.2", features = ["macros"] }
 

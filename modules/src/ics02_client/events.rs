@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
-struct CreateClientEvent {
+pub struct CreateClientEvent {
     data: Value,
 }
 
