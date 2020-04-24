@@ -9,11 +9,17 @@ authors = [
 
 [dependencies]
 relayer = { path = "../relay" }
+relayer-modules = { path = "../../modules" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "tendermint/v0.33" }
 
+abscissa_tokio = "0.5.1"
 anomaly = "0.2.0"
 gumdrop = "0.7"
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
+tokio = { version = "0.2.13", features = ["rt-util"] }
+tracing = "0.1.13"
+tracing-subscriber = "0.2.3"
 
 [dependencies.abscissa_core]
 version = "0.5.2"

@@ -1,29 +1,10 @@
 use tendermint::abci;
-use tendermint::rpc::endpoint::abci_query::AbciQuery;
-
-use relayer_modules::Height;
 
 use crate::chain::Chain;
-use crate::error;
+use relayer_modules::error;
+use relayer_modules::query::IbcQuery;
 
-pub mod client_consensus_state;
-
-pub trait IbcResponse<Query>: Sized {
-    fn from_abci_response(query: Query, response: AbciQuery) -> Result<Self, error::Error>;
-}
-
-pub trait IbcQuery: Sized {
-    type Response: IbcResponse<Self>;
-
-    fn path(&self) -> abci::Path;
-    fn height(&self) -> Height;
-    fn prove(&self) -> bool;
-    fn data(&self) -> Vec<u8>;
-
-    fn build_response(self, response: AbciQuery) -> Result<Self::Response, error::Error> {
-        Self::Response::from_abci_response(self, response)
-    }
-}
+pub mod client;
 
 /// Perform an IBC `query` on the given `chain`, and return the corresponding IBC response.
 pub async fn ibc_query<C, Q>(chain: &C, query: Q) -> Result<Q::Response, error::Error>
@@ -59,5 +40,5 @@ where
 /// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
 /// where queryType must be "store" and subpath must be "key" to require a proof.
 fn is_query_store_with_proof(_path: &abci::Path) -> bool {
-    todo!()
+    false
 }

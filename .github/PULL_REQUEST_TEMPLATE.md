@@ -17,7 +17,8 @@ ______
 
 For contributor use:
 
-- [ ] Wrote tests
+- [ ] Unit tests written
+- [ ] Added test to CI if applicable 
 - [ ] Updated CHANGELOG_PENDING.md
 - [ ] Linked to Github issue with discussion and accepted design OR link to spec that describes this work.
 - [ ] Updated relevant documentation (`docs/`) and code comments

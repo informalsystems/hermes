@@ -65,3 +65,19 @@ impl Path for ConsensusStatePath {
         paths::consensus_state_path(&self)
     }
 }
+
+pub struct ClientStatePath {
+    pub client_id: ClientId,
+}
+
+impl ClientStatePath {
+    pub fn new(client_id: ClientId) -> Self {
+        Self { client_id }
+    }
+}
+
+impl Path for ClientStatePath {
+    fn to_string(&self) -> String {
+        paths::client_state_path(&self)
+    }
+}
