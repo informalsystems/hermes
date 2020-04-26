@@ -25,7 +25,7 @@ mod ibc_events{
 
     /// Create Client event
     #[tokio::test]
-    // #[ig nore]
+    #[ignore]
     async fn test_create_client_event(){
         let mut client = create_event_listener().await;
         let _ = client.subscribe("tm.event='Tx'".to_owned()).await.unwrap();
@@ -36,7 +36,7 @@ mod ibc_events{
                 Ok(event) =>{ dbg!(&event); break;},
                 Err(err) => {dbg!(err);},
             }
-            if x ==99{
+            if x ==10{
                 panic!("No Create Client Event found")
             }
             x +=1;

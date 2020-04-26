@@ -3,7 +3,8 @@
 // use serde_json::Value;
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
-#[derive(Debug)]
+use serde_derive::{Deserialize, Serialize};
+#[derive(Debug, Deserialize,Serialize)]
 pub struct CreateClientEvent {
     events: std::collections::HashMap<String, Vec<String>>
 }
