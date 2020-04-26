@@ -4,7 +4,7 @@
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 use serde_derive::{Deserialize, Serialize};
-#[derive(Debug, Deserialize,Serialize)]
+#[derive(Debug, Deserialize,Serialize, Clone)]
 pub struct CreateClientEvent {
     events: std::collections::HashMap<String, Vec<String>>
 }
