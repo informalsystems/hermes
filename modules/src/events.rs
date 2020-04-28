@@ -25,144 +25,144 @@ pub enum IBCEvent{
 }
 
 impl IBCEvent {
-    pub fn get_all_events(event: Event) -> Vec<IBCEvents> {
-        let mut vals: Vec<IBCEvents> = vec![];
+    pub fn get_all_events(event: Event) -> Vec<IBCEvent> {
+        let mut vals: Vec<IBCEvent> = vec![];
         if let Ok(ev) = ClientEvents::CreateClient::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ClientEvents::UpdateClient::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ClientEvents::ClientMisbehavior::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ConnectionEvents::OpenInit::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ConnectionEvents::OpenTry::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ConnectionEvents::OpenAck::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ConnectionEvents::OpenConfirm::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ChannelEvents::SendPacket::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ChannelEvents::RecievePacket::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ChannelEvents::AcknowledgePacket::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ChannelEvents::CleanupPacket::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = ChannelEvents::TimeoutPacket::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = TransferEvents::Timeout::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = TransferEvents::Packet::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         if let Ok(ev) = TransferEvents::ChannelClosed::try_from(&event) {
-            vals.push(IBCEvents::from(ev));
+            vals.push(IBCEvent::from(ev));
         }
         return vals;
     }
 }
 
-impl From<TransferEvents::Timeout> for IBCEvents {
+impl From<TransferEvents::Timeout> for IBCEvent {
     fn from(v: TransferEvents::Timeout) -> Self {
-        IBCEvents::TimeoutTransferEvent(v)
+        IBCEvent::TimeoutTransferEvent(v)
     }
 }
 
-impl From<ChannelEvents::TimeoutPacket> for IBCEvents {
+impl From<ChannelEvents::TimeoutPacket> for IBCEvent {
     fn from(v: ChannelEvents::TimeoutPacket) -> Self {
-        IBCEvents::TimeoutPacketChannel(v)
+        IBCEvent::TimeoutPacketChannel(v)
     }
 }
 
-impl From<ChannelEvents::CleanupPacket> for IBCEvents {
+impl From<ChannelEvents::CleanupPacket> for IBCEvent {
     fn from(v: ChannelEvents::CleanupPacket) -> Self {
-        IBCEvents::CleanupPacketChannel(v)
+        IBCEvent::CleanupPacketChannel(v)
     }
 }
 
-impl From<ChannelEvents::AcknowledgePacket> for IBCEvents {
+impl From<ChannelEvents::AcknowledgePacket> for IBCEvent {
     fn from(v: ChannelEvents::AcknowledgePacket) -> Self {
-        IBCEvents::AcknowledgePacketChannel(v)
+        IBCEvent::AcknowledgePacketChannel(v)
     }
 }
 
-impl From<ChannelEvents::RecievePacket> for IBCEvents {
+impl From<ChannelEvents::RecievePacket> for IBCEvent {
     fn from(v: ChannelEvents::RecievePacket) -> Self {
-        IBCEvents::RecievePacketChannel(v)
+        IBCEvent::RecievePacketChannel(v)
     }
 }
 
-impl From<ChannelEvents::SendPacket> for IBCEvents {
+impl From<ChannelEvents::SendPacket> for IBCEvent {
     fn from(v: ChannelEvents::SendPacket) -> Self {
-        IBCEvents::SendPacketChannel(v)
+        IBCEvent::SendPacketChannel(v)
     }
 }
 
-impl From<ConnectionEvents::OpenConfirm> for IBCEvents {
+impl From<ConnectionEvents::OpenConfirm> for IBCEvent {
     fn from(v: ConnectionEvents::OpenConfirm) -> Self {
-        IBCEvents::OpenConfirmConnection(v)
+        IBCEvent::OpenConfirmConnection(v)
     }
 }
 
-impl From<ConnectionEvents::OpenAck> for IBCEvents {
+impl From<ConnectionEvents::OpenAck> for IBCEvent {
     fn from(v: ConnectionEvents::OpenAck) -> Self {
-        IBCEvents::OpenAckConnection(v)
+        IBCEvent::OpenAckConnection(v)
     }
 }
 
-impl From<ConnectionEvents::OpenTry> for IBCEvents {
+impl From<ConnectionEvents::OpenTry> for IBCEvent {
     fn from(v: ConnectionEvents::OpenTry) -> Self {
-        IBCEvents::OpenTryConnection(v)
+        IBCEvent::OpenTryConnection(v)
     }
 }
 
-impl From<ConnectionEvents::OpenInit> for IBCEvents {
+impl From<ConnectionEvents::OpenInit> for IBCEvent {
     fn from(v: ConnectionEvents::OpenInit) -> Self {
-        IBCEvents::OpenInitConnection(v)
+        IBCEvent::OpenInitConnection(v)
     }
 }
 
-impl From<ClientEvents::ClientMisbehavior> for IBCEvents {
+impl From<ClientEvents::ClientMisbehavior> for IBCEvent {
     fn from(v: ClientEvents::ClientMisbehavior) -> Self {
-        IBCEvents::ClientMisbehavior(v)
+        IBCEvent::ClientMisbehavior(v)
     }
 }
 
-impl From<ClientEvents::UpdateClient> for IBCEvents {
+impl From<ClientEvents::UpdateClient> for IBCEvent {
     fn from(v: ClientEvents::UpdateClient) -> Self {
-        IBCEvents::UpdateClient(v)
+        IBCEvent::UpdateClient(v)
     }
 }
 
-impl From<ClientEvents::CreateClient> for IBCEvents {
+impl From<ClientEvents::CreateClient> for IBCEvent {
     fn from(v: ClientEvents::CreateClient) -> Self {
-        IBCEvents::CreateClient(v)
+        IBCEvent::CreateClient(v)
     }
 }
 
-impl From<TransferEvents::ChannelClosed> for IBCEvents {
+impl From<TransferEvents::ChannelClosed> for IBCEvent {
     fn from(v: TransferEvents::ChannelClosed) -> Self {
-        IBCEvents::ChannelClosedTranfer(v)
+        IBCEvent::ChannelClosedTranfer(v)
     }
 }
 
-impl From<TransferEvents::Packet> for IBCEvents {
+impl From<TransferEvents::Packet> for IBCEvent {
     fn from(v: TransferEvents::Packet) -> Self {
-        IBCEvents::PacketTransfer(v)
+        IBCEvent::PacketTransfer(v)
     }
 }
 
