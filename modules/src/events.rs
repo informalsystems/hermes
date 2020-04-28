@@ -176,7 +176,6 @@ macro_rules! make_event {
         impl TryFrom<&Event> for $a {
             type Error = &'static str;
             fn try_from(event: &Event) -> Result<Self, Self::Error> {
-                dbg!(&event);
                 match event {
                     Event::JsonRPCTransctionResult { ref data } => Ok($a {
                         events: data.extract_events($b, $c)?.clone(),

@@ -8,8 +8,7 @@
 /// ```
 
 mod ibc_events {
-    use relayer_modules::ics02_client::events::*;
-    use std::convert::TryFrom;
+    use relayer_modules::events::IBCEvents;
     use tendermint::rpc::event_listener::EventListener;
 
     async fn create_event_listener() -> EventListener {
@@ -22,22 +21,19 @@ mod ibc_events {
 
     /// Create Client event
     #[tokio::test]
-    #[ignore]
+    // #[ignore]
     async fn test_create_client_event() {
         let mut client = create_event_listener().await;
         let _ = client.subscribe("tm.event='Tx'").await.unwrap();
 
         let mut x: i32 = 0;
         loop {
-            match CreateClient::try_from(&client.get_event().await.unwrap()) {
-                Ok(event) => {
-                    dbg!(&event);
-                    break;
-                }
-                Err(err) => {
-                    dbg!(err);
-                }
+            let events = IBCEvents::get_all_events(client.get_event().await.unwrap());
+            if events.len() != 0 {
+                dbg!(events);
+                break;
             }
+
             if x == 10 {
                 panic!("No Create Client Event found")
             }
