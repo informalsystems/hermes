@@ -1,2 +1,2 @@
 //! ICS 20: IBC Transfer implementation
-mod events;
+pub(crate) mod events;
