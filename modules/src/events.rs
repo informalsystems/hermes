@@ -6,7 +6,7 @@ use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
 #[derive(Debug)]
-pub enum IBCEvents {
+pub enum IBCEvent{
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
     ClientMisbehavior(ClientEvents::ClientMisbehavior),
@@ -24,7 +24,7 @@ pub enum IBCEvents {
     ChannelClosedTranfer(TransferEvents::ChannelClosed),
 }
 
-impl IBCEvents {
+impl IBCEvent {
     pub fn get_all_events(event: Event) -> Vec<IBCEvents> {
         let mut vals: Vec<IBCEvents> = vec![];
         if let Ok(ev) = ClientEvents::CreateClient::try_from(&event) {

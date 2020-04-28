@@ -8,7 +8,7 @@
 /// ```
 
 mod ibc_events {
-    use relayer_modules::events::IBCEvents;
+    use relayer_modules::events::IBCEvent;
     use tendermint::rpc::event_listener::EventListener;
 
     async fn create_event_listener() -> EventListener {
@@ -28,7 +28,7 @@ mod ibc_events {
 
         let mut x: i32 = 0;
         loop {
-            let events = IBCEvents::get_all_events(client.get_event().await.unwrap());
+            let events = IBCEvent::get_all_events(client.get_event().await.unwrap());
             if events.len() != 0 {
                 dbg!(events);
                 break;
