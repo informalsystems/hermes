@@ -45,7 +45,7 @@ NextEnv ==
        /\ UNCHANGED msgToB 
     \/ /\ msgToB' \in chmB!ConnectionHandshakeMessages
        /\ UNCHANGED msgToA
-    
+
 
 (******************************************************************************
  Main spec.
@@ -103,6 +103,6 @@ THEOREM Spec => []TypeInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 28 11:19:14 CEST 2020 by adi
+\* Last modified Tue Apr 28 16:41:12 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

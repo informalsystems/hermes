@@ -38,20 +38,27 @@ Connections ==
     [
         parameters : ConnectionParameters,
         state : ConnectionStates
-        \* any other fields that are specific for a connection
     ]
 
 nullConnection == "null"
 
 
 (******************************** Messages ********************************
-These messages are connection handshake specific.
+ These messages are connection handshake specific.
+ 
+ In the low-level connection handshake protocol, the four messages have the
+ following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
+ These are described in ICS 003.
+ In this high-level specification, we choose slightly different names, to
+ make an explicit distinction to the low-level protocol. Message types
+ are as follows: CHMsgInit, CHMsgTry, CHMsgAck, and CHMsgConfirm. Notice that
+ the fields of each message are also different to the ICS 003 specification.
  ***************************************************************************)
 ConnectionHandshakeMessages ==
-    [type : {"ConnOpenInit"}, 
+    [type : {"CHMsgInit"}, 
      parameters : ConnectionParameters]
     \union
-    [type : {"ConnOpenTry"},
+    [type : {"CHMsgTry"},
      parameters : ConnectionParameters
 \*        stateProof : Proofs, 
 \*        consensusHeight : Proofs
@@ -100,12 +107,20 @@ GetRemoteClientID(chainID) ==
                 ELSE nullClientID
 
 
-validConnectionParameters(para) ==
+\* Validates a ConnectionParameter `para` against the local store.
+\* Returns true if `para` is valid, and false otherwise.
+ValidConnectionParameters(para) ==
     /\ para.localEnd.connectionID = GetLocalConnectionID(store.id)
     /\ para.remoteEnd.connectionID = GetRemoteConnectionID(store.id)
     /\ para.localEnd.clientID = GetLocalClientID(store.id)
     /\ para.remoteEnd.clientID = GetRemoteClientID(store.id)
-    /\ TRUE
+
+
+\* Given a ConnectionParameters record `para`, this operator returns a new set
+\* of parameters where the local and remote ends are flipped (i.e., reversed).
+FlipConnectionParameters(para) ==
+    [localEnd   |-> para.remoteEnd,
+     remoteEnd  |-> para.localEnd]
 
 
 (***************************************************************************
@@ -113,42 +128,57 @@ validConnectionParameters(para) ==
  ***************************************************************************)
 
 
-handleInitMsg ==
-    /\ inMsg.type = "ConnOpenInit"
-    /\ [newState   |-> TRUE,
-        outMsg     |-> noMsg ]
+\* Handles a `CHMsgInit` message. 
+handleInitMsg(m) ==
+    IF store.connection = nullConnection \/ store.connection.state = "INIT"
+        THEN [nConnection   |-> [parameters |-> m.parameters, 
+                                 state      |-> "INIT"],
+                    (* Asemble the outbound message, type: HandshakeTry *)
+              oMsg          |-> [parameters |-> FlipConnectionParameters(m.parameters),
+                                 type       |-> "CHMsgTry"]]
+                      (* TODO: add proofs here. *)
+        ELSE [nConnection   |-> store.connection,
+              oMsg          |-> noMsg]
 
 
-handleTryMsg ==
-    /\ inMsg.type = "ConnOpenTry"
-    /\ store.connection.state \in {"UNINIT", "INIT", "TRYOPEN"}
-    /\ [newState |-> TRUE,
-        outMsg   |-> noMsg ]
+handleTryMsg(m) ==
+    (**** TODO ****)
+    [nConnection |-> store.connection,
+     oMsg        |-> noMsg ]
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
 advanceChainHeight ==
-    /\ PrintT([msg |-> "in advanceChainHeight", id |-> store.id])
     /\ store.height < MaxHeight
     /\ store' = [store EXCEPT !.height = @ + 1]
     /\ UNCHANGED <<outMsg, inMsg>>
 
 
+(******
+ Expects a valid ConnectionHandshakeMessage record.
+ Does two basic actions:
+   1. Updates the chain store, and
+   2. Updates outMsg with a reply message.
+ *****)
+ProcessConnectionHandshakeMessage(msg) ==
+    LET res == CASE msg.type = "CHMsgInit" -> handleInitMsg(msg)
+                 [] msg.type = "CHMsgTry"  -> handleTryMsg(msg)
+    IN /\ PrintT([msg |-> res])
+       /\ store' = [store EXCEPT !.connection = res.nConnection]
+       /\ outMsg' = res.oMsg
+
+
 \* Generic handle for any time of inbound message. 
-handleInMsg ==
-    /\ PrintT([msg |-> "handleInMsg", id |-> store.id])
+processInMsg ==
     /\ inMsg /= noMsg
-    /\ IF validConnectionParameters(inMsg.parameters) = TRUE
-        \* The connection parameters are valid. Handle the message.
-        THEN LET res == \/ handleInitMsg
-                        \/ handleTryMsg
-             IN /\ store' = res.newState
-                /\ outMsg' = res.outMsg
-                /\ inMsg' = noMsg   
+    /\ inMsg \in ConnectionHandshakeMessages
+    /\ IF ValidConnectionParameters(inMsg.parameters) = TRUE
+        THEN /\ ProcessConnectionHandshakeMessage(inMsg)
         \* The connection parameters are not valid. No state transition.
-        ELSE /\ inMsg' = noMsg
-             /\ outMsg' = noMsg
+        ELSE /\ outMsg' = noMsg
              /\ UNCHANGED store
+    /\ inMsg' = noMsg \* Flush the inbound message buffer.
+
 
 
 (***************************************************************************
@@ -163,10 +193,10 @@ Init(chainID) ==
 
 Next ==
     \/ advanceChainHeight
-    \/ handleInMsg
+    \/ processInMsg
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 28 11:18:22 CEST 2020 by adi
+\* Last modified Tue Apr 28 16:02:34 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
