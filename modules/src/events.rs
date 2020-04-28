@@ -5,7 +5,7 @@ use crate::ics20_fungible_token_transfer::events as TransferEvents;
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IBCEvent{
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
@@ -23,6 +23,7 @@ pub enum IBCEvent{
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTranfer(TransferEvents::ChannelClosed),
 }
+
 
 impl IBCEvent {
     pub fn get_all_events(event: Event) -> Vec<IBCEvent> {
