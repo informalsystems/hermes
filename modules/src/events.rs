@@ -4,8 +4,10 @@ use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEvent{
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
