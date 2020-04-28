@@ -4,27 +4,31 @@
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 use serde_derive::{Deserialize, Serialize};
-#[derive(Debug, Deserialize,Serialize, Clone)]
-pub struct CreateClientEvent {
-    events: std::collections::HashMap<String, Vec<String>>
-}
+use crate::make_event;
 
-impl TryFrom<Event> for CreateClientEvent {
-    type Error = &'static str;
-    fn try_from(event: Event) -> Result<Self, Self::Error> {
-        dbg!(&event);
-        match event {
-            Event::JsonRPCTransctionResult{ref data}=>{
-                Ok(CreateClientEvent{events: data.extract_events("ibc_client","create_client")?})
-            },
-            Event::GenericJSONEvent { .. } => {
-                    Err("Expected JSON representing a CreateClient, got wrong type")?
-                },
+make_event!(CreateClientEvent,"ibc_client","create_client");
+
+// #[derive(Debug, Deserialize,Serialize, Clone)]
+// pub struct CreateClientEvent {
+//     events: std::collections::HashMap<String, Vec<String>>
+// }
+
+// impl TryFrom<Event> for CreateClientEvent {
+//     type Error = &'static str;
+//     fn try_from(event: Event) -> Result<Self, Self::Error> {
+//         dbg!(&event);
+//         match event {
+//             Event::JsonRPCTransctionResult{ref data}=>{
+//                 Ok(CreateClientEvent{events: data.extract_events("ibc_client","create_client")?})
+//             },
+//             Event::GenericJSONEvent { .. } => {
+//                     Err("Expected JSON representing a CreateClient, got wrong type")?
+//                 },
             
-            Event::GenericStringEvent { .. } => Err("Generic event is not of type create client"),   
-        }
-    }
-}
+//             Event::GenericStringEvent { .. } => Err("Generic event is not of type create client"),   
+//         }
+//     }
+// }
 
 // pub struct UpdateClientEvent {
 //     data: Value,

@@ -27,6 +27,8 @@ pub mod ics24_host;
 pub mod keys;
 pub mod path;
 pub mod query;
+#[macro_use]
+mod events;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::lite::Height;
