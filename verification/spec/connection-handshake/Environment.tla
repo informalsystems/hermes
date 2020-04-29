@@ -27,7 +27,7 @@ chmA == INSTANCE ConnectionHandshakeModule
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight  <- MaxHeight,
              inMsg      <- msgToB,      \* Flip the message buffers w.r.t. chain A buffers.
-             outMsg     <- msgToA,       \* Inbound for "A" is outbound for "B".
+             outMsg     <- msgToA,      \* Inbound for "A" is outbound for "B".
              store      <- chainBStore
 
 
@@ -35,17 +35,27 @@ chmB == INSTANCE ConnectionHandshakeModule
  Environment actions.
  ***************************************************************************)
 
+
 InitEnv ==
     /\ msgToA = chmA!noMsg
     /\ msgToB = chmB!noMsg
 
 
-NextEnv ==
+GoodNextEnv ==
+    UNCHANGED <<msgToA, msgToB>>
+
+
+MaliciousNextEnv ==
     \/ /\ msgToA' \in chmA!ConnectionHandshakeMessages
        /\ UNCHANGED msgToB 
     \/ /\ msgToB' \in chmB!ConnectionHandshakeMessages
        /\ UNCHANGED msgToA
 
+
+(* Eventually, just good. *)
+NextEnv ==
+    \/ GoodNextEnv
+    \/ MaliciousNextEnv
 
 (******************************************************************************
  Main spec.
@@ -74,17 +84,18 @@ Init ==
 
 \* The two CH modules and the environment alternate their steps.
 Next ==
-    /\ FlipTurn
-    /\ IF turn = "env"
-        THEN /\ NextEnv
-             /\ UNCHANGED <<chainAStore, chainBStore>>
-        ELSE IF turn = "chmA"
-                THEN /\ chmA!Next
-                     /\ UNCHANGED chainBStore
-                ELSE /\ chmB!Next
-                     /\ UNCHANGED chainAStore
-     \* Handle the exceptional case when turn is neither of chm or env?
-
+    IF chainAStore.connection.state = "OPEN" /\ chainBStore.connection.state = "OPEN"
+    THEN UNCHANGED <<vars>> 
+    ELSE /\ FlipTurn
+         /\ IF turn = "env"
+            THEN /\ NextEnv
+                 /\ UNCHANGED <<chainAStore, chainBStore>>
+            ELSE IF turn = "chmA"
+                 THEN /\ chmA!Next
+                      /\ UNCHANGED chainBStore
+                 ELSE /\ chmB!Next
+                      /\ UNCHANGED chainAStore
+ 
 
 Spec ==
     /\ Init
@@ -103,6 +114,6 @@ THEOREM Spec => []TypeInvariant
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 28 16:41:12 CEST 2020 by adi
+\* Last modified Wed Apr 29 15:52:53 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

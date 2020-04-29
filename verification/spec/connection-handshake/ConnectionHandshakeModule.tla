@@ -12,14 +12,18 @@ VARIABLES
     store       \* The local store of the chain running this chModule. 
 
 
-
 ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
+
+(* TODO: constants *)
 ConnectionIDs == {"connAtoB", "connBtoA"}
 nullConnectionID == "null"
 
+
+(* TODO: constants *)
 ClientIDs == { "clientA", "clientB" }
 nullClientID == "null"
+
 
 ConnectionEnds ==
     [
@@ -40,8 +44,19 @@ Connections ==
         state : ConnectionStates
     ]
 
-nullConnection == "null"
+nullConnection == [state |-> "UNINIT"]
 
+
+Heights == 1..MaxHeight
+
+
+Clients ==
+    [   
+        clientID : ClientIDs,
+        consensusState : Heights
+    ]
+    
+nullClient == [clientID |-> nullClientID]
 
 (******************************** Messages ********************************
  These messages are connection handshake specific.
@@ -110,10 +125,10 @@ GetRemoteClientID(chainID) ==
 \* Validates a ConnectionParameter `para` against the local store.
 \* Returns true if `para` is valid, and false otherwise.
 ValidConnectionParameters(para) ==
-    /\ para.localEnd.connectionID = GetLocalConnectionID(store.id)
-    /\ para.remoteEnd.connectionID = GetRemoteConnectionID(store.id)
-    /\ para.localEnd.clientID = GetLocalClientID(store.id)
-    /\ para.remoteEnd.clientID = GetRemoteClientID(store.id)
+    /\ para.localEnd.connectionID   = GetLocalConnectionID(store.id)
+    /\ para.remoteEnd.connectionID  = GetRemoteConnectionID(store.id)
+    /\ para.localEnd.clientID       = GetLocalClientID(store.id)
+    /\ para.remoteEnd.clientID      = GetRemoteClientID(store.id)
 
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
@@ -130,7 +145,7 @@ FlipConnectionParameters(para) ==
 
 \* Handles a `CHMsgInit` message. 
 handleInitMsg(m) ==
-    IF store.connection = nullConnection \/ store.connection.state = "INIT"
+    IF store.connection.state = "UNINIT"
         THEN [nConnection   |-> [parameters |-> m.parameters, 
                                  state      |-> "INIT"],
                     (* Asemble the outbound message, type: HandshakeTry *)
@@ -148,7 +163,7 @@ handleTryMsg(m) ==
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
-advanceChainHeight ==
+AdvanceChainHeight ==
     /\ store.height < MaxHeight
     /\ store' = [store EXCEPT !.height = @ + 1]
     /\ UNCHANGED <<outMsg, inMsg>>
@@ -168,16 +183,17 @@ ProcessConnectionHandshakeMessage(msg) ==
        /\ outMsg' = res.oMsg
 
 
-\* Generic handle for any time of inbound message. 
-processInMsg ==
-    /\ inMsg /= noMsg
-    /\ inMsg \in ConnectionHandshakeMessages
+\* Generic handle for any type of inbound message.
+\* Assumes that 'inMsg' is not empty.
+\* Takes care of changing the 'store' and 'outMsg'. 
+ProcessInMsg ==
     /\ IF ValidConnectionParameters(inMsg.parameters) = TRUE
-        THEN /\ ProcessConnectionHandshakeMessage(inMsg)
+        THEN ProcessConnectionHandshakeMessage(inMsg)
         \* The connection parameters are not valid. No state transition.
-        ELSE /\ outMsg' = noMsg
+        ELSE /\ outMsg' = noMsg \* No reply.
              /\ UNCHANGED store
     /\ inMsg' = noMsg \* Flush the inbound message buffer.
+
 
 
 
@@ -188,15 +204,19 @@ processInMsg ==
 Init(chainID) ==
     store = [id                 |-> chainID,
              height             |-> 1,
-             connection         |-> nullConnection ]
+             connection         |-> nullConnection,
+             client             |-> nullClient]
 
 
 Next ==
-    \/ advanceChainHeight
-    \/ processInMsg
+    IF inMsg /= noMsg
+        THEN ProcessInMsg
+        \* We have no input message, nothing for us to do.
+        ELSE UNCHANGED <<store, inMsg, outMsg>>
+
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Apr 28 16:02:34 CEST 2020 by adi
+\* Last modified Wed Apr 29 15:47:07 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
