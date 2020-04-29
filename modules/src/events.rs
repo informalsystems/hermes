@@ -2,13 +2,12 @@ use crate::ics02_client::events as ClientEvents;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
+use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
-use serde_derive::{Deserialize, Serialize};
-
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum IBCEvent{
+pub enum IBCEvent {
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
     ClientMisbehavior(ClientEvents::ClientMisbehavior),
@@ -25,7 +24,6 @@ pub enum IBCEvent{
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTranfer(TransferEvents::ChannelClosed),
 }
-
 
 impl IBCEvent {
     pub fn get_all_events(event: Event) -> Vec<IBCEvent> {
