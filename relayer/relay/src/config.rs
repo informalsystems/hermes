@@ -111,8 +111,8 @@ impl Default for Direction {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
-    pub src_port: Option<String>,  // default from any source port
-    pub dest_port: Option<String>, // default from any dest port
+    pub src_port: Option<String>,     // default from any source port
+    pub dest_port: Option<String>,    // default from any dest port
     pub src_channel: Option<String>,  // default from any source port
     pub dest_channel: Option<String>, // default from any dest port
     #[serde(default)]
