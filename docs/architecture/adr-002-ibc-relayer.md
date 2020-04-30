@@ -6,11 +6,11 @@
 ## Definitions
 These definitions are specific for this document and they may not be consistent with the IBC Specification.
 
-IBC datagram - the transaction payload sent by the relayer over the physical network that includes client, connection, channel and IBC packet data. 
+IBC transaction - a transaction that includes IBC datagrams (including packets). This is constructed by the relayer and sent over the physical network to a chain according to the chain rules. For example, for tendermint chains a `broadcast_tx_commit` request is sent to a tendermint RPC server.
+
+IBC datagram - is an element of the transaction payload sent by the relayer; it includes client, connection, channel and IBC packet data. Multiple IBC datagrams may be included in an IBC transaction. 
 
 IBC packet - a particular type of IBC datagram that includes the application packet and its commitment proof.
-
-IBC datagram transaction - a transaction that includes an IBC datagram.
 
 On-chain IBC Client (or IBC Client) - client code running on chain, typically only the light client verification related functionality.
 
@@ -41,6 +41,7 @@ The relayer monitors the chain state to determine when packet forwarding is requ
 #### Data Legibility
 IBC protocol defines the minimal data set that must be made available to relayers for correct operation of the protocol. The relayer expects the data to be legible, i.e. **data should be serialized** according to the IBC specification format; this includes consensus state, client, connection, channel, and packet information, and any auxiliary state structure necessary to construct proofs of inclusion or exclusion of particular key/value pairs in state. 
  - [IBC Specification] some protobuf specifications can be found under individual ICS-es, for exmple [ICS-03 connection protobufs](https://github.com/cosmos/ics/blob/master/spec/ics-002-client-semantics/data-structures.proto)
+ Note: Some relayer development is blocked on SDK and Tendermint migration to protobuf encoding. Current work is done in [migration to protobuf](https://github.com/cosmos/cosmos-sdk/pull/6097)
 
 #### Query Functionality 
 IBC host state machines MUST expose an interface for inspecting their state. For Cosmos/Tendermint chains this means:
@@ -111,10 +112,9 @@ The initial implementation will heavily borrow from the Go relayer implementatio
 ### Configuration
 (WIP)
 Upon start the relayer reads a configuration file that includes global and per chain parameters. The file format is .toml
-The relayer performs initialization based on the content of this file. Below is an example of a configuration file.
+Below is an example of a configuration file.
 
-```$xslt
-# This is an IBC relayer sample configuration
+```toml
 title = "IBC Relayer Config Example"
 
 [global]
@@ -123,7 +123,7 @@ strategy = "naive"
 
 [[chains]]
   id = "chain_A"
-  rpc_addr = "http://localhost:26657"
+  rpc_addr = "localhost:26657"
   account_prefix = "cosmos"
   key_name = "testkey"
   store_prefix = "ibc"
@@ -134,8 +134,8 @@ strategy = "naive"
   trusting_period = "336h"
 
 [[chains]]
-  id = "chain-B"
-  rpc_addr = "http://localhost:26557"
+  id = "chain_B"
+  rpc_addr = "localhost:26557"
   account_prefix = "cosmos"
   key_name = "testkey"
   store_prefix = "ibc"
@@ -148,80 +148,130 @@ strategy = "naive"
 [[connections]]
 
 [connections.src]
-  client_id = "clA1"
-  connection_id = "conn1-idA-clA1"
-[connections.dest]
   client_id = "clB1"
-  connection_id = "conn1-idB-clB1"
+  connection_id = "connAtoB"
+
+[connections.dest]
+  client_id = "clA1"
+  connection_id = "connBtoA"
 
 [[connections.paths]]
-  src_port = "app1-port-A"
-  dest_port = "app1-port-B"
+  src_port = "portA1"
+  dest_port = "portB1"
   direction = "unidirectional"
 
 [[connections.paths]]
-  src_port = "app2-port-A"
-  dest_port = "app2-port-B"
+  src_port = "portA2"
+  dest_port = "portB2"
   direction = "bidirectional"
-```
 
-#### Global
+[[connections.paths]]
+  src_port = "portA3"
+  dest_port = "portB3"
+  src_channel = "chan3-on-A"
+  dest_channel = "chan3-on-B"
 ```
-[global]
-timeout = "10s"
-strategy = "naive"
-```
-
+The main sections of the configuration file are:
+- `global`:
 Relaying is done periodically and the frequency is dictated by the `timeout` parameter. The `strategy` parameter configures the relayer to run a particular relaying algorithm.
-
-#### Chains 
+- `chains`:
 Chain level information including account and key name, gas information, trusting period, etc. All source and destination chains must be listed here.
-```
-[[chains]]
-  id = "chain-B"
-  rpc_addr = "http://localhost:26557"
-  account_prefix = "cosmos"
-  key_name = "testkey"
-  store_prefix = "ibc"
-  client_ids = ["clB1"]
-  gas = 200000
-  gas_adjustement = 1.3
-  gas_price = "0.025stake"
-  trusting_period = "336h"
-```
-
-#### Relay Paths 
+- paths (`connections`, `connections.paths`): 
 The relayer may be configured to relay between some application ports, over a number of connections and channels, in unidirectional or bidirectional mode.
 
-```$xslt
-[[connections]]
+### Initialization
 
-[connections.src]
-  client_id = "clA1"
-  connection_id = "conn1-idA-clA1"
-[connections.dest]
-  client_id = "clB1"
-  connection_id = "conn1-idB-clB1"
+The relayer performs initialization based on the content of the configuration file:
+- the file is parsed and semantically validated
+- the chains, connections, ports, channels for which relaying is enabled are stored in the Config structure
 
-[[connections.paths]]
-  src_port = "app1-port-A"
-  dest_port = "app1-port-B"
-  direction = "unidirectional"
-  [[connections.paths]]
-  src_port = "app2-port-A"
-  dest_port = "app2-port-B"
-  direction = "bidirectional"
+```rust
+pub struct Config {
+    pub global: GlobalConfig,
+    pub chains: Vec<ChainConfig>,
+    pub connections: Option<Vec<Connection>>, 
+}
+
+pub enum Strategy {
+    Naive,
+}
+
+pub struct GlobalConfig {
+    pub timeout: Duration,
+    pub strategy: Strategy,
+}
+
+pub struct ChainConfig {
+    pub id: ChainId,
+    pub rpc_addr: net::Address,
+    pub account_prefix: String,
+    pub key_name: String,
+    pub client_ids: Vec<String>,
+    pub gas: u64,
+    pub trusting_period: Duration,
+}
+
+pub struct Connection {
+    pub src: Option<ConnectionEnd>,    // use any source
+    pub dest: Option<ConnectionEnd>,   // use any destination
+    pub paths: Option<Vec<RelayPath>>, // use any port, direction bidirectional
+}
+
+pub struct ConnectionEnd {
+    pub client_id: String,
+    pub connection_id: Option<String>, // use all connections to this client
+}
+
+pub enum Direction {
+    Unidirectional,
+    Bidirectional,
+}
+
+pub struct RelayPath {
+    pub src_port: Option<String>,  // default from any source port
+    pub dest_port: Option<String>, // default from any dest port
+    pub src_channel: Option<String>,  // default from any source port
+    pub dest_channel: Option<String>, // default from any dest port
+    pub direction: Direction, // default bidirectional
+}
 ```
+All `Option` fields with `None` values mean "any" values. For `direction`, default is bidirectional.
+All non-`Option` fields are mandatory and must appear in the configuration file.
+If the relayer is started with an invalid configuration file, an error is displayed and the realyer process exits.
 
 ### Relayer Commands
 
-`relayer start` starts the relayer with the specified configuration file
+#### Validate
+To validate a configuration file:
 
-`relayer verify config` reads and verifies that the specified configuration file parses correctly
+`relayer -c <config_file> config validate ` 
 
-Other commands will be added as required.
+The command verifies that the specified configuration file parses and it is semantically correct. 
 
-_Note: it is expected that the chains can be configured with client, connections and channels. Integration testing will be done with Gaia application, therefore access to the gaiacli for IBC related configuration is available_
+#### Light Client Initialization
+To initialize a light client:
+
+`relayer -c <config_file> light init -x <hash> -h <height> <chain>`
+
+The command initializes the light client for `<chain>` with a trusted height and hash. This should be done for all chains for which relaying is performed.
+
+#### Start
+To start the relayer:
+
+`relayer -c <config_file> start` 
+
+The command performs the validation as described above and then starts the relayer.
+
+#### Query
+Most of the queries performed while relaying are also available from the CLI. 
+
+`relayer -c <config_file> query client state <chain> <client_id> [-h <chain_height>] [-p <proof_required>]`
+
+The command queries the full client state of `<client_id>` on `<chain>` at `<height>`, with or without proof depending on the `<proof_required>` flag. Default `<height>` is latest state and `<proof_required>` is `true`. 
+
+`relayer -c <config_file> query client consensus <chain> <client_id> <consensus_height> [-h <chain_height>] [-p <proof_required>]`
+
+The command queries the consensus state of `<client_id>` at height `<consensus_height>` on `<chain>` at `<height>`, with or without proof depending on the `<proof_required>` flag. Default `<height>` is latest state and `<proof_required>` is `true`. 
 
 ### Relayer Queries
 The relayer queries chain state in order to build the IBC messages. It is expected that each chain type provides implementations of these queries. Initial Rust relayer implementation will be tested with Cosmos-SDK/Tendermint chains, and while some of the IBC-Modules functionality in Rust is not required (e.g. handler functions), a "query" crate should be available for the relayer. 
@@ -238,335 +288,347 @@ The following queries are required:
 - `query_client_connections(chain, clientID)` - returns all connections associated with a light client
 - ...more to be added
 
+### Relayer Concurrency Architecture
+The following threads are spawned and execute within the relayer process:
+- one Tendermint full light client thread, per configured configured source chain. For example if A->C and B->C paths are enabled then there will be two light client threads, one for A and one for B. These threads download light client headers (block header and commits), verify them and store them as trusted headers in the per chain stores.
+- one thread for the main relaying functionality, aka relay thread. 
+- one thread to relay notifications from source chain and to generate IBC events to the relay thread.
+
+The figure below shows the interactions for the last two threads. 
+![IBC relayer threads](assets/IBC_relayer_threads.jpeg)
+
+On start the relay handler thread:
+- establishes a communication channel (?) with the notification thread
+- creates the IBC datagrams for all configuration triggered events, i.e. `MsgConnOpenInit` and `MsgChannOpenInit`
+- waits for events from the notification thread
+
+The notificaton thread:
+- registers for IBC events with all source chains 
+- scans the source chains and generates events for existing IBC state on source chains
+- waits for events from the chains it registered with and forwards them to the relay thread.
+
+Initial version will have a single relay thread for all configured paths. Temporary threads may be created for the source and destination queries required. 
+Future versions may create multiple relay threads. One possibility is to create one for each destination chain Z, responsible for relaying over *->Z paths. Or have a thread pool, selecting an available thread for relaying to a given destination. The notification thread will route the IBC events to the proper thread.
 
 ### Relayer Algorithm
+
 A relayer algorithm is described in [relayer algorithm described in IBC Specifigication](https://github.com/cosmos/ics/blame/master/spec/ics-018-relayer-algorithms/README.md#L47) and [Go relayer implementation ](https://github.com/cosmos/relayer/blob/f3a302df9e6e0c28883f5480199d3190821bcc06/relayer/strategies.go#L49.).
 
-This section describes the details of the relayer algorithm in the Rust implementation. 
+This section describes some of the details of the relayer algorithm in the Rust implementation. 
 The purpose of the relayer algorithm is to build and forward messages over the `src->dest` relaying paths it has been configured for. It is executed periodically with the frequency specified in the configuration file, with each run being a **relay cycle**.
 For every destination the relayer:
 - queries clients, connection, channels and packet related state on source and destination chains,
 - creates new datagrams if needed, 
 - batches multiple datagrams in single transactions, 
-- signs and submits these datagrams to the destination.
+- signs and submits these transactions to the destination.
 
 #### Proofs
-The relayer must include proofs in some datagrams as required by the IBC handlers. There are two types of proofs.
-- proof of some local state on chain A. For example, a proof of correct connection state (`ProofInit`, `ProofTry`, `ProofAck`) is included in some of the connection handshake datagrams. The `ConnOpenTry` message includes the `ProofInit` that is obtained from chain A where the connection should be in `INIT` state and have certain local and counterpary identifiers. The message specific sections below go in more details. 
-  - this proof is verified on chain B against the client A's stored consensus state
-- proof that the chain A's IBC client `clB` is updated with a consensus state and height that have been seen on chain B.
-  - this proof is verified on chain B against its local application state
+The relayer must include proofs in some datagrams as required by the IBC handlers. There are two types of proofs:
+- proof of some local state on source chain (A). For example, a proof of correct connection state (`ProofInit`, `ProofTry`, `ProofAck`) is included in some of the connection handshake datagrams. The `ConnOpenTry` message includes the `ProofInit` that is obtained from chain A where the connection should be in `INIT` state and have certain local and counterpary identifiers. The message specific sections below go in more details. 
+- proof that the chain A's IBC client `clB` is updated with a consensus state and height that have been stored on chain B.
+- these proofs are verified on chain B against the consensus state root stored by the A client at `proof_height`.
+
+Note: The proof checks require the handlers on B to recreate the state as expected on chain A and to verify the proof against this. For this to work the store prefix of A needs to be added as prefix to the proof path (standardized in ICS 24). There is currently no query endpoint for this in Cosmos-SDK/Tendermint and initial relayer version includes a per chain store prefix in the configuration.
 
 #### Light Client Messages
-
-After the initialization step tendermint light clients are instantiated for the source and destination chains within the relayer. 
-
-In addition IBC light clients must be created on the source and destination chains if not already present.
-IBC clients must be instantiated on both source and destination chains for a successful A->B relay of some IBC packets. The client creation is permissionless and a relayer may create a client if not already present. The IBC client is identified by a clientID.
-
-In order to detect the existence of an A-client with identifier `clA` on chain B, the relayer queries the IBC clients on B and verifies if `clA` is returned. Same is done in the opposite direction.
-
-[todo - change to Rust code, add messages]
-```typescript
-function clientDatagrams(A: Chain, B: Chain): Set<Datagram>) {
-  clientMsgsForB = []
-  // get latest header and height on A
-  heightA = A.latestHeight()
-  headerA = A.latestHeader()
-
-  // get all clients instantiated on B
-  existingOnB = query_all_client_states(B)
-
-  for clIdA = range config.A.client_ids {
-    if clIdA not in existingOnB {
-      // create client 
-      msg = ClientCreate({clIdA, headerA, config.A.trusting_period, config.A.unbonding_period, config.A.Signer()})
-
-    } else if query_client(B, "A_store/clients/clIdA").height < heightA {
-      // update client
-      msg = ClientUpdate({clIdA, headerA, config.A.Signer()})
-
-    } else {
-      // do nothing
-      continue
-    }
-
-    clientMsgsForB.push(msg)
-  }
-}
+After initialization, relayer light clients are created on the destination chains if not already present. 
+For a successful A->B relay of IBC packetsIBC clients must be instantiated on both source and destination chains, potentially by different relayers. The client creation is permissionless and a relayer may create a client if not already present. 
+```rust
+let msg = MsgCreateClient::new(client_id, header, trusting_period, bonding_period, signer);
 ```
 
-The relayer runs its own light client for A, retrieves and verifies headers, and updates the A-client on chain B with new headers as required. 
+The IBC client is identified by a clientID. In order to detect the existence of an A-client with identifier `clA` on chain B, the relayer queries the IBC clients on B and verifies if `clA` is returned.
 
-Since the relayer must pay for all transactions, including `clientCreate` and `clientUpdate` ones, there are incentives for optimizations.
+The relayer runs its own light client for A, retrieves and verifies headers, and updates the A-client on chain B with new headers as required. 
+```rust
+let msg = MsgUpdateClient::new(client_id, header, signer);
+```
+
+Since the relayer must pay for all transactions, including `MsgClientCreate` and `MsgClientUpdate`, there are incentives for optimizations.
 For example, light client implementation of Tendermint supports bisection and the relayer may choose to send skipping headers to A-client on B, periodically or when required by new IBC datagrams.
 
-
 #### Connection Messages
-The relayer queries the source and destination chains of the relaying paths in order to determine if connection handshake datagrams should be sent to destination chain.
+The relayer queries the source and destination chains of the relaying paths in order to determine if connection handshake datagrams should be sent to destination chains.
 
 ##### Connection Query
 
 The following structures pertain to connection queries and should be detailed in [IBC-Modules-Rust-ADR]. 
-The structures are shown here for reference. (??)
+The structures are shown here for reference.
 
-[todo - make it Rust]
-```typescript
-type Counterparty struct {
-	ClientID     string            
-	ConnectionID string           
-	Prefix       commitment.PrefixI 
+```rust
+pub struct Counterparty {
+	pub client_id:      ClientId,            
+	pub connection_id:  ConnectionId,           
+	pub prefix:         CommitmentRoot,
 }
-type ConnectionEnd struct {
-	State    exported.State 
-	ClientID string 
-	Counterparty Counterparty 
-	Versions []string 
+
+pub struct ConnectionEnd {
+	pub state:          ConnectionState,
+    pub Id:             ConnectionId,
+	pub client_id:      ClientId,            
+	pub counterparty:   Counterparty, 
+	pub versions:       Vec<String>
 }
-// ConnectionResponse defines the client query response for a connection.
+
+pub enum ConnectionState {
+    "UNINIT",
+    "INIT",
+    "TRYOPEN",
+    "OPEN",
+}
+
+// ConnectionResponse defines the query response for a connection.
 // It includes the proof and the height at which the proof was retrieved.
-type ConnectionResponse struct {
-	Connection  ConnectionEnd    
-	Proof       commitment.Proof 
-	ProofPath   commitment.Path  // specified in ICS024
-	ProofHeight uint64           
+pub struct ConnectionResponse {
+	pub connection:     ConnectionEnd,    
+	pub proof:          Option<CommitmentProof>, 
+    pub proof_path:     CommitmentPath,
+    pub proof_height:   Height,        
 }
 ```
 
-The correct connection states on the `src` and `dest` chains must be verified by the relayer. In addition the relayer may perform some proof verification. 
+#### Connection Relaying
 
-The figure below shows the four connection handshake message types that can be created during a relay cycle (see the Relayer box and the four actions). For each message the queries (light grey arrows) and expected states on `A` and `B` are shown. For example, if the connection on A is in `OPEN` state and on B in `TRYOPEN`, the relayer will send a transaction to B including the `ConnOpenConfirm` datagram. This will cause the state of connection on B to change from `TRYOPEN` to `OPEN`.
+The figure below shows the four connection handshake message types that can be created during a relay cycle (see the Relayer box and the four actions). For each message the queries (light grey arrows) and expected states on `A` and `B` are shown. For example, if the connection on A is in `OPEN` state and on B in `TRYOPEN`, the relayer will send a transaction to B including the `ConnOpenConfirm` datagram. Once processed on B, the state of connection changes from `TRYOPEN` to `OPEN`.
 
-![IBC connection handshake relay](assets/IBC_conn_handshake_relay.jpeg).
+![IBC connection handshake relay](assets/IBC_conn_handshake_relay.jpeg)
+
 ##### MsgConnectionOpenInit
-The `MsgConnectionOpenInit` message is used to initialize a connection.
-[todo - make it Rust]
-```typescript
-type MsgConnectionOpenInit struct {
-	ConnectionID string         // connAtoB
-	ClientID     string         // clB
-	Counterparty Counterparty   // {ClientID: clA, ConnectionID: connBtoA, Prefix: "B_store">
-	Signer       sdk.AccAddress 
+The `MsgConnectionOpenInit` message is used to initialize a connection. In this section it is assumed to be relayed to A.
+```rust
+pub struct MsgConnectionOpenInit {
+    pub connection_id:  ConnectionId, // connAtoB
+	pub client_id:      ClientId,     // clB       
+	pub counterparty:   Counterparty, // {ClientID: clA, ConnectionID: connBtoA, Prefix: "B_store">
+	pub signer:         AccAddress 
 }
 ```
 The comments show the values of the fields for the diagram above. 
 
-The relayer creates and forwards this message only if it has been explicitly configured with the connection information (see `[[connections]]` section of the configuration file).
+The relayer creates and forwards this message only if it has been explicitly configured with the connection information (see `connections.src` and `connections.dest`sections of the configuration file).
 
-During a relay cycle for the A->B path, in order to create a `MsgConnectionOpenInit`, the relayer should:
-- inspect its configured A->B path and get all configured connections
-```typescript
- connections := getConfiguredConnections(A)
+In order to create a `MsgConnectionOpenInit` the relayer recreates the `ConnectionEnd` from the configuration, as it will be stored on A. The steps are:
+- create the `ConnectionEnd` for the B->A path
+```rust
+ let connection_a = getConfiguredConnection(A, B, ..);
 ```
-- for each connection in `connections` with ID `connAtoB`:
-   - query connection state on chain A:
-    ```typescript
-     connectionEndOnA := query(chainA, "A_store/connections/connAtoB")
-    ``` 
-   - query connection state on chain B:
-    ```typescript
-     connBtoA := connectionEndOnA.Connection.Counterparty.ConnectionID
-     connectionEndOnB := query(chainB, "B_store/connections/connBtoA")
-    ```
-   - if `connectionEndOnA.Connection.State != null` or `connectionEndOnB != null` continue with next connection 
-   - query chain B store prefix (initial version will get this from the relayer configuration, see `store_prefix`)
-   - create message with the information collected above. 
-    ```typescript
-    msg := MsgConnectionOpenTry{
-        ConnectionID:           connectionEndOnA.ConnectionID
-        ClientID:               connectionEndOnA.ClientID
-        Counterparty:           Counterparty{
-                                  ClientID:       connectionEndOnA.Counterparty.ClientID, 
-                                  ConnectionID:   connBtoA,
-                                  Prefix:         config.B.storePrefix
-        CounterpartyVersions:   config.A.Versions()            
-        Signer:                 config.B.Signer()    
-    }
-    ```
-  
+- query connection state on chain A and if it already exist then continue with next event
+```rust
+let existing_a = ibc_query_connection(chainA, connection_a);
+if existing_a.state != "UNINIT" {
+  continue;
+} 
+```
+- create the message 
+```rust
+let init_msg = MsgConnectionOpenInit {
+    connection_id:  connection_a.connection_id,
+    client_id:      connection_a.client_id,
+    counterparty:   Counterparty {
+                      ClientID:       connection_a.counterparty.client_id, 
+                      connection_id:  connection_a.counterparty.connection_id,
+                      prefix:         config(B).store_prefix,
+                    }
+    Signer:         config(A).signer,   
+}
+```  
+- send `init_msg` in a transaction to B
+
 
 ##### MsgConnectionOpenTry
-The `MsgConnectionOpenTry` defines the message sent by the relayer to try to open a connection.
+The `MsgConnectionOpenTry` defines the message sent by the relayer to try to open a connection. In this section it is assumed to be relayed to B.
 
-[todo - make it Rust]
-```typescript
-type MsgConnectionOpenTry struct {
-	ConnectionID         string            // connBtoA
-	ClientID             string            // clA
-	Counterparty         Counterparty      // {ClientID: clB, ConnectionID: connAtoB, Prefix: "A_store">
-	CounterpartyVersions []string          
-	ProofInit            commitment.ProofI // proof that connAtoB connection end is stored on Chain A 
-	ProofConsensus       commitment.ProofI // proof that chain A stored chain B's consensus state at ConsensusHeight
-	ProofHeight          uint64            // hA, height of A at which relayer retrieved ProofInit
-	ConsensusHeight      uint64            // hB
-	Signer               sdk.AccAddress    
+```rust
+pub struct MsgConnectionOpenTry {
+    pub connection_id:    ConnectionId, // connBtoA
+	pub client_id:        ClientId,     // clA       
+	pub counterparty:     Counterparty, // {ClientID: clB, ConnectionID: connAtoB, Prefix: "A_store">
+    pub counterparty_versions:   Vec<String>,       
+	pub proof_init:       CommitmentProof, // proof that connAtoB connection end is stored on Chain A 
+	pub proof_consensus:  CommitmentProof, // proof that on A at proof_height (hA), the B client has 
+                                           // stored B's consensus state at consensus_height (hB)
+	pub proof_height:     Height,          // hA, height of A at which relayer retrieved proof_init
+	pub consensus_height: Height,          // hB
+	pub signer:           AccAddress, 
 }
 ```
 The comments show the values of the fields for the diagram above.
 Note:
-- `ProofHeight` is the height of chain A when relayer created the `ProofInit`, hA in the diagram.
-- `ConsensusHeight` is the latest height of chain B that chain A has stored in its client `clB` at the time the relayer queried that client, `hB` in the diagram
+- `proof_height` is the height of chain A when relayer created the `proof_init`, hA in the diagram.
+- `consensus_height` is the latest height of chain B that chain A has stored in its client `clB` at the time the relayer queried that client, `hB` in the diagram
 
-During a relay cycle for the A->B path, in order to create a `MsgConnectionOpenTry`, including the proofs, the relayer should:
-- get all connections on A
-```typescript
- connections := query(chainA, "A_store/connections")
+The relayer creates a `MsgConnectionOpenTry` for the A->B relay path when an IBC event notification is received or when chain A is scanned. The steps are:
+- let `connAtoB` be the connection identifier on A
+- query connection with proof on chain A and if it is not in proper state then continue with the next event
+```rust
+ let query_response = ibc_query_connection_with_proof(chainA, connAtoB);
+ if query_response.connection.state != "INIT" { 
+   continue;
+ }
+ let connection_a = query_response.connection;
+ let proof_init = query_response.proof;
+ let proof_height := query_response.proof_height;
+``` 
+- query connection on chain B and validate its state
+```rust
+ let connBtoA = connection_a.counterparty.connection_id;
+ let connection_b = ibc_query_connection(chainB, connBtoA);
+ if connection_b.state != "UNINIT"  && connection_b.state != "INIT" {
+   continue;
+ }
 ```
-- for each connection in `connections` with ID `connAtoB`:
-   - if not configured to relay for this connection then go to the next connection
-   - query connection state with proof on chain A at `proofHeight`:
-    ```typescript
-     connectionEndOnA := queryWithProof(chainA, "A_store/connections/connAtoB")
-     proofInit := connectionEndOnA.Proof
-     proofHeight := connectionEndOn.ProofHeight
-    ``` 
-   - query connection state on chain B:
-    ```typescript
-     connBtoA := connectionEndOnA.Connection.Counterparty.ConnectionID
-     connectionEndOnB := query(chainB, "B_store/connections/connBtoA")
-    ```
-   - if `connectionEndOnA.Connection.State != INIT` or `connectionEndOnB != null` continue with next connection 
-   - update client `clA` on chain B with `proofHeight` if required
-   - update client `clB` on chain A with recent height of chain B (`UpdateClient(clB)` message is sent to chain A)
-   - query the consensus state (of chain B) stored in client `clB` on A
-    ```typescript
-     proofConsensusClientBonA, consensusHeight := queryWithProof(chainA, "A_store/clients/clB/consensusState/hB")
-    ```
-   - query chain A store prefix (initial version will get this from the relayer configuration, see `store_prefix`)
-   - create message with the information collected above. Note the perspective "flip" as this message is destined to B
-    ```typescript
-    msg := MsgConnectionOpenTry{
-        ConnectionID:           connectionEndOnA.Connection.Counterparty.ConnectionID
-        ClientID:               connectionEndOnA.Connection.Counterparty.ClientID
-        Counterparty:           Counterparty{
-                                  ClientID:       connectionEndOnA.ClientID, 
-                                  ConnectionID:   connAtoB,
-                                  Prefix:         config.A.storePrefix
-        CounterpartyVersions:   config.A.Versions()            
-        ProofInit:              proofInit
-        ProofConsensus:         proofConsensusClientBonA
-        ProofHeight:            proofHeight
-        ConsensusHeight:        consensusHeight
-        Signer:                 config.B.Signer()    
-    }
-    ```
-When `MsgConnectionOpenTry` is processed on B, the message handler does the following checks: 
-- `ConsensusHeight` is valid (smaller or equal than current B height),
-- `ProofConsensus` against B's app state at `ConsensusHeight` and 
-- `ProofInit` against the client clA's consensus state at `ProofHeight`. 
+- create `UpdateClientMsg` for `clA` on chain B if required (i.e. if `proof_height` is higher than latest height of `clA` on B)
+```rust
+ let client_msg = MsgUpdateClient::new(connection_b.client_id, header, signer);
+```
+- query the consensus state stored by client `clB` on A
+```rust
+ let consensus_response = ibc_query_consensus_with_proof(chainA, connection_a.client_id);
+ let proof_consensus = consensus_response.proof;
+ let consensus_height = consensus_response.proof_height;
+```
+- create the `MsgConnectionOpenTry` message with the information collected above.
+```rust
+let try_msg = MsgConnectionOpenTry {
+    connection_id:  connBtoA,
+    client_id:      connection_b.client_id,
+    counterparty:   Counterparty{
+                      client_id:       connection_a.client_id, 
+                      connection_id:   connAtoB,
+                      prefix:          config(A).store_prefix,
+                    }
+    proof_init,
+    proof_consensus,
+    proof_height,
+    consensus_height,
+    signer:                 config.B.Signer(),    
+}
+```
+- send `client_msg` and `try_msg` in a transaction to B
 
-The last `ProofInit` check requires the handler on B to recreate the `ConnectionEnd` as expected on A and verify it with the proof. For this to work the store prefix of A needs to be added as prefix to the proof path (standardized in ICS 24). The IBC specification allows multiple store prefixes to allow separate namespace across the different IBC modules. However there is currently no query endpoint for this in Cosmos-SDK/Tendermint and initial relayer version includes a per chain store prefix in the configuration.
+When `MsgConnectionOpenTry` is processed on B, the message handler: 
+- checks that `consensus_height` is valid (smaller or equal than chain B's current height) and within trusting period,
+- client `clA` verifies `proof_consensus` for B's consensus state at `consensus_height` and 
+- client `clA` verifies `proof_init` for the `ConnectionEnd`object that B expects to be present on A at `proof_height`. 
+The relayer may also perform these verifications before submitting the transaction.
 
 ##### MsgConnectionOpenAck
-`MsgConnectionOpenAck` defines the message sent by the relayer to chain A to acknowledge the change of connection state to `TRYOPEN` on Chain B.
-[todo - make it Rust]
-```typescript
-type MsgConnectionOpenAck struct {
-	ConnectionID    string            // connAtoB
-	ProofTry        commitment.ProofI // proof that connBtoA on Chain B is in TRYOPEN state
-	ProofConsensus  commitment.ProofI // proof that chain B stored chain A's consensus at ConsensusHeight
-	ProofHeight     uint64            // hB, height of B at which relayer retrieved the ProofTry
-	ConsensusHeight uint64            // hA, height of A in ProofConsensus
-	Version         string           
-	Signer          sdk.AccAddress   
+`MsgConnectionOpenAck` defines the message sent by the relayer to chain A to acknowledge the change of connection state to `TRYOPEN` on Chain B. 
+
+```rust
+pub struct MsgConnectionOpenAck {
+    pub connection_id:      ConnectionId,   // connAtoB
+	pub proof_try:          CommitmentProof, // proof that connBtoA on Chain B is in TRYOPEN state
+	pub proof_consensus:    CommitmentProof, // proof that on B at proof_height (hB), the A client has 
+                                           // stored A's consensus state at consensus_height (hA)
+	pub proof_height:     Height,          // hB, height of B at which relayer retrieved proof_try
+	pub consensus_height: Height,          // hA
+    pub versions:   <String>,       
+	pub signer:           AccAddress, 
 }
 ```
-
 The comments show the values of the fields for the diagram above.
 Note:
-- `ProofHeight` is the height of chain B when the relayer created the `ProofTry`, hB in the diagram.
-- `ConsensusHeight` is the latest height of chain A that chain B has stored in its client clA at the time the relayer queried that client, `hA` in the diagram
+- `proof_height` is the height of chain B when relayer created the `proof_try`, hB in the diagram.
+- `consensus_height` is the latest height of chain A that chain B has stored in its client `clA` at the time the relayer queried that client, `hA` in the diagram
 
-During a relay cycle for the B->A path, in order to create a `MsgConnectionOpenAck`, including the proofs, the relayer should:
-- get all connections on B
-```typescript
- connections := query(chainB, "B_store/connections")
+The relayer creates a `MsgConnectionOpenAck` for the B->A relay path when an IBC event notification is received or when chain B is scanned. The steps are:
+- let `connBtoA` be the connection identifier on B
+- query connection with proof on chain B and if it is not in proper state then continue with next event
+```rust
+ let query_response = ibc_query_connection_with_proof(chainB, connBtoA);
+ if query_response.connection.state != "TRYOPEN" { 
+   continue;
+ }
+ let connection_b = query_response.connection;
+ let proof_try = query_response.proof;
+ let proof_height := query_response.proof_height;
+``` 
+- query connection on chain A and validate its state:
+```rust
+ let connAtoB = connection_b.counterparty.connection_id;
+ let connection_a = ibc_query_connection(chainA, connAtoB);
+ if connection_a.state != "INIT"  && connection_a.state != "TRYOPEN" {
+   continue;
+ }
 ```
-- for each connection in `connections` with ID `connBtoA`:
-   - if not configured to relay for this connection then go to the next connection
-   - query connection state with proof on chain B at `proofHeight`:
-    ```typescript
-     connectionEndOnB := queryWithProof(chainB, "B_store/connections/connBtoA")
-     proofTry := connectionEndOnB.Proof
-     proofHeight := connectionEndOnB.ProofHeight
-    ``` 
-   - query connection state on chain A:
-    ```typescript
-     connAtoB := connectionEndOnB.Connection.Counterparty.ConnectionID
-     connectionEndOnA := query(chainA, "A_store/connections/connAtoB")
-    ```
-   - if `connectionEndOnA.Connection.State != INIT` or `connectionEndOnB != TRYOPEN` continue with next connection 
-   - update client `clB` on chain A with `proofHeight` if required
-   - update client `clA` on chain B with recent height of chain A (`UpdateClient(clB)` message is sent to chain A)
-   - query the consensus state (of chain A) stored in client `clA` on B
-    ```typescript
-     proofConsensusClientAonB, consensusHeight := queryWithProof(chainB, "B_store/clients/clA/consensusState/hA")
-    ```
-   - query chain B store prefix (initial version will get this from the relayer configuration, see `store_prefix`)
-   - create message with the information collected above. Note the perspective "flip" as this message is destined to A
-    ```typescript
-    msg := MsgConnectionOpenAck{
-        ConnectionID:           connectionEndOnB.Connection.Counterparty.ConnectionID
-        CounterpartyVersions:   config.B.Versions()            
-        ProofTry:               proofTry
-        ProofConsensus:         proofConsensusClientAonB
-        ProofHeight:            proofHeight
-        ConsensusHeight:        consensusHeight
-        Signer:                 config.A.Signer()    
-    }
-    ```
+- create `UpdateClientMsg` for `clB` on chain A if required (i.e. if `proof_height` is higher than latest height of `clB` on A)
+```rust
+ let client_msg = MsgUpdateClient::new(connection_a.client_id, header, signer);
+```
+- query the consensus state stored by client `clA` on B:
+```rust
+ let consensus_response = ibc_query_consensus_with_proof(chainB, connection_b.client_id);
+ let proof_consensus = consensus_response.proof;
+ let consensus_height = consensus_response.proof_height;
+```
+- create the `MsgConnectionOpenAck` message with the information collected above
+```rust
+let ack_msg = MsgConnectionOpenAck {
+    connection_id:  connAtoB,
+    proof_try,
+    proof_consensus,
+    proof_height,
+    consensus_height,
+    signer:         config.A.Signer(),    
+}
+```
+- send `client_msg` and `ack_msg` in a transaction to A
 
 ##### MsgConnectionOpenConfirm
 `MsgConnectionOpenConfirm` defines the message sent by the relayer to chain B to confirm the opening of a connection on chain A.
+
 [todo - make it Rust]
-```typescript
-type MsgConnectionOpenConfirm struct {
-	ConnectionID string            // connBtoA
-	ProofConfirm commitment.ProofI // proof that connAtoB on chain A is in OPEN state
-	ProofHeight  uint64            // hA, height of A at which relayer retrieved the ProofAck
-	Signer       sdk.AccAddress   
+```rust
+pub struct MsgConnectionOpenConfirm {
+	pub connection_id:      ConnectionId,   // connBtoA
+	pub proof_confirm:      CommitmentProof,// proof that connAtoB on chain A is in OPEN state
+	pub proof_height:       Height,         // hA, height of A at which relayer retrieved the proof_confirm
+	pub signer:           AccAddress, 
 }
 ```
 
-The comments show the values of the fields for the diagram above.
-Note:
-- `ProofHeight` is the height of chain A when the relayer created the `ProofConfirm`, hA in the diagram.
-
-During a relay cycle for the A->B path, in order to create a `MsgConnectionOpenConfirm`, the relayer should:
-- get all connections on A
-```typescript
- connections := query(chainA, "A_store/connections")
+The relayer creates a `MsgConnectionOpenConfirm` for the A->B relay path when an IBC event notification is received or when chain A is scanned. The steps are:
+- let `connAtoB` be the connection identifier on A
+- query connection with proof on chain A and if it is not in proper state then continue with next event
+```rust
+ let query_response = ibc_query_connection_with_proof(chainA, connAtoB);
+ if query_response.connection.state != "OPEN" { 
+   continue;
+ }
+ let connection_a = query_response.connection;
+ let proof_confirm = query_response.proof;
+ let proof_height := query_response.proof_height;
+``` 
+- query connection on chain B and validate its state:
+```rust
+ let connBtoA = connection_a.counterparty.connection_id;
+ let connection_b = ibc_query_connection(chainB, connBtoA);
+ if connection_b.state != "INIT"  && connection_b.state != "TRYOPEN" {
+   continue;
+ }
 ```
-- for each connection in `connections` with ID `connAtoB`:
-   - if not configured to relay for this connection then go to the next connection
-   - query connection state with proof on chain A at `proofHeight`:
-    ```typescript
-     connectionEndOnA := queryWithProof(chainA, "A_store/connections/connAtoB")
-     proofConfirm := connectionEndOnA.Proof
-     proofHeight := connectionEndOnA.ProofHeight
-    ``` 
-   - query connection state on chain A:
-    ```typescript
-     connBtoA := connectionEndOnA.Connection.Counterparty.ConnectionID
-     connectionEndOnB := query(chainB, "B_store/connections/connBtoA")
-    ```
-   - if `connectionEndOnA.Connection.State != OPEN` or `connectionEndOnB != TRYOPEN` continue with next connection 
-   - update client `clA` on chain B with `proofHeight` if required
-   - create message with the information collected above. Note the perspective "flip" as this message is destined to A
-    ```typescript
-    msg := MsgConnectionOpenAck{
-        ConnectionID:           connectionEndOnA.Connection.Counterparty.ConnectionID
-        ProofConfirm:           proofConfirm
-        ProofHeight:            proofHeight
-        Signer:                 config.A.Signer()    
-    }
-    ```
+- create `UpdateClientMsg` for `clA` on chain B if required (i.e. if `proof_height` is higher than latest height of `clA` on B)
+```rust
+ let client_msg = MsgUpdateClient::new(connection_b.client_id, header, config.B.Signer());
+```
+- create the `MsgConnectionOpenConfirm` message with the information collected above
+```rust
+let confirm_msg = MsgConnectionOpenAck {
+    connection_id:  connBtoA,
+    proof_confirm,
+    proof_height,
+    signer:         config.B.Signer(),    
+}
+```
+- send `client_msg` and `confirm_msg` in a transaction to A
 
 #### Channels
-The channel handshake messages are relayed in a similar way as the connection ones. In addition, checks on the state of the underlying connection is performed.
 (WIP)
+The channel handshake messages are relayed in a similar way as the connection ones. In addition, checks on the state of the underlying connection is performed.
 
 #### Packet, Timeouts and Acknowledgments
+(WIP)
 Application packets are not stored in the chain state, only a cryptographic commitment is stored. 
 The relayer has to query the chain's logging system to get the packet data for a given source port and channel. 
 The result of the query includes among others:
@@ -574,54 +636,11 @@ The result of the query includes among others:
  - the sequence number
 These are used to create the packet's commitment path which is then used in a state query to get the packet commitment.
 
-(WIP)
-
-```typescript
-function packetDatagrams(src: Chain, dest: Chain): Set<Datagram>) {
-  connections = src.queryConnectionsUsingClient()
-  channels = chain.getChannelsUsingConnections(connections)
-  height = src.latestHeight()
-
-  for (srcEnd in channels) {
-    destEnd = dest.getChannel(srcEnd.destIdentifier)
-
-    // First, scan logs for sent packets and relay all of them
-    sentPacketLogs = src.queryByTopic(height, "sendPacket")
-    for (logEntry in sentPacketLogs) {
-      packet = src.getPacketCommitment(srcEnd.portIdentifier, srcEnd.channelIdentifier, logEntry.sequence)
-      // relay packet with this sequence number
-      packetData = Packet{logEntry.sequence, logEntry.timeout, srcEnd.portIdentifier, srcEnd.channelIdentifier,
-                          destEnd.portIdentifier, destEnd.channelIdentifier, logEntry.data}
-      destDatagrams.push(PacketRecv{
-        packet: packetData,
-        proof: packet.proof(),
-        proofHeight: height,
-      })
-    }
-
-    // Then, scan logs for received packets and relay acknowledgements
-    recvPacketLogs = src.queryByTopic(height, "recvPacket")
-    for (const logEntry of recvPacketLogs) {
-      packet = src.getPacketCommitment(srcEnd.portIdentifier, srcEnd.channelIdentifier, logEntry.sequence)
-      // relay packet acknowledgement with this sequence number
-      packetData = Packet{logEntry.sequence, logEntry.timeout, srcEnd.portIdentifier, srcEnd.channelIdentifier,
-                          destEnd.portIdentifier, destEnd.channelIdentifier, logEntry.data}
-      destDatagrams.push(PacketAcknowledgement{
-        packet: packetData,
-        acknowledgement: logEntry.acknowledgement,
-        proof: packet.proof(),
-        proofHeight: height,
-      })
-    }
-}
-```
-
 ## Inter-relayer Coordination
-Multiple relayers may run in parallel and, while it is expected that they relay over disjoint paths, it could be the case that they may submit same transactions to a destination chain. In this case only the first transaction succeeds while subsequent fail causing loss of fees. Ideally some coordination would be in place to avoid this but this is not adressed here.
+Multiple relayers may run in parallel and, while it is expected that they relay over disjoint paths, it could be the case that they may submit same transactions to a chain. In this case only the first transaction succeeds while subsequent fail causing loss of fees. Ideally some coordination would be in place to avoid this but this is out of scope of this document.
 
 ## Relayer Restarts and Upgrades
 
- 
 ## Decision
 
 > This section explains all of the details of the proposed solution, including implementation details.
