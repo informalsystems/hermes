@@ -6,5 +6,5 @@ use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
 make_event!(Timeout, "ibc_transfer", "timeout");
-make_event!(Packet, "ibc_transfer", "fungible_token_packet");
+make_event!(Packet, "ibc_transfer", "transfer");
 make_event!(ChannelClosed, "ibc_transfer", "channel_closed");
