@@ -6,6 +6,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
-make_event!(CreateClient, "ibc_client", "create_client");
-make_event!(UpdateClient, "ibc_client", "update_client");
-make_event!(ClientMisbehavior, "ibc_client", "client_misbehavior");
+make_event!(CreateClient, "create_client");
+make_event!(UpdateClient, "update_client");
+make_event!(ClientMisbehavior, "client_misbehavior");

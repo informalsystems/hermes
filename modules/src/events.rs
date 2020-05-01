@@ -169,7 +169,7 @@ impl From<TransferEvents::Packet> for IBCEvent {
 
 #[macro_export]
 macro_rules! make_event {
-    ($a:ident, $b:literal, $c:literal) => {
+    ($a:ident, $b:literal) => {
         #[derive(Debug, Deserialize, Serialize, Clone)]
         pub struct $a {
             pub data: std::collections::HashMap<String, Vec<String>>,
@@ -179,7 +179,7 @@ macro_rules! make_event {
             fn try_from(event: &Event) -> Result<Self, Self::Error> {
                 match event {
                     Event::JsonRPCTransctionResult { ref data } => Ok($a {
-                        data: data.extract_events($b, $c)?.clone(),
+                        data: data.extract_events($b)?.clone(),
                     }),
                     Event::GenericJSONEvent { .. } => {
                         Err("Expected JSON representing a $a, got wrong type")?

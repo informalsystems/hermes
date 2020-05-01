@@ -5,6 +5,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
 
-make_event!(Timeout, "ibc_transfer", "timeout");
-make_event!(Packet, "ibc_transfer", "transfer");
-make_event!(ChannelClosed, "ibc_transfer", "channel_closed");
+make_event!(Timeout, "timeout");
+make_event!(Packet, "transfer");
+make_event!(ChannelClosed, "channel_closed");
