@@ -8,27 +8,27 @@ CONSTANT MaxHeight     \* Maximum height of any chain in the system.
 
 VARIABLES
     turn,
-    msgToA,
-    msgToB,
-    chainAStore,
-    chainBStore
+    bufChainA,      \* A buffer for messages inbound to chain A.
+    bufChainB,
+    storeChainA,    \* The local store of chain A.
+    storeChainB
 
 
-vars == <<turn, msgToA, msgToB, chainAStore, chainBStore>>
+vars == <<turn, bufChainA, bufChainB, storeChainA, storeChainB>>
 
 
 chmA == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight  <- MaxHeight,
-             inMsg      <- msgToA,
-             outMsg     <- msgToB,
-             store      <- chainAStore
+             inMsg      <- bufChainA,
+             outMsg     <- bufChainB,
+             store      <- storeChainA
 
 
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight  <- MaxHeight,
-             inMsg      <- msgToB,      \* Flip the message buffers w.r.t. chain A buffers.
-             outMsg     <- msgToA,      \* Inbound for "A" is outbound for "B".
-             store      <- chainBStore
+             inMsg      <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
+             outMsg     <- bufChainA,      \* Inbound for "A" is outbound for "B".
+             store      <- storeChainB
 
 
 (***************************************************************************
@@ -37,25 +37,26 @@ chmB == INSTANCE ConnectionHandshakeModule
 
 
 InitEnv ==
-    /\ msgToA = chmA!noMsg
-    /\ msgToB = chmB!noMsg
+    /\ bufChainA = chmA!noMsg
+    /\ bufChainB = chmB!noMsg
 
 
 GoodNextEnv ==
-    UNCHANGED <<msgToA, msgToB>>
+    UNCHANGED <<bufChainA, bufChainB>>
 
 
 MaliciousNextEnv ==
-    \/ /\ msgToA' \in chmA!ConnectionHandshakeMessages
-       /\ UNCHANGED msgToB 
-    \/ /\ msgToB' \in chmB!ConnectionHandshakeMessages
-       /\ UNCHANGED msgToA
+    \/ /\ bufChainA' \in chmA!ConnectionHandshakeMessages
+       /\ UNCHANGED bufChainB 
+    \/ /\ bufChainB' \in chmB!ConnectionHandshakeMessages
+       /\ UNCHANGED bufChainA
 
 
-(* Eventually, just good. *)
+(* TODO: Eventually, it should be just 'good'. *)
 NextEnv ==
     \/ GoodNextEnv
     \/ MaliciousNextEnv
+
 
 (******************************************************************************
  Main spec.
@@ -84,18 +85,18 @@ Init ==
 
 \* The two CH modules and the environment alternate their steps.
 Next ==
-    IF chainAStore.connection.state = "OPEN" /\ chainBStore.connection.state = "OPEN"
+    IF storeChainA.connection.state = "OPEN" /\ storeChainB.connection.state = "OPEN"
     THEN UNCHANGED <<vars>> 
     ELSE /\ FlipTurn
          /\ IF turn = "env"
             THEN /\ NextEnv
-                 /\ UNCHANGED <<chainAStore, chainBStore>>
+                 /\ UNCHANGED <<storeChainA, storeChainB>>
             ELSE IF turn = "chmA"
                  THEN /\ chmA!Next
-                      /\ UNCHANGED chainBStore
+                      /\ UNCHANGED storeChainB
                  ELSE /\ chmB!Next
-                      /\ UNCHANGED chainAStore
- 
+                      /\ UNCHANGED storeChainA
+
 
 Spec ==
     /\ Init
@@ -105,15 +106,36 @@ Spec ==
 
 TypeInvariant ==
     /\ turn \in {"env", "chmA", "chmB"}
-    /\ msgToA \in chmA!ConnectionHandshakeMessages
-    /\ msgToB \in chmB!ConnectionHandshakeMessages
+    /\ bufChainA \in chmA!ConnectionHandshakeMessages
+    /\ bufChainB \in chmB!ConnectionHandshakeMessages
 
 
 \* Model check it!
 THEOREM Spec => []TypeInvariant
 
+
+\* Liveness property.
+Termination ==
+    <> /\ storeChainA.connection.state = "INIT"
+       /\ storeChainA.connection.state = "INIT"
+
+
+\* Safety property.
+\* If the connections in the two chains are not null, then the
+\* connection parameters must always match.
+(* TODO: This should be incorporated in the THEOREM block. 
+   Remove the box [] from this expression and do a conjuct w/ TypeInvariant:
+        THEOREM Spec => [](TypeInvarianta /\ Consistency)
+   See §5.7 of Lamport's SS book. *)
+Consistency ==
+    /\ storeChainA.connection /= chmA!nullConnection
+    /\ storeChainB.connection /= chmB!nullConnection 
+    => [] (storeChainA.connection.parameters 
+            = chmB!FlipConnectionParameters(storeChainB.connection.parameters))
+     
+
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 29 15:52:53 CEST 2020 by adi
+\* Last modified Fri May 01 15:45:17 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

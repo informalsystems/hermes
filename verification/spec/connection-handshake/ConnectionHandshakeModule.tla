@@ -1,8 +1,8 @@
 --------------------- MODULE ConnectionHandshakeModule ---------------------
 
-EXTENDS Naturals, TLC
+EXTENDS Naturals
 
-\* Maximum height of the chain where this moduele is running.
+\* Maximum height of the chain where this module is running.
 CONSTANT MaxHeight
 
 
@@ -55,7 +55,7 @@ Clients ==
         clientID : ClientIDs,
         consensusState : Heights
     ]
-    
+
 nullClient == [clientID |-> nullClientID]
 
 (******************************** Messages ********************************
@@ -72,7 +72,9 @@ nullClient == [clientID |-> nullClientID]
 ConnectionHandshakeMessages ==
     [type : {"CHMsgInit"}, 
      parameters : ConnectionParameters]
+
     \union
+
     [type : {"CHMsgTry"},
      parameters : ConnectionParameters
 \*        stateProof : Proofs, 
@@ -84,51 +86,19 @@ noMsg == [ type |-> "none" ]
 
 (***************************************************************************
  Helper operators.
- Partly cf. ibc-rs/#55.
  ***************************************************************************)
 
 
-GetLocalConnectionID(chainID) ==
-    IF chainID = "chainA"
-        THEN "connAtoB"
-        ELSE IF chainID = "chainB"
-                THEN "connBtoA"
-                ELSE nullConnectionID      
-
-
-\* get the connection ID of the connection end at chainID's counterparty chain
-GetRemoteConnectionID(chainID) ==
-    IF chainID = "chainA"
-        THEN "connBtoA"
-        ELSE IF chainID = "chainB"
-                THEN "connAtoB"
-                ELSE nullConnectionID
-
-
-GetLocalClientID(chainID) ==
-    IF chainID = "chainA"
-        THEN "clientA"
-        ELSE IF chainID = "chainB"
-                THEN "clientB"
-                ELSE nullClientID      
-
-
-\* get the connection ID of the connection end at chainID's counterparty chain
-GetRemoteClientID(chainID) ==
-    IF chainID = "chainA"
-        THEN "clientB"
-        ELSE IF chainID = "chainB"
-                THEN "clientA"
-                ELSE nullClientID
-
-
-\* Validates a ConnectionParameter `para` against the local store.
-\* Returns true if `para` is valid, and false otherwise.
+\* Validates a ConnectionParameter `para` against an already existing connection.
+\* If the connection in the store is `nullConnection`, returns true.
+\* Otherwise, returns true if `para` matches the connection in the store, and false otherwise.
 ValidConnectionParameters(para) ==
-    /\ para.localEnd.connectionID   = GetLocalConnectionID(store.id)
-    /\ para.remoteEnd.connectionID  = GetRemoteConnectionID(store.id)
-    /\ para.localEnd.clientID       = GetLocalClientID(store.id)
-    /\ para.remoteEnd.clientID      = GetRemoteClientID(store.id)
+    \/ store.connection = nullConnection
+    \/ /\ store.connection /= nullConnection
+       /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
+       /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID  
+       /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
+       /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
 
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
@@ -139,24 +109,25 @@ FlipConnectionParameters(para) ==
 
 
 (***************************************************************************
- Connection Handshake Module actions.
+ Connection Handshake Module actions & operators.
  ***************************************************************************)
 
 
-\* Handles a `CHMsgInit` message. 
-handleInitMsg(m) ==
-    IF store.connection.state = "UNINIT"
-        THEN [nConnection   |-> [parameters |-> m.parameters, 
-                                 state      |-> "INIT"],
-                    (* Asemble the outbound message, type: HandshakeTry *)
-              oMsg          |-> [parameters |-> FlipConnectionParameters(m.parameters),
-                                 type       |-> "CHMsgTry"]]
-                      (* TODO: add proofs here. *)
-        ELSE [nConnection   |-> store.connection,
-              oMsg          |-> noMsg]
+\* Handles a `CHMsgInit` message.
+HandleInitMsg(m) ==
+    (* TODO: add proofs in the THEN branch. *)
+    LET res == IF store.connection.state = "UNINIT"
+               THEN [nConnection |-> [parameters |-> m.parameters, 
+                                      state      |-> "INIT"],
+                     oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
+                               type |-> "CHMsgTry"]]
+               ELSE [nConnection |-> store.connection,
+                     oMsg |-> noMsg] 
+    IN /\ store' = [store EXCEPT !.connection = res.nConnection]
+       /\ outMsg' = res.oMsg
 
 
-handleTryMsg(m) ==
+HandleTryMsg(m) ==
     (**** TODO ****)
     [nConnection |-> store.connection,
      oMsg        |-> noMsg ]
@@ -173,14 +144,11 @@ AdvanceChainHeight ==
  Expects a valid ConnectionHandshakeMessage record.
  Does two basic actions:
    1. Updates the chain store, and
-   2. Updates outMsg with a reply message.
+   2. Updates outMsg with a reply message, possibly NoMsg.
  *****)
 ProcessConnectionHandshakeMessage(msg) ==
-    LET res == CASE msg.type = "CHMsgInit" -> handleInitMsg(msg)
-                 [] msg.type = "CHMsgTry"  -> handleTryMsg(msg)
-    IN /\ PrintT([msg |-> res])
-       /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outMsg' = res.oMsg
+    \/ "CHMsgInit" /\ HandleInitMsg(msg)
+    \/ "CHMsgTry"  /\ HandleTryMsg(msg)
 
 
 \* Generic handle for any type of inbound message.
@@ -193,8 +161,6 @@ ProcessInMsg ==
         ELSE /\ outMsg' = noMsg \* No reply.
              /\ UNCHANGED store
     /\ inMsg' = noMsg \* Flush the inbound message buffer.
-
-
 
 
 (***************************************************************************
@@ -217,6 +183,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 29 15:47:07 CEST 2020 by adi
+\* Last modified Fri May 01 17:13:55 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
