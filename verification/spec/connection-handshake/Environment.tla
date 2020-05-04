@@ -8,16 +8,16 @@ CONSTANT MaxHeight     \* Maximum height of any chain in the system.
 
 VARIABLES
     bufChainA,      \* A buffer for messages inbound to chain A.
-    bufChainB,
+    bufChainB,      \* A buffer for messages inbound to chain B.
     storeChainA,    \* The local store of chain A.
-    storeChainB,
-    stillMalicious
+    storeChainB,    \* The local store of chain B.
+    stillMalicious  \* If TRUE, environment interferes w/ CH protocol. 
 
 
 chainAVars == <<bufChainA, bufChainB, storeChainA>>
 chainBVars == <<bufChainA, bufChainB, storeChainB>>
-chainVars == <<bufChainA, bufChainB, storeChainA, storeChainB>>
-allVars == <<chainVars, stillMalicious>>
+chainStoreVars == <<storeChainA, storeChainB>>
+allVars == <<chainStoreVars, bufChainA, bufChainB, stillMalicious>>
 
 
 chmA == INSTANCE ConnectionHandshakeModule
@@ -41,8 +41,8 @@ chmB == INSTANCE ConnectionHandshakeModule
 
 InitEnv ==
     /\ stillMalicious = TRUE
-    /\ \/ bufChainA = chmA!InitMsg \* chmA!noMsg
-       \/ bufChainB = chmB!InitMsg \* chmB!noMsg
+    /\ \/ bufChainA = chmA!InitMsg /\ bufChainB = chmB!NoMsg
+       \/ bufChainB = chmB!InitMsg /\ bufChainA = chmA!NoMsg
 
 
 MaliciousNextEnv ==
@@ -52,15 +52,18 @@ MaliciousNextEnv ==
        /\ UNCHANGED bufChainA
 
 
-(* TODO: Eventually, it should be just 'good'. *)
 NextEnv ==
-    \/ stillMalicious /\ MaliciousNextEnv /\ UNCHANGED stillMalicious
-    \/ stillMalicious /\ stillMalicious' = FALSE
+    \/ /\ stillMalicious
+       /\ MaliciousNextEnv
+       /\ UNCHANGED stillMalicious
+    \/ /\ stillMalicious
+       /\ stillMalicious' = FALSE
+       /\ UNCHANGED<<bufChainA, bufChainB>>
     
 
 CHDone ==
-    /\ storeChainA.connection.state = "OPEN" 
-    /\ storeChainB.connection.state = "OPEN"
+    /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
+    /\ storeChainB.connection.state = "INIT"
     /\ UNCHANGED <<allVars>>
 
 (******************************************************************************
@@ -78,9 +81,9 @@ Init ==
 \* The two CH modules and the environment alternate their steps.
 Next ==
     \/ CHDone
-    \/ NextEnv /\ UNCHANGED <<chainVars>>
-    \/ chmA!Next /\ UNCHANGED storeChainB
-    \/ chmB!Next /\ UNCHANGED storeChainA
+    \/ NextEnv /\ UNCHANGED <<chainStoreVars>>
+    \/ chmA!Next /\ UNCHANGED <<storeChainB, stillMalicious>>
+    \/ chmB!Next /\ UNCHANGED <<storeChainA, stillMalicious>>
 
 
 Spec ==
@@ -98,7 +101,7 @@ TypeInvariant ==
 \* Liveness property.
 Termination ==
     <> ~ stillMalicious
-        => <> /\ storeChainA.connection.state = "INIT" (* should be OPEN *)
+        => <> /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
               /\ storeChainB.connection.state = "INIT"
 
 
@@ -116,6 +119,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 04 14:56:16 CEST 2020 by adi
+\* Last modified Mon May 04 16:08:21 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

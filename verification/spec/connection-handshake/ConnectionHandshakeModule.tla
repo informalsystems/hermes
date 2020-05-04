@@ -81,10 +81,18 @@ ConnectionHandshakeMessages ==
 \*        consensusHeight : Proofs
     ]
 
-noMsg == [ type |-> "none" ]
+NoMsg == [ type |-> "none" ]
 
+
+(* The initialization message that this module expects  *)
 InitMsg ==
-    TRUE
+    CHOOSE m \in ConnectionHandshakeMessages :
+        /\ m.type = "CHMsgInit"
+        /\ m.parameters.localEnd.connectionID /= m.parameters.remoteEnd.connectionID
+        /\ m.parameters.localEnd.clientID /= m.parameters.remoteEnd.clientID
+\*    [type : { "CHMsgInit" },
+\*     parameters : ConnectionParameters]
+     
 
 (***************************************************************************
  Helper operators.
@@ -124,15 +132,22 @@ HandleInitMsg(m) ==
                      oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
                                type |-> "CHMsgTry"]]
                ELSE [nConnection |-> store.connection,
-                     oMsg |-> noMsg] 
+                     oMsg |-> NoMsg] 
     IN /\ store' = [store EXCEPT !.connection = res.nConnection]
        /\ outMsg' = res.oMsg
 
 
 HandleTryMsg(m) ==
-    (**** TODO ****)
-    [nConnection |-> store.connection,
-     oMsg        |-> noMsg ]
+    (* TODO: add proofs & more logic. *)
+    LET res == IF store.connection.state = "UNINIT"
+               THEN [nConnection |-> [parameters |-> m.parameters, 
+                                      state      |-> "INIT"],
+                     oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
+                               type |-> "CHMsgAck"]]
+               ELSE [nConnection |-> store.connection,
+                     oMsg |-> NoMsg] 
+    IN /\ store' = [store EXCEPT !.connection = res.nConnection]
+       /\ outMsg' = res.oMsg
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
@@ -160,9 +175,9 @@ ProcessInMsg ==
     /\ IF ValidConnectionParameters(inMsg.parameters) = TRUE
         THEN ProcessConnectionHandshakeMessage(inMsg)
         \* The connection parameters are not valid. No state transition.
-        ELSE /\ outMsg' = noMsg \* No reply.
+        ELSE /\ outMsg' = NoMsg \* No reply.
              /\ UNCHANGED store
-    /\ inMsg' = noMsg \* Flush the inbound message buffer.
+    /\ inMsg' = NoMsg \* Flush the inbound message buffer.
 
 
 (***************************************************************************
@@ -177,7 +192,7 @@ Init(chainID) ==
 
 
 Next ==
-    IF inMsg /= noMsg
+    IF inMsg /= NoMsg
         THEN ProcessInMsg
         \* We have no input message, nothing for us to do.
         ELSE UNCHANGED <<store, inMsg, outMsg>>
@@ -185,6 +200,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 04 14:56:24 CEST 2020 by adi
+\* Last modified Mon May 04 16:12:27 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
