@@ -83,6 +83,8 @@ ConnectionHandshakeMessages ==
 
 noMsg == [ type |-> "none" ]
 
+InitMsg ==
+    TRUE
 
 (***************************************************************************
  Helper operators.
@@ -147,8 +149,8 @@ AdvanceChainHeight ==
    2. Updates outMsg with a reply message, possibly NoMsg.
  *****)
 ProcessConnectionHandshakeMessage(msg) ==
-    \/ "CHMsgInit" /\ HandleInitMsg(msg)
-    \/ "CHMsgTry"  /\ HandleTryMsg(msg)
+    \/ msg.type = "CHMsgInit" /\ HandleInitMsg(msg)
+    \/ msg.type = "CHMsgTry"  /\ HandleTryMsg(msg)
 
 
 \* Generic handle for any type of inbound message.
@@ -183,6 +185,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 01 17:13:55 CEST 2020 by adi
+\* Last modified Mon May 04 14:56:24 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
