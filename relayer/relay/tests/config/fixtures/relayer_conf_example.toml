@@ -51,5 +51,5 @@ strategy = "naive"
 [[connections.paths]]
   src_port = "portA3"
   dest_port = "portB3"
-  src_channel = "chan3-on-A"
-  dest_channel = "chan3-on-B"
+  src_channel = "chan3onA"
+  dest_channel = "chan3onB"
