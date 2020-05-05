@@ -10,3 +10,5 @@ make_event!(RecievePacket, "recv_packet");
 make_event!(AcknowledgePacket, "acknowledge_packet");
 make_event!(CleanupPacket, "cleanup_packet");
 make_event!(TimeoutPacket, "timeout_packet");
+make_event!(OpaquePacket, "ics04/opaque");
+

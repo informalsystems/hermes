@@ -20,10 +20,13 @@ pub enum IBCEvent {
     AcknowledgePacketChannel(ChannelEvents::AcknowledgePacket),
     CleanupPacketChannel(ChannelEvents::CleanupPacket),
     TimeoutPacketChannel(ChannelEvents::TimeoutPacket),
+    OpaquePacket(ChannelEvents::OpaquePacket),
     TimeoutTransferEvent(TransferEvents::Timeout),
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTranfer(TransferEvents::ChannelClosed),
 }
+
+
 
 impl IBCEvent {
     pub fn get_all_events(event: Event) -> Vec<IBCEvent> {
@@ -64,6 +67,9 @@ impl IBCEvent {
         if let Ok(ev) = ChannelEvents::TimeoutPacket::try_from(&event) {
             vals.push(IBCEvent::from(ev));
         }
+        if let Ok(ev) = ChannelEvents::OpaquePacket::try_from(&event) {
+            vals.push(IBCEvent::from(ev));
+        }
         if let Ok(ev) = TransferEvents::Timeout::try_from(&event) {
             vals.push(IBCEvent::from(ev));
         }
@@ -74,6 +80,11 @@ impl IBCEvent {
             vals.push(IBCEvent::from(ev));
         }
         return vals;
+    }
+}
+impl From<ChannelEvents::OpaquePacket> for IBCEvent {
+    fn from(v: ChannelEvents::OpaquePacket) -> Self {
+        IBCEvent::OpaquePacket(v)
     }
 }
 
