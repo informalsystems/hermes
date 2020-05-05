@@ -14,6 +14,26 @@ VARIABLES
     stillMalicious  \* If TRUE, environment interferes w/ CH protocol. 
 
 
+chainAParameters == [
+    connectionID |-> { "connAtoB" },
+    clientID |-> { "clientChainA" }
+]
+
+chainBParameters == [
+    connectionID |-> { "connBtoA" },
+    clientID |-> { "clientChainB" }
+]
+
+
+\*chainAConnectionID = "connAtoB"
+\*chainBConnectionID = "connBtoA"
+\*chainAClientID = "clientChainA"
+\*chainBClientID = "clientChainA"
+
+
+ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
+ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
+
 chainAVars == <<bufChainA, bufChainB, storeChainA>>
 chainBVars == <<bufChainA, bufChainB, storeChainB>>
 chainStoreVars == <<storeChainA, storeChainB>>
@@ -21,17 +41,22 @@ allVars == <<chainStoreVars, bufChainA, bufChainB, stillMalicious>>
 
 
 chmA == INSTANCE ConnectionHandshakeModule
-        WITH MaxHeight  <- MaxHeight,
-             inMsg      <- bufChainA,
-             outMsg     <- bufChainB,
-             store      <- storeChainA
+        WITH MaxHeight      <- MaxHeight,
+             inMsg          <- bufChainA,
+             outMsg         <- bufChainB,
+             store          <- storeChainA,
+             ConnectionIDs  <- chainAParameters.connectionID,
+             ClientIDs      <- chainAParameters.clientID
+             
 
 
 chmB == INSTANCE ConnectionHandshakeModule
-        WITH MaxHeight  <- MaxHeight,
-             inMsg      <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
-             outMsg     <- bufChainA,      \* Inbound for "A" is outbound for "B".
-             store      <- storeChainB
+        WITH MaxHeight      <- MaxHeight,
+             inMsg          <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
+             outMsg         <- bufChainA,      \* Inbound for "A" is outbound for "B".
+             store          <- storeChainB,
+             ConnectionIDs  <- chainBParameters.connectionID,
+             ClientIDs      <- chainBParameters.clientID
 
 
 (***************************************************************************
@@ -45,6 +70,11 @@ InitEnv ==
        \/ bufChainB = chmB!InitMsg /\ bufChainA = chmA!NoMsg
 
 
+(* The environment overwrites the buffer of one of the chains. 
+   This interferes with the CH protocol in two ways:
+    1. by introducing additional messages that are incorrect,
+    2. by dropping correct messages (overwritting them).
+ *)
 MaliciousNextEnv ==
     \/ /\ bufChainA' \in chmA!ConnectionHandshakeMessages
        /\ UNCHANGED bufChainB 
@@ -59,7 +89,7 @@ NextEnv ==
     \/ /\ stillMalicious
        /\ stillMalicious' = FALSE
        /\ UNCHANGED<<bufChainA, bufChainB>>
-    
+
 
 CHDone ==
     /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
@@ -119,6 +149,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 04 16:08:21 CEST 2020 by adi
+\* Last modified Tue May 05 13:27:23 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

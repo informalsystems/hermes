@@ -2,8 +2,10 @@
 
 EXTENDS Naturals
 
-\* Maximum height of the chain where this module is running.
-CONSTANT MaxHeight
+
+CONSTANTS MaxHeight,    \* Maximum height of the chain where this module runs.
+          ConnectionIDs,\* The set of all possible connection IDs.
+          ClientIDs     \* The set of all possible client IDs.
 
 
 VARIABLES
@@ -13,16 +15,6 @@ VARIABLES
 
 
 ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
-
-
-(* TODO: constants *)
-ConnectionIDs == {"connAtoB", "connBtoA"}
-nullConnectionID == "null"
-
-
-(* TODO: constants *)
-ClientIDs == { "clientA", "clientB" }
-nullClientID == "null"
 
 
 ConnectionEnds ==
@@ -56,7 +48,7 @@ Clients ==
         consensusState : Heights
     ]
 
-nullClient == [clientID |-> nullClientID]
+nullClient == "no client"
 
 (******************************** Messages ********************************
  These messages are connection handshake specific.
@@ -77,21 +69,11 @@ ConnectionHandshakeMessages ==
 
     [type : {"CHMsgTry"},
      parameters : ConnectionParameters
-\*        stateProof : Proofs, 
+\*        stateProof : Proofs,
 \*        consensusHeight : Proofs
     ]
 
 NoMsg == [ type |-> "none" ]
-
-
-(* The initialization message that this module expects  *)
-InitMsg ==
-    CHOOSE m \in ConnectionHandshakeMessages :
-        /\ m.type = "CHMsgInit"
-        /\ m.parameters.localEnd.connectionID /= m.parameters.remoteEnd.connectionID
-        /\ m.parameters.localEnd.clientID /= m.parameters.remoteEnd.clientID
-\*    [type : { "CHMsgInit" },
-\*     parameters : ConnectionParameters]
      
 
 (***************************************************************************
@@ -103,12 +85,21 @@ InitMsg ==
 \* If the connection in the store is `nullConnection`, returns true.
 \* Otherwise, returns true if `para` matches the connection in the store, and false otherwise.
 ValidConnectionParameters(para) ==
-    \/ store.connection = nullConnection
-    \/ /\ store.connection /= nullConnection
-       /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
-       /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID  
-       /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
-       /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
+    /\ para.localEnd.connectionID \in ConnectionIDs
+    /\ para.localEnd.clientID \in ClientIDs
+    /\ \/ store.connection = nullConnection
+       \/ /\ store.connection /= nullConnection
+           /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
+           /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID
+           /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
+           /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
+
+(* The initialization message that this module expects  *)
+InitMsg ==
+    CHOOSE m \in ConnectionHandshakeMessages :
+        /\ m.type = "CHMsgInit"
+        /\ m.parameters.localEnd.connectionID \in ConnectionIDs
+        /\ m.parameters.localEnd.clientID \in ClientIDs
 
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
@@ -200,6 +191,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 04 16:12:27 CEST 2020 by adi
+\* Last modified Tue May 05 13:30:21 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
