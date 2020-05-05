@@ -14,9 +14,6 @@ VARIABLES
     store       \* The local store of the chain running this chModule. 
 
 
-ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
-
-
 ConnectionEnds ==
     [
         connectionID : ConnectionIDs,
@@ -24,17 +21,7 @@ ConnectionEnds ==
         \* commitmentPrefix add later
     ]
 
-ConnectionParameters ==
-    [
-        localEnd : ConnectionEnds,
-        remoteEnd : ConnectionEnds
-    ]
 
-Connections ==
-    [
-        parameters : ConnectionParameters,
-        state : ConnectionStates
-    ]
 
 nullConnection == [state |-> "UNINIT"]
 
@@ -50,31 +37,9 @@ Clients ==
 
 nullClient == "no client"
 
-(******************************** Messages ********************************
- These messages are connection handshake specific.
- 
- In the low-level connection handshake protocol, the four messages have the
- following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
- These are described in ICS 003.
- In this high-level specification, we choose slightly different names, to
- make an explicit distinction to the low-level protocol. Message types
- are as follows: CHMsgInit, CHMsgTry, CHMsgAck, and CHMsgConfirm. Notice that
- the fields of each message are also different to the ICS 003 specification.
- ***************************************************************************)
-ConnectionHandshakeMessages ==
-    [type : {"CHMsgInit"}, 
-     parameters : ConnectionParameters]
-
-    \union
-
-    [type : {"CHMsgTry"},
-     parameters : ConnectionParameters
-\*        stateProof : Proofs,
-\*        consensusHeight : Proofs
-    ]
 
 NoMsg == [ type |-> "none" ]
-     
+
 
 (***************************************************************************
  Helper operators.
@@ -95,11 +60,8 @@ ValidConnectionParameters(para) ==
            /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
 
 (* The initialization message that this module expects  *)
-InitMsg ==
-    CHOOSE m \in ConnectionHandshakeMessages :
-        /\ m.type = "CHMsgInit"
-        /\ m.parameters.localEnd.connectionID \in ConnectionIDs
-        /\ m.parameters.localEnd.clientID \in ClientIDs
+ChooseLocalEnd ==
+    CHOOSE l \in ConnectionEnds : TRUE
 
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
@@ -191,6 +153,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 13:30:21 CEST 2020 by adi
+\* Last modified Tue May 05 16:30:32 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

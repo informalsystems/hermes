@@ -25,12 +25,6 @@ chainBParameters == [
 ]
 
 
-\*chainAConnectionID = "connAtoB"
-\*chainBConnectionID = "connBtoA"
-\*chainAClientID = "clientChainA"
-\*chainBClientID = "clientChainA"
-
-
 ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
 ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
 
@@ -59,15 +53,61 @@ chmB == INSTANCE ConnectionHandshakeModule
              ClientIDs      <- chainBParameters.clientID
 
 
+ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
+
+
+ConnectionParameters ==
+    [
+        localEnd : chmA!ConnectionEnds,
+        remoteEnd : chmB!ConnectionEnds
+    ]
+
+Connections ==
+    [
+        parameters : ConnectionParameters,
+        state : ConnectionStates
+    ]
+
+(******************************** Messages ********************************
+ These messages are connection handshake specific.
+ 
+ In the low-level connection handshake protocol, the four messages have the
+ following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
+ These are described in ICS 003.
+ In this high-level specification, we choose slightly different names, to
+ make an explicit distinction to the low-level protocol. Message types
+ are as follows: CHMsgInit, CHMsgTry, CHMsgAck, and CHMsgConfirm. Notice that
+ the fields of each message are also different to the ICS 003 specification.
+ ***************************************************************************)
+ConnectionHandshakeMessages ==
+    [type : {"CHMsgInit"}, 
+     parameters : ConnectionParameters]
+
+    \union
+
+    [type : {"CHMsgTry"},
+     parameters : ConnectionParameters
+\*        stateProof : Proofs,
+\*        consensusHeight : Proofs
+    ]
+
+
 (***************************************************************************
  Environment actions.
  ***************************************************************************)
 
+InitMsg(le, re) ==
+    [type |-> "CHMsgInit",
+     parameters |-> [localEnd |-> le,
+                     remoteEnd |-> re]]
+
 
 InitEnv ==
     /\ stillMalicious = TRUE
-    /\ \/ bufChainA = chmA!InitMsg /\ bufChainB = chmB!NoMsg
-       \/ bufChainB = chmB!InitMsg /\ bufChainA = chmA!NoMsg
+    /\ \/ /\ bufChainA = InitMsg(chmA!ChooseLocalEnd, chmB!ChooseLocalEnd) 
+          /\ bufChainB = chmB!NoMsg
+       \/ /\ bufChainB = InitMsg(chmB!ChooseLocalEnd, chmA!ChooseLocalEnd) 
+          /\ bufChainA = chmA!NoMsg
 
 
 (* The environment overwrites the buffer of one of the chains. 
@@ -76,9 +116,9 @@ InitEnv ==
     2. by dropping correct messages (overwritting them).
  *)
 MaliciousNextEnv ==
-    \/ /\ bufChainA' \in chmA!ConnectionHandshakeMessages
+    \/ /\ bufChainA' \in ConnectionHandshakeMessages
        /\ UNCHANGED bufChainB 
-    \/ /\ bufChainB' \in chmB!ConnectionHandshakeMessages
+    \/ /\ bufChainB' \in ConnectionHandshakeMessages
        /\ UNCHANGED bufChainA
 
 
@@ -124,8 +164,8 @@ Spec ==
 
 
 TypeInvariant ==
-    /\ bufChainA \in chmA!ConnectionHandshakeMessages
-    /\ bufChainB \in chmB!ConnectionHandshakeMessages
+    /\ bufChainA \in ConnectionHandshakeMessages
+    /\ bufChainB \in ConnectionHandshakeMessages
 
 
 \* Liveness property.
@@ -149,6 +189,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 13:27:23 CEST 2020 by adi
+\* Last modified Tue May 05 16:34:19 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
