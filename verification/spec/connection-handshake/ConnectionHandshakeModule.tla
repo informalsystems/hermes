@@ -1,16 +1,21 @@
 --------------------- MODULE ConnectionHandshakeModule ---------------------
 
-EXTENDS Naturals
+EXTENDS Naturals, FiniteSets, Sequences
 
 
 CONSTANTS MaxHeight,    \* Maximum height of the chain where this module runs.
           ConnectionIDs,\* The set of all possible connection IDs.
-          ClientIDs     \* The set of all possible client IDs.
+          ClientIDs,    \* The set of all possible client IDs.
+          MaxBufLen     \* Maximum length of the input and output buffers.
+
+
+ASSUME Cardinality(ConnectionIDs) >= 1
+ASSUME Cardinality(ClientIDs) >= 1
 
 
 VARIABLES
-    inMsg,      \* A buffer holding any message incoming to the chModule.
-    outMsg,     \* A buffer holding any message outbound from the chModule.
+    inBuf,      \* A buffer (Sequence) holding any message(s) incoming to the chModule.
+    outBuf,     \* A buffer (Sequence) holding outbound message(s) from the chModule.
     store       \* The local store of the chain running this chModule. 
 
 
@@ -20,7 +25,6 @@ ConnectionEnds ==
         clientID : ClientIDs
         \* commitmentPrefix add later
     ]
-
 
 
 nullConnection == [state |-> "UNINIT"]
@@ -85,9 +89,9 @@ HandleInitMsg(m) ==
                      oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
                                type |-> "CHMsgTry"]]
                ELSE [nConnection |-> store.connection,
-                     oMsg |-> NoMsg] 
+                     oMsg |-> NoMsg]
     IN /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outMsg' = res.oMsg
+       /\ outBuf' = Append(outBuf, res.oMsg)
 
 
 HandleTryMsg(m) ==
@@ -100,59 +104,60 @@ HandleTryMsg(m) ==
                ELSE [nConnection |-> store.connection,
                      oMsg |-> NoMsg] 
     IN /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outMsg' = res.oMsg
+       /\ outBuf' = res.oMsg
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
-AdvanceChainHeight ==
-    /\ store.height < MaxHeight
-    /\ store' = [store EXCEPT !.height = @ + 1]
-    /\ UNCHANGED <<outMsg, inMsg>>
+\*AdvanceChainHeight ==
+\*    /\ store.height < MaxHeight
+\*    /\ store' = [store EXCEPT !.height = @ + 1]
+\*    /\ UNCHANGED <<outBuf, inBuf>>
 
 
 (******
  Expects a valid ConnectionHandshakeMessage record.
  Does two basic actions:
    1. Updates the chain store, and
-   2. Updates outMsg with a reply message, possibly NoMsg.
+   2. Updates outBuf with a reply message, possibly NoMsg.
  *****)
-ProcessConnectionHandshakeMessage(msg) ==
+ProcessConnectionHandshakeMsg(msg) ==
     \/ msg.type = "CHMsgInit" /\ HandleInitMsg(msg)
     \/ msg.type = "CHMsgTry"  /\ HandleTryMsg(msg)
 
 
 \* Generic handle for any type of inbound message.
-\* Assumes that 'inMsg' is not empty.
-\* Takes care of changing the 'store' and 'outMsg'. 
-ProcessInMsg ==
-    /\ IF ValidConnectionParameters(inMsg.parameters) = TRUE
-        THEN ProcessConnectionHandshakeMessage(inMsg)
-        \* The connection parameters are not valid. No state transition.
-        ELSE /\ outMsg' = NoMsg \* No reply.
-             /\ UNCHANGED store
-    /\ inMsg' = NoMsg \* Flush the inbound message buffer.
+\* Expects a parameter a non-null message.
+\* Takes care of changing the 'store' and enqueing any reply msg in 'outBuf'.
+ProcessMsg(m) ==
+    IF ValidConnectionParameters(m.parameters) = TRUE
+    THEN ProcessConnectionHandshakeMsg(m)
+    \* The connection parameters are not valid. No state transition.
+    ELSE UNCHANGED<<store, outBuf>>
+(* TODO: structure this ^^ logic better using LET .. IN *)
 
 
 (***************************************************************************
  Connection Handshake Module main spec.
  ***************************************************************************)
 
+
 Init(chainID) ==
-    store = [id                 |-> chainID,
-             height             |-> 1,
-             connection         |-> nullConnection,
-             client             |-> nullClient]
+    /\ store = [id |-> chainID,
+                height |-> 1,
+                connection |-> nullConnection,
+                client |-> nullClient]
 
 
 Next ==
-    IF inMsg /= NoMsg
-        THEN ProcessInMsg
-        \* We have no input message, nothing for us to do.
-        ELSE UNCHANGED <<store, inMsg, outMsg>>
+    LET m == Head(inBuf)
+    IN /\ inBuf /= <<>>    \* Enabled if we have a message in our inbound buffer.
+       /\ Len(outBuf) < MaxBufLen
+       /\ ProcessMsg(m)
+       /\ inBuf' = Tail(inBuf) \* Remove the head of the inbound message buffer.
 
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 16:30:32 CEST 2020 by adi
+\* Last modified Tue May 05 18:34:29 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

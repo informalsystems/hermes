@@ -1,13 +1,17 @@
 ---------------------------- MODULE Environment ----------------------------
 
-EXTENDS Naturals, FiniteSets
+EXTENDS Naturals, FiniteSets, Sequences
 
 
-CONSTANT MaxHeight     \* Maximum height of any chain in the system.
+CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
+         MaxBufLen      \* Length (size) of message buffers.
+
+ASSUME MaxHeight > 1
+ASSUME MaxBufLen > 1
 
 
 VARIABLES
-    bufChainA,      \* A buffer for messages inbound to chain A.
+    bufChainA,      \* A buffer (sequence) for messages inbound to chain A.
     bufChainB,      \* A buffer for messages inbound to chain B.
     storeChainA,    \* The local store of chain A.
     storeChainB,    \* The local store of chain B.
@@ -36,8 +40,8 @@ allVars == <<chainStoreVars, bufChainA, bufChainB, stillMalicious>>
 
 chmA == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight      <- MaxHeight,
-             inMsg          <- bufChainA,
-             outMsg         <- bufChainB,
+             inBuf          <- bufChainA,
+             outBuf         <- bufChainB,
              store          <- storeChainA,
              ConnectionIDs  <- chainAParameters.connectionID,
              ClientIDs      <- chainAParameters.clientID
@@ -46,8 +50,8 @@ chmA == INSTANCE ConnectionHandshakeModule
 
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight      <- MaxHeight,
-             inMsg          <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
-             outMsg         <- bufChainA,      \* Inbound for "A" is outbound for "B".
+             inBuf          <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
+             outBuf         <- bufChainA,      \* Inbound for "A" is outbound for "B".
              store          <- storeChainB,
              ConnectionIDs  <- chainBParameters.connectionID,
              ClientIDs      <- chainBParameters.clientID
@@ -104,10 +108,10 @@ InitMsg(le, re) ==
 
 InitEnv ==
     /\ stillMalicious = TRUE
-    /\ \/ /\ bufChainA = InitMsg(chmA!ChooseLocalEnd, chmB!ChooseLocalEnd) 
-          /\ bufChainB = chmB!NoMsg
-       \/ /\ bufChainB = InitMsg(chmB!ChooseLocalEnd, chmA!ChooseLocalEnd) 
-          /\ bufChainA = chmA!NoMsg
+    /\ \/ /\ bufChainA = <<bufChainA, InitMsg(chmA!ChooseLocalEnd, chmB!ChooseLocalEnd)>> 
+          /\ bufChainB = <<>>   \* Empty buffer.
+       \/ /\ bufChainB = <<bufChainB, InitMsg(chmB!ChooseLocalEnd, chmA!ChooseLocalEnd)>>
+          /\ bufChainA = <<>>
 
 
 (* The environment overwrites the buffer of one of the chains. 
@@ -123,10 +127,10 @@ MaliciousNextEnv ==
 
 
 NextEnv ==
-    \/ /\ stillMalicious
+    \/ /\ stillMalicious = TRUE
        /\ MaliciousNextEnv
        /\ UNCHANGED stillMalicious
-    \/ /\ stillMalicious
+    \/ /\ stillMalicious = TRUE
        /\ stillMalicious' = FALSE
        /\ UNCHANGED<<bufChainA, bufChainB>>
 
@@ -143,9 +147,10 @@ CHDone ==
 
 
 Init ==
-    /\ InitEnv
     /\ chmA!Init("chainA")
     /\ chmB!Init("chainB")
+    /\ InitEnv
+
 
 
 \* The two CH modules and the environment alternate their steps.
@@ -189,6 +194,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 16:34:19 CEST 2020 by adi
+\* Last modified Tue May 05 18:29:38 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
