@@ -351,27 +351,31 @@ Since the relayer must pay for all transactions, including `MsgClientCreate` and
 For example, light client implementation of Tendermint supports bisection and the relayer may choose to send skipping headers to A-client on B, periodically or when required by new IBC datagrams.
 
 #### IBC Client Consensus State vs Relayer Light Client States vs Chain states
-A number of IBC datagrams contain proofs obtained from chain A at a some height `proof_height` and they need to be verified against an IBC client consensus state at `proof_height` on chain B. The relayer therefore needs to ensure that the consensus state at `proof_height` exists on chain B.
+A number of IBC datagrams contain proofs obtained from chain A at a some height `h`. A proof needs to be verified on B against the commitment root for `h` which, for Tendermint clients, is included in the client consensus state at `h+1`. This is because for Tendermint chains the application Hash after applying all transactions in block `n` is included in block at height `n+1`. 
+
+The relayer therefore needs to ensure that the consensus state at `proof_height+1` exists on chain B.
 
 One proposal is shown below and described in the rest of this section.
 ![IBC_client_heights](assets/IBC_client_heights.jpeg)
 
 The relayer creates a light client on B with `hi` and then updates it as required by processing different IBC events. Let `ha'` be the last consensus state for client on B.
-When some IBC event for X (connection, channel or packet) is received, it includes the height `hx` at which the event occured on A.
+When some IBC event for X (connection, channel or packet) is received, it includes the height, let it be `hx-1` at which the event occured on A.
 According to the proposal here, the relayer should:
-- get the latest consensus state height of client on B, `ha'`
-- let `h = max(hx, ha')`
-- the relayer asks its light client for the minimal set of headers such that `h` verifies against `ha'` 
-- it then sends one or more `MsgUpdateClient` datagrams in a transaction to B
-- next the relayer periodically queries the latest height on A, `ha` waiting for `ha > h`. The issue here is that a query with proof for a height `h` will return a proof from `h-1` if `h` is the latest state on A. See [SDK store IAVL Query function](https://github.com/cosmos/cosmos-sdk/blob/01b59db35ebc555beaaad9512aaf791ff50245b1/store/iavl/store.go#L250-L267)
-- the relayer can now safely query for item X at height `h` and get a proof at this height
-- the relayer creates the message for X, including the proof and height `h` which is guaranteed to find a client consensus state on B.
+- get the latest consensus state height of client on B, `ha`
+- let `h = max(hx, ha)`
+- query for item X at height `h-1` and get a proof `p` at this height
+- wait for the block at height `hx` to be received, i.e. `Ev{bloack, hx}`
+- get the minimal set of headers from the light client such that `h` verifies against `ha` 
+- sends zero or more `MsgUpdateClient` datagrams and the `MsgX{X, p, h}` in a transaction to B
+- if the transaction is successful or `MsgX..` failed, then "consume" the `Ev{X,..}` 
+  - if `MsgX` fails there is nothing that can be done, another relayer must have submitted first
+- else raise again the event at `hA-1` if one not already there
+- the effect of this is that a new query is made at `hA-1` and since the CS at `hA` exists on B, only `MsgX` needs to be sent out 
 
 #### Connection Messages
 The relayer queries the source and destination chains of the relaying paths in order to determine if connection handshake datagrams should be sent to destination chains.
 
 ##### Connection Query
-
 The following structures pertain to connection queries and should be detailed in [IBC-Modules-Rust-ADR]. 
 The structures are shown here for reference.
 
@@ -692,6 +696,18 @@ If the proposed change will be large, please also indicate a way to do the chang
 The IBC Events, input to the relay thread are described here.
 
 ```
+{"create_client": {
+   "client_id": <clientID>,
+   "client_type": <clientType>,
+  }
+}
+
+{"update_client": {
+   "client_id": <clientID>,
+   "client_type": <clientType>,
+  }
+}
+
 {"connection_open_init": {
     "connection_id": <connectionID>, 
     "client_id": <clientID>, 
@@ -784,20 +800,6 @@ The IBC Events, input to the relay thread are described here.
 }
 ```
 
-Other available events include
-```
-   {"create_client": {
-       "client_id": <clientID>,
-       "client_type": <clientType>,
-    },
-   }
-   
-   {"update_client": {
-       "client_id": <clientID>,
-       "client_type": <clientType>,
-    }
-   }
-```
 ## References
 
 > Are there any relevant PR comments, issues that led up to this, or articles referrenced for why we made the given design choice? If so link them here!
