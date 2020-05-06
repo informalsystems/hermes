@@ -71,6 +71,11 @@ Connections ==
         state : ConnectionStates
     ]
 
+Proofs ==
+    [
+        height : 1..MaxHeight
+    ]
+
 (******************************** Messages ********************************
  These messages are connection handshake specific.
  
@@ -85,14 +90,20 @@ Connections ==
 ConnectionHandshakeMessages ==
     [type : {"CHMsgInit"}, 
      parameters : ConnectionParameters]
-
     \union
-
     [type : {"CHMsgTry"},
-     parameters : ConnectionParameters
-\*        stateProof : Proofs,
-\*        consensusHeight : Proofs
-    ]
+     parameters : ConnectionParameters,
+     stateProof : Proofs,
+     clientProof : Proofs]
+    \union
+    [type : {"CHMsgAck"},
+     parameters : ConnectionParameters,
+     stateProof : Proofs,
+     clientProof : Proofs]
+     \union
+    [type : {"CHMsgConfirm"},
+     parameters : ConnectionParameters,
+     stateProof : Proofs]
 
 
 (* The set of all Init messages, such that the local end is the
@@ -122,9 +133,9 @@ ChooseInitMsg(le, re) ==
 InitEnv ==
     /\ stillMalicious = TRUE
     (* Assign a sequence (a function) with 1 element -- the Init msg -- to bufChainA. *)
-    /\ \/ /\ bufChainA = [x \in {1} |-> ChooseInitMsg(chmA!ConnectionEnds, chmB!ConnectionEnds)]
+    /\ \/ /\ bufChainA \in {<<msg>> : msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
           /\ bufChainB = <<>>   \* Empty buffer.
-       \/ /\ bufChainB = [x \in {1} |-> ChooseInitMsg(chmB!ConnectionEnds, chmA!ConnectionEnds)]
+       \/ /\ bufChainB \in {<<msg>> : msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
           /\ bufChainA = <<>>
 
 
@@ -134,11 +145,17 @@ InitEnv ==
     2. by dropping correct messages (overwritting them).
  *)
 MaliciousNextEnv ==
-    LET arbitraryMsg == CHOOSE x \in ConnectionHandshakeMessages : TRUE (* TODO *)
-    IN \/ /\ bufChainA' = Append(bufChainA, arbitraryMsg)
-          /\ UNCHANGED bufChainB 
-       \/ /\ bufChainB' = Append(bufChainB, arbitraryMsg)
-          /\ UNCHANGED bufChainA
+    (* Without the first constraint, Env could fill buffers (DoS attack). *)
+    \/ /\ Len(bufChainA) < MaxBufLen - 1
+       /\ bufChainA' \in 
+            {Append(bufChainA, arbitraryMsg) : 
+                arbitraryMsg \in ConnectionHandshakeMessages} 
+       /\ UNCHANGED bufChainB
+    \/ /\ Len(bufChainA) < MaxBufLen - 1
+       /\ bufChainB' \in
+            {Append(bufChainB, arbitraryMsg) :
+                arbitraryMsg \in ConnectionHandshakeMessages}
+       /\ UNCHANGED bufChainA
 
 
 NextEnv ==
@@ -209,6 +226,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 06 13:43:35 CEST 2020 by adi
+\* Last modified Wed May 06 16:41:45 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

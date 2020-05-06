@@ -42,26 +42,35 @@ Clients ==
 nullClient == "no client"
 
 
-NoMsg == [ type |-> "none" ]
-
-
 (***************************************************************************
  Helper operators.
  ***************************************************************************)
 
+(* Returns true if 'para' matches the parameters in the local connection,
+    and returns false otherwise.
+ *)
+CheckLocalParameters(para) ==
+     /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
+     /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID
+     /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
+     /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID
 
-\* Validates a ConnectionParameter `para` against an already existing connection.
-\* If the connection in the store is `nullConnection`, returns true.
-\* Otherwise, returns true if `para` matches the connection in the store, and false otherwise.
+
+(* Validates a ConnectionParameter.
+    Expects as input a ConnectionParameter 'para' and returns true or false.
+    
+    This is a basic validation step, making sure that 'para' is valid with
+    respect to module-level constants ConnectionIDs and ClientIDs.
+    If there is a connection in the store, this also validates 'para'
+    against the parameters of an existing connection by relying on the
+    state predicate CheckLocalParameters.
+*)
 ValidConnectionParameters(para) ==
     /\ para.localEnd.connectionID \in ConnectionIDs
     /\ para.localEnd.clientID \in ClientIDs
     /\ \/ store.connection = nullConnection
        \/ /\ store.connection /= nullConnection
-           /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
-           /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID
-           /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
-           /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
+          /\ CheckLocalParameters(para)
 
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
@@ -71,36 +80,76 @@ FlipConnectionParameters(para) ==
      remoteEnd  |-> para.localEnd]
 
 
+(* Returns a proof, stating that the local store on this chain comprises a
+    connection in a certain state. 
+ *)
+GetStateProof ==
+    [content |-> "state proof content"]
+
+
+(* TODO *)
+GetClientProof ==
+    [content |-> "client proof content"]
+
+
 (***************************************************************************
  Connection Handshake Module actions & operators.
  ***************************************************************************)
 
 
-\* Handles a `CHMsgInit` message.
+(* Handles a "CHMsgInit" message 'm'.
+    
+    Primes the store.connection to become initialized with the parameters
+    specified in 'm'. Also creates a reply message, enqueued on the outgoing
+    buffer.
+ *)
 HandleInitMsg(m) ==
-    (* TODO: add proofs in the THEN branch. *)
-    LET res == IF store.connection.state = "UNINIT"
-               THEN [nConnection |-> [parameters |-> m.parameters, 
-                                      state      |-> "INIT"],
-                     oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
-                               type |-> "CHMsgTry"]]
-               ELSE [nConnection |-> store.connection,
-                     oMsg |-> NoMsg]
-    IN /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outBuf' = Append(outBuf, res.oMsg)
+    /\ store.connection.state = "UNINIT"
+    /\ Len(outBuf) < MaxBufLen  \* Enabled if we can reply to the remote chain.
+    /\ LET newCon == [parameters |-> m.parameters, 
+                      state      |-> "INIT"]
+           sProof == GetStateProof
+           cProof == GetClientProof
+           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                        type |-> "CHMsgTry",
+                        stateProof |-> sProof,
+                        clientProof |-> cProof]
+       IN /\ outBuf' = Append(outBuf, replyMsg)
+          /\ store' = [store EXCEPT !.connection = newCon]
 
 
+(* Handles a "CHMsgTry" message.
+ *)
 HandleTryMsg(m) ==
-    (* TODO: add proofs & more logic. *)
-    LET res == IF store.connection.state = "UNINIT"
-               THEN [nConnection |-> [parameters |-> m.parameters, 
-                                      state      |-> "INIT"],
-                     oMsg |-> [parameters |-> FlipConnectionParameters(m.parameters),
-                               type |-> "CHMsgAck"]]
-               ELSE [nConnection |-> store.connection,
-                     oMsg |-> NoMsg] 
-    IN /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outBuf' = Append(outBuf, res.oMsg)
+    /\ \/ store.connection.state = "UNINIT"
+       \/ store.connection.state = "INIT" /\ CheckLocalParameters(m.parameters)
+    /\ Len(outBuf) < MaxBufLen
+    /\ LET newCon == [parameters |-> m.parameters, 
+                      state |-> "INIT"]
+           sProof == GetStateProof
+           cProof == GetClientProof
+           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                        type |-> "CHMsgAck"]
+       IN /\ outBuf' = Append(outBuf, replyMsg)
+          /\ store' = [store EXCEPT !.connection = newCon]
+
+
+(* Handles a "CHMsgAck" message.
+ *)
+HandleAckMsg(m) ==
+    /\ \/ store.connection.state = "INIT"
+       \/ store.connection.state = "TRYOPEN"
+    /\ CheckLocalParameters(m.parameters)
+    /\ Len(outBuf) < MaxBufLen
+    /\ LET newCon == [parameters |-> m.parameters, 
+                      state |-> "INIT"]
+           sProof == GetStateProof
+           cProof == GetClientProof
+           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                        type |-> "CHMsgAck"]
+       IN /\ outBuf' = Append(outBuf, replyMsg)
+          /\ store' = [store EXCEPT !.connection = newCon]
+
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
@@ -110,26 +159,15 @@ HandleTryMsg(m) ==
 \*    /\ UNCHANGED <<outBuf, inBuf>>
 
 
-(******
- Expects a valid ConnectionHandshakeMessage record.
- Does two basic actions:
-   1. Updates the chain store, and
-   2. Updates outBuf with a reply message, possibly NoMsg.
- *****)
-ProcessConnectionHandshakeMsg(msg) ==
-    \/ msg.type = "CHMsgInit" /\ HandleInitMsg(msg)
-    \/ msg.type = "CHMsgTry"  /\ HandleTryMsg(msg)
-
-
-\* Generic handle for any type of inbound message.
-\* Expects a parameter a non-null message.
-\* Takes care of changing the 'store' and enqueing any reply msg in 'outBuf'.
+(* Generic action for handling any type of inbound message.
+    Expects as parameter a message.
+    Takes care of invoking priming the 'store' and any reply msg in 'outBuf'.
+ *)
 ProcessMsg(m) ==
-    IF ValidConnectionParameters(m.parameters) = TRUE
-    THEN ProcessConnectionHandshakeMsg(m)
-    \* The connection parameters are not valid. No state transition.
-    ELSE UNCHANGED<<store, outBuf>>
-(* TODO: structure this ^^ logic better using LET .. IN *)
+    /\ ValidConnectionParameters(m.parameters) = TRUE
+    /\ \/ m.type = "CHMsgInit" /\ HandleInitMsg(m)
+       \/ m.type = "CHMsgTry"  /\ HandleTryMsg(m)
+       \/ m.type = "CHMsgAck"  /\ HandleAckMsg(m)
 
 
 (***************************************************************************
@@ -146,14 +184,13 @@ Init(chainID) ==
 
 Next ==
     LET m == Head(inBuf)
-    IN /\ inBuf /= <<>>    \* Enabled if we have a message in our inbound buffer.
-       /\ Len(outBuf) < MaxBufLen
-       /\ ProcessMsg(m)
-       /\ inBuf' = Tail(inBuf) \* Remove the head of the inbound message buffer.
+    IN /\ inBuf /= <<>>        \* Enabled if we have an inbound msg.
+       /\ ProcessMsg(m)        \* Generic action for handling a msg.
+       /\ inBuf' = Tail(inBuf) \* Strip the head of our inbound msg. buffer.
 
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 06 13:35:35 CEST 2020 by adi
+\* Last modified Wed May 06 16:44:28 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
