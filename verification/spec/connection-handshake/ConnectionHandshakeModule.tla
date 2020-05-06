@@ -63,10 +63,6 @@ ValidConnectionParameters(para) ==
            /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
            /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID      
 
-(* The initialization message that this module expects  *)
-ChooseLocalEnd ==
-    CHOOSE l \in ConnectionEnds : TRUE
-
 
 \* Given a ConnectionParameters record `para`, this operator returns a new set
 \* of parameters where the local and remote ends are flipped (i.e., reversed).
@@ -104,7 +100,7 @@ HandleTryMsg(m) ==
                ELSE [nConnection |-> store.connection,
                      oMsg |-> NoMsg] 
     IN /\ store' = [store EXCEPT !.connection = res.nConnection]
-       /\ outBuf' = res.oMsg
+       /\ outBuf' = Append(outBuf, res.oMsg)
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
@@ -158,6 +154,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 18:34:29 CEST 2020 by adi
+\* Last modified Wed May 06 13:35:35 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

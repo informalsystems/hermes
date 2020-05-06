@@ -1,6 +1,6 @@
 ---------------------------- MODULE Environment ----------------------------
 
-EXTENDS Naturals, FiniteSets, Sequences
+EXTENDS Naturals, FiniteSets, Sequences, TLC
 
 
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
@@ -45,7 +45,6 @@ chmA == INSTANCE ConnectionHandshakeModule
              store          <- storeChainA,
              ConnectionIDs  <- chainAParameters.connectionID,
              ClientIDs      <- chainAParameters.clientID
-             
 
 
 chmB == INSTANCE ConnectionHandshakeModule
@@ -96,21 +95,36 @@ ConnectionHandshakeMessages ==
     ]
 
 
+(* The set of all Init messages, such that the local end is the
+    set 'le', and the remote end is set 're'. *)
+InitMsgs(le, re) ==
+    [type : {"CHMsgInit"},
+     parameters : [localEnd : le,
+                   remoteEnd : re]]
+
+
+(* TODO: find a more elegant way to do this. 
+    What we want, ideally, is to specify this:
+        z \in x
+    to obtain a random Sequence z out of a set of sequences x, obtaining:
+        bufChainA \in InitMsgs
+    instead of the awkward lines for building bufChainA and bufChainB below.
+ *)
+ChooseInitMsg(le, re) ==
+    CHOOSE x \in InitMsgs(le, re) : TRUE
+
+
 (***************************************************************************
  Environment actions.
  ***************************************************************************)
 
-InitMsg(le, re) ==
-    [type |-> "CHMsgInit",
-     parameters |-> [localEnd |-> le,
-                     remoteEnd |-> re]]
-
 
 InitEnv ==
     /\ stillMalicious = TRUE
-    /\ \/ /\ bufChainA = <<bufChainA, InitMsg(chmA!ChooseLocalEnd, chmB!ChooseLocalEnd)>> 
+    (* Assign a sequence (a function) with 1 element -- the Init msg -- to bufChainA. *)
+    /\ \/ /\ bufChainA = [x \in {1} |-> ChooseInitMsg(chmA!ConnectionEnds, chmB!ConnectionEnds)]
           /\ bufChainB = <<>>   \* Empty buffer.
-       \/ /\ bufChainB = <<bufChainB, InitMsg(chmB!ChooseLocalEnd, chmA!ChooseLocalEnd)>>
+       \/ /\ bufChainB = [x \in {1} |-> ChooseInitMsg(chmB!ConnectionEnds, chmA!ConnectionEnds)]
           /\ bufChainA = <<>>
 
 
@@ -120,10 +134,11 @@ InitEnv ==
     2. by dropping correct messages (overwritting them).
  *)
 MaliciousNextEnv ==
-    \/ /\ bufChainA' \in ConnectionHandshakeMessages
-       /\ UNCHANGED bufChainB 
-    \/ /\ bufChainB' \in ConnectionHandshakeMessages
-       /\ UNCHANGED bufChainA
+    LET arbitraryMsg == CHOOSE x \in ConnectionHandshakeMessages : TRUE (* TODO *)
+    IN \/ /\ bufChainA' = Append(bufChainA, arbitraryMsg)
+          /\ UNCHANGED bufChainB 
+       \/ /\ bufChainB' = Append(bufChainB, arbitraryMsg)
+          /\ UNCHANGED bufChainA
 
 
 NextEnv ==
@@ -194,6 +209,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 05 18:29:38 CEST 2020 by adi
+\* Last modified Wed May 06 13:43:35 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
