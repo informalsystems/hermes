@@ -50,7 +50,7 @@ impl QueryClientStateCmd {
                 None => true,
             },
         };
-        Ok((chain_config.clone(), opts))
+        Ok((chain_config, opts))
     }
 }
 
@@ -137,7 +137,7 @@ impl QueryClientConsensusCmd {
                         None => true,
                     },
                 };
-                Ok((chain_config.clone(), opts))
+                Ok((chain_config, opts))
             }
             None => Err("missing client consensus height".to_string()),
         }
