@@ -1,12 +1,12 @@
 --------------------- MODULE ConnectionHandshakeModule ---------------------
 
-EXTENDS Naturals, FiniteSets, Sequences
+EXTENDS Naturals, FiniteSets, Sequences, TLC
 
 
-CONSTANTS MaxHeight,    \* Maximum height of the chain where this module runs.
-          ConnectionIDs,\* The set of all possible connection IDs.
-          ClientIDs,    \* The set of all possible client IDs.
-          MaxBufLen     \* Maximum length of the input and output buffers.
+CONSTANTS MaxHeight,        \* Maximum height of the local chain.
+          ConnectionIDs,    \* The set of all possible connection IDs.
+          ClientIDs,        \* The set of all possible client IDs.
+          MaxBufLen         \* Maximum length of the input and output buffers.
 
 
 ASSUME Cardinality(ConnectionIDs) >= 1
@@ -42,6 +42,15 @@ Clients ==
 nullClient == "no client"
 
 
+(* The set of all types which a message can take. 
+    
+    TODO: These types are also used in the Environment module.
+    Is it possible to restrict these to a single module? 
+ *)
+CHMessageTypes ==
+    { "CHMsgInit", "CHMsgTry", "CHMsgAck", "CHMsgConfirm"}
+
+
 (***************************************************************************
  Helper operators.
  ***************************************************************************)
@@ -73,6 +82,10 @@ ValidConnectionParameters(para) ==
           /\ CheckLocalParameters(para)
 
 
+ValidMessageType(type) ==
+    /\ type \in CHMessageTypes
+
+
 \* Given a ConnectionParameters record `para`, this operator returns a new set
 \* of parameters where the local and remote ends are flipped (i.e., reversed).
 FlipConnectionParameters(para) ==
@@ -95,6 +108,17 @@ GetClientProof ==
 (***************************************************************************
  Connection Handshake Module actions & operators.
  ***************************************************************************)
+
+
+(* Drops a message without any priming of local variables. 
+    This action always enables (returns true); use with care.
+    This action is analogous to "abortTransaction" function from ICS specs.
+ *)
+DropMsg(m)  ==
+    PrintT([cause |-> "The msg. was not valid, dropping",
+            msg   |-> m,
+            chain |-> store.id])
+    /\ UNCHANGED<<outBuf, store>>
 
 
 (* Handles a "CHMsgInit" message 'm'.
@@ -121,6 +145,7 @@ HandleInitMsg(m) ==
 (* Handles a "CHMsgTry" message.
  *)
 HandleTryMsg(m) ==
+    (* The good-case path. *)
     /\ \/ store.connection.state = "UNINIT"
        \/ store.connection.state = "INIT" /\ CheckLocalParameters(m.parameters)
     /\ Len(outBuf) < MaxBufLen
@@ -151,12 +176,17 @@ HandleAckMsg(m) ==
           /\ store' = [store EXCEPT !.connection = newCon]
 
 
+(* Handles a "CHMsgConfirm" message.
+ *)
+HandleConfirmMsg(m) ==
+    UNCHANGED<<outBuf, store>>
+
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
-\*AdvanceChainHeight ==
-\*    /\ store.height < MaxHeight
-\*    /\ store' = [store EXCEPT !.height = @ + 1]
-\*    /\ UNCHANGED <<outBuf, inBuf>>
+AdvanceChainHeight ==
+    /\ store.height < MaxHeight
+    /\ store' = [store EXCEPT !.height = @ + 1]
+    /\ UNCHANGED <<outBuf, inBuf>>
 
 
 (* Generic action for handling any type of inbound message.
@@ -165,9 +195,13 @@ HandleAckMsg(m) ==
  *)
 ProcessMsg(m) ==
     /\ ValidConnectionParameters(m.parameters) = TRUE
+    /\ ValidMessageType(m.type) = TRUE
+    (* One of the following disjunctions will always enable, since
+        the message type is guaranteed to be valid in the THEN branch. *)
     /\ \/ m.type = "CHMsgInit" /\ HandleInitMsg(m)
-       \/ m.type = "CHMsgTry"  /\ HandleTryMsg(m)
-       \/ m.type = "CHMsgAck"  /\ HandleAckMsg(m)
+       \/ m.type = "CHMsgTry" /\ HandleTryMsg(m)
+       \/ m.type = "CHMsgAck" /\ HandleAckMsg(m)
+       \/ m.type = "CHMsgConfirm" /\ HandleConfirmMsg(m)
 
 
 (***************************************************************************
@@ -185,12 +219,13 @@ Init(chainID) ==
 Next ==
     LET m == Head(inBuf)
     IN /\ inBuf /= <<>>        \* Enabled if we have an inbound msg.
-       /\ ProcessMsg(m)        \* Generic action for handling a msg.
        /\ inBuf' = Tail(inBuf) \* Strip the head of our inbound msg. buffer.
+       /\ IF ENABLED ProcessMsg(m)
+          THEN ProcessMsg(m)      \* Generic action for handling a msg.
+          ELSE DropMsg(m)
 
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 06 16:44:28 CEST 2020 by adi
+\* Last modified Thu May 07 15:11:25 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
-

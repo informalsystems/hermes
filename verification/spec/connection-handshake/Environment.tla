@@ -1,6 +1,6 @@
 ---------------------------- MODULE Environment ----------------------------
 
-EXTENDS Naturals, FiniteSets, Sequences, TLC
+EXTENDS Naturals, FiniteSets, Sequences
 
 
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
@@ -15,7 +15,7 @@ VARIABLES
     bufChainB,      \* A buffer for messages inbound to chain B.
     storeChainA,    \* The local store of chain A.
     storeChainB,    \* The local store of chain B.
-    stillMalicious  \* If TRUE, environment interferes w/ CH protocol. 
+    maliciousEnv    \* If TRUE, environment interferes w/ CH protocol. 
 
 
 chainAParameters == [
@@ -35,7 +35,7 @@ ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID 
 chainAVars == <<bufChainA, bufChainB, storeChainA>>
 chainBVars == <<bufChainA, bufChainB, storeChainB>>
 chainStoreVars == <<storeChainA, storeChainB>>
-allVars == <<chainStoreVars, bufChainA, bufChainB, stillMalicious>>
+allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
 
 
 chmA == INSTANCE ConnectionHandshakeModule
@@ -130,11 +130,12 @@ ChooseInitMsg(le, re) ==
  ***************************************************************************)
 
 
+(* Assigns a sequence with 1 element -- the Init msg -- to either bufChainA
+    or bufChainB. *)
 InitEnv ==
-    /\ stillMalicious = TRUE
-    (* Assign a sequence (a function) with 1 element -- the Init msg -- to bufChainA. *)
+    /\ maliciousEnv = TRUE
     /\ \/ /\ bufChainA \in {<<msg>> : msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
-          /\ bufChainB = <<>>   \* Empty buffer.
+          /\ bufChainB = <<>>   (* Empty buffer. *)
        \/ /\ bufChainB \in {<<msg>> : msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
           /\ bufChainA = <<>>
 
@@ -143,11 +144,14 @@ InitEnv ==
    This interferes with the CH protocol in two ways:
     1. by introducing additional messages that are incorrect,
     2. by dropping correct messages (overwritting them).
+    
+    Without the first constraint, on the "Len(bufChainA)" and "Len(bufChainB)",
+    Env could fill buffers (DoS attack). This can lead to a deadlock, because
+    chains will simply be unable to reply to each other.
  *)
 MaliciousNextEnv ==
-    (* Without the first constraint, Env could fill buffers (DoS attack). *)
     \/ /\ Len(bufChainA) < MaxBufLen - 1
-       /\ bufChainA' \in 
+       /\ bufChainA' \in
             {Append(bufChainA, arbitraryMsg) : 
                 arbitraryMsg \in ConnectionHandshakeMessages} 
        /\ UNCHANGED bufChainB
@@ -159,11 +163,11 @@ MaliciousNextEnv ==
 
 
 NextEnv ==
-    \/ /\ stillMalicious = TRUE
+    \/ /\ maliciousEnv = TRUE
        /\ MaliciousNextEnv
-       /\ UNCHANGED stillMalicious
-    \/ /\ stillMalicious = TRUE
-       /\ stillMalicious' = FALSE
+       /\ UNCHANGED maliciousEnv
+    \/ /\ maliciousEnv = TRUE
+       /\ maliciousEnv' = FALSE
        /\ UNCHANGED<<bufChainA, bufChainB>>
 
 
@@ -184,13 +188,12 @@ Init ==
     /\ InitEnv
 
 
-
 \* The two CH modules and the environment alternate their steps.
 Next ==
     \/ CHDone
     \/ NextEnv /\ UNCHANGED <<chainStoreVars>>
-    \/ chmA!Next /\ UNCHANGED <<storeChainB, stillMalicious>>
-    \/ chmB!Next /\ UNCHANGED <<storeChainA, stillMalicious>>
+    \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
+    \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
 
 Spec ==
@@ -207,7 +210,7 @@ TypeInvariant ==
 
 \* Liveness property.
 Termination ==
-    <> ~ stillMalicious
+    <> ~ maliciousEnv
         => <> /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
               /\ storeChainB.connection.state = "INIT"
 
@@ -226,6 +229,5 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 06 16:41:45 CEST 2020 by adi
+\* Last modified Thu May 07 13:36:50 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
-
