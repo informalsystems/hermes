@@ -17,7 +17,7 @@ paths-cosmos = []
 paths-ics = []
 
 [dependencies]
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "tendermint/v0.33" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"
