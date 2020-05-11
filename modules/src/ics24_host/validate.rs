@@ -51,5 +51,5 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
 /// A valid identifier must be between 10-20 characters and only contain lowercase
 /// alphabetic characters,
 pub fn validate_client_identifier(id: &str) -> Result<(), ValidationError> {
-    validate_identifier(id, 10, 20)
+    validate_identifier(id, 5, 20)
 }

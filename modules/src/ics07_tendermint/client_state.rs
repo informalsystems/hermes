@@ -2,7 +2,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::CommitmentRoot;
 
 use crate::ics07_tendermint::header::Header;
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::ClientId;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::lite::Header as liteHeader;
