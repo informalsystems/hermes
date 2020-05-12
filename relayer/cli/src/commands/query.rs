@@ -10,6 +10,10 @@ pub enum QueryCmd {
     /// The `query client` subcommand
     #[options(help = "query client")]
     Client(QueryClientCmds),
+
+    /// The `query connection` subcommand
+    #[options(help = "query connection")]
+    Connection(QueryConnectionCmds),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
@@ -20,4 +24,11 @@ pub enum QueryClientCmds {
 
     #[options(help = "query client consensus")]
     Consensus(client::QueryClientConsensusCmd),
+}
+
+#[derive(Command, Debug, Options, Runnable)]
+pub enum QueryConnectionCmds {
+    /// The `query connection` subcommand
+    #[options(help = "query a connection")]
+    Connection(client::QueryConnectionCmd),
 }

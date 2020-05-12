@@ -43,6 +43,12 @@ pub struct ConnectionPath {
     pub connection_id: String,
 }
 
+impl ConnectionPath {
+    pub fn new(connection_id: String) -> Self {
+        Self { connection_id }
+    }
+}
+
 impl Path for ConnectionPath {
     fn to_string(&self) -> String {
         paths::connection_path(&self)
