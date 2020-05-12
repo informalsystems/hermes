@@ -1,6 +1,6 @@
 --------------------- MODULE ConnectionHandshakeModule ---------------------
 
-EXTENDS Naturals, FiniteSets, Sequences, TLC
+EXTENDS Naturals, FiniteSets, Sequences
 
 
 CONSTANTS MaxHeight,        \* Maximum height of the local chain.
@@ -59,10 +59,12 @@ CHMessageTypes ==
     and returns false otherwise.
  *)
 CheckLocalParameters(para) ==
-     /\ store.connection.parameters.localEnd.connectionID = para.localEnd.connectionID   
-     /\ store.connection.parameters.remoteEnd.connectionID = para.remoteEnd.connectionID
-     /\ store.connection.parameters.localEnd.clientID = para.localEnd.clientID       
-     /\ store.connection.parameters.remoteEnd.clientID = para.remoteEnd.clientID
+    LET local == store.connection.parameters.localEnd
+        remote == store.connection.parameters.remoteEnd 
+    IN /\ local.connectionID = para.localEnd.connectionID   
+       /\ remote.connectionID = para.remoteEnd.connectionID
+       /\ local.clientID = para.localEnd.clientID       
+       /\ remote.clientID = para.remoteEnd.clientID
 
 
 (* Validates a ConnectionParameter.
@@ -115,10 +117,7 @@ GetClientProof ==
     This action is analogous to "abortTransaction" function from ICS specs.
  *)
 DropMsg(m)  ==
-    PrintT([cause |-> "The msg. was not valid, dropping",
-            msg   |-> m,
-            chain |-> store.id])
-    /\ UNCHANGED<<outBuf, store>>
+    UNCHANGED<<outBuf, store>>
 
 
 (* Handles a "CHMsgInit" message 'm'.
@@ -218,14 +217,14 @@ Init(chainID) ==
 
 Next ==
     LET m == Head(inBuf)
-    IN /\ inBuf /= <<>>        \* Enabled if we have an inbound msg.
+    IN /\ inBuf # <<>>         \* Enabled if we have an inbound msg.
        /\ inBuf' = Tail(inBuf) \* Strip the head of our inbound msg. buffer.
-       /\ IF ENABLED ProcessMsg(m)
-          THEN ProcessMsg(m)      \* Generic action for handling a msg.
-          ELSE DropMsg(m)
+       /\ \/ ProcessMsg(m)     \* Generic action for handling a msg.
+          \/ DropMsg(m)
 
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 07 15:11:25 CEST 2020 by adi
+\* Last modified Tue May 12 13:23:17 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
+

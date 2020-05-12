@@ -32,9 +32,19 @@ chainBParameters == [
 ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
 ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
 
-chainAVars == <<bufChainA, bufChainB, storeChainA>>
-chainBVars == <<bufChainA, bufChainB, storeChainB>>
+(* Bundle with variables that chain A has access to. *)
+chainAVars == <<bufChainA,      (* Input message buffer. *)
+                bufChainB,      (* Output message buffer. *)
+                storeChainA>>   (* The local chain store. *)
+
+(* Bundle with variables that chain B has access to. *)
+chainBVars == <<bufChainA,      (* Input message buffer. *)
+                bufChainB,      (* Output message buffer. *)
+                storeChainB>>   (* Local chain store. *)
+
+(* All variables specific to chains. *)
 chainStoreVars == <<storeChainA, storeChainB>>
+
 allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
 
 
@@ -93,17 +103,17 @@ ConnectionHandshakeMessages ==
     \union
     [type : {"CHMsgTry"},
      parameters : ConnectionParameters,
-     stateProof : Proofs,
+     connProof : Proofs,
      clientProof : Proofs]
     \union
     [type : {"CHMsgAck"},
      parameters : ConnectionParameters,
-     stateProof : Proofs,
+     connProof : Proofs,
      clientProof : Proofs]
      \union
     [type : {"CHMsgConfirm"},
      parameters : ConnectionParameters,
-     stateProof : Proofs]
+     connProof : Proofs]
 
 
 (* The set of all Init messages, such that the local end is the
@@ -112,17 +122,6 @@ InitMsgs(le, re) ==
     [type : {"CHMsgInit"},
      parameters : [localEnd : le,
                    remoteEnd : re]]
-
-
-(* TODO: find a more elegant way to do this. 
-    What we want, ideally, is to specify this:
-        z \in x
-    to obtain a random Sequence z out of a set of sequences x, obtaining:
-        bufChainA \in InitMsgs
-    instead of the awkward lines for building bufChainA and bufChainB below.
- *)
-ChooseInitMsg(le, re) ==
-    CHOOSE x \in InitMsgs(le, re) : TRUE
 
 
 (***************************************************************************
@@ -135,7 +134,7 @@ ChooseInitMsg(le, re) ==
 InitEnv ==
     /\ maliciousEnv = TRUE
     /\ \/ /\ bufChainA \in {<<msg>> : msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
-          /\ bufChainB = <<>>   (* Empty buffer. *)
+          /\ bufChainB = <<>>   (* Empty buffer initially. *)
        \/ /\ bufChainB \in {<<msg>> : msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
           /\ bufChainA = <<>>
 
@@ -155,7 +154,7 @@ MaliciousNextEnv ==
             {Append(bufChainA, arbitraryMsg) : 
                 arbitraryMsg \in ConnectionHandshakeMessages} 
        /\ UNCHANGED bufChainB
-    \/ /\ Len(bufChainA) < MaxBufLen - 1
+    \/ /\ Len(bufChainB) < MaxBufLen - 1
        /\ bufChainB' \in
             {Append(bufChainB, arbitraryMsg) :
                 arbitraryMsg \in ConnectionHandshakeMessages}
@@ -196,16 +195,27 @@ Next ==
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
 
-Spec ==
-    /\ Init
-    /\ [][Next]_<<allVars>>
+FairProcessMsg ==
+    \A m \in ConnectionHandshakeMessages : 
+        /\ WF_chainAVars(chmA!ProcessMsg(m))
+        /\ WF_chainBVars(chmB!ProcessMsg(m))
+
+FairModuleProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
 
+Spec ==
+    /\ Init
+    /\ [][Next]_<<allVars>>
+    /\ FairProcessMsg
+    /\ FairModuleProgress
 
-TypeInvariant ==
-    /\ bufChainA \in ConnectionHandshakeMessages
-    /\ bufChainB \in ConnectionHandshakeMessages
+
+(* TODO: Unclear how to capture the type of a sequence. *)
+\*TypeInvariant ==
+\*    /\ \/ bufChainA = <<>>
+\*       \/ \A e in bufChainA : e \in ConnectionHandshakeMessages
+\*    /\ bufChainB \in ConnectionHandshakeMessages
 
 
 \* Liveness property.
@@ -229,5 +239,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 07 13:36:50 CEST 2020 by adi
+\* Last modified Tue May 12 13:36:09 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
+
