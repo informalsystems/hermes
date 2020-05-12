@@ -32,8 +32,6 @@ chainBParameters == [
 ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
 ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
 
-chainAProcessVars == <<bufChainB, storeChainA>>
-chainBProcessVars == <<bufChainA, storeChainB>>
 
 (* Bundle with variables that chain A has access to. *)
 chainAVars == <<bufChainA,      (* Input message buffer. *)
@@ -198,13 +196,6 @@ Next ==
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
 
-\*FairProcessMsg ==
-\*    /\ \A m \in ConnectionHandshakeMessages : WF_chainAProcessVars(chmA!ProcessMsg(m))
-\*    /\ \A n \in ConnectionHandshakeMessages : WF_chainBProcessVars(chmB!ProcessMsg(n))
-\*    /\ chmA!FairProcessMsg
-\*    /\ chmB!FairProcessMsg
-    
-
 FairModuleProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
@@ -243,6 +234,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 12 16:33:51 CEST 2020 by adi
+\* Last modified Tue May 12 16:38:51 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

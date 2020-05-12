@@ -106,12 +106,18 @@ FlipConnectionParameters(para) ==
     connection in a certain state. 
  *)
 GetStateProof ==
-    [content |-> "state proof content"]
+    [content |-> "state proof content",
+     height |-> store.height,
+     connectionState |-> store.connection.state]
 
 
 (* TODO *)
 GetClientProof ==
-    [content |-> "client proof content"]
+    IF store.client # nullClient
+    THEN [content |-> "client proof content",
+          height |-> store.client.height]
+    ELSE [content |-> "client proof content",
+          height |-> nullClient]
 
 
 (***************************************************************************
@@ -127,9 +133,25 @@ DropMsg(m) ==
     /\ UNCHANGED<<outBuf, store>>
 
 
+
+(* Modifies the local store, by replacing the connection with the input 'newCon'.
+    If the height of the chains has not yet attained MaxHeight, this action also
+    advances the chain height. 
+ *)
+ModifyStore(newCon) ==
+    \/ /\ store.height < MaxHeight
+       /\ store' = [store EXCEPT !.connection = newCon,
+                                 !.height = @ + 1]
+    \/ /\ store.height >= MaxHeight
+       /\ store' = [store EXCEPT !.connection = newCon]
+
+
+(* State predicate, guarding the handler for the Init msg. 
+ *)
 PreconditionsInitMsg(m) ==
     /\ store.connection.state = "UNINIT"
     /\ Len(outBuf) < MaxBufLen  (* Enables if we can reply on the buffer. *)
+
 
 (* Handles a "CHMsgInit" message 'm'.
     
@@ -149,12 +171,14 @@ HandleInitMsg(m) ==
                            stateProof |-> sProof,
                            clientProof |-> cProof]
            IN /\ outBuf' = Append(outBuf, replyMsg)
-              /\ store' = [store EXCEPT !.connection = newCon]
+              /\ ModifyStore(newCon)
     (* The exceptional path. *)
     \/ /\ PreconditionsInitMsg(m) = FALSE
        /\ DropMsg(m)
 
 
+(* State predicate, guarding the handler for the Try msg. 
+ *)
 PreconditionsTryMsg(m) ==
     /\ \/ store.connection.state = "UNINIT"
        \/ store.connection.state = "INIT" /\ CheckLocalParameters(m.parameters)
@@ -172,11 +196,13 @@ HandleTryMsg(m) ==
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                            type |-> "CHMsgAck"]
           IN /\ outBuf' = Append(outBuf, replyMsg)
-             /\ store' = [store EXCEPT !.connection = newCon]
+             /\ ModifyStore(newCon)
     \/ /\ PreconditionsTryMsg(m) = FALSE
        /\ DropMsg(m)
 
 
+(* State predicate, guarding the handler for the Ack msg. 
+ *)
 PreconditionsAckMsg(m) ==
     /\ \/ store.connection.state = "INIT"
        \/ store.connection.state = "TRYOPEN"
@@ -195,22 +221,36 @@ HandleAckMsg(m) ==
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                            type |-> "CHMsgAck"]
           IN /\ outBuf' = Append(outBuf, replyMsg)
-             /\ store' = [store EXCEPT !.connection = newCon]
+             /\ ModifyStore(newCon)
     \/ /\ PreconditionsAckMsg(m) = FALSE
        /\ DropMsg(m)
+
+
+(* State predicate, guarding the handler for the Confirm msg. 
+ *)
+PreconditionsConfirmMsg(m) ==
+    /\ store.connection.state = "TRYOPEN"
+    /\ CheckLocalParameters(m.parameters)
+    /\ Len(outBuf) < MaxBufLen
 
 
 (* Handles a "CHMsgConfirm" message.
  *)
 HandleConfirmMsg(m) ==
-    UNCHANGED<<outBuf, store>>
+    \/ /\ PreconditionsConfirmMsg(m) = TRUE
+       /\ LET newCon == [parameters |-> m.parameters,
+                         state |-> "OPEN"]
+          IN /\ ModifyStore(newCon)
+             /\ UNCHANGED outBuf    (* We're not sending any reply. *)
+    \/ /\ PreconditionsConfirmMsg(m) = FALSE
+       /\ DropMsg(m)
 
 
 \* If MaxHeight is not yet reached, then advance the height of the chain. 
 AdvanceChainHeight ==
-    /\ store.height < MaxHeight
-    /\ store' = [store EXCEPT !.height = @ + 1]
-    /\ UNCHANGED <<outBuf, inBuf>>
+    \/ /\ store.height < MaxHeight
+       /\ store' = [store EXCEPT !.height = @ + 1]
+    \/ UNCHANGED <<outBuf, inBuf>>
 
 
 (* Generic action for handling any type of inbound message.
@@ -218,13 +258,12 @@ AdvanceChainHeight ==
     Takes care of invoking priming the 'store' and any reply msg in 'outBuf'.
  *)
 ProcessMsg(m) ==
-    /\ ValidMsg(m) = TRUE
-    (* One of the following disjunctions will always enable, since
-        the message type is guaranteed to be valid in the THEN branch. *)
-    /\ \/ m.type = "CHMsgInit" /\ HandleInitMsg(m)
-       \/ m.type = "CHMsgTry" /\ HandleTryMsg(m)
-       \/ m.type = "CHMsgAck" /\ HandleAckMsg(m)
-       \/ m.type = "CHMsgConfirm" /\ HandleConfirmMsg(m)
+        (* One of the following disjunctions will always enable, since
+            the message type is guaranteed to be valid in the THEN branch. *)
+    \/ m.type = "CHMsgInit" /\ HandleInitMsg(m)
+    \/ m.type = "CHMsgTry" /\ HandleTryMsg(m)
+    \/ m.type = "CHMsgAck" /\ HandleAckMsg(m)
+    \/ m.type = "CHMsgConfirm" /\ HandleConfirmMsg(m)
 
 
 (***************************************************************************
@@ -238,17 +277,18 @@ Init(chainID) ==
                 connection |-> nullConnection,
                 client |-> nullClient]
 
-\*FairProcessMsg ==
-\*    \A m \in inBuf : /\ WF_vars(ProcessMsg(m))
 
 Next ==
     LET m == Head(inBuf)
     IN /\ inBuf # <<>>         \* Enabled if we have an inbound msg.
        /\ inBuf' = Tail(inBuf) \* Strip the head of our inbound msg. buffer.
-       /\ ProcessMsg(m)        \* Generic action for handling a msg.
+       /\ \/ /\ ValidMsg(m) 
+             /\ ProcessMsg(m)  \* Generic action for handling a msg.
+          \/ /\ ~ValidMsg(m)
+             /\ DropMsg(m)
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 12 16:29:41 CEST 2020 by adi
+\* Last modified Tue May 12 17:17:29 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
