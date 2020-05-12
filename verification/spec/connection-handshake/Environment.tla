@@ -32,14 +32,17 @@ chainBParameters == [
 ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
 ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
 
+chainAProcessVars == <<bufChainB, storeChainA>>
+chainBProcessVars == <<bufChainA, storeChainB>>
+
 (* Bundle with variables that chain A has access to. *)
 chainAVars == <<bufChainA,      (* Input message buffer. *)
                 bufChainB,      (* Output message buffer. *)
                 storeChainA>>   (* The local chain store. *)
 
 (* Bundle with variables that chain B has access to. *)
-chainBVars == <<bufChainA,      (* Input message buffer. *)
-                bufChainB,      (* Output message buffer. *)
+chainBVars == <<bufChainB,      (* Input message buffer. *)
+                bufChainA,      (* Output message buffer. *)
                 storeChainB>>   (* Local chain store. *)
 
 (* All variables specific to chains. *)
@@ -133,9 +136,11 @@ InitMsgs(le, re) ==
     or bufChainB. *)
 InitEnv ==
     /\ maliciousEnv = TRUE
-    /\ \/ /\ bufChainA \in {<<msg>> : msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
+    /\ \/ /\ bufChainA \in {<<msg>> : 
+                msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
           /\ bufChainB = <<>>   (* Empty buffer initially. *)
-       \/ /\ bufChainB \in {<<msg>> : msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
+       \/ /\ bufChainB \in {<<msg>> :
+                msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
           /\ bufChainA = <<>>
 
 
@@ -150,14 +155,12 @@ InitEnv ==
  *)
 MaliciousNextEnv ==
     \/ /\ Len(bufChainA) < MaxBufLen - 1
-       /\ bufChainA' \in
-            {Append(bufChainA, arbitraryMsg) : 
-                arbitraryMsg \in ConnectionHandshakeMessages} 
+       /\ bufChainA' \in {Append(bufChainA, arbitraryMsg) : 
+            arbitraryMsg \in ConnectionHandshakeMessages}
        /\ UNCHANGED bufChainB
     \/ /\ Len(bufChainB) < MaxBufLen - 1
-       /\ bufChainB' \in
-            {Append(bufChainB, arbitraryMsg) :
-                arbitraryMsg \in ConnectionHandshakeMessages}
+       /\ bufChainB' \in {Append(bufChainB, arbitraryMsg) :
+            arbitraryMsg \in ConnectionHandshakeMessages}
        /\ UNCHANGED bufChainA
 
 
@@ -195,10 +198,12 @@ Next ==
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
 
-FairProcessMsg ==
-    \A m \in ConnectionHandshakeMessages : 
-        /\ WF_chainAVars(chmA!ProcessMsg(m))
-        /\ WF_chainBVars(chmB!ProcessMsg(m))
+\*FairProcessMsg ==
+\*    /\ \A m \in ConnectionHandshakeMessages : WF_chainAProcessVars(chmA!ProcessMsg(m))
+\*    /\ \A n \in ConnectionHandshakeMessages : WF_chainBProcessVars(chmB!ProcessMsg(n))
+\*    /\ chmA!FairProcessMsg
+\*    /\ chmB!FairProcessMsg
+    
 
 FairModuleProgress ==
     /\ WF_chainAVars(chmA!Next)
@@ -207,7 +212,6 @@ FairModuleProgress ==
 Spec ==
     /\ Init
     /\ [][Next]_<<allVars>>
-    /\ FairProcessMsg
     /\ FairModuleProgress
 
 
@@ -239,6 +243,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 12 13:36:09 CEST 2020 by adi
+\* Last modified Tue May 12 16:33:51 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

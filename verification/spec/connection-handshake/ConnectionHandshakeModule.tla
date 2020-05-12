@@ -19,6 +19,8 @@ VARIABLES
     store       \* The local store of the chain running this chModule. 
 
 
+vars == <<inBuf, outBuf, store>>
+
 ConnectionEnds ==
     [
         connectionID : ConnectionIDs,
@@ -88,6 +90,11 @@ ValidMessageType(type) ==
     /\ type \in CHMessageTypes
 
 
+ValidMsg(m) == 
+    /\ ValidConnectionParameters(m.parameters)
+    /\ ValidMessageType(m.type)
+
+
 \* Given a ConnectionParameters record `para`, this operator returns a new set
 \* of parameters where the local and remote ends are flipped (i.e., reversed).
 FlipConnectionParameters(para) ==
@@ -116,9 +123,13 @@ GetClientProof ==
     This action always enables (returns true); use with care.
     This action is analogous to "abortTransaction" function from ICS specs.
  *)
-DropMsg(m)  ==
-    UNCHANGED<<outBuf, store>>
+DropMsg(m) ==
+    /\ UNCHANGED<<outBuf, store>>
 
+
+PreconditionsInitMsg(m) ==
+    /\ store.connection.state = "UNINIT"
+    /\ Len(outBuf) < MaxBufLen  (* Enables if we can reply on the buffer. *)
 
 (* Handles a "CHMsgInit" message 'm'.
     
@@ -127,52 +138,66 @@ DropMsg(m)  ==
     buffer.
  *)
 HandleInitMsg(m) ==
-    /\ store.connection.state = "UNINIT"
-    /\ Len(outBuf) < MaxBufLen  \* Enabled if we can reply to the remote chain.
-    /\ LET newCon == [parameters |-> m.parameters, 
-                      state      |-> "INIT"]
-           sProof == GetStateProof
-           cProof == GetClientProof
-           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                        type |-> "CHMsgTry",
-                        stateProof |-> sProof,
-                        clientProof |-> cProof]
-       IN /\ outBuf' = Append(outBuf, replyMsg)
-          /\ store' = [store EXCEPT !.connection = newCon]
+    (* The good-case path. *)
+    \/ /\ PreconditionsInitMsg(m) = TRUE
+       /\ LET newCon == [parameters |-> m.parameters, 
+                         state      |-> "INIT"]
+              sProof == GetStateProof
+              cProof == GetClientProof
+              replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                           type |-> "CHMsgTry",
+                           stateProof |-> sProof,
+                           clientProof |-> cProof]
+           IN /\ outBuf' = Append(outBuf, replyMsg)
+              /\ store' = [store EXCEPT !.connection = newCon]
+    (* The exceptional path. *)
+    \/ /\ PreconditionsInitMsg(m) = FALSE
+       /\ DropMsg(m)
+
+
+PreconditionsTryMsg(m) ==
+    /\ \/ store.connection.state = "UNINIT"
+       \/ store.connection.state = "INIT" /\ CheckLocalParameters(m.parameters)
+    /\ Len(outBuf) < MaxBufLen
 
 
 (* Handles a "CHMsgTry" message.
  *)
 HandleTryMsg(m) ==
-    (* The good-case path. *)
-    /\ \/ store.connection.state = "UNINIT"
-       \/ store.connection.state = "INIT" /\ CheckLocalParameters(m.parameters)
+    \/ /\ PreconditionsTryMsg(m) = TRUE
+       /\ LET newCon == [parameters |-> m.parameters, 
+                         state |-> "INIT"]
+              sProof == GetStateProof
+              cProof == GetClientProof
+              replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                           type |-> "CHMsgAck"]
+          IN /\ outBuf' = Append(outBuf, replyMsg)
+             /\ store' = [store EXCEPT !.connection = newCon]
+    \/ /\ PreconditionsTryMsg(m) = FALSE
+       /\ DropMsg(m)
+
+
+PreconditionsAckMsg(m) ==
+    /\ \/ store.connection.state = "INIT"
+       \/ store.connection.state = "TRYOPEN"
+    /\ CheckLocalParameters(m.parameters)
     /\ Len(outBuf) < MaxBufLen
-    /\ LET newCon == [parameters |-> m.parameters, 
-                      state |-> "INIT"]
-           sProof == GetStateProof
-           cProof == GetClientProof
-           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                        type |-> "CHMsgAck"]
-       IN /\ outBuf' = Append(outBuf, replyMsg)
-          /\ store' = [store EXCEPT !.connection = newCon]
 
 
 (* Handles a "CHMsgAck" message.
  *)
 HandleAckMsg(m) ==
-    /\ \/ store.connection.state = "INIT"
-       \/ store.connection.state = "TRYOPEN"
-    /\ CheckLocalParameters(m.parameters)
-    /\ Len(outBuf) < MaxBufLen
-    /\ LET newCon == [parameters |-> m.parameters, 
-                      state |-> "INIT"]
-           sProof == GetStateProof
-           cProof == GetClientProof
-           replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                        type |-> "CHMsgAck"]
-       IN /\ outBuf' = Append(outBuf, replyMsg)
-          /\ store' = [store EXCEPT !.connection = newCon]
+    \/ /\ PreconditionsAckMsg(m) = TRUE
+       /\ LET newCon == [parameters |-> m.parameters, 
+                         state |-> "INIT"]
+              sProof == GetStateProof
+              cProof == GetClientProof
+              replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                           type |-> "CHMsgAck"]
+          IN /\ outBuf' = Append(outBuf, replyMsg)
+             /\ store' = [store EXCEPT !.connection = newCon]
+    \/ /\ PreconditionsAckMsg(m) = FALSE
+       /\ DropMsg(m)
 
 
 (* Handles a "CHMsgConfirm" message.
@@ -193,8 +218,7 @@ AdvanceChainHeight ==
     Takes care of invoking priming the 'store' and any reply msg in 'outBuf'.
  *)
 ProcessMsg(m) ==
-    /\ ValidConnectionParameters(m.parameters) = TRUE
-    /\ ValidMessageType(m.type) = TRUE
+    /\ ValidMsg(m) = TRUE
     (* One of the following disjunctions will always enable, since
         the message type is guaranteed to be valid in the THEN branch. *)
     /\ \/ m.type = "CHMsgInit" /\ HandleInitMsg(m)
@@ -214,17 +238,17 @@ Init(chainID) ==
                 connection |-> nullConnection,
                 client |-> nullClient]
 
+\*FairProcessMsg ==
+\*    \A m \in inBuf : /\ WF_vars(ProcessMsg(m))
 
 Next ==
     LET m == Head(inBuf)
     IN /\ inBuf # <<>>         \* Enabled if we have an inbound msg.
        /\ inBuf' = Tail(inBuf) \* Strip the head of our inbound msg. buffer.
-       /\ \/ ProcessMsg(m)     \* Generic action for handling a msg.
-          \/ DropMsg(m)
-
+       /\ ProcessMsg(m)        \* Generic action for handling a msg.
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 12 13:23:17 CEST 2020 by adi
+\* Last modified Tue May 12 16:29:41 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
