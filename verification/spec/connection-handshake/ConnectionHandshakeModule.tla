@@ -28,20 +28,18 @@ ConnectionEnds ==
     [
         connectionID : ConnectionIDs,
         clientID : ClientIDs
-        \* commitmentPrefix add later
     ]
 
 
 nullConnection == [state |-> "UNINIT"]
 
 
-Heights == 1..MaxHeight
-
-
-Clients ==
+(* The set of possible initial values for the clients on this chain. *)
+InitClients ==
     [   
-        clientID : ClientIDs,
-        consensusState : { Heights }
+        consensusStates : {{}}, (* Client state is an empty set. *)
+        clientID : ClientIDs,   (* Any ID is for the grabs. *)
+        latestHeight : {0}      (* Initial height is 0. *)
     ]
 
 
@@ -52,6 +50,7 @@ Clients ==
 \*Proofs ==
 \*    [
 \*    ]
+
 
 (* The set of all types which a message can take. 
     
@@ -95,6 +94,7 @@ ValidConnectionParameters(para) ==
           /\ CheckLocalParameters(para)
 
 
+(* TODO: TypeOK. *)
 ValidMessageType(type) ==
     /\ type \in CHMessageTypes
 
@@ -119,8 +119,7 @@ FlipConnectionParameters(para) ==
     connection in a certain state. 
  *)
 GetStateProof(connState) ==
-    [content |-> "state proof content",
-     height |-> store.latestHeight,
+    [height |-> store.latestHeight,
      connectionState |-> connState]
 
 
@@ -131,6 +130,8 @@ GetClientProof ==
 
 (* TODO: VERIFY PROOFS *)
 VerifyStateProof(sp) ==
+\* GetLatestHeight() < proof_height
+\*    /\ currentHeight > rpoof.height
     TRUE
 
 
@@ -171,8 +172,6 @@ ModifyStore(newCon) ==
  *)
 PreconditionsInitMsg(m) ==
     /\ store.connection.state = "UNINIT"
-\*    /\ currentHeight > rpoof.height
-    /\ Len(outBuf) < MaxBufLen  (* Enables if we can reply on the buffer. *)
 
 
 (* Handles a "CHMsgInit" message 'm'.
@@ -184,6 +183,7 @@ PreconditionsInitMsg(m) ==
 HandleInitMsg(m) ==
     (* The good-case path. *)
     \/ /\ PreconditionsInitMsg(m) = TRUE
+       /\ Len(outBuf) < MaxBufLen  (* Enables if we can reply on the buffer. *)
        /\ LET newCon == [parameters |-> m.parameters,
                          state      |-> "INIT"]
               sProof == GetStateProof("INIT")
@@ -207,19 +207,21 @@ PreconditionsTryMsg(m) ==
           /\ CheckLocalParameters(m.parameters)
     /\ VerifyStateProof(m.stateProof)
     /\ VerifyClientProof(m.clientProof)
-    /\ Len(outBuf) < MaxBufLen
 
 
 (* Handles a "CHMsgTry" message.
  *)
 HandleTryMsg(m) ==
     \/ /\ PreconditionsTryMsg(m) = TRUE
+       /\ Len(outBuf) < MaxBufLen
        /\ LET newCon == [parameters |-> m.parameters, 
                          state |-> "TRYOPEN"]
               sProof == GetStateProof("TRYOPEN")
               cProof == GetClientProof
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                           type |-> "CHMsgAck"]
+                           type |-> "CHMsgAck",
+                           stateProof |-> sProof,
+                           clientProof |-> cProof]
           IN /\ outBuf' = Append(outBuf, replyMsg)
              /\ ModifyStore(newCon)
     \/ /\ PreconditionsTryMsg(m) = FALSE
@@ -233,19 +235,21 @@ PreconditionsAckMsg(m) ==
        \/ store.connection.state = "TRYOPEN"
     /\ CheckLocalParameters(m.parameters)
     /\ VerifyStateProof(m.stateProof)
-    /\ Len(outBuf) < MaxBufLen
 
 
 (* Handles a "CHMsgAck" message.
  *)
 HandleAckMsg(m) ==
     \/ /\ PreconditionsAckMsg(m) = TRUE
+       /\ Len(outBuf) < MaxBufLen
        /\ LET newCon == [parameters |-> m.parameters, 
                          state |-> "OPEN"]
               sProof == GetStateProof("OPEN")
               cProof == GetClientProof
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                           type |-> "CHMsgAck"]
+                           type |-> "CHMsgConfirm",
+                           stateProof |-> sProof,
+                           clientProof |-> cProof]
           IN /\ outBuf' = Append(outBuf, replyMsg)
              /\ ModifyStore(newCon)
     \/ /\ PreconditionsAckMsg(m) = FALSE
@@ -258,7 +262,6 @@ PreconditionsConfirmMsg(m) ==
     /\ store.connection.state = "TRYOPEN"
     /\ CheckLocalParameters(m.parameters)
     /\ VerifyStateProof(m.stateProof)
-    /\ Len(outBuf) < MaxBufLen
 
 
 (* Handles a "CHMsgConfirm" message.
@@ -337,6 +340,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 16:09:56 CEST 2020 by adi
+\* Last modified Wed May 13 18:26:57 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

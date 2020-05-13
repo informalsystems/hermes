@@ -1,7 +1,13 @@
 ---------------------------- MODULE Environment ----------------------------
 
-(* TODO: clarify the name and purpose of this MODULE in the README.md.
-    This spec is wiring everything together. *)
+(* This module is part of the TLA+ specification for the
+    IBC Connection Handshake (CH) protocol.
+    
+    This module creates two instances of ConnectionHandshakeModule,
+    wires them together, simulates some malicious behavior, and also
+    provides an initialization so that the two instances can perform
+    the CH protocol.
+*)
 
 EXTENDS Naturals, FiniteSets, Sequences
 
@@ -63,8 +69,8 @@ chmA == INSTANCE ConnectionHandshakeModule
 
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight      <- MaxHeight,
-             inBuf          <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
-             outBuf         <- bufChainA,      \* Inbound for "A" is outbound for "B".
+             inBuf          <- bufChainB,      (* Flip the message buffers w.r.t. chain A buffers. *)
+             outBuf         <- bufChainA,      (* Inbound for "A" is outbound for "B". *)
              store          <- storeChainB,
              ConnectionIDs  <- chainBParameters.connectionIDs,
              ClientIDs      <- chainBParameters.clientIDs
@@ -86,12 +92,19 @@ Connections ==
         state : ConnectionStates
     ]
 
-(* This is a mock proof.
-    TODO explain *)
+
+(* These are mock proofs.
+
+    All proofs include a height; in addition, some proofs also contain other
+    fields (e.g., connectionState). *)
 Proofs ==
     [
         height : 1..MaxHeight
     ]
+
+
+Heights == 1..MaxHeight
+
 
 (******************************** Messages ********************************
  These messages are connection handshake specific.
@@ -152,9 +165,8 @@ InitEnv ==
 GoodNextEnv ==
     \/ chmA!AdvanceChainHeight /\ UNCHANGED storeChainB
     \/ chmB!AdvanceChainHeight /\ UNCHANGED storeChainA
-    \/ \E h \in { chmA!Heights } :
-            \/ chmA!UpdateClient(h) /\ UNCHANGED storeChainB
-            \/ chmB!UpdateClient(h) /\ UNCHANGED storeChainA
+    \/ \E hA \in Heights : chmA!UpdateClient(hA) /\ UNCHANGED storeChainB
+    \/ \E hB \in Heights : chmB!UpdateClient(hB) /\ UNCHANGED storeChainA
 
 
 (* The environment injects a msg. in the buffer of one of the chains. 
@@ -188,7 +200,7 @@ NextEnv ==
        /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
 
 
-CHDone ==
+CHProtocolDone ==
     /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
     /\ storeChainB.connection.state = "INIT"
     /\ UNCHANGED <<allVars>>
@@ -202,22 +214,14 @@ CHDone ==
 (* Initializes both chains, attributing to each a chainID as well as a client.
  *)
 Init ==
-    /\ \E cidA \in chainAParameters.clientIDs :
-            chmA!Init("chainA",
-                [clientID |-> cidA,
-                 consensusStates |-> {}, (* Client state is an empty set. *)
-                 latestHeight |-> 0])
-    /\ \E cidB \in chainBParameters.clientIDs :
-            chmB!Init("chainB",
-                [clientID |-> cidB,
-                 consensusStates |-> {},
-                 latestHeight |-> 0])
+    /\ \E clientA \in chmA!InitClients : chmA!Init("chainA", clientA)
+    /\ \E clientB \in chmB!InitClients : chmB!Init("chainB", clientB)
     /\ InitEnv
 
 
 \* The two CH modules and the environment alternate their steps.
 Next ==
-    \/ CHDone
+    \/ CHProtocolDone
     \/ NextEnv
     \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
@@ -261,6 +265,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 16:11:41 CEST 2020 by adi
+\* Last modified Wed May 13 18:15:52 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
