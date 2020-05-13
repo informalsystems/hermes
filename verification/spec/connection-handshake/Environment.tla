@@ -57,6 +57,7 @@ chainStoreVars == <<storeChainA, storeChainB>>
 
 allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
 
+ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
 chmA == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight      <- MaxHeight,
@@ -74,9 +75,6 @@ chmB == INSTANCE ConnectionHandshakeModule
              store          <- storeChainB,
              ConnectionIDs  <- chainBParameters.connectionIDs,
              ClientIDs      <- chainBParameters.clientIDs
-
-
-ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
 
 (* TODO BLOCK COMMENTS *)
@@ -161,12 +159,16 @@ InitEnv ==
           /\ bufChainA = <<>>
 
 
-(* May change either of the store of chain A or B. *)
+(* May change either of the store of chain A or B. 
+
+    TODO: Unclear what condition we want precisely! *)
 GoodNextEnv ==
     \/ chmA!AdvanceChainHeight /\ UNCHANGED storeChainB
     \/ chmB!AdvanceChainHeight /\ UNCHANGED storeChainA
-    \/ \E hA \in Heights : chmA!UpdateClient(hA) /\ UNCHANGED storeChainB
-    \/ \E hB \in Heights : chmB!UpdateClient(hB) /\ UNCHANGED storeChainA
+\*    \/ \E hA \in Heights : chmA!UpdateClient(hA) /\ UNCHANGED storeChainB
+\*    \/ \E hB \in Heights : chmB!UpdateClient(hB) /\ UNCHANGED storeChainA
+    \/ chmA!UpdateClient(storeChainB.latestHeight) /\ UNCHANGED storeChainB
+    \/ chmB!UpdateClient(storeChainA.latestHeight) /\ UNCHANGED storeChainA
 
 
 (* The environment injects a msg. in the buffer of one of the chains. 
@@ -265,6 +267,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 18:15:52 CEST 2020 by adi
+\* Last modified Wed May 13 19:59:49 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

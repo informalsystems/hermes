@@ -6,8 +6,8 @@ EXTENDS Naturals, FiniteSets, Sequences
 CONSTANTS MaxHeight,        \* Maximum height of the local chain.
           ConnectionIDs,    \* The set of all possible connection IDs.
           ClientIDs,        \* The set of all possible client IDs.
-          MaxBufLen         \* Maximum length of the input and output buffers.
-
+          MaxBufLen,        \* Maximum length of the input and output buffers.
+          ConnectionStates  \* All the possible connection states.
 
 ASSUME Cardinality(ConnectionIDs) >= 1
 ASSUME Cardinality(ClientIDs) >= 1
@@ -37,9 +37,9 @@ nullConnection == [state |-> "UNINIT"]
 (* The set of possible initial values for the clients on this chain. *)
 InitClients ==
     [   
-        consensusStates : {{}}, (* Client state is an empty set. *)
+        consensusStates : {{1}},(* Client initialized to height 1. *)
         clientID : ClientIDs,   (* Any ID is for the grabs. *)
-        latestHeight : {0}      (* Initial height is 0. *)
+        latestHeight : {1}      (* The first height. *)
     ]
 
 
@@ -47,9 +47,17 @@ InitClients ==
     We should explain what is the semantic we are modelling. As this is simplified
     view, we need to explain what property of proof (checking) we want to cover.
 *)
-\*Proofs ==
-\*    [
-\*    ]
+ConnProofs ==
+    [
+        connectionState : ConnectionStates, 
+        height : 1..MaxHeight
+    ]
+
+
+ClientProofs ==
+    [
+        height : 1..MaxHeight
+    ]
 
 
 (* The set of all types which a message can take. 
@@ -95,13 +103,25 @@ ValidConnectionParameters(para) ==
 
 
 (* TODO: TypeOK. *)
-ValidMessageType(type) ==
-    /\ type \in CHMessageTypes
+ValidMessageType(m) ==
+    m.type \in CHMessageTypes
+
+
+ValidConnProof(m) ==
+     m.connProof \in ConnProofs
+
+
+ValidClientProof(m) ==
+     m.clientProof \in ClientProofs
 
 
 ValidMsg(m) == 
     /\ ValidConnectionParameters(m.parameters)
-    /\ ValidMessageType(m.type)
+    /\ ValidMessageType(m)
+    /\ \/ m.type = "CHMsgInit"
+       \/ m.type = "CHMsgTry" /\ ValidConnProof(m) /\ ValidClientProof(m)
+       \/ m.type = "CHMsgAck" /\ ValidConnProof(m) /\ ValidClientProof(m) 
+       \/ m.type = "CHMsgConfirm" /\ ValidConnProof(m)
 
 
 (* Operator for reversing the connection ends.
@@ -115,29 +135,37 @@ FlipConnectionParameters(para) ==
      remoteEnd  |-> para.localEnd]
 
 
-(* Returns a proof, stating that the local store on this chain comprises a
-    connection in a certain state. 
+(* Returns a connection proof.
+
+    The connection proof is used to demonstrate to another chain that the local store
+    on this chain comprises a connection in a certain state. 
  *)
-GetStateProof(connState) ==
+GetConnProof(connState) ==
     [height |-> store.latestHeight,
      connectionState |-> connState]
 
 
-(* TODO *)
+(* Returns a client proof.
+ *)
 GetClientProof ==
     [height |-> store.client.latestHeight]
 
 
-(* TODO: VERIFY PROOFS *)
-VerifyStateProof(sp) ==
-\* GetLatestHeight() < proof_height
-\*    /\ currentHeight > rpoof.height
-    TRUE
+(* Verification of a connection proof. 
+
+    This is a state predicate returning true if the following holds:
+        1. the local client stores the height reported in the proof, and
+            [eventually, this should become true]
+ *)
+VerifyConnProof(cp) ==
+    /\ cp.height \in store.client.consensusStates 
 
 
-(* if \in set of consensusState from store.client. *)
+(* Verification of a client proof.
+
+    if \in set of consensusState from store.client. *)
 VerifyClientProof(cp) ==
-    TRUE
+    cp.height <= store.latestHeight
 
 (***************************************************************************
  Connection Handshake Module actions & operators.
@@ -151,7 +179,6 @@ VerifyClientProof(cp) ==
  *)
 DropMsg(m) ==
     /\ UNCHANGED<<outBuf, store>>
-
 
 
 (* Modifies the local store.
@@ -186,11 +213,11 @@ HandleInitMsg(m) ==
        /\ Len(outBuf) < MaxBufLen  (* Enables if we can reply on the buffer. *)
        /\ LET newCon == [parameters |-> m.parameters,
                          state      |-> "INIT"]
-              sProof == GetStateProof("INIT")
+              sProof == GetConnProof("INIT")
               cProof == GetClientProof
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                            type |-> "CHMsgTry",
-                           stateProof |-> sProof,
+                           connProof |-> sProof,
                            clientProof |-> cProof]
            IN /\ outBuf' = Append(outBuf, replyMsg)
               /\ ModifyStore(newCon)
@@ -199,14 +226,16 @@ HandleInitMsg(m) ==
        /\ DropMsg(m)
 
 
-(* State predicate, guarding the handler for the Try msg. 
+(* State predicate, guarding the handler for the Try msg.
+
+    If any of these preconditions does not hold, the message
+    is dropped. 
  *)
 PreconditionsTryMsg(m) ==
     /\ \/ store.connection.state = "UNINIT"
        \/ /\ store.connection.state = "INIT" 
           /\ CheckLocalParameters(m.parameters)
-    /\ VerifyStateProof(m.stateProof)
-    /\ VerifyClientProof(m.clientProof)
+    /\ m.connProof.connectionState = "INIT"
 
 
 (* Handles a "CHMsgTry" message.
@@ -214,13 +243,15 @@ PreconditionsTryMsg(m) ==
 HandleTryMsg(m) ==
     \/ /\ PreconditionsTryMsg(m) = TRUE
        /\ Len(outBuf) < MaxBufLen
+       /\ VerifyConnProof(m.connProof)
+       /\ VerifyClientProof(m.clientProof)
        /\ LET newCon == [parameters |-> m.parameters, 
                          state |-> "TRYOPEN"]
-              sProof == GetStateProof("TRYOPEN")
+              sProof == GetConnProof("TRYOPEN")
               cProof == GetClientProof
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                            type |-> "CHMsgAck",
-                           stateProof |-> sProof,
+                           connProof |-> sProof,
                            clientProof |-> cProof]
           IN /\ outBuf' = Append(outBuf, replyMsg)
              /\ ModifyStore(newCon)
@@ -234,21 +265,21 @@ PreconditionsAckMsg(m) ==
     /\ \/ store.connection.state = "INIT"
        \/ store.connection.state = "TRYOPEN"
     /\ CheckLocalParameters(m.parameters)
-    /\ VerifyStateProof(m.stateProof)
-
+    /\ m.connProof.connectionState = "TRYOPEN"
 
 (* Handles a "CHMsgAck" message.
  *)
 HandleAckMsg(m) ==
     \/ /\ PreconditionsAckMsg(m) = TRUE
        /\ Len(outBuf) < MaxBufLen
+       /\ VerifyConnProof(m.connProof)
        /\ LET newCon == [parameters |-> m.parameters, 
                          state |-> "OPEN"]
-              sProof == GetStateProof("OPEN")
+              sProof == GetConnProof("OPEN")
               cProof == GetClientProof
               replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                            type |-> "CHMsgConfirm",
-                           stateProof |-> sProof,
+                           connProof |-> sProof,
                            clientProof |-> cProof]
           IN /\ outBuf' = Append(outBuf, replyMsg)
              /\ ModifyStore(newCon)
@@ -261,13 +292,14 @@ HandleAckMsg(m) ==
 PreconditionsConfirmMsg(m) ==
     /\ store.connection.state = "TRYOPEN"
     /\ CheckLocalParameters(m.parameters)
-    /\ VerifyStateProof(m.stateProof)
+    /\ m.connProof.connectionState = "OPEN"
 
 
 (* Handles a "CHMsgConfirm" message.
  *)
 HandleConfirmMsg(m) ==
     \/ /\ PreconditionsConfirmMsg(m) = TRUE
+       /\ VerifyConnProof(m.connProof)
        /\ LET newCon == [parameters |-> m.parameters,
                          state |-> "OPEN"]
           IN /\ ModifyStore(newCon)
@@ -287,20 +319,25 @@ AdvanceChainHeight ==
 
 (* Action for updating the local client on this chain with a new height.
     
-    This may prime the store, while leaving the buffers unchanged.
-    If the 'height' parameter already exists as part of 
-    'store.client.consensusStates', then we do not change the store.
+    This may prime the store; leaves the chain buffers unchanged.
     This will also advance the chain height unless MaxHeight is reached.
+    If the 'height' parameter already exists as part of
+    'store.client.consensusStates', then we do not change the store.
  *)
 UpdateClient(height) ==
     \/ /\ (height \in store.client.consensusStates)
        /\ UNCHANGED store
     \/ /\ ~ (height \in store.client.consensusStates)
-       /\ \/ /\ store.latestHeight < MaxHeight
-             /\ store' = [store EXCEPT !.latestHeight = @ + 1,
-                                       !.client.consensusStates = @ \cup {height}]
-          \/ /\ store.latestHeight >= MaxHeight
-             /\ UNCHANGED store
+       /\ LET newLHeight == IF height > store.client.latestHeight
+                            THEN height
+                            ELSE store.client.latestHeight
+          IN \/ /\ store.latestHeight < MaxHeight
+                /\ store' = [store EXCEPT !.latestHeight = @ + 1,
+                                          !.client.consensusStates = @ \cup {height},
+                                          !.client.latestHeight = newLHeight]
+             \/ /\ store.latestHeight >= MaxHeight
+                /\ store' = [store EXCEPT !.client.consensusStates = @ \cup {height},
+                                          !.client.latestHeight = newLHeight]
 
 
 (* Generic action for handling any type of inbound message.
@@ -340,6 +377,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 18:26:57 CEST 2020 by adi
+\* Last modified Wed May 13 20:02:12 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
