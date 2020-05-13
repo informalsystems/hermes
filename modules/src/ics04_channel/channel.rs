@@ -1,15 +1,15 @@
 use super::exported::*;
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics04_channel::error;
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
-//use crate::ics24_host::error::ValidationError;
-use super::error;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Channel {
     state: State,
     ordering: Order,
     remote: Endpoint,
-    connection_hops: Vec<String>,
+    connection_hops: Vec<ConnectionId>,
     version: String,
 }
 
@@ -20,6 +20,10 @@ impl Channel {
         connection_hops: Vec<String>,
         version: String,
     ) -> Self {
+        let connection_hops: Vec<ConnectionId> = connection_hops
+            .iter()
+            .map(|s| ConnectionId::from_str(s.as_str()).unwrap())
+            .collect();
         Self {
             state: State::Uninitialized,
             ordering,
@@ -45,7 +49,7 @@ impl ChannelI for Channel {
         Box::new(self.remote.clone())
     }
 
-    fn connection_hops(&self) -> Vec<String> {
+    fn connection_hops(&self) -> Vec<ConnectionId> {
         self.connection_hops.clone()
     }
 
@@ -53,9 +57,19 @@ impl ChannelI for Channel {
         self.version.parse().unwrap()
     }
 
-    //fn validate_basic(&self) -> Result<(), ValidationError> {
-    //    Ok(())
-    //}
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        if self.connection_hops.len() != 1 {
+            return Err(error::Kind::InvalidConnectionHopsLength
+                .context("validate channel")
+                .into());
+        }
+        if self.version().trim().to_string() == String::from("") {
+            return Err(error::Kind::InvalidVersion
+                .context("empty version string")
+                .into());
+        }
+        self.counterparty().validate_basic()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -84,7 +98,7 @@ impl CounterpartyI for Endpoint {
         String::from(self.channel_id.as_str())
     }
 
-    //fn validate_basic(&self) -> Result<(), ValidationError> {
-    // Ok(())
-    //}
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        Ok(())
+    }
 }

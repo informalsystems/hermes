@@ -1,4 +1,4 @@
-use super::{ClientStatePath, ConnectionPath, ConsensusStatePath, ChannelPath};
+use super::{ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath};
 
 pub fn connection_path(path: &ConnectionPath) -> String {
     format!("connection/{}", path.connection_id)

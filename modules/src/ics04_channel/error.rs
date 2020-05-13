@@ -8,12 +8,27 @@ pub enum Kind {
     #[error("channel state unknown")]
     UnknownState,
 
+    #[error("identifier error")]
+    IdentifierError,
+
     #[error("channel order type unknown")]
     UnknownOrderType,
+
+    #[error("invalid connection hops length")]
+    InvalidConnectionHopsLength,
+
+    #[error("invalid version")]
+    InvalidVersion,
 }
 
 impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
         Context::new(self, Some(source.into()))
+    }
+}
+
+impl From<crate::ics24_host::error::ValidationKind> for Kind {
+    fn from(_kind: crate::ics24_host::error::ValidationKind) -> Kind {
+        Kind::IdentifierError
     }
 }

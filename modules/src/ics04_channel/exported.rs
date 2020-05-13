@@ -1,4 +1,5 @@
 use super::error;
+use crate::ics24_host::identifier::ConnectionId;
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 
@@ -7,16 +8,16 @@ pub trait ChannelI {
     fn state(&self) -> State;
     fn ordering(&self) -> Order;
     fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = super::error::Error>>;
-    fn connection_hops(&self) -> Vec<String>;
+    fn connection_hops(&self) -> Vec<ConnectionId>;
     fn version(&self) -> String;
-    //fn validate_basic(&self) -> Result<(), Self::ValidationError>;
+    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 }
 
 pub trait CounterpartyI {
     type ValidationError: std::error::Error;
     fn port_id(&self) -> String;
     fn channel_id(&self) -> String;
-    //fn validate_basic(&self) -> Result<(), Self::ValidationError>;
+    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
