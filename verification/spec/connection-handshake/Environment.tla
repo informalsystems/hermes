@@ -1,5 +1,8 @@
 ---------------------------- MODULE Environment ----------------------------
 
+(* TODO: clarify the name and purpose of this MODULE in the README.md.
+    This spec is wiring everything together. *)
+
 EXTENDS Naturals, FiniteSets, Sequences
 
 
@@ -19,18 +22,18 @@ VARIABLES
 
 
 chainAParameters == [
-    connectionID |-> { "connAtoB" },
-    clientID |-> { "clientChainA" }
+    connectionIDs |-> { "connAtoB" },
+    clientIDs |-> { "clientIDChainA" }
 ]
 
 chainBParameters == [
-    connectionID |-> { "connBtoA" },
-    clientID |-> { "clientChainB" }
+    connectionIDs |-> { "connBtoA" },
+    clientIDs |-> { "clientIDChainB" }
 ]
 
 
-ClientIDs == { chainAParameters.clientID, chainBParameters.clientID }
-ConnectionIDs == { chainAParameters.connectionID, chainBParameters.connectionID }
+ClientIDs == { chainAParameters.clientIDs, chainBParameters.clientIDs }
+ConnectionIDs == { chainAParameters.connectionIDs, chainBParameters.connectionIDs }
 
 
 (* Bundle with variables that chain A has access to. *)
@@ -54,8 +57,8 @@ chmA == INSTANCE ConnectionHandshakeModule
              inBuf          <- bufChainA,
              outBuf         <- bufChainB,
              store          <- storeChainA,
-             ConnectionIDs  <- chainAParameters.connectionID,
-             ClientIDs      <- chainAParameters.clientID
+             ConnectionIDs  <- chainAParameters.connectionIDs,
+             ClientIDs      <- chainAParameters.clientIDs
 
 
 chmB == INSTANCE ConnectionHandshakeModule
@@ -63,13 +66,14 @@ chmB == INSTANCE ConnectionHandshakeModule
              inBuf          <- bufChainB,      \* Flip the message buffers w.r.t. chain A buffers.
              outBuf         <- bufChainA,      \* Inbound for "A" is outbound for "B".
              store          <- storeChainB,
-             ConnectionIDs  <- chainBParameters.connectionID,
-             ClientIDs      <- chainBParameters.clientID
+             ConnectionIDs  <- chainBParameters.connectionIDs,
+             ClientIDs      <- chainBParameters.clientIDs
 
 
 ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 
 
+(* TODO BLOCK COMMENTS *)
 ConnectionParameters ==
     [
         localEnd : chmA!ConnectionEnds,
@@ -82,6 +86,8 @@ Connections ==
         state : ConnectionStates
     ]
 
+(* This is a mock proof.
+    TODO explain *)
 Proofs ==
     [
         height : 1..MaxHeight
@@ -142,7 +148,16 @@ InitEnv ==
           /\ bufChainA = <<>>
 
 
-(* The environment overwrites the buffer of one of the chains. 
+(* May change either of the store of chain A or B. *)
+GoodNextEnv ==
+    \/ chmA!AdvanceChainHeight /\ UNCHANGED storeChainB
+    \/ chmB!AdvanceChainHeight /\ UNCHANGED storeChainA
+    \/ \E h \in { chmA!Heights } :
+            \/ chmA!UpdateClient(h) /\ UNCHANGED storeChainB
+            \/ chmB!UpdateClient(h) /\ UNCHANGED storeChainA
+
+
+(* The environment injects a msg. in the buffer of one of the chains. 
    This interferes with the CH protocol in two ways:
     1. by introducing additional messages that are incorrect,
     2. by dropping correct messages (overwritting them).
@@ -163,12 +178,14 @@ MaliciousNextEnv ==
 
 
 NextEnv ==
+    \/ /\ GoodNextEnv
+       /\ UNCHANGED<<bufChainA, bufChainB, maliciousEnv>>
     \/ /\ maliciousEnv = TRUE
        /\ MaliciousNextEnv
-       /\ UNCHANGED maliciousEnv
+       /\ UNCHANGED<<maliciousEnv, chainStoreVars>>
     \/ /\ maliciousEnv = TRUE
        /\ maliciousEnv' = FALSE
-       /\ UNCHANGED<<bufChainA, bufChainB>>
+       /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
 
 
 CHDone ==
@@ -182,16 +199,26 @@ CHDone ==
  *****************************************************************************)
 
 
+(* Initializes both chains, attributing to each a chainID as well as a client.
+ *)
 Init ==
-    /\ chmA!Init("chainA")
-    /\ chmB!Init("chainB")
+    /\ \E cidA \in chainAParameters.clientIDs :
+            chmA!Init("chainA",
+                [clientID |-> cidA,
+                 consensusStates |-> {}, (* Client state is an empty set. *)
+                 latestHeight |-> 0])
+    /\ \E cidB \in chainBParameters.clientIDs :
+            chmB!Init("chainB",
+                [clientID |-> cidB,
+                 consensusStates |-> {},
+                 latestHeight |-> 0])
     /\ InitEnv
 
 
 \* The two CH modules and the environment alternate their steps.
 Next ==
     \/ CHDone
-    \/ NextEnv /\ UNCHANGED <<chainStoreVars>>
+    \/ NextEnv
     \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
@@ -216,8 +243,8 @@ Spec ==
 \* Liveness property.
 Termination ==
     <> ~ maliciousEnv
-        => <> /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
-              /\ storeChainB.connection.state = "INIT"
+        => <> /\ storeChainA.connection.state = "OPEN"
+              /\ storeChainB.connection.state = "OPEN"
 
 
 \* Safety property.
@@ -234,6 +261,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 12 16:38:51 CEST 2020 by adi
+\* Last modified Wed May 13 16:11:41 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
