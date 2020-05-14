@@ -1,13 +1,22 @@
 ---------------------------- MODULE Environment ----------------------------
 
-(* This module is part of the TLA+ specification for the
-    IBC Connection Handshake (CH) protocol.
+(***************************************************************************
+
+    This module is part of the TLA+ specification for the
+    IBC Connection Handshake (CH) protocol. This is a high-level spec of CH.
     
-    This module creates two instances of ConnectionHandshakeModule,
-    wires them together, simulates some malicious behavior, and also
-    provides an initialization so that the two instances can perform
-    the CH protocol.
-*)
+    This module captures the operators and actions outside of the CH protocol
+    itself (i.e., the environment).
+    Among others, the environment does the following:
+    - creates two instances of ConnectionHandshakeModule,
+    - wires these instances together,
+    - simulates some malicious behavior by injecting incorrect messages
+    - provides the initialization step for CH protocol, concretely a
+    "CHMsgInit" message, so that the two instances can perform the protocol.
+    - updates the clients on each instance periodically, or advances the chain
+    of each instance. 
+
+  ***************************************************************************)
 
 EXTENDS Naturals, FiniteSets, Sequences
 
@@ -84,6 +93,18 @@ ConnectionParameters ==
         remoteEnd : chmB!ConnectionEnds
     ]
 
+
+(******************************* Connections *******************************
+     A set of connection end records.
+     A connection end record contains the following fields:
+
+     - connectionID -- a string 
+       Stores the identifier of this connection, specific to a chain.
+
+     - clientID -- a string
+       Stores the identifier of the client running on this chain.  
+     
+ ***************************************************************************)
 Connections ==
     [
         parameters : ConnectionParameters,
@@ -91,11 +112,38 @@ Connections ==
     ]
 
 
-(* These are mock proofs.
+(******************************* ConnProof *********************************
+     A set of records describing the possible values for connection proofs.
+     
+     A connection proof record contains the following fields:
 
-    All proofs include a height; in addition, some proofs also contain other
-    fields (e.g., connectionState). *)
-Proofs ==
+     - connectionState -- a string 
+       Captures the state of the connection in the local store of the module
+       which created this proof.
+
+     - height -- a Nat
+       The current height (latestHeight) of the chain at the moment when the
+       module created this proof.
+
+ ***************************************************************************)
+ConnProofs ==
+    [
+        connectionState : ConnectionStates, 
+        height : 1..MaxHeight
+    ]
+
+
+(******************************* ClientProofs *******************************
+     A set of records describing the possible values for client proofs.
+     
+     A client proof record contains the following fields:
+
+     - height -- a Nat
+       The current height (latestHeight) of the client colocated with module
+       which created this proof.
+
+ ***************************************************************************)
+ClientProofs ==
     [
         height : 1..MaxHeight
     ]
@@ -105,15 +153,20 @@ Heights == 1..MaxHeight
 
 
 (******************************** Messages ********************************
- These messages are connection handshake specific.
+Messages are connection handshake specific.
  
- In the low-level connection handshake protocol, the four messages have the
- following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
+    The valid message types are defined in:
+    ConnectionHandshakeModule.CHMessageTypes.
+    
+In the low-level connection handshake protocol, the four messages have the
+following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
  These are described in ICS 003.
  In this high-level specification, we choose slightly different names, to
  make an explicit distinction to the low-level protocol. Message types
  are as follows: CHMsgInit, CHMsgTry, CHMsgAck, and CHMsgConfirm. Notice that
  the fields of each message are also different to the ICS 003 specification.
+ 
+ 
  ***************************************************************************)
 ConnectionHandshakeMessages ==
     [type : {"CHMsgInit"}, 
@@ -121,17 +174,17 @@ ConnectionHandshakeMessages ==
     \union
     [type : {"CHMsgTry"},
      parameters : ConnectionParameters,
-     connProof : Proofs,
-     clientProof : Proofs]
+     connProof : ConnProofs,
+     clientProof : ClientProofs]
     \union
     [type : {"CHMsgAck"},
      parameters : ConnectionParameters,
-     connProof : Proofs,
-     clientProof : Proofs]
+     connProof : ConnProofs,
+     clientProof : ClientProofs]
      \union
     [type : {"CHMsgConfirm"},
      parameters : ConnectionParameters,
-     connProof : Proofs]
+     connProof : ConnProofs]
 
 
 (* The set of all Init messages, such that the local end is the
@@ -160,15 +213,16 @@ InitEnv ==
 
 
 (* May change either of the store of chain A or B. 
-
-    TODO: Unclear what condition we want precisely! *)
+ *)
 GoodNextEnv ==
-    \/ chmA!AdvanceChainHeight /\ UNCHANGED storeChainB
-    \/ chmB!AdvanceChainHeight /\ UNCHANGED storeChainA
-\*    \/ \E hA \in Heights : chmA!UpdateClient(hA) /\ UNCHANGED storeChainB
-\*    \/ \E hB \in Heights : chmB!UpdateClient(hB) /\ UNCHANGED storeChainA
-    \/ chmA!UpdateClient(storeChainB.latestHeight) /\ UNCHANGED storeChainB
-    \/ chmB!UpdateClient(storeChainA.latestHeight) /\ UNCHANGED storeChainA
+    \/ /\ chmA!NotMaxHeight
+       /\ \/ chmA!AdvanceChainHeight 
+          \/ chmA!UpdateClient(storeChainB.latestHeight)
+       /\ UNCHANGED storeChainB
+    \/ /\ chmB!NotMaxHeight
+       /\ \/ chmB!AdvanceChainHeight
+          \/ chmB!UpdateClient(storeChainA.latestHeight)
+       /\ UNCHANGED storeChainA
 
 
 (* The environment injects a msg. in the buffer of one of the chains. 
@@ -203,9 +257,10 @@ NextEnv ==
 
 
 CHProtocolDone ==
-    /\ storeChainA.connection.state = "INIT" (* TODO: should be OPEN *)
-    /\ storeChainB.connection.state = "INIT"
+    /\ storeChainA.connection.state = "OPEN"
+    /\ storeChainB.connection.state = "OPEN"
     /\ UNCHANGED <<allVars>>
+
 
 (******************************************************************************
  Main spec.
@@ -216,8 +271,8 @@ CHProtocolDone ==
 (* Initializes both chains, attributing to each a chainID as well as a client.
  *)
 Init ==
-    /\ \E clientA \in chmA!InitClients : chmA!Init("chainA", clientA)
-    /\ \E clientB \in chmB!InitClients : chmB!Init("chainB", clientB)
+    /\ \E clientB \in chmB!InitClients : chmA!Init("chainA", clientB)
+    /\ \E clientA \in chmA!InitClients : chmB!Init("chainB", clientA)
     /\ InitEnv
 
 
@@ -242,10 +297,9 @@ Spec ==
 
 
 (* TODO: Unclear how to capture the type of a sequence. *)
-\*TypeInvariant ==
-\*    /\ \/ bufChainA = <<>>
-\*       \/ \A e in bufChainA : e \in ConnectionHandshakeMessages
-\*    /\ bufChainB \in ConnectionHandshakeMessages
+TypeInvariant ==
+    /\ \/ bufChainA \in Seq(ConnectionHandshakeMessages)
+       \/ bufChainB \in Seq(ConnectionHandshakeMessages)
 
 
 \* Liveness property.
@@ -269,6 +323,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 14 10:01:23 CEST 2020 by adi
+\* Last modified Thu May 14 16:36:27 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
