@@ -229,14 +229,16 @@ Next ==
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
 
 
-FairModuleProgress ==
+FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
+    /\ WF_chainStoreVars(GoodNextEnv)
+
 
 Spec ==
     /\ Init
     /\ [][Next]_<<allVars>>
-    /\ FairModuleProgress
+    /\ FairProgress
 
 
 (* TODO: Unclear how to capture the type of a sequence. *)
@@ -267,6 +269,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 19:59:49 CEST 2020 by adi
+\* Last modified Thu May 14 10:01:23 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
