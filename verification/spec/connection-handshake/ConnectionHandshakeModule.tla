@@ -1,5 +1,29 @@
 --------------------- MODULE ConnectionHandshakeModule ---------------------
 
+(***************************************************************************
+
+    This module is part of the TLA+ specification for the
+    IBC Connection Handshake (CH) protocol.
+    
+    This module captures the actions and operators of the IBC CH protocol.
+    Typically, it is an IBC module running on a chain that would implement
+    this logic, hence the name "ConnectionHandshakeModule".
+
+    This module deals with a high-level spec of the CH protocol, hence it is
+    a simplification in several regards:
+    - the modules assumes to run on a chain which modeled as a simple
+    advancing height, plus a few more critical fields (see the 'store'),
+    but without any state (e.g., blockchain, transactions, consensus core);
+    - we model a single connection; establishing multiple connections is not
+    possible;
+    - we do not do any cryptographic proofs or proof verifications.
+    - the abstractions we use are higher-level, and slightly different from
+    the ones in ICS 003 (see e.g., ConnectionEnd and Connection)
+    - the client colocated with the module is simplified, comprising only
+    a set of heights.
+
+ ***************************************************************************)
+
 EXTENDS Naturals, FiniteSets, Sequences
 
 
@@ -14,16 +38,45 @@ ASSUME Cardinality(ClientIDs) >= 1
 
 
 VARIABLES
-    (*******
-    TODO store description block
-    *******)
-    store,       \* The local store of the chain running this chModule. 
-    inBuf,      \* A buffer (Sequence) holding any message(s) incoming to the chModule.
-    outBuf     \* A buffer (Sequence) holding outbound message(s) from the chModule.
+(******************************* Store *****************************
+     The store record of a chain contains the following fields:
+     
+     - id -- a string 
+       Stores the identifier of the chain where this module executes.
+
+     - latestHeight -- a Nat
+       Describes the current height of the chain.  
+
+     - connection -- a connection record.
+       Captures all the details of the connection on this chain.
+       For a full description of a connection record, see the
+       'Environment.Connections' set.
+
+     - client -- a client record.
+       Specifies the state of the client running on this chain.
+       For a full description of a client and the initialization values
+       for this record, see the InitClients set below.  
+     
+ ***************************************************************************)   
+    store,
+    inBuf,  \* A buffer (Sequence) holding any message(s) incoming to the chModule.
+    outBuf  \* A buffer (Sequence) holding outbound message(s) from the chModule.
 
 
 vars == <<inBuf, outBuf, store>>
 
+
+(******************************* ConnectionEnds *****************************
+     A set of connection end records.
+     A connection end record contains the following fields:
+     
+     - connectionID -- a string 
+       Stores the identifier of this connection, specific to a chain.
+
+     - clientID -- a string
+       Stores the identifier of the client running on this chain.  
+     
+ ***************************************************************************)
 ConnectionEnds ==
     [
         connectionID : ConnectionIDs,
@@ -31,22 +84,55 @@ ConnectionEnds ==
     ]
 
 
+(*
+    Initially, the connection on this chain is uninitialized. 
+*)
 nullConnection == [state |-> "UNINIT"]
 
 
-(* The set of possible initial values for the clients on this chain. *)
+(******************************* InitClients *****************************
+     A set of records describing the possible initial values for the
+     clients on this chain.
+     
+     A client record contains the following fields:
+
+     - consensusStates -- a set of heights, each height being a Nat 
+       Stores the set of all heights (i.e., consensus states) that this
+       client observed. At initialization time, the client only observes
+       the first height, so the only possible value for this record is
+       {1}.
+
+     - clientID -- a string
+       The identifier of the client.
+       
+     - latestHeight -- a natural number
+       Stores the latest height among all the heights in consensusStates.
+       Initialized to 1.
+     
+ ***************************************************************************)
 InitClients ==
     [   
-        consensusStates : {{1}},(* Client initialized to height 1. *)
-        clientID : ClientIDs,   (* Any ID is for the grabs. *)
-        latestHeight : {1}      (* The first height. *)
+        consensusStates : {{1}},
+        clientID : ClientIDs,
+        latestHeight : {1}
     ]
 
 
-(* TODO:
-    We should explain what is the semantic we are modelling. As this is simplified
-    view, we need to explain what property of proof (checking) we want to cover.
-*)
+(******************************* ConnProof *********************************
+
+     A set of records describing the possible values for connection proofs.
+     
+     A connection proof record contains the following fields:
+
+     - connectionState -- a string 
+       Captures the state of the connection in the local store of the module
+       which created this proof.
+
+     - height -- a Nat
+       The current height (latestHeight) of the chain at the moment when the
+       module created this proof.
+
+ ***************************************************************************)
 ConnProofs ==
     [
         connectionState : ConnectionStates, 
@@ -54,24 +140,43 @@ ConnProofs ==
     ]
 
 
+(******************************* ClientProofs *******************************
+
+     A set of records describing the possible values for client proofs.
+     
+     A client proof record contains the following fields:
+
+     - height -- a Nat
+       The current height (latestHeight) of the client colocated with module
+       which created this proof.
+
+ ***************************************************************************)
 ClientProofs ==
     [
         height : 1..MaxHeight
     ]
 
 
-(* The set of all types which a message can take. 
-    
-    TODO: These types are also used in the Environment module.
-    Is it possible to restrict these to a single module? 
- *)
+(******************************* CHMessageTypes *****************************
+
+     The set of valid message types that this module can handle, e.g., as
+     incoming or outgoing messages.
+
+     For a complete description of the message record, see
+     'Environment.Messages'.
+     
+ ***************************************************************************)
 CHMessageTypes ==
-    { "CHMsgInit", "CHMsgTry", "CHMsgAck", "CHMsgConfirm"}
+    {"CHMsgInit", 
+     "CHMsgTry",
+     "CHMsgAck",
+     "CHMsgConfirm"}
 
 
 (***************************************************************************
- Helper operators.
+    Helper operators.
  ***************************************************************************)
+
 
 (* Returns true if 'para' matches the parameters in the local connection,
     and returns false otherwise.
@@ -102,11 +207,21 @@ ValidConnectionParameters(para) ==
           /\ CheckLocalParameters(para)
 
 
-(* TODO: TypeOK. *)
+(* Basic validation on the type of an incoming message.
+ *)
 ValidMessageType(m) ==
     m.type \in CHMessageTypes
 
 
+(* Basic validation on an incoming message, including the
+    connection proof and client proofs.
+    
+    The following three formulas are state predicates,
+    not type invariants! Some proofs are generated by the
+    malicious environment, and therefore may be malformed.
+    Our specification must be able to capture such malformed
+    records, and these state predicates helps filter them out.
+ *)
 ValidConnProof(m) ==
      m.connProof \in ConnProofs
 
@@ -135,17 +250,17 @@ FlipConnectionParameters(para) ==
      remoteEnd  |-> para.localEnd]
 
 
-(* Returns a connection proof.
+(* Operator for construcing a connection proof.
 
-    The connection proof is used to demonstrate to another chain that the local store
-    on this chain comprises a connection in a certain state. 
+    The connection proof is used to demonstrate to another chain that the
+    local store on this chain comprises a connection in a certain state. 
  *)
 GetConnProof(connState) ==
     [height |-> store.latestHeight,
      connectionState |-> connState]
 
 
-(* Returns a client proof.
+(* Operator for construcing a client proof.
  *)
 GetClientProof ==
     [height |-> store.client.latestHeight]
@@ -153,9 +268,11 @@ GetClientProof ==
 
 (* Verification of a connection proof. 
 
-    This is a state predicate returning true if the following holds:
-        1. the local client stores the height reported in the proof, and
-            [eventually, this should become true]
+    This is a state predicate returning true if the following holds: the local
+    client on this chain stores the height reported in the proof. Note that this
+    condition should eventually become true, assuming a correct environment, which
+    should periodically update the client on each chain; see actions 'GoodNextEnv'
+    and 'UpdateClient'. 
  *)
 VerifyConnProof(cp) ==
     /\ cp.height \in store.client.consensusStates 
@@ -163,16 +280,20 @@ VerifyConnProof(cp) ==
 
 (* Verification of a client proof.
 
-    if \in set of consensusState from store.client. *)
+    This is a state predicate returning true if the following holds: the height
+    reported in the client proof must not exceed the current (latestHeight) of
+    this chain.
+ *)
 VerifyClientProof(cp) ==
     cp.height <= store.latestHeight
+
 
 (***************************************************************************
  Connection Handshake Module actions & operators.
  ***************************************************************************)
 
 
-(* Drops a message without any priming of local variables.
+(* Drops a message without priming the store or output buffer variables.
  
     This action always enables (returns true); use with care.
     This action is analogous to "abortTransaction" function from ICS specs.
@@ -233,7 +354,7 @@ HandleInitMsg(m) ==
  *)
 PreconditionsTryMsg(m) ==
     /\ \/ store.connection.state = "UNINIT"
-       \/ /\ store.connection.state = "INIT" 
+       \/ /\ store.connection.state = "INIT"
           /\ CheckLocalParameters(m.parameters)
     /\ m.connProof.connectionState = "INIT"
 
@@ -266,6 +387,7 @@ PreconditionsAckMsg(m) ==
        \/ store.connection.state = "TRYOPEN"
     /\ CheckLocalParameters(m.parameters)
     /\ m.connProof.connectionState = "TRYOPEN"
+
 
 (* Handles a "CHMsgAck" message.
  *)
@@ -377,6 +499,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 13 20:02:12 CEST 2020 by adi
+\* Last modified Thu May 14 10:58:32 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
