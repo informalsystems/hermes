@@ -26,9 +26,3 @@ impl Kind {
         Context::new(self, Some(source.into()))
     }
 }
-
-impl From<crate::ics24_host::error::ValidationKind> for Kind {
-    fn from(_kind: crate::ics24_host::error::ValidationKind) -> Kind {
-        Kind::IdentifierError
-    }
-}

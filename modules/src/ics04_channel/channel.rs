@@ -1,8 +1,8 @@
 use super::exported::*;
 use crate::ics04_channel::error;
+use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
-use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Channel {
@@ -17,13 +17,9 @@ impl Channel {
     pub fn new(
         ordering: Order,
         remote: Endpoint,
-        connection_hops: Vec<String>,
+        connection_hops: Vec<ConnectionId>,
         version: String,
     ) -> Self {
-        let connection_hops: Vec<ConnectionId> = connection_hops
-            .iter()
-            .map(|s| ConnectionId::from_str(s.as_str()).unwrap())
-            .collect();
         Self {
             state: State::Uninitialized,
             ordering,
@@ -35,7 +31,7 @@ impl Channel {
 }
 
 impl ChannelI for Channel {
-    type ValidationError = error::Error;
+    type ValidationError = crate::ics04_channel::error::Error;
 
     fn state(&self) -> State {
         self.state.clone()
@@ -45,7 +41,7 @@ impl ChannelI for Channel {
         self.ordering.clone()
     }
 
-    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = super::error::Error>> {
+    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = Self::ValidationError>> {
         Box::new(self.remote.clone())
     }
 
@@ -79,16 +75,23 @@ pub struct Endpoint {
 }
 
 impl Endpoint {
-    pub fn new(port_id: String, channel_id: String) -> Self {
-        Self {
-            port_id: port_id.parse().unwrap(),
-            channel_id: channel_id.parse().unwrap(),
-        }
+    pub fn new(
+        port_id: String,
+        channel_id: String,
+    ) -> Result<Self, crate::ics04_channel::error::Error> {
+        Ok(Self {
+            port_id: port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+        })
     }
 }
 
 impl CounterpartyI for Endpoint {
-    type ValidationError = error::Error;
+    type ValidationError = crate::ics04_channel::error::Error;
 
     fn port_id(&self) -> String {
         String::from(self.port_id.as_str())

@@ -1,7 +1,9 @@
 use super::channel::{Channel, Endpoint};
 use super::exported::*;
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics04_channel::error::Kind;
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 
 pub const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
@@ -30,27 +32,6 @@ pub struct MsgChannelOpenInit {
 }
 
 impl MsgChannelOpenInit {
-    /*
-        pub fn new1(
-            port_id: String,
-            channel_id: String,
-            version: String,
-            order: String,
-            connection_hops: Vec<String>,
-            counterparty_port_id: String,
-            counterparty_channel_id: String,
-            signer: AccountId,
-        ) -> Result<MsgChannelOpenInit, crate::ics04_channel::error::Error>
-        {
-            let counterparty = Endpoint::new(counterparty_port_id, counterparty_channel_id);
-            Ok(Self {
-                port_id: port_id.parse()?,
-                channel_id: channel_id.parse()?,
-                channel: Channel::new(order.parse()?, counterparty, connection_hops, version),
-                signer,
-            })
-        }
-    */
     pub fn new(
         port_id: String,
         channel_id: String,
@@ -61,12 +42,26 @@ impl MsgChannelOpenInit {
         counterparty_channel_id: String,
         signer: AccountId,
     ) -> Result<MsgChannelOpenInit, crate::ics04_channel::error::Error> {
-        let counterparty = Endpoint::new(counterparty_port_id, counterparty_channel_id);
-        let order = order.parse()?;
+        // TODO - do ? for error
+        let connection_hops: Vec<ConnectionId> = connection_hops
+            .iter()
+            .map(|s| ConnectionId::from_str(s.as_str()).unwrap())
+            .collect();
+
         Ok(Self {
-            port_id: port_id.parse().unwrap(),
-            channel_id: channel_id.parse().unwrap(),
-            channel: Channel::new(order, counterparty, connection_hops, version),
+            port_id: port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel: Channel::new(
+                order.parse()?,
+                Endpoint::new(counterparty_port_id, counterparty_channel_id)
+                    .map_err(|e| Kind::IdentifierError.context(e))?,
+                connection_hops,
+                version,
+            ),
             signer,
         })
     }
@@ -118,65 +113,73 @@ mod tests {
             counterparty_channel_id: String,
         }
 
-        let msgs: Vec<OpenInitParams> = vec![
-            // Good parameters
-            OpenInitParams {
-                port_id: "port".to_string(),
-                channel_id: "testchannel".to_string(),
-                version: "1.0".to_string(),
-                order: "ORDERED".to_string(),
-                connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
-                counterparty_port_id: "destport".to_string(),
-                counterparty_channel_id: "testdestchannel".to_string(),
-            },
-            // Bad order
-            OpenInitParams {
-                port_id: "test".to_string(),
-                channel_id: "testchannel".to_string(),
-                version: "1.0".to_string(),
-                order: "MYORER".to_string(),
-                connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
-                counterparty_port_id: "destport".to_string(),
-                counterparty_channel_id: "testdestchannel".to_string(),
-            },
-            // Bad version
-            OpenInitParams {
-                port_id: "test".to_string(),
-                channel_id: "testchannel".to_string(),
-                version: " . ".to_string(),
-                order: "MYORER".to_string(),
-                connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
-                counterparty_port_id: "destport".to_string(),
-                counterparty_channel_id: "testdestchannel".to_string(),
-            },
-        ]
-        .into_iter()
-        .collect();
+        let default_params = OpenInitParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            version: "1.0".to_string(),
+            order: "ORDERED".to_string(),
+            connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
+            counterparty_port_id: "destport".to_string(),
+            counterparty_channel_id: "testdestchannel".to_string(),
+        };
 
         struct Test {
-            params: usize,
+            name: String,
+            params: OpenInitParams,
             want_pass: bool,
         }
 
         let tests: Vec<Test> = vec![
             Test {
-                params: 0,
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
                 want_pass: true,
             },
             Test {
-                params: 1,
-                want_pass: true,
-            },
-            Test {
-                params: 2,
+                name: "Bad port, non-alpha".to_string(),
+                params: OpenInitParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
                 want_pass: false,
             },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: OpenInitParams {
+                    channel_id: "connone".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad version".to_string(),
+                params: OpenInitParams {
+                    version: " . ".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: true, // verified in validate_basic()
+            },
+            Test {
+                name: "Bad order".to_string(),
+                params: OpenInitParams {
+                    order: "MYORER".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            /*
+            Test {
+                name: "Bad connection hops".to_string(),
+                params: OpenInitParams {connection_hops: vec!["conn124".to_string()].into_iter().collect(), ..default_params.clone()},
+                want_pass: false,
+            },
+            */
         ]
         .into_iter()
         .collect();
 
         for test in tests {
-            let p = msgs[test.params].clone();
+            let p = test.params.clone();
 
             let msg = MsgChannelOpenInit::new(
                 p.port_id,
@@ -194,14 +197,16 @@ mod tests {
                     assert!(
                         test.want_pass,
                         "MsgConnOpenInit::new should have failed for test {}, \nmsg {:?}",
-                        test.params, msgs[test.params]
+                        test.name,
+                        test.params.clone()
                     );
                 }
                 Err(_err) => {
                     assert!(
                         !test.want_pass,
                         "MsgConnOpenInit::new failed for test {}, \nmsg {:?}",
-                        test.params, msgs[test.params]
+                        test.name,
+                        test.params.clone()
                     );
                 }
             }
