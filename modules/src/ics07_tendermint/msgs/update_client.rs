@@ -1,6 +1,6 @@
 use crate::ics02_client::msgs::Msg;
 use crate::ics07_tendermint::header::Header;
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::ClientId;
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;

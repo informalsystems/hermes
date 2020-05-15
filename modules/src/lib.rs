@@ -22,6 +22,7 @@
 pub mod error;
 pub mod ics02_client;
 pub mod ics03_connection;
+pub mod ics04_channel;
 pub mod ics07_tendermint;
 pub mod ics23_commitment;
 pub mod ics24_host;

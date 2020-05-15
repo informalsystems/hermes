@@ -4,6 +4,7 @@ use crate::chain::Chain;
 use relayer_modules::error;
 use relayer_modules::query::IbcQuery;
 
+pub mod channel;
 pub mod client;
 pub mod connection;
 
