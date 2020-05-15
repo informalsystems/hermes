@@ -96,12 +96,12 @@ chmB == INSTANCE ConnectionHandshakeModule
 
      - remoteEnd -- a connection end
        Specifies the local connection details.  
-     
+
  ***************************************************************************)
 ConnectionParameters ==
     [
-        localEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds,
-        remoteEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds
+        localEnd : chmA!ConnectionEnds,
+        remoteEnd : chmB!ConnectionEnds
     ]
 
 
@@ -210,6 +210,8 @@ ConnectionHandshakeMessages ==
      connProof : ConnProofs]
 
 
+
+
 (***************************** InitMsgs ***********************************
 
     The set of ConnectionHandshakeMessage records where message type is
@@ -231,25 +233,26 @@ InitMsgs(le, re) ==
 
 
 (* Assigns a sequence with 1 element -- the Init msg -- to either bufChainA
-    or bufChainB. *)
+    or bufChainB. 
+    
+    TODO: Maybe reduce this. 
+ *)
 InitEnv ==
     /\ maliciousEnv = TRUE
-    /\ \/ /\ bufChainA \in {<<msg>> : 
-                msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
-          /\ bufChainB = <<>>   (* Empty buffer initially. *)
-       \/ /\ bufChainB \in {<<msg>> :
-                msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
-          /\ bufChainA = <<>>
+    /\ bufChainA \in {<<msg>> :
+            msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
+    /\ bufChainB \in {<<msg>> :
+            msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
 
 
 (* May change either of the store of chain A or B. 
  *)
 GoodNextEnv ==
-    \/ /\ chmA!NotMaxHeight
-       /\ \/ chmA!AdvanceChainHeight 
+    \/ /\ chmA!CanProgress
+       /\ \/ chmA!AdvanceChainHeight
           \/ chmA!UpdateClient(storeChainB.latestHeight)
        /\ UNCHANGED storeChainB
-    \/ /\ chmB!NotMaxHeight
+    \/ /\ chmB!CanProgress
        /\ \/ chmB!AdvanceChainHeight
           \/ chmB!UpdateClient(storeChainA.latestHeight)
        /\ UNCHANGED storeChainA
@@ -316,7 +319,7 @@ Next ==
 FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
-    /\ WF_chainStoreVars(GoodNextEnv)
+\*    /\ WF_chainStoreVars(GoodNextEnv)
 
 
 Spec ==
@@ -331,27 +334,28 @@ TypeInvariant ==
 
 
 (* Liveness property. *)
+(* As long as all chains CanProgress: We should reach open & open. *)
 Termination ==
-    <> ~ maliciousEnv
-        => <> /\ storeChainA.connection.state = "OPEN"
-              /\ storeChainB.connection.state = "OPEN"
+    <> [](chmA!CanProgress /\ chmB!CanProgress) 
+        => [](/\ storeChainA.connection.state = "OPEN"
+              /\ storeChainB.connection.state = "OPEN")
 
 
 (* Safety property. *)
-ConsistencyInv ==
-    \/ storeChainA.connection = chmA!nullConnection
-    \/ storeChainB.connection = chmB!nullConnection
+ConsistencyProperty ==
+    \/ storeChainA.connection.state = "OPEN"
+    \/ storeChainB.connection.state = "OPEN"
     (* If the connections in the two chains are not null, then the
         connection parameters must always match.
      *)
-    \/ storeChainA.connection.parameters 
+    => storeChainA.connection.parameters 
         = chmB!FlipConnectionParameters(storeChainB.connection.parameters)
 
 Consistency ==
-    [] ConsistencyInv
+    [] ConsistencyProperty
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 15 09:50:23 CEST 2020 by adi
+\* Last modified Fri May 15 13:01:37 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

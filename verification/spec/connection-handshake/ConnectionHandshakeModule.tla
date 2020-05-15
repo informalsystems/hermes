@@ -325,11 +325,13 @@ HandleConfirmMsg(m) ==
 (* If MaxHeight is not yet reached, then advance the latestHeight of the chain.
  *) 
 AdvanceChainHeight ==
-    /\ store' = [store EXCEPT !.latestHeight = @ + 1]
+    store' = [store EXCEPT !.latestHeight = @ + 1]
 
 
-NotMaxHeight ==
-    store.latestHeight <= MaxHeight
+(* State predicate returning true if MaxHeight not yet attained.
+ *)
+CanProgress ==
+    store.latestHeight < MaxHeight
 
 
 (* Action for updating the local client on this chain with a new height.
@@ -375,18 +377,18 @@ Init(chainID, client) ==
 
 Next ==
     \/ /\ inBuf # <<>>            \* Enabled if we have an inbound msg.
+       /\ store.latestHeight < MaxHeight
        /\ ProcessMsg(Head(inBuf)) \* Generic action for handling a msg.
        /\ inBuf' = Tail(inBuf)    \* Strip the head of our inbound msg. buffer.
     \/ /\ inBuf = <<>>
+       /\ store.latestHeight = MaxHeight
        /\ UNCHANGED<<moduleVars>>
 
 
-\*       /\ store.latestHeight < MaxHeight
-\*       /\ store.latestHeight = MaxHeight    
 
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 15 09:47:47 CEST 2020 by adi
+\* Last modified Fri May 15 12:55:45 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
