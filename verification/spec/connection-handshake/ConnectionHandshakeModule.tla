@@ -3,22 +3,23 @@
 (***************************************************************************
 
     This module is part of the TLA+ specification for the
-    IBC Connection Handshake (CH) protocol.
+    IBC Connection Handshake protocol (ICS3).
     
-    This module captures the actions and operators of the IBC CH protocol.
+    This module captures the actions and operators of the ICS3 protocol.
     Typically, it is an IBC module running on a chain that would implement
-    this logic, hence the name "ConnectionHandshakeModule".
+    the logic in this TLA+ module, hence the name "ConnectionHandshakeModule"
+    sometimes abbreviated to "chModule" or "chm".
 
-    This module deals with a high-level spec of the CH protocol, hence it is
-    a simplification in several regards:
-    - the modules assumes to run on a chain which modeled as a simple
+    This module deals with a high-level spec of the ICS3 protocol, so it is
+    a simplification with respect to ICS3 proper in several regards:
+    - the modules assumes to run on a chain which we model as a simple
     advancing height, plus a few more critical fields (see the 'store'),
     but without any state (e.g., blockchain, transactions, consensus core);
     - we model a single connection; establishing multiple connections is not
     possible;
-    - we do not do any cryptographic proofs or proof verifications.
+    - we do not perform any cryptographic proofs or proof verifications.
     - the abstractions we use are higher-level, and slightly different from
-    the ones in ICS 003 (see e.g., ConnectionEnd and Connection)
+    the ones in ICS3 (see e.g., ConnectionEnd and Connection records).
     - the client colocated with the module is simplified, comprising only
     a set of heights.
 
@@ -28,8 +29,8 @@ EXTENDS Naturals, FiniteSets, Sequences
 
 
 CONSTANTS MaxHeight,        \* Maximum height of the local chain.
-          ConnectionIDs,    \* The set of all possible connection IDs.
-          ClientIDs,        \* The set of all possible client IDs.
+          ConnectionIDs,    \* The set of valid connection IDs.
+          ClientIDs,        \* The set of valid client IDs.
           MaxBufLen,        \* Maximum length of the input and output buffers.
           ConnectionStates  \* All the possible connection states.
 
@@ -116,22 +117,6 @@ InitClients ==
         clientID : ClientIDs,
         latestHeight : {1}
     ]
-
-
-(******************************* CHMessageTypes *****************************
-
-     The set of valid message types that this module can handle, e.g., as
-     incoming or outgoing messages.
-
-     For a complete description of the message record, see
-     'Environment.Messages'.
-     
- ***************************************************************************)
-CHMessageTypes ==
-    {"CHMsgInit", 
-     "CHMsgTry",
-     "CHMsgAck",
-     "CHMsgConfirm"}
 
 
 (***************************************************************************
@@ -233,7 +218,7 @@ NewStore(newCon) ==
                   !.latestHeight = @ + 1]
 
 
-(* Handles a "CHMsgInit" message 'm'.
+(* Handles a "ICS3MsgInit" message 'm'.
     
     Primes the store.connection to become initialized with the parameters
     specified in 'm'. Also creates a reply message, enqueued on the outgoing
@@ -245,7 +230,7 @@ HandleInitMsg(m) ==
         sProof == GetConnProof("INIT")
         cProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     type |-> "CHMsgTry",
+                     type |-> "ICS3MsgTry",
                      connProof |-> sProof,
                      clientProof |-> cProof] IN
     IF /\ ValidConnectionParameters(m.parameters)
@@ -271,7 +256,7 @@ PreconditionsTryMsg(m) ==
     /\ VerifyClientProof(m.clientProof)
 
 
-(* Handles a "CHMsgTry" message.
+(* Handles a "ICS3MsgTry" message.
  *)
 HandleTryMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
@@ -279,7 +264,7 @@ HandleTryMsg(m) ==
         sProof == GetConnProof("TRYOPEN")
         cProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     type |-> "CHMsgAck",
+                     type |-> "ICS3MsgAck",
                      connProof |-> sProof,
                      clientProof |-> cProof] IN
     IF PreconditionsTryMsg(m)
@@ -299,7 +284,7 @@ PreconditionsAckMsg(m) ==
     /\ VerifyConnProof(m.connProof)
 
 
-(* Handles a "CHMsgAck" message.
+(* Handles a "ICS3MsgAck" message.
  *)
 HandleAckMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
@@ -307,7 +292,7 @@ HandleAckMsg(m) ==
         sProof == GetConnProof("OPEN")
         cProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     type |-> "CHMsgConfirm",
+                     type |-> "ICS3MsgConfirm",
                      connProof |-> sProof,
                      clientProof |-> cProof] IN
     IF PreconditionsAckMsg(m)
@@ -325,7 +310,7 @@ PreconditionsConfirmMsg(m) ==
     /\ m.connProof.connectionState = "OPEN"
     /\ VerifyConnProof(m.connProof)
 
-(* Handles a "CHMsgConfirm" message.
+(* Handles a "ICS3MsgConfirm" message.
  *)
 HandleConfirmMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
@@ -368,16 +353,16 @@ UpdateClient(height) ==
     disjunctions will always enable.
  *)
 ProcessMsg(m) ==
-    LET res == CASE m.type = "CHMsgInit" -> HandleInitMsg(m)
-                 [] m.type = "CHMsgTry"  -> HandleTryMsg(m)
-                 [] m.type = "CHMsgAck"  -> HandleAckMsg(m)
-                 [] m.type = "CHMsgConfirm"  -> HandleConfirmMsg(m) IN
+    LET res == CASE m.type = "ICS3MsgInit" -> HandleInitMsg(m)
+                 [] m.type = "ICS3MsgTry" -> HandleTryMsg(m)
+                 [] m.type = "ICS3MsgAck" -> HandleAckMsg(m)
+                 [] m.type = "ICS3MsgConfirm" -> HandleConfirmMsg(m) IN
     /\ outBuf' = res.out
     /\ store' = res.store
 
 
 (***************************************************************************
- Connection Handshake Module main spec.
+ Connection Handshake Module (ICS3) main spec.
  ***************************************************************************)
 
 
@@ -402,6 +387,6 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 14 16:30:38 CEST 2020 by adi
+\* Last modified Fri May 15 09:47:47 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

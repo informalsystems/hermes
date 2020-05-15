@@ -2,8 +2,8 @@
 
 (***************************************************************************
 
-    This module is part of the TLA+ specification for the
-    IBC Connection Handshake (CH) protocol. This is a high-level spec of CH.
+    This module is part of the TLA+ specification for the IBC Connection
+    Handshake protocol (identifier 'ICS3'). This is a high-level spec of ICS3.
     
     This module captures the operators and actions outside of the CH protocol
     itself (i.e., the environment).
@@ -11,12 +11,12 @@
     - creates two instances of ConnectionHandshakeModule,
     - wires these instances together,
     - simulates some malicious behavior by injecting incorrect messages
-    - provides the initialization step for CH protocol, concretely a
-    "CHMsgInit" message, so that the two instances can perform the protocol.
+    - provides the initialization step for ICS3 protocol, concretely a
+    "ICS3MsgInit" message, so that the two instances can perform the protocol.
     - updates the clients on each instance periodically, or advances the chain
     of each instance. 
 
-  ***************************************************************************)
+ ***************************************************************************)
 
 EXTENDS Naturals, FiniteSets, Sequences
 
@@ -38,12 +38,12 @@ VARIABLES
 
 chainAParameters == [
     connectionIDs |-> { "connAtoB" },
-    clientIDs |-> { "clientIDChainA" }
+    clientIDs |-> { "clientIDChainB" }
 ]
 
 chainBParameters == [
     connectionIDs |-> { "connBtoA" },
-    clientIDs |-> { "clientIDChainB" }
+    clientIDs |-> { "clientIDChainA" }
 ]
 
 
@@ -79,30 +79,40 @@ chmA == INSTANCE ConnectionHandshakeModule
 
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxHeight      <- MaxHeight,
-             inBuf          <- bufChainB,      (* Flip the message buffers w.r.t. chain A buffers. *)
-             outBuf         <- bufChainA,      (* Inbound for "A" is outbound for "B". *)
+             inBuf          <- bufChainB,      (* Flip message buffers *)
+             outBuf         <- bufChainA,      (* Inbound of "A" is outbound of "B". *)
              store          <- storeChainB,
              ConnectionIDs  <- chainBParameters.connectionIDs,
              ClientIDs      <- chainBParameters.clientIDs
 
 
-(* TODO BLOCK COMMENTS *)
+(******************************* ConnectionParameters **********************
+     A set of connection parameter records.
+     A connection parameter record contains the following fields:
+
+     - localEnd -- a connection end 
+       Specifies the local connection details (i.e., connection ID and
+       client ID).
+
+     - remoteEnd -- a connection end
+       Specifies the local connection details.  
+     
+ ***************************************************************************)
 ConnectionParameters ==
     [
-        localEnd : chmA!ConnectionEnds,
-        remoteEnd : chmB!ConnectionEnds
+        localEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds,
+        remoteEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds
     ]
 
 
 (******************************* Connections *******************************
-     A set of connection end records.
-     A connection end record contains the following fields:
+     A set of connection records.
+     A connection record contains the following fields:
 
-     - connectionID -- a string 
-       Stores the identifier of this connection, specific to a chain.
+     - parameters -- a connection parameters record 
+       Specifies the local plus remote ends.
 
-     - clientID -- a string
-       Stores the identifier of the client running on this chain.  
+     - state -- a connection state (see ConnectionStates set).
      
  ***************************************************************************)
 Connections ==
@@ -152,45 +162,65 @@ ClientProofs ==
 Heights == 1..MaxHeight
 
 
-(******************************** Messages ********************************
-Messages are connection handshake specific.
- 
-    The valid message types are defined in:
-    ConnectionHandshakeModule.CHMessageTypes.
-    
-In the low-level connection handshake protocol, the four messages have the
-following types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
- These are described in ICS 003.
- In this high-level specification, we choose slightly different names, to
- make an explicit distinction to the low-level protocol. Message types
- are as follows: CHMsgInit, CHMsgTry, CHMsgAck, and CHMsgConfirm. Notice that
- the fields of each message are also different to the ICS 003 specification.
- 
+(******************************* ICS3MessageTypes *****************************
+
+    The set of valid message types that the ConnectionHandshakeModule can 
+    handle, e.g., as incoming or outgoing messages.
+
+    In the low-level connection handshake protocol, the four messages have
+    types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
+    In this high-level specification, we choose slightly different names, to
+    make an explicit distinction to the low-level protocol. Message types
+    are as follows:
+    ICS3MsgInit, ICS3MsgTry, ICS3MsgAck, and ICS3MsgConfirm.
+    For a complete description of the message record, see
+    ConnectionHandshakeMessage below.
+     
+ ***************************************************************************)
+ICS3MessageTypes ==
+    {"ICS3MsgInit", 
+     "ICS3MsgTry",
+     "ICS3MsgAck",
+     "ICS3MsgConfirm"}
+
+
+(*********************** ConnectionHandshakeMessages ***********************
+
+    The set of ConnectionHandshakeMessage records.
+    These are connection handshake specific messages that two chains exchange
+    while executing the ICS3 protocol.
  
  ***************************************************************************)
 ConnectionHandshakeMessages ==
-    [type : {"CHMsgInit"}, 
+    [type : {"ICS3MsgInit"}, 
      parameters : ConnectionParameters]
     \union
-    [type : {"CHMsgTry"},
+    [type : {"ICS3MsgTry"},
      parameters : ConnectionParameters,
      connProof : ConnProofs,
      clientProof : ClientProofs]
     \union
-    [type : {"CHMsgAck"},
+    [type : {"ICS3MsgAck"},
      parameters : ConnectionParameters,
      connProof : ConnProofs,
      clientProof : ClientProofs]
      \union
-    [type : {"CHMsgConfirm"},
+    [type : {"ICS3MsgConfirm"},
      parameters : ConnectionParameters,
      connProof : ConnProofs]
 
 
-(* The set of all Init messages, such that the local end is the
-    set 'le', and the remote end is set 're'. *)
+(***************************** InitMsgs ***********************************
+
+    The set of ConnectionHandshakeMessage records where message type is
+    ICS3MsgInit.
+
+    This operator returns the set of all initialization messages, such that
+    the local end is the set 'le', and the remote end is set 're'.
+ 
+ ***************************************************************************)
 InitMsgs(le, re) ==
-    [type : {"CHMsgInit"},
+    [type : {"ICS3MsgInit"},
      parameters : [localEnd : le,
                    remoteEnd : re]]
 
@@ -226,13 +256,13 @@ GoodNextEnv ==
 
 
 (* The environment injects a msg. in the buffer of one of the chains. 
-   This interferes with the CH protocol in two ways:
-    1. by introducing additional messages that are incorrect,
-    2. by dropping correct messages (overwritting them).
+    This interferes with the ICS3 protocol by introducing additional
+    messages that are usually incorrect.
     
-    Without the first constraint, on the "Len(bufChainA)" and "Len(bufChainB)",
-    Env could fill buffers (DoS attack). This can lead to a deadlock, because
-    chains will simply be unable to reply to each other.
+    Without the first constraint, on the "Len(bufChainA)" and
+    "Len(bufChainB)", Env could fill buffers (DoS attack). This can
+    lead to a deadlock, because chains will simply be unable to reply
+    to each other.
  *)
 MaliciousNextEnv ==
     \/ /\ Len(bufChainA) < MaxBufLen - 1
@@ -256,7 +286,7 @@ NextEnv ==
        /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
 
 
-CHProtocolDone ==
+ICS3ProtocolDone ==
     /\ storeChainA.connection.state = "OPEN"
     /\ storeChainB.connection.state = "OPEN"
     /\ UNCHANGED <<allVars>>
@@ -268,17 +298,16 @@ CHProtocolDone ==
  *****************************************************************************)
 
 
-(* Initializes both chains, attributing to each a chainID as well as a client.
- *)
+(* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ \E clientB \in chmB!InitClients : chmA!Init("chainA", clientB)
-    /\ \E clientA \in chmA!InitClients : chmB!Init("chainB", clientA)
+    /\ \E clientA \in chmA!InitClients : chmA!Init("chainA", clientA)
+    /\ \E clientB \in chmB!InitClients : chmB!Init("chainB", clientB)
     /\ InitEnv
 
 
-\* The two CH modules and the environment alternate their steps.
+(* The two ICS3 modules and the environment alternate their steps. *)
 Next ==
-    \/ CHProtocolDone
+    \/ ICS3ProtocolDone
     \/ NextEnv
     \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
@@ -296,25 +325,25 @@ Spec ==
     /\ FairProgress
 
 
-(* TODO: Unclear how to capture the type of a sequence. *)
 TypeInvariant ==
     /\ \/ bufChainA \in Seq(ConnectionHandshakeMessages)
        \/ bufChainB \in Seq(ConnectionHandshakeMessages)
 
 
-\* Liveness property.
+(* Liveness property. *)
 Termination ==
     <> ~ maliciousEnv
         => <> /\ storeChainA.connection.state = "OPEN"
               /\ storeChainB.connection.state = "OPEN"
 
 
-\* Safety property.
-\* If the connections in the two chains are not null, then the
-\* connection parameters must always match.
+(* Safety property. *)
 ConsistencyInv ==
     \/ storeChainA.connection = chmA!nullConnection
     \/ storeChainB.connection = chmB!nullConnection
+    (* If the connections in the two chains are not null, then the
+        connection parameters must always match.
+     *)
     \/ storeChainA.connection.parameters 
         = chmB!FlipConnectionParameters(storeChainB.connection.parameters)
 
@@ -323,6 +352,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 14 16:36:27 CEST 2020 by adi
+\* Last modified Fri May 15 09:50:23 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
