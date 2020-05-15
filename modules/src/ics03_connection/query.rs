@@ -3,6 +3,7 @@ use tendermint::rpc::endpoint::abci_query::AbciQuery;
 use tendermint::abci;
 
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
+use crate::ics24_host::identifier::ConnectionId;
 
 use crate::error;
 use crate::path::ConnectionPath;
@@ -11,8 +12,7 @@ use crate::Height;
 
 pub struct QueryConnection {
     pub chain_height: Height,
-    // TODO: change this to ConnectionId(String) to implement validation functions on it?
-    pub connection_id: String,
+    pub connection_id: ConnectionId,
     pub connection_path: ConnectionPath,
     pub prove: bool,
 }
@@ -58,7 +58,7 @@ pub struct ConnectionResponse {
 
 impl ConnectionResponse {
     pub fn new(
-        connection_id: String,
+        connection_id: ConnectionId,
         connection: ConnectionEnd,
         abci_proof: Option<CommitmentProof>,
         proof_height: Height,
@@ -98,17 +98,17 @@ impl IbcResponse<QueryConnection> for ConnectionResponse
 
 pub struct IdentifiedConnectionEnd {
     connection_end: ConnectionEnd,
-    identifier: String,
+    connection_id: ConnectionId,
 }
 
 impl IdentifiedConnectionEnd {
     pub fn new(
         connection_end: ConnectionEnd,
-        identifier: String,
+        connection_id: ConnectionId,
     ) -> Self {
         IdentifiedConnectionEnd{
             connection_end,
-            identifier,
+            connection_id,
         }
     }
 }

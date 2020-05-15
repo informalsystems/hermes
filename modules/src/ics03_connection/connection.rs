@@ -1,20 +1,21 @@
 use super::exported::*;
-use super::error;
+use crate::ics03_connection::error;
 use crate::ics23_commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ConnectionId, ClientId};
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use serde_derive::{Deserialize, Serialize};
 
-
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
-    client_id: String,
+    client_id: ClientId,
     counterparty: Counterparty,
     version: String,
 }
 
-impl ConnectionEnd{
+impl ConnectionEnd {
     pub fn new(
         state: ConnectionState,
-        client_id: String,
+        client_id: ClientId,
         counterparty: Counterparty,
         version: String,
     ) -> Self {
@@ -27,18 +28,27 @@ impl ConnectionEnd{
     }
 }
 
+impl ConnectionI for ConnectionEnd {
+    type ValidationError: error::Error;
+
+
+    fn state(&self) -> State {
+        self.state.clone()
+    }
+    fn client_id(&self) -> String;
+    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = super::error::Error>>;
+    fn version(&self) -> String;
+    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
+}
+
 pub struct Counterparty {
-    client_id: String,
-    connection_id: String,
+    client_id: ClientId,
+    connection_id: ConnectionId,
     prefix: CommitmentPrefix,
 }
 
 impl Counterparty {
-    pub fn new(
-        client_id: String,
-        connection_id: String,
-        prefix: CommitmentPrefix,
-    ) -> Self {
+    pub fn new(client_id: ClientId, connection_id: ConnectionId, prefix: CommitmentPrefix) -> Self {
         Counterparty {
             client_id,
             connection_id,

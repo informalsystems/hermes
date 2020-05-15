@@ -93,7 +93,7 @@ mod tests {
             },
             Test {
                 state: "INVALID_STATE",
-                want_res: State::Open,
+                want_res: None,
                 want_err: true,
             },
         ]
