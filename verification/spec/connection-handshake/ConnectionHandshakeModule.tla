@@ -60,8 +60,10 @@ VARIABLES
      
  ***************************************************************************)   
     store,
-    inBuf,  \* A buffer (Sequence) holding any message(s) incoming to the chModule.
-    outBuf  \* A buffer (Sequence) holding outbound message(s) from the chModule.
+    (* A buffer (Sequence) holding any message(s) incoming to this module. *)
+    inBuf,
+    (* A buffer (Sequence) holding outbound message(s) from this module. *)
+    outBuf
 
 
 moduleVars == <<inBuf, outBuf, store>>
@@ -210,8 +212,7 @@ VerifyClientProof(cp) ==
 (* Modifies the local store.
 
     Replaces the connection in the store with the argument 'newCon'.
-    If the height (latestHeight) of the chain has not yet attained MaxHeight, this action also
-    advances the chain height. 
+    This action also advances the chain height. 
  *)
 NewStore(newCon) ==
     [store EXCEPT !.connection = newCon,
@@ -322,7 +323,9 @@ HandleConfirmMsg(m) ==
           store |-> store]
 
 
-(* If MaxHeight is not yet reached, then advance the latestHeight of the chain.
+(* Action for advancing the current height (latestHeight) of the chain.
+
+    The environment triggers this as part of the GoodNextEnv action.
  *) 
 AdvanceChainHeight ==
     store' = [store EXCEPT !.latestHeight = @ + 1]
@@ -334,12 +337,11 @@ CanProgress ==
     store.latestHeight < MaxHeight
 
 
-(* Action for updating the local client on this chain with a new height.
+(* Action for updating the local client on this chain with a height.
     
-    This may prime the store; leaves the chain buffers unchanged.
-    This will also advance the chain height unless MaxHeight is reached.
-    If the 'height' parameter already exists as part of
-    'store.client.consensusStates', then we do not change the store.
+    The environment triggers this as part of the GoodNextEnv action.
+    This primes the store; leaves the chain buffers unchanged.
+    This will also advance the chain height.
  *)
 UpdateClient(height) ==
     store' = [store EXCEPT !.latestHeight = @ + 1,
@@ -385,10 +387,8 @@ Next ==
        /\ UNCHANGED<<moduleVars>>
 
 
-
-
 =============================================================================
 \* Modification History
-\* Last modified Fri May 15 12:55:45 CEST 2020 by adi
+\* Last modified Mon May 18 15:08:56 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

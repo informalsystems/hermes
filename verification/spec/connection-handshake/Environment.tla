@@ -261,7 +261,7 @@ InitMsgs(le, re) ==
     process this message; the remoteEnd is incorrect, however, but chain
     B is not able to validate that part of the connection, so it will
     accept it as it is.
-    
+
     2. Chain A processes the ICS3MsgInit (action HandleInitMsg) and
     updates its store.connection with the parameters from step 1 above.
     At this point, chain A "locks onto" these parameters and will not
@@ -278,7 +278,6 @@ InitMsgs(le, re) ==
     deadlock. To avoid this problem, we prevent the environment from
     acting maliciously in the preliminary parts of the ICS3 protocol, until
     both chains finish locking on the same set of connection parameters.
-    
  *)
 InitEnv ==
     /\ maliciousEnv = FALSE
@@ -329,7 +328,6 @@ MaliciousNextEnv ==
        /\ bufChainB' \in {Append(bufChainB, arbitraryMsg) :
             arbitraryMsg \in ConnectionHandshakeMessages}
        /\ UNCHANGED bufChainA
-
 
 
 (* Environment next action.
@@ -386,6 +384,7 @@ ICS3NonTermination ==
     /\ (~ chmB!CanProgress \/ storeChainB.connection.state # "OPEN")
     /\ UNCHANGED <<allVars>>
 
+
 (******************************************************************************
  Main spec.
  The system comprises the connection handshake module & environment.
@@ -424,21 +423,24 @@ TypeInvariant ==
        \/ bufChainB \in Seq(ConnectionHandshakeMessages)
 
 
-(* Liveness property. *)
-(* If both chains CanProgress: We should reach open & open. *)
+(* Liveness property.
+    
+    If both chains can progress, we should reach open on both chains.
+*)
 Termination ==
     [](chmA!CanProgress /\ chmB!CanProgress)
         => <> [](/\ storeChainA.connection.state = "OPEN"
                  /\ storeChainB.connection.state = "OPEN")
 
 
-(* Safety property. *)
+(* Safety property.
+
+    If the connections in the two chains are not null, then the
+        connection parameters must always match.
+ *)
 ConsistencyProperty ==
     /\ storeChainA.connection.state # "UNINIT"
     /\ storeChainB.connection.state # "UNINIT"
-    (* If the connections in the two chains are not null, then the
-        connection parameters must always match.
-     *)
     => storeChainA.connection.parameters 
         = chmB!FlipConnectionParameters(storeChainB.connection.parameters)
 
@@ -447,6 +449,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 18 14:28:24 CEST 2020 by adi
+\* Last modified Mon May 18 15:11:58 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
