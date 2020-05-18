@@ -100,8 +100,8 @@ chmB == INSTANCE ConnectionHandshakeModule
  ***************************************************************************)
 ConnectionParameters ==
     [
-        localEnd : chmA!ConnectionEnds,
-        remoteEnd : chmB!ConnectionEnds
+        localEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds,
+        remoteEnd : chmB!ConnectionEnds \union chmA!ConnectionEnds
     ]
 
 
@@ -192,7 +192,7 @@ ICS3MessageTypes ==
  
  ***************************************************************************)
 ConnectionHandshakeMessages ==
-    [type : {"ICS3MsgInit"}, 
+    [type : {"ICS3MsgInit"},
      parameters : ConnectionParameters]
     \union
     [type : {"ICS3MsgTry"},
@@ -208,8 +208,6 @@ ConnectionHandshakeMessages ==
     [type : {"ICS3MsgConfirm"},
      parameters : ConnectionParameters,
      connProof : ConnProofs]
-
-
 
 
 (***************************** InitMsgs ***********************************
@@ -232,20 +230,73 @@ InitMsgs(le, re) ==
  ***************************************************************************)
 
 
-(* Assigns a sequence with 1 element -- the Init msg -- to either bufChainA
-    or bufChainB. 
+(* Environment initialization.
     
-    TODO: Maybe reduce this. 
+    This action kick-stars the ICS3 protocol by assigning an ICS3MsgInit
+    msg to either of the two chains (or both).
+    
+    Initially, the environment is non-malicious. The environment starts
+    acting maliciously once the connection on both chains transitions out
+    of state "UNINIT" (the initials state). It is important to
+    initialize the protocol like this, otherwise the env. can provoke a
+    deadlock. This can happen with the following sequence of actions:
+    
+    1. Environment injects a ICS3MsgInit to chain A with the following
+    correct parameters:
+
+        localEnd |-> [connectionID |-> "connAtoB",
+                      clientID |-> "clientIDChainB"]
+        remoteEnd |-> [connectionID |-> "connBtoA",
+                       clientID |-> "clientIDChainA"]
+                    
+    2. Environment injects, maliciously, a ICS3MsgInit to chain B with
+    the following parameters:
+
+        localEnd |-> [connectionID |-> "connBtoA",
+                      clientID |-> "clientIDChainA"]
+        remoteEnd |-> [connectionID |-> "connBtoA",
+                       clientID |-> "clientIDChainA"]
+                       
+    Notice that the localEnd is correct, so chain B will validate and
+    process this message; the remoteEnd is incorrect, however, but chain
+    B is not able to validate that part of the connection, so it will
+    accept it as it is.
+    
+    2. Chain A processes the ICS3MsgInit (action HandleInitMsg) and
+    updates its store.connection with the parameters from step 1 above.
+    At this point, chain A "locks onto" these parameters and will not
+    accept any others. Chain A also produces a ICS3MsgTry message.
+    
+    3. Chain B processes the ICS3MsgInit (action HandleInitMsg) and
+    updates its store.connection with the parameters from step 2 above.
+    Chain B "locks onto" these parameters and will not accept any others.
+    At this step, chain B produces a ICS3MsgTry message with the local
+    parameters from its connection.
+    
+    Both chains will be locked on a different set of connection parameters,
+    and neither chain will accept their corresponding ICS3MsgTry, hence a
+    deadlock. To avoid this problem, we prevent the environment from
+    acting maliciously in the preliminary parts of the ICS3 protocol, until
+    both chains finish locking on the same set of connection parameters.
+    
  *)
 InitEnv ==
-    /\ maliciousEnv = TRUE
-    /\ bufChainA \in {<<msg>> :
+    /\ maliciousEnv = FALSE
+    /\ \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
             msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
-    /\ bufChainB \in {<<msg>> :
+          /\ bufChainB = <<>>
+       \/ /\ bufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
+            msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
+          /\ bufChainB = <<>>
+       \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
+            msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
+          /\ bufChainB \in {<<msg>> :
             msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
 
 
-(* May change either of the store of chain A or B. 
+(* Default next (good) action for Environment.
+
+    May change either of the store of chain A or B. 
  *)
 GoodNextEnv ==
     \/ /\ chmA!CanProgress
@@ -258,7 +309,9 @@ GoodNextEnv ==
        /\ UNCHANGED storeChainA
 
 
-(* The environment injects a msg. in the buffer of one of the chains. 
+(* Environment malicious behavior.
+
+    The environment injects a msg. in the buffer of one of the chains. 
     This interferes with the ICS3 protocol by introducing additional
     messages that are usually incorrect.
     
@@ -278,22 +331,60 @@ MaliciousNextEnv ==
        /\ UNCHANGED bufChainA
 
 
+
+(* Environment next action.
+
+    There are four possible actions that the environment may perform:
+    
+    1. A good step: the environment advances or updates the client on
+    one of the two chains.
+    
+    2. The environment becomes malicious, as a result of both chains
+    advancing past the UNINIT step (i.e., after both chains finished 
+    locking on to a set of connection parameters).
+    
+    3. A malicious step.
+    
+    4. The environment stops acting maliciously.
+ *)
 NextEnv ==
-    \/ /\ GoodNextEnv
+    \/ /\ GoodNextEnv                               (* A good step. *)
        /\ UNCHANGED<<bufChainA, bufChainB, maliciousEnv>>
-    \/ /\ maliciousEnv = TRUE
+    \/ /\ maliciousEnv = FALSE                      (* Enable malicious env. *)
+       /\ storeChainA.connection.state # "UNINIT"
+       /\ storeChainB.connection.state # "UNINIT"
+       /\ maliciousEnv' = TRUE
+       /\ MaliciousNextEnv
+       /\ UNCHANGED chainStoreVars
+    \/ /\ maliciousEnv = TRUE                       (* A malicious step. *)
        /\ MaliciousNextEnv
        /\ UNCHANGED<<maliciousEnv, chainStoreVars>>
-    \/ /\ maliciousEnv = TRUE
+    \/ /\ maliciousEnv = TRUE                       (* Disable malicious env. *)
        /\ maliciousEnv' = FALSE
        /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
 
 
-ICS3ProtocolDone ==
+(* Enables when the connection is open on both chains.
+
+    State predicate signaling that the protocol terminated correctly.
+ *)
+ICS3ReachTermination ==
     /\ storeChainA.connection.state = "OPEN"
     /\ storeChainB.connection.state = "OPEN"
     /\ UNCHANGED <<allVars>>
 
+
+(* Enables when both chains attain maximum height, if the connection is still
+    not opened.
+
+    State predicate signaling that the chains cannot progress any further,
+    and therefore the protocol terminates without successfully opening the
+    connection.
+ *)
+ICS3NonTermination ==
+    /\ (~ chmA!CanProgress \/ storeChainA.connection.state # "OPEN")
+    /\ (~ chmB!CanProgress \/ storeChainB.connection.state # "OPEN")
+    /\ UNCHANGED <<allVars>>
 
 (******************************************************************************
  Main spec.
@@ -310,7 +401,8 @@ Init ==
 
 (* The two ICS3 modules and the environment alternate their steps. *)
 Next ==
-    \/ ICS3ProtocolDone
+    \/ ICS3ReachTermination
+    \/ ICS3NonTermination
     \/ NextEnv
     \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
     \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
@@ -319,7 +411,6 @@ Next ==
 FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
-\*    /\ WF_chainStoreVars(GoodNextEnv)
 
 
 Spec ==
@@ -334,17 +425,17 @@ TypeInvariant ==
 
 
 (* Liveness property. *)
-(* As long as all chains CanProgress: We should reach open & open. *)
+(* If both chains CanProgress: We should reach open & open. *)
 Termination ==
-    <> [](chmA!CanProgress /\ chmB!CanProgress) 
-        => [](/\ storeChainA.connection.state = "OPEN"
-              /\ storeChainB.connection.state = "OPEN")
+    [](chmA!CanProgress /\ chmB!CanProgress)
+        => <> [](/\ storeChainA.connection.state = "OPEN"
+                 /\ storeChainB.connection.state = "OPEN")
 
 
 (* Safety property. *)
 ConsistencyProperty ==
-    \/ storeChainA.connection.state = "OPEN"
-    \/ storeChainB.connection.state = "OPEN"
+    /\ storeChainA.connection.state # "UNINIT"
+    /\ storeChainB.connection.state # "UNINIT"
     (* If the connections in the two chains are not null, then the
         connection parameters must always match.
      *)
@@ -356,6 +447,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 15 13:01:37 CEST 2020 by adi
+\* Last modified Mon May 18 14:28:24 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
