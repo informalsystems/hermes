@@ -339,10 +339,11 @@ TypeInvariant ==
     /\ inBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
     /\ outBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
     /\ store.connection \in Connections
+    /\ store.client.clientID \in ClientIDs \union {NullClientID}
 
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 09:56:48 CEST 2020 by adi
+\* Last modified Tue May 19 11:29:24 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

@@ -37,19 +37,32 @@ VARIABLES
     maliciousEnv    \* If TRUE, environment interferes w/ CH protocol. 
 
 
-chainAParameters == [
-    connectionIDs |-> { "connAtoB" },
-    clientIDs |-> { "clientIDChainB" }
-]
+(************* chainAConnectionEnds & chainBConnectionEnds *****************
 
-chainBParameters == [
-    connectionIDs |-> { "connBtoA" },
-    clientIDs |-> { "clientIDChainA" }
-]
+    The set of records that each chain can use as a valid local connection
+    end. For each chain, this set contains one record, since we are
+    modeling a single connection in this specification.
+ 
+ ***************************************************************************)
+chainAConnectionEnds == 
+    [
+        connectionID : { "connAtoB" },
+        clientID : { "clientOnAToB" }
+    ]
+chainBConnectionEnds ==
+    [
+        connectionID : { "connBtoA" },
+        clientID : { "clientOnBToA" }
+    ]
 
+AllConnectionEnds ==
+    chainAConnectionEnds \union chainBConnectionEnds
 
-AllClientIDs == chainAParameters.clientIDs \union chainBParameters.clientIDs
-AllConnectionIDs == chainAParameters.connectionIDs \union chainBParameters.connectionIDs
+AllClientIDs == 
+    { x.clientID : x \in AllConnectionEnds }
+
+AllConnectionIDs ==
+    { x.connectionID : x \in AllConnectionEnds }
 
 
 (* Bundle with variables that chain A has access to. *)
@@ -69,15 +82,14 @@ allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
 
 
 INSTANCE ICS3Types
-    WITH MaxHeight <- MaxHeight
 
 chmA == INSTANCE ConnectionHandshakeModule
         WITH MaxChainHeight <- MaxHeight,
              inBuf          <- bufChainA,
              outBuf         <- bufChainB,
              store          <- storeChainA,
-             ConnectionIDs  <- chainAParameters.connectionIDs,
-             ClientIDs      <- chainAParameters.clientIDs
+             ConnectionIDs  <- { x.connectionID : x \in chainAConnectionEnds },
+             ClientIDs      <- { x.clientID : x \in chainAConnectionEnds }
 
 
 chmB == INSTANCE ConnectionHandshakeModule
@@ -85,8 +97,8 @@ chmB == INSTANCE ConnectionHandshakeModule
              inBuf          <- bufChainB,      (* Flip message buffers *)
              outBuf         <- bufChainA,      (* Inbound of "A" is outbound of "B". *)
              store          <- storeChainB,
-             ConnectionIDs  <- chainBParameters.connectionIDs,
-             ClientIDs      <- chainBParameters.clientIDs
+             ConnectionIDs  <- { x.connectionID : x \in chainBConnectionEnds },
+             ClientIDs      <- { x.clientID : x \in chainBConnectionEnds }
 
 
 (***************************************************************************
@@ -146,15 +158,15 @@ chmB == INSTANCE ConnectionHandshakeModule
 InitEnv ==
     /\ maliciousEnv = FALSE
     /\ \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
-            msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
+            msg \in InitMsgs(chainAConnectionEnds, chainBConnectionEnds)}
           /\ bufChainB = <<>>
        \/ /\ bufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-            msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
+            msg \in InitMsgs(chainBConnectionEnds, chainAConnectionEnds)}
           /\ bufChainB = <<>>
        \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-            msg \in InitMsgs(chmA!ConnectionEnds, chmB!ConnectionEnds)}
+            msg \in InitMsgs(chainAConnectionEnds, chainBConnectionEnds)}
           /\ bufChainB \in {<<msg>> :
-            msg \in InitMsgs(chmB!ConnectionEnds, chmA!ConnectionEnds)}
+            msg \in InitMsgs(chainBConnectionEnds, chainAConnectionEnds)}
 
 
 (* Default next (good) action for Environment.
@@ -257,9 +269,9 @@ ICS3NonTermination ==
 
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ \E clientA \in InitClients(chainAParameters.clientIDs) :
+    /\ \E clientA \in InitClients({ x.clientID : x \in chainAConnectionEnds }) :
             chmA!Init("chainA", clientA, NullConnection)
-    /\ \E clientB \in InitClients(chainBParameters.clientIDs) :
+    /\ \E clientB \in InitClients({ x.clientID : x \in chainBConnectionEnds }) :
             chmB!Init("chainB", clientB, NullConnection)
     /\ InitEnv
 
@@ -330,6 +342,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 09:45:49 CEST 2020 by adi
+\* Last modified Tue May 19 11:35:41 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
