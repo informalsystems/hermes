@@ -25,14 +25,14 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, Sequences
+EXTENDS Naturals, FiniteSets, Sequences, ICS3Types
 
 
-CONSTANTS MaxHeight,        \* Maximum height of the local chain.
+CONSTANTS MaxChainHeight,   \* Maximum height of the local chain.
           ConnectionIDs,    \* The set of valid connection IDs.
           ClientIDs,        \* The set of valid client IDs.
-          MaxBufLen,        \* Maximum length of the input and output buffers.
-          ConnectionStates  \* All the possible connection states.
+          MaxBufLen         \* Maximum length of the input and output buffers.
+
 
 ASSUME Cardinality(ConnectionIDs) >= 1
 ASSUME Cardinality(ClientIDs) >= 1
@@ -69,58 +69,6 @@ VARIABLES
 moduleVars == <<inBuf, outBuf, store>>
 
 
-(******************************* ConnectionEnds *****************************
-     A set of connection end records.
-     A connection end record contains the following fields:
-     
-     - connectionID -- a string 
-       Stores the identifier of this connection, specific to a chain.
-
-     - clientID -- a string
-       Stores the identifier of the client running on this chain.  
-     
- ***************************************************************************)
-ConnectionEnds ==
-    [
-        connectionID : ConnectionIDs,
-        clientID : ClientIDs
-    ]
-
-
-(*
-    Initially, the connection on this chain is uninitialized. 
-*)
-nullConnection == [state |-> "UNINIT"]
-
-
-(******************************* InitClients *****************************
-     A set of records describing the possible initial values for the
-     clients on this chain.
-     
-     A client record contains the following fields:
-
-     - consensusStates -- a set of heights, each height being a Nat 
-       Stores the set of all heights (i.e., consensus states) that this
-       client observed. At initialization time, the client only observes
-       the first height, so the only possible value for this record is
-       {1}.
-
-     - clientID -- a string
-       The identifier of the client.
-       
-     - latestHeight -- a natural number
-       Stores the latest height among all the heights in consensusStates.
-       Initialized to 1.
-     
- ***************************************************************************)
-InitClients ==
-    [   
-        consensusStates : {{1}},
-        clientID : ClientIDs,
-        latestHeight : {1}
-    ]
-
-
 (***************************************************************************
     Helper operators.
  ***************************************************************************)
@@ -150,8 +98,8 @@ CheckLocalParameters(para) ==
 ValidConnectionParameters(para) ==
     /\ para.localEnd.connectionID \in ConnectionIDs
     /\ para.localEnd.clientID \in ClientIDs
-    /\ \/ store.connection = nullConnection
-       \/ /\ store.connection /= nullConnection
+    /\ \/ store.connection = NullConnection
+       \/ /\ store.connection /= NullConnection
           /\ CheckLocalParameters(para)
 
 
@@ -294,8 +242,7 @@ HandleAckMsg(m) ==
         cProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgConfirm",
-                     connProof |-> sProof,
-                     clientProof |-> cProof] IN
+                     connProof |-> sProof] IN
     IF PreconditionsAckMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
           store |-> NewStore(newCon)]
@@ -331,10 +278,10 @@ AdvanceChainHeight ==
     store' = [store EXCEPT !.latestHeight = @ + 1]
 
 
-(* State predicate returning true if MaxHeight not yet attained.
+(* State predicate returning true if MaxChainHeight not yet attained.
  *)
-CanProgress ==
-    store.latestHeight < MaxHeight
+CanAdvance ==
+    store.latestHeight < MaxChainHeight
 
 
 (* Action for updating the local client on this chain with a height.
@@ -344,9 +291,10 @@ CanProgress ==
     This will also advance the chain height.
  *)
 UpdateClient(height) ==
-    store' = [store EXCEPT !.latestHeight = @ + 1,
-                           !.client.consensusStates = @ \cup {height},
-                           !.client.latestHeight = height]
+    /\ height \notin store.client.consensusStates
+    /\ store' = [store EXCEPT !.latestHeight = @ + 1,
+                              !.client.consensusStates = @ \cup {height},
+                              !.client.latestHeight = height]
 
 
 (* Generic action for handling any type of inbound message.
@@ -370,25 +318,31 @@ ProcessMsg(m) ==
  ***************************************************************************)
 
 
-Init(chainID, client) ==
+Init(chainID, client, connection) ==
     /\ store = [id |-> chainID,
                 latestHeight |-> 1,
-                connection |-> nullConnection,
+                connection |-> connection,
                 client |-> client]
 
 
 Next ==
     \/ /\ inBuf # <<>>            \* Enabled if we have an inbound msg.
-       /\ store.latestHeight < MaxHeight
+       /\ CanAdvance
        /\ ProcessMsg(Head(inBuf)) \* Generic action for handling a msg.
        /\ inBuf' = Tail(inBuf)    \* Strip the head of our inbound msg. buffer.
     \/ /\ inBuf = <<>>
-       /\ store.latestHeight = MaxHeight
+       /\ ~ CanAdvance
        /\ UNCHANGED<<moduleVars>>
+
+
+TypeInvariant ==
+    /\ inBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
+    /\ outBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
+    /\ store.connection \in Connections
 
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 18 15:08:56 CEST 2020 by adi
+\* Last modified Tue May 19 09:56:48 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

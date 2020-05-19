@@ -24,6 +24,7 @@ EXTENDS Naturals, FiniteSets, Sequences
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
          MaxBufLen      \* Length (size) of message buffers.
 
+
 ASSUME MaxHeight > 1
 ASSUME MaxBufLen > 1
 
@@ -47,8 +48,8 @@ chainBParameters == [
 ]
 
 
-ClientIDs == { chainAParameters.clientIDs, chainBParameters.clientIDs }
-ConnectionIDs == { chainAParameters.connectionIDs, chainBParameters.connectionIDs }
+AllClientIDs == chainAParameters.clientIDs \union chainBParameters.clientIDs
+AllConnectionIDs == chainAParameters.connectionIDs \union chainBParameters.connectionIDs
 
 
 (* Bundle with variables that chain A has access to. *)
@@ -66,10 +67,12 @@ chainStoreVars == <<storeChainA, storeChainB>>
 
 allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
 
-ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
+
+INSTANCE ICS3Types
+    WITH MaxHeight <- MaxHeight
 
 chmA == INSTANCE ConnectionHandshakeModule
-        WITH MaxHeight      <- MaxHeight,
+        WITH MaxChainHeight <- MaxHeight,
              inBuf          <- bufChainA,
              outBuf         <- bufChainB,
              store          <- storeChainA,
@@ -78,151 +81,12 @@ chmA == INSTANCE ConnectionHandshakeModule
 
 
 chmB == INSTANCE ConnectionHandshakeModule
-        WITH MaxHeight      <- MaxHeight,
+        WITH MaxChainHeight <- MaxHeight,
              inBuf          <- bufChainB,      (* Flip message buffers *)
              outBuf         <- bufChainA,      (* Inbound of "A" is outbound of "B". *)
              store          <- storeChainB,
              ConnectionIDs  <- chainBParameters.connectionIDs,
              ClientIDs      <- chainBParameters.clientIDs
-
-
-(******************************* ConnectionParameters **********************
-     A set of connection parameter records.
-     A connection parameter record contains the following fields:
-
-     - localEnd -- a connection end 
-       Specifies the local connection details (i.e., connection ID and
-       client ID).
-
-     - remoteEnd -- a connection end
-       Specifies the local connection details.  
-
- ***************************************************************************)
-ConnectionParameters ==
-    [
-        localEnd : chmA!ConnectionEnds \union chmB!ConnectionEnds,
-        remoteEnd : chmB!ConnectionEnds \union chmA!ConnectionEnds
-    ]
-
-
-(******************************* Connections *******************************
-     A set of connection records.
-     A connection record contains the following fields:
-
-     - parameters -- a connection parameters record 
-       Specifies the local plus remote ends.
-
-     - state -- a connection state (see ConnectionStates set).
-     
- ***************************************************************************)
-Connections ==
-    [
-        parameters : ConnectionParameters,
-        state : ConnectionStates
-    ]
-
-
-(******************************* ConnProof *********************************
-     A set of records describing the possible values for connection proofs.
-     
-     A connection proof record contains the following fields:
-
-     - connectionState -- a string 
-       Captures the state of the connection in the local store of the module
-       which created this proof.
-
-     - height -- a Nat
-       The current height (latestHeight) of the chain at the moment when the
-       module created this proof.
-
- ***************************************************************************)
-ConnProofs ==
-    [
-        connectionState : ConnectionStates, 
-        height : 1..MaxHeight
-    ]
-
-
-(******************************* ClientProofs *******************************
-     A set of records describing the possible values for client proofs.
-     
-     A client proof record contains the following fields:
-
-     - height -- a Nat
-       The current height (latestHeight) of the client colocated with module
-       which created this proof.
-
- ***************************************************************************)
-ClientProofs ==
-    [
-        height : 1..MaxHeight
-    ]
-
-
-Heights == 1..MaxHeight
-
-
-(******************************* ICS3MessageTypes *****************************
-
-    The set of valid message types that the ConnectionHandshakeModule can 
-    handle, e.g., as incoming or outgoing messages.
-
-    In the low-level connection handshake protocol, the four messages have
-    types: ConnOpenInit, ConnOpenTry, ConnOpenAck, ConnOpenConfirm.
-    In this high-level specification, we choose slightly different names, to
-    make an explicit distinction to the low-level protocol. Message types
-    are as follows:
-    ICS3MsgInit, ICS3MsgTry, ICS3MsgAck, and ICS3MsgConfirm.
-    For a complete description of the message record, see
-    ConnectionHandshakeMessage below.
-     
- ***************************************************************************)
-ICS3MessageTypes ==
-    {"ICS3MsgInit", 
-     "ICS3MsgTry",
-     "ICS3MsgAck",
-     "ICS3MsgConfirm"}
-
-
-(*********************** ConnectionHandshakeMessages ***********************
-
-    The set of ConnectionHandshakeMessage records.
-    These are connection handshake specific messages that two chains exchange
-    while executing the ICS3 protocol.
- 
- ***************************************************************************)
-ConnectionHandshakeMessages ==
-    [type : {"ICS3MsgInit"},
-     parameters : ConnectionParameters]
-    \union
-    [type : {"ICS3MsgTry"},
-     parameters : ConnectionParameters,
-     connProof : ConnProofs,
-     clientProof : ClientProofs]
-    \union
-    [type : {"ICS3MsgAck"},
-     parameters : ConnectionParameters,
-     connProof : ConnProofs,
-     clientProof : ClientProofs]
-     \union
-    [type : {"ICS3MsgConfirm"},
-     parameters : ConnectionParameters,
-     connProof : ConnProofs]
-
-
-(***************************** InitMsgs ***********************************
-
-    The set of ConnectionHandshakeMessage records where message type is
-    ICS3MsgInit.
-
-    This operator returns the set of all initialization messages, such that
-    the local end is the set 'le', and the remote end is set 're'.
- 
- ***************************************************************************)
-InitMsgs(le, re) ==
-    [type : {"ICS3MsgInit"},
-     parameters : [localEnd : le,
-                   remoteEnd : re]]
 
 
 (***************************************************************************
@@ -298,11 +162,11 @@ InitEnv ==
     May change either of the store of chain A or B. 
  *)
 GoodNextEnv ==
-    \/ /\ chmA!CanProgress
+    \/ /\ chmA!CanAdvance
        /\ \/ chmA!AdvanceChainHeight
           \/ chmA!UpdateClient(storeChainB.latestHeight)
        /\ UNCHANGED storeChainB
-    \/ /\ chmB!CanProgress
+    \/ /\ chmB!CanAdvance
        /\ \/ chmB!AdvanceChainHeight
           \/ chmB!UpdateClient(storeChainA.latestHeight)
        /\ UNCHANGED storeChainA
@@ -348,16 +212,16 @@ MaliciousNextEnv ==
 NextEnv ==
     \/ /\ GoodNextEnv                               (* A good step. *)
        /\ UNCHANGED<<bufChainA, bufChainB, maliciousEnv>>
-    \/ /\ maliciousEnv = FALSE                      (* Enable malicious env. *)
-       /\ storeChainA.connection.state # "UNINIT"
-       /\ storeChainB.connection.state # "UNINIT"
-       /\ maliciousEnv' = TRUE
-       /\ MaliciousNextEnv
-       /\ UNCHANGED chainStoreVars
-    \/ /\ maliciousEnv = TRUE                       (* A malicious step. *)
+\*    \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
+\*       /\ storeChainA.connection.state # "UNINIT"
+\*       /\ storeChainB.connection.state # "UNINIT"
+\*       /\ maliciousEnv' = TRUE
+\*       /\ MaliciousNextEnv
+\*       /\ UNCHANGED chainStoreVars
+    \/ /\ maliciousEnv                              (* A malicious step. *)
        /\ MaliciousNextEnv
        /\ UNCHANGED<<maliciousEnv, chainStoreVars>>
-    \/ /\ maliciousEnv = TRUE                       (* Disable malicious env. *)
+    \/ /\ maliciousEnv                              (* Disable malicious env. *)
        /\ maliciousEnv' = FALSE
        /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
 
@@ -380,8 +244,8 @@ ICS3ReachTermination ==
     connection.
  *)
 ICS3NonTermination ==
-    /\ (~ chmA!CanProgress \/ storeChainA.connection.state # "OPEN")
-    /\ (~ chmB!CanProgress \/ storeChainB.connection.state # "OPEN")
+    /\ (~ chmA!CanAdvance \/ storeChainA.connection.state # "OPEN")
+    /\ (~ chmB!CanAdvance \/ storeChainB.connection.state # "OPEN")
     /\ UNCHANGED <<allVars>>
 
 
@@ -393,8 +257,10 @@ ICS3NonTermination ==
 
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ \E clientA \in chmA!InitClients : chmA!Init("chainA", clientA)
-    /\ \E clientB \in chmB!InitClients : chmB!Init("chainB", clientB)
+    /\ \E clientA \in InitClients(chainAParameters.clientIDs) :
+            chmA!Init("chainA", clientA, NullConnection)
+    /\ \E clientB \in InitClients(chainBParameters.clientIDs) :
+            chmB!Init("chainB", clientB, NullConnection)
     /\ InitEnv
 
 
@@ -410,6 +276,10 @@ Next ==
 FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
+    /\ \A height \in 1..MaxHeight : WF_storeChainA(chmA!UpdateClient(height))
+    /\ \A height \in 1..MaxHeight : WF_storeChainB(chmB!UpdateClient(height))
+    /\ WF_storeChainA(chmA!AdvanceChainHeight)
+    /\ WF_storeChainB(chmB!AdvanceChainHeight)
 
 
 Spec ==
@@ -419,18 +289,28 @@ Spec ==
 
 
 TypeInvariant ==
-    /\ \/ bufChainA \in Seq(ConnectionHandshakeMessages)
-       \/ bufChainB \in Seq(ConnectionHandshakeMessages)
+    /\ chmA!TypeInvariant
+    /\ chmB!TypeInvariant
 
 
 (* Liveness property.
     
     If both chains can progress, we should reach open on both chains.
 *)
-Termination ==
-    [](chmA!CanProgress /\ chmB!CanProgress)
-        => <> [](/\ storeChainA.connection.state = "OPEN"
-                 /\ storeChainB.connection.state = "OPEN")
+\*Termination ==
+\*\*    [](chmA!CanAdvance /\ chmB!CanAdvance)
+\*\*        =>
+\*        <> (/\ storeChainA.connection.state = "OPEN"
+\*            /\ storeChainB.connection.state = "OPEN"
+\*            /\ bufChainA = <<>>
+\*            /\ bufChainB = <<>>
+\*            /\ chmA!CanAdvance
+\*            /\ chmB!CanAdvance
+\*            /\ storeChainA.client = storeChainB.client )
+
+
+MockProperty ==
+    <> /\ storeChainA.latestHeight = 3
 
 
 (* Safety property.
@@ -444,11 +324,12 @@ ConsistencyProperty ==
     => storeChainA.connection.parameters 
         = chmB!FlipConnectionParameters(storeChainB.connection.parameters)
 
+
 Consistency ==
     [] ConsistencyProperty
 
 =============================================================================
 \* Modification History
-\* Last modified Mon May 18 15:11:58 CEST 2020 by adi
+\* Last modified Tue May 19 09:45:49 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
