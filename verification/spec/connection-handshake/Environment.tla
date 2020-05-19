@@ -26,7 +26,7 @@ CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
 
 
 ASSUME MaxHeight > 1
-ASSUME MaxBufLen > 1
+ASSUME MaxBufLen >= 1
 
 
 VARIABLES
@@ -224,12 +224,12 @@ MaliciousNextEnv ==
 NextEnv ==
     \/ /\ GoodNextEnv                               (* A good step. *)
        /\ UNCHANGED<<bufChainA, bufChainB, maliciousEnv>>
-\*    \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
-\*       /\ storeChainA.connection.state # "UNINIT"
-\*       /\ storeChainB.connection.state # "UNINIT"
-\*       /\ maliciousEnv' = TRUE
-\*       /\ MaliciousNextEnv
-\*       /\ UNCHANGED chainStoreVars
+    \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
+       /\ storeChainA.connection.state # "UNINIT"
+       /\ storeChainB.connection.state # "UNINIT"
+       /\ maliciousEnv' = TRUE
+       /\ MaliciousNextEnv
+       /\ UNCHANGED chainStoreVars
     \/ /\ maliciousEnv                              (* A malicious step. *)
        /\ MaliciousNextEnv
        /\ UNCHANGED<<maliciousEnv, chainStoreVars>>
@@ -309,21 +309,15 @@ TypeInvariant ==
     
     If both chains can progress, we should reach open on both chains.
 *)
-\*Termination ==
+Termination ==
 \*\*    [](chmA!CanAdvance /\ chmB!CanAdvance)
 \*\*        =>
-\*        <> (/\ storeChainA.connection.state = "OPEN"
-\*            /\ storeChainB.connection.state = "OPEN"
-\*            /\ bufChainA = <<>>
-\*            /\ bufChainB = <<>>
-\*            /\ chmA!CanAdvance
-\*            /\ chmB!CanAdvance
-\*            /\ storeChainA.client = storeChainB.client )
+        <> (/\ storeChainA.connection.state = "OPEN"
+            /\ storeChainB.connection.state = "OPEN")
 
 
-MockProperty ==
-    <> /\ storeChainA.latestHeight = 3
-
+\*TerminationPrecondition ==
+\*    <> [](chmA!CanAdvance /\ chmB!CanAdvance)
 
 (* Safety property.
 
@@ -342,6 +336,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 11:35:41 CEST 2020 by adi
+\* Last modified Tue May 19 13:09:14 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
