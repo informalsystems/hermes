@@ -30,33 +30,36 @@ ASSUME MaxBufLen >= 1
 
 
 VARIABLES
-    bufChainA,      \* A buffer (sequence) for messages inbound to chain A.
-    bufChainB,      \* A buffer for messages inbound to chain B.
+    turn,
+    inBufChainA,    \* A buffer (sequence) for messages inbound to chain A.
+    inBufChainB,    \* A buffer for messages inbound to chain B.
+    outBufChainA,   \* A buffer for messages outgoing from chain A.
+    outBufChainB,   \* A buffer for messages outgoing from chain B.
     storeChainA,    \* The local store of chain A.
     storeChainB,    \* The local store of chain B.
     maliciousEnv    \* If TRUE, environment interferes w/ CH protocol. 
 
 
-(************* chainAConnectionEnds & chainBConnectionEnds *****************
+(************* ChainAConnectionEnds & ChainBConnectionEnds *****************
 
     The set of records that each chain can use as a valid local connection
     end. For each chain, this set contains one record, since we are
     modeling a single connection in this specification.
  
  ***************************************************************************)
-chainAConnectionEnds == 
+ChainAConnectionEnds == 
     [
         connectionID : { "connAtoB" },
         clientID : { "clientOnAToB" }
     ]
-chainBConnectionEnds ==
+ChainBConnectionEnds ==
     [
         connectionID : { "connBtoA" },
         clientID : { "clientOnBToA" }
     ]
 
 AllConnectionEnds ==
-    chainAConnectionEnds \union chainBConnectionEnds
+    ChainAConnectionEnds \union ChainBConnectionEnds
 
 AllClientIDs == 
     { x.clientID : x \in AllConnectionEnds }
@@ -66,39 +69,43 @@ AllConnectionIDs ==
 
 
 (* Bundle with variables that chain A has access to. *)
-chainAVars == <<bufChainA,      (* Input message buffer. *)
-                bufChainB,      (* Output message buffer. *)
+chainAVars == <<inBufChainA,    (* Input message buffer. *)
+                outBufChainA,   (* Output message buffer. *)
                 storeChainA>>   (* The local chain store. *)
 
 (* Bundle with variables that chain B has access to. *)
-chainBVars == <<bufChainB,      (* Input message buffer. *)
-                bufChainA,      (* Output message buffer. *)
+chainBVars == <<inBufChainB,    (* Input message buffer. *)
+                outBufChainB,   (* Output message buffer. *)
                 storeChainB>>   (* Local chain store. *)
 
 (* All variables specific to chains. *)
 chainStoreVars == <<storeChainA, storeChainB>>
 
-allVars == <<chainStoreVars, bufChainA, bufChainB, maliciousEnv>>
+allVars == <<chainStoreVars, 
+             inBufChainA, inBufChainB, 
+             outBufChainA, outBufChainB,
+             maliciousEnv,
+             turn>>
 
 
 INSTANCE ICS3Types
 
 chmA == INSTANCE ConnectionHandshakeModule
         WITH MaxChainHeight <- MaxHeight,
-             inBuf          <- bufChainA,
-             outBuf         <- bufChainB,
+             inBuf          <- inBufChainA,
+             outBuf         <- outBufChainA,
              store          <- storeChainA,
-             ConnectionIDs  <- { x.connectionID : x \in chainAConnectionEnds },
-             ClientIDs      <- { x.clientID : x \in chainAConnectionEnds }
+             ConnectionIDs  <- { x.connectionID : x \in ChainAConnectionEnds },
+             ClientIDs      <- { x.clientID : x \in ChainAConnectionEnds }
 
 
 chmB == INSTANCE ConnectionHandshakeModule
         WITH MaxChainHeight <- MaxHeight,
-             inBuf          <- bufChainB,      (* Flip message buffers *)
-             outBuf         <- bufChainA,      (* Inbound of "A" is outbound of "B". *)
+             inBuf          <- inBufChainB,
+             outBuf         <- outBufChainB,
              store          <- storeChainB,
-             ConnectionIDs  <- { x.connectionID : x \in chainBConnectionEnds },
-             ClientIDs      <- { x.clientID : x \in chainBConnectionEnds }
+             ConnectionIDs  <- { x.connectionID : x \in ChainBConnectionEnds },
+             ClientIDs      <- { x.clientID : x \in ChainBConnectionEnds }
 
 
 (***************************************************************************
@@ -157,19 +164,30 @@ chmB == INSTANCE ConnectionHandshakeModule
  *)
 InitEnv ==
     /\ maliciousEnv = FALSE
-    /\ \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
-            msg \in InitMsgs(chainAConnectionEnds, chainBConnectionEnds)}
-          /\ bufChainB = <<>>
-       \/ /\ bufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-            msg \in InitMsgs(chainBConnectionEnds, chainAConnectionEnds)}
-          /\ bufChainB = <<>>
-       \/ /\ bufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-            msg \in InitMsgs(chainAConnectionEnds, chainBConnectionEnds)}
-          /\ bufChainB \in {<<msg>> :
-            msg \in InitMsgs(chainBConnectionEnds, chainAConnectionEnds)}
+    /\ \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
+            msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+          /\ inBufChainB = <<>>
+       \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
+            msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+          /\ inBufChainB = <<>>
+       \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
+            msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+          /\ inBufChainB \in {<<msg>> :
+            msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+    /\ outBufChainA = <<>>
+    /\ outBufChainB = <<>>
+
+
+Relay(from, to) ==
+    /\ from # <<>>
+    /\ Len(to) < MaxBufLen - 1
+    /\ to' = Append(to, Head(from))
+    /\ from' = Tail(from)
 
 
 (* Default next (good) action for Environment.
+
+    TODO: should advance the height non-deterministically?
 
     May change either of the store of chain A or B. 
  *)
@@ -177,11 +195,28 @@ GoodNextEnv ==
     \/ /\ chmA!CanAdvance
        /\ \/ chmA!AdvanceChainHeight
           \/ chmA!UpdateClient(storeChainB.latestHeight)
-       /\ UNCHANGED storeChainB
+       /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
     \/ /\ chmB!CanAdvance
        /\ \/ chmB!AdvanceChainHeight
           \/ chmB!UpdateClient(storeChainA.latestHeight)
-       /\ UNCHANGED storeChainA
+       /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+
+
+RelayNextEnv ==
+    \/ LET msg == Head(outBufChainA)
+           targetHeight == IF MessageTypeIncludesConnProof(msg.type)
+                           THEN msg.connProof.height
+                           ELSE storeChainA.latestHeight
+       IN /\ Relay(outBufChainA, inBufChainB)
+          /\ chmB!UpdateClient(targetHeight)
+          /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
+    \/ LET msg == Head(outBufChainB)
+           targetHeight == IF MessageTypeIncludesConnProof(msg.type)
+                           THEN msg.connProof.height
+                           ELSE storeChainB.latestHeight
+       IN /\ Relay(outBufChainB, inBufChainA)
+          /\ chmA!UpdateClient(targetHeight)
+          /\ UNCHANGED<<storeChainB, outBufChainA, inBufChainB>>
 
 
 (* Environment malicious behavior.
@@ -190,52 +225,61 @@ GoodNextEnv ==
     This interferes with the ICS3 protocol by introducing additional
     messages that are usually incorrect.
     
-    Without the first constraint, on the "Len(bufChainA)" and
-    "Len(bufChainB)", Env could fill buffers (DoS attack). This can
+    Without the first constraint, on the "Len(inBufChainA)" and
+    "Len(inBufChainB)", Env could fill buffers (DoS attack). This can
     lead to a deadlock, because chains will simply be unable to reply
     to each other.
  *)
 MaliciousNextEnv ==
-    \/ /\ Len(bufChainA) < MaxBufLen - 1
-       /\ bufChainA' \in {Append(bufChainA, arbitraryMsg) : 
-            arbitraryMsg \in ConnectionHandshakeMessages}
-       /\ UNCHANGED bufChainB
-    \/ /\ Len(bufChainB) < MaxBufLen - 1
-       /\ bufChainB' \in {Append(bufChainB, arbitraryMsg) :
-            arbitraryMsg \in ConnectionHandshakeMessages}
-       /\ UNCHANGED bufChainA
+    \/ /\ Len(inBufChainA) < MaxBufLen - 1
+       /\ inBufChainA' \in {Append(inBufChainA, arbitraryMsg) : 
+            arbitraryMsg \in {msg \in ConnectionHandshakeMessages : 
+            msg.type = "ICS3MsgTry"}}
+       /\ UNCHANGED inBufChainB
+    \/ /\ Len(inBufChainB) < MaxBufLen - 1
+       /\ inBufChainB' \in {Append(inBufChainB, arbitraryMsg) :
+            arbitraryMsg \in {msg \in ConnectionHandshakeMessages : 
+                msg.type = "ICS3MsgTry"}}
+\*            arbitraryMsg \in ConnectionHandshakeMessages
+\*            /\ arbitraryMsg.type = "ICS3MsgTry"}
+       /\ UNCHANGED inBufChainA
 
 
 (* Environment next action.
 
+TODO: explain the relaying functionality and additional variables.
+
     There are four possible actions that the environment may perform:
-    
+
     1. A good step: the environment advances or updates the client on
     one of the two chains.
-    
+
     2. The environment becomes malicious, as a result of both chains
     advancing past the UNINIT step (i.e., after both chains finished 
     locking on to a set of connection parameters).
-    
+
     3. A malicious step.
-    
+
     4. The environment stops acting maliciously.
  *)
 NextEnv ==
     \/ /\ GoodNextEnv                               (* A good step. *)
-       /\ UNCHANGED<<bufChainA, bufChainB, maliciousEnv>>
+       /\ UNCHANGED maliciousEnv
+    \/ /\ RelayNextEnv
+       /\ UNCHANGED maliciousEnv
+    \/ /\ UNCHANGED <<chainAVars, chainBVars, maliciousEnv>>
     \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
        /\ storeChainA.connection.state # "UNINIT"
        /\ storeChainB.connection.state # "UNINIT"
        /\ maliciousEnv' = TRUE
        /\ MaliciousNextEnv
-       /\ UNCHANGED chainStoreVars
+       /\ UNCHANGED<<chainStoreVars, outBufChainA, outBufChainB>>
     \/ /\ maliciousEnv                              (* A malicious step. *)
        /\ MaliciousNextEnv
-       /\ UNCHANGED<<maliciousEnv, chainStoreVars>>
+       /\ UNCHANGED<<maliciousEnv, chainStoreVars, outBufChainA, outBufChainB>>
     \/ /\ maliciousEnv                              (* Disable malicious env. *)
        /\ maliciousEnv' = FALSE
-       /\ UNCHANGED<<bufChainA, bufChainB, chainStoreVars>>
+       /\ UNCHANGED<<chainAVars, chainBVars>>
 
 
 (* Enables when the connection is open on both chains.
@@ -245,7 +289,7 @@ NextEnv ==
 ICS3ReachTermination ==
     /\ storeChainA.connection.state = "OPEN"
     /\ storeChainB.connection.state = "OPEN"
-    /\ UNCHANGED <<allVars>>
+    /\ UNCHANGED allVars
 
 
 (* Enables when both chains attain maximum height, if the connection is still
@@ -258,40 +302,48 @@ ICS3ReachTermination ==
 ICS3NonTermination ==
     /\ (~ chmA!CanAdvance \/ storeChainA.connection.state # "OPEN")
     /\ (~ chmB!CanAdvance \/ storeChainB.connection.state # "OPEN")
-    /\ UNCHANGED <<allVars>>
+    /\ UNCHANGED allVars
 
 
 (******************************************************************************
- Main spec.
- The system comprises the connection handshake module & environment.
+
+    Main spec. The system comprises the environment plus the two instances of
+    ICS3 modules.
+
  *****************************************************************************)
 
 
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ \E clientA \in InitClients({ x.clientID : x \in chainAConnectionEnds }) :
+    /\ turn = "ENV"
+    /\ \E clientA \in InitClients({ x.clientID : x \in ChainAConnectionEnds }) :
             chmA!Init("chainA", clientA, NullConnection)
-    /\ \E clientB \in InitClients({ x.clientID : x \in chainBConnectionEnds }) :
+    /\ \E clientB \in InitClients({ x.clientID : x \in ChainBConnectionEnds }) :
             chmB!Init("chainB", clientB, NullConnection)
     /\ InitEnv
 
 
 (* The two ICS3 modules and the environment alternate their steps. *)
 Next ==
-    \/ ICS3ReachTermination
-    \/ ICS3NonTermination
-    \/ NextEnv
-    \/ chmA!Next /\ UNCHANGED <<storeChainB, maliciousEnv>>
-    \/ chmB!Next /\ UNCHANGED <<storeChainA, maliciousEnv>>
+\*    \/ ICS3ReachTermination
+\*    \/ ICS3NonTermination
+    \/ turn = "ENV" /\ NextEnv /\ turn' = "A"
+    \/ turn = "A" /\ chmA!Next /\ UNCHANGED <<chainBVars, maliciousEnv>>
+                  /\ turn' = "B" 
+    \/ turn = "B" /\ chmB!Next /\ UNCHANGED <<chainAVars, maliciousEnv>>
+                  /\ turn' = "ENV"
 
 
 FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
-    /\ \A height \in 1..MaxHeight : WF_storeChainA(chmA!UpdateClient(height))
-    /\ \A height \in 1..MaxHeight : WF_storeChainB(chmB!UpdateClient(height))
-    /\ WF_storeChainA(chmA!AdvanceChainHeight)
-    /\ WF_storeChainB(chmB!AdvanceChainHeight)
+    /\ WF_<<chainAVars, chainBVars>>(RelayNextEnv)
+\*    /\ <> ~ maliciousEnv
+\*    /\ <> ~ activeEnv
+\*    /\ \A height \in 1..MaxHeight : WF_storeChainA(chmA!UpdateClient(height))
+\*    /\ \A height \in 1..MaxHeight : WF_storeChainB(chmB!UpdateClient(height))
+\*    /\ WF_storeChainA(chmA!AdvanceChainHeight)
+\*    /\ WF_storeChainB(chmB!AdvanceChainHeight)
 
 
 Spec ==
@@ -305,19 +357,25 @@ TypeInvariant ==
     /\ chmB!TypeInvariant
 
 
+(* Action ProcessMsg will eventually enable & chainAVars 
+    will not be unchanged. *)
+MessageLivenessPre ==
+    \E m \in ConnectionHandshakeMessages : m = Head(inBufChainA)
+        => <><<chmA!ProcessMsg(m)>>_chainAVars
+
+
 (* Liveness property.
     
     If both chains can progress, we should reach open on both chains.
 *)
 Termination ==
-\*\*    [](chmA!CanAdvance /\ chmB!CanAdvance)
-\*\*        =>
-        <> (/\ storeChainA.connection.state = "OPEN"
-            /\ storeChainB.connection.state = "OPEN")
+    []((/\ <> ~ maliciousEnv
+        /\ storeChainA.latestHeight < MaxHeight - 4
+        /\ storeChainB.latestHeight < MaxHeight - 4
+        /\ MessageLivenessPre)
+        => <> (/\ storeChainA.connection.state = "OPEN"
+               /\ storeChainB.connection.state = "OPEN"))
 
-
-\*TerminationPrecondition ==
-\*    <> [](chmA!CanAdvance /\ chmB!CanAdvance)
 
 (* Safety property.
 
@@ -336,6 +394,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 13:09:14 CEST 2020 by adi
+\* Last modified Tue May 19 18:20:06 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

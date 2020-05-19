@@ -136,7 +136,8 @@ GetClientProof ==
     client on this chain stores the height reported in the proof. Note that this
     condition should eventually become true, assuming a correct environment, which
     should periodically update the client on each chain; see actions 'GoodNextEnv'
-    and 'UpdateClient'. 
+    and 'UpdateClient'.
+
  *)
 VerifyConnProof(cp) ==
     /\ cp.height \in store.client.consensusStates
@@ -258,6 +259,7 @@ PreconditionsConfirmMsg(m) ==
     /\ m.connProof.connectionState = "OPEN"
     /\ VerifyConnProof(m.connProof)
 
+
 (* Handles a "ICS3MsgConfirm" message.
  *)
 HandleConfirmMsg(m) ==
@@ -291,10 +293,12 @@ CanAdvance ==
     This will also advance the chain height.
  *)
 UpdateClient(height) ==
-    /\ height \notin store.client.consensusStates
-    /\ store' = [store EXCEPT !.latestHeight = @ + 1,
-                              !.client.consensusStates = @ \cup {height},
-                              !.client.latestHeight = height]
+    \/ /\ height \notin store.client.consensusStates
+       /\ store' = [store EXCEPT !.latestHeight = @ + 1,
+                                 !.client.consensusStates = @ \cup {height},
+                                 !.client.latestHeight = height]
+    \/ /\ height \in store.client.consensusStates
+       /\ UNCHANGED store
 
 
 (* Generic action for handling any type of inbound message.
@@ -333,6 +337,7 @@ Next ==
     \/ /\ inBuf = <<>>
        /\ ~ CanAdvance
        /\ UNCHANGED<<moduleVars>>
+    \/ UNCHANGED<<moduleVars>>
 
 
 TypeInvariant ==
@@ -344,6 +349,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 11:29:24 CEST 2020 by adi
+\* Last modified Tue May 19 17:48:10 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
