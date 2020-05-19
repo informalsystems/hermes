@@ -59,7 +59,7 @@ impl ChannelI for Channel {
                 .context("validate channel")
                 .into());
         }
-        if self.version().trim().to_string() == String::from("") {
+        if self.version().trim() == "" {
             return Err(error::Kind::InvalidVersion
                 .context("empty version string")
                 .into());

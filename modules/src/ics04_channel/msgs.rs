@@ -1,3 +1,4 @@
+#![allow(clippy::too_many_arguments)]
 use super::channel::{Channel, Endpoint};
 use super::exported::*;
 use crate::ics04_channel::error::Kind;
@@ -42,10 +43,9 @@ impl MsgChannelOpenInit {
         counterparty_channel_id: String,
         signer: AccountId,
     ) -> Result<MsgChannelOpenInit, crate::ics04_channel::error::Error> {
-        // TODO - do ? for error
-        let connection_hops: Vec<ConnectionId> = connection_hops
-            .iter()
-            .map(|s| ConnectionId::from_str(s.as_str()).unwrap())
+        let connection_hops: Result<Vec<_>, _> = connection_hops
+            .into_iter()
+            .map(|s| ConnectionId::from_str(s.as_str()))
             .collect();
 
         Ok(Self {
@@ -59,7 +59,7 @@ impl MsgChannelOpenInit {
                 order.parse()?,
                 Endpoint::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
-                connection_hops,
+                connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
                 version,
             ),
             signer,
@@ -87,7 +87,7 @@ impl Msg for MsgChannelOpenInit {
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer.clone()]
+        vec![self.signer]
     }
 }
 
@@ -167,13 +167,14 @@ mod tests {
                 },
                 want_pass: false,
             },
-            /*
             Test {
                 name: "Bad connection hops".to_string(),
-                params: OpenInitParams {connection_hops: vec!["conn124".to_string()].into_iter().collect(), ..default_params.clone()},
+                params: OpenInitParams {
+                    connection_hops: vec!["conn124".to_string()].into_iter().collect(),
+                    ..default_params.clone()
+                },
                 want_pass: false,
             },
-            */
         ]
         .into_iter()
         .collect();
@@ -201,12 +202,13 @@ mod tests {
                         test.params.clone()
                     );
                 }
-                Err(_err) => {
+                Err(err) => {
                     assert!(
                         !test.want_pass,
-                        "MsgConnOpenInit::new failed for test {}, \nmsg {:?}",
+                        "MsgConnOpenInit::new failed for test {}, \nmsg {:?} with err {:?}",
                         test.name,
-                        test.params.clone()
+                        test.params.clone(),
+                        err
                     );
                 }
             }

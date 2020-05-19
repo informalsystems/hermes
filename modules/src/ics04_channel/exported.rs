@@ -31,7 +31,7 @@ pub enum State {
 
 impl State {
     /// Yields the state as a string
-    pub fn as_string(self) -> &'static str {
+    pub fn as_string(&self) -> &'static str {
         match self {
             Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
@@ -66,7 +66,7 @@ pub enum Order {
 
 impl Order {
     /// Yields the Order as a string
-    pub fn as_string(self) -> &'static str {
+    pub fn as_string(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
             Self::Unordered => "UNORDERED",
