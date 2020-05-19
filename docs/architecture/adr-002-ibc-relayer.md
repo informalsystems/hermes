@@ -364,13 +364,13 @@ According to the proposal here, the relayer should:
 - get the latest consensus state height of client on B, `ha`
 - let `h = max(hx, ha)`
 - query for item X at height `h-1` and get a proof `p` at this height
-- wait for the block at height `hx` to be received, i.e. `Ev{bloack, hx}`
+- wait for the block at height `hx` to be received, i.e. `Ev{block, hx}`
 - get the minimal set of headers from the light client such that `h` verifies against `ha` 
-- sends zero or more `MsgUpdateClient` datagrams and the `MsgX{X, p, h}` in a transaction to B
+- send zero or more `MsgUpdateClient` datagrams and the `MsgX{X, p, h}` in a transaction to B
 - if the transaction is successful or `MsgX..` failed, then "consume" the `Ev{X,..}` 
   - if `MsgX` fails there is nothing that can be done, another relayer must have submitted first
 - else raise again the event at `hA-1` if one not already there
-- the effect of this is that a new query is made at `hA-1` and since the CS at `hA` exists on B, only `MsgX` needs to be sent out 
+- the effect of this is that a new query is made at `hA-1` and since the consensus state at `hA` exists on B, only `MsgX` needs to be sent out 
 
 #### Connection Messages
 The relayer queries the source and destination chains of the relaying paths in order to determine if connection handshake datagrams should be sent to destination chains.
