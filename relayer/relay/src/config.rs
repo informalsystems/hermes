@@ -74,6 +74,7 @@ pub struct ChainConfig {
     pub rpc_addr: net::Address,
     pub account_prefix: String,
     pub key_name: String,
+    pub store_prefix: String,
     pub client_ids: Vec<String>,
     #[serde(default = "default::gas")]
     pub gas: u64,
@@ -110,8 +111,10 @@ impl Default for Direction {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
-    pub src_port: Option<String>,  // default from any source port
-    pub dest_port: Option<String>, // default from any dest port
+    pub src_port: Option<String>,     // default from any source port
+    pub dest_port: Option<String>,    // default from any dest port
+    pub src_channel: Option<String>,  // default from any source port
+    pub dest_channel: Option<String>, // default from any dest port
     #[serde(default)]
     pub direction: Direction, // default bidirectional
 }
@@ -142,6 +145,7 @@ mod tests {
         );
 
         let config = parse(path);
+        println!("{:?}", config);
         assert!(config.is_ok());
     }
 }
