@@ -10,6 +10,9 @@ pub enum Kind {
     #[error("connection state unknown")]
     UnknownState,
 
+    #[error("identifier error")]
+    IdentifierError,
+
     #[error("invalid version")]
     InvalidVersion,
 }

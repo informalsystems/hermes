@@ -6,7 +6,8 @@ use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 use crate::ics24_host::identifier::ConnectionId;
 
 use crate::error;
-use crate::path::ConnectionPath;
+use crate::ics03_connection::connection::ConnectionEnd;
+use crate::path::{ConnectionPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
 
@@ -18,7 +19,7 @@ pub struct QueryConnection {
 }
 
 impl QueryConnection {
-    pub fn new(chain_height: Height, connection_id: String, prove: bool) -> Self {
+    pub fn new(chain_height: Height, connection_id: ConnectionId, prove: bool) -> Self {
         Self {
             chain_height,
             connection_id: connection_id.clone(),
@@ -28,8 +29,7 @@ impl QueryConnection {
     }
 }
 
-impl IbcQuery for QueryConnection
-{
+impl IbcQuery for QueryConnection {
     type Response = ConnectionResponse;
 
     fn path(&self) -> abci::Path {
@@ -63,9 +63,9 @@ impl ConnectionResponse {
         abci_proof: Option<CommitmentProof>,
         proof_height: Height,
     ) -> Self {
-        let proof_path = CommitmentPath::from_path(ConnectionPath::new(connection_id));
+        let proof_path = CommitmentPath::from_path(ConnectionPath::new(connection_id.clone()));
         let identified_connection_end = IdentifiedConnectionEnd::new(connection, connection_id);
-        ClientFullStateResponse {
+        ConnectionResponse {
             connection: identified_connection_end,
             proof: abci_proof,
             proof_path,
@@ -74,8 +74,7 @@ impl ConnectionResponse {
     }
 }
 
-impl IbcResponse<QueryConnection> for ConnectionResponse
-{
+impl IbcResponse<QueryConnection> for ConnectionResponse {
     fn from_abci_response(
         query: QueryConnection,
         response: AbciQuery,
@@ -96,19 +95,22 @@ impl IbcResponse<QueryConnection> for ConnectionResponse
     }
 }
 
+#[derive(Debug)]
 pub struct IdentifiedConnectionEnd {
     connection_end: ConnectionEnd,
     connection_id: ConnectionId,
 }
 
 impl IdentifiedConnectionEnd {
-    pub fn new(
-        connection_end: ConnectionEnd,
-        connection_id: ConnectionId,
-    ) -> Self {
-        IdentifiedConnectionEnd{
+    pub fn new(connection_end: ConnectionEnd, connection_id: ConnectionId) -> Self {
+        IdentifiedConnectionEnd {
             connection_end,
             connection_id,
         }
     }
+}
+
+fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
+
+    todo!()
 }

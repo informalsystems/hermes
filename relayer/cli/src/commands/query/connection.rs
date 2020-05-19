@@ -6,10 +6,11 @@ use relayer::query::connection::query_connection;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::ics24_host::identifier::ConnectionId;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Command, Debug, Options)]
-pub struct QueryConnectionCmd {
+pub struct QueryConnectionEndCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
@@ -25,12 +26,12 @@ pub struct QueryConnectionCmd {
 
 #[derive(Debug)]
 struct QueryConnectionOptions {
-    connection_id: String,
+    connection_id: ConnectionId,
     height: u64,
     proof: bool,
 }
 
-impl QueryConnectionCmd {
+impl QueryConnectionEndCmd {
     fn validate_options(
         &self,
         config: &Config,
@@ -52,7 +53,7 @@ impl QueryConnectionCmd {
     }
 }
 
-impl Runnable for QueryConnectionCmd {
+impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -66,15 +67,17 @@ impl Runnable for QueryConnectionCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient
+        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient -p false
+        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
         let res = block_on(query_connection(
+            &chain,
+            opts.height,
             opts.connection_id.clone(),
             opts.proof,
         ));
@@ -90,35 +93,30 @@ fn validate_common_options(
     connection_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, String), String> {
-
     match (&chain_id, &connection_id) {
         (Some(chain_id), Some(connection_id)) => {
-            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
 
-            match chain_config {
-                Some(chain_config) => {
-                    /// TODO: Check for valid connection id for the given chain_id
-                    /// chain id -> client id in dst -> connection id
-                    Ok((chain_config.clone(), connection_id.parse().unwrap()))
+                match chain_config {
+                    Some(chain_config) => {
+                        // Check for valid connection id for the given chain_id
+                        // config.connections.as_ref()
+                        //         .unwrap()
+                        //         .iter()
+                        //         .find(|conn|
+                        //             conn.dest.as_ref().unwrap().connection_id.as_ref().unwrap() == connection_id && chain_config.client_ids.contains(&conn.dest.as_ref().unwrap().client_id));
+
+
+                        Ok((chain_config.clone(), connection_id.parse().unwrap()))
+
+                    // _ => Err(format!("cannot find connection {} for chain {} in config", connection_id, chain_id)),
+
                 }
-                None => Err(format!("cannot find chain {} in config", chain_id)),
+                    None => Err(format!("cannot find chain {} in config", chain_id)),
             }
-            // match chain_config.connections{
-            //     Some(conns) => {
-            //         match conns
-            //             .iter()
-            //             .find(|c| c.dest.connection_id == connection_id) {
-            //                 Some(_) => Ok((chain_config.clone(), connection_id.parse().unwrap())),
-            //                 None => Err(format!("cannot find connection {} in config", connection_id)),
-            //             }
-            //     },
-            //     None => Err(format!("cannot find any connections in config")),
-            // }
         }
 
         (None, _) => Err("missing chain identifier".to_string()),
-        (_, None) => Err("missing client identifier".to_string()),
+        (_, None) => Err("missing connection identifier".to_string()),
     }
-
 }
-

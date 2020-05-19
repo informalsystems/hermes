@@ -13,10 +13,9 @@ pub enum QueryCmd {
     #[options(help = "query client")]
     Client(QueryClientCmds),
 
-    //TODO: check with channel command implementation
     /// The `query connection` subcommand
     #[options(help = "query connection")]
-    Connection(connection::QueryConnectionCmd),
+    Connection(QueryConnectionCmds),
 
     /// The `query channel` subcommand
     #[options(help = "query channel")]
@@ -28,9 +27,17 @@ pub enum QueryClientCmds {
     /// The `query client state` subcommand
     #[options(help = "query client full state")]
     State(client::QueryClientStateCmd),
+    
     /// The `query client consensus` subcommand
     #[options(help = "query client consensus")]
     Consensus(client::QueryClientConsensusCmd),
+}
+
+#[derive(Command, Debug, Options, Runnable)]
+pub enum QueryConnectionCmds {
+    /// The `query connection end` subcommand
+    #[options(help = "query connection end")]
+    End(connection::QueryConnectionEndCmd),
 }
 
 #[derive(Command, Debug, Options, Runnable)]

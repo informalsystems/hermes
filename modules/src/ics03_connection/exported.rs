@@ -1,6 +1,7 @@
 use super::error;
-
 use crate::ics23_commitment::CommitmentPrefix;
+use anomaly::fail;
+use serde_derive::{Deserialize, Serialize};
 
 pub trait ConnectionI {
     type ValidationError: std::error::Error;
@@ -55,7 +56,6 @@ impl std::str::FromStr for State {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
@@ -93,7 +93,7 @@ mod tests {
             },
             Test {
                 state: "INVALID_STATE",
-                want_res: None,
+                want_res: State::Open,
                 want_err: true,
             },
         ]
