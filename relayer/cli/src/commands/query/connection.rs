@@ -95,24 +95,24 @@ fn validate_common_options(
 ) -> Result<(ChainConfig, String), String> {
     match (&chain_id, &connection_id) {
         (Some(chain_id), Some(connection_id)) => {
-                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
 
-                match chain_config {
-                    Some(chain_config) => {
-                        // Check for valid connection id for the given chain_id
-                        // config.connections.as_ref()
-                        //         .unwrap()
-                        //         .iter()
-                        //         .find(|conn|
-                        //             conn.dest.as_ref().unwrap().connection_id.as_ref().unwrap() == connection_id && chain_config.client_ids.contains(&conn.dest.as_ref().unwrap().client_id));
-
-
-                        Ok((chain_config.clone(), connection_id.parse().unwrap()))
-
-                    // _ => Err(format!("cannot find connection {} for chain {} in config", connection_id, chain_id)),
-
+            match chain_config {
+                Some(chain_config) => {
+                    // Check for valid connection id for the given chain_id
+                    // match config.connections.as_ref()
+                    //         .unwrap()
+                    //         .iter()
+                    //         .find(|conn|
+                    //             conn.dest.as_ref().unwrap().connection_id.as_ref().unwrap() == connection_id && chain_config.client_ids.contains(&conn.dest.as_ref().unwrap().client_id))
+                    // {
+                    //     Some(_) =>  Ok((chain_config.clone(), connection_id.parse().unwrap())),
+                    //     None => Err(format!("cannot find connection {} for chain {} in config", connection_id, chain_id)),
+                    //
+                    // }
+                    Ok((chain_config.clone(), connection_id.parse().unwrap()))
                 }
-                    None => Err(format!("cannot find chain {} in config", chain_id)),
+                None => Err(format!("cannot find chain {} in config", chain_id)),
             }
         }
 

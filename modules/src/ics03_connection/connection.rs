@@ -44,7 +44,12 @@ impl ConnectionI for ConnectionEnd {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        if self.version().trim().to_string() == String::from("") {
+            return Err(error::Kind::InvalidVersion
+                .context("empty version string")
+                .into());
+        }
+        self.counterparty().validate_basic()
     }
 }
 
