@@ -38,6 +38,11 @@ GetCounterpartyClientID(chainID) ==
  Client datagram handlers
  ***************************************************************************)
     
+\* client heights: 
+\* good version: add all client heights from datagrams to counterpartyClientHeights
+\* bad version: add only Max of client heights from datagrams to counterpartyClientHeights
+\*              if Max > Max(counterpartyClientHeights)
+    
 \* Handle "CreateClient" datagrams
 HandleCreateClient(chainID, chain, datagrams) == 
     \* get "CreateClient" datagrams with valid clientID
@@ -50,18 +55,22 @@ HandleCreateClient(chainID, chain, datagrams) ==
     \* new chain record with clients created
     LET clientCreateChain == [
             height |-> chain.height,
-            counterpartyClientHeight |-> IF createClientHeights /= {}
-                                         THEN Max(createClientHeights)
-                                         ELSE chain.counterpartyClientHeight,
+            counterpartyClientHeights |-> 
+                \* if set of counterparty client heights is not empty
+                IF chain.counterpartyClientHeights /= {}
+                \* then discard CreateClient datagrams  
+                THEN chain.counterpartyClientHeights
+                \* otherwise, if set of heights from datagrams is not empty  
+                ELSE IF createClientHeights /= {} 
+                     \* then create counterparty client with height Max(createClientHeights) 
+                     THEN {Max(createClientHeights)}
+                     \* otherwise, do not create client (as chain.counterpartyClientHeight = {})  
+                     ELSE chain.counterpartyClientHeights,
             connectionEnd |-> chain.connectionEnd
          ] IN
 
-    IF chain.counterpartyClientHeight = nullHeight
-    \* if the counterparty client height is null, create the client   
-    THEN clientCreateChain
-    \* otherwise, do not update the chain  
-    ELSE chain 
-
+   clientCreateChain
+   
 \* Handle "ClientUpdate" datagrams
 HandleUpdateClient(chainID, chain, datagrams) ==      
     \* get "ClientUpdate" datagrams with valid clientID
@@ -74,21 +83,24 @@ HandleUpdateClient(chainID, chain, datagrams) ==
     \* new chain record with clients updated
     LET clientUpdatedChain == [
             height |-> chain.height,
-            counterpartyClientHeight |-> IF updateClientHeights /= {}
-                                         THEN Max(updateClientHeights)
-                                         ELSE chain.counterpartyClientHeight,
+            counterpartyClientHeights |-> 
+                \* if set of counterparty client heights is empty
+                IF chain.counterpartyClientHeights = {}
+                \* then discard ClientUpdate datagrams  
+                THEN chain.counterpartyClientHeights
+                \* otherwise, if set of heights from datagrams is not empty
+                ELSE IF updateClientHeights /= {}
+                     \* then update counterparty client heights with height Max(createClientHeights)
+                     THEN chain.counterpartyClientHeights \union {Max(updateClientHeights)} 
+                     \* otherwise, do not update client heights
+                     ELSE chain.counterpartyClientHeights,
             connectionEnd |-> chain.connectionEnd
          ] IN
-    
-\*    IF chain.counterpartyClientHeight < clientUpdatedChain.counterpartyClientHeight
-    \* if the current height of the counterparty client is smaller than the new height, update it
-\*    THEN clientUpdatedChain 
-    \* otherwise, do not update the chain
-\*    ELSE chain 
+   
     clientUpdatedChain
         
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 15 16:17:39 CEST 2020 by ilinastoilkovska
+\* Last modified Thu May 14 16:20:42 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

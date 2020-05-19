@@ -76,8 +76,8 @@ ConnectionEnds ==
     - height : an integer between nullHeight and MaxHeight. 
       Stores the current height of the chain.
     
-    - counterpartyClientHeight : an integer between nullHeight and MaxHeight
-      Stores the height of the client for the counterparty chain.
+    - counterpartyClientHeights : a set of integers between 1 and MaxHeight
+      Stores the heights of the client for the counterparty chain.
 
     - connectionEnd : a connection end record 
       Stores data about the connection with the counterparty chain
@@ -85,7 +85,7 @@ ConnectionEnds ==
 Chains ==    
     [
         height : Heights \union {nullHeight},
-        counterpartyClientHeight : Heights \union {nullHeight},
+        counterpartyClientHeights : SUBSET(Heights),
         connectionEnd : ConnectionEnds
     ]
     
@@ -125,17 +125,23 @@ Datagrams ==
 GetLatestHeight(chainID) ==
     chains[chainID].height   
       
-\* get the height of the client for chainID's counterparty chain    
-GetCounterpartyClientHeight(chainID) ==
-    chains[chainID].counterpartyClientHeight
+\* get the maximal height of the client for chainID's counterparty chain    
+GetMaxCounterpartyClientHeight(chainID) ==
+    IF chains[chainID].counterpartyClientHeights /= {}
+    THEN Max(chains[chainID].counterpartyClientHeights)
+    ELSE nullHeight
+
+\* get the set of heights of the client for chainID's counterparty chain    
+GetCounterpartyClientHeights(chainID) ==
+    chains[chainID].counterpartyClientHeights        
 
 \* returns true if the counterparty client is initialized on chainID
 IsCounterpartyClientOnChain(chainID) ==
-    chains[chainID].counterpartyClientHeight /= nullHeight
+    chains[chainID].counterpartyClientHeights /= {}
 
 \* returns true if the counterparty client height on chainID is greater or equal than h
 CounterpartyClientHeightUpdated(chainID, h) ==
-    chains[chainID].counterpartyClientHeight >= h
+    h \in chains[chainID].counterpartyClientHeights
 
 \* get the connection end at chainID
 GetConnectionEnd(chainID) == 
@@ -238,7 +244,15 @@ UpdateChain(chainID, datagrams) ==
     \* ICS 004: Channel updates
     LET channelsUpdated == ChannelUpdate(chainID, connectionsUpdated, datagrams) IN
     
-    channelsUpdated
+    \* update height
+    LET updatedChain == 
+        IF /\ chain /= channelsUpdated
+           /\ chain.height < MaxHeight 
+        THEN [channelsUpdated EXCEPT !.height = chain.height + 1]
+        ELSE channelsUpdated
+    IN
+    
+    updatedChain
     
 (***************************************************************************
  Chain actions
@@ -290,7 +304,7 @@ InitConnectionEnd ==
 \*      - the connection end is initialized to InitConnectionEnd 
 InitChain ==
     [height |-> 1,
-     counterpartyClientHeight |-> nullHeight, 
+     counterpartyClientHeights |-> {}, 
      connectionEnd |-> InitConnectionEnd]
 
 (***************************************************************************
@@ -330,5 +344,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 15 16:18:18 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 15 15:07:29 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 13 19:48:22 CET 2020 by ilinastoilkovska

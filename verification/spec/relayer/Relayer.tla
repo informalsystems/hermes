@@ -14,7 +14,8 @@ VARIABLES chains, \* a function that assigns a chain record to each chainID
           relayerChainHeights, \* a function that assigns a height to each chainID         
           turn  
           
-vars == <<chains, pendingDatagrams, relayerChainHeights, turn>>            
+vars == <<chains, pendingDatagrams, relayerChainHeights, turn>>
+specVars == <<chains, pendingDatagrams, relayerChainHeights>>             
 envVars == <<chains>>           
 
 \* Instance of the module Environment, which encodes the chain logic    
@@ -46,7 +47,10 @@ Datagrams == Env!Datagrams
 GetLatestHeight(chainID) == Env!GetLatestHeight(chainID)
 
 \* get the height of the client for chainID's counterparty chain 
-GetCounterpartyClientHeight(chainID) == Env!GetCounterpartyClientHeight(chainID)
+GetMaxCounterpartyClientHeight(chainID) == Env!GetMaxCounterpartyClientHeight(chainID)
+
+\* get the set of heights of the client for chainID's counterparty chain    
+GetCounterpartyClientHeights(chainID) == Env!GetCounterpartyClientHeights(chainID) 
 
 \* get the ID of chainID's counterparty chain           
 GetCounterpartyChainID(chainID) == Env!GetCounterpartyChainID(chainID)
@@ -114,7 +118,7 @@ IsChannelOpen(chainID) == Env!IsChannelOpen(chainID)
 \* the relayer stores for srcChainID
 LightClientUpdates(srcChainID, dstChainID, relayer) ==
     LET srcChainHeight == GetLatestHeight(srcChainID) IN    
-    LET srcClientHeight == GetCounterpartyClientHeight(dstChainID) IN
+    LET srcClientHeight == GetMaxCounterpartyClientHeight(dstChainID) IN
     LET srcClientID == GetClientID(srcChainID) IN
     
     \* check if the relayer chain height for srcChainID should be updated
@@ -144,37 +148,12 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
                     
     [datagrams|-> dstDatagrams, relayerUpdate |-> updatedRelayer]    
    
-\* Get the client datagrams for clients on srcChainID and on dstChainID,
-\* as well as the relayer update triggered by creating client datagrams     
-ClientDatagrams(srcChainID, dstChainID) ==
-    \* get the client datagrams for dstChainID 
-    \* and relayer update triggered by difference between the height of 
-    \* srcChainID and the height that the relayer stores for srcChainID  
-    LET dstLightClientUpdates == 
-            LightClientUpdates(srcChainID, dstChainID, relayerChainHeights) IN
-    LET dstClientDatagrams == 
-            dstLightClientUpdates.datagrams IN
-    LET dstRelayerUpdate ==
-            dstLightClientUpdates.relayerUpdate IN
-    
-    \* get the client datagrams for srcChainID 
-    \* and relayer update triggered by difference between the height of 
-    \* dstChainID and the height that the relayer stores for dstChainID
-    LET srcLightClientUpdates == 
-            LightClientUpdates(dstChainID, srcChainID, dstRelayerUpdate) IN
-    LET srcClientDatagrams == 
-            srcLightClientUpdates.datagrams IN
-    LET srcRelayerUpdate == 
-            srcLightClientUpdates.relayerUpdate IN     
-            
-    [src |-> srcClientDatagrams, dst |-> dstClientDatagrams, relayerUpdate |-> srcRelayerUpdate]            
-
 (***************************************************************************
  Connection datagrams
  ***************************************************************************)    
 \* Compute connection datagrams designated for dstChainID. 
 \* These are used to update the connection end on dstChainID in the environment.
-ComputeConnectionDatagrams(srcChainID, dstChainID) ==
+ConnectionDatagrams(srcChainID, dstChainID) ==
     LET srcConnectionEnd == GetConnectionEnd(srcChainID) IN
     LET dstConnectionEnd == GetConnectionEnd(dstChainID) IN
 
@@ -182,7 +161,7 @@ ComputeConnectionDatagrams(srcChainID, dstChainID) ==
     LET dstConnectionID == GetConnectionID(dstChainID) IN
 
     LET srcHeight == GetLatestHeight(srcChainID) IN
-    LET srcConsensusHeight == GetCounterpartyClientHeight(srcChainID) IN
+    LET srcConsensusHeight == GetMaxCounterpartyClientHeight(srcChainID) IN
     
     IF dstConnectionEnd.state = "UNINIT" /\ srcConnectionEnd.state = "UNINIT" THEN 
          {[type |-> "ConnOpenInit", 
@@ -214,21 +193,12 @@ ComputeConnectionDatagrams(srcChainID, dstChainID) ==
            proofHeight |-> srcHeight]} 
     ELSE {}
 
-\* Get the connection datagrams designated for srcChainID and dstChainID         
-ConnectionDatagrams(srcChainID, dstChainID) ==
-    \* connection datagrams from dstChainID to srcChainID 
-    LET srcConnectionDatagrams == ComputeConnectionDatagrams(dstChainID, srcChainID) IN
-    \* connection datagrams from srcChainID to dstChainID
-    LET dstConnectionDatagrams == ComputeConnectionDatagrams(srcChainID, dstChainID) IN
-    
-    [src |-> srcConnectionDatagrams, dst |-> dstConnectionDatagrams]
-
 (***************************************************************************
  Channel datagrams
  ***************************************************************************)
 \* Compute channel datagrams designated for dstChainID. 
 \* These are used to update the channel end on dstChainID in the environment.
-ComputeChannelDatagrams(srcChainID, dstChainID) ==
+ChannelDatagrams(srcChainID, dstChainID) ==
     LET srcChannelEnd == GetChannelEnd(srcChainID) IN
     LET dstChannelEnd == GetChannelEnd(dstChainID) IN
     
@@ -261,18 +231,8 @@ ComputeChannelDatagrams(srcChainID, dstChainID) ==
            proofHeight |-> srcHeight]} 
     ELSE {}
     
-    
-\* Get the channel datagrams designated for srcChainID and dstChainID
-ChannelDatagrams(srcChainID, dstChainID) ==
-    \* channel datagrams from dstChainID to srcChainID
-    LET srcChannelDatagrams == ComputeChannelDatagrams(dstChainID, srcChainID) IN
-    \* channel datagrams from srcChainID to dstChainID
-    LET dstChannelDatagrams == ComputeChannelDatagrams(srcChainID, dstChainID) IN
-    
-    [src |-> srcChannelDatagrams, dst |-> dstChannelDatagrams]    
-
 (***************************************************************************
- Compute pending datagrams
+ Compute pending datagrams (from srcChainID to dstChainID)
  ***************************************************************************)
 \* Currently supporting:
 \*  -  ICS 002: Client updates
@@ -282,7 +242,7 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 PendingDatagrams(srcChainID, dstChainID) ==
     \* ICS 002 : Clients
     \* - Determine if light clients needs to be updated 
-    LET clientDatagrams == ClientDatagrams(srcChainID, dstChainID) IN
+    LET clientDatagrams == LightClientUpdates(srcChainID, dstChainID, relayerChainHeights) IN
     
     \* ICS3 : Connections
     \* - Determine if any connection handshakes are in progress
@@ -296,16 +256,16 @@ PendingDatagrams(srcChainID, dstChainID) ==
     \* - Determine if any packets, acknowledgements, or timeouts need to be relayed
     \* TODO
     
-    [src |-> clientDatagrams.src \union connectionDatagrams.src \union channelDatagrams.src, 
-     dst |-> clientDatagrams.dst \union connectionDatagrams.dst \union channelDatagrams.dst,
+    [datagrams |-> clientDatagrams.datagrams \union 
+                   connectionDatagrams \union 
+                   channelDatagrams, 
      relayerUpdate |-> clientDatagrams.relayerUpdate]
 
 (***************************************************************************
  Relayer actions
  ***************************************************************************)   
 \* Update the height of the relayer client for some chainID
-UpdateRelayerClients ==
-    \E chainID \in ChainIDs : 
+UpdateRelayerClients(chainID) ==
         /\ relayerChainHeights[chainID] < GetLatestHeight(chainID)
         /\ relayerChainHeights' = [relayerChainHeights EXCEPT 
                                         ![chainID] = GetLatestHeight(chainID)
@@ -314,15 +274,15 @@ UpdateRelayerClients ==
 
 \* for two chains, srcChainID and dstChainID, where srcChainID /= dstChainID, 
 \* create the pending datagrams and update the corresponding sets of pending datagrams
-Relay ==
-    \E srcChainID \in ChainIDs :
-        \E dstChainID \in ChainIDs :
+Relay(srcChainID, dstChainID) ==
+    
             /\ srcChainID /= dstChainID
             /\ LET datagramsAndRelayerUpdate == PendingDatagrams(srcChainID, dstChainID) IN
                   /\ pendingDatagrams' = 
                         [pendingDatagrams EXCEPT 
-                            ![srcChainID] = pendingDatagrams[srcChainID] \union datagramsAndRelayerUpdate.src, 
-                            ![dstChainID] = pendingDatagrams[dstChainID] \union datagramsAndRelayerUpdate.dst
+                            ![dstChainID] = pendingDatagrams[dstChainID] 
+                                            \union 
+                                            datagramsAndRelayerUpdate.datagrams
                         ]
                   /\ relayerChainHeights' = datagramsAndRelayerUpdate.relayerUpdate       
                   /\ UNCHANGED chains
@@ -336,8 +296,8 @@ Relay ==
 \*        - relays datagrams between two chains, or
 \*        - does nothing
 Relayer ==
-    \/ UpdateRelayerClients
-    \/ Relay
+    \/ \E chainID \in ChainIDs : UpdateRelayerClients(chainID)
+    \/ \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : Relay(srcChainID, dstChainID)
     \/ UNCHANGED vars
     
 \* Environment
@@ -375,8 +335,10 @@ Next ==
        
 \* Fairness constraints
 Fairness ==
-    /\ WF_<<chains, pendingDatagrams, relayerChainHeights>>(UpdateRelayerClients)
-    /\ WF_<<chains, pendingDatagrams, relayerChainHeights>>(Relay)
+    /\ \A chainID \in ChainIDs : 
+            WF_specVars(UpdateRelayerClients(chainID))
+    /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs : 
+            WF_specVars(Relay(srcChainID, dstChainID))
     /\ Env!Fairness 
                         
 \* Spec formula
@@ -398,18 +360,32 @@ IsClientUpdateInPendingDatagrams(chainID, clID, h) ==
         \in pendingDatagrams[chainID]
 
 \* returns true if there is a "ConnOpenInit" datagram  
-\* in pending datagrams of chainID
+\* for the connection between srcChainID and dstChainID
+ConnOpenInitGenerated(srcChainID, dstChainID) == 
+    LET srcClientID == GetClientID(dstChainID) IN
+    LET dstClientID == GetClientID(srcChainID) IN
+    LET srcConnectionID == GetConnectionID(srcChainID) IN
+    LET dstConnectionID == GetConnectionID(dstChainID) IN
+    
+    [type |-> "ConnOpenInit", 
+        connectionID |-> srcConnectionID, 
+        clientID |-> srcClientID,
+        counterpartyConnectionID |-> dstConnectionID,
+        counterpartyClientID |-> dstClientID] \in pendingDatagrams[srcChainID]
+
+\* returns true if there is a "ConnOpenInit" datagram 
+\* in pending datagrams of chainID                
 IsConnOpenInitInPendingDatagrams(
     chainID, clientID, counterpartyClientID,
     connectionID, counterpartyConnectionID
-    ) ==
-
+    ) ==     
+    
     [type |-> "ConnOpenInit", 
      connectionID |-> connectionID, 
      clientID |-> clientID,
      counterpartyConnectionID |-> counterpartyConnectionID,
      counterpartyClientID |-> counterpartyClientID] \in pendingDatagrams[chainID]
-
+    
 \* returns true if there is a "ConnOpenTry" datagram 
 \* in pending datagrams of chainID
 IsConnOpenTryInPendingDatagrams(
@@ -442,7 +418,11 @@ IsConnOpenConfirmInPendingDatagrams(chainID, connectionID) ==
     [type |-> "ConnOpenConfirm", 
      connectionID |-> connectionID, 
      proofHeight |-> pHeight] \in pendingDatagrams[chainID]
-     
+
+\*\* returns true if there is a "ConnOpenInit" datagram  
+\*\* for the channel between srcChainID and dstChainID
+\*ChanOpenInitGenerated(srcChainID, GetCounterpartyChainID(chainID)) ==
+
 \* returns true if there is a "ChanOpenInit" datagram  
 \* in pending datagrams of chainID
 IsChanOpenInitInPendingDatagrams(chainID, channelID, counterpartyChannelID) ==
@@ -492,7 +472,7 @@ CreateClientInv ==
     \A chainID \in ChainIDs : \A clID \in ClientIDs :  
         ((\E h \in Heights : IsCreateClientInPendingDatagrams(chainID, clID, h)) 
             => (/\ clID = GetCounterpartyClientID(chainID)
-                /\ GetCounterpartyClientHeight(chainID) = nullHeight))
+                /\ GetCounterpartyClientHeights(chainID) = {}))
 
 \* if a "ClientUpdate" datagram is in pendingDatagrams for chainID, 
 \* then the datagram has the correct client ID   
@@ -501,7 +481,7 @@ ClientUpdateInv ==
     \A chainID \in ChainIDs : \A clID \in ClientIDs : \A h \in Heights :
         IsClientUpdateInPendingDatagrams(chainID, clID, h) 
             => (/\ clID = GetCounterpartyClientID(chainID)
-                /\ GetCounterpartyClientHeight(chainID) < h)
+                /\ GetMaxCounterpartyClientHeight(chainID) < h)
 
 \* ConnOpenInitInv   
 \* if a "ConnOpenInit" datagram is in pendingDatagrams for chainID, 
@@ -512,10 +492,8 @@ ConnOpenInitInv ==
     \A chainID \in ChainIDs :
     \A clientID \in ClientIDs : \A counterpartyClientID \in ClientIDs :
     \A connectionID \in ConnectionIDs : \A counterpartyConnectionID \in ConnectionIDs :
-        IsConnOpenInitInPendingDatagrams(
-            chainID, clientID, counterpartyClientID,
-            connectionID, counterpartyConnectionID
-        )
+        IsConnOpenInitInPendingDatagrams(chainID, clientID, counterpartyClientID, 
+                                         connectionID, counterpartyConnectionID)
             => /\ clientID = GetCounterpartyClientID(chainID)
                /\ counterpartyClientID = GetClientID(chainID)
                /\ connectionID = GetConnectionID(chainID)
@@ -638,7 +616,7 @@ Inv ==
 \*      * the relayer EVENTUALLY adds a "CreateClient" datagram in pending datagrams of chainID
 CreateClientIsGenerated == 
     [](\A chainID \in ChainIDs : 
-        GetCounterpartyClientHeight(chainID) = nullHeight
+        GetCounterpartyClientHeights(chainID) = {}
         => <>(\E h \in Heights : IsCreateClientInPendingDatagrams(chainID, GetCounterpartyClientID(chainID), h)))
         
 \* it ALWAYS holds that, for every chainID:
@@ -661,8 +639,8 @@ ClientCreated ==
 \*      * the relayer EVENTUALLY adds a "ClientUpdate" datagram in pending datagrams of chainID           
 ClientUpdateIsGenerated ==
     [](\A chainID \in ChainIDs : \A h1 \in Heights : 
-        (/\ GetCounterpartyClientHeight(chainID) = h1
-         /\ GetCounterpartyClientHeight(chainID) < GetLatestHeight(GetCounterpartyChainID(chainID)))
+        (/\ GetMaxCounterpartyClientHeight(chainID) = h1
+         /\ GetMaxCounterpartyClientHeight(chainID) < GetLatestHeight(GetCounterpartyChainID(chainID)))
             => <>(\E h2 \in Heights : 
                     /\ h1 <= h2 
                     /\ IsClientUpdateInPendingDatagrams(chainID, GetCounterpartyClientID(chainID), h2)))
@@ -677,7 +655,7 @@ ClientUpdateIsGenerated ==
 ClientUpdated ==
     [](\A chainID \in ChainIDs : \A h \in Heights : 
         (/\ IsClientUpdateInPendingDatagrams(chainID, GetCounterpartyClientID(chainID), h) 
-         /\ GetCounterpartyClientHeight(chainID) < h)
+         /\ GetMaxCounterpartyClientHeight(chainID) < h)
            => (<>(CounterpartyClientHeightUpdated(chainID, h))))
     
 (***************************************************************************
@@ -687,16 +665,17 @@ ClientUpdated ==
 \*  - if 
 \*      * the connection on chainID is uninitialized and 
 \*      * the connection on chainID's counterparty is uninitialized
-\*  - then
-\*      * the relayer EVENTUALLY adds a "ConnOpenInit" datagram in pending datagrams of chainID           
+\*  - then EVENTUALLY either
+\*      * there is a "ConnOpenInit" datagram in pending datagrams of chainID  
+\*      * or the state of the counterparty connection is "INIT"         
 ConnOpenInitIsGenerated ==
     [](\A chainID \in ChainIDs : 
-        (/\ IsConnectionUninit(chainID)
-         /\ IsConnectionUninit(GetCounterpartyChainID(chainID)))
-            => <>(IsConnOpenInitInPendingDatagrams(
-                    chainID, GetCounterpartyClientID(chainID), GetClientID(chainID), 
-                    GetConnectionID(chainID), GetCounterpartyConnectionID(chainID)
-                  )))
+         IsConnectionUninit(chainID)
+            => <>(\/ IsConnOpenInitInPendingDatagrams(
+                        chainID, GetCounterpartyClientID(chainID), GetClientID(chainID), 
+                        GetConnectionID(chainID), GetCounterpartyConnectionID(chainID)
+                     )
+                  \/ IsConnectionInit(GetCounterpartyChainID(chainID))))
           
 \* it ALWAYS holds that, for every cahinID, and every counterpartyChainID:
 \*    - if   
@@ -705,13 +684,13 @@ ConnOpenInitIsGenerated ==
 \*    - then 
 \*        * the connection is EVENTUALLY open              
 ConnectionOpened ==
-    [](\A chainID \in ChainIDs :
+    [](\A chainID \in ChainIDs : 
         IsConnOpenInitInPendingDatagrams(
                chainID, GetClientID(chainID), GetCounterpartyClientID(chainID),
                GetConnectionID(chainID), GetCounterpartyConnectionID(chainID)
         )
-            => (<>(/\ IsConnectionOpen(chainID)
-                   /\ IsConnectionOpen(GetCounterpartyChainID(chainID)))))              
+            => <>(/\ IsConnectionOpen(chainID)
+                  /\ IsConnectionOpen(GetCounterpartyChainID(chainID))))              
 
 (***************************************************************************
  Properties about channel handshake
@@ -724,9 +703,9 @@ ConnectionOpened ==
 \*      * the relayer EVENTUALLY adds a "ChanOpenInit" datagram in pending datagrams of chainID           
 ChanOpenInitIsGenerated ==
     [](\A chainID \in ChainIDs : 
-        (/\ IsChannelUninit(chainID)
-         /\ IsChannelUninit(GetCounterpartyChainID(chainID)))
-            => <>(IsChanOpenInitInPendingDatagrams(chainID, GetChannelID(chainID), GetCounterpartyChannelID(chainID))))
+        (IsChannelUninit(chainID)
+            => <>(\/ IsChanOpenInitInPendingDatagrams(chainID, GetChannelID(chainID), GetCounterpartyChannelID(chainID))
+                  \/ IsChannelInit(GetCounterpartyChainID(chainID)))))
           
 \* it ALWAYS holds that, for every cahinID, and every counterpartyChainID:
 \*    - if   
@@ -753,17 +732,17 @@ HeightsDontDecrease ==
 \* Prop
 \* A conjunction of all properties                                                             
 Prop ==                           
-    /\ CreateClientIsGenerated
-    /\ ClientCreated
-    /\ ClientUpdateIsGenerated
-    /\ ClientUpdated
+    /\ CreateClientIsGenerated 
+    /\ ClientCreated 
+    /\ ClientUpdateIsGenerated 
+    /\ ClientUpdated 
     /\ ConnOpenInitIsGenerated
-    /\ ConnectionOpened
+    /\ ConnectionOpened 
     /\ ChanOpenInitIsGenerated
     /\ ChannelOpened
-    /\ HeightsDontDecrease
+    /\ HeightsDontDecrease 
     
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 15 16:25:56 CEST 2020 by ilinastoilkovska
+\* Last modified Mon May 18 19:24:50 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

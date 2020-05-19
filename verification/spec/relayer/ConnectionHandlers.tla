@@ -71,7 +71,8 @@ HandleConnOpenTry(chainID, chain, datagrams) ==
                             /\ dgr.type = "ConnOpenTry"
                             /\ dgr.desiredConnectionID = GetConnectionID(chainID)
                             /\ dgr.consensusHeight <= chain.height
-                            /\ dgr.proofHeight <= chain.counterpartyClientHeight} IN
+                            /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
+                            \* TODO: check dgr.proofHeight \in chain.counterpartyClientHeight
     
     IF connOpenTryDgrs /= {}
     \* if there are valid "ConnOpenTry" datagrams, update the connection end 
@@ -112,7 +113,8 @@ HandleConnOpenAck(chainID, chain, datagrams) ==
     LET connOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenAck"
                             /\ dgr.connectionID = GetConnectionID(chainID)
-                            /\ dgr.consensusHeight <= chain.height} IN
+                            /\ dgr.consensusHeight <= chain.height
+                            /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF connOpenAckDgrs /= {}
     \* if there are valid "ConnOpenAck" datagrams, update the connection end 
@@ -141,7 +143,8 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
     \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
     LET connOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ConnOpenConfirm"
-                                /\ dgr.connectionID = GetConnectionID(chainID)} IN
+                                /\ dgr.connectionID = GetConnectionID(chainID)
+                                /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF connOpenConfirmDgrs /= {}
     \* if there are valid "connOpenConfirmDgrs" datagrams, update the connection end 
@@ -164,5 +167,5 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 15 16:18:37 CEST 2020 by ilinastoilkovska
+\* Last modified Thu May 14 16:29:33 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska

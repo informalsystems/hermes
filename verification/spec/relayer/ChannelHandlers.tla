@@ -72,7 +72,7 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
     LET chanOpenTryDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenTry"
                             /\ dgr.channelID = GetChannelID(chainID)
-                            /\ dgr.proofHeight <= chain.counterpartyClientHeight} IN
+                            /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF chanOpenTryDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
     \* if there are valid "ChanOpenTry" datagrams and the connection is "OPEN", 
@@ -109,7 +109,7 @@ HandleChanOpenAck(chainID, chain, datagrams) ==
     LET chanOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenAck"
                             /\ dgr.channelID = GetChannelID(chainID)
-                            /\ dgr.proofHeight <= chain.counterpartyClientHeight} IN
+                            /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF chanOpenAckDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
     \* if there are valid "ChanOpenAck" datagrams, update the channel end 
@@ -142,7 +142,7 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
     LET chanOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ChanOpenConfirm"
                                 /\ dgr.channelID = GetChannelID(chainID)
-                                /\ dgr.proofHeight <= chain.counterpartyClientHeight} IN
+                                /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF chanOpenConfirmDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
     \* if there are valid "ChanOpenConfirm" datagrams, update the channel end 
@@ -168,5 +168,5 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
  
 =============================================================================
 \* Modification History
-\* Last modified Wed Apr 15 16:18:59 CEST 2020 by ilinastoilkovska
+\* Last modified Thu May 14 16:29:29 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska
