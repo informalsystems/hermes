@@ -337,7 +337,6 @@ Next ==
     \/ /\ inBuf = <<>>
        /\ ~ CanAdvance
        /\ UNCHANGED<<moduleVars>>
-    \/ UNCHANGED<<moduleVars>>
 
 
 TypeInvariant ==
@@ -349,6 +348,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 17:48:10 CEST 2020 by adi
+\* Last modified Wed May 20 08:49:23 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

@@ -30,14 +30,13 @@ ASSUME MaxBufLen >= 1
 
 
 VARIABLES
-    turn,
     inBufChainA,    \* A buffer (sequence) for messages inbound to chain A.
     inBufChainB,    \* A buffer for messages inbound to chain B.
     outBufChainA,   \* A buffer for messages outgoing from chain A.
     outBufChainB,   \* A buffer for messages outgoing from chain B.
     storeChainA,    \* The local store of chain A.
     storeChainB,    \* The local store of chain B.
-    maliciousEnv    \* If TRUE, environment interferes w/ CH protocol. 
+    maliciousEnv    \* If TRUE, environment interferes w/ CH protocol.
 
 
 (************* ChainAConnectionEnds & ChainBConnectionEnds *****************
@@ -84,8 +83,7 @@ chainStoreVars == <<storeChainA, storeChainB>>
 allVars == <<chainStoreVars, 
              inBufChainA, inBufChainB, 
              outBufChainA, outBufChainB,
-             maliciousEnv,
-             turn>>
+             maliciousEnv>>
 
 
 INSTANCE ICS3Types
@@ -208,14 +206,16 @@ RelayNextEnv ==
                            THEN msg.connProof.height
                            ELSE storeChainA.latestHeight
        IN /\ Relay(outBufChainA, inBufChainB)
-          /\ chmB!UpdateClient(targetHeight)
+          /\ \/ chmB!CanAdvance /\ chmB!UpdateClient(targetHeight)
+             \/ ~ chmB!CanAdvance /\ UNCHANGED storeChainB
           /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
     \/ LET msg == Head(outBufChainB)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
                            THEN msg.connProof.height
                            ELSE storeChainB.latestHeight
        IN /\ Relay(outBufChainB, inBufChainA)
-          /\ chmA!UpdateClient(targetHeight)
+          /\ \/ chmA!CanAdvance /\ chmA!UpdateClient(targetHeight)
+             \/ ~ chmA!CanAdvance /\ UNCHANGED storeChainA
           /\ UNCHANGED<<storeChainB, outBufChainA, inBufChainB>>
 
 
@@ -267,19 +267,19 @@ NextEnv ==
        /\ UNCHANGED maliciousEnv
     \/ /\ RelayNextEnv
        /\ UNCHANGED maliciousEnv
-    \/ /\ UNCHANGED <<chainAVars, chainBVars, maliciousEnv>>
-    \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
-       /\ storeChainA.connection.state # "UNINIT"
-       /\ storeChainB.connection.state # "UNINIT"
-       /\ maliciousEnv' = TRUE
-       /\ MaliciousNextEnv
-       /\ UNCHANGED<<chainStoreVars, outBufChainA, outBufChainB>>
-    \/ /\ maliciousEnv                              (* A malicious step. *)
-       /\ MaliciousNextEnv
-       /\ UNCHANGED<<maliciousEnv, chainStoreVars, outBufChainA, outBufChainB>>
-    \/ /\ maliciousEnv                              (* Disable malicious env. *)
-       /\ maliciousEnv' = FALSE
-       /\ UNCHANGED<<chainAVars, chainBVars>>
+\*    \/ /\ UNCHANGED <<chainAVars, chainBVars, maliciousEnv>>
+\*    \/ /\ ~ maliciousEnv                            (* Enable malicious env. *)
+\*       /\ storeChainA.connection.state # "UNINIT"
+\*       /\ storeChainB.connection.state # "UNINIT"
+\*       /\ maliciousEnv' = TRUE
+\*       /\ MaliciousNextEnv
+\*       /\ UNCHANGED<<chainStoreVars, outBufChainA, outBufChainB>>
+\*    \/ /\ maliciousEnv                              (* A malicious step. *)
+\*       /\ MaliciousNextEnv
+\*       /\ UNCHANGED<<maliciousEnv, chainStoreVars, outBufChainA, outBufChainB>>
+\*    \/ /\ maliciousEnv                              (* Disable malicious env. *)
+\*       /\ maliciousEnv' = FALSE
+\*       /\ UNCHANGED<<chainAVars, chainBVars>>
 
 
 (* Enables when the connection is open on both chains.
@@ -292,18 +292,11 @@ ICS3ReachTermination ==
     /\ UNCHANGED allVars
 
 
-(* Enables when both chains attain maximum height, if the connection is still
-    not opened.
 
-    State predicate signaling that the chains cannot progress any further,
-    and therefore the protocol terminates without successfully opening the
-    connection.
- *)
 ICS3NonTermination ==
-    /\ (~ chmA!CanAdvance \/ storeChainA.connection.state # "OPEN")
-    /\ (~ chmB!CanAdvance \/ storeChainB.connection.state # "OPEN")
+    /\ \/ (~ chmA!CanAdvance /\ storeChainA.connection.state # "OPEN")
+       \/ (~ chmB!CanAdvance /\ storeChainB.connection.state # "OPEN")
     /\ UNCHANGED allVars
-
 
 (******************************************************************************
 
@@ -315,7 +308,6 @@ ICS3NonTermination ==
 
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ turn = "ENV"
     /\ \E clientA \in InitClients({ x.clientID : x \in ChainAConnectionEnds }) :
             chmA!Init("chainA", clientA, NullConnection)
     /\ \E clientB \in InitClients({ x.clientID : x \in ChainBConnectionEnds }) :
@@ -325,19 +317,19 @@ Init ==
 
 (* The two ICS3 modules and the environment alternate their steps. *)
 Next ==
-\*    \/ ICS3ReachTermination
-\*    \/ ICS3NonTermination
-    \/ turn = "ENV" /\ NextEnv /\ turn' = "A"
-    \/ turn = "A" /\ chmA!Next /\ UNCHANGED <<chainBVars, maliciousEnv>>
-                  /\ turn' = "B" 
-    \/ turn = "B" /\ chmB!Next /\ UNCHANGED <<chainAVars, maliciousEnv>>
-                  /\ turn' = "ENV"
+    \/ ICS3ReachTermination
+    \/ ICS3NonTermination
+    \/ NextEnv
+    \/ chmA!Next /\ UNCHANGED <<chainBVars, maliciousEnv>> 
+    \/ chmB!Next /\ UNCHANGED <<chainAVars, maliciousEnv>>
 
 
 FairProgress ==
     /\ WF_chainAVars(chmA!Next)
     /\ WF_chainBVars(chmB!Next)
     /\ WF_<<chainAVars, chainBVars>>(RelayNextEnv)
+\*    /\ \E m \in ConnectionHandshakeMessages : m = Head(inBufChainA)
+\*        => WF_chainAVars(chmA!ProcessMsg(m))
 \*    /\ <> ~ maliciousEnv
 \*    /\ <> ~ activeEnv
 \*    /\ \A height \in 1..MaxHeight : WF_storeChainA(chmA!UpdateClient(height))
@@ -360,13 +352,24 @@ TypeInvariant ==
 (* Action ProcessMsg will eventually enable & chainAVars 
     will not be unchanged. *)
 MessageLivenessPre ==
-    \E m \in ConnectionHandshakeMessages : m = Head(inBufChainA)
-        => <><<chmA!ProcessMsg(m)>>_chainAVars
+    TRUE
+\*    /\ \E m \in ConnectionHandshakeMessages : m = Head(inBufChainA)
+\*        => <><<chmA!ProcessMsg(m)>>_chainAVars
+\*    /\ \E m \in ConnectionHandshakeMessages : m = Head(inBufChainB)
+\*        => <><<chmB!ProcessMsg(m)>>_chainBVars
 
 
 (* Liveness property.
     
-    If both chains can progress, we should reach open on both chains.
+    We expect to always reach an OPEN connection on both chains if the following
+    conditions hold:
+    
+    1. eventually, the environment stops being malicious, and
+    
+    2, 3. both chains can advance with at least 4 more steps (4 is the minimum
+    number of steps that are necessary for the chains to reach OPEN)
+    
+    4.
 *)
 Termination ==
     []((/\ <> ~ maliciousEnv
@@ -394,6 +397,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 18:20:06 CEST 2020 by adi
+\* Last modified Wed May 20 10:20:16 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
