@@ -234,7 +234,7 @@ ChannelUpdate(chainID, chain, datagrams) ==
  Chain update operators
  ***************************************************************************)
 \* Update chainID with the received datagrams
-\* Currently, only supporting ICS 002: Client updates
+\* Supports ICS2 (Clients), ICS3 (Connections), and ICS4 (Channels).
 UpdateChain(chainID, datagrams) == 
     LET chain == chains[chainID] IN
     \* ICS 002: Client updates
