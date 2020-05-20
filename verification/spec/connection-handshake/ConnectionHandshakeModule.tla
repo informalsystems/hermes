@@ -12,16 +12,21 @@
 
     This module deals with a high-level spec of the ICS3 protocol, so it is
     a simplification with respect to ICS3 proper in several regards:
+
     - the modules assumes to run on a chain which we model as a simple
     advancing height, plus a few more critical fields (see the 'store'),
     but without any state (e.g., blockchain, transactions, consensus core);
+
     - we model a single connection; establishing multiple connections is not
     possible;
-    - we do not perform any cryptographic proofs or proof verifications.
+
+    - we do not perform any cryptographic proof verifications;
+
     - the abstractions we use are higher-level, and slightly different from
     the ones in ICS3 (see e.g., ConnectionEnd and Connection records).
+
     - the client colocated with the module is simplified, comprising only
-    a set of heights.
+    a set of heights (not the actual blockchain headers).
 
  ***************************************************************************)
 
@@ -40,12 +45,13 @@ ASSUME Cardinality(ClientIDs) >= 1
 
 VARIABLES
 (******************************* Store *****************************
+
      The store record of a chain contains the following fields:
-     
-     - id -- a string 
+
+     - chainID -- a string 
        Stores the identifier of the chain where this module executes.
 
-     - latestHeight -- a Nat
+     - latestHeight -- a natural number in the range 1..MaxHeight
        Describes the current height of the chain.  
 
      - connection -- a connection record.
@@ -55,10 +61,23 @@ VARIABLES
 
      - client -- a client record.
        Specifies the state of the client running on this chain.
-       For a full description of a client and the initialization values
-       for this record, see the InitClients set below.  
-     
- ***************************************************************************)   
+
+       A client record contains the following fields:
+
+         - consensusHeights -- a set of heights 
+           Stores the set of all heights (i.e., consensus states) that this
+           client observed.
+
+         - clientID -- a string
+           The identifier of the client.
+
+         - latestHeight -- a natural number in the range 1..MaxHeight
+           Stores the latest height among all the heights in consensusHeights.
+
+        For more details on how clients are initialized, see the operator
+        ICS3Types.InitClients. 
+
+ ***************************************************************************)
     store,
     (* A buffer (Sequence) holding any message(s) incoming to this module. *)
     inBuf,
@@ -66,7 +85,8 @@ VARIABLES
     outBuf
 
 
-moduleVars == <<inBuf, outBuf, store>>
+moduleVars ==
+    <<inBuf, outBuf, store>>
 
 
 (***************************************************************************
@@ -74,10 +94,19 @@ moduleVars == <<inBuf, outBuf, store>>
  ***************************************************************************)
 
 
-(* Returns true if 'para' matches the parameters in the local connection,
-    and returns false otherwise.
+(* Simple computation returning the maximum out of two numbers 'a' and 'b'.
  *)
-CheckLocalParameters(para) ==
+MAX(a, b) ==
+    IF a > b THEN a ELSE b
+
+
+(* Validates a connection parameter.
+
+    Returns true if 'para' matches the parameters in the local connection,
+    and returns false otherwise.
+
+ *)
+ValidConnectionParameters(para) ==
     LET local == store.connection.parameters.localEnd
         remote == store.connection.parameters.remoteEnd 
     IN /\ local.connectionID = para.localEnd.connectionID   
@@ -86,21 +115,16 @@ CheckLocalParameters(para) ==
        /\ remote.clientID = para.remoteEnd.clientID
 
 
-(* Validates a ConnectionParameter.
+(* Validates a connection parameter local end.
+
     Expects as input a ConnectionParameter 'para' and returns true or false.
-    
-    This is a basic validation step, making sure that 'para' is valid with
-    respect to module-level constants ConnectionIDs and ClientIDs.
-    If there is a connection in the store, this also validates 'para'
-    against the parameters of an existing connection by relying on the
-    state predicate CheckLocalParameters.
+    This is a basic validation step, making sure that the local end in 'para'
+    is valid with respect to module-level constants ConnectionIDs and ClientIDs.
+
 *)
-ValidConnectionParameters(para) ==
+ValidLocalEnd(para) ==
     /\ para.localEnd.connectionID \in ConnectionIDs
     /\ para.localEnd.clientID \in ClientIDs
-    /\ \/ store.connection = NullConnection
-       \/ /\ store.connection /= NullConnection
-          /\ CheckLocalParameters(para)
 
 
 (* Operator for reversing the connection ends.
@@ -114,33 +138,34 @@ FlipConnectionParameters(para) ==
      remoteEnd  |-> para.localEnd]
 
 
-(* Operator for construcing a connection proof.
+(* Operator for constructing a connection proof.
 
     The connection proof is used to demonstrate to another chain that the
     local store on this chain comprises a connection in a certain state. 
  *)
-GetConnProof(connState) ==
-    [height |-> store.latestHeight,
-     connectionState |-> connState]
+GetConnProof(myConnection) ==
+    [connection |-> myConnection]
 
 
-(* Operator for construcing a client proof.
+(* Operator for constructing a client proof.
  *)
 GetClientProof ==
-    [height |-> store.client.latestHeight]
+    [latestHeight |-> store.client.latestHeight,
+     consensusHeights |-> store.client.consensusHeights]
 
 
 (* Verification of a connection proof. 
 
-    This is a state predicate returning true if the following holds: the local
-    client on this chain stores the height reported in the proof. Note that this
-    condition should eventually become true, assuming a correct environment, which
-    should periodically update the client on each chain; see actions 'GoodNextEnv'
-    and 'UpdateClient'.
+    This is a state predicate returning true if the following holds: 
+    - the state of connection in this proof should match with input parameter
+    'expectedState'; and
+    - the connection parameters in this proof should match with the flipped version
+    of the input 'expectedParams'.
 
  *)
-VerifyConnProof(cp) ==
-    /\ cp.height \in store.client.consensusStates
+VerifyConnProof(cp, expectedState, expectedParams) ==
+    /\ cp.connection.state = expectedState
+    /\ cp.connection.parameters = FlipConnectionParameters(expectedParams)
 
 
 (* Verification of a client proof.
@@ -150,7 +175,8 @@ VerifyConnProof(cp) ==
     this chain.
  *)
 VerifyClientProof(cp) ==
-    cp.height <= store.latestHeight
+    /\ cp.latestHeight <= store.latestHeight   (* Consistency height check. *)
+    /\ cp.latestHeight \in cp.consensusHeights (* Client verification step. *)
 
 
 (***************************************************************************
@@ -169,7 +195,7 @@ NewStore(newCon) ==
 
 
 (* Handles a "ICS3MsgInit" message 'm'.
-    
+
     Primes the store.connection to become initialized with the parameters
     specified in 'm'. Also creates a reply message, enqueued on the outgoing
     buffer.
@@ -177,13 +203,14 @@ NewStore(newCon) ==
 HandleInitMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
                    state      |-> "INIT"]
-        sProof == GetConnProof("INIT")
-        cProof == GetClientProof
+        myConnProof == GetConnProof(newCon)
+        myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgTry",
-                     connProof |-> sProof,
-                     clientProof |-> cProof] IN
-    IF /\ ValidConnectionParameters(m.parameters)
+                     proofHeight |-> store.latestHeight,
+                     connProof |-> myConnProof,
+                     clientProof |-> myClientProof] IN
+    IF /\ ValidLocalEnd(m.parameters)  (* Basic validation of localEnd in parameters. *)
        /\ store.connection.state = "UNINIT"
     THEN [out |-> Append(outBuf, replyMsg),
           store |-> NewStore(newCon)]
@@ -194,15 +221,15 @@ HandleInitMsg(m) ==
 (* State predicate, guarding the handler for the Try msg.
 
     If any of these preconditions does not hold, the message
-    is dropped. 
+    is dropped.
  *)
 PreconditionsTryMsg(m) ==
-    /\ ValidConnectionParameters(m.parameters)
-    /\ \/ store.connection.state = "UNINIT"
+    /\ \/ /\ store.connection.state = "UNINIT"
+          /\ ValidLocalEnd(m.parameters)
        \/ /\ store.connection.state = "INIT"
-          /\ CheckLocalParameters(m.parameters)
-    /\ m.connProof.connectionState = "INIT"
-    /\ VerifyConnProof(m.connProof)
+          /\ ValidConnectionParameters(m.parameters)
+    /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
+    /\ VerifyConnProof(m.connProof, "INIT", m.parameters)
     /\ VerifyClientProof(m.clientProof)
 
 
@@ -211,12 +238,13 @@ PreconditionsTryMsg(m) ==
 HandleTryMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "TRYOPEN"]
-        sProof == GetConnProof("TRYOPEN")
-        cProof == GetClientProof
+        myConnProof == GetConnProof(newCon)
+        myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgAck",
-                     connProof |-> sProof,
-                     clientProof |-> cProof] IN
+                     proofHeight |-> store.latestHeight,
+                     connProof |-> myConnProof,
+                     clientProof |-> myClientProof] IN
     IF PreconditionsTryMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
           store |-> NewStore(newCon)]
@@ -229,9 +257,10 @@ HandleTryMsg(m) ==
 PreconditionsAckMsg(m) ==
     /\ \/ store.connection.state = "INIT"
        \/ store.connection.state = "TRYOPEN"
-    /\ CheckLocalParameters(m.parameters)
-    /\ m.connProof.connectionState = "TRYOPEN"
-    /\ VerifyConnProof(m.connProof)
+    /\ ValidConnectionParameters(m.parameters)
+    /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
+    /\ VerifyConnProof(m.connProof, "TRYOPEN", m.parameters)
+    /\ VerifyClientProof(m.clientProof)
 
 
 (* Handles a "ICS3MsgAck" message.
@@ -239,11 +268,11 @@ PreconditionsAckMsg(m) ==
 HandleAckMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "OPEN"]
-        sProof == GetConnProof("OPEN")
-        cProof == GetClientProof
+        myConnProof == GetConnProof(newCon)
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
+                     proofHeight |-> store.latestHeight,
                      type |-> "ICS3MsgConfirm",
-                     connProof |-> sProof] IN
+                     connProof |-> myConnProof] IN
     IF PreconditionsAckMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
           store |-> NewStore(newCon)]
@@ -255,9 +284,9 @@ HandleAckMsg(m) ==
  *)
 PreconditionsConfirmMsg(m) ==
     /\ store.connection.state = "TRYOPEN"
-    /\ CheckLocalParameters(m.parameters)
-    /\ m.connProof.connectionState = "OPEN"
-    /\ VerifyConnProof(m.connProof)
+    /\ ValidConnectionParameters(m.parameters)
+    /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
+    /\ VerifyConnProof(m.connProof, "OPEN", m.parameters)
 
 
 (* Handles a "ICS3MsgConfirm" message.
@@ -293,11 +322,13 @@ CanAdvance ==
     This will also advance the chain height.
  *)
 UpdateClient(height) ==
-    \/ /\ height \notin store.client.consensusStates
+    \/ /\ height \notin store.client.consensusHeights
+       (* Warning: following line should provoke a deadlock in ICS3 protocol. *)
+       /\ height >= store.client.latestHeight
        /\ store' = [store EXCEPT !.latestHeight = @ + 1,
-                                 !.client.consensusStates = @ \cup {height},
-                                 !.client.latestHeight = height]
-    \/ /\ height \in store.client.consensusStates
+                                 !.client.consensusHeights = @ \cup {height},
+                                 !.client.latestHeight = MAX(height, store.client.latestHeight)]
+    \/ /\ height \in store.client.consensusHeights
        /\ UNCHANGED store
 
 
@@ -322,10 +353,10 @@ ProcessMsg(m) ==
  ***************************************************************************)
 
 
-Init(chainID, client, connection) ==
-    /\ store = [id |-> chainID,
+Init(chainID, client) ==
+    /\ store = [chainID |-> chainID,
                 latestHeight |-> 1,
-                connection |-> connection,
+                connection |-> NullConnection,
                 client |-> client]
 
 
@@ -341,13 +372,12 @@ Next ==
 
 TypeInvariant ==
     /\ inBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
-    /\ outBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>}
-    /\ store.connection \in Connections
-    /\ store.client.clientID \in ClientIDs \union {NullClientID}
+    /\ outBuf \in Seq(ConnectionHandshakeMessages) \union {<<>>} 
+    /\ store \in Stores
 
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 20 08:49:23 CEST 2020 by adi
+\* Last modified Wed May 20 16:27:30 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

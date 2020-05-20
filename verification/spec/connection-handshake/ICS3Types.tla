@@ -8,23 +8,24 @@
     This module includes common domain definitions that other modules will
     extend.
 
-
  ***************************************************************************)
 
 EXTENDS Naturals
 
 CONSTANTS MaxHeight,
           AllConnectionIDs,
-          AllClientIDs
+          AllClientIDs,
+          AllChainIDs
 
 
-(******************************* InitClients *****************************
+(******************************* InitClients ********************************
+
      A set of records describing the possible initial values for the
      clients on a chain.
      
      A client record contains the following fields:
 
-     - consensusStates -- a set of heights, each height being a Nat 
+     - consensusHeights -- a set of heights 
        Stores the set of all heights (i.e., consensus states) that this
        client observed. At initialization time, the client only observes
        the first height, so the only possible value for this record is
@@ -34,18 +35,18 @@ CONSTANTS MaxHeight,
        The identifier of the client. This is expected as a parameter, since
        it is a chain-specific field at initialization time.
        
-     - latestHeight -- a natural number
-       Stores the latest height among all the heights in consensusStates.
+     - latestHeight -- a number representing a (consensus) height
+       Stores the latest height among all the heights in consensusHeights.
        Initialized to 1.
 
  ***************************************************************************)
 InitClients(specificClientIDs) ==
     [
-        consensusStates : {{1}},
+        consensusHeights : {{1}},
         clientID : specificClientIDs,
         latestHeight : {1}
     ]
-
+    
 
 (***************************** InitMsgs ***********************************
 
@@ -110,9 +111,10 @@ NullClientID ==
 NullConnectionID ==
     "NULLConnectionID"
 
+
 (******************************* NullConnectionEnd *************************
 
-    A special record defining an uninitialized connection end. 
+    A special record defining an uninitialized connection end record. 
      
  ***************************************************************************)
 NullConnectionEnd ==
@@ -124,7 +126,7 @@ NullConnectionEnd ==
 
 (******************************* NullConnectionParameters ******************
  
-    A record defining the special null connection parameters.
+    A record defining the special null connection parameters record.
      
  ***************************************************************************)
 NullConnectionParameters == 
@@ -135,8 +137,9 @@ NullConnectionParameters ==
 
 
 (******************************* ConnectionEnds *****************************
-     A set of connection end records.
-     A connection end record contains the following fields:
+     
+    A set of connection end records.
+    A connection end record contains the following fields:
      
      - connectionID -- a string 
        Stores the identifier of this connection, specific to a chain.
@@ -153,15 +156,16 @@ ConnectionEnds ==
 
 
 (******************************* ConnectionParameters **********************
-     A set of connection parameter records.
-     A connection parameter record contains the following fields:
+
+    A set of connection parameter records.
+    A connection parameter record contains the following fields:
 
      - localEnd -- a connection end 
        Specifies the local connection details (i.e., connection ID and
        client ID).
 
      - remoteEnd -- a connection end
-       Specifies the local connection details.  
+       Specifies the remote connection details.  
 
  ***************************************************************************)
 ConnectionParameters ==
@@ -188,7 +192,8 @@ NullConnection == [
 
 
 (******************************* Connections *******************************
-     A set of connection records.
+
+     The set of possible connection records.
      A connection record contains the following fields:
 
      - parameters -- a connection parameters record 
@@ -205,39 +210,19 @@ Connections ==
 
 
 (******************************* ConnProof *********************************
+
      A set of records describing the possible values for connection proofs.
-     
-     A connection proof record contains the following fields:
 
-     - connectionState -- a string 
-       Captures the state of the connection in the local store of the module
-       which created this proof.
+     A connection proof record contains a single field:
 
-     - height -- a Nat
-       The current height (latestHeight) of the chain at the moment when the
-       module created this proof.
+     - connection -- a connection record
+       This is the connection (in the local store of a chain) at the moment
+       when the module created this proof.
 
  ***************************************************************************)
 ConnProofs ==
     [
-        connectionState : ICS3ConnectionStates, 
-        height : 1..MaxHeight
-    ]
-
-
-(******************************* ClientProofs *******************************
-     A set of records describing the possible values for client proofs.
-     
-     A client proof record contains the following fields:
-
-     - height -- a Nat
-       The current height (latestHeight) of the client colocated with module
-       which created this proof.
-
- ***************************************************************************)
-ClientProofs ==
-    [
-        height : 1..MaxHeight
+        connection : Connections
     ]
 
 
@@ -249,6 +234,28 @@ ClientProofs ==
  ***************************************************************************)
 Heights ==
     1..MaxHeight
+
+
+(******************************* ClientProofs *******************************
+
+     A set of records describing the possible values for client proofs.
+     
+     A client proof record contains two fields:
+     
+     - latestHeight -- a number representing a height
+     The current height (latestHeight) of the client (in the local store of a
+     chain) at the moment when the ICS3 module created this proof. 
+
+     - consensusHeights -- a set of heights
+     The set of heights of the client colocated with module which created
+     this proof.
+
+ ***************************************************************************)
+ClientProofs ==
+    [
+        latestHeight : Heights,
+        consensusHeights : SUBSET Heights
+    ]
 
 
 (*********************** ConnectionHandshakeMessages ***********************
@@ -267,6 +274,7 @@ ConnectionHandshakeMessages ==
     [
         type : {"ICS3MsgTry"},
         parameters : ConnectionParameters,
+        proofHeight : Heights,
         connProof : ConnProofs,
         clientProof : ClientProofs
     ]
@@ -274,6 +282,7 @@ ConnectionHandshakeMessages ==
     [
         type : {"ICS3MsgAck"},
         parameters : ConnectionParameters,
+        proofHeight : Heights,
         connProof : ConnProofs,
         clientProof : ClientProofs
     ]
@@ -281,16 +290,69 @@ ConnectionHandshakeMessages ==
     [
         type : {"ICS3MsgConfirm"},
         parameters : ConnectionParameters,
+        proofHeight : Heights,
         connProof : ConnProofs
     ]
 
 
+
+(********************** MessageTypeIncludesConnProof ***********************
+
+     Operator that evaluates to true if the message type (input parameter
+     'type') refers to a message that includes a connection proof.
+
+ ***************************************************************************)
 MessageTypeIncludesConnProof(type) ==
     type \in {"ICS3MsgTry", "ICS3MsgAck", "ICS3MsgConfirm"}
 
 
+(******************************* Clients ***********************************
+
+     A set of records describing all the possible values for the
+     clients on a chain.
+
+     See client record description above (within the InitClients operator).
+
+ ***************************************************************************)
+Clients ==
+    [
+        consensusHeights : SUBSET Heights,
+        clientID : AllClientIDs \union { NullClientID },
+        latestHeight : Heights
+    ]
+
+(******************************* Stores *************************************
+
+    The set of store records.
+    A store record represents the local storage of a chain. This record
+    contains the following fields:
+
+     - chainID -- a string
+       Stores the identifier of the chain where this module executes.
+
+     - latestHeight -- a number representing a height
+       Describes the current height of the chain.
+
+     - connection -- a connection record
+       Captures all the details of the connection on this chain.
+       For a full description of a connection record, see the
+       'Environment.Connections' set.
+
+     - client -- a client record.
+       Specifies the state of the client running on this chain.
+
+ ***************************************************************************)   
+Stores ==
+    [
+        chainID : AllChainIDs,
+        latestHeight : Heights,
+        connection : Connections \union { NullConnection },
+        client : Clients
+    ]
+
+
 =============================================================================
 \* Modification History
-\* Last modified Tue May 19 17:44:07 CEST 2020 by adi
+\* Last modified Wed May 20 16:53:21 CEST 2020 by adi
 \* Created Mon May 18 17:53:08 CEST 2020 by adi
 

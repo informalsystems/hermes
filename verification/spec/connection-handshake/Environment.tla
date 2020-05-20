@@ -66,6 +66,8 @@ AllClientIDs ==
 AllConnectionIDs ==
     { x.connectionID : x \in AllConnectionEnds }
 
+AllChainIDs ==
+    { "chainA", "chainB" }
 
 (* Bundle with variables that chain A has access to. *)
 chainAVars == <<inBufChainA,    (* Input message buffer. *)
@@ -112,10 +114,10 @@ chmB == INSTANCE ConnectionHandshakeModule
 
 
 (* Environment initialization.
-    
-    This action kick-stars the ICS3 protocol by assigning an ICS3MsgInit
+
+    This action kick-starts the ICS3 protocol by assigning an ICS3MsgInit
     msg to either of the two chains (or both).
-    
+
     Initially, the environment is non-malicious. The environment starts
     acting maliciously once the connection on both chains transitions out
     of state "UNINIT" (the initials state). It is important to
@@ -129,7 +131,7 @@ chmB == INSTANCE ConnectionHandshakeModule
                       clientID |-> "clientIDChainB"]
         remoteEnd |-> [connectionID |-> "connBtoA",
                        clientID |-> "clientIDChainA"]
-                    
+
     2. Environment injects, maliciously, a ICS3MsgInit to chain B with
     the following parameters:
 
@@ -137,7 +139,7 @@ chmB == INSTANCE ConnectionHandshakeModule
                       clientID |-> "clientIDChainA"]
         remoteEnd |-> [connectionID |-> "connBtoA",
                        clientID |-> "clientIDChainA"]
-                       
+
     Notice that the localEnd is correct, so chain B will validate and
     process this message; the remoteEnd is incorrect, however, but chain
     B is not able to validate that part of the connection, so it will
@@ -147,35 +149,39 @@ chmB == INSTANCE ConnectionHandshakeModule
     updates its store.connection with the parameters from step 1 above.
     At this point, chain A "locks onto" these parameters and will not
     accept any others. Chain A also produces a ICS3MsgTry message.
-    
+
     3. Chain B processes the ICS3MsgInit (action HandleInitMsg) and
     updates its store.connection with the parameters from step 2 above.
     Chain B "locks onto" these parameters and will not accept any others.
     At this step, chain B produces a ICS3MsgTry message with the local
     parameters from its connection.
-    
+
     Both chains will be locked on a different set of connection parameters,
     and neither chain will accept their corresponding ICS3MsgTry, hence a
     deadlock. To avoid this problem, we prevent the environment from
     acting maliciously in the preliminary parts of the ICS3 protocol, until
     both chains finish locking on the same set of connection parameters.
+
  *)
 InitEnv ==
     /\ maliciousEnv = FALSE
     /\ \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
-            msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
           /\ inBufChainB = <<>>
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-            msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
-          /\ inBufChainB = <<>>
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+          /\ inBufChainA = <<>>
        \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-            msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
           /\ inBufChainB \in {<<msg>> :
-            msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
     /\ outBufChainA = <<>>
     /\ outBufChainB = <<>>
 
 
+(*
+    TODO EXPLAIN
+ *)
 Relay(from, to) ==
     /\ from # <<>>
     /\ Len(to) < MaxBufLen - 1
@@ -203,17 +209,21 @@ GoodNextEnv ==
 RelayNextEnv ==
     \/ LET msg == Head(outBufChainA)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
-                           THEN msg.connProof.height
+                           THEN msg.proofHeight
                            ELSE storeChainA.latestHeight
        IN /\ Relay(outBufChainA, inBufChainB)
+            (* TODO: remove following line to fix the deadlock. *)
+\*          /\ chmB!UpdateClient(storeChainA.latestHeight)
           /\ \/ chmB!CanAdvance /\ chmB!UpdateClient(targetHeight)
              \/ ~ chmB!CanAdvance /\ UNCHANGED storeChainB
           /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
     \/ LET msg == Head(outBufChainB)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
-                           THEN msg.connProof.height
+                           THEN msg.proofHeight
                            ELSE storeChainB.latestHeight
        IN /\ Relay(outBufChainB, inBufChainA)
+             (* TODO: remove following line to fix the deadlock. *)
+\*          /\ chmA!UpdateClient(storeChainB.latestHeight)
           /\ \/ chmA!CanAdvance /\ chmA!UpdateClient(targetHeight)
              \/ ~ chmA!CanAdvance /\ UNCHANGED storeChainA
           /\ UNCHANGED<<storeChainB, outBufChainA, inBufChainB>>
@@ -292,11 +302,11 @@ ICS3ReachTermination ==
     /\ UNCHANGED allVars
 
 
-
 ICS3NonTermination ==
     /\ \/ (~ chmA!CanAdvance /\ storeChainA.connection.state # "OPEN")
        \/ (~ chmB!CanAdvance /\ storeChainB.connection.state # "OPEN")
     /\ UNCHANGED allVars
+
 
 (******************************************************************************
 
@@ -309,9 +319,9 @@ ICS3NonTermination ==
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
     /\ \E clientA \in InitClients({ x.clientID : x \in ChainAConnectionEnds }) :
-            chmA!Init("chainA", clientA, NullConnection)
+            chmA!Init("chainA", clientA)
     /\ \E clientB \in InitClients({ x.clientID : x \in ChainBConnectionEnds }) :
-            chmB!Init("chainB", clientB, NullConnection)
+            chmB!Init("chainB", clientB)
     /\ InitEnv
 
 
@@ -367,12 +377,12 @@ MessageLivenessPre ==
     1. eventually, the environment stops being malicious, and
     
     2, 3. both chains can advance with at least 4 more steps (4 is the minimum
-    number of steps that are necessary for the chains to reach OPEN)
-    
-    4.
+    number of steps that are necessary for the chains to reach OPEN).
 *)
 Termination ==
     []((/\ <> ~ maliciousEnv
+     (* TODO: add activeEnv mechanism, to disable GoodNextEnv sub-action. *)
+\*        /\ <> ~ activeEnv 
         /\ storeChainA.latestHeight < MaxHeight - 4
         /\ storeChainB.latestHeight < MaxHeight - 4
         /\ MessageLivenessPre)
@@ -395,8 +405,9 @@ ConsistencyProperty ==
 Consistency ==
     [] ConsistencyProperty
 
+
 =============================================================================
 \* Modification History
-\* Last modified Wed May 20 10:20:16 CEST 2020 by adi
+\* Last modified Wed May 20 16:45:24 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
