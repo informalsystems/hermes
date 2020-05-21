@@ -1,0 +1,480 @@
+@!@!@STARTMSG 2262:0 @!@!@
+TLC2 Version 2.15 of Day Month 20?? (rev: eb3ff99)
+@!@!@ENDMSG 2262 @!@!@
+@!@!@STARTMSG 2187:0 @!@!@
+Running breadth-first search Model-Checking with fp 17 and seed -8638731545884049323 with 3 workers on 4 cores with 1943MB heap and 4368MB offheap memory [pid: 26881] (Mac OS X 10.15.4 x86_64, AdoptOpenJDK 14.0.1 x86_64, OffHeapDiskFPSet, DiskStateQueue).
+@!@!@ENDMSG 2187 @!@!@
+@!@!@STARTMSG 2220:0 @!@!@
+Starting SANY...
+@!@!@ENDMSG 2220 @!@!@
+Parsing file /Users/adi/Kraftwerk/Specs/tla-playground/CHModular/CHModular.toolbox/Model_1/MC.tla
+Parsing file /Users/adi/Kraftwerk/Specs/tla-playground/CHModular/CHModular.toolbox/Model_1/Environment.tla
+Parsing file /Applications/TLA+ Toolbox.app/Contents/Eclipse/plugins/org.lamport.tlatools_1.0.0.202004251858/tla2sany/StandardModules/TLC.tla
+Parsing file /Applications/TLA+ Toolbox.app/Contents/Eclipse/plugins/org.lamport.tlatools_1.0.0.202004251858/tla2sany/StandardModules/Naturals.tla
+Parsing file /Applications/TLA+ Toolbox.app/Contents/Eclipse/plugins/org.lamport.tlatools_1.0.0.202004251858/tla2sany/StandardModules/FiniteSets.tla
+Parsing file /Applications/TLA+ Toolbox.app/Contents/Eclipse/plugins/org.lamport.tlatools_1.0.0.202004251858/tla2sany/StandardModules/Sequences.tla
+Parsing file /Users/adi/Kraftwerk/Specs/tla-playground/CHModular/CHModular.toolbox/Model_1/ICS3Types.tla
+Parsing file /Users/adi/Kraftwerk/Specs/tla-playground/CHModular/CHModular.toolbox/Model_1/ConnectionHandshakeModule.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module ICS3Types
+Semantic processing of module ConnectionHandshakeModule
+Semantic processing of module Environment
+Semantic processing of module TLC
+Semantic processing of module MC
+@!@!@STARTMSG 2219:0 @!@!@
+SANY finished.
+@!@!@ENDMSG 2219 @!@!@
+@!@!@STARTMSG 2185:0 @!@!@
+Starting... (2020-05-21 08:55:24)
+@!@!@ENDMSG 2185 @!@!@
+@!@!@STARTMSG 2212:0 @!@!@
+Implied-temporal checking--satisfiability problem has 1 branches.
+@!@!@ENDMSG 2212 @!@!@
+@!@!@STARTMSG 2189:0 @!@!@
+Computing initial states...
+@!@!@ENDMSG 2189 @!@!@
+@!@!@STARTMSG 2269:0 @!@!@
+Computed 2 initial states...
+@!@!@ENDMSG 2269 @!@!@
+@!@!@STARTMSG 2190:0 @!@!@
+Finished computing initial states: 3 distinct states generated at 2020-05-21 08:55:26.
+@!@!@ENDMSG 2190 @!@!@
+@!@!@STARTMSG 2114:1 @!@!@
+Deadlock reached.
+@!@!@ENDMSG 2114 @!@!@
+@!@!@STARTMSG 2121:1 @!@!@
+The behavior up to this point is:
+@!@!@ENDMSG 2121 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+1: <Initial predicate>
+/\ storeChainA = [ latestHeight |-> 1,
+  connection |->
+      [ state |-> "UNINIT",
+        parameters |->
+            [ localEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ],
+              remoteEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ storeChainB = [ latestHeight |-> 1,
+  connection |->
+      [ state |-> "UNINIT",
+        parameters |->
+            [ localEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ],
+              remoteEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = <<>>
+/\ inBufChainA = << [ type |-> "ICS3MsgInit",
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+           remoteEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"] ] ] >>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+2: <Next line 285, col 8 to line 285, col 62 of module Environment>
+/\ storeChainA = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ storeChainB = [ latestHeight |-> 1,
+  connection |->
+      [ state |-> "UNINIT",
+        parameters |->
+            [ localEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ],
+              remoteEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ outBufChainA = << [ type |-> "ICS3MsgTry",
+     proofHeight |-> 1,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+           remoteEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "INIT",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ] ] ] ],
+     clientProof |-> [latestHeight |-> 1, consensusHeights |-> {1}] ] >>
+/\ outBufChainB = <<>>
+/\ inBufChainA = <<>>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+3: <NextEnv line 230, col 8 to line 231, col 27 of module Environment>
+/\ storeChainA = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ storeChainB = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "UNINIT",
+        parameters |->
+            [ localEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ],
+              remoteEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = << [ type |-> "ICS3MsgTry",
+     proofHeight |-> 1,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+           remoteEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "INIT",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ] ] ] ],
+     clientProof |-> [latestHeight |-> 1, consensusHeights |-> {1}] ] >>
+/\ outBufChainB = <<>>
+/\ inBufChainA = <<>>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = TRUE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+4: <RelayNextEnv line 195, col 11 to line 202, col 73 of module Environment>
+/\ storeChainA = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ storeChainB = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "UNINIT",
+        parameters |->
+            [ localEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ],
+              remoteEnd |->
+                  [ connectionID |-> "NULLConnectionID",
+                    clientID |-> "NULLClientID" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = <<>>
+/\ inBufChainA = <<>>
+/\ inBufChainB = << [ type |-> "ICS3MsgTry",
+     proofHeight |-> 1,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+           remoteEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "INIT",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ] ] ] ],
+     clientProof |-> [latestHeight |-> 1, consensusHeights |-> {1}] ] >>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+5: <Next line 286, col 8 to line 286, col 62 of module Environment>
+/\ storeChainA = [ latestHeight |-> 2,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 1,
+        consensusHeights |-> {1} ] ]
+/\ storeChainB = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "TRYOPEN",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+              remoteEnd |->
+                  [ connectionID |-> "connAtoB",
+                    clientID |-> "clientOnAToB" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = << [ type |-> "ICS3MsgAck",
+     proofHeight |-> 2,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+           remoteEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "TRYOPEN",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ] ] ] ],
+     clientProof |-> [latestHeight |-> 2, consensusHeights |-> {1, 2}] ] >>
+/\ inBufChainA = <<>>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+6: <NextEnv line 230, col 8 to line 231, col 27 of module Environment>
+/\ storeChainA = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 3,
+        consensusHeights |-> {1, 3} ] ]
+/\ storeChainB = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "TRYOPEN",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+              remoteEnd |->
+                  [ connectionID |-> "connAtoB",
+                    clientID |-> "clientOnAToB" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = << [ type |-> "ICS3MsgAck",
+     proofHeight |-> 2,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+           remoteEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "TRYOPEN",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ] ] ] ],
+     clientProof |-> [latestHeight |-> 2, consensusHeights |-> {1, 2}] ] >>
+/\ inBufChainA = <<>>
+/\ inBufChainB = <<>>
+/\ relayToA = TRUE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+7: <RelayNextEnv line 207, col 11 to line 214, col 73 of module Environment>
+/\ storeChainA = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 3,
+        consensusHeights |-> {1, 3} ] ]
+/\ storeChainB = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "TRYOPEN",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+              remoteEnd |->
+                  [ connectionID |-> "connAtoB",
+                    clientID |-> "clientOnAToB" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = <<>>
+/\ inBufChainA = << [ type |-> "ICS3MsgAck",
+     proofHeight |-> 2,
+     parameters |->
+         [ localEnd |->
+               [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+           remoteEnd |->
+               [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"] ],
+     connProof |->
+         [ connection |->
+               [ state |-> "TRYOPEN",
+                 parameters |->
+                     [ localEnd |->
+                           [ connectionID |-> "connBtoA",
+                             clientID |-> "clientOnBToA" ],
+                       remoteEnd |->
+                           [ connectionID |-> "connAtoB",
+                             clientID |-> "clientOnAToB" ] ] ] ],
+     clientProof |-> [latestHeight |-> 2, consensusHeights |-> {1, 2}] ] >>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2217:4 @!@!@
+8: <Next line 285, col 8 to line 285, col 62 of module Environment>
+/\ storeChainA = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "INIT",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connAtoB", clientID |-> "clientOnAToB"],
+              remoteEnd |->
+                  [ connectionID |-> "connBtoA",
+                    clientID |-> "clientOnBToA" ] ] ],
+  chainID |-> "chainA",
+  client |->
+      [ clientID |-> "clientOnAToB",
+        latestHeight |-> 3,
+        consensusHeights |-> {1, 3} ] ]
+/\ storeChainB = [ latestHeight |-> 3,
+  connection |->
+      [ state |-> "TRYOPEN",
+        parameters |->
+            [ localEnd |->
+                  [connectionID |-> "connBtoA", clientID |-> "clientOnBToA"],
+              remoteEnd |->
+                  [ connectionID |-> "connAtoB",
+                    clientID |-> "clientOnAToB" ] ] ],
+  chainID |-> "chainB",
+  client |->
+      [ clientID |-> "clientOnBToA",
+        latestHeight |-> 2,
+        consensusHeights |-> {1, 2} ] ]
+/\ outBufChainA = <<>>
+/\ outBufChainB = <<>>
+/\ inBufChainA = <<>>
+/\ inBufChainB = <<>>
+/\ relayToA = FALSE
+/\ relayToB = FALSE
+
+@!@!@ENDMSG 2217 @!@!@
+@!@!@STARTMSG 2200:0 @!@!@
+Progress(9) at 2020-05-21 08:55:27: 212 states generated (3,160 s/min), 169 distinct states found (2,519 ds/min), 57 states left on queue.
+@!@!@ENDMSG 2200 @!@!@
+@!@!@STARTMSG 2199:0 @!@!@
+212 states generated, 169 distinct states found, 57 states left on queue.
+@!@!@ENDMSG 2199 @!@!@
+@!@!@STARTMSG 2194:0 @!@!@
+The depth of the complete state graph search is 9.
+@!@!@ENDMSG 2194 @!@!@
+@!@!@STARTMSG 2268:0 @!@!@
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 3 and the 95th percentile is 2).
+@!@!@ENDMSG 2268 @!@!@
+@!@!@STARTMSG 2186:0 @!@!@
+Finished in 4033ms at (2020-05-21 08:55:27)
+@!@!@ENDMSG 2186 @!@!@
