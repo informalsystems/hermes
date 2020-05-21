@@ -164,17 +164,17 @@ RelayMessage(from, to) ==
 
     This action may change (non-deterministically) either of the store of chain A
     or B by advancing the height or updating the client on that chain.
-  
+
  *)
-DefaultNextEnv ==
-    \/ /\ chmA!CanAdvance
-       /\ \/ chmA!AdvanceChainHeight
-          \/ chmA!UpdateClient(storeChainB.latestHeight)
-       /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-    \/ /\ chmB!CanAdvance
-       /\ \/ chmB!AdvanceChainHeight
-          \/ chmB!UpdateClient(storeChainA.latestHeight)
-       /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+\*DefaultNextEnv ==
+\*    \/ /\ chmA!CanAdvance
+\*       /\ \/ chmA!AdvanceChainHeight
+\*          \/ chmA!UpdateClient(storeChainB.latestHeight)
+\*       /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+\*    \/ /\ chmB!CanAdvance
+\*       /\ \/ chmB!AdvanceChainHeight
+\*          \/ chmB!UpdateClient(storeChainA.latestHeight)
+\*       /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
 
 (* Relaying action for the environment.
@@ -191,9 +191,12 @@ RelayNextEnv ==
                            ELSE storeChainA.latestHeight
        IN /\ RelayMessage(outBufChainA, inBufChainB)
             (* TODO: remove following line to fix the deadlock. *)
-\*          /\ chmB!UpdateClient(storeChainA.latestHeight)
-          /\ \/ chmB!CanAdvance /\ chmB!UpdateClient(targetHeight)
-             \/ ~ chmB!CanAdvance /\ UNCHANGED storeChainB
+          /\ chmB!UpdateClient(storeChainA.latestHeight)
+          /\ \/ chmB!CanAdvance /\ chmB!CanUpdateClient(targetHeight)
+                                /\ chmB!UpdateClient(targetHeight)
+             \/ (~ chmB!CanAdvance \/ ~ chmB!CanUpdateClient(targetHeight)) 
+\*          /\ \/ chmB!CanAdvance /\ chmB!UpdateClient(targetHeight)
+\*             \/ ~ chmB!CanAdvance /\ UNCHANGED storeChainB
           /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
     \/ LET msg == Head(outBufChainB)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
@@ -201,9 +204,10 @@ RelayNextEnv ==
                            ELSE storeChainB.latestHeight
        IN /\ RelayMessage(outBufChainB, inBufChainA)
              (* TODO: remove following line to fix the deadlock. *)
-\*          /\ chmA!UpdateClient(storeChainB.latestHeight)
-          /\ \/ chmA!CanAdvance /\ chmA!UpdateClient(targetHeight)
-             \/ ~ chmA!CanAdvance /\ UNCHANGED storeChainA
+          /\ chmA!UpdateClient(storeChainB.latestHeight)
+          /\ \/ chmA!CanAdvance /\ chmA!CanUpdateClient(targetHeight)
+                                /\ chmA!UpdateClient(targetHeight)
+             \/ (~ chmA!CanAdvance \/ ~ chmA!CanUpdateClient(targetHeight))
           /\ UNCHANGED<<storeChainB, outBufChainA, inBufChainB>>
 
 
@@ -218,7 +222,7 @@ RelayNextEnv ==
 
  *)
 NextEnv ==
-    \/ DefaultNextEnv
+\*    \/ DefaultNextEnv
     \/ RelayNextEnv
 
 
@@ -324,6 +328,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 20 19:42:17 CEST 2020 by adi
+\* Last modified Thu May 21 08:03:07 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
