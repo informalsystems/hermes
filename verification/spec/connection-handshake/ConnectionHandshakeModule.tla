@@ -315,22 +315,20 @@ CanAdvance ==
     store.latestHeight < MaxChainHeight
 
 
-(* Action for updating the local client on this chain with a height.
-    
-    The environment triggers this as part of the GoodNextEnv action.
+(* Action for updating the local client on this chain with a new height.
+
     This primes the store; leaves the chain buffers unchanged.
     This will also advance the chain height.
  *)
-UpdateClient(height) ==
-    \/ /\ height \notin store.client.consensusHeights
-       (* Warning: following line should provoke a deadlock in ICS3 protocol. *)
-       /\ height >= store.client.latestHeight
-       /\ store' = [store EXCEPT !.latestHeight = @ + 1,
-                                 !.client.consensusHeights = @ \cup {height},
-                                 !.client.latestHeight = MAX(height, store.client.latestHeight)]
-    \/ /\ height \in store.client.consensusHeights
-       /\ UNCHANGED store
+UpdateClient(height) == 
+    /\ store' = [store EXCEPT !.latestHeight = @ + 1,
+                              !.client.consensusHeights = @ \cup {height},
+                              !.client.latestHeight = MAX(height, store.client.latestHeight)]
 
+CanUpdateClient(height) ==
+    /\ CanAdvance
+    /\ height \notin store.client.consensusHeights
+    
 
 (* Generic action for handling any type of inbound message.
 
@@ -378,6 +376,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 20 16:27:30 CEST 2020 by adi
+\* Last modified Thu May 21 09:22:33 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 

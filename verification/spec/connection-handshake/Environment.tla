@@ -37,7 +37,6 @@ VARIABLES
     storeChainA,    \* The local store of chain A.
     storeChainB     \* The local store of chain B.
 
-
 (************* ChainAConnectionEnds & ChainBConnectionEnds *****************
 
     The set of records that each chain can use as a valid local connection
@@ -166,16 +165,15 @@ RelayMessage(from, to) ==
     or B by advancing the height or updating the client on that chain.
 
  *)
-\*DefaultNextEnv ==
-\*    \/ /\ chmA!CanAdvance
-\*       /\ \/ chmA!AdvanceChainHeight
-\*          \/ chmA!UpdateClient(storeChainB.latestHeight)
-\*       /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-\*    \/ /\ chmB!CanAdvance
-\*       /\ \/ chmB!AdvanceChainHeight
-\*          \/ chmB!UpdateClient(storeChainA.latestHeight)
-\*       /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-
+DefaultNextEnv ==
+    \/ /\ chmA!CanAdvance
+       /\ \/ chmA!AdvanceChainHeight
+          \/ chmA!UpdateClient(storeChainB.latestHeight)
+       /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+    \/ /\ chmB!CanAdvance
+       /\ \/ chmB!AdvanceChainHeight
+          \/ chmB!UpdateClient(storeChainA.latestHeight)
+       /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
 (* Relaying action for the environment.
 
@@ -190,24 +188,20 @@ RelayNextEnv ==
                            THEN msg.proofHeight
                            ELSE storeChainA.latestHeight
        IN /\ RelayMessage(outBufChainA, inBufChainB)
-            (* TODO: remove following line to fix the deadlock. *)
-          /\ chmB!UpdateClient(storeChainA.latestHeight)
-          /\ \/ chmB!CanAdvance /\ chmB!CanUpdateClient(targetHeight)
-                                /\ chmB!UpdateClient(targetHeight)
-             \/ (~ chmB!CanAdvance \/ ~ chmB!CanUpdateClient(targetHeight)) 
-\*          /\ \/ chmB!CanAdvance /\ chmB!UpdateClient(targetHeight)
-\*             \/ ~ chmB!CanAdvance /\ UNCHANGED storeChainB
+          /\ \/ chmB!CanUpdateClient(targetHeight) 
+                    /\ chmB!UpdateClient(targetHeight)
+             \/ ~ chmB!CanUpdateClient(targetHeight)
+                    /\ UNCHANGED storeChainB
           /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
     \/ LET msg == Head(outBufChainB)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
                            THEN msg.proofHeight
                            ELSE storeChainB.latestHeight
        IN /\ RelayMessage(outBufChainB, inBufChainA)
-             (* TODO: remove following line to fix the deadlock. *)
-          /\ chmA!UpdateClient(storeChainB.latestHeight)
-          /\ \/ chmA!CanAdvance /\ chmA!CanUpdateClient(targetHeight)
-                                /\ chmA!UpdateClient(targetHeight)
-             \/ (~ chmA!CanAdvance \/ ~ chmA!CanUpdateClient(targetHeight))
+          /\ \/ chmA!CanUpdateClient(targetHeight)
+                    /\ chmA!UpdateClient(targetHeight)
+             \/ ~ chmA!CanUpdateClient(targetHeight)
+                    /\ UNCHANGED storeChainA
           /\ UNCHANGED<<storeChainB, outBufChainA, inBufChainB>>
 
 
@@ -215,14 +209,15 @@ RelayNextEnv ==
 
     There are two possible actions that the environment may perform:
 
-    1. A default step: the environment advances or updates the client on
-    one of the two chains.
+    1. An update client step: the environment updates the client on
+    one of the two chains, if that chain is expecting to receive a message
+    (i.e., if there is a message in the ougoing buffer of the other chain).
 
-    2. The environment performs a relaying step.
+    2. Otherwise, the environment performs a relaying step.
 
  *)
 NextEnv ==
-\*    \/ DefaultNextEnv
+    \/ DefaultNextEnv
     \/ RelayNextEnv
 
 
@@ -275,7 +270,7 @@ Next ==
     \/ ICS3ReachedOpenConnection
     \/ ICS3ImpossibleToAdvance
     \/ NextEnv
-    \/ chmA!Next /\ UNCHANGED chainBVars 
+    \/ chmA!Next /\ UNCHANGED chainBVars
     \/ chmB!Next /\ UNCHANGED chainAVars
 
 
@@ -306,8 +301,8 @@ TypeInvariant ==
 Termination ==
     []((/\ storeChainA.latestHeight < MaxHeight - 4
         /\ storeChainB.latestHeight < MaxHeight - 4)
-        => <> (/\ storeChainA.connection.state = "OPEN"
-               /\ storeChainB.connection.state = "OPEN"))
+        => <> [](/\ storeChainA.connection.state = "OPEN"
+                 /\ storeChainB.connection.state = "OPEN"))
 
 
 (* Safety property.
@@ -328,6 +323,6 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 21 08:03:07 CEST 2020 by adi
+\* Last modified Thu May 21 09:19:12 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
