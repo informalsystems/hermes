@@ -5,7 +5,7 @@
     This module is part of the TLA+ specification for the IBC Connection
     Handshake protocol (identifier 'ICS3'). This is a high-level spec of ICS3.
     
-    This module captures the operators and actions outside of the CH protocol
+    This module captures the operators and actions outside of the ICS3 protocol
     itself (i.e., the environment).
     Among others, the environment does the following:
     - creates two instances of ConnectionHandshakeModule,

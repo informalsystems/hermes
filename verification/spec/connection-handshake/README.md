@@ -1,7 +1,7 @@
-# IBC Connection Handshake (CH) TLA+ spec
+# IBC Connection Handshake (ICS3) TLA+ spec
 
 
-This is a high-level TLA+ spec for the IBC Connection Handshake (CH) protocol.
+This is a high-level TLA+ spec for the IBC Connection Handshake (ICS3) protocol.
 The spec has three modules: 
 
   - `Environment.tla` (main model lives here)
