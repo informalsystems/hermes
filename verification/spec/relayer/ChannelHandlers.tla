@@ -44,9 +44,9 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
                             /\ dgr.type = "ChanOpenInit"
                             /\ dgr.channelID = GetChannelID(chainID)} IN
     
-    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT"
     \* if there are valid "ChanOpenInit" datagrams and the connection is not "UNINIT", 
     \* create a new channel end and update the chain
+    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT"
     THEN LET chanOpenInitDgr == CHOOSE dgr \in chanOpenInitDgrs : TRUE IN
          LET chanOpenInitChannelEnd == [
              state |-> "INIT",
@@ -74,9 +74,9 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
                             /\ dgr.channelID = GetChannelID(chainID)
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
-    IF chanOpenTryDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
     \* if there are valid "ChanOpenTry" datagrams and the connection is "OPEN", 
-    \* update the channel end 
+    \* update the channel end
+    IF chanOpenTryDgrs /= {} /\ chain.connectionEnd.state = "OPEN" 
     THEN LET chanOpenTryDgr == CHOOSE dgr \in chanOpenTryDgrs : TRUE IN
          LET chanOpenTryChannelEnd == [
              state |-> "TRYOPEN",
@@ -111,12 +111,12 @@ HandleChanOpenAck(chainID, chain, datagrams) ==
                             /\ dgr.channelID = GetChannelID(chainID)
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
+    \* if there are valid "ChanOpenAck" datagrams, update the channel end
     IF chanOpenAckDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
-    \* if there are valid "ChanOpenAck" datagrams, update the channel end 
-    THEN IF \/ chain.connectionEnd.channelEnd.state = "INIT"
+    THEN \* if the channel end on the chain is in "INIT" or it is in "TRYOPEN",   
+         \* update the channel end   
+         IF \/ chain.connectionEnd.channelEnd.state = "INIT"
             \/ chain.connectionEnd.channelEnd.state = "TRYOPEN"
-         \* if the channel end on the chain is in "INIT" or it is in "TRYOPEN",   
-         \* update the channel end       
          THEN LET chanOpenAckDgr == CHOOSE dgr \in chanOpenAckDgrs : TRUE IN
               LET chanOpenAckChannelEnd == [
                   chain.connectionEnd.channelEnd EXCEPT !.state = "OPEN",
@@ -144,10 +144,10 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
                                 /\ dgr.channelID = GetChannelID(chainID)
                                 /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
+    \* if there are valid "ChanOpenConfirm" datagrams, update the channel end
     IF chanOpenConfirmDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
-    \* if there are valid "ChanOpenConfirm" datagrams, update the channel end 
-    THEN IF chain.connectionEnd.channelEnd.state = "TRYOPEN"
-         \* if the channel end on the chain is in "TRYOPEN", update the channel end       
+    THEN \* if the channel end on the chain is in "TRYOPEN", update the channel end 
+         IF chain.connectionEnd.channelEnd.state = "TRYOPEN"
          THEN LET chanOpenConfirmDgr == CHOOSE dgr \in chanOpenConfirmDgrs : TRUE IN
               LET chanOpenConfirmChannelEnd == [
                   chain.connectionEnd.channelEnd EXCEPT !.state = "OPEN",
@@ -165,8 +165,8 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
          ELSE chain
     \* otherwise, do not update the chain     
     ELSE chain 
- 
+    
 =============================================================================
 \* Modification History
-\* Last modified Thu May 14 16:29:29 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:19:49 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

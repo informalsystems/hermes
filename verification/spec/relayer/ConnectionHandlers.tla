@@ -43,9 +43,8 @@ HandleConnOpenInit(chainID, chain, datagrams) ==
                             /\ dgr.type = "ConnOpenInit"
                             /\ dgr.connectionID = GetConnectionID(chainID)} IN
     
-    IF connOpenInitDgrs /= {} 
     \* if there are valid "ConnOpenInit" datagrams, create a new connection end and update the chain
-    \* TODO: check here if connection is already in INIT?
+    IF connOpenInitDgrs /= {} /\ chain.connectionEnd.state = "UNINIT"
     THEN LET connOpenInitDgr == CHOOSE dgr \in connOpenInitDgrs : TRUE IN
          LET connOpenInitConnectionEnd == [
              state |-> "INIT",
@@ -72,7 +71,6 @@ HandleConnOpenTry(chainID, chain, datagrams) ==
                             /\ dgr.desiredConnectionID = GetConnectionID(chainID)
                             /\ dgr.consensusHeight <= chain.height
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
-                            \* TODO: check dgr.proofHeight \in chain.counterpartyClientHeight
     
     IF connOpenTryDgrs /= {}
     \* if there are valid "ConnOpenTry" datagrams, update the connection end 
@@ -137,7 +135,6 @@ HandleConnOpenAck(chainID, chain, datagrams) ==
     \* otherwise, do not update the chain     
     ELSE chain
 
-
 \* Handle "ConnOpenConfirm" datagrams
 HandleConnOpenConfirm(chainID, chain, datagrams) ==
     \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
@@ -167,5 +164,5 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 14 16:29:33 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:20:00 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska

@@ -10,9 +10,10 @@
 EXTENDS Naturals, FiniteSets, ClientHandlers, ConnectionHandlers, ChannelHandlers
 
 VARIABLES chains, \* a function that assigns a chain record to each chainID  
-          pendingDatagrams \* a function that assigns a set of pending datagrams to each chainID 
+          incomingDatagrams \* a function that assigns a set of incoming datagrams 
+                            \* incoming from the relayer to each chainID 
           
-vars == <<chains, pendingDatagrams>>
+vars == <<chains, incomingDatagrams>>
 
 ChainIDs == {"chainA", "chainB"}
 
@@ -263,15 +264,15 @@ AdvanceChain(chainID) ==
     /\ chains' = [chains EXCEPT 
                     ![chainID].height = chains[chainID].height + 1                                            
                  ]
-    /\ UNCHANGED pendingDatagrams
+    /\ UNCHANGED incomingDatagrams
 
 \* Receive the datagrams and update the chain state        
 ReceiveDatagrams(chainID) ==
-    /\ pendingDatagrams[chainID] /= {} 
+    /\ incomingDatagrams[chainID] /= {} 
     /\ chains' = [chains EXCEPT 
-                    ![chainID] = UpdateChain(chainID, pendingDatagrams[chainID])
+                    ![chainID] = UpdateChain(chainID, incomingDatagrams[chainID])
                  ]
-    /\ pendingDatagrams' = [pendingDatagrams EXCEPT
+    /\ incomingDatagrams' = [incomingDatagrams EXCEPT
                                 ![chainID] = {}
                            ]
 
@@ -316,7 +317,7 @@ InitChain ==
 \*        - pendingDatagrams for each chain is empty
 Init ==    
     /\ chains = [chainID \in ChainIDs |-> InitChain]
-    /\ pendingDatagrams = [chainID \in ChainIDs |-> {}]
+    /\ incomingDatagrams = [chainID \in ChainIDs |-> {}]
 
 \* Next state action
 \*    One of the chains either
@@ -340,9 +341,9 @@ Fairness ==
 \* Type invariant           
 TypeOK ==    
     /\ chains \in [ChainIDs -> Chains]
-    /\ pendingDatagrams \in [ChainIDs -> SUBSET Datagrams]     
+    /\ incomingDatagrams \in [ChainIDs -> SUBSET Datagrams]     
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 15 15:07:29 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:09:26 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 13 19:48:22 CET 2020 by ilinastoilkovska

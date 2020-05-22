@@ -10,18 +10,19 @@ EXTENDS Naturals, FiniteSets
 CONSTANTS MaxHeight \* maximal height of all the chains in the system 
 
 VARIABLES chains, \* a function that assigns a chain record to each chainID 
-          pendingDatagrams, \* a function that assigns a set of pending datagrams to each chainID 
+          outgoingDatagrams, \* a function that assigns a set of pending datagrams 
+                             \* outgoing from the relayer to each chainID 
           relayerChainHeights, \* a function that assigns a height to each chainID         
           turn  
           
-vars == <<chains, pendingDatagrams, relayerChainHeights, turn>>
-specVars == <<chains, pendingDatagrams, relayerChainHeights>>             
+vars == <<chains, outgoingDatagrams, relayerChainHeights, turn>>
+specVars == <<chains, outgoingDatagrams, relayerChainHeights>>             
 envVars == <<chains>>           
 
 \* Instance of the module Environment, which encodes the chain logic    
 Env == INSTANCE Environment 
        WITH chains <- chains, 
-            pendingDatagrams <- pendingDatagrams,
+            incomingDatagrams <- outgoingDatagrams,
             MaxHeight <- MaxHeight
                               
 ChainIDs == Env!ChainIDs
@@ -270,22 +271,21 @@ UpdateRelayerClients(chainID) ==
         /\ relayerChainHeights' = [relayerChainHeights EXCEPT 
                                         ![chainID] = GetLatestHeight(chainID)
                                    ]
-        /\ UNCHANGED <<chains, pendingDatagrams>>  
+        /\ UNCHANGED <<chains, outgoingDatagrams>>  
 
 \* for two chains, srcChainID and dstChainID, where srcChainID /= dstChainID, 
 \* create the pending datagrams and update the corresponding sets of pending datagrams
 Relay(srcChainID, dstChainID) ==
-    
-            /\ srcChainID /= dstChainID
-            /\ LET datagramsAndRelayerUpdate == PendingDatagrams(srcChainID, dstChainID) IN
-                  /\ pendingDatagrams' = 
-                        [pendingDatagrams EXCEPT 
-                            ![dstChainID] = pendingDatagrams[dstChainID] 
-                                            \union 
-                                            datagramsAndRelayerUpdate.datagrams
-                        ]
-                  /\ relayerChainHeights' = datagramsAndRelayerUpdate.relayerUpdate       
-                  /\ UNCHANGED chains
+    LET datagramsAndRelayerUpdate == PendingDatagrams(srcChainID, dstChainID) IN
+    /\ srcChainID /= dstChainID
+    /\ outgoingDatagrams' = 
+            [outgoingDatagrams EXCEPT 
+                ![dstChainID] = outgoingDatagrams[dstChainID] 
+                                \union 
+                                datagramsAndRelayerUpdate.datagrams
+            ]
+    /\ relayerChainHeights' = datagramsAndRelayerUpdate.relayerUpdate       
+    /\ UNCHANGED chains
 
 (***************************************************************************
  Component actions
@@ -348,16 +348,16 @@ Spec == Init /\ [][Next]_vars /\ Fairness
  Helper operators used in properties
  ***************************************************************************)
 \* returns true if there is a "CreateClient" datagram
-\* in pending datagrams of chainID 
+\* in outgoing datagrams for chainID 
 IsCreateClientInPendingDatagrams(chainID, clID, h) == 
     [type |-> "CreateClient", clientID |-> clID, height |-> h] 
-        \in pendingDatagrams[chainID]
+        \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ClientUpdate" datagram
-\* in pending datagrams of chainID           
+\* in outgoing datagrams for chainID           
 IsClientUpdateInPendingDatagrams(chainID, clID, h) ==
     [type |-> "ClientUpdate", clientID |-> clID, height |-> h] 
-        \in pendingDatagrams[chainID]
+        \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ConnOpenInit" datagram  
 \* for the connection between srcChainID and dstChainID
@@ -371,10 +371,10 @@ ConnOpenInitGenerated(srcChainID, dstChainID) ==
         connectionID |-> srcConnectionID, 
         clientID |-> srcClientID,
         counterpartyConnectionID |-> dstConnectionID,
-        counterpartyClientID |-> dstClientID] \in pendingDatagrams[srcChainID]
+        counterpartyClientID |-> dstClientID] \in outgoingDatagrams[srcChainID]
 
 \* returns true if there is a "ConnOpenInit" datagram 
-\* in pending datagrams of chainID                
+\* in outgoing datagrams for chainID                
 IsConnOpenInitInPendingDatagrams(
     chainID, clientID, counterpartyClientID,
     connectionID, counterpartyConnectionID
@@ -384,10 +384,10 @@ IsConnOpenInitInPendingDatagrams(
      connectionID |-> connectionID, 
      clientID |-> clientID,
      counterpartyConnectionID |-> counterpartyConnectionID,
-     counterpartyClientID |-> counterpartyClientID] \in pendingDatagrams[chainID]
+     counterpartyClientID |-> counterpartyClientID] \in outgoingDatagrams[chainID]
     
 \* returns true if there is a "ConnOpenTry" datagram 
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsConnOpenTryInPendingDatagrams(
     chainID, clientID, counterpartyClientID,
     connectionID, counterpartyConnectionID
@@ -400,60 +400,56 @@ IsConnOpenTryInPendingDatagrams(
      counterpartyConnectionID |-> counterpartyConnectionID,
      counterpartyClientID |-> counterpartyClientID,
      proofHeight |-> pHeight,
-     consensusHeight |-> cHeight] \in pendingDatagrams[chainID]
+     consensusHeight |-> cHeight] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ConnOpenAck" datagram
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsConnOpenAckInPendingDatagrams(chainID, connectionID) ==
     \E pHeight \in Heights : \E cHeight \in Heights :
     [type |-> "ConnOpenAck", 
      connectionID |-> connectionID, 
      proofHeight |-> pHeight,
-     consensusHeight |-> cHeight] \in pendingDatagrams[chainID]
+     consensusHeight |-> cHeight] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ConnOpenConfirm" datagram 
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsConnOpenConfirmInPendingDatagrams(chainID, connectionID) ==
     \E pHeight \in Heights : 
     [type |-> "ConnOpenConfirm", 
      connectionID |-> connectionID, 
-     proofHeight |-> pHeight] \in pendingDatagrams[chainID]
-
-\*\* returns true if there is a "ConnOpenInit" datagram  
-\*\* for the channel between srcChainID and dstChainID
-\*ChanOpenInitGenerated(srcChainID, GetCounterpartyChainID(chainID)) ==
+     proofHeight |-> pHeight] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ChanOpenInit" datagram  
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsChanOpenInitInPendingDatagrams(chainID, channelID, counterpartyChannelID) ==
     [type |-> "ChanOpenInit", 
      channelID |-> channelID, 
-     counterpartyChannelID |-> counterpartyChannelID] \in pendingDatagrams[chainID]
+     counterpartyChannelID |-> counterpartyChannelID] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ChanOpenTry" datagram 
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsChanOpenTryInPendingDatagrams(chainID, channelID, counterpartyChannelID) ==
     \E pHeight \in Heights :
     [type |-> "ChanOpenTry", 
      channelID |-> channelID, 
      counterpartyChannelID |-> counterpartyChannelID,
-     proofHeight |-> pHeight] \in pendingDatagrams[chainID]
+     proofHeight |-> pHeight] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ChanOpenAck" datagram
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsChanOpenAckInPendingDatagrams(chainID, channelID) ==
     \E pHeight \in Heights :
     [type |-> "ChanOpenAck", 
      channelID |-> channelID, 
-     proofHeight |-> pHeight] \in pendingDatagrams[chainID]
+     proofHeight |-> pHeight] \in outgoingDatagrams[chainID]
 
 \* returns true if there is a "ChanOpenConfirm" datagram 
-\* in pending datagrams of chainID
+\* in outgoing datagrams for chainID
 IsChanOpenConfirmInPendingDatagrams(chainID, channelID) ==
     \E pHeight \in Heights : 
     [type |-> "ChanOpenConfirm", 
      channelID |-> channelID, 
-     proofHeight |-> pHeight] \in pendingDatagrams[chainID]     
+     proofHeight |-> pHeight] \in outgoingDatagrams[chainID]     
 
 (***************************************************************************
  Invariants
@@ -741,8 +737,8 @@ Prop ==
     /\ ChanOpenInitIsGenerated
     /\ ChannelOpened
     /\ HeightsDontDecrease 
-    
+
 =============================================================================
 \* Modification History
-\* Last modified Mon May 18 19:24:50 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:20:08 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
