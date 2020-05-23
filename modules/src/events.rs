@@ -186,17 +186,20 @@ macro_rules! make_event {
             pub data: std::collections::HashMap<String, Vec<String>>,
         }
         impl TryFrom<&Event> for $a {
-            type Error = &'static str;
+            type Error = Box<dyn Error>;
             fn try_from(event: &Event) -> Result<Self, Self::Error> {
                 match event {
-                    Event::JsonRPCTransctionResult { ref data } => Ok($a {
+                    Event::JsonRPCTransactionResult { 0: ref data } => Ok($a {
                         data: data.extract_events($b)?.clone(),
                     }),
                     Event::GenericJSONEvent { .. } => {
-                        Err("Expected JSON representing a $a, got wrong type")?
+                        Err("Expected JSON representing a $a, got wrong Generic Json Event")?
+                    },
+                    Event::JsonRPCBlockResult { .. } => {
+                        Err("Expected JSON representing a $a, got wrong Block Result")?
                     }
 
-                    Event::GenericStringEvent { .. } => Err("Generic event is not of $a"),
+                    Event::GenericStringEvent { .. } => Err("Generic event is not of $a".into()),
                 }
             }
         }

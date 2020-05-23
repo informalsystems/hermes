@@ -4,6 +4,7 @@ use crate::make_event;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::rpc::event_listener::Event;
+use std::error::Error;
 
 make_event!(Timeout, "timeout");
 make_event!(Packet, "transfer");

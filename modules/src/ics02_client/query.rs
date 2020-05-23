@@ -89,7 +89,7 @@ where
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
         match (response.value, &response.proof) {
-            (Some(value), _) => {
+            (value, _) => {
                 let client_state = amino_unmarshal_binary_length_prefixed(&value)?;
 
                 Ok(ClientFullStateResponse::new(
@@ -99,7 +99,6 @@ where
                     response.height.into(),
                 ))
             }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
         }
     }
 }
@@ -193,7 +192,7 @@ where
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
         match (response.value, &response.proof) {
-            (Some(value), _) => {
+            (value, _) => {
                 let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
 
                 Ok(ConsensusStateResponse::new(
@@ -203,7 +202,6 @@ where
                     response.height.into(),
                 ))
             }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
         }
     }
 }

@@ -24,7 +24,7 @@ mod ibc_events {
     // #[ignore]
     async fn test_create_client_event() {
         let mut client = create_event_listener().await;
-        let _ = client.subscribe("tm.event='Tx'").await.unwrap();
+        let _ = client.subscribe(tendermint::rpc::event_listener::EventSubscription::TransactionSubscription).await.unwrap();
 
         let mut x: i32 = 0;
         loop {
