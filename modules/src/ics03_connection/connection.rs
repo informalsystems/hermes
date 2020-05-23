@@ -10,16 +10,16 @@ pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
     counterparty: Counterparty,
-    version: String,
+    versions: Vec<String>,
 }
 
 impl ConnectionEnd {
-    pub fn new(client_id: ClientId, counterparty: Counterparty, version: String) -> Self {
+    pub fn new(client_id: ClientId, counterparty: Counterparty, versions: Vec<String>) -> Self {
         ConnectionEnd {
             state: State::Uninitialized,
             client_id,
             counterparty,
-            version,
+            versions,
         }
     }
 }
@@ -39,15 +39,23 @@ impl ConnectionI for ConnectionEnd {
         Box::new(self.counterparty.clone())
     }
 
-    fn version(&self) -> String {
-        self.version.parse().unwrap()
+    fn versions(&self) -> Vec<String> {
+        self.versions.clone()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        if self.version().trim().to_string() == String::from("") {
+        if self.versions.len() == 0 {
             return Err(error::Kind::InvalidVersion
-                .context("empty version string")
+                .context("missing connection versions")
                 .into());
+        }
+
+        for v in self.versions().iter() {
+            if v.trim().to_string() == String::from("") {
+                return Err(error::Kind::InvalidVersion
+                    .context("empty version string")
+                    .into());
+            }
         }
         self.counterparty().validate_basic()
     }

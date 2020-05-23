@@ -9,7 +9,7 @@ pub trait ConnectionI {
     fn state(&self) -> State;
     fn client_id(&self) -> String;
     fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = super::error::Error>>;
-    fn version(&self) -> String;
+    fn versions(&self) -> Vec<String>;
     fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 }
 
