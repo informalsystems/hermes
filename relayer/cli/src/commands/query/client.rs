@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 use relayer::query::client::{query_client_consensus_state, query_client_full_state};
 
-use relayer_modules::ics24_host::client::ClientId;
+use relayer_modules::ics24_host::identifier::ClientId;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;

@@ -7,7 +7,7 @@ use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 
 use crate::error;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::ClientId;
 use crate::path::{ClientStatePath, ConsensusStatePath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;

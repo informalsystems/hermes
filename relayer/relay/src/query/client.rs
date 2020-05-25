@@ -1,4 +1,4 @@
-use relayer_modules::ics24_host::client::ClientId;
+use relayer_modules::ics24_host::identifier::ClientId;
 use relayer_modules::Height;
 
 use super::ibc_query;

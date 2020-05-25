@@ -1,7 +1,7 @@
 use super::client_type::ClientType;
 
 use crate::ics23_commitment::CommitmentRoot;
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
 pub trait ConsensusState {
