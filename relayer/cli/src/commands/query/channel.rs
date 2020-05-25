@@ -44,7 +44,7 @@ impl QueryChannelEndsCmd {
     ) -> Result<(ChainConfig, QueryChannelOptions), String> {
         let chain_id = self
             .chain_id
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
             .iter()
