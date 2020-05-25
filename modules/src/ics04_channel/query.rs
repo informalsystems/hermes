@@ -79,20 +79,13 @@ impl ChannelResponse {
 
 impl IbcResponse<QueryChannel> for ChannelResponse {
     fn from_abci_response(query: QueryChannel, response: AbciQuery) -> Result<Self, error::Error> {
-        match (response.value, &response.proof) {
-            (Some(value), _) => {
-                let channel = amino_unmarshal_binary_length_prefixed(&value)?;
-
-                Ok(ChannelResponse::new(
-                    query.port_id,
-                    query.channel_id,
-                    channel,
-                    response.proof,
-                    response.height.into(),
-                ))
-            }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
-        }
+        Ok(ChannelResponse::new(
+            query.port_id,
+            query.channel_id,
+            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            response.proof,
+            response.height.into(),
+        ))
     }
 }
 

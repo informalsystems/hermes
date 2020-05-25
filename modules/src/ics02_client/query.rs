@@ -88,19 +88,12 @@ where
         query: QueryClientFullState<CLS>,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        match (response.value, &response.proof) {
-            (Some(value), _) => {
-                let client_state = amino_unmarshal_binary_length_prefixed(&value)?;
-
-                Ok(ClientFullStateResponse::new(
-                    query.client_id,
-                    client_state,
-                    response.proof,
-                    response.height.into(),
-                ))
-            }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
-        }
+        Ok(ClientFullStateResponse::new(
+            query.client_id,
+            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            response.proof,
+            response.height.into(),
+        ))
     }
 }
 
@@ -192,18 +185,11 @@ where
         query: QueryClientConsensusState<CS>,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        match (response.value, &response.proof) {
-            (Some(value), _) => {
-                let consensus_state = amino_unmarshal_binary_length_prefixed(&value)?;
-
-                Ok(ConsensusStateResponse::new(
-                    query.client_id,
-                    consensus_state,
-                    response.proof,
-                    response.height.into(),
-                ))
-            }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
-        }
+        Ok(ConsensusStateResponse::new(
+            query.client_id,
+            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            response.proof,
+            response.height.into(),
+        ))
     }
 }
