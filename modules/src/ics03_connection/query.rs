@@ -79,7 +79,7 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let connection = amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?;
+        let connection = amino_unmarshal_binary_length_prefixed(&response.value)?;
 
         Ok(ConnectionResponse::new(
             query.connection_id,
