@@ -72,7 +72,7 @@ impl Counterparty {
     pub fn new(
         client_id: String,
         connection_id: String,
-        prefix: CommitmentPrefix
+        prefix: CommitmentPrefix,
     ) -> Result<Self, error::Error> {
         Ok(Self {
             client_id: client_id

@@ -111,6 +111,5 @@ impl IdentifiedConnectionEnd {
 }
 
 fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
-
     todo!()
 }

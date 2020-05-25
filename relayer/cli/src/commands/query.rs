@@ -46,4 +46,3 @@ pub enum QueryConnectionCmds {
     #[options(help = "query connection end")]
     End(connection::QueryConnectionEndCmd),
 }
-

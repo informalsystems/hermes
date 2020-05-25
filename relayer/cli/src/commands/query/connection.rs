@@ -98,9 +98,7 @@ fn validate_common_options(
             let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
 
             match chain_config {
-                Some(chain_config) => {
-                    Ok((chain_config.clone(), connection_id.parse().unwrap()))
-                }
+                Some(chain_config) => Ok((chain_config.clone(), connection_id.parse().unwrap())),
                 None => Err(format!("cannot find chain {} in config", chain_id)),
             }
         }

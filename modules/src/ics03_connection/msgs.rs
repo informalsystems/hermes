@@ -1,12 +1,12 @@
-use crate::ics04_channel::msgs::Msg as Msg;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics03_connection::connection::Counterparty;
-use tendermint::account::Id as AccountId;
-use serde_derive::{Deserialize, Serialize};
-use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics03_connection::error::Kind;
-use crate::ics24_host::validate::{validate_client_identifier, validate_connection_identifier};
 use crate::ics03_connection::exported::CounterpartyI;
+use crate::ics04_channel::msgs::Msg;
+use crate::ics23_commitment::CommitmentPrefix;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::validate::{validate_client_identifier, validate_connection_identifier};
+use serde_derive::{Deserialize, Serialize};
+use tendermint::account::Id as AccountId;
 
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 
@@ -38,7 +38,8 @@ impl MsgConnectionOpenInit {
                 counterparty_client_id,
                 counterparty_connection_id,
                 counterparty_commitment_prefix,
-            ).map_err(|e| Kind::IdentifierError.context(e))?,
+            )
+            .map_err(|e| Kind::IdentifierError.context(e))?,
             signer,
         })
     }
@@ -56,12 +57,12 @@ impl Msg for MsgConnectionOpenInit {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-
         validate_connection_identifier(self.connection_id.as_str())
             .map_err(|e| Kind::IdentifierError.context(e))?;
         validate_client_identifier(self.client_id.as_str())
             .map_err(|e| Kind::IdentifierError.context(e))?;
-        self.counterparty.validate_basic()
+        self.counterparty
+            .validate_basic()
             .map_err(|e| Kind::IdentifierError.context(e))?;
         //todo: validate signer!
         Ok(())
@@ -78,9 +79,9 @@ impl Msg for MsgConnectionOpenInit {
 
 #[cfg(test)]
 mod tests {
+    use crate::ics23_commitment::CommitmentPrefix;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
-    use crate::ics23_commitment::CommitmentPrefix;
 
     #[test]
     fn parse_connection_open_init_msg() {
@@ -102,7 +103,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix{},
+            counterparty_commitment_prefix: CommitmentPrefix {},
         };
 
         struct Test {
@@ -142,8 +143,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
