@@ -79,19 +79,14 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        match (response.value, &response.proof) {
-            (Some(value), _) => {
-                let connection = amino_unmarshal_binary_length_prefixed(&value)?;
+        let connection = amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?;
 
-                Ok(ConnectionResponse::new(
-                    query.connection_id,
-                    connection,
-                    response.proof,
-                    response.height.into(),
-                ))
-            }
-            (None, _) => Err(error::Kind::Rpc.context("Bad response").into()),
-        }
+        Ok(ConnectionResponse::new(
+            query.connection_id,
+            connection,
+            response.proof,
+            response.height.into(),
+        ))
     }
 }
 

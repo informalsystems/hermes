@@ -123,7 +123,7 @@ mod tests {
     use relayer::config::parse;
 
     #[test]
-    fn parse_query_ends_parameters() {
+    fn parse_channel_query_ends_parameters() {
         let default_params = QueryChannelEndsCmd {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
             port_id: Some("transfer".to_string().parse().unwrap()),

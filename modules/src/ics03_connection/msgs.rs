@@ -73,7 +73,7 @@ impl Msg for MsgConnectionOpenInit {
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer.clone()]
+        vec![self.signer]
     }
 }
 

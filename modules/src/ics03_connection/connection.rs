@@ -44,14 +44,14 @@ impl ConnectionI for ConnectionEnd {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        if self.versions.len() == 0 {
+        if self.versions.is_empty() {
             return Err(error::Kind::InvalidVersion
                 .context("missing connection versions")
                 .into());
         }
 
         for v in self.versions().iter() {
-            if v.trim().to_string() == String::from("") {
+            if v.trim().is_empty() {
                 return Err(error::Kind::InvalidVersion
                     .context("empty version string")
                     .into());

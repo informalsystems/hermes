@@ -82,7 +82,7 @@ impl IbcResponse<QueryChannel> for ChannelResponse {
         Ok(ChannelResponse::new(
             query.port_id,
             query.channel_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?,
             response.proof,
             response.height.into(),
         ))

@@ -6,10 +6,11 @@ use relayer::query::connection::query_connection;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
 use tendermint::chain::Id as ChainId;
 
-#[derive(Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
@@ -36,10 +37,24 @@ impl QueryConnectionEndCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryConnectionOptions), String> {
-        let (chain_config, connection_id) =
-            validate_common_options(&self.chain_id, &self.connection_id, config)?;
+        let chain_id = self
+            .chain_id
+            .ok_or_else(|| "missing chain identifier".to_string())?;
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == chain_id)
+            .ok_or_else(|| "missing chain configuration".to_string())?;
+
+        let connection_id = self
+            .connection_id
+            .as_ref()
+            .ok_or_else(|| "missing connection identifier".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
+
         let opts = QueryConnectionOptions {
-            connection_id: connection_id.parse().unwrap(),
+            connection_id,
             height: match self.height {
                 Some(h) => h,
                 None => 0 as u64,
@@ -88,22 +103,102 @@ impl Runnable for QueryConnectionEndCmd {
     }
 }
 
-fn validate_common_options(
-    chain_id: &Option<ChainId>,
-    connection_id: &Option<String>,
-    config: &Config,
-) -> Result<(ChainConfig, String), String> {
-    match (&chain_id, &connection_id) {
-        (Some(chain_id), Some(connection_id)) => {
-            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+#[cfg(test)]
+mod tests {
+    use crate::commands::query::connection::QueryConnectionEndCmd;
+    use relayer::config::parse;
 
-            match chain_config {
-                Some(chain_config) => Ok((chain_config.clone(), connection_id.parse().unwrap())),
-                None => Err(format!("cannot find chain {} in config", chain_id)),
-            }
+    #[test]
+    fn parse_connection_query_end_parameters() {
+        let default_params = QueryConnectionEndCmd {
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
+            height: None,
+            proof: None,
+        };
+
+        struct Test {
+            name: String,
+            params: QueryConnectionEndCmd,
+            want_pass: bool,
         }
 
-        (None, _) => Err("missing chain identifier".to_string()),
-        (_, None) => Err("missing connection identifier".to_string()),
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryConnectionEndCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryConnectionEndCmd {
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No connection id specified".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, non-alpha".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("conn01".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, name too short".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("connshort".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
     }
 }

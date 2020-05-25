@@ -90,7 +90,7 @@ where
     ) -> Result<Self, error::Error> {
         Ok(ClientFullStateResponse::new(
             query.client_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?,
             response.proof,
             response.height.into(),
         ))
@@ -187,7 +187,7 @@ where
     ) -> Result<Self, error::Error> {
         Ok(ConsensusStateResponse::new(
             query.client_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
+            amino_unmarshal_binary_length_prefixed(&response.value.unwrap())?,
             response.proof,
             response.height.into(),
         ))
