@@ -197,7 +197,7 @@ mod tests {
                 Ok(_res) => {
                     assert!(
                         test.want_pass,
-                        "MsgConnOpenInit::new should have failed for test {}, \nmsg {:?}",
+                        "MsgChanOpenInit::new should have failed for test {}, \nmsg {:?}",
                         test.name,
                         test.params.clone()
                     );
@@ -205,7 +205,7 @@ mod tests {
                 Err(err) => {
                     assert!(
                         !test.want_pass,
-                        "MsgConnOpenInit::new failed for test {}, \nmsg {:?} with err {:?}",
+                        "MsgChanOpenInit::new failed for test {}, \nmsg {:?} with err {:?}",
                         test.name,
                         test.params.clone(),
                         err
