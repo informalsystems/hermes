@@ -191,12 +191,12 @@ fn validate_common_options(
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id.ok_or_else(|| "missing chain configuration".to_string())?;
+    let chain_id = chain_id.ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .chains
         .iter()
         .find(|c| c.id == chain_id)
-        .ok_or_else(|| "missing chain configuration".to_string())?;
+        .ok_or_else(|| "missing chain in configuration".to_string())?;
     let client_id = client_id
         .as_ref()
         .ok_or_else(|| "missing client identifier".to_string())?
