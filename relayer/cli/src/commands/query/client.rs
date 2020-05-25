@@ -11,7 +11,7 @@ use relayer::chain::tendermint::TendermintChain;
 use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
-#[derive(Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
@@ -91,7 +91,7 @@ impl Runnable for QueryClientStateCmd {
     }
 }
 
-#[derive(Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
@@ -197,6 +197,7 @@ fn validate_common_options(
         .iter()
         .find(|c| c.id == chain_id)
         .ok_or_else(|| "missing chain in configuration".to_string())?;
+
     let client_id = client_id
         .as_ref()
         .ok_or_else(|| "missing client identifier".to_string())?
@@ -204,4 +205,96 @@ fn validate_common_options(
         .map_err(|err: ValidationError| err.to_string())?;
 
     Ok((chain_config.clone(), client_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::query::client::QueryClientStateCmd;
+    use relayer::config::parse;
+
+    #[test]
+    fn parse_query_state_parameters() {
+        let default_params = QueryClientStateCmd {
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            client_id: Some("ibconeclient".to_string().parse().unwrap()),
+            height: None,
+            proof: None,
+        };
+
+        struct Test {
+            name: String,
+            params: QueryClientStateCmd,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryClientStateCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryClientStateCmd {
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No client id specified".to_string(),
+                params: QueryClientStateCmd {
+                    client_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad client id, non-alpha".to_string(),
+                params: QueryClientStateCmd {
+                    client_id: Some("p34".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
+    }
 }

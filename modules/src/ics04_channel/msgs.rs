@@ -146,7 +146,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too short".to_string(),
                 params: OpenInitParams {
-                    channel_id: "connone".to_string(),
+                    channel_id: "chshort".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
