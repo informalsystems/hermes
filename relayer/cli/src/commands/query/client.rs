@@ -8,9 +8,10 @@ use relayer_modules::ics24_host::identifier::ClientId;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
-#[derive(Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
@@ -39,8 +40,9 @@ impl QueryClientStateCmd {
     ) -> Result<(ChainConfig, QueryClientStateOptions), String> {
         let (chain_config, client_id) =
             validate_common_options(&self.chain_id, &self.client_id, config)?;
+
         let opts = QueryClientStateOptions {
-            client_id: client_id.parse().unwrap(),
+            client_id,
             height: match self.height {
                 Some(h) => h,
                 None => 0 as u64,
@@ -89,7 +91,7 @@ impl Runnable for QueryClientStateCmd {
     }
 }
 
-#[derive(Command, Debug, Options)]
+#[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
@@ -126,7 +128,7 @@ impl QueryClientConsensusCmd {
         match self.consensus_height {
             Some(consensus_height) => {
                 let opts = QueryClientConsensusOptions {
-                    client_id: client_id.parse().unwrap(),
+                    client_id,
                     consensus_height,
                     height: match self.height {
                         Some(h) => h,
@@ -188,28 +190,111 @@ fn validate_common_options(
     chain_id: &Option<ChainId>,
     client_id: &Option<String>,
     config: &Config,
-) -> Result<(ChainConfig, String), String> {
-    match (&chain_id, &client_id) {
-        (Some(chain_id), Some(client_id)) => {
-            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+) -> Result<(ChainConfig, ClientId), String> {
+    let chain_id = chain_id.ok_or_else(|| "missing chain parameter".to_string())?;
+    let chain_config = config
+        .chains
+        .iter()
+        .find(|c| c.id == chain_id)
+        .ok_or_else(|| "missing chain in configuration".to_string())?;
 
-            match chain_config {
-                Some(chain_config) => {
-                    // check that the client_id is specified in one of the chain configurations
-                    match config
-                        .chains
-                        .iter()
-                        .find(|c| c.client_ids.contains(client_id))
-                    {
-                        Some(_) => Ok((chain_config.clone(), client_id.parse().unwrap())),
-                        None => Err(format!("cannot find client {} in config", client_id)),
-                    }
-                }
-                None => Err(format!("cannot find chain {} in config", chain_id)),
-            }
+    let client_id = client_id
+        .as_ref()
+        .ok_or_else(|| "missing client identifier".to_string())?
+        .parse()
+        .map_err(|err: ValidationError| err.to_string())?;
+
+    Ok((chain_config.clone(), client_id))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::commands::query::client::QueryClientStateCmd;
+    use relayer::config::parse;
+
+    #[test]
+    fn parse_query_state_parameters() {
+        let default_params = QueryClientStateCmd {
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            client_id: Some("ibconeclient".to_string().parse().unwrap()),
+            height: None,
+            proof: None,
+        };
+
+        struct Test {
+            name: String,
+            params: QueryClientStateCmd,
+            want_pass: bool,
         }
 
-        (None, _) => Err("missing chain identifier".to_string()),
-        (_, None) => Err("missing client identifier".to_string()),
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryClientStateCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryClientStateCmd {
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No client id specified".to_string(),
+                params: QueryClientStateCmd {
+                    client_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad client id, non-alpha".to_string(),
+                params: QueryClientStateCmd {
+                    client_id: Some("p34".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
     }
 }
