@@ -8,6 +8,7 @@ use relayer_modules::ics24_host::identifier::ClientId;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Command, Debug, Options)]
@@ -39,8 +40,9 @@ impl QueryClientStateCmd {
     ) -> Result<(ChainConfig, QueryClientStateOptions), String> {
         let (chain_config, client_id) =
             validate_common_options(&self.chain_id, &self.client_id, config)?;
+
         let opts = QueryClientStateOptions {
-            client_id: client_id.parse().unwrap(),
+            client_id,
             height: match self.height {
                 Some(h) => h,
                 None => 0 as u64,
@@ -126,7 +128,7 @@ impl QueryClientConsensusCmd {
         match self.consensus_height {
             Some(consensus_height) => {
                 let opts = QueryClientConsensusOptions {
-                    client_id: client_id.parse().unwrap(),
+                    client_id,
                     consensus_height,
                     height: match self.height {
                         Some(h) => h,
@@ -188,28 +190,18 @@ fn validate_common_options(
     chain_id: &Option<ChainId>,
     client_id: &Option<String>,
     config: &Config,
-) -> Result<(ChainConfig, String), String> {
-    match (&chain_id, &client_id) {
-        (Some(chain_id), Some(client_id)) => {
-            let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
+) -> Result<(ChainConfig, ClientId), String> {
+    let chain_id = chain_id.ok_or_else(|| "missing chain configuration".to_string())?;
+    let chain_config = config
+        .chains
+        .iter()
+        .find(|c| c.id == chain_id)
+        .ok_or_else(|| "missing chain configuration".to_string())?;
+    let client_id = client_id
+        .as_ref()
+        .ok_or_else(|| "missing client identifier".to_string())?
+        .parse()
+        .map_err(|err: ValidationError| err.to_string())?;
 
-            match chain_config {
-                Some(chain_config) => {
-                    // check that the client_id is specified in one of the chain configurations
-                    match config
-                        .chains
-                        .iter()
-                        .find(|c| c.client_ids.contains(client_id))
-                    {
-                        Some(_) => Ok((chain_config.clone(), client_id.parse().unwrap())),
-                        None => Err(format!("cannot find client {} in config", client_id)),
-                    }
-                }
-                None => Err(format!("cannot find chain {} in config", chain_id)),
-            }
-        }
-
-        (None, _) => Err("missing chain identifier".to_string()),
-        (_, None) => Err("missing client identifier".to_string()),
-    }
+    Ok((chain_config.clone(), client_id))
 }

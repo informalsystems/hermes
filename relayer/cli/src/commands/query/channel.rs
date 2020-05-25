@@ -8,6 +8,7 @@ use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Command, Debug, Options)]
@@ -41,32 +42,42 @@ impl QueryChannelEndsCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryChannelOptions), String> {
-        match (&self.chain_id, &self.port_id, &self.channel_id) {
-            (Some(chain_id), Some(port_id), Some(channel_id)) => {
-                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
-                match chain_config {
-                    Some(chain_config) => {
-                        let opts = QueryChannelOptions {
-                            port_id: port_id.parse().unwrap(),
-                            channel_id: channel_id.parse().unwrap(),
-                            height: match self.height {
-                                Some(h) => h,
-                                None => 0 as u64,
-                            },
-                            proof: match self.proof {
-                                Some(proof) => proof,
-                                None => true,
-                            },
-                        };
-                        Ok((chain_config.clone(), opts))
-                    }
-                    _ => Err(format!("cannot find chain {} in config", chain_id)),
-                }
-            }
-            (None, _, _) => Err("missing chain identifier".to_string()),
-            (_, None, _) => Err("missing port identifier".to_string()),
-            (_, _, None) => Err("missing channel identifier".to_string()),
-        }
+        let chain_id = self
+            .chain_id
+            .ok_or_else(|| "missing chain configuration".to_string())?;
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == chain_id)
+            .ok_or_else(|| "missing chain configuration".to_string())?;
+
+        let port_id = self
+            .port_id
+            .as_ref()
+            .ok_or_else(|| "missing port identifier".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
+
+        let channel_id = self
+            .channel_id
+            .as_ref()
+            .ok_or_else(|| "missing channel identifier".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
+
+        let opts = QueryChannelOptions {
+            port_id,
+            channel_id,
+            height: match self.height {
+                Some(h) => h,
+                None => 0 as u64,
+            },
+            proof: match self.proof {
+                Some(proof) => proof,
+                None => true,
+            },
+        };
+        Ok((chain_config.clone(), opts))
     }
 }
 
