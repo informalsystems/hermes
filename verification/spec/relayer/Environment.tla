@@ -267,7 +267,7 @@ AdvanceChain(chainID) ==
     /\ UNCHANGED incomingDatagrams
 
 \* Receive the datagrams and update the chain state        
-ReceiveDatagrams(chainID) ==
+ReceiveIncomingDatagrams(chainID) ==
     /\ incomingDatagrams[chainID] /= {} 
     /\ chains' = [chains EXCEPT 
                     ![chainID] = UpdateChain(chainID, incomingDatagrams[chainID])
@@ -324,16 +324,17 @@ Init ==
 \*        - advances its height
 \*        - receives datagrams and updates its state
 Next == 
-    \E chainID \in ChainIDs :
+   \E chainID \in ChainIDs :
         \/ AdvanceChain(chainID)
-        \/ ReceiveDatagrams(chainID)
+        \/ ReceiveIncomingDatagrams(chainID)
         \/ UNCHANGED vars
+   
 
 \* Fairness constraints 
 Fairness ==
     \* ensure all chains take steps
     /\ \A chainID \in ChainIDs : WF_vars(AdvanceChain(chainID))
-    /\ \A chainID \in ChainIDs : WF_vars(ReceiveDatagrams(chainID))
+    /\ \A chainID \in ChainIDs : WF_vars(ReceiveIncomingDatagrams(chainID))
  
 (***************************************************************************
  Invariants
@@ -345,5 +346,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 22 17:09:26 CEST 2020 by ilinastoilkovska
+\* Last modified Tue May 26 12:38:40 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 13 19:48:22 CET 2020 by ilinastoilkovska
