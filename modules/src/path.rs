@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 mod cosmos;
@@ -40,7 +40,13 @@ pub trait Path: Sized {
 }
 
 pub struct ConnectionPath {
-    pub connection_id: String,
+    pub connection_id: ConnectionId,
+}
+
+impl ConnectionPath {
+    pub fn new(connection_id: ConnectionId) -> Self {
+        Self { connection_id }
+    }
 }
 
 impl Path for ConnectionPath {

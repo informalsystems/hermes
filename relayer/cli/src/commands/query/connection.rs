@@ -2,25 +2,21 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::channel::query_channel;
-
-use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
+use relayer::query::connection::query_connection;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use relayer_modules::ics24_host::error::ValidationError;
+use relayer_modules::ics24_host::identifier::ConnectionId;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct QueryChannelEndCmd {
+pub struct QueryConnectionEndCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the port to query")]
-    port_id: Option<String>,
-
-    #[options(free, help = "identifier of the channel to query")]
-    channel_id: Option<String>,
+    #[options(free, help = "identifier of the connection to query")]
+    connection_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
@@ -30,18 +26,17 @@ pub struct QueryChannelEndCmd {
 }
 
 #[derive(Debug)]
-struct QueryChannelOptions {
-    port_id: PortId,
-    channel_id: ChannelId,
+struct QueryConnectionOptions {
+    connection_id: ConnectionId,
     height: u64,
     proof: bool,
 }
 
-impl QueryChannelEndCmd {
+impl QueryConnectionEndCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<(ChainConfig, QueryChannelOptions), String> {
+    ) -> Result<(ChainConfig, QueryConnectionOptions), String> {
         let chain_id = self
             .chain_id
             .ok_or_else(|| "missing chain identifier".to_string())?;
@@ -51,23 +46,15 @@ impl QueryChannelEndCmd {
             .find(|c| c.id == chain_id)
             .ok_or_else(|| "missing chain configuration".to_string())?;
 
-        let port_id = self
-            .port_id
+        let connection_id = self
+            .connection_id
             .as_ref()
-            .ok_or_else(|| "missing port identifier".to_string())?
+            .ok_or_else(|| "missing connection identifier".to_string())?
             .parse()
             .map_err(|err: ValidationError| err.to_string())?;
 
-        let channel_id = self
-            .channel_id
-            .as_ref()
-            .ok_or_else(|| "missing channel identifier".to_string())?
-            .parse()
-            .map_err(|err: ValidationError| err.to_string())?;
-
-        let opts = QueryChannelOptions {
-            port_id,
-            channel_id,
+        let opts = QueryConnectionOptions {
+            connection_id,
             height: match self.height {
                 Some(h) => h,
                 None => 0 as u64,
@@ -81,7 +68,7 @@ impl QueryChannelEndCmd {
     }
 }
 
-impl Runnable for QueryChannelEndCmd {
+impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -95,46 +82,44 @@ impl Runnable for QueryChannelEndCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer
+        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer -p false
+        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a channel using the go relayer.
+        // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query_channel(
+        let res = block_on(query_connection(
             &chain,
             opts.height,
-            opts.port_id.clone(),
-            opts.channel_id.clone(),
+            opts.connection_id.clone(),
             opts.proof,
         ));
         match res {
-            Ok(cs) => status_info!("channel query result: ", "{:?}", cs.channel),
-            Err(e) => status_info!("channel query error: ", "{:?}", e),
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs.connection),
+            Err(e) => status_info!("connection query error: ", "{:?}", e),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::channel::QueryChannelEndCmd;
+    use crate::commands::query::connection::QueryConnectionEndCmd;
     use relayer::config::parse;
 
     #[test]
-    fn parse_channel_query_end_parameters() {
-        let default_params = QueryChannelEndCmd {
+    fn parse_connection_query_end_parameters() {
+        let default_params = QueryConnectionEndCmd {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
-            port_id: Some("transfer".to_string().parse().unwrap()),
-            channel_id: Some("testchannel".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
             height: None,
             proof: None,
         };
 
         struct Test {
             name: String,
-            params: QueryChannelEndCmd,
+            params: QueryConnectionEndCmd,
             want_pass: bool,
         }
 
@@ -146,7 +131,7 @@ mod tests {
             },
             Test {
                 name: "No chain specified".to_string(),
-                params: QueryChannelEndCmd {
+                params: QueryConnectionEndCmd {
                     chain_id: None,
                     ..default_params.clone()
                 },
@@ -154,40 +139,32 @@ mod tests {
             },
             Test {
                 name: "Chain not configured".to_string(),
-                params: QueryChannelEndCmd {
+                params: QueryConnectionEndCmd {
                     chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "No port id specified".to_string(),
-                params: QueryChannelEndCmd {
-                    port_id: None,
+                name: "No connection id specified".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: None,
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad port, non-alpha".to_string(),
-                params: QueryChannelEndCmd {
-                    port_id: Some("p34".to_string()),
+                name: "Bad connection, non-alpha".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("conn01".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "No channel id specified".to_string(),
-                params: QueryChannelEndCmd {
-                    channel_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Bad channel, name too short".to_string(),
-                params: QueryChannelEndCmd {
-                    channel_id: Some("chshort".to_string()),
+                name: "Bad connection, name too short".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("connshort".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,
