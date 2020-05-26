@@ -728,17 +728,17 @@ HeightsDontDecrease ==
 \* Prop
 \* A conjunction of all properties                                                             
 Prop ==                           
-    /\ CreateClientIsGenerated 
-    /\ ClientCreated 
-    /\ ClientUpdateIsGenerated 
+\*    /\ CreateClientIsGenerated 
+\*    /\ ClientCreated 
+\*    /\ ClientUpdateIsGenerated 
     /\ ClientUpdated 
-    /\ ConnOpenInitIsGenerated
-    /\ ConnectionOpened 
-    /\ ChanOpenInitIsGenerated
-    /\ ChannelOpened
-    /\ HeightsDontDecrease 
+\*    /\ ConnOpenInitIsGenerated
+\*    /\ ConnectionOpened 
+\*    /\ ChanOpenInitIsGenerated
+\*    /\ ChannelOpened
+\*    /\ HeightsDontDecrease 
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 22 17:20:08 CEST 2020 by ilinastoilkovska
+\* Last modified Tue May 26 11:30:45 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

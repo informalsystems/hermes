@@ -72,11 +72,16 @@ HandleCreateClient(chainID, chain, datagrams) ==
    clientCreateChain
  
 \* Handle "ClientUpdate" datagrams
-HandleUpdateClient(chainID, chain, datagrams) ==      
+HandleUpdateClient(chainID, chain, datagrams) ==     
+    \* max client height of chain
+    LET maxClientHeight == IF chain.counterpartyClientHeights /= {}
+                           THEN Max(chain.counterpartyClientHeights)
+                           ELSE 0 IN 
     \* get "ClientUpdate" datagrams with valid clientID
     LET updateClientDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ClientUpdate"
-                            /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
+                            /\ dgr.clientID = GetCounterpartyClientID(chainID)
+                            /\ maxClientHeight < dgr.height} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
     LET updateClientHeights == {h \in Heights : \E dgr \in updateClientDgrs : dgr.height = h} IN    
 
@@ -102,5 +107,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri May 22 17:19:54 CEST 2020 by ilinastoilkovska
+\* Last modified Tue May 26 11:30:26 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska
