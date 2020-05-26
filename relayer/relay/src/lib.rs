@@ -1,6 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(
-    warnings,
+    // warnings,
     // missing_docs,
     trivial_casts,
     trivial_numeric_casts,
@@ -11,5 +11,10 @@
 
 //! IBC Relayer implementation
 
+pub mod chain;
+pub mod client;
 pub mod config;
 pub mod error;
+pub mod query;
+pub mod store;
+pub mod util;

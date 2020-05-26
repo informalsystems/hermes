@@ -1,7 +1,7 @@
 use super::client_type::ClientType;
 use super::header::Header;
 use super::state::ConsensusState;
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::ClientId;
 
 // FIXME: Remove Header associated type and use Box<dyn tendermint::lite::Header> instead of
 // Self::Header?

@@ -48,8 +48,32 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
 
 /// Default validator function for Client identifiers.
 ///
-/// A valid identifier must be between 10-20 characters and only contain lowercase
+/// A valid identifier must be between 9-20 characters and only contain lowercase
 /// alphabetic characters,
 pub fn validate_client_identifier(id: &str) -> Result<(), ValidationError> {
+    validate_identifier(id, 9, 20)
+}
+
+/// Default validator function for Connection identifiers.
+///
+/// A valid Identifier must be between 10-20 characters and only contain lowercase
+/// alphabetic characters,
+pub fn validate_connection_identifier(id: &str) -> Result<(), ValidationError> {
+    validate_identifier(id, 10, 20)
+}
+
+/// Default validator function for Port identifiers.
+///
+/// A valid Identifier must be between 2-20 characters and only contain lowercase
+/// alphabetic characters,
+pub fn validate_port_identifier(id: &str) -> Result<(), ValidationError> {
+    validate_identifier(id, 2, 20)
+}
+
+/// Default validator function for Channel identifiers.
+///
+/// A valid Identifier must be between 10-20 characters and only contain lowercase
+/// alphabetic characters,
+pub fn validate_channel_identifier(id: &str) -> Result<(), ValidationError> {
     validate_identifier(id, 10, 20)
 }

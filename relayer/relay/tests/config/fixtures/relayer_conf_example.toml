@@ -1,5 +1,3 @@
-# This is an IBC relayer sample configuration
-
 title = "IBC Relayer Config Example"
 
 [global]
@@ -11,6 +9,7 @@ strategy = "naive"
   rpc_addr = "localhost:26657"
   account_prefix = "cosmos"
   key_name = "testkey"
+  store_prefix = "ibc"
   client_ids = ["clA1", "clA2"]
   gas = 200000
   gas_adjustement = 1.3
@@ -18,10 +17,11 @@ strategy = "naive"
   trusting_period = "336h"
 
 [[chains]]
-  id = "chain-B"
+  id = "chain_B"
   rpc_addr = "localhost:26557"
   account_prefix = "cosmos"
   key_name = "testkey"
+  store_prefix = "ibc"
   client_ids = ["clB1"]
   gas = 200000
   gas_adjustement = 1.3
@@ -31,19 +31,25 @@ strategy = "naive"
 [[connections]]
 
 [connections.src]
-  client_id = "clA1"
-  connection_id = "conn1-idA-clA1"
+  client_id = "clB1"
+  connection_id = "connAtoB"
 
 [connections.dest]
-  client_id = "clB1"
-  connection_id = "conn1-idB-clB1"
+  client_id = "clA1"
+  connection_id = "connBtoA"
 
 [[connections.paths]]
-  src_port = "app1-port-A"
-  dest_port = "app1-port-B"
+  src_port = "portA1"
+  dest_port = "portB1"
   direction = "unidirectional"
+
 [[connections.paths]]
-  src_port = "app2-port-A"
-  dest_port = "app2-port-B"
+  src_port = "portA2"
+  dest_port = "portB2"
   direction = "bidirectional"
 
+[[connections.paths]]
+  src_port = "portA3"
+  dest_port = "portB3"
+  src_channel = "chan3onA"
+  dest_channel = "chan3onB"

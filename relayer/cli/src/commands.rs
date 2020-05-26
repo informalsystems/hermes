@@ -6,10 +6,15 @@
 //! application's configuration file.
 
 mod config;
+mod light;
+mod query;
 mod start;
+mod utils;
 mod version;
 
-use self::{config::ConfigCmd, start::StartCmd, version::VersionCmd};
+use self::{
+    config::ConfigCmd, light::LightCmd, query::QueryCmd, start::StartCmd, version::VersionCmd,
+};
 
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
@@ -36,6 +41,14 @@ pub enum CliCmd {
     /// The `version` subcommand
     #[options(help = "display version information")]
     Version(VersionCmd),
+
+    /// The `query` subcommand
+    #[options(help = "query state from chain")]
+    Query(QueryCmd),
+
+    /// The `light` subcommand
+    #[options(help = "basic functionality for managing the lite clients")]
+    Light(LightCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.
@@ -60,9 +73,6 @@ impl Configurable<Config> for CliCmd {
     /// This can be safely deleted if you don't want to override config
     /// settings from command-line options.
     fn process_config(&self, config: Config) -> Result<Config, FrameworkError> {
-        match self {
-            // CliCmd::Start(cmd) => cmd.override_config(config),
-            _ => Ok(config),
-        }
+        Ok(config)
     }
 }
