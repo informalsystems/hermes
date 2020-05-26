@@ -24,18 +24,20 @@ impl ConnectionEnd {
     }
 }
 
-impl ConnectionI for ConnectionEnd {
+impl Connection for ConnectionEnd {
     type ValidationError = error::Error;
 
-    fn state(&self) -> State {
-        self.state.clone()
+    fn state(&self) -> &State {
+        &self.state
     }
 
     fn client_id(&self) -> String {
-        String::from(self.client_id.as_str())
+        self.client_id.as_str().into()
     }
 
-    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = Self::ValidationError>> {
+    fn counterparty(
+        &self,
+    ) -> Box<dyn ConnectionCounterparty<ValidationError = Self::ValidationError>> {
         Box::new(self.counterparty.clone())
     }
 
@@ -86,19 +88,19 @@ impl Counterparty {
     }
 }
 
-impl CounterpartyI for Counterparty {
+impl ConnectionCounterparty for Counterparty {
     type ValidationError = error::Error;
 
     fn client_id(&self) -> String {
-        String::from(self.client_id.as_str())
+        self.client_id.as_str().into()
     }
 
     fn connection_id(&self) -> String {
-        String::from(self.connection_id.as_str())
+        self.connection_id.as_str().into()
     }
 
-    fn prefix(&self) -> CommitmentPrefix {
-        self.prefix.clone()
+    fn prefix(&self) -> &CommitmentPrefix {
+        &self.prefix
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {

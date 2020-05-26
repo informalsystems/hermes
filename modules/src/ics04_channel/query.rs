@@ -5,7 +5,7 @@ use tendermint::abci;
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 
 use crate::error;
-use crate::ics04_channel::channel::Channel;
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::path::{ChannelEndsPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
@@ -52,7 +52,7 @@ impl IbcQuery for QueryChannel {
 }
 
 pub struct ChannelResponse {
-    pub channel: Channel,
+    pub channel: ChannelEnd,
     pub proof: Option<CommitmentProof>,
     pub proof_path: CommitmentPath,
     pub proof_height: Height,
@@ -62,7 +62,7 @@ impl ChannelResponse {
     pub fn new(
         port_id: PortId,
         channel_id: ChannelId,
-        channel: Channel,
+        channel: ChannelEnd,
         abci_proof: Option<CommitmentProof>,
         proof_height: Height,
     ) -> Self {

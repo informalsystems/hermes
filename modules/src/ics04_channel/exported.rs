@@ -3,17 +3,17 @@ use crate::ics24_host::identifier::ConnectionId;
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 
-pub trait ChannelI {
+pub trait Channel {
     type ValidationError: std::error::Error;
-    fn state(&self) -> State;
-    fn ordering(&self) -> Order;
-    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = super::error::Error>>;
+    fn state(&self) -> &State;
+    fn ordering(&self) -> &Order;
+    fn counterparty(&self) -> Box<dyn ChannelCounterparty<ValidationError = super::error::Error>>;
     fn connection_hops(&self) -> Vec<ConnectionId>;
     fn version(&self) -> String;
     fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 }
 
-pub trait CounterpartyI {
+pub trait ChannelCounterparty {
     type ValidationError: std::error::Error;
     fn port_id(&self) -> String;
     fn channel_id(&self) -> String;

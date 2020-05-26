@@ -5,18 +5,18 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Channel {
+pub struct ChannelEnd {
     state: State,
     ordering: Order,
-    remote: Endpoint,
+    remote: Counterparty,
     connection_hops: Vec<ConnectionId>,
     version: String,
 }
 
-impl Channel {
+impl ChannelEnd {
     pub fn new(
         ordering: Order,
-        remote: Endpoint,
+        remote: Counterparty,
         connection_hops: Vec<ConnectionId>,
         version: String,
     ) -> Self {
@@ -30,18 +30,20 @@ impl Channel {
     }
 }
 
-impl ChannelI for Channel {
+impl Channel for ChannelEnd {
     type ValidationError = crate::ics04_channel::error::Error;
 
-    fn state(&self) -> State {
-        self.state.clone()
+    fn state(&self) -> &State {
+        &self.state
     }
 
-    fn ordering(&self) -> Order {
-        self.ordering.clone()
+    fn ordering(&self) -> &Order {
+        &self.ordering
     }
 
-    fn counterparty(&self) -> Box<dyn CounterpartyI<ValidationError = Self::ValidationError>> {
+    fn counterparty(
+        &self,
+    ) -> Box<dyn ChannelCounterparty<ValidationError = Self::ValidationError>> {
         Box::new(self.remote.clone())
     }
 
@@ -69,12 +71,12 @@ impl ChannelI for Channel {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Endpoint {
+pub struct Counterparty {
     port_id: PortId,
     channel_id: ChannelId,
 }
 
-impl Endpoint {
+impl Counterparty {
     pub fn new(
         port_id: String,
         channel_id: String,
@@ -90,15 +92,15 @@ impl Endpoint {
     }
 }
 
-impl CounterpartyI for Endpoint {
+impl ChannelCounterparty for Counterparty {
     type ValidationError = crate::ics04_channel::error::Error;
 
     fn port_id(&self) -> String {
-        String::from(self.port_id.as_str())
+        self.port_id.as_str().into()
     }
 
     fn channel_id(&self) -> String {
-        String::from(self.channel_id.as_str())
+        self.channel_id.as_str().into()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {

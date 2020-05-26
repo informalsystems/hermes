@@ -12,7 +12,7 @@ use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct QueryChannelEndsCmd {
+pub struct QueryChannelEndCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
@@ -37,7 +37,7 @@ struct QueryChannelOptions {
     proof: bool,
 }
 
-impl QueryChannelEndsCmd {
+impl QueryChannelEndCmd {
     fn validate_options(
         &self,
         config: &Config,
@@ -81,7 +81,7 @@ impl QueryChannelEndsCmd {
     }
 }
 
-impl Runnable for QueryChannelEndsCmd {
+impl Runnable for QueryChannelEndCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -95,10 +95,10 @@ impl Runnable for QueryChannelEndsCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel ends ibc0 transfer ibconexfer
+        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel ends ibc0 transfer ibconexfer -p false
+        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a channel using the go relayer.
@@ -119,12 +119,12 @@ impl Runnable for QueryChannelEndsCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::channel::QueryChannelEndsCmd;
+    use crate::commands::query::channel::QueryChannelEndCmd;
     use relayer::config::parse;
 
     #[test]
-    fn parse_channel_query_ends_parameters() {
-        let default_params = QueryChannelEndsCmd {
+    fn parse_channel_query_end_parameters() {
+        let default_params = QueryChannelEndCmd {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
             port_id: Some("transfer".to_string().parse().unwrap()),
             channel_id: Some("testchannel".to_string().parse().unwrap()),
@@ -134,7 +134,7 @@ mod tests {
 
         struct Test {
             name: String,
-            params: QueryChannelEndsCmd,
+            params: QueryChannelEndCmd,
             want_pass: bool,
         }
 
@@ -146,7 +146,7 @@ mod tests {
             },
             Test {
                 name: "No chain specified".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     chain_id: None,
                     ..default_params.clone()
                 },
@@ -154,7 +154,7 @@ mod tests {
             },
             Test {
                 name: "Chain not configured".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
@@ -162,7 +162,7 @@ mod tests {
             },
             Test {
                 name: "No port id specified".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     port_id: None,
                     ..default_params.clone()
                 },
@@ -170,7 +170,7 @@ mod tests {
             },
             Test {
                 name: "Bad port, non-alpha".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     port_id: Some("p34".to_string()),
                     ..default_params.clone()
                 },
@@ -178,7 +178,7 @@ mod tests {
             },
             Test {
                 name: "No channel id specified".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     channel_id: None,
                     ..default_params.clone()
                 },
@@ -186,7 +186,7 @@ mod tests {
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
-                params: QueryChannelEndsCmd {
+                params: QueryChannelEndCmd {
                     channel_id: Some("chshort".to_string()),
                     ..default_params.clone()
                 },

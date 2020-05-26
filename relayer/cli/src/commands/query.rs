@@ -12,13 +12,14 @@ pub enum QueryCmd {
     /// The `query client` subcommand
     #[options(help = "query client")]
     Client(QueryClientCmds),
-    /// The `query channel` subcommand
-    #[options(help = "query channel")]
-    Channel(QueryChannelCmds),
 
     /// The `query connection` subcommand
     #[options(help = "query connection")]
     Connection(QueryConnectionCmds),
+
+    /// The `query channel` subcommand
+    #[options(help = "query channel")]
+    Channel(QueryChannelCmds),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
@@ -34,15 +35,15 @@ pub enum QueryClientCmds {
 }
 
 #[derive(Command, Debug, Options, Runnable)]
-pub enum QueryChannelCmds {
-    /// The `query channel ends` subcommand
-    #[options(help = "query channel ends")]
-    Ends(channel::QueryChannelEndsCmd),
-}
-
-#[derive(Command, Debug, Options, Runnable)]
 pub enum QueryConnectionCmds {
     /// The `query connection end` subcommand
     #[options(help = "query connection end")]
     End(connection::QueryConnectionEndCmd),
+}
+
+#[derive(Command, Debug, Options, Runnable)]
+pub enum QueryChannelCmds {
+    /// The `query channel end` subcommand
+    #[options(help = "query channel end")]
+    End(channel::QueryChannelEndCmd),
 }

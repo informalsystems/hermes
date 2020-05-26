@@ -1,5 +1,5 @@
 #![allow(clippy::too_many_arguments)]
-use super::channel::{Channel, Endpoint};
+use super::channel::{ChannelEnd, Counterparty};
 use super::exported::*;
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -28,7 +28,7 @@ pub trait Msg {
 pub struct MsgChannelOpenInit {
     port_id: PortId,
     channel_id: ChannelId,
-    channel: Channel,
+    channel: ChannelEnd,
     signer: AccountId,
 }
 
@@ -55,9 +55,9 @@ impl MsgChannelOpenInit {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel: Channel::new(
+            channel: ChannelEnd::new(
                 order.parse()?,
-                Endpoint::new(counterparty_port_id, counterparty_channel_id)
+                Counterparty::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
                 version,

@@ -1,6 +1,6 @@
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::Kind;
-use crate::ics03_connection::exported::CounterpartyI;
+use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics04_channel::msgs::Msg;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
