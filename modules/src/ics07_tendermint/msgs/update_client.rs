@@ -1,6 +1,6 @@
-use crate::ics02_client::msgs::Msg;
 use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::ClientId;
+use crate::tx_msg::Msg;
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
@@ -22,11 +22,18 @@ impl MsgUpdateClient {
             signer,
         }
     }
+
+    fn get_client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    fn get_header(&self) -> &Header {
+        &self.header
+    }
 }
 
 impl Msg for MsgUpdateClient {
     type ValidationError = crate::ics24_host::error::ValidationError;
-    type Header = Header;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -45,20 +52,14 @@ impl Msg for MsgUpdateClient {
         todo!()
     }
 
-    fn get_signers(&self) -> Vec<ClientId> {
-        vec![self.client_id.clone()]
-    }
-
-    fn get_client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    fn get_header(&self) -> &Self::Header {
-        &self.header
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 
 impl crate::ics02_client::msgs::MsgUpdateClient for MsgUpdateClient {
+    type Header = Header;
+
     fn client_id(&self) -> &ClientId {
         &self.client_id
     }
