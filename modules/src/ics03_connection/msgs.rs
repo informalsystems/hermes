@@ -1,7 +1,7 @@
 use crate::ics03_connection::connection::Counterparty;
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::error::{Kind, Error};
 use crate::ics03_connection::exported::ConnectionCounterparty;
-use crate::ics23_commitment::CommitmentPrefix;
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::validate::{validate_client_identifier, validate_connection_identifier};
 use crate::tx_msg::Msg;
@@ -26,7 +26,7 @@ impl MsgConnectionOpenInit {
         counterparty_client_id: String,
         counterparty_commitment_prefix: CommitmentPrefix,
         signer: AccountId,
-    ) -> Result<MsgConnectionOpenInit, crate::ics03_connection::error::Error> {
+    ) -> Result<MsgConnectionOpenInit, Error> {
         Ok(Self {
             connection_id: connection_id
                 .parse()
@@ -46,7 +46,7 @@ impl MsgConnectionOpenInit {
 }
 
 impl Msg for MsgConnectionOpenInit {
-    type ValidationError = crate::ics03_connection::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -75,6 +75,124 @@ impl Msg for MsgConnectionOpenInit {
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
+}
+
+pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MsgConnectionOpenTry {
+    connection_id: ConnectionId,
+    client_id: ClientId,
+    counterparty: Counterparty,
+    counterparty_versions: Vec<String>,
+    proof: Proof,
+    consensus_height: u64,
+    signer: AccountId,
+}
+
+impl MsgConnectionOpenTry {
+    pub fn new(
+        connection_id: String,
+        client_id: String,
+        counterparty_connection_id: String,
+        counterparty_client_id: String,
+        counterparty_commitment_prefix: CommitmentPrefix,
+        counterparty_versions: Vec<String>,
+        proof_init: CommitmentProof,
+        proof_consensus: CommitmentProof,
+        proof_height: u64,
+        consensus_height: u64,
+        signer: AccountId,
+    ) -> Result<MsgConnectionOpenTry, Error> {
+        Ok(Self {
+            connection_id: connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty: Counterparty::new(
+                counterparty_client_id,
+                counterparty_connection_id,
+                counterparty_commitment_prefix,
+            )
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_versions,
+            proof: Proof::new(
+                proof_init,
+                proof_consensus,
+                proof_height,
+            ),
+            consensus_height,
+            signer,
+        })
+    }
+}
+
+impl Msg for MsgConnectionOpenTry {
+    type ValidationError = Error;
+
+    fn route(&self) -> String {
+        crate::keys::ROUTER_KEY.to_string()
+    }
+
+    fn get_type(&self) -> String {
+        TYPE_MSG_CONNECTION_OPEN_TRY.to_string()
+    }
+
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        // validate_common_fields(
+        //     self.connection_id,
+        //     self.client_id,
+        //     self.counterparty,
+        // );
+        //todo: validate signer, proof, heights ?!
+        Ok(())
+    }
+
+    fn get_sign_bytes(&self) -> Vec<u8> {
+        unimplemented!()
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Proof {
+    proof_init: CommitmentProof,
+    proof_consensus: CommitmentProof,
+    proof_height: u64,
+}
+
+impl Proof {
+    pub fn new(
+        proof_init: CommitmentProof,
+        proof_consensus: CommitmentProof,
+        proof_height: u64,
+    ) -> Self {
+        Self{
+            proof_init,
+            proof_consensus,
+            proof_height
+        }
+    }
+}
+
+pub fn validate_common_fields(
+    connection_id: ConnectionId,
+    client_id: ClientId,
+    counterparty: Counterparty,
+) -> Result<(), Error> {
+    validate_connection_identifier(connection_id.as_str())
+        .map_err(|e| Kind::IdentifierError.context(e))?;
+    validate_client_identifier(client_id.as_str())
+        .map_err(|e| Kind::IdentifierError.context(e))?;
+    counterparty
+        .validate_basic()
+        .map_err(|e| Kind::IdentifierError.context(e))?;
+    Ok(())
 }
 
 #[cfg(test)]
