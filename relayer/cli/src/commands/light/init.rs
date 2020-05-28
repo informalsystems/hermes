@@ -94,7 +94,7 @@ impl Runnable for InitCmd {
             .unwrap();
 
             let mut store: SledStore<TendermintChain> =
-                relayer::store::persistent(format!("store_{}.db", chain_config.id));
+                relayer::store::persistent(format!("store_{}.db", chain_config.id)).unwrap(); // FIXME: unwrap
 
             store.set_trust_options(trust_options).unwrap(); // FIXME: unwrap
 

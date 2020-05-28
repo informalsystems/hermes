@@ -2,11 +2,12 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
+use tracing::{debug, info, warn};
 
 use tendermint::lite::types::{Commit, Header as _, Requester, ValidatorSet as _};
 use tendermint::lite::{SignedHeader, TrustThresholdFraction, TrustedState};
 
-use crate::chain::{self, ValidatorSet};
+use crate::chain;
 use crate::error;
 use crate::store::{self, StoreHeight};
 
@@ -51,39 +52,71 @@ where
     Chain: chain::Chain,
     Store: store::Store<Chain>,
 {
-    /// Creates a new `Client` for the given `chain`, storing headers
+    /// Create a new `Client` for the given `Chain` with the given trusted store
+    /// and trust options, and try to restore the last trusted state from the trusted store.
+    pub fn new_from_trusted_store(
+        chain: Chain,
+        trusted_store: Store,
+        trust_options: &TrustOptions,
+    ) -> Result<Self, error::Error> {
+        debug!(
+            chain.id = %chain.id(),
+            "initializing client from trusted store",
+        );
+
+        let mut client = Self {
+            chain,
+            trusted_store,
+            trusting_period: trust_options.trusting_period,
+            trust_threshold: trust_options.trust_threshold,
+            last_trusted_state: None,
+        };
+
+        client.restore_trusted_state()?;
+
+        Ok(client)
+    }
+
+    /// Create a new `Client` for the given `chain`, storing headers
     /// in the given `trusted_store`, and verifying them with the
     /// given `trust_options`.
     ///
     /// This method is async because it needs to pull the latest header
     /// from the chain, verify it, and store it.
-    pub async fn new(
+    pub async fn new_from_trust_options(
         chain: Chain,
         trusted_store: Store,
-        trust_options: TrustOptions,
+        trust_options: &TrustOptions,
     ) -> Result<Self, error::Error> {
         let mut client = Self::new_from_trusted_store(chain, trusted_store, &trust_options)?;
 
-        // If we managed to pull and verify a header from the chain already
+        // If we already have a last trusted state
         if let Some(ref trusted_state) = client.last_trusted_state {
-            // Check that this header can be trusted with the given trust options
+            debug!("found last trusted state");
+
+            // Check that the last trusted header can actually be trusted with the given trust options
             client
                 .check_trusted_header(trusted_state.last_header(), &trust_options)
                 .await?;
 
+            debug!("trusted header was valid");
+
             // If the last header we trust is below the given trusted height, we need
             // to fetch and verify the header at the given trusted height instead.
-            if trusted_state.last_header().header().height() < trust_options.height {
+            let last_header_height = trusted_state.last_header().header().height();
+
+            if last_header_height < trust_options.height {
+                debug!(
+                    last_header.height = last_header_height,
+                    trust_options.height, "last header height below trust options height"
+                );
+
                 client.init_with_trust_options(trust_options).await?;
             }
         } else {
             // Otherwise, init the client with the given trusted height, etc.
             client.init_with_trust_options(trust_options).await?;
         }
-
-        // Perform an update already, to make sure the client is up-to-date.
-        // TODO: Should we leave this up to the responsibility of the caller?
-        let _ = client.update(SystemTime::now()).await?;
 
         Ok(client)
     }
@@ -123,16 +156,8 @@ where
                     .await
                     .map_err(|e| error::Kind::LightClient.context(e))?;
 
-                let latest_validator_set = self
-                    .chain
-                    .requester()
-                    .validator_set(latest_header.header().height())
-                    .await
-                    .map_err(|e| error::Kind::LightClient.context(e))?;
-
                 if latest_header.header().height() > last_trusted_height {
-                    self.verify_header(&latest_header, &latest_validator_set, now)
-                        .await?;
+                    self.verify_header(&latest_header, now).await?;
 
                     Ok(Some(latest_header))
                 } else {
@@ -150,15 +175,14 @@ where
     /// the stored hash, we fail with an error.
     ///
     /// Otherwise, and only if we already have a trusted state,
-    /// we then pull the next validator set (w.r.t to the given header)
-    /// and attempt to verify the new header against it.
-    /// If that succeeds we update the trusted store and our last trusted state.
+    /// we attempt bisection for the new header at the given height.
+    /// If this succeeds, we add the new trusted states to the store and
+    /// update our last trusted state.
     ///
-    /// If there is no current trusted state, we fail with an error.
+    /// In any other case, we fail with an error.
     async fn verify_header(
         &mut self,
         new_header: &SignedHeader<Chain::Commit, Chain::Header>,
-        new_validator_set: &ValidatorSet<Chain>,
         now: SystemTime,
     ) -> Result<(), error::Error> {
         let in_store = self
@@ -180,40 +204,26 @@ where
             }
         }
 
-        // If we already have a trusted state, we then pull the next validator set of
-        // the header we were given to verify, and attempt to verify the new
-        // header against it.
+        // If we already have a trusted state, we attempt bisection for the
+        // new header at the given height. If it succeeds, we add the new
+        // trusted states to the store and update our last trusted state.
         if let Some(ref last_trusted_state) = self.last_trusted_state {
-            let next_height = new_header
-                .header()
-                .height()
-                .checked_add(1)
-                .expect("height overflow");
+            let new_header_height = new_header.header().height();
 
-            let new_next_validator_set = self
-                .chain
-                .requester()
-                .validator_set(next_height)
-                .await
-                .map_err(|e| error::Kind::LightClient.context(e))?;
-
-            tendermint::lite::verifier::verify_single(
+            let new_trusted_states = tendermint::lite::verifier::verify_bisection(
                 last_trusted_state.clone(),
-                &new_header,
-                &new_validator_set,
-                &new_next_validator_set,
+                new_header_height,
                 self.trust_threshold,
                 self.trusting_period,
                 now,
+                self.chain.requester(),
             )
+            .await
             .map_err(|e| error::Kind::LightClient.context(e))?;
 
-            // TODO: Compare new header with witnesses (?)
-
-            let new_trusted_state =
-                TrustedState::new(new_header.clone(), new_validator_set.clone());
-
-            self.update_trusted_state(new_trusted_state)?;
+            for new_trusted_state in new_trusted_states {
+                self.update_trusted_state(new_trusted_state)?;
+            }
 
             Ok(())
         } else {
@@ -224,35 +234,31 @@ where
         }
     }
 
-    /// Create a new client with the given trusted store and trust options,
-    /// and try to restore the last trusted state from the trusted store.
-    fn new_from_trusted_store(
-        chain: Chain,
-        trusted_store: Store,
-        trust_options: &TrustOptions,
-    ) -> Result<Self, error::Error> {
-        let mut client = Self {
-            chain,
-            trusted_store,
-            trusting_period: trust_options.trusting_period,
-            trust_threshold: trust_options.trust_threshold,
-            last_trusted_state: None,
-        };
-
-        client.restore_trusted_state()?;
-
-        Ok(client)
-    }
-
     /// Restore the last trusted state from the state, by asking for
     /// its last stored height, without any verification.
     fn restore_trusted_state(&mut self) -> Result<(), error::Error> {
-        if let Some(last_height) = self.trusted_store.last_height() {
+        if let Some(last_height) = self.trusted_store.last_height()? {
+            debug!(
+                chain.id = %self.chain.id(),
+                "restoring trusted state from store",
+            );
+
             let last_trusted_state = self
                 .trusted_store
                 .get(store::StoreHeight::Given(last_height))?;
 
+            debug!(
+                chain.id = %self.chain.id(),
+                last_height = last_height,
+                "found trusted state in store",
+            );
+
             self.last_trusted_state = Some(last_trusted_state);
+        } else {
+            debug!(
+                chain.id = %self.chain.id(),
+                "no last height recorded in trusted store",
+            );
         }
 
         Ok(())
@@ -269,9 +275,20 @@ where
         trusted_header: &SignedHeader<Chain::Commit, Chain::Header>,
         trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
+        debug!(
+            chain.id = %self.chain.id(),
+            "restoring trusted state from store",
+        );
+
         let primary_hash = match trust_options.height.cmp(&trusted_header.header().height()) {
             Ordering::Greater => {
-                // TODO: Fetch from primary (?)
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is greater than trusted header height",
+                );
+
                 self.chain
                     .requester()
                     .signed_header(trust_options.height)
@@ -280,21 +297,67 @@ where
                     .header()
                     .hash()
             }
-            Ordering::Equal => trust_options.hash,
+            Ordering::Equal => {
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is equal to trusted header height",
+                );
+
+                trust_options.hash
+            }
             Ordering::Less => {
-                // TODO: Implement rollback
+                debug!(
+                    chain.id = %self.chain.id(),
+                    trust_options.height,
+                    trusted_header.height = trusted_header.header().height(),
+                    "trusted options height is lesser than trusted header height",
+                );
+
+                info!(
+                    chain.id = %self.chain.id(),
+                    old = %trust_options.height,
+                    trusted_header.height = %trusted_header.header().height(),
+                    trusted_header.hash = %trusted_header.header().hash(),
+                    "client initialized with old header (trusted header is more recent)",
+                );
+
+                // TODO: Rollback: Remove all headers in (trust_options.height, trusted_header.height]
+
                 trust_options.hash
             }
         };
 
+        debug!(
+            chain.id = %self.chain.id(),
+            primary.hash = %primary_hash,
+            trusted_header.hash = %trusted_header.header().hash(),
+            "comparing trusted_header.hash against primary.hash",
+        );
+
         if primary_hash != trusted_header.header().hash() {
             // TODO: Implement cleanup
+
+            warn!(
+                chain.id = %self.chain.id(),
+                primary.hash = %primary_hash,
+                trusted_header.hash = %trusted_header.header().hash(),
+                "trusted header hash and primary header hash do not match, rolling back (TODO)",
+            );
+        } else {
+            debug!(
+                chain.id = %self.chain.id(),
+                primary.hash = %primary_hash,
+                trusted_header.hash = %trusted_header.header().hash(),
+                "trusted header hash and primary header hash match",
+            );
         }
 
         Ok(())
     }
 
-    /// Init this client with the given trust options.
+    /// Initialize this client with the given trust options.
     ///
     /// This pulls the header and validator set at the height specified in
     /// the trust options, and checks their hashes against the hashes
@@ -308,8 +371,10 @@ where
     /// update the last trusted state with it.
     async fn init_with_trust_options(
         &mut self,
-        trust_options: TrustOptions,
+        trust_options: &TrustOptions,
     ) -> Result<(), error::Error> {
+        debug!("initialize client with given trust_options");
+
         // TODO: Fetch from primary (?)
         let signed_header = self
             .chain
@@ -317,6 +382,12 @@ where
             .signed_header(trust_options.height)
             .await
             .map_err(|e| error::Kind::Rpc.context(e))?;
+
+        debug!(
+            trust_options.height,
+            header.hash = %signed_header.header().hash(),
+            "fetched header at height {}", trust_options.height
+        );
 
         // TODO: Validate basic
 
@@ -331,6 +402,8 @@ where
 
         // TODO: Compare header with witnesses (?)
 
+        debug!("TODO: compare header with witnesses");
+
         // TODO: Fetch from primary (?)
         let validator_set = self
             .chain
@@ -338,6 +411,12 @@ where
             .validator_set(trust_options.height)
             .await
             .map_err(|e| error::Kind::Rpc.context(e))?;
+
+        debug!(
+            trust_options.height,
+            validator_set.hash = %validator_set.hash(),
+            header.validators_hash = %signed_header.header().validators_hash(),
+            "fetched validator set at height {}", trust_options.height);
 
         if signed_header.header().validators_hash() != validator_set.hash() {
             fail!(
@@ -348,11 +427,15 @@ where
             )
         }
 
+        debug!("validator set hashes match");
+
         // FIXME: Is this necessary?
         signed_header
             .commit()
             .validate(&validator_set)
             .map_err(|e| error::Kind::LightClient.context(e))?;
+
+        debug!("header is valid");
 
         tendermint::lite::verifier::verify_commit_trusting(
             &validator_set,
@@ -360,6 +443,8 @@ where
             trust_options.trust_threshold,
         )
         .map_err(|e| error::Kind::LightClient.context(e))?;
+
+        debug!("verify_commit_trusting result is valid");
 
         let trusted_state = TrustedState::new(signed_header, validator_set);
         self.update_trusted_state(trusted_state)?;
@@ -389,6 +474,12 @@ where
         self.trusted_store.add(state.clone())?;
 
         // TODO: Pruning
+
+        debug!(
+            state.header.hash = %state.last_header().header().hash(),
+            state.header.height = state.last_header().header().height(),
+            "updated trusted store"
+        );
 
         self.last_trusted_state = Some(state);
 

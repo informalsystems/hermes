@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::ics24_host::client::ClientId;
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 mod cosmos;
@@ -40,7 +40,13 @@ pub trait Path: Sized {
 }
 
 pub struct ConnectionPath {
-    pub connection_id: String,
+    pub connection_id: ConnectionId,
+}
+
+impl ConnectionPath {
+    pub fn new(connection_id: ConnectionId) -> Self {
+        Self { connection_id }
+    }
 }
 
 impl Path for ConnectionPath {
@@ -63,5 +69,45 @@ impl ConsensusStatePath {
 impl Path for ConsensusStatePath {
     fn to_string(&self) -> String {
         paths::consensus_state_path(&self)
+    }
+}
+
+pub struct ClientStatePath {
+    pub client_id: ClientId,
+}
+
+impl ClientStatePath {
+    pub fn new(client_id: ClientId) -> Self {
+        Self { client_id }
+    }
+}
+
+impl Path for ClientStatePath {
+    fn to_string(&self) -> String {
+        paths::client_state_path(&self)
+    }
+}
+
+pub struct ChannelPath {
+    pub port_id: PortId,
+    channel_id: ChannelId,
+}
+
+impl ChannelPath {
+    pub fn new(port_id: PortId, channel_id: ChannelId) -> Self {
+        Self {
+            port_id,
+            channel_id,
+        }
+    }
+}
+
+const KEY_CHANNEL_PREFIX: &str = "channelEnds";
+
+pub type ChannelEndsPath = ChannelPath;
+
+impl Path for ChannelEndsPath {
+    fn to_string(&self) -> String {
+        format!("{}/{}", KEY_CHANNEL_PREFIX, paths::channel_path(&self))
     }
 }

@@ -9,15 +9,21 @@ authors = [
 
 [features]
 # Default features
-default = ["paths-cosmos"]
+#default = ["paths-cosmos"]
+default = ["paths-ics"]
 
 # In IBC queries, use paths as defined in the Cosmos-SDK Go implementation, rather than in the ICS.
 paths-cosmos = []
+paths-ics = []
 
 [dependencies]
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git" }
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"
 serde_derive = "1.0.104"
 serde = "1.0.104"
+
+[dev-dependencies]
+serde_json = "1"
+

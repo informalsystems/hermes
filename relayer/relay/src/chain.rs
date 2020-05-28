@@ -8,7 +8,7 @@ use ::tendermint::lite::types as tmlite;
 use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint::rpc::Client as RpcClient;
 
-use relayer_modules::ics02_client::state::ConsensusState;
+use relayer_modules::ics02_client::state::{ClientState, ConsensusState};
 
 use crate::config::ChainConfig;
 use crate::error;
@@ -21,13 +21,16 @@ pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
     /// Type of headers for this chain
-    type Header: tmlite::Header + Serialize + DeserializeOwned;
+    type Header: tmlite::Header + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of commits for this chain
-    type Commit: tmlite::Commit + Serialize + DeserializeOwned;
+    type Commit: tmlite::Commit + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState + Serialize + DeserializeOwned;
+    type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
+
+    /// Type of the client state for this chain
+    type ClientState: ClientState;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type Requester: tmlite::Requester<Self::Commit, Self::Header>;
