@@ -1,2 +1,5 @@
 # Specification and verification of IBC protocols 
- * [spec](./spec) contains TLA+ specifications
+
+ * [relayer](./relayer) comprises TLA+ specification for the IBC relayer algorithms (ICS 018).
+
+ * [connection-handshake](./connection-handshake) contains English and TLA+ specifications for the IBC Connection Handshake Protocol (ICS 003).
