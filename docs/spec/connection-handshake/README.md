@@ -1,7 +1,5 @@
 # IBC Connection Handshake Spec
 
-> Work in progress. Reviews are welcome.
-
 ## Specification roadmap
 
 In this folder you will find a collection of documents representing English & TLA+ specifications for the IBC connection handshake problem [[ICS-003](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics)].
