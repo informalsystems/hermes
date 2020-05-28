@@ -91,6 +91,7 @@ pub struct Connection {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ConnectionEnd {
+    pub chain_id: String,
     pub client_id: String,
     pub connection_id: Option<String>, // use all connections to this client
 }
