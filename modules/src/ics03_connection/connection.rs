@@ -104,6 +104,7 @@ impl ConnectionCounterparty for Counterparty {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // todo!()
+        Ok(())
     }
 }
