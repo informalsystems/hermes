@@ -1,9 +1,9 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::msgs::Msg;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
+use crate::tx_msg::Msg;
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
@@ -35,11 +35,18 @@ impl MsgCreateClient {
             signer,
         }
     }
+
+    fn get_client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    fn get_header(&self) -> &Header {
+        &self.header
+    }
 }
 
 impl Msg for MsgCreateClient {
     type ValidationError = crate::ics24_host::error::ValidationError;
-    type Header = Header;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -58,16 +65,8 @@ impl Msg for MsgCreateClient {
         todo!()
     }
 
-    fn get_signers(&self) -> Vec<ClientId> {
-        vec![self.client_id.clone()]
-    }
-
-    fn get_client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    fn get_header(&self) -> &Self::Header {
-        &self.header
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 
@@ -78,8 +77,8 @@ impl crate::ics02_client::msgs::MsgCreateClient for MsgCreateClient {
         &self.client_id
     }
 
-    fn header(&self) -> &Self::Header {
-        &self.header
+    fn client_type(&self) -> ClientType {
+        ClientType::Tendermint
     }
 
     fn consensus_state(&self) -> Self::ConsensusState {
@@ -92,9 +91,5 @@ impl crate::ics02_client::msgs::MsgCreateClient for MsgCreateClient {
             header.time,
             self.header.validator_set.clone(),
         )
-    }
-
-    fn client_type(&self) -> ClientType {
-        ClientType::Tendermint
     }
 }
