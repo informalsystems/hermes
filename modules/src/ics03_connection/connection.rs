@@ -4,6 +4,7 @@ use crate::ics03_connection::error::Kind;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
+use anomaly::fail;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -46,19 +47,7 @@ impl Connection for ConnectionEnd {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        if self.versions.is_empty() {
-            return Err(error::Kind::InvalidVersion
-                .context("missing connection versions")
-                .into());
-        }
-
-        for v in self.versions().iter() {
-            if v.trim().is_empty() {
-                return Err(error::Kind::InvalidVersion
-                    .context("empty version string")
-                    .into());
-            }
-        }
+        validate_versions(&self.versions)?;
         self.counterparty().validate_basic()
     }
 }
@@ -107,4 +96,22 @@ impl ConnectionCounterparty for Counterparty {
         // todo!()
         Ok(())
     }
+}
+
+pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, String> {
+    if versions.is_empty() {
+        return Err("missing versions".to_string());
+    }
+
+    for v in versions.into_iter() {
+        validate_version(v)?;
+    }
+    Ok(versions)
+}
+
+pub fn validate_version(version: String) -> Result<String, String> {
+        if version.trim().is_empty() {
+            return Err("empty version string".to_string());
+        }
+    Ok(version)
 }

@@ -9,6 +9,10 @@ use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use crate::ics23_commitment::CommitmentProof;
 use crate::ics04_channel::packet::Packet;
+use crate::ics03_connection::connection::validate_version;
+use anomaly::fail;
+
+// TODO: Validate Proof for all Msgs
 
 pub const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
 
@@ -106,6 +110,10 @@ impl MsgChannelOpenTry {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgChannelOpenTry, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         let connection_hops: Result<Vec<_>, _> = connection_hops
             .into_iter()
             .map(|s| ConnectionId::from_str(s.as_str()))
@@ -125,7 +133,8 @@ impl MsgChannelOpenTry {
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
                 channel_version,
             ),
-            counterparty_version,
+            counterparty_version: validate_version(counterparty_version)
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             proof_init,
             proof_height,
             signer,
@@ -178,6 +187,10 @@ impl MsgChannelOpenAck {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgChannelOpenAck, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -185,7 +198,8 @@ impl MsgChannelOpenAck {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_version,
+            counterparty_version: validate_version(counterparty_version)
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             proof_try,
             proof_height,
             signer,
@@ -205,7 +219,9 @@ impl Msg for MsgChannelOpenAck {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -236,6 +252,10 @@ impl MsgChannelOpenConfirm {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgChannelOpenConfirm, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -262,7 +282,9 @@ impl Msg for MsgChannelOpenConfirm {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -313,7 +335,9 @@ impl Msg for MsgChannelCloseInit {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -344,6 +368,10 @@ impl MsgChannelCloseConfirm {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgChannelCloseConfirm, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -370,7 +398,9 @@ impl Msg for MsgChannelCloseConfirm {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -399,8 +429,13 @@ impl MsgPacket {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgPacket, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
-            packet,
+            packet: packet.validate()
+                .map_err(|e| Kind::InvalidPacket.context(e))?,
             proof,
             proof_height,
             signer,
@@ -424,7 +459,9 @@ impl Msg for MsgPacket {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -455,8 +492,13 @@ impl MsgTimeout {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgTimeout, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
-            packet,
+            packet: packet.validate()
+                .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv,
             proof,
             proof_height,
@@ -477,7 +519,9 @@ impl Msg for MsgTimeout {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -508,8 +552,17 @@ impl MsgAcknowledgement {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgAcknowledgement, crate::ics04_channel::error::Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
+        if acknowledgement.len() > 100 {
+            fail!(Kind::AcknowledgementTooLong, "Acknowledgement cannot exceed 100 bytes")
+        }
+
         Ok(Self {
-            packet,
+            packet: packet.validate()
+                .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement,
             proof,
             proof_height,
@@ -530,7 +583,9 @@ impl Msg for MsgAcknowledgement {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // Nothing to validate
+        // All the validation is performed on creation
+        Ok(())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {

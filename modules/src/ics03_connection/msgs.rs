@@ -1,12 +1,14 @@
-use crate::ics03_connection::connection::Counterparty;
+use crate::ics03_connection::connection::{Counterparty, validate_versions, validate_version};
 use crate::ics03_connection::error::{Kind, Error};
 use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::ics24_host::validate::{validate_client_identifier, validate_connection_identifier};
 use crate::tx_msg::Msg;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
+use anomaly::fail;
+
+// TODO: Validate Proof for all Msgs
 
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 
@@ -57,15 +59,8 @@ impl Msg for MsgConnectionOpenInit {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        validate_common_fields(
-            &self.connection_id,
-            &self.client_id,
-            &self.counterparty,
-            self.signer,
-        ).map_err(|e| Kind::IdentifierError.context(e))?;
-
-        //todo: validate signer!
-        Ok(())
+        // All the validation is performed on creation
+        self.counterparty.validate_basic()
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -104,6 +99,10 @@ impl MsgConnectionOpenTry {
         consensus_height: u64,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenTry, Error> {
+        if proof_height == 0 || consensus_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             connection_id: connection_id
                 .parse()
@@ -115,9 +114,9 @@ impl MsgConnectionOpenTry {
                 counterparty_client_id,
                 counterparty_connection_id,
                 counterparty_commitment_prefix,
-            )
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_versions,
+            ).map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_versions: validate_versions(counterparty_versions)
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             proof: ProofConnOpenTry::new(
                 proof_init,
                 proof_consensus,
@@ -141,15 +140,7 @@ impl Msg for MsgConnectionOpenTry {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        validate_common_fields(
-            &self.connection_id,
-            &self.client_id,
-            &self.counterparty,
-            self.signer,
-        ).map_err(|e| Kind::IdentifierError.context(e))?;
-
-        //todo: validate signer, proof ?!
-        Ok(())
+        self.counterparty.validate_basic()
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -203,6 +194,10 @@ impl MsgConnectionOpenAck {
         version: String,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenAck, Error> {
+        if consensus_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             connection_id: connection_id
                 .parse()
@@ -213,7 +208,8 @@ impl MsgConnectionOpenAck {
                 proof_height,
             ),
             consensus_height,
-            version,
+            version: validate_version(version)
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             signer,
         })
     }
@@ -231,10 +227,7 @@ impl Msg for MsgConnectionOpenAck {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        validate_connection_identifier(self.connection_id.as_str())
-                .map_err(|e| Kind::IdentifierError.context(e))?;
-
-        //todo: validate signer, proof ?!
+        //todo: validate proof !
         Ok(())
     }
 
@@ -285,6 +278,10 @@ impl MsgConnectionOpenConfirm {
         proof_height: u64,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenConfirm, Error> {
+        if proof_height == 0 {
+            fail!(Kind::InvalidHeight, "Height cannot be zero");
+        }
+
         Ok(Self {
             connection_id: connection_id
                 .parse()
@@ -310,10 +307,7 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        validate_connection_identifier(self.connection_id.as_str())
-            .map_err(|e| Kind::IdentifierError.context(e))?;
-
-        //todo: validate signer, proof ?!
+        //todo: validate proof !
         Ok(())
     }
 
@@ -343,26 +337,6 @@ impl ProofConnOpenConfirm {
         }
     }
 }
-
-pub fn validate_common_fields(
-    connection_id: &ConnectionId,
-    client_id: &ClientId,
-    counterparty: &Counterparty,
-    _signer: AccountId,
-) -> Result<(), Error> {
-    validate_connection_identifier(connection_id.as_str())
-        .map_err(|e| Kind::IdentifierError.context(e))?;
-    validate_client_identifier(client_id.as_str())
-        .map_err(|e| Kind::IdentifierError.context(e))?;
-    counterparty
-        .validate_basic()
-        .map_err(|e| Kind::IdentifierError.context(e))?;
-    //TODO: validate signer
-    Ok(())
-
-}
-
-
 
 #[cfg(test)]
 mod tests {

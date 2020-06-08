@@ -2,6 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::path::Path;
 use tendermint::abci;
+use std::error::Error;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentRoot;
@@ -19,13 +20,19 @@ impl CommitmentPath {
 }
 
 pub type CommitmentProof = abci::Proof;
+
 /*
 impl CommitmentProof {
     pub fn from_bytes(_bytes: &[u8]) -> Self {
         todo!()
     }
+
+    pub fn validate_basic() -> Result<CommitmentProof, Error> {
+        todo!()
+    }
 }
-*/
+ */
+
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPrefix;
