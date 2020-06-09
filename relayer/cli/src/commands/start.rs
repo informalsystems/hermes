@@ -82,8 +82,7 @@ async fn init_monitor(
 }
 
 async fn init_event_handler(rx: Receiver<(ChainId, Vec<IBCEvent>)>) -> EventHandler {
-    let event_reporter = EventHandler::new(rx);
-    event_reporter
+    EventHandler::new(rx)
 }
 
 async fn spawn_client(chain_config: ChainConfig, reset: bool) {

@@ -47,21 +47,21 @@ impl IBCEvent {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct TryObject {
+pub struct RawObject {
     pub height: block::Height,
     pub action: String,
     pub idx: usize,
     pub events: HashMap<String, Vec<String>>,
 }
 
-impl TryObject {
+impl RawObject {
     pub fn new(
         height: block::Height,
         action: String,
         idx: usize,
         events: HashMap<String, Vec<String>>,
-    ) -> TryObject {
-        TryObject {
+    ) -> RawObject {
+        RawObject {
             height,
             action,
             idx,
@@ -70,13 +70,13 @@ impl TryObject {
     }
 }
 
-pub fn extract_events<'a, S: ::std::hash::BuildHasher>(
-    events: &'a HashMap<String, Vec<String>, S>,
-    action_string: &'a str,
-) -> Result<&'a HashMap<String, Vec<String>, S>, Box<dyn std::error::Error>> {
+pub fn extract_events<S: ::std::hash::BuildHasher>(
+    events: &HashMap<String, Vec<String>, S>,
+    action_string: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
-            return Ok(events);
+            return Ok(());
         }
         return Err("Missing action string".into());
     }
@@ -132,7 +132,7 @@ pub fn get_all_events(result: ResultEvent) -> Result<Vec<IBCEvent>, String> {
                 .map_err(|e| e.to_string())?;
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                let ev = build_event(TryObject::new(
+                let ev = build_event(RawObject::new(
                     height.into(),
                     action.0,
                     action.1.try_into().unwrap(),
@@ -147,7 +147,7 @@ pub fn get_all_events(result: ResultEvent) -> Result<Vec<IBCEvent>, String> {
     Ok(vals)
 }
 
-pub fn build_event(object: TryObject) -> Result<IBCEvent, Box<dyn std::error::Error>> {
+pub fn build_event(object: RawObject) -> Result<IBCEvent, Box<dyn std::error::Error>> {
     match object.action.as_str() {
         "create_client" => Ok(IBCEvent::from(ClientEvents::CreateClient::try_from(
             object,
@@ -229,12 +229,15 @@ macro_rules! make_event {
         pub struct $a {
             pub data: std::collections::HashMap<String, Vec<String>>,
         }
-        impl TryFrom<TryObject> for $a {
+        impl TryFrom<RawObject> for $a {
             type Error = Box<dyn std::error::Error>;
-            fn try_from(result: TryObject) -> Result<Self, Self::Error> {
-                Ok($a {
-                    data: crate::events::extract_events(&result.events, $b)?.clone(),
-                })
+            fn try_from(result: RawObject) -> Result<Self, Self::Error> {
+                match crate::events::extract_events(&result.events, $b) {
+                    Ok(()) => Ok($a {
+                        data: result.events.clone(),
+                    }),
+                    Err(e) => Err(e),
+                }
             }
         }
     };

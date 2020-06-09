@@ -1,5 +1,5 @@
 use crate::attribute;
-use crate::events::{IBCEvent, TryObject};
+use crate::events::{IBCEvent, RawObject};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -13,9 +13,9 @@ pub struct OpenInit {
     pub counterparty_client_id: ClientId,
 }
 
-impl TryFrom<TryObject> for OpenInit {
+impl TryFrom<RawObject> for OpenInit {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_init.connection_id"),
@@ -39,9 +39,9 @@ pub struct OpenTry {
     pub counterparty_client_id: ClientId,
 }
 
-impl TryFrom<TryObject> for OpenTry {
+impl TryFrom<RawObject> for OpenTry {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_try.connection_id"),
@@ -63,9 +63,9 @@ pub struct OpenAck {
     pub connection_id: ConnectionId,
 }
 
-impl TryFrom<TryObject> for OpenAck {
+impl TryFrom<RawObject> for OpenAck {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_ack.connection_id"),
@@ -85,9 +85,9 @@ pub struct OpenConfirm {
     pub connection_id: ConnectionId,
 }
 
-impl TryFrom<TryObject> for OpenConfirm {
+impl TryFrom<RawObject> for OpenConfirm {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_confirm.connection_id"),

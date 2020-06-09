@@ -11,7 +11,7 @@ pub enum Kind {
 
     /// Event error (raised by the event monitor)
     #[error("Bad Notification")]
-    EventErr,
+    Event,
 }
 
 impl Kind {

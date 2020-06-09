@@ -1,5 +1,5 @@
 use crate::attribute;
-use crate::events::{IBCEvent, TryObject};
+use crate::events::{IBCEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 
@@ -42,9 +42,9 @@ pub struct CreateClient {
     pub client_type: ClientType,
 }
 
-impl TryFrom<TryObject> for CreateClient {
+impl TryFrom<RawObject> for CreateClient {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient {
             height: obj.height,
             client_id: attribute!(obj, "create_client.client_id"),
@@ -66,9 +66,9 @@ pub struct UpdateClient {
     pub client_type: ClientType,
 }
 
-impl TryFrom<TryObject> for UpdateClient {
+impl TryFrom<RawObject> for UpdateClient {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(UpdateClient {
             height: obj.height,
             client_id: attribute!(obj, "update_client.client_id"),
@@ -90,9 +90,9 @@ pub struct ClientMisbehavior {
     pub client_type: ClientType,
 }
 
-impl TryFrom<TryObject> for ClientMisbehavior {
+impl TryFrom<RawObject> for ClientMisbehavior {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(ClientMisbehavior {
             height: obj.height,
             client_id: attribute!(obj, "client_misbehaviour.client_id"),

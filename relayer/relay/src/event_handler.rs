@@ -12,7 +12,9 @@ pub struct EventHandler {
 impl EventHandler {
     /// Constructor for the Event Handler
     pub fn new(channel_from_monitors: Receiver<(ChainId, Vec<IBCEvent>)>) -> Self {
-        Self { channel_from_monitors }
+        Self {
+            channel_from_monitors,
+        }
     }
 
     ///Event Handler loop
@@ -20,13 +22,10 @@ impl EventHandler {
         info!("running IBC Event Handler");
 
         loop {
-            match self.channel_from_monitors.recv().await {
-                Some(events) => {
-                    for event in events.1 {
-                        self.handle(events.0, event);
-                    }
+            if let Some(events) = self.channel_from_monitors.recv().await {
+                for event in events.1 {
+                    self.handle(events.0, event);
                 }
-                _ => {}
             }
         }
     }

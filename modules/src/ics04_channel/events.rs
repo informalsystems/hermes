@@ -1,7 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket for the channels modules.
 
 use crate::attribute;
-use crate::events::{IBCEvent, TryObject};
+use crate::events::{IBCEvent, RawObject};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -17,9 +17,9 @@ pub struct OpenInit {
     pub counterparty_channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for OpenInit {
+impl TryFrom<RawObject> for OpenInit {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_init.port_id"),
@@ -47,9 +47,9 @@ pub struct OpenTry {
     pub counterparty_channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for OpenTry {
+impl TryFrom<RawObject> for OpenTry {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_try.port_id"),
@@ -74,9 +74,9 @@ pub struct OpenAck {
     pub channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for OpenAck {
+impl TryFrom<RawObject> for OpenAck {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_ack.port_id"),
@@ -98,9 +98,9 @@ pub struct OpenConfirm {
     pub channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for OpenConfirm {
+impl TryFrom<RawObject> for OpenConfirm {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_confirm.port_id"),
@@ -122,9 +122,9 @@ pub struct CloseInit {
     pub channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for CloseInit {
+impl TryFrom<RawObject> for CloseInit {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseInit {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_init.port_id"),
@@ -146,9 +146,9 @@ pub struct CloseConfirm {
     pub channel_id: ChannelId,
 }
 
-impl TryFrom<TryObject> for CloseConfirm {
+impl TryFrom<RawObject> for CloseConfirm {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseConfirm {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_confirm.port_id"),
@@ -175,9 +175,9 @@ pub struct SendPacket {
     pub packet_timeout_stamp: u64,
 }
 
-impl TryFrom<TryObject> for SendPacket {
+impl TryFrom<RawObject> for SendPacket {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(SendPacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "send_packet.packet_src_port"),
@@ -210,9 +210,9 @@ pub struct ReceivePacket {
     pub packet_ack: String,
 }
 
-impl TryFrom<TryObject> for ReceivePacket {
+impl TryFrom<RawObject> for ReceivePacket {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(ReceivePacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "recv_packet.packet_src_port"),
@@ -245,9 +245,9 @@ pub struct AcknowledgePacket {
     pub packet_timeout_stamp: u64,
 }
 
-impl TryFrom<TryObject> for AcknowledgePacket {
+impl TryFrom<RawObject> for AcknowledgePacket {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(AcknowledgePacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "acknowledge_packet.packet_src_port"),
@@ -279,9 +279,9 @@ pub struct CleanupPacket {
     pub packet_timeout_stamp: u64,
 }
 
-impl TryFrom<TryObject> for CleanupPacket {
+impl TryFrom<RawObject> for CleanupPacket {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CleanupPacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "cleanup_packet.packet_src_port"),
@@ -313,9 +313,9 @@ pub struct TimeoutPacket {
     pub packet_timeout_stamp: u64,
 }
 
-impl TryFrom<TryObject> for TimeoutPacket {
+impl TryFrom<RawObject> for TimeoutPacket {
     type Error = Box<dyn std::error::Error>;
-    fn try_from(obj: TryObject) -> Result<Self, Self::Error> {
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "timeout_packet.packet_src_port"),

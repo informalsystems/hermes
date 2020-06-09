@@ -41,7 +41,7 @@ impl EventMonitor {
             event_listener,
             channel_to_handler,
             node_addr: rpc_addr.clone(),
-            event_queries: event_queries,
+            event_queries,
         })
     }
 
@@ -81,15 +81,13 @@ impl EventMonitor {
 
     /// get a TM event and extract the IBC events
     pub async fn collect_events(&mut self) -> Result<(), TMError> {
-        match self.event_listener.get_event().await? {
-            Some(tm_event) => match relayer_modules::events::get_all_events(tm_event) {
-                Ok(ibc_events) => {
-                    // TODO - send_timeout()?
-                    self.channel_to_handler.send((self.chain_id, ibc_events)).await?;
-                }
-                _ => {}
-            },
-            None => {}
+        if let Some(tm_event) = self.event_listener.get_event().await? {
+            if let Ok(ibc_events) = relayer_modules::events::get_all_events(tm_event) {
+                // TODO - send_timeout()?
+                self.channel_to_handler
+                    .send((self.chain_id, ibc_events))
+                    .await?;
+            }
         }
         Ok(())
     }

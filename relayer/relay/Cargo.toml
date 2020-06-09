@@ -9,7 +9,7 @@ authors = [
 
 [dependencies]
 relayer-modules = { path = "../../modules" }
-tendermint = { path = "/Users/ancaz/rust/tendermint-rs/tendermint"}
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
