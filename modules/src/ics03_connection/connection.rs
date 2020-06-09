@@ -1,5 +1,5 @@
 use super::exported::*;
-use crate::ics03_connection::error::{Kind, Error};
+use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
@@ -13,13 +13,16 @@ pub struct ConnectionEnd {
 }
 
 impl ConnectionEnd {
-    pub fn new(client_id: ClientId, counterparty: Counterparty, versions: Vec<String>) -> Result<Self, Error> {
+    pub fn new(
+        client_id: ClientId,
+        counterparty: Counterparty,
+        versions: Vec<String>,
+    ) -> Result<Self, Error> {
         Ok(Self {
             state: State::Uninitialized,
             client_id,
             counterparty,
-            versions: validate_versions(versions)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
         })
     }
 }
@@ -109,8 +112,8 @@ pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, String> {
 }
 
 pub fn validate_version(version: String) -> Result<String, String> {
-        if version.trim().is_empty() {
-            return Err("empty version string".to_string());
-        }
+    if version.trim().is_empty() {
+        return Err("empty version string".to_string());
+    }
     Ok(version)
 }

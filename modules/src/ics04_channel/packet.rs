@@ -1,5 +1,5 @@
-use serde_derive::{Deserialize, Serialize};
 use crate::ics04_channel::error::Error;
+use serde_derive::{Deserialize, Serialize};
 
 // TODO: Packet needs to be implemented
 // This is only a workaround for MsgPacket for now!

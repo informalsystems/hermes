@@ -1,12 +1,13 @@
-use crate::ics03_connection::connection::{Counterparty, validate_versions, validate_version};
-use crate::ics03_connection::error::{Kind, Error};
+#![allow(clippy::too_many_arguments)]
+use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
+use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
+use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
-use anomaly::fail;
 
 // TODO: Validate Proof for all Msgs
 
@@ -114,14 +115,11 @@ impl MsgConnectionOpenTry {
                 counterparty_client_id,
                 counterparty_connection_id,
                 counterparty_commitment_prefix,
-            ).map_err(|e| Kind::IdentifierError.context(e))?,
+            )
+            .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_versions: validate_versions(counterparty_versions)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proof: ProofConnOpenTry::new(
-                proof_init,
-                proof_consensus,
-                proof_height,
-            ),
+            proof: ProofConnOpenTry::new(proof_init, proof_consensus, proof_height),
             consensus_height,
             signer,
         })
@@ -165,10 +163,10 @@ impl ProofConnOpenTry {
         proof_consensus: CommitmentProof,
         proof_height: u64,
     ) -> Self {
-        Self{
+        Self {
             proof_init,
             proof_consensus,
-            proof_height
+            proof_height,
         }
     }
 }
@@ -202,14 +200,9 @@ impl MsgConnectionOpenAck {
             connection_id: connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof: ProofConnOpenAck::new(
-                proof_try,
-                proof_consensus,
-                proof_height,
-            ),
+            proof: ProofConnOpenAck::new(proof_try, proof_consensus, proof_height),
             consensus_height,
-            version: validate_version(version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            version: validate_version(version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer,
         })
     }
@@ -253,14 +246,13 @@ impl ProofConnOpenAck {
         proof_consensus: CommitmentProof,
         proof_height: u64,
     ) -> Self {
-        Self{
+        Self {
             proof_try,
             proof_consensus,
-            proof_height
+            proof_height,
         }
     }
 }
-
 
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
@@ -286,10 +278,7 @@ impl MsgConnectionOpenConfirm {
             connection_id: connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof: ProofConnOpenConfirm::new(
-                proof_ack,
-                proof_height,
-            ),
+            proof: ProofConnOpenConfirm::new(proof_ack, proof_height),
             signer,
         })
     }
@@ -327,29 +316,27 @@ pub struct ProofConnOpenConfirm {
 }
 
 impl ProofConnOpenConfirm {
-    pub fn new(
-        proof_ack: CommitmentProof,
-        proof_height: u64,
-    ) -> Self {
-        Self{
+    pub fn new(proof_ack: CommitmentProof, proof_height: u64) -> Self {
+        Self {
             proof_ack,
-            proof_height
+            proof_height,
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::MsgConnectionOpenInit;
+    use crate::ics03_connection::msgs::{
+        MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
+    };
     use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
     use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
-    use super::MsgConnectionOpenInit;
     use tendermint::abci::Proof;
-    use crate::ics03_connection::msgs::{MsgConnectionOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm};
+    use tendermint::account::Id as AccountId;
 
     #[test]
     fn parse_connection_open_init_msg() {
-
         #[derive(Clone, Debug, PartialEq)]
         struct ConOpenInitParams {
             connection_id: String,
@@ -404,8 +391,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -423,7 +410,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgConnOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -434,7 +422,6 @@ mod tests {
 
     #[test]
     fn parse_connection_open_try_msg() {
-
         #[derive(Clone, Debug, PartialEq)]
         struct ConOpenTryParams {
             connection_id: String,
@@ -465,7 +452,7 @@ mod tests {
             proof_init: Proof { ops: vec![] },
             proof_consensus: Proof { ops: vec![] },
             proof_height: 10,
-            consensus_height: 10
+            consensus_height: 10,
         };
 
         let tests: Vec<Test> = vec![
@@ -539,8 +526,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -563,7 +550,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgConnOpenTry::new failed for test {}, \nmsg {:?}",
                 test.name,
                 test.params.clone()
@@ -573,7 +561,6 @@ mod tests {
 
     #[test]
     fn parse_connection_open_ack_msg() {
-
         #[derive(Clone, Debug, PartialEq)]
         struct ConOpenAckParams {
             connection_id: String,
@@ -638,8 +625,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -658,7 +645,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgConnOpenAck::new failed for test {}, \nmsg {:?}",
                 test.name,
                 test.params.clone()
@@ -668,7 +656,6 @@ mod tests {
 
     #[test]
     fn parse_connection_open_confirm_msg() {
-
         #[derive(Clone, Debug, PartialEq)]
         struct ConOpenConfirmParams {
             connection_id: String,
@@ -711,8 +698,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -720,15 +707,12 @@ mod tests {
             let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
             let acc = AccountId::from_str(id_hex).unwrap();
 
-            let msg = MsgConnectionOpenConfirm::new(
-                p.connection_id,
-                p.proof_ack,
-                p.proof_height,
-                acc,
-            );
+            let msg =
+                MsgConnectionOpenConfirm::new(p.connection_id, p.proof_ack, p.proof_height, acc);
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgConnOpenConfirm::new failed for test {}, \nmsg {:?}",
                 test.name,
                 test.params.clone()

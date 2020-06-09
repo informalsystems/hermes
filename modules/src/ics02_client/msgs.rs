@@ -18,10 +18,8 @@ where
     Self: Msg,
 {
     type ConsensusState: ConsensusState;
-    type Header: Header;
 
     fn client_id(&self) -> &ClientId;
     fn client_type(&self) -> ClientType;
-    fn header(&self) -> &Self::Header;
     fn consensus_state(&self) -> Self::ConsensusState;
 }

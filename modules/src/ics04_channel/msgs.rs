@@ -1,16 +1,16 @@
 #![allow(clippy::too_many_arguments)]
 use super::channel::{ChannelEnd, Counterparty};
 use super::exported::*;
+use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::Kind;
+use crate::ics04_channel::packet::Packet;
+use crate::ics23_commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::tx_msg::Msg;
+use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
-use crate::ics23_commitment::CommitmentProof;
-use crate::ics04_channel::packet::Packet;
-use crate::ics03_connection::connection::validate_version;
-use anomaly::fail;
 
 // TODO: Validate Proof for all Msgs
 
@@ -119,8 +119,8 @@ impl MsgChannelOpenTry {
             .map(|s| ConnectionId::from_str(s.as_str()))
             .collect();
 
-        let version = validate_version(channel_version)
-        .map_err(|e| Kind::InvalidVersion.context(e))?;
+        let version =
+            validate_version(channel_version).map_err(|e| Kind::InvalidVersion.context(e))?;
 
         Ok(Self {
             port_id: port_id
@@ -437,7 +437,8 @@ impl MsgPacket {
         }
 
         Ok(Self {
-            packet: packet.validate()
+            packet: packet
+                .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             proof,
             proof_height,
@@ -447,7 +448,9 @@ impl MsgPacket {
 
     // returns the base64-encoded bytes used for the
     // data field when signing the packet
-    pub fn get_data_bytes() -> Vec<u8> {todo!()}
+    pub fn get_data_bytes() -> Vec<u8> {
+        todo!()
+    }
 }
 
 impl Msg for MsgPacket {
@@ -500,7 +503,8 @@ impl MsgTimeout {
         }
 
         Ok(Self {
-            packet: packet.validate()
+            packet: packet
+                .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv,
             proof,
@@ -560,11 +564,15 @@ impl MsgAcknowledgement {
         }
 
         if acknowledgement.len() > 100 {
-            fail!(Kind::AcknowledgementTooLong, "Acknowledgement cannot exceed 100 bytes")
+            fail!(
+                Kind::AcknowledgementTooLong,
+                "Acknowledgement cannot exceed 100 bytes"
+            )
         }
 
         Ok(Self {
-            packet: packet.validate()
+            packet: packet
+                .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement,
             proof,
@@ -602,16 +610,18 @@ impl Msg for MsgAcknowledgement {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
     use super::MsgChannelOpenInit;
+    use crate::ics04_channel::msgs::{
+        MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
+        MsgChannelOpenTry,
+    };
     use crate::ics23_commitment::CommitmentProof;
+    use std::str::FromStr;
     use tendermint::abci::Proof;
-    use crate::ics04_channel::msgs::{MsgChannelOpenTry, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelCloseInit, MsgChannelCloseConfirm};
+    use tendermint::account::Id as AccountId;
 
     #[test]
     fn parse_channel_open_init_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -707,7 +717,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -718,7 +729,6 @@ mod tests {
 
     #[test]
     fn parse_channel_open_try_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -746,7 +756,7 @@ mod tests {
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
             proof_init: Proof { ops: vec![] },
-            proof_height: 10
+            proof_height: 10,
         };
 
         struct Test {
@@ -844,7 +854,9 @@ mod tests {
             Test {
                 name: "Bad connection hops, connection id too long".to_string(),
                 params: OpenTryParams {
-                    connection_hops: vec!["abcdefghijklmnopqrstu".to_string()].into_iter().collect(),
+                    connection_hops: vec!["abcdefghijklmnopqrstu".to_string()]
+                        .into_iter()
+                        .collect(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -891,8 +903,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -912,7 +924,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -923,7 +936,6 @@ mod tests {
 
     #[test]
     fn parse_channel_open_ack_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -941,7 +953,7 @@ mod tests {
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
             proof_try: Proof { ops: vec![] },
-            proof_height: 10
+            proof_height: 10,
         };
 
         struct Test {
@@ -1021,8 +1033,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -1037,7 +1049,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanOpenAck::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -1048,7 +1061,6 @@ mod tests {
 
     #[test]
     fn parse_channel_open_confirm_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -1064,7 +1076,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             proof_ack: Proof { ops: vec![] },
-            proof_height: 10
+            proof_height: 10,
         };
 
         struct Test {
@@ -1136,8 +1148,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -1151,7 +1163,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanOpenConfirm::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -1162,7 +1175,6 @@ mod tests {
 
     #[test]
     fn parse_channel_close_init_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -1238,20 +1250,17 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
 
-            let msg = MsgChannelCloseInit::new(
-                p.port_id,
-                p.channel_id,
-                acc,
-            );
+            let msg = MsgChannelCloseInit::new(p.port_id, p.channel_id, acc);
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanCloseInit::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
@@ -1262,7 +1271,6 @@ mod tests {
 
     #[test]
     fn parse_channel_close_confirm_msg() {
-
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -1278,7 +1286,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             proof_init: Proof { ops: vec![] },
-            proof_height: 10
+            proof_height: 10,
         };
 
         struct Test {
@@ -1350,8 +1358,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         for test in tests {
             let p = test.params.clone();
@@ -1365,7 +1373,8 @@ mod tests {
             );
 
             assert_eq!(
-                test.want_pass, msg.is_ok(),
+                test.want_pass,
+                msg.is_ok(),
                 "MsgChanCloseConfirm::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.params.clone(),
