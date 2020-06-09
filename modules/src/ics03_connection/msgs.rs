@@ -194,7 +194,7 @@ impl MsgConnectionOpenAck {
         version: String,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenAck, Error> {
-        if consensus_height == 0 {
+        if consensus_height == 0 || proof_height == 0 {
             fail!(Kind::InvalidHeight, "Height cannot be zero");
         }
 
@@ -340,31 +340,30 @@ impl ProofConnOpenConfirm {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics23_commitment::CommitmentPrefix;
+    use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
     use super::MsgConnectionOpenInit;
+    use tendermint::abci::Proof;
+    use crate::ics03_connection::msgs::{MsgConnectionOpenTry, MsgConnectionOpenAck, MsgConnectionOpenConfirm};
 
-    #[derive(Clone, Debug, PartialEq)]
-    struct ConOpenInitParams {
-        connection_id: String,
-        client_id: String,
-        counterparty_connection_id: String,
-        counterparty_client_id: String,
-        counterparty_commitment_prefix: CommitmentPrefix,
-    }
+    #[test]
+    fn parse_connection_open_init_msg() {
 
-    struct Test {
-        name: String,
-        params: ConOpenInitParams,
-        want_pass: bool,
-    }
+        #[derive(Clone, Debug, PartialEq)]
+        struct ConOpenInitParams {
+            connection_id: String,
+            client_id: String,
+            counterparty_connection_id: String,
+            counterparty_client_id: String,
+            counterparty_commitment_prefix: CommitmentPrefix,
+        }
 
-    fn default_test_setting() -> (ConOpenInitParams, AccountId) {
-
-        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-        let acc = AccountId::from_str(id_hex).unwrap();
-
+        struct Test {
+            name: String,
+            params: ConOpenInitParams,
+            want_pass: bool,
+        }
 
         let default_con_params = ConOpenInitParams {
             connection_id: "srcconnection".to_string(),
@@ -373,16 +372,6 @@ mod tests {
             counterparty_client_id: "destclient".to_string(),
             counterparty_commitment_prefix: CommitmentPrefix {},
         };
-
-
-
-        (default_con_params, acc)
-    }
-
-    #[test]
-    fn parse_connection_open_init_msg() {
-
-        let (default_con_params, acc) = default_test_setting();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -421,6 +410,9 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
+            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+            let acc = AccountId::from_str(id_hex).unwrap();
+
             let msg = MsgConnectionOpenInit::new(
                 p.connection_id,
                 p.client_id,
@@ -432,7 +424,312 @@ mod tests {
 
             assert_eq!(
                 test.want_pass, msg.is_ok(),
-                "MsgConnOpenInit::new failed for test {}, \nmsg {:?}",
+                "MsgConnOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_connection_open_try_msg() {
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct ConOpenTryParams {
+            connection_id: String,
+            client_id: String,
+            counterparty_connection_id: String,
+            counterparty_client_id: String,
+            counterparty_commitment_prefix: CommitmentPrefix,
+            counterparty_versions: Vec<String>,
+            proof_init: CommitmentProof,
+            proof_consensus: CommitmentProof,
+            proof_height: u64,
+            consensus_height: u64,
+        }
+
+        struct Test {
+            name: String,
+            params: ConOpenTryParams,
+            want_pass: bool,
+        }
+
+        let default_con_params = ConOpenTryParams {
+            connection_id: "srcconnection".to_string(),
+            client_id: "srcclient".to_string(),
+            counterparty_connection_id: "destconnection".to_string(),
+            counterparty_client_id: "destclient".to_string(),
+            counterparty_commitment_prefix: CommitmentPrefix {},
+            counterparty_versions: vec!["1.0.0".to_string()],
+            proof_init: Proof { ops: vec![] },
+            proof_consensus: Proof { ops: vec![] },
+            proof_height: 10,
+            consensus_height: 10
+        };
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_con_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad connection id, non-alpha".to_string(),
+                params: ConOpenTryParams {
+                    connection_id: "con007".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad client id, name too short".to_string(),
+                params: ConOpenTryParams {
+                    client_id: "client".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad destination connection id, name too long".to_string(),
+                params: ConOpenTryParams {
+                    counterparty_connection_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad destination client id, name in uppercase".to_string(),
+                params: ConOpenTryParams {
+                    counterparty_client_id: "BadClientId".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad counterparty versions, empty versions vec".to_string(),
+                params: ConOpenTryParams {
+                    counterparty_versions: vec![],
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad counterparty versions, empty version string".to_string(),
+                params: ConOpenTryParams {
+                    counterparty_versions: vec!["".to_string()],
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height is 0".to_string(),
+                params: ConOpenTryParams {
+                    proof_height: 0,
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad consensus height, height is 0".to_string(),
+                params: ConOpenTryParams {
+                    consensus_height: 0,
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+            let acc = AccountId::from_str(id_hex).unwrap();
+
+            let msg = MsgConnectionOpenTry::new(
+                p.connection_id,
+                p.client_id,
+                p.counterparty_connection_id,
+                p.counterparty_client_id,
+                p.counterparty_commitment_prefix,
+                p.counterparty_versions,
+                p.proof_init,
+                p.proof_consensus,
+                p.proof_height,
+                p.consensus_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgConnOpenTry::new failed for test {}, \nmsg {:?}",
+                test.name,
+                test.params.clone()
+            );
+        }
+    }
+
+    #[test]
+    fn parse_connection_open_ack_msg() {
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct ConOpenAckParams {
+            connection_id: String,
+            proof_try: CommitmentProof,
+            proof_consensus: CommitmentProof,
+            proof_height: u64,
+            consensus_height: u64,
+            version: String,
+        }
+
+        struct Test {
+            name: String,
+            params: ConOpenAckParams,
+            want_pass: bool,
+        }
+
+        let default_con_params = ConOpenAckParams {
+            connection_id: "srcconnection".to_string(),
+            proof_try: Proof { ops: vec![] },
+            proof_consensus: Proof { ops: vec![] },
+            proof_height: 10,
+            consensus_height: 10,
+            version: "1.0.0".to_string(),
+        };
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_con_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad connection id, non-alpha".to_string(),
+                params: ConOpenAckParams {
+                    connection_id: "con007".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad version, empty version string".to_string(),
+                params: ConOpenAckParams {
+                    version: "".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height is 0".to_string(),
+                params: ConOpenAckParams {
+                    proof_height: 0,
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad consensus height, height is 0".to_string(),
+                params: ConOpenAckParams {
+                    consensus_height: 0,
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+            let acc = AccountId::from_str(id_hex).unwrap();
+
+            let msg = MsgConnectionOpenAck::new(
+                p.connection_id,
+                p.proof_try,
+                p.proof_consensus,
+                p.proof_height,
+                p.consensus_height,
+                p.version,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgConnOpenAck::new failed for test {}, \nmsg {:?}",
+                test.name,
+                test.params.clone()
+            );
+        }
+    }
+
+    #[test]
+    fn parse_connection_open_confirm_msg() {
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct ConOpenConfirmParams {
+            connection_id: String,
+            proof_ack: CommitmentProof,
+            proof_height: u64,
+        }
+
+        struct Test {
+            name: String,
+            params: ConOpenConfirmParams,
+            want_pass: bool,
+        }
+
+        let default_con_params = ConOpenConfirmParams {
+            connection_id: "srcconnection".to_string(),
+            proof_ack: Proof { ops: vec![] },
+            proof_height: 10,
+        };
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_con_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad connection id, non-alpha".to_string(),
+                params: ConOpenConfirmParams {
+                    connection_id: "con007".to_string(),
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height is 0".to_string(),
+                params: ConOpenConfirmParams {
+                    proof_height: 0,
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+            let acc = AccountId::from_str(id_hex).unwrap();
+
+            let msg = MsgConnectionOpenConfirm::new(
+                p.connection_id,
+                p.proof_ack,
+                p.proof_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgConnOpenConfirm::new failed for test {}, \nmsg {:?}",
                 test.name,
                 test.params.clone()
             );

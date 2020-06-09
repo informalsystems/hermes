@@ -119,6 +119,9 @@ impl MsgChannelOpenTry {
             .map(|s| ConnectionId::from_str(s.as_str()))
             .collect();
 
+        let version = validate_version(channel_version)
+        .map_err(|e| Kind::InvalidVersion.context(e))?;
+
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -131,7 +134,7 @@ impl MsgChannelOpenTry {
                 Counterparty::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
-                channel_version,
+                version,
             ),
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
@@ -601,10 +604,14 @@ impl Msg for MsgAcknowledgement {
 mod tests {
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
+    use super::MsgChannelOpenInit;
+    use crate::ics23_commitment::CommitmentProof;
+    use tendermint::abci::Proof;
+    use crate::ics04_channel::msgs::{MsgChannelOpenTry, MsgChannelOpenAck, MsgChannelOpenConfirm, MsgChannelCloseInit, MsgChannelCloseConfirm};
 
     #[test]
     fn parse_channel_open_init_msg() {
-        use super::MsgChannelOpenInit;
+
         let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
         let acc = AccountId::from_str(id_hex).unwrap();
 
@@ -699,25 +706,671 @@ mod tests {
                 acc,
             );
 
-            match msg {
-                Ok(_res) => {
-                    assert!(
-                        test.want_pass,
-                        "MsgChanOpenInit::new should have failed for test {}, \nmsg {:?}",
-                        test.name,
-                        test.params.clone()
-                    );
-                }
-                Err(err) => {
-                    assert!(
-                        !test.want_pass,
-                        "MsgChanOpenInit::new failed for test {}, \nmsg {:?} with err {:?}",
-                        test.name,
-                        test.params.clone(),
-                        err
-                    );
-                }
-            }
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_channel_open_try_msg() {
+
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        let acc = AccountId::from_str(id_hex).unwrap();
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct OpenTryParams {
+            port_id: String,
+            channel_id: String,
+            channel_version: String,
+            order: String,
+            connection_hops: Vec<String>,
+            counterparty_port_id: String,
+            counterparty_channel_id: String,
+            counterparty_version: String,
+            proof_init: CommitmentProof,
+            proof_height: u64,
+        }
+
+        let default_params = OpenTryParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            channel_version: "1.0".to_string(),
+            order: "ORDERED".to_string(),
+            connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
+            counterparty_port_id: "destport".to_string(),
+            counterparty_channel_id: "testdestchannel".to_string(),
+            counterparty_version: "1.0".to_string(),
+            proof_init: Proof { ops: vec![] },
+            proof_height: 10
+        };
+
+        struct Test {
+            name: String,
+            params: OpenTryParams,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name non-alpha".to_string(),
+                params: OpenTryParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                params: OpenTryParams {
+                    port_id: "p".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                params: OpenTryParams {
+                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name non-alpha".to_string(),
+                params: OpenTryParams {
+                    channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: OpenTryParams {
+                    channel_id: "chshort".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                params: OpenTryParams {
+                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty counterparty version".to_string(),
+                params: OpenTryParams {
+                    counterparty_version: " ".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height = 0".to_string(),
+                params: OpenTryParams {
+                    proof_height: 0,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad order".to_string(),
+                params: OpenTryParams {
+                    order: "MYORER".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection hops, non-alpha connection id".to_string(),
+                params: OpenTryParams {
+                    connection_hops: vec!["connection124".to_string()].into_iter().collect(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection hops, connection id too long".to_string(),
+                params: OpenTryParams {
+                    connection_hops: vec!["abcdefghijklmnopqrstu".to_string()].into_iter().collect(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection hops, connection id too short".to_string(),
+                params: OpenTryParams {
+                    connection_hops: vec!["connid".to_string()].into_iter().collect(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            // Currently failing because we don't validate connection hops
+            // Test {
+            //     name: "Bad connection hops, more than 1".to_string(),
+            //     params: OpenTryParams {
+            //         connection_hops: vec!["connectionhop".to_string(), "connectionhopnext".to_string()].into_iter().collect(),
+            //         ..default_params.clone()
+            //     },
+            //     want_pass: false,
+            // },
+            Test {
+                name: "Empty channel version".to_string(),
+                params: OpenTryParams {
+                    channel_version: " ".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad counterparty port, name too long".to_string(),
+                params: OpenTryParams {
+                    counterparty_port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad counterparty channel, name non-alpha".to_string(),
+                params: OpenTryParams {
+                    counterparty_channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let msg = MsgChannelOpenTry::new(
+                p.port_id,
+                p.channel_id,
+                p.channel_version,
+                p.order,
+                p.connection_hops,
+                p.counterparty_port_id,
+                p.counterparty_channel_id,
+                p.counterparty_version,
+                p.proof_init,
+                p.proof_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_channel_open_ack_msg() {
+
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        let acc = AccountId::from_str(id_hex).unwrap();
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct OpenAckParams {
+            port_id: String,
+            channel_id: String,
+            counterparty_version: String,
+            proof_try: CommitmentProof,
+            proof_height: u64,
+        }
+
+        let default_params = OpenAckParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            counterparty_version: "1.0".to_string(),
+            proof_try: Proof { ops: vec![] },
+            proof_height: 10
+        };
+
+        struct Test {
+            name: String,
+            params: OpenAckParams,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name non-alpha".to_string(),
+                params: OpenAckParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                params: OpenAckParams {
+                    port_id: "p".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                params: OpenAckParams {
+                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name non-alpha".to_string(),
+                params: OpenAckParams {
+                    channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: OpenAckParams {
+                    channel_id: "chshort".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                params: OpenAckParams {
+                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty counterparty version".to_string(),
+                params: OpenAckParams {
+                    counterparty_version: " ".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height = 0".to_string(),
+                params: OpenAckParams {
+                    proof_height: 0,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let msg = MsgChannelOpenAck::new(
+                p.port_id,
+                p.channel_id,
+                p.counterparty_version,
+                p.proof_try,
+                p.proof_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanOpenAck::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_channel_open_confirm_msg() {
+
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        let acc = AccountId::from_str(id_hex).unwrap();
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct OpenConfirmParams {
+            port_id: String,
+            channel_id: String,
+            proof_ack: CommitmentProof,
+            proof_height: u64,
+        }
+
+        let default_params = OpenConfirmParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            proof_ack: Proof { ops: vec![] },
+            proof_height: 10
+        };
+
+        struct Test {
+            name: String,
+            params: OpenConfirmParams,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name non-alpha".to_string(),
+                params: OpenConfirmParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                params: OpenConfirmParams {
+                    port_id: "p".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                params: OpenConfirmParams {
+                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name non-alpha".to_string(),
+                params: OpenConfirmParams {
+                    channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: OpenConfirmParams {
+                    channel_id: "chshort".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                params: OpenConfirmParams {
+                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height = 0".to_string(),
+                params: OpenConfirmParams {
+                    proof_height: 0,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let msg = MsgChannelOpenConfirm::new(
+                p.port_id,
+                p.channel_id,
+                p.proof_ack,
+                p.proof_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanOpenConfirm::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_channel_close_init_msg() {
+
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        let acc = AccountId::from_str(id_hex).unwrap();
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct CloseInitParams {
+            port_id: String,
+            channel_id: String,
+        }
+
+        let default_params = CloseInitParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+        };
+
+        struct Test {
+            name: String,
+            params: CloseInitParams,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name non-alpha".to_string(),
+                params: CloseInitParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                params: CloseInitParams {
+                    port_id: "p".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                params: CloseInitParams {
+                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name non-alpha".to_string(),
+                params: CloseInitParams {
+                    channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: CloseInitParams {
+                    channel_id: "chshort".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                params: CloseInitParams {
+                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let msg = MsgChannelCloseInit::new(
+                p.port_id,
+                p.channel_id,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanCloseInit::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
+        }
+    }
+
+    #[test]
+    fn parse_channel_close_confirm_msg() {
+
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        let acc = AccountId::from_str(id_hex).unwrap();
+
+        #[derive(Clone, Debug, PartialEq)]
+        struct CloseConfirmParams {
+            port_id: String,
+            channel_id: String,
+            proof_init: CommitmentProof,
+            proof_height: u64,
+        }
+
+        let default_params = CloseConfirmParams {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            proof_init: Proof { ops: vec![] },
+            proof_height: 10
+        };
+
+        struct Test {
+            name: String,
+            params: CloseConfirmParams,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name non-alpha".to_string(),
+                params: CloseConfirmParams {
+                    port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                params: CloseConfirmParams {
+                    port_id: "p".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                params: CloseConfirmParams {
+                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name non-alpha".to_string(),
+                params: CloseConfirmParams {
+                    channel_id: "channelid34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                params: CloseConfirmParams {
+                    channel_id: "chshort".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                params: CloseConfirmParams {
+                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad proof height, height = 0".to_string(),
+                params: CloseConfirmParams {
+                    proof_height: 0,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let msg = MsgChannelCloseConfirm::new(
+                p.port_id,
+                p.channel_id,
+                p.proof_init,
+                p.proof_height,
+                acc,
+            );
+
+            assert_eq!(
+                test.want_pass, msg.is_ok(),
+                "MsgChanCloseConfirm::new failed for test {}, \nmsg {:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                msg.err(),
+            );
         }
     }
 }
