@@ -20,6 +20,7 @@
 //! - ICS 24: Host Requirements
 
 pub mod error;
+pub mod events;
 pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
@@ -30,7 +31,6 @@ pub mod ics24_host;
 pub mod keys;
 pub mod path;
 pub mod query;
-pub mod events;
 pub mod tx_msg;
 
 /// Height of a block, same as in `tendermint` crate
