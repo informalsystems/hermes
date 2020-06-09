@@ -332,7 +332,6 @@ mod tests {
     };
     use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
     use std::str::FromStr;
-    use tendermint::abci::Proof;
     use tendermint::account::Id as AccountId;
 
     #[test]
@@ -449,8 +448,8 @@ mod tests {
             counterparty_client_id: "destclient".to_string(),
             counterparty_commitment_prefix: CommitmentPrefix {},
             counterparty_versions: vec!["1.0.0".to_string()],
-            proof_init: Proof { ops: vec![] },
-            proof_consensus: Proof { ops: vec![] },
+            proof_init: CommitmentProof { ops: vec![] },
+            proof_consensus: CommitmentProof { ops: vec![] },
             proof_height: 10,
             consensus_height: 10,
         };
@@ -579,8 +578,8 @@ mod tests {
 
         let default_con_params = ConOpenAckParams {
             connection_id: "srcconnection".to_string(),
-            proof_try: Proof { ops: vec![] },
-            proof_consensus: Proof { ops: vec![] },
+            proof_try: CommitmentProof { ops: vec![] },
+            proof_consensus: CommitmentProof { ops: vec![] },
             proof_height: 10,
             consensus_height: 10,
             version: "1.0.0".to_string(),
@@ -671,7 +670,7 @@ mod tests {
 
         let default_con_params = ConOpenConfirmParams {
             connection_id: "srcconnection".to_string(),
-            proof_ack: Proof { ops: vec![] },
+            proof_ack: CommitmentProof { ops: vec![] },
             proof_height: 10,
         };
 

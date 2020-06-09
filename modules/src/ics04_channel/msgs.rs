@@ -617,7 +617,6 @@ mod tests {
     };
     use crate::ics23_commitment::CommitmentProof;
     use std::str::FromStr;
-    use tendermint::abci::Proof;
     use tendermint::account::Id as AccountId;
 
     #[test]
@@ -755,7 +754,7 @@ mod tests {
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_init: Proof { ops: vec![] },
+            proof_init: CommitmentProof { ops: vec![] },
             proof_height: 10,
         };
 
@@ -952,7 +951,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_try: Proof { ops: vec![] },
+            proof_try: CommitmentProof { ops: vec![] },
             proof_height: 10,
         };
 
@@ -1075,7 +1074,7 @@ mod tests {
         let default_params = OpenConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_ack: Proof { ops: vec![] },
+            proof_ack: CommitmentProof { ops: vec![] },
             proof_height: 10,
         };
 
@@ -1285,7 +1284,7 @@ mod tests {
         let default_params = CloseConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_init: Proof { ops: vec![] },
+            proof_init: CommitmentProof { ops: vec![] },
             proof_height: 10,
         };
 
