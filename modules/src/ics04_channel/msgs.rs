@@ -3,26 +3,12 @@ use super::channel::{ChannelEnd, Counterparty};
 use super::exported::*;
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::tx_msg::Msg;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 
 pub const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
-
-// FIXME - this should be common for all messages not just channel, client also defines it.
-pub trait Msg {
-    type ValidationError: std::error::Error;
-
-    fn route(&self) -> String;
-
-    fn get_type(&self) -> String;
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
-
-    fn get_sign_bytes(&self) -> Vec<u8>;
-
-    fn get_signers(&self) -> Vec<AccountId>;
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgChannelOpenInit {

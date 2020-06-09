@@ -31,10 +31,12 @@ strategy = "naive"
 [[connections]]
 
 [connections.src]
+  chain_id = "chain_A"
   client_id = "clB1"
   connection_id = "connAtoB"
 
 [connections.dest]
+  chain_id = "chain_B"
   client_id = "clA1"
   connection_id = "connBtoA"
 
