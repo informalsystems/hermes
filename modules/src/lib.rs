@@ -24,11 +24,14 @@ pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
 pub mod ics07_tendermint;
+pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
 pub mod path;
 pub mod query;
+#[macro_use]
+pub mod events;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::lite::Height;

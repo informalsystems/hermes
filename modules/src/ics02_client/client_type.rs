@@ -1,8 +1,10 @@
 use super::error;
 use anomaly::fail;
+use serde_derive::{Deserialize, Serialize};
 
 /// Type of the consensus algorithm
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+
 pub enum ClientType {
     Tendermint = 1,
 }
