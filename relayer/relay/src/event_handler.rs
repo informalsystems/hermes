@@ -7,13 +7,15 @@ use tracing::{debug, info};
 /// The Event Handler handles IBC events from the monitors.
 pub struct EventHandler {
     channel_from_monitors: Receiver<(ChainId, Vec<IBCEvent>)>,
+    relay: bool,
 }
 
 impl EventHandler {
     /// Constructor for the Event Handler
-    pub fn new(channel_from_monitors: Receiver<(ChainId, Vec<IBCEvent>)>) -> Self {
+    pub fn new(channel_from_monitors: Receiver<(ChainId, Vec<IBCEvent>)>, relay: bool) -> Self {
         Self {
             channel_from_monitors,
+            relay,
         }
     }
 
@@ -31,6 +33,12 @@ impl EventHandler {
     }
 
     fn handle(&self, id: ChainId, event: IBCEvent) {
+        if !self.relay {
+            info!("Chain {} pushed {}", id, event.to_json());
+            return;
+        }
+
+        // TODO - main event handler
         debug!("Relayer handle event from {}: {}", id, event.to_json());
     }
 }
