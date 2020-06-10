@@ -1,6 +1,8 @@
+//! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::block;
@@ -14,7 +16,7 @@ pub struct OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit {
             height: obj.height,
@@ -40,7 +42,7 @@ pub struct OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry {
             height: obj.height,
@@ -64,7 +66,7 @@ pub struct OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck {
             height: obj.height,
@@ -86,7 +88,7 @@ pub struct OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm {
             height: obj.height,

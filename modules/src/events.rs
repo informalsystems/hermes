@@ -3,6 +3,7 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
+use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
@@ -73,7 +74,7 @@ impl RawObject {
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), BoxError> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
@@ -147,7 +148,7 @@ pub fn get_all_events(result: ResultEvent) -> Result<Vec<IBCEvent>, String> {
     Ok(vals)
 }
 
-pub fn build_event(object: RawObject) -> Result<IBCEvent, Box<dyn std::error::Error>> {
+pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
     match object.action.as_str() {
         "create_client" => Ok(IBCEvent::from(ClientEvents::CreateClient::try_from(
             object,
@@ -210,9 +211,7 @@ pub fn build_event(object: RawObject) -> Result<IBCEvent, Box<dyn std::error::Er
     }
 }
 
-pub fn extract_block_height(
-    result: &ResultEvent,
-) -> Result<block::Height, Box<dyn std::error::Error>> {
+pub fn extract_block_height(result: &ResultEvent) -> Result<block::Height, BoxError> {
     match &result.data {
         TMEventData::EventDataNewBlock(nb) => match &nb.block {
             Some(block) => Ok(block.header.height),
@@ -230,7 +229,7 @@ macro_rules! make_event {
             pub data: std::collections::HashMap<String, Vec<String>>,
         }
         impl TryFrom<RawObject> for $a {
-            type Error = Box<dyn std::error::Error>;
+            type Error = BoxError;
             fn try_from(result: RawObject) -> Result<Self, Self::Error> {
                 match crate::events::extract_events(&result.events, $b) {
                     Ok(()) => Ok($a {

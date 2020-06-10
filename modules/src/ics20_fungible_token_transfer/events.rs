@@ -1,5 +1,6 @@
 use crate::events::{IBCEvent, RawObject};
 use crate::make_event;
+use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 

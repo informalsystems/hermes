@@ -1,7 +1,9 @@
+//! Types for the IBC events emitted from Tendermint Websocket by the client module.
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
+use anomaly::BoxError;
 
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
@@ -21,7 +23,7 @@ impl NewBlock {
 }
 
 impl TryFrom<&ResultEvent> for NewBlock {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(result: &ResultEvent) -> Result<Self, Self::Error> {
         Ok(NewBlock {
             height: crate::events::extract_block_height(result)?,
@@ -43,7 +45,7 @@ pub struct CreateClient {
 }
 
 impl TryFrom<RawObject> for CreateClient {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient {
             height: obj.height,
@@ -67,7 +69,7 @@ pub struct UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(UpdateClient {
             height: obj.height,
@@ -91,7 +93,7 @@ pub struct ClientMisbehavior {
 }
 
 impl TryFrom<RawObject> for ClientMisbehavior {
-    type Error = Box<dyn std::error::Error>;
+    type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(ClientMisbehavior {
             height: obj.height,
