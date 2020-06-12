@@ -1,15 +1,16 @@
 use super::error;
 use anomaly::fail;
+use serde_derive::{Deserialize, Serialize};
 
 /// Type of the consensus algorithm
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ClientType {
     Tendermint = 1,
 }
 
 impl ClientType {
     /// Yields the identifier of this client type as a string
-    pub fn as_string(self) -> &'static str {
+    pub fn as_string(&self) -> &'static str {
         match self {
             Self::Tendermint => "tendermint",
         }

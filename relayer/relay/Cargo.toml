@@ -20,6 +20,7 @@ sled = { version = "0.31.0", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.11"
 toml = "0.5"
 tracing = "0.1.13"
+tokio = "0.2"
+serde_json = { version = "1" }
 
 [dev-dependencies]
-tokio = { version = "0.2.13", features = ["macros"] }
