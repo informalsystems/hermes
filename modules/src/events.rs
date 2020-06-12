@@ -211,16 +211,6 @@ pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
     }
 }
 
-pub fn extract_block_height(result: &ResultEvent) -> Result<block::Height, BoxError> {
-    match &result.data {
-        TMEventData::EventDataNewBlock(nb) => match &nb.block {
-            Some(block) => Ok(block.header.height),
-            None => Err("Empty block".into()),
-        },
-        _ => Err("Incorrect Event Data".into()),
-    }
-}
-
 #[macro_export]
 macro_rules! make_event {
     ($a:ident, $b:literal) => {

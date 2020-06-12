@@ -8,7 +8,6 @@ use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::block;
-use tendermint::rpc::event_listener::ResultEvent;
 
 // TODO - find a better place for NewBlock
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -19,15 +18,6 @@ pub struct NewBlock {
 impl NewBlock {
     pub fn new(h: block::Height) -> NewBlock {
         NewBlock { height: h }
-    }
-}
-
-impl TryFrom<&ResultEvent> for NewBlock {
-    type Error = BoxError;
-    fn try_from(result: &ResultEvent) -> Result<Self, Self::Error> {
-        Ok(NewBlock {
-            height: crate::events::extract_block_height(result)?,
-        })
     }
 }
 
