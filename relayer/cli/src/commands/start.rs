@@ -114,9 +114,7 @@ async fn create_client(
 
     let store = relayer::store::persistent(format!("store_{}.db", chain.id())).unwrap(); //FIXME: unwrap
     let trust_options = store.get_trust_options().unwrap(); // FIXME: unwrap
-
-    info!("Last height in the store exists: {}", store.last_height().is_ok());
-
+    
     if reset {
         info!(chain.id = %id, "resetting client to trust options state");
         let client = Client::new_from_trust_options(chain, store, &trust_options);
