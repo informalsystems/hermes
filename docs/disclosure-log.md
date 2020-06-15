@@ -24,3 +24,15 @@ The same issue (and fix) seems to exist for the channel handshake datagrams.
 Related issues: [#71](https://github.com/informalsystems/ibc-rs/issues/71) and [#61](https://github.com/informalsystems/ibc-rs/issues/61).
 
 Code for obtaining an execution trace in TLA+: [#73](https://github.com/informalsystems/ibc-rs/pull/73).
+Briefly, this trace comprises the following sequence of actions, assuming two chains `A` and `B` and a relayer (as a simplification, the chains in this model are in charge of creating messages, a responsibility that the relayer typically implements):
+
+
+0. Chain `A` creates a message `M` that has a proof for height `h`, chain `A` also advances its height to `h+1`.
+
+1. The relayer updates the client on chain `B` with the latest height of chain A, namely `h+1` (call to `UpdateClient`).
+
+2. The relayer sends message `M` that chain `A` created (at step 0) to chain B, and also attempt to update the client on chain `B` with height `h` (the height in the proof of this message), but is unable to do so because `h` is smaller than `h +1` (the latest height of client on chain B).
+
+3. Chain `B` will be unable to verify message `M` since it lacks the adequate height information `h`, so chain `B` will drop this message, hence ICS3 can no longer progress.
+
+For the full details of this trace, see the [README.md](https://github.com/informalsystems/ibc-rs/blob/e33f32db95314461d18fbdb13574ddeabafedad4/verification/spec/connection-handshake/updateclient-deadlock/README.md) within #73.
