@@ -1,6 +1,6 @@
 # ibc-rs
 
-> Rust implementation of IBC modules and relayer
+Rust implementation of IBC modules and relayer.
 
 ## Disclaimer
 
@@ -10,23 +10,46 @@ THIS PROJECT IS UNDER HEAVY DEVELOPMENT AND IS NOT IN A WORKING STAGE NOW, USE A
 
 - Rust 1.42+ (might work on earlier versions but this has not been tested yet)
 
-## Usage
 
-Provided that one has a Tendermint node running on port 26657, one can
-configure and spawn two light clients for this chain with the following commands (to be run in the `ibc-rs` directory):
+## Relayer usage
 
-1. Fetch a trusted header from the chain:
+
+### Requirements
+
+Prerequisites to run the instructions below:
+
+- `jq`, a command-line JSON processor
+- To use and test the present relayer implementation, we first need a Tendermint instance that supports IBC; see more details on setting up a basic instance in the [development environment](#development-environment) part below.
+
+
+### Instructions
+
+Assuming two Tendermint nodes running on local ports `26557` and `26657`.
+Suppose we use the name `chain_A` to refer to the node running on port `26657`, and the name `chain_B` for the node running on port `26557`.
+We can now configure and spawn two light clients for each of these chains with the following sequence of commands.
+Run these from the `ibc-rs` directory:
+
+1. Fetch a trusted header from `chain_A`:
 
     ```bash
     $ curl -s http://localhost:26657/status | jq '.result.sync_info|.latest_block_hash,.latest_block_height'
     ```
 
-2. Initialize a light client for chain A with the trusted height and hash fetched in step 1:
+This should return two lines, the first one containing a hash, and the second containig the height of the chain running on `localhost:26657`.
+Sample output:
+
+```bash
+"A8B490542710082377109F4B23E966F9AF924C90A4C3591E9DE9984FFABC2786"
+"158"
+```
+
+2. Initialize a light client for `chain_A` with the trusted height and hash fetched in step 1:
+    
+    > Replace `HASH` and `HEIGHT` with the appropriate values (from step 1 above) in the following command.
 
     ```bash
     ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x HASH -h HEIGHT chain_A
     ```
-    > Replace `HASH` and `HEIGHT` with the appropriate values.
 
 3. Repeat step 1 and 2 above for `chain_B`.
 
@@ -35,10 +58,33 @@ configure and spawn two light clients for this chain with the following commands
 4. Start the light clients and a dummy relayer thread:
 
     ```bash
-    ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml start
+    ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml start --reset
     ```
 
+    The `--reset` flag only needs to be passed once, for initializing the trusted headers based on the hash & height stored from steps 1-3 above.
+
+Beside the basic relayer `start` command, other subcommands are also supported at the moment:
+
+- `listen` will start only the monitor part of the relayer, without the light client functionality;
+- `query`can be used to initiate various queries against one of the chains, for example: `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml query connection end A Z` will look up the connection with identifier `Z` on chain `A`.
+
+The `relayer/cli/src/commands.rs` file contains further description of the CLI subcommands.
+
 **Note:** Add a `-v` flag to the commands above to see detailed log output, eg. `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run`
+
+
+### Development environment
+
+To set up a local development environment, clone the relayer implementation from [iqlusioninc/relayer](https://github.com/iqlusioninc/relayer/).
+We are interested in two commands we can run from this repo:
+
+- `bash scripts/two-chainz "local" "skip"`. Running this script will instantiate two chains, listening on ports `26557` and `26657`, respectively.
+
+
+- `bash dev-env`. Running this script script from your local source will instantiate two chains, on ports `26557` and `26657`, and also a relayer that sets up some connections and channels.
+
+Note that these script rely on the [cosmos/gaia](https://github.com/cosmos/gaia) implementation, which provides the basic tools for setting up a IBC-enabled Tendermint chain (called a "Cosmos Hub" in the IBC terminology).
+
 
 ## License
 
