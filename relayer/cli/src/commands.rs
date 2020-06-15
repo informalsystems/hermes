@@ -7,13 +7,15 @@
 
 mod config;
 mod light;
+mod listen;
 mod query;
 mod start;
 mod utils;
 mod version;
 
 use self::{
-    config::ConfigCmd, light::LightCmd, query::QueryCmd, start::StartCmd, version::VersionCmd,
+    config::ConfigCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
+    version::VersionCmd,
 };
 
 use crate::config::Config;
@@ -33,6 +35,10 @@ pub enum CliCmd {
     /// The `start` subcommand
     #[options(help = "start the relayer")]
     Start(StartCmd),
+
+    /// The `listen` subcommand
+    #[options(help = "listen to IBC events")]
+    Listen(ListenCmd),
 
     /// The `config` subcommand
     #[options(help = "manipulate the relayer configuration")]

@@ -19,7 +19,6 @@ impl CommitmentPath {
 }
 
 pub type CommitmentProof = Proof;
-
 /*
 impl CommitmentProof {
     pub fn from_bytes(_bytes: &[u8]) -> Self {
@@ -30,7 +29,7 @@ impl CommitmentProof {
         todo!()
     }
 }
- */
+*/
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPrefix;
