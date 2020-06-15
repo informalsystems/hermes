@@ -63,10 +63,11 @@ Sample output:
 
     The `--reset` flag only needs to be passed once, for initializing the trusted headers based on the hash & height stored from steps 1-3 above.
 
-Beside the basic relayer `start` command, other subcommands are also supported at the moment:
+Beside the basic relayer `start` command, the following are also available:
 
 - `listen` will start only the monitor part of the relayer, without the light client functionality;
-- `query`can be used to initiate various queries against one of the chains, for example: `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml query connection end A Z` will look up the connection with identifier `Z` on chain `A`.
+- `query`can be used to initiate various queries against one of the chains, for example: `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml query connection end chain_A testconnection` will look up the connection with identifier `testconnection` on chain `chain_A`.
+Note: Currently these commands fail in the response deserialization code and will be fixed as soon as  the protobuf encoding is available for tendermint and cosmos-sdk implementations.
 
 The `relayer/cli/src/commands.rs` file contains further description of the CLI subcommands.
 
@@ -81,9 +82,9 @@ We are interested in two commands we can run from this repo:
 - `bash scripts/two-chainz "local" "skip"`. Running this script will instantiate two chains, listening on ports `26557` and `26657`, respectively.
 
 
-- `bash dev-env`. Running this script script from your local source will instantiate two chains, on ports `26557` and `26657`, and also a relayer that sets up some connections and channels.
+- `bash dev-env`. Running this script script from your local source instantiates two chains, on ports `26557` and `26657`, and starts a relayer that sets up one connection, one channel and sends a few packets over the channel.
 
-Note that these script rely on the [cosmos/gaia](https://github.com/cosmos/gaia) implementation, which provides the basic tools for setting up a IBC-enabled Tendermint chain (called a "Cosmos Hub" in the IBC terminology).
+Note that these script rely on the [cosmos/gaia](https://github.com/cosmos/gaia) implementation, which is a Cosmos-SDK application for the cosmos hub. 
 
 
 ## License
