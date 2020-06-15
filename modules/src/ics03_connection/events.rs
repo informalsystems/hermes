@@ -21,8 +21,8 @@ impl TryFrom<RawObject> for OpenInit {
         Ok(OpenInit {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_init.connection_id"),
-            client_id: attribute!(obj, "connection_open_init.counterparty_client_id"),
-            counterparty_client_id: attribute!(obj, "connection_open_init.client_id"),
+            client_id: attribute!(obj, "connection_open_init.client_id"),
+            counterparty_client_id: attribute!(obj, "connection_open_init.counterparty_client_id"),
         })
     }
 }
@@ -47,8 +47,8 @@ impl TryFrom<RawObject> for OpenTry {
         Ok(OpenTry {
             height: obj.height,
             connection_id: attribute!(obj, "connection_open_try.connection_id"),
-            client_id: attribute!(obj, "connection_open_try.counterparty_client_id"),
-            counterparty_client_id: attribute!(obj, "connection_open_try.client_id"),
+            client_id: attribute!(obj, "connection_open_try.client_id"),
+            counterparty_client_id: attribute!(obj, "connection_open_try.counterparty_client_id"),
         })
     }
 }
