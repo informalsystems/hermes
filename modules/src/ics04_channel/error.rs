@@ -20,8 +20,8 @@ pub enum Kind {
     #[error("invalid version")]
     InvalidVersion,
 
-    #[error("invalid height")]
-    InvalidHeight,
+    #[error("invalid proof")]
+    InvalidProof,
 
     #[error("invalid packet")]
     InvalidPacket,

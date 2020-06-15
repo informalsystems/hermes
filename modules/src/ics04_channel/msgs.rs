@@ -2,17 +2,15 @@
 use super::channel::{ChannelEnd, Counterparty};
 use super::exported::*;
 use crate::ics03_connection::connection::validate_version;
-use crate::ics04_channel::error::Kind;
+use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::proofs::Proofs;
 use crate::tx_msg::Msg;
-use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
-
-// TODO: Validate Proof for all Msgs
 
 pub const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
 
@@ -34,7 +32,7 @@ impl MsgChannelOpenInit {
         counterparty_port_id: String,
         counterparty_channel_id: String,
         signer: AccountId,
-    ) -> Result<MsgChannelOpenInit, crate::ics04_channel::error::Error> {
+    ) -> Result<MsgChannelOpenInit, Error> {
         let connection_hops: Result<Vec<_>, _> = connection_hops
             .into_iter()
             .map(|s| ConnectionId::from_str(s.as_str()))
@@ -60,7 +58,7 @@ impl MsgChannelOpenInit {
 }
 
 impl Msg for MsgChannelOpenInit {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -91,8 +89,7 @@ pub struct MsgChannelOpenTry {
     channel_id: ChannelId,
     channel: ChannelEnd,
     counterparty_version: String,
-    proof_init: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -107,13 +104,9 @@ impl MsgChannelOpenTry {
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_init: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         signer: AccountId,
-    ) -> Result<MsgChannelOpenTry, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgChannelOpenTry, Error> {
         let connection_hops: Result<Vec<_>, _> = connection_hops
             .into_iter()
             .map(|s| ConnectionId::from_str(s.as_str()))
@@ -138,15 +131,15 @@ impl MsgChannelOpenTry {
             ),
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proof_init,
-            proof_height,
+            proofs: Proofs::new(proof_init, None, proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgChannelOpenTry {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -176,8 +169,7 @@ pub struct MsgChannelOpenAck {
     port_id: PortId,
     channel_id: ChannelId,
     counterparty_version: String,
-    proof_try: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -187,13 +179,9 @@ impl MsgChannelOpenAck {
         channel_id: String,
         counterparty_version: String,
         proof_try: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         signer: AccountId,
-    ) -> Result<MsgChannelOpenAck, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgChannelOpenAck, Error> {
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -203,15 +191,15 @@ impl MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proof_try,
-            proof_height,
+            proofs: Proofs::new(proof_try, None, proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgChannelOpenAck {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -242,8 +230,7 @@ pub const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
 pub struct MsgChannelOpenConfirm {
     port_id: PortId,
     channel_id: ChannelId,
-    proof_ack: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -252,13 +239,9 @@ impl MsgChannelOpenConfirm {
         port_id: String,
         channel_id: String,
         proof_ack: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         signer: AccountId,
-    ) -> Result<MsgChannelOpenConfirm, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgChannelOpenConfirm, Error> {
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -266,15 +249,15 @@ impl MsgChannelOpenConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof_ack,
-            proof_height,
+            proofs: Proofs::new(proof_ack, None, proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgChannelOpenConfirm {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -313,7 +296,7 @@ impl MsgChannelCloseInit {
         port_id: String,
         channel_id: String,
         signer: AccountId,
-    ) -> Result<MsgChannelCloseInit, crate::ics04_channel::error::Error> {
+    ) -> Result<MsgChannelCloseInit, Error> {
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -327,7 +310,7 @@ impl MsgChannelCloseInit {
 }
 
 impl Msg for MsgChannelCloseInit {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -358,8 +341,7 @@ pub const TYPE_MSG_CHANNEL_CLOSE_CONFIRM: &str = "channel_close_confirm";
 pub struct MsgChannelCloseConfirm {
     port_id: PortId,
     channel_id: ChannelId,
-    proof_init: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -368,13 +350,9 @@ impl MsgChannelCloseConfirm {
         port_id: String,
         channel_id: String,
         proof_init: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         signer: AccountId,
-    ) -> Result<MsgChannelCloseConfirm, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgChannelCloseConfirm, Error> {
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -382,15 +360,15 @@ impl MsgChannelCloseConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof_init,
-            proof_height,
+            proofs: Proofs::new(proof_init, None, proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgChannelCloseConfirm {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -420,8 +398,7 @@ pub const TYPE_MSG_PACKET: &str = "ics04/opaque";
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgPacket {
     packet: Packet,
-    proof: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -431,17 +408,13 @@ impl MsgPacket {
         proof: CommitmentProof,
         proof_height: u64,
         signer: AccountId,
-    ) -> Result<MsgPacket, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgPacket, Error> {
         Ok(Self {
             packet: packet
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
-            proof,
-            proof_height,
+            proofs: Proofs::new(proof, None, proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
@@ -454,7 +427,7 @@ impl MsgPacket {
 }
 
 impl Msg for MsgPacket {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -485,8 +458,7 @@ pub const TYPE_MSG_TIMEOUT: &str = "ics04/timeout";
 pub struct MsgTimeout {
     packet: Packet,
     next_sequence_recv: Option<u64>,
-    proof: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -497,25 +469,21 @@ impl MsgTimeout {
         proof: CommitmentProof,
         proof_height: u64,
         signer: AccountId,
-    ) -> Result<MsgTimeout, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgTimeout, Error> {
         Ok(Self {
             packet: packet
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv,
-            proof,
-            proof_height,
+            proofs: Proofs::new(proof, None, proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgTimeout {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -546,8 +514,7 @@ pub const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
 pub struct MsgAcknowledgement {
     packet: Packet,
     acknowledgement: Vec<u8>,
-    proof: CommitmentProof,
-    proof_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -558,16 +525,9 @@ impl MsgAcknowledgement {
         proof: CommitmentProof,
         proof_height: u64,
         signer: AccountId,
-    ) -> Result<MsgAcknowledgement, crate::ics04_channel::error::Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
+    ) -> Result<MsgAcknowledgement, Error> {
         if acknowledgement.len() > 100 {
-            fail!(
-                Kind::AcknowledgementTooLong,
-                "Acknowledgement cannot exceed 100 bytes"
-            )
+            return Err(Kind::AcknowledgementTooLong.into());
         }
 
         Ok(Self {
@@ -575,15 +535,15 @@ impl MsgAcknowledgement {
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement,
-            proof,
-            proof_height,
+            proofs: Proofs::new(proof, None, proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
 }
 
 impl Msg for MsgAcknowledgement {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
@@ -611,6 +571,7 @@ impl Msg for MsgAcknowledgement {
 #[cfg(test)]
 mod tests {
     use super::MsgChannelOpenInit;
+    use crate::ics03_connection::msgs::test_util::get_dummy_proof;
     use crate::ics04_channel::msgs::{
         MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
         MsgChannelOpenTry,
@@ -754,7 +715,7 @@ mod tests {
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_init: CommitmentProof { ops: vec![] },
+            proof_init: get_dummy_proof(),
             proof_height: 10,
         };
 
@@ -951,7 +912,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_try: CommitmentProof { ops: vec![] },
+            proof_try: get_dummy_proof(),
             proof_height: 10,
         };
 
@@ -1074,7 +1035,7 @@ mod tests {
         let default_params = OpenConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_ack: CommitmentProof { ops: vec![] },
+            proof_ack: get_dummy_proof(),
             proof_height: 10,
         };
 
@@ -1284,7 +1245,7 @@ mod tests {
         let default_params = CloseConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_init: CommitmentProof { ops: vec![] },
+            proof_init: get_dummy_proof(),
             proof_height: 10,
         };
 

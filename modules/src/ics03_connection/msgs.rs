@@ -4,12 +4,10 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
-use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
-
-// TODO: Validate Proof for all Msgs
 
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 
@@ -81,8 +79,7 @@ pub struct MsgConnectionOpenTry {
     client_id: ClientId,
     counterparty: Counterparty,
     counterparty_versions: Vec<String>,
-    proof: ProofConnOpenTry,
-    consensus_height: u64,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -94,15 +91,14 @@ impl MsgConnectionOpenTry {
         counterparty_client_id: String,
         counterparty_commitment_prefix: CommitmentPrefix,
         counterparty_versions: Vec<String>,
-        proof_init: CommitmentProof,
-        proof_consensus: CommitmentProof,
-        proof_height: u64,
+        init_proof: CommitmentProof,
+        consensus_proof: CommitmentProof,
+        proofs_height: u64,
         consensus_height: u64,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenTry, Error> {
-        if proof_height == 0 || consensus_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
+        let consensus_proof_obj = ConsensusProof::new(consensus_proof, consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
 
         Ok(Self {
             connection_id: connection_id
@@ -119,8 +115,8 @@ impl MsgConnectionOpenTry {
             .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_versions: validate_versions(counterparty_versions)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proof: ProofConnOpenTry::new(proof_init, proof_consensus, proof_height),
-            consensus_height,
+            proofs: Proofs::new(init_proof, Option::from(consensus_proof_obj), proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
@@ -150,34 +146,12 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ProofConnOpenTry {
-    proof_init: CommitmentProof,
-    proof_consensus: CommitmentProof,
-    proof_height: u64,
-}
-
-impl ProofConnOpenTry {
-    pub fn new(
-        proof_init: CommitmentProof,
-        proof_consensus: CommitmentProof,
-        proof_height: u64,
-    ) -> Self {
-        Self {
-            proof_init,
-            proof_consensus,
-            proof_height,
-        }
-    }
-}
-
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
-    proof: ProofConnOpenAck,
-    consensus_height: u64,
+    proofs: Proofs,
     version: String,
     signer: AccountId,
 }
@@ -187,21 +161,20 @@ impl MsgConnectionOpenAck {
         connection_id: String,
         proof_try: CommitmentProof,
         proof_consensus: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         consensus_height: u64,
         version: String,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenAck, Error> {
-        if consensus_height == 0 || proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
+        let consensus_proof_obj = ConsensusProof::new(proof_consensus, consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
 
         Ok(Self {
             connection_id: connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof: ProofConnOpenAck::new(proof_try, proof_consensus, proof_height),
-            consensus_height,
+            proofs: Proofs::new(proof_try, Option::from(consensus_proof_obj), proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             version: validate_version(version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer,
         })
@@ -220,7 +193,6 @@ impl Msg for MsgConnectionOpenAck {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        //todo: validate proof !
         Ok(())
     }
 
@@ -233,33 +205,12 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ProofConnOpenAck {
-    proof_try: CommitmentProof,
-    proof_consensus: CommitmentProof,
-    proof_height: u64,
-}
-
-impl ProofConnOpenAck {
-    pub fn new(
-        proof_try: CommitmentProof,
-        proof_consensus: CommitmentProof,
-        proof_height: u64,
-    ) -> Self {
-        Self {
-            proof_try,
-            proof_consensus,
-            proof_height,
-        }
-    }
-}
-
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenConfirm {
     connection_id: ConnectionId,
-    proof: ProofConnOpenConfirm,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -267,18 +218,15 @@ impl MsgConnectionOpenConfirm {
     pub fn new(
         connection_id: String,
         proof_ack: CommitmentProof,
-        proof_height: u64,
+        proofs_height: u64,
         signer: AccountId,
     ) -> Result<MsgConnectionOpenConfirm, Error> {
-        if proof_height == 0 {
-            fail!(Kind::InvalidHeight, "Height cannot be zero");
-        }
-
         Ok(Self {
             connection_id: connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proof: ProofConnOpenConfirm::new(proof_ack, proof_height),
+            proofs: Proofs::new(proof_ack, None, proofs_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
     }
@@ -296,7 +244,6 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        //todo: validate proof !
         Ok(())
     }
 
@@ -309,23 +256,28 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ProofConnOpenConfirm {
-    proof_ack: CommitmentProof,
-    proof_height: u64,
-}
+#[cfg(test)]
+pub mod test_util {
+    use crate::ics23_commitment::CommitmentProof;
+    use tendermint::merkle::proof::ProofOp;
 
-impl ProofConnOpenConfirm {
-    pub fn new(proof_ack: CommitmentProof, proof_height: u64) -> Self {
-        Self {
-            proof_ack,
-            proof_height,
+    pub fn get_dummy_proof() -> CommitmentProof {
+        let proof_op = ProofOp {
+            field_type: "iavl:v".to_string(),
+            key: "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy".as_bytes().to_vec(),
+            data: "8QEK7gEKKAgIEAwYHCIgG9RAkJgHlxNjmyzOW6bUAidhiRSja0x6+GXCVENPG1oKKAgGEAUYFyIgwRns+dJvjf1Zk2BaFrXz8inPbvYHB7xx2HCy9ima5f8KKAgEEAMYFyogOr8EGajEV6fG5fzJ2fAAvVMgRLhdMJTzCPlogl9rxlIKKAgCEAIYFyIgcjzX/a+2bFbnNldpawQqZ+kYhIwz5r4wCUzuu1IFW04aRAoeY29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIyEiAZ1uuG60K4NHJZZMuS9QX6o4eEhica5jIHYwflRiYkDBgX"
+                .as_bytes().to_vec()
+        };
+
+        CommitmentProof {
+            ops: vec![proof_op],
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::test_util::get_dummy_proof;
     use super::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
@@ -448,8 +400,8 @@ mod tests {
             counterparty_client_id: "destclient".to_string(),
             counterparty_commitment_prefix: CommitmentPrefix {},
             counterparty_versions: vec!["1.0.0".to_string()],
-            proof_init: CommitmentProof { ops: vec![] },
-            proof_consensus: CommitmentProof { ops: vec![] },
+            proof_init: get_dummy_proof(),
+            proof_consensus: get_dummy_proof(),
             proof_height: 10,
             consensus_height: 10,
         };
@@ -524,6 +476,14 @@ mod tests {
                 },
                 want_pass: false,
             },
+            Test {
+                name: "Empty proof".to_string(),
+                params: ConOpenTryParams {
+                    proof_init: CommitmentProof { ops: vec![] },
+                    ..default_con_params.clone()
+                },
+                want_pass: false,
+            },
         ]
         .into_iter()
         .collect();
@@ -551,9 +511,10 @@ mod tests {
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenTry::new failed for test {}, \nmsg {:?}",
+                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} \nwith error {:?}",
                 test.name,
-                test.params.clone()
+                test.params.clone(),
+                msg.err(),
             );
         }
     }
@@ -578,8 +539,8 @@ mod tests {
 
         let default_con_params = ConOpenAckParams {
             connection_id: "srcconnection".to_string(),
-            proof_try: CommitmentProof { ops: vec![] },
-            proof_consensus: CommitmentProof { ops: vec![] },
+            proof_try: get_dummy_proof(),
+            proof_consensus: get_dummy_proof(),
             proof_height: 10,
             consensus_height: 10,
             version: "1.0.0".to_string(),
@@ -646,9 +607,10 @@ mod tests {
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenAck::new failed for test {}, \nmsg {:?}",
+                "MsgConnOpenAck::new failed for test {}, \nmsg {:?} \nwith error {:?}",
                 test.name,
-                test.params.clone()
+                test.params.clone(),
+                msg.err()
             );
         }
     }
@@ -670,7 +632,7 @@ mod tests {
 
         let default_con_params = ConOpenConfirmParams {
             connection_id: "srcconnection".to_string(),
-            proof_ack: CommitmentProof { ops: vec![] },
+            proof_ack: get_dummy_proof(),
             proof_height: 10,
         };
 
@@ -712,9 +674,10 @@ mod tests {
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenConfirm::new failed for test {}, \nmsg {:?}",
+                "MsgConnOpenConfirm::new failed for test {}, \nmsg {:?} \nwith error {:?}",
                 test.name,
-                test.params.clone()
+                test.params.clone(),
+                msg.err()
             );
         }
     }

@@ -19,8 +19,8 @@ pub enum Kind {
     #[error("invalid address")]
     InvalidAddress,
 
-    #[error("invalid height")]
-    InvalidHeight,
+    #[error("invalid proof")]
+    InvalidProof,
 }
 
 impl Kind {
