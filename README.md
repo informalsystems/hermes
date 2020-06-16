@@ -55,7 +55,7 @@ Sample output:
 
     > For this, update the height and hash, and change the chain identifier in the command above from `chain_A` to `chain_B`.
 
-4. Start the light clients and a dummy relayer thread:
+4. Finally, start the main relayer thread, along with the light clients and IBC event monitor threads:
 
     ```bash
     ibc-rs $ cargo run --bin relayer -- -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml start --reset
