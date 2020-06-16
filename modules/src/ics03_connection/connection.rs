@@ -1,6 +1,5 @@
 use super::exported::*;
-use crate::ics03_connection::error;
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
@@ -14,18 +13,22 @@ pub struct ConnectionEnd {
 }
 
 impl ConnectionEnd {
-    pub fn new(client_id: ClientId, counterparty: Counterparty, versions: Vec<String>) -> Self {
-        ConnectionEnd {
+    pub fn new(
+        client_id: ClientId,
+        counterparty: Counterparty,
+        versions: Vec<String>,
+    ) -> Result<Self, Error> {
+        Ok(Self {
             state: State::Uninitialized,
             client_id,
             counterparty,
-            versions,
-        }
+            versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
+        })
     }
 }
 
 impl Connection for ConnectionEnd {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
 
     fn state(&self) -> &State {
         &self.state
@@ -46,19 +49,6 @@ impl Connection for ConnectionEnd {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        if self.versions.is_empty() {
-            return Err(error::Kind::InvalidVersion
-                .context("missing connection versions")
-                .into());
-        }
-
-        for v in self.versions().iter() {
-            if v.trim().is_empty() {
-                return Err(error::Kind::InvalidVersion
-                    .context("empty version string")
-                    .into());
-            }
-        }
         self.counterparty().validate_basic()
     }
 }
@@ -75,7 +65,7 @@ impl Counterparty {
         client_id: String,
         connection_id: String,
         prefix: CommitmentPrefix,
-    ) -> Result<Self, error::Error> {
+    ) -> Result<Self, Error> {
         Ok(Self {
             client_id: client_id
                 .parse()
@@ -89,7 +79,7 @@ impl Counterparty {
 }
 
 impl ConnectionCounterparty for Counterparty {
-    type ValidationError = error::Error;
+    type ValidationError = Error;
 
     fn client_id(&self) -> String {
         self.client_id.as_str().into()
@@ -104,6 +94,26 @@ impl ConnectionCounterparty for Counterparty {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
+        // todo!()
+        Ok(())
     }
+}
+
+pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, String> {
+    let v: Vec<String> = versions.to_vec();
+    if v.is_empty() {
+        return Err("missing versions".to_string());
+    }
+
+    for v in versions.into_iter() {
+        validate_version(v)?;
+    }
+    Ok(v)
+}
+
+pub fn validate_version(version: String) -> Result<String, String> {
+    if version.trim().is_empty() {
+        return Err("empty version string".to_string());
+    }
+    Ok(version)
 }

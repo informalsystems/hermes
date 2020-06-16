@@ -24,6 +24,10 @@ impl CommitmentProof {
     pub fn from_bytes(_bytes: &[u8]) -> Self {
         todo!()
     }
+
+    pub fn validate_basic() -> Result<CommitmentProof, Error> {
+        todo!()
+    }
 }
 */
 

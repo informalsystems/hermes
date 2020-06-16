@@ -30,6 +30,7 @@ pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
 pub mod path;
+pub mod proofs;
 pub mod query;
 pub mod tx_msg;
 
