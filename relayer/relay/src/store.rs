@@ -53,7 +53,7 @@ where
 }
 
 /// Returns a persistent trusted store backed by an on-disk `sled` database
-/// stored in sthe folder specified in the `path` argument.
+/// stored in the folder specified in the `path` argument.
 pub fn persistent<C: Chain>(db_path: impl AsRef<Path>) -> Result<sled::SledStore<C>, error::Error> {
     sled::SledStore::new(db_path)
 }
