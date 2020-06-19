@@ -1,6 +1,7 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::CommitmentRoot;
 
+use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::ClientId;
 use serde_derive::{Deserialize, Serialize};
@@ -9,7 +10,7 @@ use tendermint::lite::Header as liteHeader;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
-    id: String,
+    id: ClientId,
     trusting_period: Duration,
     unbonding_period: Duration,
     frozen_height: crate::Height,
@@ -19,26 +20,27 @@ pub struct ClientState {
 impl ClientState {
     pub fn new(
         id: String,
-        trusting_period: Duration,
-        unbonding_period: Duration,
+        trusting_period: Duration, // TODO initialize with Duration::from_..?
+        unbonding_period: Duration, // TODO initialize with Duration::from_..?
         latest_header: Header,
         frozen_height: crate::Height,
-    ) -> Self {
-        Self {
-            id,
+    ) -> Result<ClientState, Error> {
+        Ok(Self {
+            // TODO: Consider replacing 'ValidationError' with 'IdentifierError' Kind.
+            id: id.parse().map_err(|e| Kind::ValidationError.context(e))?,
             trusting_period,
             unbonding_period,
             latest_header,
             frozen_height,
-        }
+        })
     }
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
-    type ValidationError = crate::ics07_tendermint::error::Error;
+    type ValidationError = Error;
 
     fn client_id(&self) -> ClientId {
-        self.id.parse().unwrap()
+        self.id.clone()
     }
 
     fn client_type(&self) -> ClientType {

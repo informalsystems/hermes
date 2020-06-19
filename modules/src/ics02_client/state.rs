@@ -29,7 +29,7 @@ pub trait ClientState {
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Height of consensus state
+    /// Latest height of consensus state
     fn get_latest_height(&self) -> Height;
 
     /// Freeze status of the client
