@@ -8,13 +8,12 @@
     This module captures the operators and actions outside of the ICS3 protocol
     itself (i.e., the environment).
     Among others, the environment does the following:
-    - creates two instances of ConnectionHandshakeModule,
+    - creates two instances of ICS3Module,
     - wires these instances together,
-    - simulates some malicious behavior by injecting incorrect messages
-    - provides the initialization step for ICS3 protocol, concretely a
-    "ICS3MsgInit" message, so that the two instances can perform the protocol.
-    - updates the clients on each instance periodically, or advances the chain
-    of each instance. 
+    - some relayer functionality: provides the initialization step for ICS3
+    protocol, concretely a "ICS3MsgInit" message, so that the two instances can
+    perform the protocol; also, updates the clients on each instance
+    periodically, or advances the chain of each instance.
 
  ***************************************************************************)
 
@@ -98,10 +97,10 @@ allVars == <<chainStoreVars,
              outBufChainA, outBufChainB>>
 
 
-(* Separate module with the common type definitions. *)
+(* This is a separate module comprising common type definitions. *)
 INSTANCE ICS3Types
 
-chmA == INSTANCE ConnectionHandshakeModule
+chmA == INSTANCE ICS3Module
         WITH MaxChainHeight <- MaxHeight,
              inBuf          <- inBufChainA,
              outBuf         <- outBufChainA,
@@ -110,7 +109,7 @@ chmA == INSTANCE ConnectionHandshakeModule
              ClientIDs      <- ChainAClientIDs
 
 
-chmB == INSTANCE ConnectionHandshakeModule
+chmB == INSTANCE ICS3Module
         WITH MaxChainHeight <- MaxHeight,
              inBuf          <- inBufChainB,
              outBuf         <- outBufChainB,
@@ -145,8 +144,9 @@ InitEnv ==
     /\ outBufChainB = <<>>
 
 
-(* Relay sub-action of the environment.
+(* Message relaying functionality of the environment.
 
+    This is part of the RelayNextEnv sub-action of the environment.
     This performs a basic relaying step, that is, passing a message from the
     output buffer of one of the chains (paramter 'from') into the input buffer
     of another chain (parameter 'to').
@@ -159,23 +159,26 @@ RelayMessage(from, to) ==
     /\ from' = Tail(from)
 
 
-(* Default next action for environment.
+(* Default next sub-action for environment.
 
     This action may change (non-deterministically) either of the store of chain A
-    or B by advancing the height or updating the client on that chain.
+    or B, either by advancing the height or updating the client on that chain.
 
  *)
 DefaultNextEnv ==
-    \/ /\ chmA!CanAdvance
-       /\ \/ chmA!AdvanceChainHeight
-          \/ chmA!UpdateClient(storeChainB.latestHeight)
+    \/ \/ /\ chmA!CanAdvance
+          /\ chmA!AdvanceChainHeight
+       \/ /\ chmA!CanUpdateClient(storeChainB.latestHeight)
+          /\ chmA!UpdateClient(storeChainB.latestHeight)
        /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-    \/ /\ chmB!CanAdvance
-       /\ \/ chmB!AdvanceChainHeight
-          \/ chmB!UpdateClient(storeChainA.latestHeight)
+    \/ \/ /\ chmB!CanAdvance
+          /\ chmB!AdvanceChainHeight
+       \/ /\ chmB!CanUpdateClient(storeChainA.latestHeight)
+          /\ chmB!UpdateClient(storeChainA.latestHeight)
        /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
-(* Relaying action for the environment.
+
+(* Relaying sub-action for the environment.
 
     This action performs a relaying step: moving a message between the output
     buffer of a chain to the input buffer of the other chain, and updating accordingly
@@ -183,6 +186,7 @@ DefaultNextEnv ==
 
  *)
 RelayNextEnv ==
+    (* Relay direction: from chain A to chain B. *)
     \/ LET msg == Head(outBufChainA)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
                            THEN msg.proofHeight
@@ -193,6 +197,7 @@ RelayNextEnv ==
              \/ ~ chmB!CanUpdateClient(targetHeight)
                     /\ UNCHANGED storeChainB
           /\ UNCHANGED<<storeChainA, outBufChainB, inBufChainA>>
+    (* Relay direction: from chain B to chain A. *)
     \/ LET msg == Head(outBufChainB)
            targetHeight == IF MessageTypeIncludesConnProof(msg.type)
                            THEN msg.proofHeight
@@ -323,6 +328,7 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 21 09:19:12 CEST 2020 by adi
+\* Last modified Mon Jun 22 16:53:20 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
+
 
