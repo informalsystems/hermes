@@ -21,7 +21,8 @@ EXTENDS Naturals, FiniteSets, Sequences
 
 
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
-         MaxBufLen      \* Length (size) of message buffers.
+         MaxBufLen,     \* Length (size) of message buffers.
+         Concurrency    \* Flag for enabling concurrent relayers.
 
 
 ASSUME MaxHeight > 1
@@ -222,7 +223,7 @@ RelayNextEnv ==
 
  *)
 NextEnv ==
-    \/ DefaultNextEnv
+    \/ Concurrency /\ DefaultNextEnv
     \/ RelayNextEnv
 
 
@@ -328,7 +329,7 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:53:20 CEST 2020 by adi
+\* Last modified Tue Jun 23 10:57:28 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
 
