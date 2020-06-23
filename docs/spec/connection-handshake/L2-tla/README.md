@@ -26,7 +26,9 @@ The `Concurrency` flag enables/disables some non-determinsm of the environment,
 specifically:
 
 - if TRUE, then the environment can non-deterministically advance the height or update the light client of a chain.
-This configuration simulates a liveness problem caused by the way `UpdateClient` is used by relayers, and will lead the model to stutter. See more details in the [disclosure log](https://github.com/informalsystems/ibc-rs/pull/83).
+This configuration simulates a liveness problem caused by the way `UpdateClient` is used by relayers, and will lead the model to stutter.
+To be clear: the stuttering is not caused by a bug in the ICS3 protocol itself; this model simply captures the original (faulty) algorithms surrounding the ICS3 protocol.
+See more details in the [disclosure log](https://github.com/informalsystems/ibc-rs/pull/83).
 - if FALSE, then the model should check correctly.
 
 3. add the invariant `ConsistencyInv` and `TypeInvariant` as well as the property (temporal formula) `Termination`.
