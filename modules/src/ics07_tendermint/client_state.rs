@@ -20,13 +20,32 @@ pub struct ClientState {
 impl ClientState {
     pub fn new(
         id: String,
-        trusting_period: Duration, // TODO initialize with Duration::from_..?
-        unbonding_period: Duration, // TODO initialize with Duration::from_..?
+        trusting_period: Duration,
+        unbonding_period: Duration,
         latest_header: Header,
         frozen_height: crate::Height,
     ) -> Result<ClientState, Error> {
+        // Basic validation of trusting period and unbonding period: each should be non-zero.
+        if trusting_period <= Duration::new(0, 0) {
+            return Err(Kind::InvalidTrustingPeriod
+                .context("ClientState trusting period must be greater than zero")
+                .into());
+        }
+        if unbonding_period <= Duration::new(0, 0) {
+            return Err(Kind::InvalidUnboundingPeriod
+                .context("ClientState unbonding period must be greater than zero")
+                .into());
+        }
+
+        // Basic validation for the frozen_height parameter.
+        if frozen_height != 0 {
+            return Err(Kind::ValidationError
+                .context("ClientState cannot be frozen at creation time")
+                .into());
+        }
+
         Ok(Self {
-            // TODO: Consider replacing 'ValidationError' with 'IdentifierError' Kind.
+            // TODO: Consider adding a specific 'IdentifierError' Kind, akin to the one in ICS04.
             id: id.parse().map_err(|e| Kind::ValidationError.context(e))?,
             trusting_period,
             unbonding_period,
@@ -52,7 +71,8 @@ impl crate::ics02_client::state::ClientState for ClientState {
     }
 
     fn is_frozen(&self) -> bool {
-        false
+        // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
+        self.frozen_height != 0
     }
 
     fn verify_client_consensus_state(

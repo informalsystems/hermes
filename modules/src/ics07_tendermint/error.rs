@@ -14,7 +14,7 @@ pub enum Kind {
     #[error("invalid address")]
     InvalidAddress,
 
-    #[error("invalid header, failed basic validation with its own chain-id")]
+    #[error("invalid header, failed basic validation")]
     InvalidHeader,
 
     #[error("validation error")]
