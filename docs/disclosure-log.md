@@ -55,38 +55,41 @@ Note that it is also possible for relayer `r2` to have submitted the same item `
 
 ##### TLA+ trace
 
-To obtain an execution in TLA+ that depicts the above liveness problem, it is sufficient to enable the `Concurrency` flag in the default TLA+ spec for ICS3.
+To obtain an execution in TLA+ that depicts the above liveness problem, it is sufficient to enable the `Concurrency` flag in the L2 default TLA+ spec for ICS3.
+This spec is located in [spec/connection-handshake/L2-tla/](./spec/connection-handshake/L2-tla/).
 In this spec we make a few simplifications compared to the real system, most importantly: to verify an item at height `h`, a light client can use the consensus state at the same height `h` (no need for smaller height `h-1`).
 Below we summarize the parameters as well as the sequence of actions that lead to the liveness problem.
 
 ###### Parameters:
 
 - `MaxBufLen <- 2`
-- `MaxHeight <- 6`
-- `Concurrency <- True`
+- `MaxHeight <- 8`
+- `Concurrency <- TRUE`
 - Behavior spec: Temporal formula `Spec`
 - Check for `Deadlock`, Invariants `TypeInvariant` and `ConsistencyProperty`, as well as Property `Termination`
 
 ###### Trace:
 
-Both chains `A` and `B` start at height `1`, and the light client on each chain has consensus state `1`.
+Both chains `A` and `B` start at height `1`, and the light client on each chain has consensus state for height `1`.
 
 1. The environment submits a `ICS3MsgInit` message to chain `A`.
 
-2. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `1` to height `2`.
+2. Chain `A` processes the `ICS3MsgInit`, advances to height `2`, and prepares a `ICS3MsgTry` message destined for chain `B`.
+The proof in this message is for height `2`.
 
-3. Chain `A` processes the `ICS3MsgInit`, advances to height `3`, and prepares a `ICS3MsgTry` message destined for chain `B`.
-The proof in this message is for height `3`.
+3. The environment triggers the `AdvanceChainHeight` action of chain `B`, so this chain transitions from height `1` to height `2`.
 
-4. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `3` to height `4`.
+4. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `2` to height `3`.
 
-5. __Concurrency:__ The environment triggers the `UpdateClient` action on chain `B`: the light client on this chain is updated with height `4` (that is, the latest height of chain `A`), and chain `B` also transitions from height `1` to height `2`.
+5. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `3` to height `4`.
 
-6. The environment passes (i.e., relays) the `ICS3MsgTry` message to chain `B`.
-Recall that this message has proofs for height `3`; consenquently, the environment also attempts to trigger `UpdateClient` action on chain `B` for consensus state `3`.
-This action does not enable because the light client on `B` has a more recent consensus state `4`.
+6. __Concurrency:__ The environment triggers the `UpdateClient` action on chain `B`: the light client on this chain is updated with height `4` (that is, the latest height of chain `A`), and chain `B` also transitions from height `2` to height `3`.
 
-7. Chain `B` attempts to process the `ICS3MsgTry` but is unable to verify its authenticity, since the light client on this chain does not have the required consensus state `3`.
+7. The environment passes (i.e., relays) the `ICS3MsgTry` message to chain `B`.
+Recall that this message has proofs for height `2`; consenquently, the environment also attempts to trigger `UpdateClient` action on chain `B` for consensus state at height `2`.
+This action does not enable because the light client on `B` has a more recent consensus state for height `4`.
+
+8. Chain `B` attempts to process the `ICS3MsgTry` but is unable to verify its authenticity, since the light client on this chain does not have the required consensus state at height `2`.
 Chain `B` drops this message.
 
 From this point on, the model stutters, i.e., is unable to progress further in the connection handshake protocol.
