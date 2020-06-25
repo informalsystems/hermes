@@ -17,7 +17,7 @@ To run this spec:
 Note the assumptions:
 
 ```
-ASSUME MaxHeight > 1
+ASSUME MaxHeight > 4
 ASSUME MaxBufLen >= 1
 ```
 
@@ -25,9 +25,9 @@ Typical values could be: `MaxHeight = 5` and `MaxBufLen = 2`.
 The `Concurrency` flag enables/disables some non-determinsm of the environment,
 specifically:
 
-- if TRUE, then the environment can non-deterministically advance the height or update the light client of a chain.
-This configuration simulates a liveness problem caused by the way `UpdateClient` is used by relayers, and will lead the model to stutter.
-To be clear: the stuttering is not caused by a bug in the ICS3 protocol itself; this model simply captures the original (faulty) algorithms surrounding the ICS3 protocol.
+- if TRUE, then the environment can non-deterministically update the light client of a chain.
+This configuration simulates a liveness problem caused by the way relayers use `UpdateClient`, and will lead the model to stutter.
+To be clear: the stuttering is not caused by a bug in the ICS3 protocol itself; this model simply captures the original faulty relayer algorithms surrounding the ICS3 protocol.
 See more details in the [disclosure log](https://github.com/informalsystems/ibc-rs/pull/83).
 - if FALSE, then the model should check correctly.
 

@@ -8,12 +8,16 @@
     This module captures the operators and actions outside of the ICS3 protocol
     itself (i.e., the environment).
     Among others, the environment does the following:
-    - creates two instances of ICS3Module,
-    - wires these instances together,
-    - some relayer functionality: provides the initialization step for ICS3
-    protocol, concretely a "ICS3MsgInit" message, so that the two instances can
-    perform the protocol; also, updates the clients on each instance
-    periodically, or advances the chain of each instance.
+    - creates two instances of ICS3Module;
+    - wires these instances together;
+    - provides the initialization step for ICS3 protocol, concretely a
+    "ICS3MsgInit" message, so that the two instances can perform the protocol;
+    - some relayer functionality: passes any outgoing message from a chain
+    into the ingoing buffer of the other (destination) chain and correspondingly
+    updates the client of the destination chain;
+    - also, advances the chain of each instance non-deterministically;
+    - if `Concurrency` is TRUE, then this module can take non-deterministic
+    steps, by updating the client on a chain.
 
  ***************************************************************************)
 
@@ -25,7 +29,7 @@ CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
          Concurrency    \* Flag for enabling concurrent relayers.
 
 
-ASSUME MaxHeight > 1
+ASSUME MaxHeight > 4
 ASSUME MaxBufLen >= 1
 
 
@@ -137,9 +141,9 @@ InitEnv ==
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
                         msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
           /\ inBufChainA = <<>>
-       \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
+       \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
                         msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
-          /\ inBufChainB \in {<<msg>> :
+                      /\ inBufChainB \in {<<msg>> :
                         msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
@@ -160,28 +164,43 @@ RelayMessage(from, to) ==
     /\ from' = Tail(from)
 
 
-(* Default next sub-action for environment.
+(* Default next step for environment.
 
-    This action may change (non-deterministically) either of the store of chain A
-    or B, either by advancing the height or updating the client on that chain.
+    This step may change (non-deterministically) either of the store of chain A
+    or B, by advancing the height of that chain. This can only enable if the
+    respective chain has ample steps left, i.e., the chain height is not within 4 steps
+    of the maximum height. This precondition disallow continuos advancing of chain heights,
+    and therefore allows chains to take meaningful steps (executing the ICS3 protocol to
+    completion).
 
  *)
 DefaultNextEnv ==
-    \/ \/ /\ chmA!CanAdvance
+    \/ \/ /\ MaxHeight - storeChainA.latestHeight > 4
           /\ chmA!AdvanceChainHeight
-       \/ /\ chmA!CanUpdateClient(storeChainB.latestHeight)
-          /\ chmA!UpdateClient(storeChainB.latestHeight)
        /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-    \/ \/ /\ chmB!CanAdvance
+    \/ \/ /\ MaxHeight - storeChainB.latestHeight > 4
           /\ chmB!AdvanceChainHeight
-       \/ /\ chmB!CanUpdateClient(storeChainA.latestHeight)
-          /\ chmB!UpdateClient(storeChainA.latestHeight)
        /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
 
-(* Relaying sub-action for the environment.
+(* A concurrent UpdateClient step for the environment.
 
-    This action performs a relaying step: moving a message between the output
+    This updates the client on one of the chains with the latest height of the other chain.
+    This step helps to simulate the conditions of having multiple relayers acting in parallel.
+
+*)
+ConcurrentUpdateClient ==
+       \/ /\ chmB!CanUpdateClient(storeChainA.latestHeight)
+          /\ chmB!UpdateClient(storeChainA.latestHeight)
+          /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+       \/ /\ chmA!CanUpdateClient(storeChainB.latestHeight)
+          /\ chmA!UpdateClient(storeChainB.latestHeight)
+          /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
+
+
+(* Relaying step for the environment.
+
+    This step performs a relay: moving a message between the output
     buffer of a chain to the input buffer of the other chain, and updating accordingly
     the client on the latter chain. 
 
@@ -213,17 +232,25 @@ RelayNextEnv ==
 
 (* Environment next action.
 
-    There are two possible actions that the environment may perform:
+    There are three possible actions that the environment may perform:
 
-    1. An update client step: the environment updates the client on
-    one of the two chains, if that chain is expecting to receive a message
-    (i.e., if there is a message in the ougoing buffer of the other chain).
+    1. If `Concurrency` flag is TRUE, then the environment may update the
+    client on one of the two chains. This effectively models what happens
+    when more than a relayer triggers the `UpdateClient` action of a chain,
+    a condition that can lead to liveness (termination) problems in ICS3. 
+    
+    2. A 'DefaultNextEnv' step, that simply advances the height of one of
+    the chains unless the chain has just a few (namely, `4`) heights left.
 
-    2. Otherwise, the environment performs a relaying step.
+    3. The environment may perform a relaying step, that is:
+    if there is a message in the ougoing buffer of a chain, the relayer
+    moves this message to the ingoing buffer of the other chain, and also
+    updates the client on the latter chain.
 
  *)
 NextEnv ==
-    \/ Concurrency /\ DefaultNextEnv
+    \/ Concurrency /\ ConcurrentUpdateClient
+    \/ DefaultNextEnv
     \/ RelayNextEnv
 
 
@@ -299,17 +326,17 @@ TypeInvariant ==
 
 (* Liveness property.
 
-    We expect to always reach an OPEN connection on both chains if the following
-    condition holds:
-    both chains can advance with at least 4 more steps (4 is the minimum
-    number of steps that are necessary for the chains to reach OPEN).
+    We expect to eventually always reach an OPEN connection on both chains.
+    
+    Naturally, this property may not hold if the two chains do not have
+    sufficient number of heights they can advance to. In other words, the
+    `MaxHeight` constant should be at least `4` for this property to hold.
+
+    The `Concurrency` constant may also affect liveness.
 *)
 Termination ==
-    []((/\ storeChainA.latestHeight < MaxHeight - 4
-        /\ storeChainB.latestHeight < MaxHeight - 4)
-        => <> [](/\ storeChainA.connection.state = "OPEN"
-                 /\ storeChainB.connection.state = "OPEN"))
-
+       <> [](/\ storeChainA.connection.state = "OPEN"
+             /\ storeChainB.connection.state = "OPEN")
 
 (* Safety property.
 
@@ -329,7 +356,7 @@ Consistency ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jun 23 10:57:28 CEST 2020 by adi
+\* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
 
