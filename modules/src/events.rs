@@ -8,7 +8,8 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
-use tendermint::rpc::event_listener::{ResultEvent, TMEventData};
+
+use tendermint_rpc::event_listener::{ResultEvent, TMEventData};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEvent {

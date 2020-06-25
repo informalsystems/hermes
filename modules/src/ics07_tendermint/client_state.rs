@@ -64,7 +64,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
 #[cfg(test)]
 mod tests {
     use crate::test::test_serialization_roundtrip;
-    use tendermint::rpc::endpoint::abci_query::AbciQuery;
+    use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
