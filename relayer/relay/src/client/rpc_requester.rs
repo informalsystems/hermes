@@ -3,10 +3,10 @@ use async_trait::async_trait;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::lite::{error, Height, SignedHeader};
-use tendermint_rpc as rpc;
 use tendermint::validator;
 use tendermint::validator::Set;
 use tendermint::{block, lite};
+use tendermint_rpc as rpc;
 
 /// RpcRequester wraps the Tendermint rpc::Client to provide
 /// a slightly higher-level API to fetch signed headers
