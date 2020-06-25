@@ -1,5 +1,5 @@
 use std::marker::PhantomData;
-use tendermint::rpc::endpoint::abci_query::AbciQuery;
+use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
 use tendermint::abci;
 

@@ -1,5 +1,5 @@
 use tendermint::abci;
-use tendermint::rpc::endpoint::abci_query::AbciQuery;
+use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
 use crate::error;
 use crate::Height;

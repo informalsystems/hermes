@@ -1,6 +1,6 @@
 use relayer_modules::events::IBCEvent;
-use tendermint::rpc::event_listener::EventSubscription;
-use tendermint::{net, rpc::event_listener, Error as TMError};
+use tendermint::{net, Error as TMError};
+use tendermint_rpc::{event_listener, event_listener::EventSubscription};
 use tokio::sync::mpsc::Sender;
 
 use ::tendermint::chain::Id as ChainId;
