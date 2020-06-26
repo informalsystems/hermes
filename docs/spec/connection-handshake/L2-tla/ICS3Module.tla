@@ -214,16 +214,17 @@ PreconditionsInitMsg(m) ==
 HandleInitMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
                    state      |-> "INIT"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgTry",
-                     proofHeight |-> store.latestHeight + 1,
+                     proofHeight |-> newStore.latestHeight,
                      connProof |-> myConnProof,
                      clientProof |-> myClientProof] IN
     IF PreconditionsInitMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -248,16 +249,17 @@ PreconditionsTryMsg(m) ==
 HandleTryMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "TRYOPEN"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgAck",
-                     proofHeight |-> store.latestHeight + 1,
+                     proofHeight |-> newStore.latestHeight,
                      connProof |-> myConnProof,
                      clientProof |-> myClientProof] IN
     IF PreconditionsTryMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -278,14 +280,15 @@ PreconditionsAckMsg(m) ==
 HandleAckMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "OPEN"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     proofHeight |-> store.latestHeight + 1,
+                     proofHeight |-> newStore.latestHeight,
                      type |-> "ICS3MsgConfirm",
                      connProof |-> myConnProof] IN
     IF PreconditionsAckMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -303,10 +306,11 @@ PreconditionsConfirmMsg(m) ==
  *)
 HandleConfirmMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
-                   state |-> "OPEN"] IN 
+                   state |-> "OPEN"]
+        newStore == NewStore(newCon) IN 
     IF PreconditionsConfirmMsg(m)
     THEN [out |-> outBuf,    (* Never need to reply to a confirm msg. *)
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -392,7 +396,7 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jun 25 14:50:52 CEST 2020 by adi
+\* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
 
