@@ -76,34 +76,55 @@ ConnectionEnds ==
         channelEnd : ChannelEnds
     ]  
 
+
+(********************************** Chains *********************************
+    A set of chain records. 
+    A chain record contains the following fields:
+    
+    - height : an integer between nullHeight and MaxHeight. 
+      Stores the current height of the chain.
+    
+    - counterpartyClientHeights : a set of integers between 1 and MaxHeight
+      Stores the heights of the client for the counterparty chain.
+
+    - connectionEnd : a connection end record 
+      Stores data about the connection with the counterparty chain
+ ***************************************************************************)
+Chains ==    
+    [
+        height : Nat,
+        counterpartyClientHeights : SUBSET(Nat),
+        connectionEnd : ConnectionEnds
+    ]
+
 (******************************** Datagrams ********************************
  A set of datagrams.
  ***************************************************************************)
-Datagrams ==
-    [type : {"CreateClient"}, clientID : ClientIDs, height : Nat]
+Datagrams(Heights) ==
+    [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
-    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Nat]   
+    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
     \union
     [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
     \union
     [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs, 
-     clientID : ClientIDs, proofHeight : Heights, consensusHeight : Nat]
+     clientID : ClientIDs, proofHeight : Heights, consensusHeight : Heights]
     \union
-    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs, proofHeight : Nat, 
+    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs, proofHeight : Heights, 
      consensusHeight : Heights ]
     \union
-    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs, proofHeight : Nat] 
+    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs, proofHeight : Heights] 
     \union
     [type : {"ChanOpenInit"}, channelID : ChannelIDs, counterpartyChannelID : ChannelIDs] 
     \union 
     [type : {"ChanOpenTry"}, channelID : ChannelIDs, counterpartyChannelID : ChannelIDs, 
-     proofHeight : Nat]
+     proofHeight : Heights]
     \union 
-    [type : {"ChanOpenAck"}, channelID : ChannelIDs, proofHeight : Nat]
+    [type : {"ChanOpenAck"}, channelID : ChannelIDs, proofHeight : Heights]
     \union
-    [type : {"ChanOpenConfirm"}, channelID : ChannelIDs, proofHeight : Nat]
+    [type : {"ChanOpenConfirm"}, channelID : ChannelIDs, proofHeight : Heights]
 
 (***************************************************************************
  Initial values of a channel end, connection end, chain
@@ -138,8 +159,21 @@ InitChain ==
      connectionEnd |-> InitConnectionEnd]
 
 (***************************************************************************
- Chain helper operators
+ Client helper operators
  ***************************************************************************)
+
+\* get the ID of chainID's counterparty chain    
+GetCounterpartyChainID(chainID) ==
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"    
+ 
+\* get the client ID of the client for chainID 
+GetClientID(chainID) ==
+    IF chainID = "chainA" THEN "clA" ELSE "clB"
+        
+\* get the client ID of the client for chainID's counterparty chain           
+GetCounterpartyClientID(chainID) ==
+    IF chainID = "chainA" THEN "clB" ELSE "clA"
+    
 \* get the latest height of chainID
 GetLatestHeight(chain) ==
     chain.height   
@@ -158,10 +192,29 @@ GetCounterpartyClientHeights(chain) ==
 IsCounterpartyClientOnChain(chain) ==
     chain.counterpartyClientHeights /= {}
 
-\* returns true if the counterparty client height on chainID is greater or equal than h
-CounterpartyClientHeightUpdated(chain, h) ==
+\* returns true if the height h is in counterparty client heights on chainID 
+IsCounterpartyClientHeightOnChain(chain, h) ==
     h \in chain.counterpartyClientHeights
+     
+(***************************************************************************
+ Connection helper operators
+ ***************************************************************************)
 
+\* get the connection ID of the connection end at chainID
+GetConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "connBtoA"
+         ELSE nullConnectionID      
+
+\* get the connection ID of the connection end at chainID's counterparty chain
+GetCounterpartyConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "connAtoB"
+         ELSE nullConnectionID 
 \* get the connection end at chainID
 GetConnectionEnd(chain) == 
     chain.connectionEnd
@@ -182,6 +235,26 @@ IsConnectionTryopen(chain) ==
 IsConnectionOpen(chain) ==
     chain.connectionEnd.state = "OPEN"
           
+(***************************************************************************
+ Channel helper operators
+ ***************************************************************************)
+
+\* get the channel ID of the channel end at the connection end of chainID
+GetChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "chanBtoA"
+         ELSE nullChannelID
+         
+\* get the channel ID of the channel end at chainID's counterparty chain
+GetCounterpartyChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "chanAtoB"
+         ELSE nullChannelID 
+                   
 \* get the channel end at the connection end of chainID          
 GetChannelEnd(chain) ==
     chain.connectionEnd.channelEnd
@@ -205,5 +278,5 @@ IsChannelOpen(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 08 16:48:22 CET 2020 by ilinastoilkovska
+\* Last modified Wed Jun 24 18:18:13 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

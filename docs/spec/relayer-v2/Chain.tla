@@ -1,17 +1,15 @@
 ---------------------------- MODULE Chain ----------------------------
 
-EXTENDS Naturals, FiniteSets, ClientHandlers, ConnectionHandlers, ChannelHandlers
-
-CONSTANTS ChainID, 
-          MaxHeight \* maximal height of all the chains in the system 
+EXTENDS Naturals, FiniteSets, RelayerDefinitions, 
+        ClientHandlers, ConnectionHandlers, ChannelHandlers
+        
+CONSTANTS ChainID, \* chain identifier
+          Heights \* set of possible heights of the chains in the system 
 
 VARIABLES chainStore,
           incomingDatagrams
 
 vars == <<chainStore, incomingDatagrams>>          
-Heights == 1..MaxHeight
-nullHeight == 0
-
 
 (***************************************************************************
  Client update operators
@@ -68,37 +66,37 @@ ChannelUpdate(chainID, chain, datagrams) ==
  ***************************************************************************)
 \* Update chainID with the received datagrams
 \* Supports ICS2 (Clients), ICS3 (Connections), and ICS4 (Channels).
-UpdateChain(chainID, datagrams) == 
+UpdateChainStore(chainID, datagrams) == 
     \* ICS 002: Client updates
-    LET lightClientsUpdated == LightClientUpdate(chainID, chain, datagrams) IN 
+    LET lightClientsUpdatedStore == LightClientUpdate(chainID, chainStore, datagrams) IN 
     \* ICS 003: Connection updates
-    LET connectionsUpdated == ConnectionUpdate(chainID, lightClientsUpdated, datagrams) IN
+    LET connectionsUpdatedStore == ConnectionUpdate(chainID, lightClientsUpdatedStore, datagrams) IN
     \* ICS 004: Channel updates
-    LET channelsUpdated == ChannelUpdate(chainID, connectionsUpdated, datagrams) IN
+    LET channelsUpdatedStore == ChannelUpdate(chainID, connectionsUpdatedStore, datagrams) IN
     
     \* update height
-    LET updatedChain == 
-        IF /\ chain /= channelsUpdated
-           /\ chain.height < MaxHeight 
-        THEN [channelsUpdated EXCEPT !.height = chain.height + 1]
-        ELSE channelsUpdated
+    LET updatedChainStore == 
+        IF /\ chainStore /= channelsUpdatedStore
+           /\ chainStore.height + 1 \in Heights 
+        THEN [channelsUpdatedStore EXCEPT !.height = chainStore.height + 1]
+        ELSE channelsUpdatedStore
     IN
     
-    updatedChain
+    updatedChainStore
 
 (***************************************************************************
  Chain actions
  ***************************************************************************)       
 \* Advance the height of the chain until MaxHeight is reached
 AdvanceChain ==
-    /\ chain.height < MaxHeight
-    /\ chain' = [chain EXCEPT !height = chain.height + 1]
+    /\ chainStore.height + 1 \in Heights
+    /\ chainStore' = [chainStore EXCEPT !.height = chainStore.height + 1]
     /\ UNCHANGED incomingDatagrams
 
-\* Receive the datagrams and update the chain state        
-ReceiveIncomingDatagrams ==
+\* Handle the datagrams and update the chain state        
+HandleIncomingDatagrams ==
     /\ incomingDatagrams /= {} 
-    /\ chain' = UpdateChain(ChainID, incomingDatagrams[chainID])
+    /\ chainStore' = UpdateChainStore(ChainID, incomingDatagrams)
     /\ incomingDatagrams' = {}
 
 (***************************************************************************
@@ -120,12 +118,11 @@ Next ==
     \/ AdvanceChain
     \/ HandleIncomingDatagrams
     \/ UNCHANGED vars
-        
-\* Fairness constraints 
+    
 Fairness ==
     /\ WF_vars(AdvanceChain)
     /\ WF_vars(HandleIncomingDatagrams)
-
+        
 (***************************************************************************
  Invariants
  ***************************************************************************)
@@ -133,9 +130,17 @@ Fairness ==
 \* Chains and Datagrams are defined in RelayerDefinitions.tla        
 TypeOK ==    
     /\ chainStore \in Chains
-    /\ incomingDatagrams \in SUBSET Datagrams
+    /\ incomingDatagrams \in SUBSET Datagrams(Heights)
+    
+(***************************************************************************
+ Properties
+ ***************************************************************************)    
+\* it ALWAYS holds that the height of the chain does not EVENTUALLY decrease
+HeightDoesntDecrease ==
+    [](\A h \in Heights : chainStore.height = h 
+        => <>(chainStore.height >= h))
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 08 16:48:22 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jun 26 14:53:06 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

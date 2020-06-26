@@ -8,26 +8,6 @@
 EXTENDS Naturals, FiniteSets, RelayerDefinitions
 
 (***************************************************************************
- Client helper operators
- ***************************************************************************)
-
-\* get the ID of chainID's counterparty chain    
-GetCounterpartyChainID(chainID) ==
-    IF chainID = "chainA" THEN "chainB" ELSE "chainA"    
- 
-\* get the client ID of the client for chainID 
-GetClientID(chainID) ==
-    IF chainID = "chainA" THEN "clA" ELSE "clB"
-        
-\* get the client ID of the client for chainID's counterparty chain           
-GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN "clB" ELSE "clA" 
-    
-\* \* get the height of the datagram    
-\* GetDatagramHeight(datagram) ==
-\*     datgram.height    
-
-(***************************************************************************
  Client datagram handlers
  ***************************************************************************)
     
@@ -100,5 +80,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue May 26 11:30:26 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jun 22 16:23:48 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska
