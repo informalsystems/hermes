@@ -28,4 +28,4 @@ tracing = "0.1.13"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
-
+subtle-encoding = { version = "0.5" }
