@@ -3,7 +3,7 @@ use std::time::Duration;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::lite::TrustThresholdFraction;
-use tendermint::rpc::Client as RpcClient;
+use tendermint_rpc::Client as RpcClient;
 
 use relayer_modules::ics07_tendermint::client_state::ClientState;
 use relayer_modules::ics07_tendermint::consensus_state::ConsensusState;

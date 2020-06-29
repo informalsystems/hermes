@@ -99,7 +99,7 @@ mod tests {
     use crate::ics07_tendermint::header::Header;
     use crate::test::test_serialization_roundtrip;
     use std::time::Duration;
-    use tendermint::rpc::endpoint::abci_query::AbciQuery;
+    use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
