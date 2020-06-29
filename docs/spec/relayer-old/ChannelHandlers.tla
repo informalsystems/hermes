@@ -5,7 +5,33 @@
  channel datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions         
+EXTENDS Naturals, FiniteSets
+
+ChannelIDs == {"chanAtoB", "chanBtoA"}
+nullChannelID == "none"
+
+ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
+ChannelOrder == {"ORDERED", "UNORDERED"}
+
+(***************************************************************************
+ Channel helper operators
+ ***************************************************************************)
+
+\* get the channel ID of the channel end at the connection end of chainID
+GetChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "chanBtoA"
+         ELSE nullChannelID
+         
+\* get the channel ID of the channel end at chainID's counterparty chain
+GetCounterpartyChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "chanAtoB"
+         ELSE nullChannelID          
 
 (***************************************************************************
  Channel datagram handlers
@@ -142,5 +168,5 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:24:56 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:19:49 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska
