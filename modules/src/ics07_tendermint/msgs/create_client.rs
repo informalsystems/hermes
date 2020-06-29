@@ -5,6 +5,8 @@ use crate::ics23_commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
+use std::time::Duration;
+
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
 
@@ -14,8 +16,8 @@ pub const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
 pub struct MsgCreateClient {
     client_id: ClientId,
     header: Header,
-    trusting_period: std::time::Duration,
-    bonding_period: std::time::Duration,
+    trusting_period: Duration,
+    bonding_period: Duration,
     signer: AccountId,
 }
 
@@ -23,8 +25,8 @@ impl MsgCreateClient {
     pub fn new(
         client_id: ClientId,
         header: Header,
-        trusting_period: std::time::Duration,
-        bonding_period: std::time::Duration,
+        trusting_period: Duration,
+        bonding_period: Duration,
         signer: AccountId,
     ) -> Self {
         Self {

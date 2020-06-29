@@ -29,12 +29,13 @@ pub trait ClientState {
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Height of consensus state
+    /// Latest height of consensus state
     fn get_latest_height(&self) -> Height;
 
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
+    // TODO: It's unclear what this function is expected to achieve. Document this.
     fn verify_client_consensus_state(
         &self,
         root: &CommitmentRoot,
