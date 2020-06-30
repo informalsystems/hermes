@@ -1,8 +1,8 @@
 ------------------------------ MODULE Relayer ------------------------------
 
 (***************************************************************************
- This module contains the specification of the relayer algorithm. 
- It instantiates the module Environment, which takes care of the chain logic. 
+ This module contains the specification of a relayer, which is an off-chain 
+ process running a relayer algorithm 
  ***************************************************************************)
 
 EXTENDS Naturals, FiniteSets, RelayerDefinitions
@@ -204,11 +204,12 @@ ComputeDatagrams(srcChainID, dstChainID) ==
  ***************************************************************************)   
 \* Update the height of the relayer client for some chainID
 UpdateRelayerClients(chainID) ==
-        /\ relayerHeights[chainID] < GetLatestHeight(GetChainByID(chainID))
-        /\ relayerHeights' = [relayerHeights EXCEPT 
-                                        ![chainID] = GetLatestHeight(GetChainByID(chainID))
-                                   ]
-        /\ UNCHANGED <<chainAstore, chainBstore, outgoingDatagrams>>  
+    LET chainLatestHeight == GetLatestHeight(GetChainByID(chainID)) IN
+    /\ relayerHeights[chainID] < chainLatestHeight
+    /\ relayerHeights' = [relayerHeights EXCEPT 
+                            ![chainID] = GetLatestHeight(GetChainByID(chainID))
+                         ]
+    /\ UNCHANGED <<chainAstore, chainBstore, outgoingDatagrams>>  
 
 \* for two chains, srcChainID and dstChainID, where srcChainID /= dstChainID, 
 \* create the pending datagrams and update the corresponding sets of pending datagrams
@@ -267,5 +268,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 26 15:03:29 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Jun 30 17:53:17 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
