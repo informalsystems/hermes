@@ -44,7 +44,7 @@ Given an item `X` and a commitment proof for `X` constructed at height `h-1`, th
 
 2. __Concurrency:__ Different relayers may update the same light client. Suppose a relayer `r1` wants to submit a consensus state at height `h` and a message that includes `X` plus the associated proof at `h-1`.
 In the meantime, however, another relayer `r2` may update this same light client to height `h'`.
-It is important to note that `h'` is bigger than `h`.
+Assume `h'` is bigger than `h`.
 Now `r1` will be unable to update the light client with consensus state `h`, because the light client disallows updates with smaller heights than the current height `h'`; consequently, the relayer will be unable to submit `X`.
 
 To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the consensus state at a larger height (e.g., at `h'`) followed by the message that includes the proof for `X` (at `h'-1`).
