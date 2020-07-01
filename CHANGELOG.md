@@ -1,4 +1,6 @@
-## [0.0.1] - 2020-07-01
+## [0.0.1]
+
+* July 1st, 2020*
 
 - Initial release
 ### Added
@@ -11,4 +13,4 @@
 
     - Note: the event handler just displays the events.
 - IBC Modules partial implementation for datastructures, messages and queries.
-- Some specifications and models for Connection Handshake and Naive relayer algorithm.
+- Some English and TLA+ specifications for Connection & Channel Handshake as well as naive relayer algorithm.
