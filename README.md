@@ -99,7 +99,7 @@ one!
 
 ## Versioning
 
-We follow [Semantic Versioning](), but none of the APIs are stable yet. Expect
+We follow [Semantic Versioning](https://semver.org/), but none of the APIs are stable yet. Expect
 anything to break with each release until `v0.1.0`.
 
 ## Resources
