@@ -69,7 +69,7 @@ InitMsgs(le, re) ==
 
 (******************************* ICS3MessageTypes *****************************
 
-    The set of valid message types that the ConnectionHandshakeModule can 
+    The set of valid message types that the ICS3Module can
     handle, e.g., as incoming or outgoing messages.
 
     In the low-level connection handshake protocol, the four messages have
@@ -353,6 +353,6 @@ Stores ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed May 20 16:53:21 CEST 2020 by adi
+\* Last modified Tue Jun 23 13:47:17 CEST 2020 by adi
 \* Created Mon May 18 17:53:08 CEST 2020 by adi
 
