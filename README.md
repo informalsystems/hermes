@@ -1,28 +1,43 @@
 # ibc-rs
 
-Rust implementation of IBC modules and relayer.
+Rust implementation of Interblockchain Communication (IBC) 
+[modules](/modules) and 
+[relayer](/relayer).
+
+Includes [TLA+ specifications](/docs/spec).
 
 ## Disclaimer
 
 THIS PROJECT IS UNDER HEAVY DEVELOPMENT AND IS NOT IN A WORKING STAGE NOW, USE AT YOUR OWN RISK.
 
-## Requirements
+## Releases
 
-- Rust 1.42+ (might work on earlier versions but this has not been tested yet)
+This project is still a pre v0.1.0 prototype. Releases can be found
+[here](https://github.com/informalsystems/ibc-rs/releases)
 
+## Installation 
 
-## Relayer usage
+Requires Rust 1.42+ (might work on earlier versions but this has not been tested yet)
 
+These are instructions for setting up a local development environment with two
+IBC-enabled local blockchains that the relayer can run against.
 
-### Requirements
-
-Prerequisites to run the instructions below:
+Dependencies:
 
 - `jq`, a command-line JSON processor
-- To use and test the present relayer implementation, we first need a Tendermint instance that supports IBC; see more details on setting up a basic instance in the [development environment](#development-environment) part below.
+- [`gaia`](https://github.com/cosmos/gaia), a blockchain supporting IBC 
+
+Clone the relayer implementation from [iqlusioninc/relayer](https://github.com/iqlusioninc/relayer/).
+We are interested in two commands we can run from this repo:
+
+- `bash scripts/two-chainz "local" "skip"`. Running this script will instantiate two chains, listening on ports `26557` and `26657`, respectively.
 
 
-### Instructions
+- `bash dev-env`. Running this script from your local source instantiates two chains, on ports `26557` and `26657`, and starts a relayer that sets up one connection, one channel and sends a few packets over the channel.
+
+Note that these script rely on the [cosmos/gaia](https://github.com/cosmos/gaia) implementation, which is a Cosmos-SDK application for the cosmos hub. 
+
+## Running the Relayer
 
 Assuming two Tendermint nodes running on local ports `26557` and `26657`.
 Suppose we use the name `chain_A` to refer to the node running on port `26657`, and the name `chain_B` for the node running on port `26557`.
@@ -73,23 +88,30 @@ The `relayer/cli/src/commands.rs` file contains further description of the CLI s
 
 **Note:** Add a `-v` flag to the commands above to see detailed log output, eg. `cargo run --bin relayer -- -v -c ./relayer/relay/tests/config/fixtures/relayer_conf_example.toml run`
 
+## Contributing
 
-### Development environment
+IBC is specified in English in the [cosmos/ics repo](https://github.com/cosmos/ics). Any
+protocol changes or clarifications should be contributed there.
 
-To set up a local development environment, clone the relayer implementation from [iqlusioninc/relayer](https://github.com/iqlusioninc/relayer/).
-We are interested in two commands we can run from this repo:
+This repo contains the TLA+ specification and Rust implementation for the IBC
+modules and relayer. If you're interested in contributing, please comment on an issue or open a new
+one!
 
-- `bash scripts/two-chainz "local" "skip"`. Running this script will instantiate two chains, listening on ports `26557` and `26657`, respectively.
+## Versioning
 
+We follow [Semantic Versioning](), but none of the APIs are stable yet. Expect
+anything to break with each release until `v0.1.0`.
 
-- `bash dev-env`. Running this script script from your local source instantiates two chains, on ports `26557` and `26657`, and starts a relayer that sets up one connection, one channel and sends a few packets over the channel.
+## Resources
 
-Note that these script rely on the [cosmos/gaia](https://github.com/cosmos/gaia) implementation, which is a Cosmos-SDK application for the cosmos hub. 
-
+- [IBC Website](https://cosmos.network/ibc)
+- [IBC Specification](https://github.com/cosmos/ics)
+- [IBC Modules in Go](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc)
+- [IBC Relayer in Go](https://github.com/iqlusioninc/relayer)
 
 ## License
 
-Copyright © 2020 Informal Systems
+Copyright © 2020 Informal Systems Inc. and ibc-rs authors.
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
