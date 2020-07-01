@@ -40,15 +40,14 @@ This is difficult to guarantee in practice, however.
 Intuitively, the difficulty arises because of a combination of two factors:
 
 1. __Proof requirement:__ For chain `B` to accept item `X`, it must verify the authenticity of this item; this is done via the light client that chain `B` maintains.
-This light client requires, given item `X` at height `h` on `A`, a proof constructed at height `h-1`.
-Put simply, the light client needs: (1) the item `X` at height `h` (as part of what is called "consensus state"), plus (2) a proof constructed at height `h-1` for this item.
+Given an item `X` and a commitment proof for `X` constructed at height `h-1`, the light client requires the consensus state at height `h` that includes that commitment root required for verification.
 
-2. __Concurrency:__ Different relayers may update the same light client. Suppose a relayer `r1` wants to submit `X` at consensus state `h` plus the associated proof at `h-1`.
+2. __Concurrency:__ Different relayers may update the same light client. Suppose a relayer `r1` wants to submit a consensus state at height `h` and a message that includes `X` plus the associated proof at `h-1`.
 In the meantime, however, another relayer `r2` may update this same light client to height `h'`.
 It is important to note that `h'` is bigger than `h`.
 Now `r1` will be unable to update the light client with consensus state `h`, because the light client disallows updates with smaller heights than the current height `h'`; consequently, the relayer will be unable to submit `X`.
 
-To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the item at a larger height (e.g., at `h'`) with the associated proof (at `h'-1`).
+To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the consensus state at a larger height (e.g., at `h'`) followed by the message that includes the proof for `X` (at `h'-1`).
 This retry mechanism was adoped as a solution for the [current relayer implementation](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-002-ibc-relayer.md#ibc-client-consensus-state-vs-relayer-light-client-states-vs-chain-states).
 Note that it is also possible for relayer `r2` to have submitted the same item `X` successfully; in this case, the liveness problem does not actually surface.
 
