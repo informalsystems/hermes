@@ -38,7 +38,7 @@ Currently, we specify **ICS18Delivery** for all datagrams, and
 **ICS18Safety** for `ClientUpdate` datagrams.
 
 To import the specification in the TLA+ toolbox and run TLC:
-  - add the spec `ICS18Environment.tla` in TLA+ toolbox
+  - add a new spec in TLA+ toolbox with the root-module file `ICS18Environment.tla` 
   - create a model
   - assign a value to the constants
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
