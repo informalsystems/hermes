@@ -46,7 +46,7 @@ Given an item `X` and a commitment proof for `X` constructed at height `h-1`, th
 Suppose a relayer `r1` wants to submit a consensus state at height `h`.
 In the meantime, however, another relayer `r2` may update this same light client to height `h'`.
 Assume `h'` is bigger than `h`.
-Now `r1` will be unable to update the light client with consensus state `h`, because the light client disallows updates with smaller heights than the current height `h'`.
+If the light client disallows updates with heights smaller than the current height `h'` then `r1`'s update fails .
 Consequently, the relayer will be unable to submit consensus state at height `h`.
 
 To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the consensus state at a larger height (e.g., at `h'`) followed by the message that includes the proof for `X` (e.g., at `h'-1`).
