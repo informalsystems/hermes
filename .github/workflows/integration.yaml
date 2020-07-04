@@ -39,4 +39,12 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: run
-          args: --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml start --reset
+          args: --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml start --reset &
+      - name: Run custom transactions
+        run: |
+          echo "Todo: if you want to run custom commands, now's your chance. We'll sleep for 30 seconds then run integration tests. You can remove this if you don't need it."
+          sleep 30
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration --no-fail-fast
