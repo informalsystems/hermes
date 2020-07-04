@@ -27,22 +27,15 @@ jobs:
       - name: Set up chain_a
         run: |
           TRUSTED_HEADER="$(curl -s http://localhost:26657/status)"
-          export HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
-          export HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
+          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
+          HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
           cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_A
-#      - uses: actions-rs/cargo@v1
-#        with:
-#          command: run
-#          args: --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_A
       - name: Set up chain_b
         run: |
           TRUSTED_HEADER="$(curl -s http://localhost:26557/status)"
           HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
           HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
-      - uses: actions-rs/cargo@v1
-        with:
-          command: run
-          args: --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_B
+          cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_B
       - uses: actions-rs/cargo@v1
         with:
           command: run
