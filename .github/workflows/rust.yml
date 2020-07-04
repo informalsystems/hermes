@@ -53,6 +53,34 @@ jobs:
           command: test
           args: --all-features --no-fail-fast
 
+  test-integration-stable:
+    runs-on: ubuntu-latest
+    services:
+      chain1:
+        image: informaldev/chain1
+        ports:
+          - 26656:26656
+          - 26657:26657
+      chain2:
+        image: informaldev/chain2
+        ports:
+          - 26656:27656
+          - 26657:27657
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --all --all-targets
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration --no-fail-fast
+
   test-nightly-coverage:
     runs-on: ubuntu-latest
     steps:
