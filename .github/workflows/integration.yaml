@@ -20,16 +20,20 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -p relayer
       - name: Set up relayer
         run: |
           TRUSTED_HEADER="$(curl -s http://localhost:26657/status)"
-          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info\|.latest_block_hash)"
-          HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .latest_block_height)"
-          cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_A
+          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
+          HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
+          target/debug/relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_A
           TRUSTED_HEADER="$(curl -s http://localhost:26557/status)"
-          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info\|.latest_block_hash)"
-          export HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .latest_block_height)"
-          cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_B
+          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
+          export HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
+          target/debug/relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml light init -x "${HASH}" -h "${HEIGHT}" chain_B
       - name: Test env vars
         run: |
           echo "--"
