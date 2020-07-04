@@ -23,12 +23,13 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: -p relayer
+          args: -p relayer-cli --bins
       - name: Set up chain_a
         run: |
           TRUSTED_HEADER="$(curl -s http://localhost:26657/status)"
-          HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
-          HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
+          export HASH="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_hash)"
+          export HEIGHT="$(echo "${TRUSTED_HEADER}" | jq -r .result.sync_info.latest_block_height)"
+          ls -la target/debug
       - uses: actions-rs/cargo@v1
         with:
           command: run
