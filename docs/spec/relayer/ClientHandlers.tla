@@ -29,16 +29,13 @@ HandleCreateClient(chainID, chain, datagrams) ==
     LET clientCreateChain == [
             height |-> chain.height,
             counterpartyClientHeights |-> 
-                \* if set of counterparty client heights is not empty
-                IF chain.counterpartyClientHeights /= {}
+                \* if the set of counterparty client heights is not empty and
+                \* if the set of heights from datagrams is empty
+                IF chain.counterpartyClientHeights /= {} /\ createClientHeights = {}
                 \* then discard CreateClient datagrams  
                 THEN chain.counterpartyClientHeights
-                \* otherwise, if set of heights from datagrams is not empty  
-                ELSE IF createClientHeights /= {} 
-                     \* then create counterparty client with height Max(createClientHeights) 
-                     THEN {Max(createClientHeights)}
-                     \* otherwise, do not create client (as chain.counterpartyClientHeight = {})  
-                     ELSE chain.counterpartyClientHeights,
+                \* otherwise, create counterparty client with height Max(createClientHeights)  
+                ELSE {Max(createClientHeights)},
             connectionEnd |-> chain.connectionEnd
          ] IN
 
@@ -80,5 +77,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:23:48 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 06 15:37:30 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

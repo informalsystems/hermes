@@ -228,7 +228,7 @@ IsConnectionInit(chain) ==
     chain.connectionEnd.state = "INIT"
 
 \* returns true if the connection end on chainID is TRYOPEN
-IsConnectionTryopen(chain) ==
+IsConnectionTryOpen(chain) ==
     chain.connectionEnd.state = "TRYOPEN"
     
 \* returns true if the connection end on chainID is OPEN
@@ -268,7 +268,7 @@ IsChannelInit(chain) ==
     chain.connectionEnd.channelEnd.state = "INIT"
 
 \* returns true if the channel end on chainID is TRYOPEN
-IsChannelTryopen(chain) ==
+IsChannelTryOpen(chain) ==
     chain.connectionEnd.channelEnd.state = "TRYOPEN"
     
 \* returns true if the channel end on chainID is OPEN
@@ -278,5 +278,5 @@ IsChannelOpen(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 24 18:18:13 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 06 16:19:06 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

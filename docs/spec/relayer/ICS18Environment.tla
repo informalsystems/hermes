@@ -208,7 +208,7 @@ IsChanOpenInitInOutgoingDatagrams(chainID) ==
  Properties
  ***************************************************************************)
 (***************************************************************************
- Safety
+ Safety: client datagrams
  ***************************************************************************)    
 
 \* it ALWAYS holds that, for every chainID and every height h:
@@ -225,13 +225,96 @@ ClientUpdateSafety ==
         => [](~IsCounterpartyClientHeightOnChain(GetChainByID(chainID), h)))
 
 (***************************************************************************
+ Safety: connection datagrams
+ ***************************************************************************)    
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the connection end is in INIT
+\*  - then 
+\*    * it NEVER goes to UNINIT 
+ConnectionInitSafety ==
+    [](\A chainID \in ChainIDs:
+        /\ IsConnectionInit(GetChainByID(chainID))
+        => [](~IsConnectionUninit(GetChainByID(chainID))))
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the connection end is in TRYOPEN
+\*  - then 
+\*    * it NEVER goes to UNINIT ]
+ConnectionTryOpenSafety ==
+    [](\A chainID \in ChainIDs:
+        /\ IsConnectionTryOpen(GetChainByID(chainID))
+        => [](/\ ~IsConnectionUninit(GetChainByID(chainID))))
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the connection end is in OPEN
+\*  - then 
+\*    * it NEVER goes to UNINIT, INIT, or TRYOPEN              
+ConnectionOpenSafety ==     
+    [](\A chainID \in ChainIDs:
+        /\ IsConnectionOpen(GetChainByID(chainID))
+        => [](/\ ~IsConnectionUninit(GetChainByID(chainID))
+              /\ ~IsConnectionInit(GetChainByID(chainID))
+              /\ ~IsConnectionTryOpen(GetChainByID(chainID))))
+
+(***************************************************************************
+ Safety: channels datagrams
+ ***************************************************************************)    
+              
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the channel end is in INIT
+\*  - then 
+\*    * it NEVER goes to UNINIT 
+ChannelInitSafety ==
+    [](\A chainID \in ChainIDs:
+        /\ IsChannelInit(GetChainByID(chainID))
+        => [](~IsChannelUninit(GetChainByID(chainID))))
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the channel end is in TRYOPEN
+\*  - then 
+\*    * it NEVER goes to UNINIT 
+ChannelTryOpenSafety ==
+    [](\A chainID \in ChainIDs:
+        /\ IsChannelTryOpen(GetChainByID(chainID))
+        => [](/\ ~IsChannelUninit(GetChainByID(chainID))))
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the channel end is in OPEN
+\*  - then 
+\*    * it NEVER goes to UNINIT, INIT, or TRYOPEN              
+ChannelOpenSafety ==     
+    [](\A chainID \in ChainIDs:
+        /\ IsChannelOpen(GetChainByID(chainID))
+        => [](/\ ~IsChannelUninit(GetChainByID(chainID))
+              /\ ~IsChannelInit(GetChainByID(chainID))
+              /\ ~IsChannelTryOpen(GetChainByID(chainID)))) 
+
+(***************************************************************************
  Safety [ICS18Safety]:
     Bad datagrams are not used to update the chain stores 
  ***************************************************************************)
 \* ICS18Safety property: conjunction of safety properties 
 ICS18Safety ==
-    /\ ClientUpdateSafety  
-    \* TODO: similar properties for connection, channel handshake datagrams      
+    \* at least one relayer creates client datagrams
+    /\ (ClientDatagramsRelayer1 \/ ClientDatagramsRelayer2)
+         => ClientUpdateSafety  
+    \* at least one relayer creates connection datagrams
+    /\ (ConnectionDatagramsRelayer1 \/ ConnectionDatagramsRelayer2)
+         => /\ ConnectionInitSafety
+            /\ ConnectionTryOpenSafety
+            /\ ConnectionOpenSafety 
+    \* at least one relayer creates channel datagrams
+    /\ (ChannelDatagramsRelayer1 \/ ChannelDatagramsRelayer2)
+         => /\ ChannelInitSafety
+            /\ ChannelTryOpenSafety
+            /\ ChannelOpenSafety      
 
 (***************************************************************************
  Liveness: Eventual delivery of client datagrams
@@ -310,5 +393,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Tue Jun 30 13:19:53 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 06 17:45:41 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

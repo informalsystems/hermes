@@ -20,7 +20,8 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
     
     \* if there are valid "ChanOpenInit" datagrams and the connection is not "UNINIT", 
     \* create a new channel end and update the chain
-    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT"
+    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT" 
+                              /\ chain.connectionEnd.channelEnd.state = "UNINIT"
     THEN LET chanOpenInitDgr == CHOOSE dgr \in chanOpenInitDgrs : TRUE IN
          LET chanOpenInitChannelEnd == [
              state |-> "INIT",
@@ -34,7 +35,6 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
             chain EXCEPT !.connectionEnd = chanOpenInitConnectionEnd            
          ] IN
         
-         \* TODO: check here if channel is already in INIT?
          \* TODO: when handling packets later on, set nextSequenceRecv and nextSequenceSend to 1
          chanOpenInitChain
     \* otherwise, do not update the chain     
@@ -142,5 +142,5 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:24:56 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 06 15:43:14 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

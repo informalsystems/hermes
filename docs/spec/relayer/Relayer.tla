@@ -87,7 +87,7 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
     LET dstConnectionID == GetConnectionID(dstChainID) IN
 
     LET srcHeight == GetLatestHeight(srcChain) IN
-    LET srcConsensusHeight == GetMaxCounterpartyClientHeight(srcChain) IN
+    LET srcClientHeight == GetMaxCounterpartyClientHeight(srcChain) IN
     
     IF dstConnectionEnd.state = "UNINIT" /\ srcConnectionEnd.state = "UNINIT" THEN 
          {[type |-> "ConnOpenInit", 
@@ -104,14 +104,14 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
            counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
            counterpartyClientID |-> srcConnectionEnd.clientID, \* "clB" 
            proofHeight |-> srcHeight,
-           consensusHeight |-> srcConsensusHeight]}
+           consensusHeight |-> srcClientHeight]}
          
     ELSE IF srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
                                                   \/ dstConnectionEnd.state = "TRYOPEN" THEN
          {[type |-> "ConnOpenAck",
            connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            proofHeight |-> srcHeight,
-           consensusHeight |-> srcConsensusHeight]} 
+           consensusHeight |-> srcClientHeight]} 
          
     ELSE IF srcConnectionEnd.state = "OPEN" /\ dstConnectionEnd.state = "TRYOPEN" THEN
          {[type |-> "ConnOpenConfirm",
@@ -268,5 +268,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Jun 30 17:53:17 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 06 15:55:07 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
