@@ -5,7 +5,34 @@
  client datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions
+EXTENDS Naturals, FiniteSets
+
+CONSTANTS MaxHeight \* maximal height of all the chains in the system
+
+ClientIDs == {"clA", "clB"}
+nullClientID == "none"
+nullHeight == 0
+
+Heights == 1..MaxHeight 
+
+Max(S) == CHOOSE x \in S: \A y \in S: y <= x
+
+(***************************************************************************
+ Client helper operators
+ ***************************************************************************)
+
+\* get the ID of chainID's counterparty chain    
+GetCounterpartyChainID(chainID) ==
+    IF chainID = "chainA" THEN "chainB" ELSE "chainA"    
+ 
+\* get the client ID of the client for chainID 
+GetClientID(chainID) ==
+    IF chainID = "chainA" THEN "clA" ELSE "clB"
+        
+\* get the client ID of the client for chainID's counterparty chain           
+GetCounterpartyClientID(chainID) ==
+    IF chainID = "chainA" THEN "clB" ELSE "clA" 
+    
 
 (***************************************************************************
  Client datagram handlers
@@ -23,19 +50,22 @@ HandleCreateClient(chainID, chain, datagrams) ==
                             /\ dgr.type = "CreateClient"
                             /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET createClientHeights == {dgr.height : dgr \in createClientDgrs} IN  
+    LET createClientHeights == {h \in Heights : \E dgr \in createClientDgrs : dgr.height = h} IN  
     
     \* new chain record with clients created
     LET clientCreateChain == [
             height |-> chain.height,
             counterpartyClientHeights |-> 
-                \* if the set of counterparty client heights is not empty and
-                \* if the set of heights from datagrams is empty
-                IF chain.counterpartyClientHeights /= {} /\ createClientHeights = {}
+                \* if set of counterparty client heights is not empty
+                IF chain.counterpartyClientHeights /= {}
                 \* then discard CreateClient datagrams  
                 THEN chain.counterpartyClientHeights
-                \* otherwise, create counterparty client with height Max(createClientHeights)  
-                ELSE {Max(createClientHeights)},
+                \* otherwise, if set of heights from datagrams is not empty  
+                ELSE IF createClientHeights /= {} 
+                     \* then create counterparty client with height Max(createClientHeights) 
+                     THEN {Max(createClientHeights)}
+                     \* otherwise, do not create client (as chain.counterpartyClientHeight = {})  
+                     ELSE chain.counterpartyClientHeights,
             connectionEnd |-> chain.connectionEnd
          ] IN
 
@@ -53,7 +83,7 @@ HandleUpdateClient(chainID, chain, datagrams) ==
                             /\ dgr.clientID = GetCounterpartyClientID(chainID)
                             /\ maxClientHeight < dgr.height} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET updateClientHeights == {dgr.height : dgr \in updateClientDgrs} IN    
+    LET updateClientHeights == {h \in Heights : \E dgr \in updateClientDgrs : dgr.height = h} IN    
 
     \* new chain record with clients updated
     LET clientUpdatedChain == [
@@ -77,5 +107,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 06 15:37:30 CEST 2020 by ilinastoilkovska
+\* Last modified Tue May 26 11:30:26 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

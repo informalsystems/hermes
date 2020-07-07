@@ -5,7 +5,33 @@
  channel datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions         
+EXTENDS Naturals, FiniteSets
+
+ChannelIDs == {"chanAtoB", "chanBtoA"}
+nullChannelID == "none"
+
+ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
+ChannelOrder == {"ORDERED", "UNORDERED"}
+
+(***************************************************************************
+ Channel helper operators
+ ***************************************************************************)
+
+\* get the channel ID of the channel end at the connection end of chainID
+GetChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "chanBtoA"
+         ELSE nullChannelID
+         
+\* get the channel ID of the channel end at chainID's counterparty chain
+GetCounterpartyChannelID(chainID) ==
+    IF chainID = "chainA"
+    THEN "chanBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "chanAtoB"
+         ELSE nullChannelID          
 
 (***************************************************************************
  Channel datagram handlers
@@ -20,8 +46,7 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
     
     \* if there are valid "ChanOpenInit" datagrams and the connection is not "UNINIT", 
     \* create a new channel end and update the chain
-    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT" 
-                              /\ chain.connectionEnd.channelEnd.state = "UNINIT"
+    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT"
     THEN LET chanOpenInitDgr == CHOOSE dgr \in chanOpenInitDgrs : TRUE IN
          LET chanOpenInitChannelEnd == [
              state |-> "INIT",
@@ -35,6 +60,7 @@ HandleChanOpenInit(chainID, chain, datagrams) ==
             chain EXCEPT !.connectionEnd = chanOpenInitConnectionEnd            
          ] IN
         
+         \* TODO: check here if channel is already in INIT?
          \* TODO: when handling packets later on, set nextSequenceRecv and nextSequenceSend to 1
          chanOpenInitChain
     \* otherwise, do not update the chain     
@@ -142,5 +168,5 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 06 15:43:14 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:19:49 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

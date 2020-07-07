@@ -5,7 +5,32 @@
  connection datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions     
+EXTENDS Naturals, FiniteSets
+
+ConnectionIDs == {"connAtoB", "connBtoA"}
+nullConnectionID == "none"
+
+ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
+
+(***************************************************************************
+ Connection helper operators
+ ***************************************************************************)
+
+\* get the connection ID of the connection end at chainID
+GetConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connAtoB"
+    ELSE IF chainID = "chainB"
+         THEN "connBtoA"
+         ELSE nullConnectionID      
+
+\* get the connection ID of the connection end at chainID's counterparty chain
+GetCounterpartyConnectionID(chainID) ==
+    IF chainID = "chainA"
+    THEN "connBtoA"
+    ELSE IF chainID = "chainB"
+         THEN "connAtoB"
+         ELSE nullConnectionID      
 
 (***************************************************************************
  Connection datagram handlers
@@ -139,5 +164,5 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:24:40 CEST 2020 by ilinastoilkovska
+\* Last modified Fri May 22 17:20:00 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska
