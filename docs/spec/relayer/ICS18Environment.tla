@@ -138,7 +138,7 @@ Fairness ==
     /\ ChainA!Fairness
     /\ ChainB!Fairness
     /\ Relayer1!Fairness
-    /\ Relayer1!Fairness
+    /\ Relayer2!Fairness
 
 \* Specification formula
 Spec == Init /\ [][Next]_vars /\ Fairness
@@ -246,7 +246,7 @@ ConnectionInitSafety ==
 ConnectionTryOpenSafety ==
     [](\A chainID \in ChainIDs:
         /\ IsConnectionTryOpen(GetChainByID(chainID))
-        => [](/\ ~IsConnectionUninit(GetChainByID(chainID))))
+        => [](~IsConnectionUninit(GetChainByID(chainID))))
 
 \* it ALWAYS holds that, for every chainID
 \*  - if 
@@ -282,7 +282,7 @@ ChannelInitSafety ==
 ChannelTryOpenSafety ==
     [](\A chainID \in ChainIDs:
         /\ IsChannelTryOpen(GetChainByID(chainID))
-        => [](/\ ~IsChannelUninit(GetChainByID(chainID))))
+        => [](~IsChannelUninit(GetChainByID(chainID))))
 
 \* it ALWAYS holds that, for every chainID
 \*  - if 
@@ -393,5 +393,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 06 17:45:41 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Jul 07 13:13:08 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

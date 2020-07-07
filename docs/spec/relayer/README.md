@@ -52,7 +52,7 @@ To import the specification in the TLA+ toolbox and run TLC:
   - add the properties `ICS18Safety` and `ICS18Delivery`
   - run TLC on the model
   
-###  Assigning values to the constants 
+#### Assigning values to the constants in a TLC model
 
 The Boolean flags, defined as constants in the module `ICS18Environment.tla`, allow us to run experiments in different settings. For example, if we set both `ClientDatagramsRelayer_1` and `ClientDatagramsRelayer_2` to `TRUE` in a TLC model, then the two relayers in the system concurrently create datagrams related to client creation and client update, and the model checker will check the temporal properties related to client datagrams. 
 
