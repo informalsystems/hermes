@@ -18,7 +18,7 @@ paths-ics = []
 
 [dependencies]
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", path = "/rpc", features=["client"] }
+tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", features=["client"] }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"
