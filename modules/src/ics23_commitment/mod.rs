@@ -14,7 +14,7 @@ impl CommitmentPath {
     where
         P: Path,
     {
-        todo!()
+        CommitmentPath{}
     }
 }
 

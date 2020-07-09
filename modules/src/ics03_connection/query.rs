@@ -2,14 +2,20 @@ use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
 use tendermint::abci;
 
-use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
-use crate::ics24_host::identifier::ConnectionId;
+use crate::ics23_commitment::{CommitmentPath, CommitmentProof, CommitmentPrefix};
+use crate::ics24_host::identifier::{ConnectionId, ClientId};
 
 use crate::error;
-use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use crate::path::{ConnectionPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
+
+// Protobuf
+use crate::ics03_connection::proto_ibc_connection;
+use prost::Message;
+use bytes::Bytes;
+use std::str::FromStr;
 
 pub struct QueryConnection {
     pub chain_height: Height,
@@ -79,14 +85,22 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let connection = amino_unmarshal_binary_length_prefixed(&response.value)?;
 
-        Ok(ConnectionResponse::new(
-            query.connection_id,
-            connection,
-            response.proof,
-            response.height.into(),
-        ))
+        let connection = proto_unmarshal(response.value);
+        match connection {
+            Ok(conn) => {
+                Ok(ConnectionResponse::new(
+                    query.connection_id,
+                    conn,
+                    response.proof,
+                    response.height.into(),
+                ))
+            },
+            Err(e) => {
+                println!("Error proto un-marshall: {:?}", e);
+                todo!()
+            }
+        }
     }
 }
 
@@ -101,6 +115,24 @@ impl IdentifiedConnectionEnd {
         IdentifiedConnectionEnd {
             connection_end,
             connection_id,
+        }
+    }
+}
+
+fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, error::Error> {
+    let buf = Bytes::from(bytes);
+    let decoded = proto_ibc_connection::ConnectionEnd::decode(buf);
+    match decoded {
+        Ok(conn) => {
+            let client_id = ClientId::from_str(&conn.client_id).unwrap();
+            let prefix = CommitmentPrefix{};
+            let counterparty = Counterparty::new(client_id.to_string(), conn.id, prefix).unwrap();
+            let connection_end = ConnectionEnd::new(client_id, counterparty, conn.versions).unwrap();
+            Ok(connection_end)
+        },
+        Err(e) => {
+            println!("Error proto un-marshall: {:?}", e);
+            todo!()
         }
     }
 }
