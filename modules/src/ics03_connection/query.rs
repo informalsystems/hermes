@@ -1,6 +1,7 @@
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
 use tendermint::abci;
+use prost::Message;
 
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 use crate::ics24_host::identifier::ConnectionId;
@@ -10,6 +11,11 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::path::{ConnectionPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
+use tracing::info;
+
+pub mod items {
+    include!(concat!(env!("OUT_DIR"), "/items.rs"));
+}
 
 pub struct QueryConnection {
     pub chain_height: Height,
@@ -76,17 +82,31 @@ impl ConnectionResponse {
 
 impl IbcResponse<QueryConnection> for ConnectionResponse {
     fn from_abci_response(
-        query: QueryConnection,
-        response: AbciQuery,
+        _query: QueryConnection,
+        _response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let connection = amino_unmarshal_binary_length_prefixed(&response.value)?;
+        use bytes::Bytes;
 
-        Ok(ConnectionResponse::new(
-            query.connection_id,
-            connection,
-            response.proof,
-            response.height.into(),
-        ))
+        let buf = Bytes::from(_response.value);
+
+        let conn_end:items::ConnectionEnd = items::ConnectionEnd::decode(buf).unwrap();
+
+        info!("the connection: {:?}", conn_end);
+        // info!("the ACTUAL connection: {:?}", std::str::from_utf8(&*_response.value));
+
+        // @ADI: That's the spot.
+        // let connection = proto_unmarshal(&response.value)?;
+
+        // debug!("done with 'query connection end' command: {:?}", connection);
+
+        todo!()
+
+        // Ok(ConnectionResponse::new(
+        //     query.connection_id,
+        //     connection,
+        //     response.proof,
+        //     response.height.into(),
+        // ))
     }
 }
 
@@ -103,6 +123,10 @@ impl IdentifiedConnectionEnd {
             connection_id,
         }
     }
+}
+
+fn proto_unmarshal(_bytes: &[u8]) -> Result<ConnectionEnd, error::Error> {
+    todo!()
 }
 
 fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {

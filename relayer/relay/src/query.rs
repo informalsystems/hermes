@@ -3,6 +3,7 @@ use tendermint::abci;
 use crate::chain::Chain;
 use relayer_modules::error;
 use relayer_modules::query::IbcQuery;
+// use tracing::debug;
 
 pub mod channel;
 pub mod client;
@@ -33,6 +34,8 @@ where
     if is_query_store_with_proof(&query.path()) {
         todo!() // TODO: Verify proof
     }
+
+    // debug!("done with 'query connection end' command: {:?}", abci_response);
 
     query.build_response(abci_response)
 }

@@ -26,7 +26,14 @@ serde_derive = "1.0.104"
 serde = "1.0.104"
 serde_json = "1"
 tracing = "0.1.13"
+prost = "0.6.1"
+bytes = "0.5"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
+
+
+[build-dependencies]
+prost-build = { version = "0.6.1" }
+

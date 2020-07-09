@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package items;
+
+import "proto/gogo.proto";
+//import "ibc/commitment/commitment.proto";
+
+// ConnectionEnd defines a stateful object on a chain connected to another separate
+// one.
+// NOTE: there must only be 2 defined ConnectionEnds to establish a connection
+// between two chains.
+message ConnectionEnd {
+  option (gogoproto.goproto_getters) = false;
+  // connection identifier.
+  string id = 1 [(gogoproto.customname) = "ID", (gogoproto.moretags) = "yaml:\"id\""];
+  // client associated with this connection.
+  string client_id = 2 [(gogoproto.customname) = "ClientID", (gogoproto.moretags) = "yaml:\"client_id\""];
+  // opaque string which can be utilised to determine encodings or protocols for
+  // channels or packets utilising this connection
+  repeated string versions = 3;
+  // current state of the connection end.
+  State state = 4;
+  // counterparty chain associated with this corparty = 5 [(gogoprotonnection.
+  Counterparty counterparty = 5 [(gogoproto.nullable) = false];
+}
+
+// State defines if a connection is in one of the following states:
+// INIT, TRYOPEN, OPEN or UNINITIALIZED.
+enum State {
+  option (gogoproto.goproto_enum_prefix) = false;
+
+  // Default State
+  STATE_UNINITIALIZED_UNSPECIFIED = 0;
+  // A connection end has just started the opening handshake.
+  STATE_INIT = 1;
+  // A connection end has acknowledged the handshake step on the counterparty chain.
+  STATE_TRYOPEN = 2;
+  // A connection end has completed the handshake.
+  STATE_OPEN = 3;
+}
