@@ -2,7 +2,7 @@ syntax = "proto3";
 package ibc.connection;
 
 import "gogoproto/gogo.proto";
-import "ibc/commitment/commitment.proto";
+//import "ibc/commitment/commitment.proto";
 
 // ICS03 - Connection Data Structures as defined in
 // https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures
@@ -50,7 +50,7 @@ message Counterparty {
   // identifies the connection end on the counterparty chain associated with a given connection.
   string connection_id = 2 [(gogoproto.customname) = "ConnectionID", (gogoproto.moretags) = "yaml:\"connection_id\""];
   // commitment merkle prefix of the counterparty chain
-  ibc.commitment.MerklePrefix prefix = 3 [(gogoproto.nullable) = false];
+  //ibc.commitment.MerklePrefix prefix = 3 [(gogoproto.nullable) = false];
 }
 
 // ClientPaths define all the connection paths for a client state.
