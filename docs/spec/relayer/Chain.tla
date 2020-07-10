@@ -59,7 +59,12 @@ ChannelUpdate(chainID, store, datagrams) ==
     \* update the chain store with "ChanOpenConfirm" datagrams
     LET chanOpenConfirmStore == HandleChanOpenConfirm(chainID, chanOpenAckStore, datagrams) IN
     
-    chanOpenConfirmStore
+    \* update the chain store with "ChanCloseInit" datagrams
+    LET chanCloseInitStore == HandleChanCloseInit(chainID, chanOpenConfirmStore, datagrams) IN
+    \* update the chain store with "ChanCloseConfirm" datagrams
+    LET chanCloseConfirmStore == HandleChanCloseConfirm(chainID, chanCloseInitStore, datagrams) IN
+    
+    chanCloseConfirmStore
 
 (***************************************************************************
  Chain update operators
@@ -142,5 +147,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jul 02 16:10:33 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Jul 10 16:13:04 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

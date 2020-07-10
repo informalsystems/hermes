@@ -21,7 +21,9 @@ VARIABLES chainAstore, \* store of ChainA
           chainBstore, \* store of ChainB
           outgoingDatagrams, \* a function that assigns a set of pending datagrams 
                              \* outgoing from the relayer to each chainID 
-          relayerHeights \* a function that assigns a height to each chainID         
+          relayerHeights, \* a function that assigns a height to each chainID
+          closeChannelA, \* flag that triggers closing of the channel end at ChainA
+          closeChannelB \* flag that triggers closing of the channel end at ChainB         
           
 vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights>>                     
 
@@ -29,6 +31,11 @@ GetChainByID(chainID) ==
     IF chainID = "chainA"
     THEN chainAstore
     ELSE chainBstore
+    
+GetCloseChannelFlag(chainID) ==
+    IF chainID = "chainA"
+    THEN closeChannelA
+    ELSE closeChannelB
  
 (***************************************************************************
  Client datagrams
@@ -136,6 +143,8 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 
     LET srcHeight == GetLatestHeight(srcChain) IN
     
+    LET dstCloseChannel == GetCloseChannelFlag(dstChainID) IN 
+    
     IF dstChannelEnd.state = "UNINIT" /\ srcChannelEnd.state = "UNINIT" THEN 
          {[type |-> "ChanOpenInit", 
            channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
@@ -144,22 +153,32 @@ ChannelDatagrams(srcChainID, dstChainID) ==
     ELSE IF srcChannelEnd.state = "INIT" /\ \/ dstChannelEnd.state = "UNINIT"
                                             \/ dstChannelEnd.state = "INIT" THEN 
          {[type |-> "ChanOpenTry",
-           channelID |-> dstChannelID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            counterpartyChannelID |-> srcChannelID, \* "chanAtoB"
            proofHeight |-> srcHeight]} 
          
     ELSE IF srcChannelEnd.state = "TRYOPEN" /\ \/ dstChannelEnd.state = "INIT"
                                                \/ dstChannelEnd.state = "TRYOPEN" THEN
          {[type |-> "ChanOpenAck",
-           channelID |-> dstChannelID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+           channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            proofHeight |-> srcHeight]} 
          
     ELSE IF srcChannelEnd.state = "OPEN" /\ dstChannelEnd.state = "TRYOPEN" THEN
          {[type |-> "ChanOpenConfirm",
            channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            proofHeight |-> srcHeight]} 
-    ELSE {}
     
+    ELSE IF dstChannelEnd.state = "OPEN" /\ GetCloseChannelFlag(dstChannelID) THEN
+         {[type |-> "ChanCloseInit", 
+           channelID |-> dstChannelEnd.channelID]} \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           
+    ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" THEN 
+         {[type |-> "ChanCloseConfirm", 
+           channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           proofHeight |-> srcHeight]}
+           
+    ELSE {}
+
 (***************************************************************************
  Compute datagrams (from srcChainID to dstChainID)
  ***************************************************************************)
@@ -268,5 +287,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 06 15:55:07 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Jul 09 15:51:13 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
