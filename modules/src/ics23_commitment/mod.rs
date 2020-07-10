@@ -32,7 +32,7 @@ impl CommitmentProof {
 */
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommitmentPrefix(std::vec::Vec<u8>);
+pub struct CommitmentPrefix(Vec<u8>);
 
 impl CommitmentPrefix {
     pub fn new(content: Vec<u8>) -> Self {

@@ -9,5 +9,8 @@ pub mod query;
 
 // Use the generated proto file for the connection according to prost_build instructions
 pub mod proto_connection {
+
+    #![allow(unused_qualifications)]
+
     include!(concat!(env!("OUT_DIR"), "/connection.rs"));
 }
