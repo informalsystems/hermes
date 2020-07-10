@@ -85,19 +85,14 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let connection = proto_unmarshal(response.value);
-        match connection {
-            Ok(conn) => Ok(ConnectionResponse::new(
-                query.connection_id,
-                conn,
-                response.proof,
-                response.height.into(),
-            )),
-            Err(e) => {
-                println!("Error proto un-marshall: {:?}", e);
-                todo!()
-            }
-        }
+        let decoded_conn = proto_unmarshal(response.value).unwrap();
+
+        Ok(ConnectionResponse::new(
+            query.connection_id,
+            decoded_conn,
+            response.proof,
+            response.height.into(),
+        ))
     }
 }
 
@@ -120,8 +115,4 @@ fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, Error> {
     let buf = Bytes::from(bytes);
     let decoded = proto_connection::ConnectionEnd::decode(buf).unwrap();
     ConnectionEnd::from_proto_connection(decoded)
-}
-
-fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
-    todo!()
 }
