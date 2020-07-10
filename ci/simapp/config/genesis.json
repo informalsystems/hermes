@@ -1,0 +1,478 @@
+{
+  "genesis_time": "2020-07-08T00:22:16.404261Z",
+  "chain_id": "ibc-test",
+  "consensus_params": {
+    "block": {
+      "max_bytes": "22020096",
+      "max_gas": "-1",
+      "time_iota_ms": "1000"
+    },
+    "evidence": {
+      "max_age_num_blocks": "100000",
+      "max_age_duration": "172800000000000"
+    },
+    "validator": {
+      "pub_key_types": [
+        "ed25519"
+      ]
+    }
+  },
+  "app_hash": "",
+  "app_state": {
+    "mint": {
+      "minter": {
+        "inflation": "0.130000000000000000",
+        "annual_provisions": "0.000000000000000000"
+      },
+      "params": {
+        "mint_denom": "stake",
+        "inflation_rate_change": "0.130000000000000000",
+        "inflation_max": "0.200000000000000000",
+        "inflation_min": "0.070000000000000000",
+        "goal_bonded": "0.670000000000000000",
+        "blocks_per_year": "6311520"
+      }
+    },
+    "capability": {
+      "index": "1",
+      "owners": []
+    },
+    "slashing": {
+      "params": {
+        "json:\"signed_blocks_window\"": "100",
+        "json:\"min_signed_per_window\"": "0.500000000000000000",
+        "json:\"downtime_jail_duration\"": "600000000000",
+        "json:\"slash_fraction_double_sign\"": "0.050000000000000000",
+        "json:\"slash_fraction_downtime\"": "0.010000000000000000"
+      },
+      "signing_infos": {},
+      "missed_blocks": {}
+    },
+    "ibc": {
+      "client_genesis": {
+        "clients": [
+          {
+            "type": "ibc/client/tendermint/ClientState",
+            "value": {
+              "id": "ethbridge",
+              "trust_level": {
+                "numerator": "1",
+                "denominator": "3"
+              },
+              "trusting_period": "1209600000000000",
+              "unbonding_period": "1814400000000000",
+              "MaxClockDrift": "10000000000",
+              "frozen_height": "0",
+              "last_header": {
+                "signed_header": {
+                  "header": {
+                    "version": {
+                      "block": "2",
+                      "app": "2"
+                    },
+                    "chain_id": "chain_B",
+                    "height": "10",
+                    "time": "2020-07-10T06:05:02.142281Z",
+                    "last_block_id": {
+                      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                      "parts": {
+                        "total": "9223372036854775807",
+                        "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    },
+                    "last_commit_hash": "E7AAD01A1AF897B05BCF78C7563B5D1ADC2939D543DAC949A5C8712156D19BF8",
+                    "data_hash": "6D6E28B8B98B5327042EA50A57DD46E6CC851C72E528BDEAA6EFDEEEFE66A0B8",
+                    "validators_hash": "60854EC04E71A8FD0AF7E57D3DE84B4C87EDCA0CF382FD0DB847754F79B73492",
+                    "next_validators_hash": "60854EC04E71A8FD0AF7E57D3DE84B4C87EDCA0CF382FD0DB847754F79B73492",
+                    "consensus_hash": "E5E566C41ED57E3FF8CC10F184178788B8FAA602B07CF1F425217BD8179F1F24",
+                    "app_hash": "41CAFAE31CC70F5801FA1016A2DD54A9BCB8201B5B389919FE9976762532C516",
+                    "last_results_hash": "092E058630247ED6009863A12EEE117D26CD9D08B5ADCAAB37F2AB35DB475A37",
+                    "evidence_hash": "73865DB08F49D58428905D389AB4CA4B96E45A3206C7A69D43A5DC7372E60714",
+                    "proposer_address": "25EF56CA795135E409368E6DB8110F22A4BE05C2"
+                  },
+                  "commit": {
+                    "height": "10",
+                    "round": "1",
+                    "block_id": {
+                      "hash": "6B9DC374300F3093EA4C0710D2CCD82A6AAB1FEFDFEB832F374CC42D4EBDE206",
+                      "parts": {
+                        "total": "3",
+                        "hash": "87080A39CFE336A663EA5C0D9BDEEF493ABDC18B7C3E3E0C8E661354C1831432"
+                      }
+                    },
+                    "signatures": [
+                      {
+                        "block_id_flag": 2,
+                        "validator_address": "25EF56CA795135E409368E6DB8110F22A4BE05C2",
+                        "timestamp": "2020-07-10T06:05:02.142281Z",
+                        "signature": "JMLsYYJi6oLAgZ0SELwXoLqFKeq6TQKkuXehX4r33f0DjxD6fuBBPYC7RUhGcQ3ARQyAnolOKzKfSBaRDAAkDQ=="
+                      }
+                    ]
+                  }
+                },
+                "validator_set": {
+                  "validators": [
+                    {
+                      "address": "25EF56CA795135E409368E6DB8110F22A4BE05C2",
+                      "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "FfL2qaxy/V247i+s3j9GUpEyOfgvVkJs0QsogtqBKCo="
+                      },
+                      "voting_power": "10",
+                      "proposer_priority": "0"
+                    }
+                  ],
+                  "proposer": {
+                    "address": "25EF56CA795135E409368E6DB8110F22A4BE05C2",
+                    "pub_key": {
+                      "type": "tendermint/PubKeyEd25519",
+                      "value": "FfL2qaxy/V247i+s3j9GUpEyOfgvVkJs0QsogtqBKCo="
+                    },
+                    "voting_power": "10",
+                    "proposer_priority": "0"
+                  }
+                }
+              },
+              "proof_specs": [
+                {
+                  "leaf_spec": {
+                    "hash": 1,
+                    "prehash_value": 1,
+                    "length": 1,
+                    "prefix": "AA=="
+                  },
+                  "inner_spec": {
+                    "child_order": [
+                      0,
+                      1
+                    ],
+                    "child_size": 33,
+                    "min_prefix_length": 4,
+                    "max_prefix_length": 12,
+                    "hash": 1
+                  }
+                },
+                {
+                  "leaf_spec": {
+                    "hash": 1,
+                    "prehash_value": 1,
+                    "length": 1,
+                    "prefix": "AA=="
+                  },
+                  "inner_spec": {
+                    "child_order": [
+                      0,
+                      1
+                    ],
+                    "child_size": 32,
+                    "min_prefix_length": 1,
+                    "max_prefix_length": 1,
+                    "hash": 1
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "ibc/client/localhost/ClientState",
+            "value": {
+              "id": "localhost",
+              "chain_id": "chain_B",
+              "height": "10"
+            }
+          }
+        ],
+        "clients_consensus": [
+          {
+            "client_id": "ethbridge",
+            "consensus_states": [
+              {
+                "type": "ibc/client/tendermint/ConsensusState",
+                "value": {
+                  "timestamp": "2020-07-10T06:05:02.142281Z",
+                  "root": {
+                    "type": "ibc/commitment/MerkleRoot",
+                    "value": {
+                      "hash": "Qcr64xzHD1gB+hAWot1Uqby4IBtbOJkZ/pl2diUyxRY="
+                    }
+                  },
+                  "height": "10",
+                  "validator_set": {
+                    "validators": [
+                      {
+                        "address": "25EF56CA795135E409368E6DB8110F22A4BE05C2",
+                        "pub_key": {
+                          "type": "tendermint/PubKeyEd25519",
+                          "value": "FfL2qaxy/V247i+s3j9GUpEyOfgvVkJs0QsogtqBKCo="
+                        },
+                        "voting_power": "10",
+                        "proposer_priority": "0"
+                      }
+                    ],
+                    "proposer": {
+                      "address": "25EF56CA795135E409368E6DB8110F22A4BE05C2",
+                      "pub_key": {
+                        "type": "tendermint/PubKeyEd25519",
+                        "value": "FfL2qaxy/V247i+s3j9GUpEyOfgvVkJs0QsogtqBKCo="
+                      },
+                      "voting_power": "10",
+                      "proposer_priority": "0"
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "create_localhost": true
+      },
+      "connection_genesis": {
+        "connections": [
+          {
+            "id": "connectionidone",
+            "client_id": "clientidone",
+            "versions": [
+              "(1,[ORDER_ORDERED,ORDER_UNORDERED])"
+            ],
+            "state": 1,
+            "counterparty": {
+              "client_id": "clientidtwo",
+              "connection_id": "connectionidtwo",
+              "prefix": {
+                "key_prefix": "cHJlZml4"
+              }
+            }
+          }
+        ],
+        "client_connection_paths": [
+          {
+            "client_id": "clientidone",
+            "paths": [
+              "connections/connectionidone"
+            ]
+          }
+        ]
+      },
+      "channel_genesis": {
+        "channels": [
+          {
+            "state": 1,
+            "ordering": 2,
+            "counterparty": {
+              "port_id": "secondport",
+              "channel_id": "secondchannel"
+            },
+            "connection_hops": [
+              "connectionidatob"
+            ],
+            "version": "1.0",
+            "port_id": "firstport",
+            "channel_id": "firstchannel"
+          },
+          {
+            "state": 1,
+            "ordering": 2,
+            "counterparty": {
+              "port_id": "firstport",
+              "channel_id": "firstchannel"
+            },
+            "connection_hops": [
+              "connectionidatob"
+            ],
+            "version": "1.0",
+            "port_id": "secondport",
+            "channel_id": "secondchannel"
+          }
+        ],
+        "acknowledgements": [
+          {
+            "port_id": "secondport",
+            "channel_id": "secondchannel",
+            "sequence": "1",
+            "hash": "YWNr"
+          }
+        ],
+        "commitments": [
+          {
+            "port_id": "firstport",
+            "channel_id": "firstchannel",
+            "sequence": "1",
+            "hash": "Y29tbWl0X2hhc2g="
+          }
+        ],
+        "send_sequences": [
+          {
+            "port_id": "firstport",
+            "channel_id": "firstchannel",
+            "sequence": "1"
+          }
+        ],
+        "recv_sequences": [
+          {
+            "port_id": "secondport",
+            "channel_id": "secondchannel",
+            "sequence": "1"
+          }
+        ],
+        "ack_sequences": [
+          {
+            "port_id": "secondport",
+            "channel_id": "secondchannel",
+            "sequence": "1"
+          }
+        ]
+      }
+    },
+    "transfer": {
+      "port_id": "transfer"
+    },
+    "distribution": {
+      "params": {
+        "community_tax": "0.020000000000000000",
+        "base_proposer_reward": "0.010000000000000000",
+        "bonus_proposer_reward": "0.040000000000000000",
+        "withdraw_addr_enabled": true
+      },
+      "fee_pool": {
+        "community_pool": []
+      },
+      "delegator_withdraw_infos": [],
+      "previous_proposer": "",
+      "outstanding_rewards": [],
+      "validator_accumulated_commissions": [],
+      "validator_historical_rewards": [],
+      "validator_current_rewards": [],
+      "delegator_starting_infos": [],
+      "validator_slash_events": []
+    },
+    "staking": {
+      "params": {
+        "unbonding_time": "1814400000000000",
+        "max_validators": 100,
+        "max_entries": 7,
+        "historical_entries": 100,
+        "bond_denom": "stake"
+      },
+      "last_total_power": "0",
+      "last_validator_powers": null,
+      "validators": null,
+      "delegations": null,
+      "unbonding_delegations": null,
+      "redelegations": null,
+      "exported": false
+    },
+    "evidence": {
+      "evidence": []
+    },
+    "upgrade": {},
+    "crisis": {
+      "constant_fee": {
+        "denom": "stake",
+        "amount": "1000"
+      }
+    },
+    "bank": {
+      "send_enabled": true,
+      "balances": [
+        {
+          "address": "cosmos1m98jvjtvtrgpvgpan8mm7xrzs6a899vkaufyq3",
+          "coins": [
+            {
+              "denom": "stake",
+              "amount": "1000000000"
+            },
+            {
+              "denom": "validatortoken",
+              "amount": "1000000000"
+            }
+          ]
+        }
+      ],
+      "supply": []
+    },
+    "genutil": {
+      "gentxs": [
+        {
+          "type": "cosmos-sdk/StdTx",
+          "value": {
+            "msg": [
+              {
+                "type": "cosmos-sdk/MsgCreateValidator",
+                "value": {
+                  "description": {
+                    "moniker": "bucko"
+                  },
+                  "commission": {
+                    "rate": "0.100000000000000000",
+                    "max_rate": "0.200000000000000000",
+                    "max_change_rate": "0.010000000000000000"
+                  },
+                  "min_self_delegation": "1",
+                  "delegator_address": "cosmos1m98jvjtvtrgpvgpan8mm7xrzs6a899vkaufyq3",
+                  "validator_address": "cosmosvaloper1m98jvjtvtrgpvgpan8mm7xrzs6a899vkcga3vz",
+                  "pubkey": "cosmosvalconspub1zcjduepqegcw9wsxe40w2djkwa0vtxjtr7qaz6l6sadnjffvfu6ue5enfvnsq9dcfd",
+                  "value": {
+                    "denom": "stake",
+                    "amount": "1000000000"
+                  }
+                }
+              }
+            ],
+            "fee": {
+              "amount": [],
+              "gas": "200000"
+            },
+            "signatures": [
+              {
+                "pub_key": "61rphyED7K9o4sM6JWxe1vLXHsIqst/GSei0xnwD0vOnj1wh1zQ=",
+                "signature": "Wo0t6wzeC6+BrA8ZhIXkPWN5ql7/tx3cyu0zjZUqUV5LDi2F1/oF/rV/fo8P0Z1tpBCIENymq+SwXXocj51xrA=="
+              }
+            ],
+            "memo": "8c2342017f69157d76c4e64c777b3b5ad097898d@192.168.1.4:26656"
+          }
+        }
+      ]
+    },
+    "gov": {
+      "starting_proposal_id": "1",
+      "deposits": null,
+      "votes": null,
+      "proposals": null,
+      "deposit_params": {
+        "min_deposit": [
+          {
+            "denom": "stake",
+            "amount": "10000000"
+          }
+        ],
+        "max_deposit_period": "172800000000000"
+      },
+      "voting_params": {
+        "voting_period": "172800000000000"
+      },
+      "tally_params": {
+        "quorum": "0.334000000000000000",
+        "threshold": "0.500000000000000000",
+        "veto": "0.334000000000000000"
+      }
+    },
+    "auth": {
+      "params": {
+        "max_memo_characters": "256",
+        "tx_sig_limit": "7",
+        "tx_size_cost_per_byte": "10",
+        "sig_verify_cost_ed25519": "590",
+        "sig_verify_cost_secp256k1": "1000"
+      },
+      "accounts": [
+        {
+          "type": "cosmos-sdk/BaseAccount",
+          "value": {
+            "address": "cosmos1m98jvjtvtrgpvgpan8mm7xrzs6a899vkaufyq3"
+          }
+        }
+      ]
+    },
+    "params": null
+  }
+}
