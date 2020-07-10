@@ -1,8 +1,12 @@
 use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::proto_connection;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
+
+use anomaly::fail;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -24,6 +28,34 @@ impl ConnectionEnd {
             counterparty,
             versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
         })
+    }
+
+    pub fn set_state(&mut self, new_state: State) {
+        self.state = new_state;
+    }
+
+    pub fn from_proto_connection(pc: proto_connection::ConnectionEnd) -> Result<Self, Error> {
+        // The Counterparty field is an Option, may be missing.
+        match pc.counterparty {
+            Some(cp) => {
+                let mut conn = ConnectionEnd::new(
+                    ClientId::from_str(&pc.client_id).unwrap(),
+                    Counterparty::from_proto_counterparty(cp).unwrap(),
+                    pc.versions,
+                )
+                .unwrap();
+
+                // Set the state.
+                conn.set_state(State::from_i32(pc.state));
+                Ok(conn)
+            }
+
+            // If no counterparty was set, signal the error.
+            None => fail!(
+                Kind::MissingCounterparty,
+                "no counterparty in the given connection"
+            ),
+        }
     }
 }
 
@@ -75,6 +107,20 @@ impl Counterparty {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             prefix,
         })
+    }
+
+    pub fn from_proto_counterparty(pc: proto_connection::Counterparty) -> Result<Self, Error> {
+        match pc.prefix {
+            Some(prefix) => Counterparty::new(
+                pc.client_id,
+                pc.connection_id,
+                CommitmentPrefix::new(prefix.key_prefix),
+            ),
+            None => fail!(
+                Kind::MissingCounterpartyPrefix,
+                "no prefix in the given counterparty"
+            ),
+        }
     }
 }
 

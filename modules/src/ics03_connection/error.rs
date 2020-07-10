@@ -21,6 +21,12 @@ pub enum Kind {
 
     #[error("invalid proof")]
     InvalidProof,
+
+    #[error("missing counterparty")]
+    MissingCounterparty,
+
+    #[error("missing counterparty prefix")]
+    MissingCounterpartyPrefix,
 }
 
 impl Kind {

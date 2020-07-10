@@ -14,7 +14,7 @@ impl CommitmentPath {
     where
         P: Path,
     {
-        CommitmentPath{}
+        CommitmentPath {}
     }
 }
 
@@ -32,6 +32,10 @@ impl CommitmentProof {
 */
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommitmentPrefix;
+pub struct CommitmentPrefix(std::vec::Vec<u8>);
 
-// TODO: impl CommitPrefix
+impl CommitmentPrefix {
+    pub fn new(content: Vec<u8>) -> Self {
+        Self { 0: content }
+    }
+}
