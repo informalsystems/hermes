@@ -32,11 +32,13 @@ echo "*** Create Docker image and upload to Docker Hub"
 cd ..
 docker build -t informaldev/chain_a -f chain_a.Dockerfile .
 docker build -t informaldev/chain_b -f chain_b.Dockerfile .
-docker push informaldev/chain_a
-docker push informaldev/chain_b
 
 # Get details from the config files
 echo SECRET_A=$(jq -r .secret gaia/build/chain_a/node0/gaiacli/key_seed.json)
 echo SECRET_B=$(jq -r .secret gaia/build/chain_b/node0/gaiacli/key_seed.json)
 echo NODEID_A=$(jq -r .app_state.genutil.gentxs[0].value.memo  gaia/build/chain_a/node0/gaiad/config/genesis.json)
 echo NODEID_B=$(jq -r .app_state.genutil.gentxs[0].value.memo  gaia/build/chain_b/node0/gaiad/config/genesis.json)
+
+read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
+docker push informaldev/chain_a
+docker push informaldev/chain_b

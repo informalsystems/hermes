@@ -20,5 +20,5 @@ GOOS=linux make build-simd
 echo "*** Create Docker image and upload to Docker Hub"
 cd ..
 docker build -t informaldev/simd -f simd.Dockerfile .
+read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
 docker push informaldev/simd
-
