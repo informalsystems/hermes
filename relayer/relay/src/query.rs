@@ -26,7 +26,10 @@ where
         .map_err(|e| error::Kind::Rpc.context(e))?;
 
     if !abci_response.code.is_ok() {
-        todo!() // TODO: Fail with response log
+        // Fail with response log
+        return Err(error::Kind::Rpc
+            .context(abci_response.log.to_string())
+            .into());
     }
 
     // Data that is not from trusted node or subspace query needs verification

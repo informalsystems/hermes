@@ -89,12 +89,12 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
     ) -> Result<Self, error::Error> {
         match proto_unmarshal(response.value) {
             Ok(decoded_conn) => Ok(ConnectionResponse::new(
-                                                    query.connection_id,
-                                                    decoded_conn,
-                                                    response.proof,
-                                                    response.height.into(),
-                                                )),
-            Err(e) => Err(error::Kind::ResponseParsing.context(e).into())
+                query.connection_id,
+                decoded_conn,
+                response.proof,
+                response.height.into(),
+            )),
+            Err(e) => Err(error::Kind::ResponseParsing.context(e).into()),
         }
     }
 }

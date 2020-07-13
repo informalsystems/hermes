@@ -99,7 +99,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs.connection),
-            Err(e) => status_info!("connection query error: ", "{:?}", e)
+            Err(e) => status_info!("connection query error", "{}", e),
         }
     }
 }
