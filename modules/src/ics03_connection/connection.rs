@@ -38,6 +38,10 @@ impl ConnectionEnd {
     }
 
     pub fn from_proto_connection(pc: ProtoConnectionEnd) -> Result<Self, Error> {
+        if pc.id == "" {
+            return Err(Kind::ConnectionNotFound.into());
+        }
+
         // The Counterparty field is an Option, may be missing.
         match pc.counterparty {
             Some(cp) => {
@@ -54,10 +58,7 @@ impl ConnectionEnd {
             }
 
             // If no counterparty was set, signal the error.
-            None => fail!(
-                Kind::MissingCounterparty,
-                "no counterparty in the given connection"
-            ),
+            None => Err(Kind::MissingCounterparty.into()),
         }
     }
 }

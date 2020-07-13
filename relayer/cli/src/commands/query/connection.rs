@@ -81,6 +81,7 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
+        let chain = TendermintChain::from_config(chain_config).unwrap();
         // run with proof:
         // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection
         //
@@ -89,16 +90,16 @@ impl Runnable for QueryConnectionEndCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let chain = TendermintChain::from_config(chain_config).unwrap();
         let res = block_on(query_connection(
             &chain,
             opts.height,
             opts.connection_id.clone(),
             opts.proof,
         ));
+
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs.connection),
-            Err(e) => status_info!("connection query error: ", "{:?}", e),
+            Err(e) => status_info!("connection query error: ", "{:?}", e)
         }
     }
 }

@@ -12,7 +12,8 @@ use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
 
 use crate::ics03_connection::error::Error;
-// Protobuf
+
+// Import protobuf definitions.
 use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
 
 use bytes::Bytes;
@@ -86,14 +87,15 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let decoded_conn = proto_unmarshal(response.value).unwrap();
-
-        Ok(ConnectionResponse::new(
-            query.connection_id,
-            decoded_conn,
-            response.proof,
-            response.height.into(),
-        ))
+        match proto_unmarshal(response.value) {
+            Ok(decoded_conn) => Ok(ConnectionResponse::new(
+                                                    query.connection_id,
+                                                    decoded_conn,
+                                                    response.proof,
+                                                    response.height.into(),
+                                                )),
+            Err(e) => Err(error::Kind::ResponseParsing.context(e).into())
+        }
     }
 }
 

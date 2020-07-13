@@ -22,6 +22,9 @@ pub enum Kind {
     #[error("invalid proof")]
     InvalidProof,
 
+    #[error("queried for a non-existing connection")]
+    ConnectionNotFound,
+
     #[error("missing counterparty")]
     MissingCounterparty,
 
