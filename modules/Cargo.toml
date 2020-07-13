@@ -20,6 +20,9 @@ paths-ics = []
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", path = "/rpc", features=["client"] }
 
+# Proto definitions for all IBC-related interfaces, e.g., connections or channels.
+ibc-proto = "0.1.0"
+
 anomaly = "0.2.0"
 thiserror = "1.0.11"
 serde_derive = "1.0.104"
@@ -32,6 +35,3 @@ bytes = "0.5.5"
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-
-[build-dependencies]
-prost-build = { version = "0.6.1" }

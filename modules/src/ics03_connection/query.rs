@@ -11,9 +11,10 @@ use crate::path::{ConnectionPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
 
-// Protobuf
 use crate::ics03_connection::error::Error;
-use crate::ics03_connection::proto_connection;
+// Protobuf
+use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+
 use bytes::Bytes;
 use prost::Message;
 
@@ -113,6 +114,6 @@ impl IdentifiedConnectionEnd {
 
 fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, Error> {
     let buf = Bytes::from(bytes);
-    let decoded = proto_connection::ConnectionEnd::decode(buf).unwrap();
+    let decoded = ProtoConnectionEnd::decode(buf).unwrap();
     ConnectionEnd::from_proto_connection(decoded)
 }

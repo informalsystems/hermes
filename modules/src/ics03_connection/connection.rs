@@ -1,9 +1,12 @@
 use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::proto_connection;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
+
+// Import proto declarations.
+use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+use ibc_proto::connection::Counterparty as ProtoCounterparty;
 
 use anomaly::fail;
 use std::str::FromStr;
@@ -34,7 +37,7 @@ impl ConnectionEnd {
         self.state = new_state;
     }
 
-    pub fn from_proto_connection(pc: proto_connection::ConnectionEnd) -> Result<Self, Error> {
+    pub fn from_proto_connection(pc: ProtoConnectionEnd) -> Result<Self, Error> {
         // The Counterparty field is an Option, may be missing.
         match pc.counterparty {
             Some(cp) => {
@@ -109,7 +112,7 @@ impl Counterparty {
         })
     }
 
-    pub fn from_proto_counterparty(pc: proto_connection::Counterparty) -> Result<Self, Error> {
+    pub fn from_proto_counterparty(pc: ProtoCounterparty) -> Result<Self, Error> {
         match pc.prefix {
             Some(prefix) => Counterparty::new(
                 pc.client_id,
