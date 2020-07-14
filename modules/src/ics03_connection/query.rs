@@ -117,5 +117,5 @@ impl IdentifiedConnectionEnd {
 fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, Error> {
     let buf = Bytes::from(bytes);
     let decoded = ProtoConnectionEnd::decode(buf).unwrap();
-    ConnectionEnd::from_proto_connection(decoded)
+    ConnectionEnd::from_proto_connection_end(decoded)
 }

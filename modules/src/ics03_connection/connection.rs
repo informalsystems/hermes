@@ -8,9 +8,6 @@ use serde_derive::{Deserialize, Serialize};
 use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
 use ibc_proto::connection::Counterparty as ProtoCounterparty;
 
-use anomaly::fail;
-use std::str::FromStr;
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
@@ -37,7 +34,7 @@ impl ConnectionEnd {
         self.state = new_state;
     }
 
-    pub fn from_proto_connection(pc: ProtoConnectionEnd) -> Result<Self, Error> {
+    pub fn from_proto_connection_end(pc: ProtoConnectionEnd) -> Result<Self, Error> {
         if pc.id == "" {
             return Err(Kind::ConnectionNotFound.into());
         }
@@ -46,9 +43,11 @@ impl ConnectionEnd {
         match pc.counterparty {
             Some(cp) => {
                 let mut conn = ConnectionEnd::new(
-                    ClientId::from_str(&pc.client_id).unwrap(),
-                    Counterparty::from_proto_counterparty(cp).unwrap(),
-                    pc.versions,
+                    pc.client_id
+                        .parse()
+                        .map_err(|e| Kind::IdentifierError.context(e))?,
+                    Counterparty::from_proto_counterparty(cp)?,
+                    validate_versions(pc.versions).map_err(|e| Kind::InvalidVersion.context(e))?,
                 )
                 .unwrap();
 
@@ -120,10 +119,7 @@ impl Counterparty {
                 pc.connection_id,
                 CommitmentPrefix::new(prefix.key_prefix),
             ),
-            None => fail!(
-                Kind::MissingCounterpartyPrefix,
-                "no prefix in the given counterparty"
-            ),
+            None => Err(Kind::MissingCounterpartyPrefix.into()),
         }
     }
 }
