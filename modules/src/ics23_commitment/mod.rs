@@ -1,6 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 
 use crate::path::Path;
+use std::fmt;
 use tendermint::merkle::proof::Proof;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -31,11 +32,21 @@ impl CommitmentProof {
 }
 */
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPrefix(Vec<u8>);
 
 impl CommitmentPrefix {
     pub fn new(content: Vec<u8>) -> Self {
         Self { 0: content }
+    }
+}
+
+impl fmt::Debug for CommitmentPrefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let converted = String::from_utf8(self.clone().0);
+        match converted {
+            Ok(s) => write!(f, "{}", s),
+            Err(_e) => write!(f, "{:?}", &self.0),
+        }
     }
 }
