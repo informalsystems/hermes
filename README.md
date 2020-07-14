@@ -22,6 +22,14 @@ Requires Rust 1.42+ (might work on earlier versions but this has not been tested
 These are instructions for setting up a local development environment with two
 IBC-enabled local blockchains that the relayer can run against.
 
+### Using Docker
+For alternative setup using scripts, check the next section.
+```shell script
+docker run --rm -d -p 26656:26656 -p 26657:26657 informaldev/chain_a
+docker run --rm -d -p 26556:26656 -p 26557:26657 informaldev/chain_b
+```
+
+### Using scripts
 Dependencies:
 
 - `jq`, a command-line JSON processor
