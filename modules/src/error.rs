@@ -12,6 +12,10 @@ pub enum Kind {
     /// Event error (raised by the event monitor)
     #[error("Bad Notification")]
     Event,
+
+    /// Response parsing error
+    #[error("Could not parse/unmarshall response")]
+    ResponseParsing,
 }
 
 impl Kind {

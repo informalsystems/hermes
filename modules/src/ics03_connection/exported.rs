@@ -42,6 +42,15 @@ impl State {
             Self::Open => "OPEN",
         }
     }
+
+    pub fn from_i32(nr: i32) -> Self {
+        match nr {
+            1 => Self::Init,
+            2 => Self::TryOpen,
+            3 => Self::Open,
+            _ => Self::Uninitialized,
+        }
+    }
 }
 
 impl std::str::FromStr for State {

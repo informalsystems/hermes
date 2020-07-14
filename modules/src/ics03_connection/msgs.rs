@@ -308,7 +308,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix {},
+            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
         };
 
         let tests: Vec<Test> = vec![
@@ -398,7 +398,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix {},
+            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
             proof_consensus: get_dummy_proof(),

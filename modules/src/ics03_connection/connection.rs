@@ -4,6 +4,10 @@ use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
 
+// Import proto declarations.
+use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+use ibc_proto::connection::Counterparty as ProtoCounterparty;
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     state: State,
@@ -24,6 +28,37 @@ impl ConnectionEnd {
             counterparty,
             versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
         })
+    }
+
+    pub fn set_state(&mut self, new_state: State) {
+        self.state = new_state;
+    }
+
+    pub fn from_proto_connection_end(pc: ProtoConnectionEnd) -> Result<Self, Error> {
+        if pc.id == "" {
+            return Err(Kind::ConnectionNotFound.into());
+        }
+
+        // The Counterparty field is an Option, may be missing.
+        match pc.counterparty {
+            Some(cp) => {
+                let mut conn = ConnectionEnd::new(
+                    pc.client_id
+                        .parse()
+                        .map_err(|e| Kind::IdentifierError.context(e))?,
+                    Counterparty::from_proto_counterparty(cp)?,
+                    validate_versions(pc.versions).map_err(|e| Kind::InvalidVersion.context(e))?,
+                )
+                .unwrap();
+
+                // Set the state.
+                conn.set_state(State::from_i32(pc.state));
+                Ok(conn)
+            }
+
+            // If no counterparty was set, signal the error.
+            None => Err(Kind::MissingCounterparty.into()),
+        }
     }
 }
 
@@ -75,6 +110,17 @@ impl Counterparty {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             prefix,
         })
+    }
+
+    pub fn from_proto_counterparty(pc: ProtoCounterparty) -> Result<Self, Error> {
+        match pc.prefix {
+            Some(prefix) => Counterparty::new(
+                pc.client_id,
+                pc.connection_id,
+                CommitmentPrefix::new(prefix.key_prefix),
+            ),
+            None => Err(Kind::MissingCounterpartyPrefix.into()),
+        }
     }
 }
 

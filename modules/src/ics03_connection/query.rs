@@ -11,6 +11,14 @@ use crate::path::{ConnectionPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
 
+use crate::ics03_connection::error::Error;
+
+// Import protobuf definitions.
+use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+
+use bytes::Bytes;
+use prost::Message;
+
 pub struct QueryConnection {
     pub chain_height: Height,
     pub connection_id: ConnectionId,
@@ -79,14 +87,15 @@ impl IbcResponse<QueryConnection> for ConnectionResponse {
         query: QueryConnection,
         response: AbciQuery,
     ) -> Result<Self, error::Error> {
-        let connection = amino_unmarshal_binary_length_prefixed(&response.value)?;
-
-        Ok(ConnectionResponse::new(
-            query.connection_id,
-            connection,
-            response.proof,
-            response.height.into(),
-        ))
+        match proto_unmarshal(response.value) {
+            Ok(decoded_conn) => Ok(ConnectionResponse::new(
+                query.connection_id,
+                decoded_conn,
+                response.proof,
+                response.height.into(),
+            )),
+            Err(e) => Err(error::Kind::ResponseParsing.context(e).into()),
+        }
     }
 }
 
@@ -105,6 +114,8 @@ impl IdentifiedConnectionEnd {
     }
 }
 
-fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
-    todo!()
+fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, Error> {
+    let buf = Bytes::from(bytes);
+    let decoded = ProtoConnectionEnd::decode(buf).unwrap();
+    ConnectionEnd::from_proto_connection_end(decoded)
 }
