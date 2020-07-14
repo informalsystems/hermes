@@ -28,7 +28,7 @@ curl 'localhost:26657/abci_query?path="store/ibc/key"&data="clients/ethbridge"'
 curl 'localhost:26657/abci_query?path="store/ibc/key"&data="channels/firstchannel"'
 ```
 
-will return the relevent proto encoded connection data.
+will return the relevent proto encoded data.
 
 
 :D
