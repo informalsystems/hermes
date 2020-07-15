@@ -2,10 +2,11 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::connection::query_connection;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer::query::ibc_query;
+use relayer_modules::ics03_connection::query::QueryConnection;
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
 use tendermint::chain::Id as ChainId;
@@ -83,18 +84,16 @@ impl Runnable for QueryConnectionEndCmd {
 
         let chain = TendermintChain::from_config(chain_config).unwrap();
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc0 ibconeconnection --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc0 ibconeconnection --height 3  -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let res = block_on(query_connection(
+        let res = block_on(ibc_query(
             &chain,
-            opts.height,
-            opts.connection_id.clone(),
-            opts.proof,
+            QueryConnection::new(opts.height, opts.connection_id.clone(), opts.proof),
         ));
 
         match res {

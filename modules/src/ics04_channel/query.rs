@@ -11,6 +11,15 @@ use crate::path::{ChannelEndsPath, Path};
 use crate::query::{IbcQuery, IbcResponse};
 use crate::Height;
 
+use crate::ics04_channel::error::Error;
+
+// Import protobuf definitions.
+use ibc_proto::channel::Channel as ProtoChannel;
+
+use bytes::Bytes;
+use prost::Message;
+use std::convert::TryFrom;
+
 pub struct QueryChannel {
     pub chain_height: Height,
     pub port_id: PortId,
@@ -79,16 +88,25 @@ impl ChannelResponse {
 
 impl IbcResponse<QueryChannel> for ChannelResponse {
     fn from_abci_response(query: QueryChannel, response: AbciQuery) -> Result<Self, error::Error> {
-        Ok(ChannelResponse::new(
-            query.port_id,
-            query.channel_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
-            response.proof,
-            response.height.into(),
-        ))
+        match proto_unmarshal(response.value) {
+            Ok(decoded_conn) => Ok(ChannelResponse::new(
+                query.port_id,
+                query.channel_id,
+                decoded_conn,
+                response.proof,
+                response.height.into(),
+            )),
+            Err(e) => Err(error::Kind::ResponseParsing.context(e).into()),
+        }
     }
 }
 
 fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
     todo!()
+}
+
+fn proto_unmarshal(bytes: Vec<u8>) -> Result<ChannelEnd, Error> {
+    let buf = Bytes::from(bytes);
+    let decoded = ProtoChannel::decode(buf).unwrap();
+    ChannelEnd::try_from(decoded)
 }

@@ -2,8 +2,9 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::channel::query_channel;
+use relayer::query::ibc_query;
 
+use relayer_modules::ics04_channel::query::QueryChannel;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::commands::utils::block_on;
@@ -95,20 +96,22 @@ impl Runnable for QueryChannelEndCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc0 firstport firstchannel --height 3 -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a channel using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query_channel(
+        let res = block_on(ibc_query(
             &chain,
-            opts.height,
-            opts.port_id.clone(),
-            opts.channel_id.clone(),
-            opts.proof,
+            QueryChannel::new(
+                opts.height,
+                opts.port_id.clone(),
+                opts.channel_id.clone(),
+                opts.proof,
+            ),
         ));
         match res {
             Ok(cs) => status_info!("channel query result: ", "{:?}", cs.channel),

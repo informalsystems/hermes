@@ -18,6 +18,7 @@ use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
 
 use bytes::Bytes;
 use prost::Message;
+use std::convert::TryFrom;
 
 pub struct QueryConnection {
     pub chain_height: Height,
@@ -117,5 +118,5 @@ impl IdentifiedConnectionEnd {
 fn proto_unmarshal(bytes: Vec<u8>) -> Result<ConnectionEnd, Error> {
     let buf = Bytes::from(bytes);
     let decoded = ProtoConnectionEnd::decode(buf).unwrap();
-    ConnectionEnd::from_proto_connection_end(decoded)
+    ConnectionEnd::try_from(decoded)
 }

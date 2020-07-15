@@ -4,9 +4,7 @@ use crate::chain::Chain;
 use relayer_modules::error;
 use relayer_modules::query::IbcQuery;
 
-pub mod channel;
 pub mod client;
-pub mod connection;
 
 /// Perform an IBC `query` on the given `chain`, and return the corresponding IBC response.
 pub async fn ibc_query<C, Q>(chain: &C, query: Q) -> Result<Q::Response, error::Error>
