@@ -1,4 +1,4 @@
-# This is an IBC relayer sample configuration
+# This is an IBC relayer sample configuration to be used with simapp described in the repository ci/simapp folder README.md
 
 title = "IBC Relayer Config Example"
 

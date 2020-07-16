@@ -1,3 +1,4 @@
+#This example config can be used between two chains chain_A and chain_B described in the repository README.md
 title = "IBC Relayer Config Example"
 
 [global]
