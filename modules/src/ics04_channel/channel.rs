@@ -6,8 +6,9 @@ use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
 use ibc_proto::channel::Channel as ProtoChannel;
-use std::str::FromStr;
+
 use serde::export::TryFrom;
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelEnd {
