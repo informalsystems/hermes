@@ -71,7 +71,7 @@ where
 
     // Deserialize response data
 
-    // Poor man's serde(with='P') - this can be simplified if we use a serde-compatible protobuf implementation
+    // Poor man's serde(from='P') - this can be simplified if we use a serde-compatible protobuf implementation
     let proto_type = P::decode(Bytes::from(abci_response.value))
         .map_err(|e| error::Kind::ResponseParsing.context(e))?;
     T::try_from(proto_type).map_err(|_e| error::Kind::ResponseParsing.into()) // Todo: Add context to error
