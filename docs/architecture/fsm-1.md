@@ -16,7 +16,9 @@
 
 ###### Query results:
 
-- __RelayerClientResponse__
+- __RelayerClientResponse__, parametrized result:
+    * if (y), then there is some new headers are available and the client on the opposite chain should be updated
+    * if (n), then the client on the opposite chain does not need to be updated
 
 
 ## FSM states:
@@ -43,16 +45,20 @@ Proof-related states:
 | State|           Input        | Next State |  Output  |
 |:----:|:----------------------:|:----------:|:--------:|
 | Z    | OpenInit \| OpenTry    |   Q[d]     | Query destination chain headers via relayer client |
-| Z    | OpenAck \| OpenConfirm |      W     | _ |
-| Q[d] | RelayerClientResponse  |   U[s]     | UpdateClient on source chain |
-| U[s] | UpdateClient           |   Q[s]     | _ |
+| Z    | OpenAck |      W     | _ |
+| Z    | OpenConfirm |      X     | FSM Exit |
+| Q[d] | RelayerClientResponse(y)|   U[s]     | Submit UpdateClient on source chain |
+| Q[d] | RelayerClientResponse(n)|   W     | _ |
+| U[s] | UpdateClient           |   Q[s]     | Query source chain headers via relayer client |
 | W    | NewBlock               |   Q[s]     | Query source chain headers via relayer client |
-| Q[s] | RelayerClientResponse  |   U[d]     | UpdateClient on destination chain |
+| Q[s] | RelayerClientResponse(y) |   U[d]     | Submit UpdateClient on destination chain |
+| Q[s] | RelayerClientResponse(n) |   P     | [internal] Create proofs |
 | U[d] | UpdateClient           |    P       | [internal] Create proofs |
 | P    | OpenInit \| OpenTry    |   PCC      | Query the IBC client state and the connection state on source chain |
-| P    | OpenInit \| OpenTry \| OpenAck \| OpenConfirm    |    PC      | Query the connection state on source chain |
-| PC   | RelayerClientResponse  |    S      | Submit datagram + proofs to destination chain |
-| PCC  | RelayerClientResponse  |    S      | Submit datagram + proofs to destination chain |
+| P    | OpenAck     |    PC      | Query the connection state on source chain |
+| P    | OpenConfirm     |    X      | FSM Exit |
+| PC   | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
+| PCC  | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
 |  S   | NewBlock               |   X       | FSM Exit |
 
 ## Dependencies:
@@ -63,10 +69,10 @@ Proof-related states:
 - Height of destination chain
 - Height of IBC client on source chain
 - Height of IBC client on destination chain
-- RPC to destination chain (for state __U[d]__)
+- RPC to destination chain (for states __U[d]__ and __S__ and __PC__ and __PCC__)
 - RPC to source chain (for state __U[s]__)
 
 Limitations to this description:
 
-- this is a sequential description
 - have to consider height offsets!
+- more details about states __PC__ and __PCC__ are needed 
