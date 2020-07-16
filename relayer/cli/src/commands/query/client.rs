@@ -2,11 +2,13 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::client::{query_client_consensus_state, query_client_full_state};
+//use relayer::query::client::{query_client_consensus_state, query_client_full_state};
+//use relayer::query::{query, Request};
 
+//use relayer_modules::ics02_client::query::QueryClientFullState;
 use relayer_modules::ics24_host::identifier::ClientId;
 
-use crate::commands::utils::block_on;
+//use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
@@ -70,14 +72,15 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client state ibc0 ibconeclient -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        /* Todo: Implement client full state query
         let res = block_on(query_client_full_state(
             &chain,
             opts.height,
@@ -88,6 +91,7 @@ impl Runnable for QueryClientStateCmd {
             Ok(cs) => status_info!("client state query result: ", "{:?}", cs.client_state),
             Err(e) => status_info!("client state query error: ", "{:?}", e),
         }
+        */
     }
 }
 
@@ -167,7 +171,8 @@ impl Runnable for QueryClientConsensusCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        /* Todo: Implement client consensus state query
         let res = block_on(query_client_consensus_state(
             &chain,
             opts.height,
@@ -183,6 +188,8 @@ impl Runnable for QueryClientConsensusCmd {
             ),
             Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
         }
+
+         */
     }
 }
 

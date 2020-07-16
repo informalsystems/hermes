@@ -5,11 +5,17 @@ use relayer::config::{ChainConfig, Config};
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
-use relayer::query::ibc_query;
-use relayer_modules::ics03_connection::query::QueryConnection;
+use relayer::query::{query, Request};
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
+use relayer_modules::path::{ConnectionPath, Path};
 use tendermint::chain::Id as ChainId;
+
+use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+use relayer_modules::ics03_connection::connection::ConnectionEnd;
+use std::str::FromStr;
+use tendermint::abci::Path as TendermintPath;
+use tendermint::block::Height;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -84,22 +90,26 @@ impl Runnable for QueryConnectionEndCmd {
 
         let chain = TendermintChain::from_config(chain_config).unwrap();
         // run with proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc0 ibconeconnection --height 3
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc0 ibconeconnection --height 3  -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3  -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let res = block_on(ibc_query(
+        let res = block_on(query::<TendermintChain, ProtoConnectionEnd, ConnectionEnd>(
             &chain,
-            QueryConnection::new(opts.height, opts.connection_id.clone(), opts.proof),
+            Request {
+                path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+                data: ConnectionPath::new(opts.connection_id)
+                    .to_string()
+                    .into_bytes(),
+                height: Some(Height::from(opts.height)),
+                prove: opts.proof,
+            },
         ));
 
-        match res {
-            Ok(cs) => status_info!("connection query result: ", "{:?}", cs.connection),
-            Err(e) => status_info!("connection query error", "{}", e),
-        }
+        println!("{:?}", res);
     }
 }
 

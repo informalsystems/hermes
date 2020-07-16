@@ -30,13 +30,15 @@ impl TryFrom<ProtoConnectionEnd> for ConnectionEnd {
         match value.counterparty {
             Some(cp) => {
                 let mut conn = ConnectionEnd::new(
-                    value.client_id
+                    value
+                        .client_id
                         .parse()
                         .map_err(|e| Kind::IdentifierError.context(e))?,
                     Counterparty::try_from(cp)?,
-                    validate_versions(value.versions).map_err(|e| Kind::InvalidVersion.context(e))?,
+                    validate_versions(value.versions)
+                        .map_err(|e| Kind::InvalidVersion.context(e))?,
                 )
-                    .unwrap();
+                .unwrap();
 
                 // Set the state.
                 conn.set_state(State::from_i32(value.state));

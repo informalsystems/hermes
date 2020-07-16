@@ -1,25 +1,57 @@
-use tendermint::abci;
-
 use crate::chain::Chain;
+use bytes::Bytes;
+use prost::Message;
 use relayer_modules::error;
-use relayer_modules::query::IbcQuery;
+use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
+use tendermint::abci::Path;
+use tendermint::block;
 
 pub mod client;
 
-/// Perform an IBC `query` on the given `chain`, and return the corresponding IBC response.
-pub async fn ibc_query<C, Q>(chain: &C, query: Q) -> Result<Q::Response, error::Error>
+// This struct was copied form tenderint-rs rpc/source/endpoint/abci_query.rs and made public.
+// Todo: Work on removing it by consolidating the Request part of every query function - maybe with a helper function.
+/// Query the ABCI application for information
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct Request {
+    /// Path to the data
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<Path>,
+
+    /// Data to query
+    //#[serde(with = "serializers::bytes::hexstring")]
+    pub data: Vec<u8>,
+
+    /// Block height
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<block::Height>,
+
+    /// Include proof in response
+    pub prove: bool,
+}
+
+/// Whether or not this path requires proof verification.
+///
+/// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
+/// where queryType must be "store" and subpath must be "key" to require a proof.
+fn is_query_store_with_proof(_path: &Path) -> bool {
+    false
+}
+
+/// Perform a generic `abci_query` on the given `chain`, and return the corresponding deserialized response data.
+pub async fn query<C, P, T>(chain: &C, request: Request) -> Result<T, error::Error>
 where
     C: Chain,
-    Q: IbcQuery,
+    P: Message + Default,
+    T: TryFrom<P>,
 {
+    // RPC Request
+
+    let path = request.path.clone().unwrap();
+    // Use the Tendermint-rs RPC client to do the query
     let abci_response = chain
         .rpc_client()
-        .abci_query(
-            Some(query.path()),
-            query.data(),
-            Some(query.height().into()),
-            query.prove(),
-        )
+        .abci_query(request.path, request.data, request.height, request.prove)
         .await
         .map_err(|e| error::Kind::Rpc.context(e))?;
 
@@ -30,18 +62,17 @@ where
             .into());
     }
 
+    // Verify response proof
+
     // Data that is not from trusted node or subspace query needs verification
-    if is_query_store_with_proof(&query.path()) {
+    if is_query_store_with_proof(&path) {
         todo!() // TODO: Verify proof
     }
 
-    query.build_response(abci_response)
-}
+    // Deserialize response data
 
-/// Whether or not this path requires proof verification.
-///
-/// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
-/// where queryType must be "store" and subpath must be "key" to require a proof.
-fn is_query_store_with_proof(_path: &abci::Path) -> bool {
-    false
+    // Poor man's serde(with='P') - this can be simplified if we use a serde-compatible protobuf implementation
+    let proto_type = P::decode(Bytes::from(abci_response.value))
+        .map_err(|e| error::Kind::ResponseParsing.context(e))?;
+    T::try_from(proto_type).map_err(|_e| error::Kind::ResponseParsing.into()) // Todo: Add context to error
 }

@@ -2,14 +2,21 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::ibc_query;
+use relayer::query::{query, Request};
 
-use relayer_modules::ics04_channel::query::QueryChannel;
+use relayer_modules::ics04_channel::channel::ChannelEnd;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
+
+// Import protobuf definitions.
+use ibc_proto::channel::Channel as ProtoChannel;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use relayer_modules::ics24_host::error::ValidationError;
+use relayer_modules::path::{ChannelEndsPath, Path};
+use std::str::FromStr;
+use tendermint::abci::Path as TendermintPath;
+use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -99,24 +106,24 @@ impl Runnable for QueryChannelEndCmd {
         // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc0 firstport firstchannel --height 3 -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a channel using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(ibc_query(
+        let res = block_on(query::<TendermintChain, ProtoChannel, ChannelEnd>(
             &chain,
-            QueryChannel::new(
-                opts.height,
-                opts.port_id.clone(),
-                opts.channel_id.clone(),
-                opts.proof,
-            ),
+            Request {
+                path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+                data: ChannelEndsPath::new(opts.port_id, opts.channel_id)
+                    .to_string()
+                    .into_bytes(),
+                height: Some(Height::from(opts.height)),
+                prove: opts.proof,
+            },
         ));
-        match res {
-            Ok(cs) => status_info!("channel query result: ", "{:?}", cs.channel),
-            Err(e) => status_info!("channel query error: ", "{:?}", e),
-        }
+
+        println!("{:?}", res);
     }
 }
 
