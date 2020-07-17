@@ -5,7 +5,7 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
-use ibc_proto::channel::Channel as ProtoChannel;
+use ibc_proto::channel::Channel as RawChannel;
 
 use serde::export::TryFrom;
 use std::str::FromStr;
@@ -19,10 +19,10 @@ pub struct ChannelEnd {
     version: String,
 }
 
-impl TryFrom<ProtoChannel> for ChannelEnd {
+impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
 
-    fn try_from(value: ProtoChannel) -> Result<Self, Self::Error> {
+    fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Todo: Do validation of data here. This is just an example implementation for testing.
         let ordering = match value.ordering {
             0 => Order::None,

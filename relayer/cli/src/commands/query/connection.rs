@@ -11,7 +11,7 @@ use relayer_modules::ics24_host::identifier::ConnectionId;
 use relayer_modules::path::{ConnectionPath, Path};
 use tendermint::chain::Id as ChainId;
 
-use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
+use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
 use relayer_modules::ics03_connection::connection::ConnectionEnd;
 use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
@@ -109,12 +109,15 @@ impl Runnable for QueryConnectionEndCmd {
         // To test this start a Gaia node and configure a client using the go relayer.
         let res = block_on(query::<
             TendermintChain,
-            ProtoConnectionEnd,
+            RawConnectionEnd,
             ConnectionEnd,
             QueryConnectionOptions,
         >(&chain, opts));
 
-        println!("{:?}", res);
+        match res {
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection query error", "{}", e),
+        }
     }
 }
 

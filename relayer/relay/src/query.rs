@@ -32,12 +32,12 @@ fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
 }
 
 /// Perform a generic `abci_query` on the given `chain`, and return the corresponding deserialized response data.
-pub async fn query<C, P, T, O>(chain: &C, request: O) -> Result<T, error::Error>
+pub async fn query<C, R, T>(chain: &C, request: Request) -> Result<T, error::Error>
 where
     C: Chain,             // Chain configuration
-    P: Message + Default, // Proto Struct type
-    T: TryFrom<P>,        // Internal Struct type
-    O: Into<Request>,     // Query Command configuration
+    R: Message + Default, // Raw Struct type
+    T: TryFrom<R>,        // Internal Struct type
+    O: Into<Request>,     // Query Command configuration (opts)
 {
     // RPC Request
 
@@ -62,6 +62,10 @@ where
             .context(abci_response.log.to_string())
             .into());
     }
+    if abci_response.value.is_empty() {
+        // Fail due to empty response value (nothing to decode).
+        return Err(error::Kind::EmptyResponseValue.into());
+    }
 
     // Verify response proof
 
@@ -73,7 +77,7 @@ where
     // Deserialize response data
 
     // Poor man's serde(from='P') - this can be simplified if we use a serde-compatible protobuf implementation
-    let proto_type = P::decode(Bytes::from(abci_response.value))
+    let proto_type = R::decode(Bytes::from(abci_response.value))
         .map_err(|e| error::Kind::ResponseParsing.context(e))?;
     T::try_from(proto_type).map_err(|_e| error::Kind::ResponseParsing.into()) // Todo: Add context to error
 }
