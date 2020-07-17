@@ -32,7 +32,7 @@ fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
 }
 
 /// Perform a generic `abci_query` on the given `chain`, and return the corresponding deserialized response data.
-pub async fn query<C, R, T>(chain: &C, request: Request) -> Result<T, error::Error>
+pub async fn query<C, R, T, O>(chain: &C, request: O) -> Result<T, error::Error>
 where
     C: Chain,             // Chain configuration
     R: Message + Default, // Raw Struct type
@@ -50,7 +50,7 @@ where
         .abci_query(
             request.path,
             request.data.to_string().into_bytes(),
-            request.height.map(|h| block::Height::from(h)),
+            request.height.map(block::Height::from),
             request.prove,
         )
         .await
