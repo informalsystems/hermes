@@ -39,11 +39,11 @@ fn is_query_store_with_proof(_path: &Path) -> bool {
 }
 
 /// Perform a generic `abci_query` on the given `chain`, and return the corresponding deserialized response data.
-pub async fn query<C, P, T>(chain: &C, request: Request) -> Result<T, error::Error>
+pub async fn query<C, R, T>(chain: &C, request: Request) -> Result<T, error::Error>
 where
     C: Chain,
-    P: Message + Default,
-    T: TryFrom<P>,
+    R: Message + Default,
+    T: TryFrom<R>,
 {
     // RPC Request
 
@@ -76,7 +76,7 @@ where
     // Deserialize response data
 
     // Poor man's serde(from='P') - this can be simplified if we use a serde-compatible protobuf implementation
-    let proto_type = P::decode(Bytes::from(abci_response.value))
+    let proto_type = R::decode(Bytes::from(abci_response.value))
         .map_err(|e| error::Kind::ResponseParsing.context(e))?;
     T::try_from(proto_type).map_err(|_e| error::Kind::ResponseParsing.into()) // Todo: Add context to error
 }

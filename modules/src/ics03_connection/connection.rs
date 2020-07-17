@@ -5,8 +5,8 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
-use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
-use ibc_proto::connection::Counterparty as ProtoCounterparty;
+use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
+use ibc_proto::connection::Counterparty as RawCounterparty;
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -17,10 +17,10 @@ pub struct ConnectionEnd {
     versions: Vec<String>,
 }
 
-impl TryFrom<ProtoConnectionEnd> for ConnectionEnd {
+impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
 
-    fn try_from(value: ProtoConnectionEnd) -> Result<Self, Self::Error> {
+    fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         // Todo: Is validation complete here? (Code was moved from `from_proto_connection_end`.)
         if value.id == "" {
             return Err(Kind::ConnectionNotFound.into());
@@ -103,10 +103,10 @@ pub struct Counterparty {
     prefix: CommitmentPrefix,
 }
 
-impl TryFrom<ProtoCounterparty> for Counterparty {
+impl TryFrom<RawCounterparty> for Counterparty {
     type Error = anomaly::Error<Kind>;
 
-    fn try_from(value: ProtoCounterparty) -> Result<Self, Self::Error> {
+    fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         // Todo: Is validation complete here? (code was moved from `from_proto_counterparty`)
         match value.prefix {
             Some(prefix) => Counterparty::new(

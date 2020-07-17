@@ -8,7 +8,7 @@ use relayer_modules::ics04_channel::channel::ChannelEnd;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
 
 // Import protobuf definitions.
-use ibc_proto::channel::Channel as ProtoChannel;
+use ibc_proto::channel::Channel as RawChannel;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
@@ -111,7 +111,7 @@ impl Runnable for QueryChannelEndCmd {
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a channel using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query::<TendermintChain, ProtoChannel, ChannelEnd>(
+        let res = block_on(query::<TendermintChain, RawChannel, ChannelEnd>(
             &chain,
             Request {
                 path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
