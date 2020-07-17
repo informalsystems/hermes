@@ -2,29 +2,22 @@ use crate::chain::Chain;
 use bytes::Bytes;
 use prost::Message;
 use relayer_modules::error;
-use serde::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use tendermint::abci::Path;
+use tendermint::abci::Path as TendermintPath;
 use tendermint::block;
 
 pub mod client;
 
-// This struct was copied form tenderint-rs rpc/source/endpoint/abci_query.rs and made public.
-// Todo: Work on removing it by consolidating the Request part of every query function - maybe with a helper function.
 /// Query the ABCI application for information
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct Request {
     /// Path to the data
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub path: Option<Path>,
+    pub path: Option<TendermintPath>,
 
     /// Data to query
-    //#[serde(with = "serializers::bytes::hexstring")]
-    pub data: Vec<u8>,
+    pub data: String,
 
     /// Block height
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub height: Option<block::Height>,
+    pub height: u64,
 
     /// Include proof in response
     pub prove: bool,
@@ -34,24 +27,35 @@ pub struct Request {
 ///
 /// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
 /// where queryType must be "store" and subpath must be "key" to require a proof.
-fn is_query_store_with_proof(_path: &Path) -> bool {
+fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
     false
 }
 
 /// Perform a generic `abci_query` on the given `chain`, and return the corresponding deserialized response data.
-pub async fn query<C, R, T>(chain: &C, request: Request) -> Result<T, error::Error>
+pub async fn query<C, R, T, O>(chain: &C, request: O) -> Result<T, error::Error>
 where
-    C: Chain,
-    R: Message + Default,
-    T: TryFrom<R>,
+    C: Chain,             // Chain configuration
+    R: Message + Default, // Raw Struct type
+    T: TryFrom<R>,        // Internal Struct type
+    O: Into<Request>,     // Query Command configuration (opts)
 {
     // RPC Request
 
-    let path = request.path.clone().unwrap();
+    let request: Request = request.into();
+    let path = request.path.clone().unwrap(); // for the is_query_store_with_proof function
+
     // Use the Tendermint-rs RPC client to do the query
     let abci_response = chain
         .rpc_client()
-        .abci_query(request.path, request.data, request.height, request.prove)
+        .abci_query(
+            request.path,
+            request.data.to_string().into_bytes(),
+            match request.height {
+                0 => None,
+                _ => Some(block::Height::from(request.height)),
+            },
+            request.prove,
+        )
         .await
         .map_err(|e| error::Kind::Rpc.context(e))?;
 

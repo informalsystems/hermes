@@ -15,7 +15,6 @@ use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
 use relayer_modules::ics03_connection::connection::ConnectionEnd;
 use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
-use tendermint::block::Height;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -37,6 +36,17 @@ struct QueryConnectionOptions {
     connection_id: ConnectionId,
     height: u64,
     proof: bool,
+}
+
+impl Into<Request> for QueryConnectionOptions {
+    fn into(self) -> Request {
+        Request {
+            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+            data: ConnectionPath::new(self.connection_id).to_string(),
+            height: self.height,
+            prove: self.proof,
+        }
+    }
 }
 
 impl QueryConnectionEndCmd {
@@ -97,17 +107,12 @@ impl Runnable for QueryConnectionEndCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let res = block_on(query::<TendermintChain, RawConnectionEnd, ConnectionEnd>(
-            &chain,
-            Request {
-                path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
-                data: ConnectionPath::new(opts.connection_id)
-                    .to_string()
-                    .into_bytes(),
-                height: Some(Height::from(opts.height)),
-                prove: opts.proof,
-            },
-        ));
+        let res = block_on(query::<
+            TendermintChain,
+            RawConnectionEnd,
+            ConnectionEnd,
+            QueryConnectionOptions,
+        >(&chain, opts));
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
