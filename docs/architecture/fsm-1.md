@@ -9,7 +9,7 @@
 - __OpenInit__
 - __OpenTry__
 - __OpenAck__
-- __OpenConfirm__
+- __OpenConfirm__ (no FSM should be created to handle this event)
 - __NewBlock__
 - __UpdateClient__
 
@@ -46,7 +46,6 @@ Proof-related states:
 |:----:|:----------------------:|:----------:|:--------:|
 | Z    | OpenInit \| OpenTry    |   Q[d]     | Query destination chain headers via relayer client |
 | Z    | OpenAck |      W     | _ |
-| Z    | OpenConfirm |      X     | FSM Exit |
 | Q[d] | RelayerClientResponse(y)|   U[s]     | Submit UpdateClient on source chain |
 | Q[d] | RelayerClientResponse(n)|   W     | _ |
 | U[s] | UpdateClient           |   Q[s]     | Query source chain headers via relayer client |
@@ -56,7 +55,6 @@ Proof-related states:
 | U[d] | UpdateClient           |    P       | [internal] Create proofs |
 | P    | OpenInit \| OpenTry    |   PCC      | Query the IBC client state and the connection state on source chain |
 | P    | OpenAck     |    PC      | Query the connection state on source chain |
-| P    | OpenConfirm     |    X      | FSM Exit |
 | PC   | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
 | PCC  | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
 |  S   | NewBlock               |   X       | FSM Exit |
