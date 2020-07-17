@@ -49,7 +49,7 @@ impl Into<Request> for QueryChannelOptions {
         Request {
             path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
             data: ChannelEndsPath::new(self.port_id.clone(), self.channel_id.clone()).to_string(),
-            height: Some(self.height),
+            height: self.height,
             prove: self.proof,
         }
     }
@@ -88,7 +88,7 @@ impl QueryChannelEndCmd {
             channel_id,
             height: match self.height {
                 Some(h) => h,
-                None => 0 as u64, // Todo: Is this universally accepted for queries? (If yes, it allows more code scrubbing.)
+                None => 0 as u64,
             },
             proof: match self.proof {
                 Some(proof) => proof,

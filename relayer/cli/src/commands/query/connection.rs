@@ -43,7 +43,7 @@ impl Into<Request> for QueryConnectionOptions {
         Request {
             path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
             data: ConnectionPath::new(self.connection_id.clone()).to_string(),
-            height: Some(self.height),
+            height: self.height,
             prove: self.proof,
         }
     }

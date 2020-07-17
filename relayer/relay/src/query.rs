@@ -17,7 +17,7 @@ pub struct Request {
     pub data: String,
 
     /// Block height
-    pub height: Option<u64>,
+    pub height: u64,
 
     /// Include proof in response
     pub prove: bool,
@@ -50,7 +50,10 @@ where
         .abci_query(
             request.path,
             request.data.to_string().into_bytes(),
-            request.height.map(block::Height::from),
+            match request.height {
+                0 => None,
+                _ => Some(block::Height::from(request.height)),
+            },
             request.prove,
         )
         .await
