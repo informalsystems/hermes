@@ -16,7 +16,6 @@ use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::path::{ChannelEndsPath, Path};
 use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
-use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -43,6 +42,17 @@ struct QueryChannelOptions {
     channel_id: ChannelId,
     height: u64,
     proof: bool,
+}
+
+impl Into<Request> for QueryChannelOptions {
+    fn into(self) -> Request {
+        Request {
+            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+            data: ChannelEndsPath::new(self.port_id.clone(), self.channel_id.clone()).to_string(),
+            height: Some(self.height),
+            prove: self.proof,
+        }
+    }
 }
 
 impl QueryChannelEndCmd {
@@ -78,7 +88,7 @@ impl QueryChannelEndCmd {
             channel_id,
             height: match self.height {
                 Some(h) => h,
-                None => 0 as u64,
+                None => 0 as u64, // Todo: Is this universally accepted for queries? (If yes, it allows more code scrubbing.)
             },
             proof: match self.proof {
                 Some(proof) => proof,
@@ -111,17 +121,12 @@ impl Runnable for QueryChannelEndCmd {
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a channel using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query::<TendermintChain, ProtoChannel, ChannelEnd>(
-            &chain,
-            Request {
-                path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
-                data: ChannelEndsPath::new(opts.port_id, opts.channel_id)
-                    .to_string()
-                    .into_bytes(),
-                height: Some(Height::from(opts.height)),
-                prove: opts.proof,
-            },
-        ));
+        let res = block_on(query::<
+            TendermintChain,
+            ProtoChannel,
+            ChannelEnd,
+            QueryChannelOptions,
+        >(&chain, opts));
 
         println!("{:?}", res);
     }
