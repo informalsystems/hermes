@@ -123,7 +123,10 @@ impl Runnable for QueryChannelEndCmd {
             },
         ));
 
-        println!("{:?}", res);
+        match res {
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection query error", "{}", e),
+        }
     }
 }
 
