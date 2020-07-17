@@ -61,7 +61,7 @@ where
             .context(abci_response.log.to_string())
             .into());
     }
-    if abci_response.value.len() == 0 {
+    if abci_response.value.is_empty() {
         // Fail due to empty response value (nothing to decode).
         return Err(error::Kind::EmptyResponseValue.into());
     }
