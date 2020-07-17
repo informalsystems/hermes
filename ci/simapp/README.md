@@ -24,8 +24,8 @@ can then query. For instance:
 
 ```
 curl 'localhost:26657/abci_query?path="store/ibc/key"&data="connections/connectionidone"'
-curl 'localhost:26657/abci_query?path="store/ibc/key"&data="clients/ethbridge"'
-curl 'localhost:26657/abci_query?path="store/ibc/key"&data="channels/firstchannel"'
+curl 'localhost:26657/abci_query?path="store/ibc/key"&data="clients/ethbridge/clientState"&prove=true'
+curl 'localhost:26657/abci_query?path="store/ibc/key"&data="channelEnds/ports/firstport/channels/firstchannel"'
 ```
 
 will return the relevent proto encoded data.
