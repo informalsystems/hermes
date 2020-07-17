@@ -48,7 +48,7 @@ impl Into<Request> for QueryChannelOptions {
     fn into(self) -> Request {
         Request {
             path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
-            data: ChannelEndsPath::new(self.port_id.clone(), self.channel_id.clone()).to_string(),
+            data: ChannelEndsPath::new(self.port_id, self.channel_id).to_string(),
             height: self.height,
             prove: self.proof,
         }
