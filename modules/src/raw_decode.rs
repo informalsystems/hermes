@@ -2,21 +2,27 @@
 //! This is similar to the pattern of using the #[serde(from="RawType") derive for automatic
 //! conversion with the TryFrom::try_from<InternalType>(value: RawType) trait for validation.
 //! Only serde does this for JSON and here we need to do it with protobuf.
-use ::prost::Message;
+use prost::{Message, DecodeError};
+use std::marker::Sized;
+use std::default::Default;
+use std::convert::Into;
+use std::error::Error;
+use std::vec::Vec;
+use bytes::Bytes;
 
 /// RawDecode trait needs to implement a validate() function and an Error type for the return of that function.
-pub trait RawDecode: ::std::marker::Sized {
+pub trait RawDecode: Sized {
     /// RawType defines the prost-compiled protobuf-defined Rust struct
-    type RawType: ::prost::Message + ::std::default::Default;
+    type RawType: Message + Default;
 
     /// Error defines the error type returned from validation.
-    type Error: ::std::convert::Into<Box<dyn std::error::Error + Send + Sync + 'static>>;
+    type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
 
     /// validate function will validate the incoming RawType and convert it to our internal type
     fn validate(value: Self::RawType) -> Result<Self, Self::Error>;
 
     /// raw_decode function will decode the type from RawType using Prost
-    fn raw_decode(wire: ::std::vec::Vec<u8>) -> Self::RawType {
-        Self::RawType::decode(::bytes::Bytes::from(wire)).unwrap() // Todo: Error handling
+    fn raw_decode(wire: Vec<u8>) -> Result<Self::RawType, DecodeError> {
+        Self::RawType::decode(Bytes::from(wire))
     }
 }
