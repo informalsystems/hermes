@@ -1,6 +1,6 @@
 use crate::chain::Chain;
 use relayer_modules::error;
-use relayer_modules::raw_decode::RawDecode;
+use relayer_modules::try_from_raw::TryFromRaw;
 use tendermint::abci::Path as TendermintPath;
 use tendermint::block;
 
@@ -33,7 +33,7 @@ fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
 pub async fn query<C, T, O>(chain: &C, request: O) -> Result<T, error::Error>
 where
     C: Chain,         // Chain configuration
-    T: RawDecode,     // Internal Struct type (expected response)
+    T: TryFromRaw,     // Internal Struct type (expected response)
     O: Into<Request>, // Query Command configuration (opts)
 {
     // RPC Request
@@ -75,5 +75,5 @@ where
     // Deserialize response data
 
     let raw = T::raw_decode(response.value).map_err(|e| error::Kind::ResponseParsing.context(e))?;
-    T::validate(raw).map_err(|e| error::Kind::ResponseParsing.context(e).into())
+    T::try_from(raw).map_err(|e| error::Kind::ResponseParsing.context(e).into())
 }

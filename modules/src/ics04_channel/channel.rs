@@ -2,7 +2,7 @@ use super::exported::*;
 use crate::ics04_channel::error;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::raw_decode::RawDecode;
+use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
@@ -19,10 +19,10 @@ pub struct ChannelEnd {
     version: String,
 }
 
-impl RawDecode for ChannelEnd {
+impl TryFromRaw for ChannelEnd {
     type RawType = RawChannel;
     type Error = anomaly::Error<Kind>;
-    fn validate(value: RawChannel) -> Result<Self, Self::Error> {
+    fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Todo: Do validation of data here. This is just an example implementation for testing.
         let ordering = match value.ordering {
             0 => Order::None,

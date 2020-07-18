@@ -2,7 +2,7 @@ use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::raw_decode::RawDecode;
+use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
@@ -18,10 +18,10 @@ pub struct ConnectionEnd {
     versions: Vec<String>,
 }
 
-impl RawDecode for ConnectionEnd {
+impl TryFromRaw for ConnectionEnd {
     type RawType = RawConnectionEnd;
     type Error = anomaly::Error<Kind>;
-    fn validate(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+    fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         // Todo: Is validation complete here? (Code was moved from `from_proto_connection_end`.)
         if value.id == "" {
             return Err(Kind::ConnectionNotFound.into());

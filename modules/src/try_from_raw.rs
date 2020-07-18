@@ -11,7 +11,7 @@ use std::marker::Sized;
 use std::vec::Vec;
 
 /// RawDecode trait needs to implement a validate() function and an Error type for the return of that function.
-pub trait RawDecode: Sized {
+pub trait TryFromRaw: Sized {
     /// RawType defines the prost-compiled protobuf-defined Rust struct
     type RawType: Message + Default;
 
@@ -19,7 +19,7 @@ pub trait RawDecode: Sized {
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
 
     /// validate function will validate the incoming RawType and convert it to our internal type
-    fn validate(value: Self::RawType) -> Result<Self, Self::Error>;
+    fn try_from(value: Self::RawType) -> Result<Self, Self::Error>;
 
     /// raw_decode function will decode the type from RawType using Prost
     fn raw_decode(wire: Vec<u8>) -> Result<Self::RawType, DecodeError> {
