@@ -2,13 +2,13 @@
 //! This is similar to the pattern of using the #[serde(from="RawType") derive for automatic
 //! conversion with the TryFrom::try_from<InternalType>(value: RawType) trait for validation.
 //! Only serde does this for JSON and here we need to do it with protobuf.
-use prost::{Message, DecodeError};
-use std::marker::Sized;
-use std::default::Default;
-use std::convert::Into;
-use std::error::Error;
-use std::vec::Vec;
 use bytes::Bytes;
+use prost::{DecodeError, Message};
+use std::convert::Into;
+use std::default::Default;
+use std::error::Error;
+use std::marker::Sized;
+use std::vec::Vec;
 
 /// RawDecode trait needs to implement a validate() function and an Error type for the return of that function.
 pub trait RawDecode: Sized {
