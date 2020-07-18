@@ -6,12 +6,12 @@ use relayer::config::{ChainConfig, Config};
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
 use relayer::query::{query, Request};
+use relayer_modules::error::Error;
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
 use relayer_modules::path::{ConnectionPath, Path};
 use tendermint::chain::Id as ChainId;
 
-use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
 use relayer_modules::ics03_connection::connection::ConnectionEnd;
 use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
@@ -99,20 +99,9 @@ impl Runnable for QueryConnectionEndCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        // run with proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
-        //
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3  -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
-        let res = block_on(query::<
-            TendermintChain,
-            RawConnectionEnd,
-            ConnectionEnd,
-            QueryConnectionOptions,
-        >(&chain, opts));
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
+        let res: Result<ConnectionEnd, Error> = block_on(query(&chain, opts));
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
