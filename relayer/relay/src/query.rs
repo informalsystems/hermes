@@ -33,7 +33,7 @@ fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
 pub async fn query<C, T, O>(chain: &C, request: O) -> Result<T, error::Error>
 where
     C: Chain,         // Chain configuration
-    T: TryFromRaw,     // Internal Struct type (expected response)
+    T: TryFromRaw,    // Internal Struct type (expected response)
     O: Into<Request>, // Query Command configuration (opts)
 {
     // RPC Request
