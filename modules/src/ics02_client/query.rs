@@ -1,15 +1,10 @@
 use std::marker::PhantomData;
-use tendermint_rpc::endpoint::abci_query::AbciQuery;
-
-use tendermint::abci;
 
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 
-use crate::error;
-use crate::ics02_client::state::{ClientState, ConsensusState};
+//use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
-use crate::path::{ClientStatePath, ConsensusStatePath, Path};
-use crate::query::{IbcQuery, IbcResponse};
+use crate::path::{ClientStatePath, ConsensusStatePath};
 use crate::Height;
 
 pub struct QueryClientFullState<CLS> {
@@ -29,29 +24,6 @@ impl<CLS> QueryClientFullState<CLS> {
             prove,
             marker: PhantomData,
         }
-    }
-}
-
-impl<CLS> IbcQuery for QueryClientFullState<CLS>
-where
-    CLS: ClientState,
-{
-    type Response = ClientFullStateResponse<CLS>;
-
-    fn path(&self) -> abci::Path {
-        "/store/ibc/key".parse().unwrap()
-    }
-
-    fn height(&self) -> Height {
-        self.chain_height
-    }
-
-    fn prove(&self) -> bool {
-        self.prove
-    }
-
-    fn data(&self) -> Vec<u8> {
-        self.client_state_path.to_key().into()
     }
 }
 
@@ -78,27 +50,6 @@ impl<CLS> ClientFullStateResponse<CLS> {
             proof_height,
         }
     }
-}
-
-impl<CLS> IbcResponse<QueryClientFullState<CLS>> for ClientFullStateResponse<CLS>
-where
-    CLS: ClientState,
-{
-    fn from_abci_response(
-        query: QueryClientFullState<CLS>,
-        response: AbciQuery,
-    ) -> Result<Self, error::Error> {
-        Ok(ClientFullStateResponse::new(
-            query.client_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
-            response.proof,
-            response.height.into(),
-        ))
-    }
-}
-
-fn amino_unmarshal_binary_length_prefixed<T>(_bytes: &[u8]) -> Result<T, error::Error> {
-    todo!()
 }
 
 pub struct QueryClientConsensusState<CS> {
@@ -128,29 +79,6 @@ impl<CS> QueryClientConsensusState<CS> {
     }
 }
 
-impl<CS> IbcQuery for QueryClientConsensusState<CS>
-where
-    CS: ConsensusState,
-{
-    type Response = ConsensusStateResponse<CS>;
-
-    fn path(&self) -> abci::Path {
-        "/store/ibc/key".parse().unwrap()
-    }
-
-    fn height(&self) -> Height {
-        self.chain_height
-    }
-
-    fn prove(&self) -> bool {
-        self.prove
-    }
-
-    fn data(&self) -> Vec<u8> {
-        self.consensus_state_path.to_key().into()
-    }
-}
-
 pub struct ConsensusStateResponse<CS> {
     pub consensus_state: CS,
     pub proof: Option<CommitmentProof>,
@@ -174,22 +102,5 @@ impl<CS> ConsensusStateResponse<CS> {
             proof_path,
             proof_height,
         }
-    }
-}
-
-impl<CS> IbcResponse<QueryClientConsensusState<CS>> for ConsensusStateResponse<CS>
-where
-    CS: ConsensusState,
-{
-    fn from_abci_response(
-        query: QueryClientConsensusState<CS>,
-        response: AbciQuery,
-    ) -> Result<Self, error::Error> {
-        Ok(ConsensusStateResponse::new(
-            query.client_id,
-            amino_unmarshal_binary_length_prefixed(&response.value)?,
-            response.proof,
-            response.height.into(),
-        ))
     }
 }

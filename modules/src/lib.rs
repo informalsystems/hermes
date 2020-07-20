@@ -31,7 +31,7 @@ pub mod ics24_host;
 pub mod keys;
 pub mod path;
 pub mod proofs;
-pub mod query;
+pub mod try_from_raw;
 pub mod tx_msg;
 
 /// Height of a block, same as in `tendermint` crate

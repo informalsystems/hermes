@@ -6,4 +6,3 @@ pub mod events;
 pub mod exported;
 pub mod msgs;
 pub mod packet;
-pub mod query;

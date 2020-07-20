@@ -16,6 +16,9 @@ pub enum Kind {
     /// Response parsing error
     #[error("Could not parse/unmarshall response")]
     ResponseParsing,
+
+    #[error("Empty response value")]
+    EmptyResponseValue,
 }
 
 impl Kind {

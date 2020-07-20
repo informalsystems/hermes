@@ -1,8 +1,14 @@
 use super::exported::*;
 use crate::ics04_channel::error;
-use crate::ics04_channel::error::Kind;
+use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
+
+// Import proto declarations.
+use ibc_proto::channel::Channel as RawChannel;
+
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelEnd {
@@ -11,6 +17,32 @@ pub struct ChannelEnd {
     remote: Counterparty,
     connection_hops: Vec<ConnectionId>,
     version: String,
+}
+
+impl TryFromRaw for ChannelEnd {
+    type RawType = RawChannel;
+    type Error = anomaly::Error<Kind>;
+    fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
+        // Todo: Do validation of data here. This is just an example implementation for testing.
+        let ordering = match value.ordering {
+            0 => Order::None,
+            1 => Order::Unordered,
+            2 => Order::Ordered,
+            _ => panic!("invalid order number"),
+        };
+        let counterparty = value.counterparty.unwrap();
+        let remote = Counterparty {
+            port_id: PortId::from_str(counterparty.port_id.as_str()).unwrap(),
+            channel_id: ChannelId::from_str(counterparty.channel_id.as_str()).unwrap(),
+        };
+        let connection_hops = value
+            .connection_hops
+            .into_iter()
+            .map(|e| ConnectionId::from_str(e.as_str()).unwrap())
+            .collect();
+        let version = value.version;
+        Ok(ChannelEnd::new(ordering, remote, connection_hops, version))
+    }
 }
 
 impl ChannelEnd {
@@ -31,7 +63,7 @@ impl ChannelEnd {
 }
 
 impl Channel for ChannelEnd {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn state(&self) -> &State {
         &self.state
@@ -77,10 +109,7 @@ pub struct Counterparty {
 }
 
 impl Counterparty {
-    pub fn new(
-        port_id: String,
-        channel_id: String,
-    ) -> Result<Self, crate::ics04_channel::error::Error> {
+    pub fn new(port_id: String, channel_id: String) -> Result<Self, Error> {
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -93,7 +122,7 @@ impl Counterparty {
 }
 
 impl ChannelCounterparty for Counterparty {
-    type ValidationError = crate::ics04_channel::error::Error;
+    type ValidationError = Error;
 
     fn port_id(&self) -> String {
         self.port_id.as_str().into()

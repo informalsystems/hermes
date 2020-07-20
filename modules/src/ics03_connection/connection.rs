@@ -2,11 +2,13 @@ use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
-use ibc_proto::connection::ConnectionEnd as ProtoConnectionEnd;
-use ibc_proto::connection::Counterparty as ProtoCounterparty;
+use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
+use ibc_proto::connection::Counterparty as RawCounterparty;
+use std::convert::TryFrom;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -14,6 +16,40 @@ pub struct ConnectionEnd {
     client_id: ClientId,
     counterparty: Counterparty,
     versions: Vec<String>,
+}
+
+impl TryFromRaw for ConnectionEnd {
+    type RawType = RawConnectionEnd;
+    type Error = anomaly::Error<Kind>;
+    fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+        // Todo: Is validation complete here? (Code was moved from `from_proto_connection_end`.)
+        if value.id == "" {
+            return Err(Kind::ConnectionNotFound.into());
+        }
+
+        // The Counterparty field is an Option, may be missing.
+        match value.counterparty {
+            Some(cp) => {
+                let mut conn = ConnectionEnd::new(
+                    value
+                        .client_id
+                        .parse()
+                        .map_err(|e| Kind::IdentifierError.context(e))?,
+                    Counterparty::try_from(cp)?,
+                    validate_versions(value.versions)
+                        .map_err(|e| Kind::InvalidVersion.context(e))?,
+                )
+                .unwrap();
+
+                // Set the state.
+                conn.set_state(State::from_i32(value.state));
+                Ok(conn)
+            }
+
+            // If no counterparty was set, signal the error.
+            None => Err(Kind::MissingCounterparty.into()),
+        }
+    }
 }
 
 impl ConnectionEnd {
@@ -32,33 +68,6 @@ impl ConnectionEnd {
 
     pub fn set_state(&mut self, new_state: State) {
         self.state = new_state;
-    }
-
-    pub fn from_proto_connection_end(pc: ProtoConnectionEnd) -> Result<Self, Error> {
-        if pc.id == "" {
-            return Err(Kind::ConnectionNotFound.into());
-        }
-
-        // The Counterparty field is an Option, may be missing.
-        match pc.counterparty {
-            Some(cp) => {
-                let mut conn = ConnectionEnd::new(
-                    pc.client_id
-                        .parse()
-                        .map_err(|e| Kind::IdentifierError.context(e))?,
-                    Counterparty::from_proto_counterparty(cp)?,
-                    validate_versions(pc.versions).map_err(|e| Kind::InvalidVersion.context(e))?,
-                )
-                .unwrap();
-
-                // Set the state.
-                conn.set_state(State::from_i32(pc.state));
-                Ok(conn)
-            }
-
-            // If no counterparty was set, signal the error.
-            None => Err(Kind::MissingCounterparty.into()),
-        }
     }
 }
 
@@ -95,6 +104,22 @@ pub struct Counterparty {
     prefix: CommitmentPrefix,
 }
 
+impl TryFrom<RawCounterparty> for Counterparty {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
+        // Todo: Is validation complete here? (code was moved from `from_proto_counterparty`)
+        match value.prefix {
+            Some(prefix) => Counterparty::new(
+                value.client_id,
+                value.connection_id,
+                CommitmentPrefix::new(prefix.key_prefix),
+            ),
+            None => Err(Kind::MissingCounterpartyPrefix.into()),
+        }
+    }
+}
+
 impl Counterparty {
     pub fn new(
         client_id: String,
@@ -110,17 +135,6 @@ impl Counterparty {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             prefix,
         })
-    }
-
-    pub fn from_proto_counterparty(pc: ProtoCounterparty) -> Result<Self, Error> {
-        match pc.prefix {
-            Some(prefix) => Counterparty::new(
-                pc.client_id,
-                pc.connection_id,
-                CommitmentPrefix::new(prefix.key_prefix),
-            ),
-            None => Err(Kind::MissingCounterpartyPrefix.into()),
-        }
     }
 }
 
