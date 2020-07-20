@@ -74,6 +74,5 @@ where
 
     // Deserialize response data
 
-    let raw = T::raw_decode(response.value).map_err(|e| error::Kind::ResponseParsing.context(e))?;
-    T::try_from(raw).map_err(|e| error::Kind::ResponseParsing.context(e).into())
+    T::deserialize(response.value)
 }
