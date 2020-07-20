@@ -18,7 +18,7 @@ paths-ics = []
 
 [dependencies]
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", features=["client"] }
+tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master", features=["client"] }
 
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = "0.1.0"
