@@ -33,7 +33,7 @@ pub enum State {
 }
 
 impl State {
-    /// Yields the state as a string
+    /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
             Self::Uninitialized => "UNINITIALIZED",
@@ -43,6 +43,7 @@ impl State {
         }
     }
 
+    /// Parses the State from a i32.
     pub fn from_i32(nr: i32) -> Self {
         match nr {
             1 => Self::Init,

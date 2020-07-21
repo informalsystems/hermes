@@ -116,8 +116,8 @@ impl Runnable for QueryChannelEndCmd {
         let res: Result<ChannelEnd, Error> = block_on(query(&chain, opts));
 
         match res {
-            Ok(cs) => status_info!("channel query result: ", "{:?}", cs),
-            Err(e) => status_info!("channel query error", "{}", e),
+            Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
+            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
         }
     }
 }

@@ -23,7 +23,7 @@ pub struct Request {
 
 /// Whether or not this path requires proof verification.
 ///
-/// is_query_store_with_proofxpects a format like /<queryType>/<storeName>/<subpath>,
+/// is_query_store_with_proof expects a format like /<queryType>/<storeName>/<subpath>,
 /// where queryType must be "store" and subpath must be "key" to require a proof.
 fn is_query_store_with_proof(_path: &TendermintPath) -> bool {
     false
@@ -37,11 +37,11 @@ where
     O: Into<Request>, // Query Command configuration (opts)
 {
     // RPC Request
-
     let request: Request = request.into();
     let path = request.path.clone().unwrap(); // for the is_query_store_with_proof function
 
-    // Use the Tendermint-rs RPC client to do the query - Todo: generalize further for other type of chains
+    // Use the Tendermint-rs RPC client to do the query.
+    // Todo: generalize further for other type of chains (#157).
     let response = chain
         .rpc_client()
         .abci_query(
@@ -57,7 +57,7 @@ where
         .map_err(|e| error::Kind::Rpc.context(e))?;
 
     if !response.code.is_ok() {
-        // Fail with response log
+        // Fail with response log.
         return Err(error::Kind::Rpc.context(response.log.to_string()).into());
     }
     if response.value.is_empty() {
@@ -65,14 +65,12 @@ where
         return Err(error::Kind::EmptyResponseValue.into());
     }
 
-    // Verify response proof
-
-    // Data that is not from trusted node or subspace query needs verification
+    // Verify response proof.
+    // Data that is not from trusted node or subspace query needs verification.
     if is_query_store_with_proof(&path) {
         todo!() // TODO: Verify proof
     }
 
-    // Deserialize response data
-
+    // Deserialize response data.
     T::deserialize(response.value)
 }

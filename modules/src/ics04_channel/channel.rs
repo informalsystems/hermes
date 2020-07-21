@@ -22,26 +22,42 @@ pub struct ChannelEnd {
 impl TryFromRaw for ChannelEnd {
     type RawType = RawChannel;
     type Error = anomaly::Error<Kind>;
+
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
-        // Todo: Do validation of data here. This is just an example implementation for testing.
-        let ordering = match value.ordering {
-            0 => Order::None,
-            1 => Order::Unordered,
-            2 => Order::Ordered,
-            _ => panic!("invalid order number"),
+        // Parse the ordering type. Propagate the error, if any, to our caller.
+        let ordering = Order::from_i32(value.ordering)?;
+
+        let chan_state = State::from_i32(value.state)?;
+
+        // Pop out the Counterparty from the Option.
+        let counterparty = match value.counterparty {
+            Some(cp) => cp,
+            None => return Err(Kind::MissingCounterparty.into()),
         };
-        let counterparty = value.counterparty.unwrap();
+
+        // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = Counterparty {
-            port_id: PortId::from_str(counterparty.port_id.as_str()).unwrap(),
-            channel_id: ChannelId::from_str(counterparty.channel_id.as_str()).unwrap(),
+            port_id: PortId::from_str(counterparty.port_id.as_str())
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: ChannelId::from_str(counterparty.channel_id.as_str())
+                .map_err(|e| Kind::IdentifierError.context(e))?,
         };
+
+        // Parse each item in connection_hops into a ConnectionId.
         let connection_hops = value
             .connection_hops
             .into_iter()
-            .map(|e| ConnectionId::from_str(e.as_str()).unwrap())
-            .collect();
+            .map(|conn_id| ConnectionId::from_str(conn_id.as_str()))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
+
+        // No explicit validation is necessary for the version attribute (opaque field).
         let version = value.version;
-        Ok(ChannelEnd::new(ordering, remote, connection_hops, version))
+
+        let mut channel_end = ChannelEnd::new(ordering, remote, connection_hops, version);
+        channel_end.set_state(chan_state);
+
+        Ok(channel_end)
     }
 }
 
@@ -59,6 +75,10 @@ impl ChannelEnd {
             connection_hops,
             version,
         }
+    }
+
+    pub fn set_state(&mut self, new_state: State) {
+        self.state = new_state;
     }
 }
 
@@ -134,5 +154,59 @@ impl ChannelCounterparty for Counterparty {
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ibc_proto::channel::Channel as RawChannel;
+    use crate::ics04_channel::channel::ChannelEnd;
+    use crate::try_from_raw::TryFromRaw;
+
+    #[test]
+    fn channel_end_try_from_raw() {
+        let default_raw_channel_end = RawChannel {
+            state: 0,
+            ordering: 0,
+            counterparty: None,
+            connection_hops: vec![],
+            version: "".to_string()
+        };
+
+        struct Test {
+            name: String,
+            params: RawChannel,
+            want_pass: bool,
+        }
+        let tests: Vec<Test> = vec![Test {
+            name: "Basic raw channel end".to_string(),
+            params: default_raw_channel_end.clone(),
+            want_pass: false,
+        },
+        Test {
+            name: "Raw channel end with empty state".to_string(),
+            params: RawChannel {
+                state: -1,
+                ..default_raw_channel_end.clone()
+            },
+            want_pass: false,
+        }]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            let p = test.params.clone();
+
+            let ce_result = ChannelEnd::try_from(p);
+
+            assert_eq!(
+                test.want_pass,
+                ce_result.is_ok(),
+                "ChannelEnd::try_from() failed for test {}, \nmsg{:?} with error {:?}",
+                test.name,
+                test.params.clone(),
+                ce_result.err(),
+            );
+        }
     }
 }
