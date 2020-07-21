@@ -62,6 +62,7 @@ impl TryFromRaw for ChannelEnd {
 }
 
 impl ChannelEnd {
+    /// Creates a new ChannelEnd in state Uninitialized and other fields parametrized.
     pub fn new(
         ordering: Order,
         remote: Counterparty,
@@ -77,8 +78,9 @@ impl ChannelEnd {
         }
     }
 
-    pub fn set_state(&mut self, new_state: State) {
-        self.state = new_state;
+    /// Updates the ChannelEnd to assume a new State 's'.
+    pub fn set_state(&mut self, s: State) {
+        self.state = s;
     }
 }
 
@@ -159,18 +161,32 @@ impl ChannelCounterparty for Counterparty {
 
 #[cfg(test)]
 mod tests {
-    use ibc_proto::channel::Channel as RawChannel;
     use crate::ics04_channel::channel::ChannelEnd;
     use crate::try_from_raw::TryFromRaw;
+    use ibc_proto::channel::Channel as RawChannel;
+    use ibc_proto::channel::Counterparty as RawCounterparty;
 
     #[test]
     fn channel_end_try_from_raw() {
-        let default_raw_channel_end = RawChannel {
+        let empty_raw_channel_end = RawChannel {
             state: 0,
             ordering: 0,
             counterparty: None,
             connection_hops: vec![],
-            version: "".to_string()
+            version: "".to_string(),
+        };
+
+        let cparty = RawCounterparty {
+            port_id: "0123456789".into(),
+            channel_id: "0987654321".into(),
+        };
+
+        let raw_channel_end = RawChannel {
+            state: 0,
+            ordering: 0,
+            counterparty: Some(cparty),
+            connection_hops: vec![],
+            version: "".to_string(),
         };
 
         struct Test {
@@ -178,19 +194,22 @@ mod tests {
             params: RawChannel,
             want_pass: bool,
         }
-        let tests: Vec<Test> = vec![Test {
-            name: "Basic raw channel end".to_string(),
-            params: default_raw_channel_end.clone(),
-            want_pass: false,
-        },
-        Test {
-            name: "Raw channel end with empty state".to_string(),
-            params: RawChannel {
-                state: -1,
-                ..default_raw_channel_end.clone()
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Empty raw channel end (missing counterparty)".to_string(),
+                params: empty_raw_channel_end.clone(),
+                want_pass: false,
             },
-            want_pass: false,
-        }]
+            Test {
+                name: "Raw channel end with incorrect state".to_string(),
+                params: RawChannel {
+                    state: -1,
+                    ..raw_channel_end.clone()
+                },
+                want_pass: false,
+            },
+        ]
         .into_iter()
         .collect();
 
