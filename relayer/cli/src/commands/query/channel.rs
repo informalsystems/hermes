@@ -174,9 +174,17 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad port, non-alpha".to_string(),
+                name: "Correct port (alphanumeric)".to_string(),
                 params: QueryChannelEndCmd {
                     port_id: Some("p34".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Incorrect port identifier (contains invalid character)".to_string(),
+                params: QueryChannelEndCmd {
+                    port_id: Some("p34^".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,

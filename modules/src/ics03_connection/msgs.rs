@@ -437,12 +437,13 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad destination client id, name in uppercase".to_string(),
+                name: "Correct destination client id with lower/upper case and special chars"
+                    .to_string(),
                 params: ConOpenTryParams {
-                    counterparty_client_id: "BadClientId".to_string(),
+                    counterparty_client_id: "ClientId_".to_string(),
                     ..default_con_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad counterparty versions, empty versions vec".to_string(),

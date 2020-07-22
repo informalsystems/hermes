@@ -25,7 +25,7 @@ impl TryFromRaw for ChannelEnd {
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Parse the ordering type. Propagate the error, if any, to our caller.
-        let ordering = Order::from_i32(value.ordering)?;
+        let chan_ordering = Order::from_i32(value.ordering)?;
 
         let chan_state = State::from_i32(value.state)?;
 
@@ -54,7 +54,7 @@ impl TryFromRaw for ChannelEnd {
         // No explicit validation is necessary for the version attribute (opaque field).
         let version = value.version;
 
-        let mut channel_end = ChannelEnd::new(ordering, remote, connection_hops, version);
+        let mut channel_end = ChannelEnd::new(chan_ordering, remote, connection_hops, version);
         channel_end.set_state(chan_state);
 
         Ok(channel_end)
@@ -186,7 +186,7 @@ mod tests {
             ordering: 0,
             counterparty: Some(cparty),
             connection_hops: vec![],
-            version: "".to_string(),
+            version: "".to_string(), // The version is not validated.
         };
 
         struct Test {
@@ -197,7 +197,7 @@ mod tests {
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Empty raw channel end (missing counterparty)".to_string(),
+                name: "Raw channel end with missing counterparty".to_string(),
                 params: empty_raw_channel_end.clone(),
                 want_pass: false,
             },
@@ -208,6 +208,38 @@ mod tests {
                     ..raw_channel_end.clone()
                 },
                 want_pass: false,
+            },
+            Test {
+                name: "Raw channel end with incorrect ordering".to_string(),
+                params: RawChannel {
+                    ordering: -1,
+                    ..raw_channel_end.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Raw channel end with incorrect connection id in connection hops".to_string(),
+                params: RawChannel {
+                    connection_hops: vec!["connection*".to_string()].into_iter().collect(),
+                    ..raw_channel_end.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Raw channel end with two correct connection ids in connection hops"
+                    .to_string(),
+                params: RawChannel {
+                    connection_hops: vec!["connection1".to_string(), "connection2".to_string()]
+                        .into_iter()
+                        .collect(),
+                    ..raw_channel_end.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Raw channel end with correct params".to_string(),
+                params: raw_channel_end.clone(),
+                want_pass: true,
             },
         ]
         .into_iter()
