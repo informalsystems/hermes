@@ -9,7 +9,7 @@ macro_rules! bail {
 
 /// Path separator (ie. forward slash '/')
 const PATH_SEPARATOR: char = '/';
-const VALID_SPECIAL_CHARS: &str = "._+-# []<>";
+const VALID_SPECIAL_CHARS: &str = "._+-#[]<>";
 
 /// Default validator function for identifiers.
 ///

@@ -51,7 +51,10 @@ impl TryFromRaw for ChannelEnd {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        // No explicit validation is necessary for the version attribute (opaque field).
+        // This field is supposed to be opaque to the core IBC protocol (cf. ICS 004); however,
+        // in cosmos-sdk the version field undergoes basic validation (non-empty check).
+        // TODO: Clarify if explicit validation is necessary for the version attribute.
+        // Ref: https://github.com/informalsystems/ibc-rs/pull/163#discussion_r458809021
         let version = value.version;
 
         let mut channel_end = ChannelEnd::new(chan_ordering, remote, connection_hops, version);
@@ -221,6 +224,14 @@ mod tests {
                 name: "Raw channel end with incorrect connection id in connection hops".to_string(),
                 params: RawChannel {
                     connection_hops: vec!["connection*".to_string()].into_iter().collect(),
+                    ..raw_channel_end.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Raw channel end with incorrect connection id (has blank space)".to_string(),
+                params: RawChannel {
+                    connection_hops: vec!["con nection".to_string()].into_iter().collect(),
                     ..raw_channel_end.clone()
                 },
                 want_pass: false,
