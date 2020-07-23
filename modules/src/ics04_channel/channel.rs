@@ -51,10 +51,8 @@ impl TryFromRaw for ChannelEnd {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        // This field is supposed to be opaque to the core IBC protocol (cf. ICS 004); however,
-        // in cosmos-sdk the version field undergoes basic validation (non-empty check).
-        // TODO: Clarify if explicit validation is necessary for the version attribute.
-        // Ref: https://github.com/informalsystems/ibc-rs/pull/163#discussion_r458809021
+        // This field is supposed to be opaque to the core IBC protocol. Empty
+        // version is allowed by the specification (cf. ICS 004). No explicit validation necessary.
         let version = value.version;
 
         let mut channel_end = ChannelEnd::new(chan_ordering, remote, connection_hops, version);
