@@ -9,6 +9,7 @@ macro_rules! bail {
 
 /// Path separator (ie. forward slash '/')
 const PATH_SEPARATOR: char = '/';
+const VALID_SPECIAL_CHARS: &str = "._+-#[]<>";
 
 /// Default validator function for identifiers.
 ///
@@ -37,9 +38,15 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
         ));
     }
 
-    // Check identifier is lowercase alphanumeric
-    if !id.chars().all(|c| c.is_alphanumeric() && c.is_lowercase()) {
-        bail!(ValidationKind::not_lower_alpha(id.to_string()));
+    // Check that the identifier comprises only valid characters:
+    // - Alphanumeric
+    // - `.`, `_`, `+`, `-`, `#`
+    // - `[`, `]`, `<`, `>`
+    if !id
+        .chars()
+        .all(|c| c.is_alphanumeric() || VALID_SPECIAL_CHARS.contains(c))
+    {
+        bail!(ValidationKind::invalid_character(id.to_string()));
     }
 
     // All good!

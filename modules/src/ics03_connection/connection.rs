@@ -36,8 +36,7 @@ impl TryFromRaw for ConnectionEnd {
                         .parse()
                         .map_err(|e| Kind::IdentifierError.context(e))?,
                     Counterparty::try_from(cp)?,
-                    validate_versions(value.versions)
-                        .map_err(|e| Kind::InvalidVersion.context(e))?,
+                    value.versions,
                 )
                 .unwrap();
 
