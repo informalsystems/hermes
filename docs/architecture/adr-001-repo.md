@@ -110,7 +110,7 @@ where the ICS itself defines `Kind::InvalidConnectionHopsLength` and `Kind::Miss
 
 ###### Deserialization
 
-See the details for the crate `ibc-proto` [below](#ibc-proto).
+See the details for the crate `ibc-proto` [below](#crate-ibc-proto).
 
 #### Crate `ibc_proto`
 
