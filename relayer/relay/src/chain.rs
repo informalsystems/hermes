@@ -6,7 +6,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use ::tendermint::chain::Id as ChainId;
 use ::tendermint::lite::types as tmlite;
 use ::tendermint::lite::{self, Height, TrustThresholdFraction};
-use ::tendermint::rpc::Client as RpcClient;
+use ::tendermint_rpc::Client as RpcClient;
 
 use relayer_modules::ics02_client::state::{ClientState, ConsensusState};
 

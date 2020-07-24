@@ -19,6 +19,18 @@ pub enum Kind {
 
     #[error("invalid version")]
     InvalidVersion,
+
+    #[error("invalid proof")]
+    InvalidProof,
+
+    #[error("invalid packet")]
+    InvalidPacket,
+
+    #[error("acknowledgement too long")]
+    AcknowledgementTooLong,
+
+    #[error("missing counterparty")]
+    MissingCounterparty,
 }
 
 impl Kind {

@@ -15,6 +15,21 @@ pub enum Kind {
 
     #[error("invalid version")]
     InvalidVersion,
+
+    #[error("invalid address")]
+    InvalidAddress,
+
+    #[error("invalid proof")]
+    InvalidProof,
+
+    #[error("queried for a non-existing connection")]
+    ConnectionNotFound,
+
+    #[error("missing counterparty")]
+    MissingCounterparty,
+
+    #[error("missing counterparty prefix")]
+    MissingCounterpartyPrefix,
 }
 
 impl Kind {

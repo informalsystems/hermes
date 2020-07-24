@@ -1,4 +1,4 @@
---------------------- MODULE ConnectionHandshakeModule ---------------------
+-------------------------- MODULE ICS3Module ------------------------------
 
 (***************************************************************************
 
@@ -7,7 +7,7 @@
     
     This module captures the actions and operators of the ICS3 protocol.
     Typically, it is an IBC module running on a chain that would implement
-    the logic in this TLA+ module, hence the name "ConnectionHandshakeModule"
+    the logic in this TLA+ module, hence the name "ICS3Module".
     sometimes abbreviated to "chModule" or "chm".
 
     This module deals with a high-level spec of the ICS3 protocol, so it is
@@ -48,10 +48,10 @@ VARIABLES
 
      The store record of a chain contains the following fields:
 
-     - chainID -- a string 
+     - chainID -- a string.
        Stores the identifier of the chain where this module executes.
 
-     - latestHeight -- a natural number in the range 1..MaxHeight
+     - latestHeight -- a natural number in the range 1..MaxHeight.
        Describes the current height of the chain.  
 
      - connection -- a connection record.
@@ -64,14 +64,14 @@ VARIABLES
 
        A client record contains the following fields:
 
-         - consensusHeights -- a set of heights 
+         - consensusHeights -- a set of heights.
            Stores the set of all heights (i.e., consensus states) that this
            client observed.
 
-         - clientID -- a string
+         - clientID -- a string.
            The identifier of the client.
 
-         - latestHeight -- a natural number in the range 1..MaxHeight
+         - latestHeight -- a natural number in the range 1..MaxHeight.
            Stores the latest height among all the heights in consensusHeights.
 
         For more details on how clients are initialized, see the operator
@@ -194,26 +194,37 @@ NewStore(newCon) ==
                   !.latestHeight = @ + 1]
 
 
+(* State predicate, guarding the handler for the Init msg.
+
+    If any of these preconditions does not hold, the message
+    is dropped.
+ *)
+PreconditionsInitMsg(m) ==
+    /\ ValidLocalEnd(m.parameters)  (* Basic validation of localEnd in parameters. *)
+    /\ store.connection.state = "UNINIT"
+
+
 (* Handles a "ICS3MsgInit" message 'm'.
 
     Primes the store.connection to become initialized with the parameters
     specified in 'm'. Also creates a reply message, enqueued on the outgoing
-    buffer.
+    buffer. This reply message will include proofs that match the height of
+    this chain (i.e., current store.latestHeight + 1).
  *)
 HandleInitMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
                    state      |-> "INIT"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgTry",
-                     proofHeight |-> store.latestHeight,
+                     proofHeight |-> newStore.latestHeight,
                      connProof |-> myConnProof,
                      clientProof |-> myClientProof] IN
-    IF /\ ValidLocalEnd(m.parameters)  (* Basic validation of localEnd in parameters. *)
-       /\ store.connection.state = "UNINIT"
+    IF PreconditionsInitMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -238,16 +249,17 @@ PreconditionsTryMsg(m) ==
 HandleTryMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "TRYOPEN"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         myClientProof == GetClientProof
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
                      type |-> "ICS3MsgAck",
-                     proofHeight |-> store.latestHeight,
+                     proofHeight |-> newStore.latestHeight,
                      connProof |-> myConnProof,
                      clientProof |-> myClientProof] IN
     IF PreconditionsTryMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -268,14 +280,15 @@ PreconditionsAckMsg(m) ==
 HandleAckMsg(m) ==
     LET newCon == [parameters |-> m.parameters, 
                    state |-> "OPEN"]
+        newStore == NewStore(newCon)
         myConnProof == GetConnProof(newCon)
         replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     proofHeight |-> store.latestHeight,
+                     proofHeight |-> newStore.latestHeight,
                      type |-> "ICS3MsgConfirm",
                      connProof |-> myConnProof] IN
     IF PreconditionsAckMsg(m)
     THEN [out |-> Append(outBuf, replyMsg),
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -293,10 +306,11 @@ PreconditionsConfirmMsg(m) ==
  *)
 HandleConfirmMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
-                   state |-> "OPEN"] IN 
+                   state |-> "OPEN"]
+        newStore == NewStore(newCon) IN 
     IF PreconditionsConfirmMsg(m)
     THEN [out |-> outBuf,    (* Never need to reply to a confirm msg. *)
-          store |-> NewStore(newCon)]
+          store |-> newStore]
     ELSE [out |-> outBuf,
           store |-> store]
 
@@ -325,9 +339,15 @@ UpdateClient(height) ==
                               !.client.consensusHeights = @ \cup {height},
                               !.client.latestHeight = MAX(height, store.client.latestHeight)]
 
-CanUpdateClient(height) ==
+
+(* State predicate guarding the UpdateClient action.
+
+    This requires client updates to be monotonic (prevents updates with older
+    heights).
+ *)
+CanUpdateClient(newHeight) ==
     /\ CanAdvance
-    /\ height \notin store.client.consensusHeights
+    /\ newHeight > store.client.latestHeight
     
 
 (* Generic action for handling any type of inbound message.
@@ -376,6 +396,7 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu May 21 09:22:33 CEST 2020 by adi
+\* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
+
 

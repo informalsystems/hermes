@@ -13,7 +13,10 @@ use relayer::chain::tendermint::TendermintChain;
 use relayer::chain::Chain;
 use relayer::client::Client;
 use relayer::config::ChainConfig;
+
 use relayer::store::Store;
+
+use crate::commands::listen::relayer_task;
 
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
@@ -36,14 +39,13 @@ impl Runnable for StartCmd {
         let local = tokio::task::LocalSet::new();
 
         block_on(local.run_until(async move {
-            for chain_config in config.chains {
+            for chain_config in &config.chains {
                 info!(chain.id = %chain_config.id, "spawning light client");
-                tokio::task::spawn_local(spawn_client(chain_config, self.reset));
+                tokio::task::spawn_local(spawn_client(chain_config.clone(), self.reset));
             }
 
-            info!("starting relayer");
-            relayer_task().await
-        }));
+            relayer_task(&config, true).await;
+        }))
     }
 }
 
@@ -71,15 +73,6 @@ async fn client_task(client: Client<TendermintChain, impl Store<TendermintChain>
     );
 
     update_client(client).await;
-}
-
-async fn relayer_task() {
-    let mut interval = tokio::time::interval(Duration::from_secs(3));
-
-    loop {
-        info!(target: "relayer_cli::relayer", "relayer is running");
-        interval.tick().await;
-    }
 }
 
 async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {

@@ -2,13 +2,19 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::connection::query_connection;
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer::query::{query, Request};
+use relayer_modules::error::Error;
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
+use relayer_modules::path::{ConnectionPath, Path};
 use tendermint::chain::Id as ChainId;
+
+use relayer_modules::ics03_connection::connection::ConnectionEnd;
+use std::str::FromStr;
+use tendermint::abci::Path as TendermintPath;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -30,6 +36,17 @@ struct QueryConnectionOptions {
     connection_id: ConnectionId,
     height: u64,
     proof: bool,
+}
+
+impl Into<Request> for QueryConnectionOptions {
+    fn into(self) -> Request {
+        Request {
+            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+            data: ConnectionPath::new(self.connection_id).to_string(),
+            height: self.height,
+            prove: self.proof,
+        }
+    }
 }
 
 impl QueryConnectionEndCmd {
@@ -81,24 +98,14 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection
-        //
-        // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query connection end ibc0 ibconeconnection -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query_connection(
-            &chain,
-            opts.height,
-            opts.connection_id.clone(),
-            opts.proof,
-        ));
+        // run without proof:
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
+        let res: Result<ConnectionEnd, Error> = block_on(query(&chain, opts));
+
         match res {
-            Ok(cs) => status_info!("connection query result: ", "{:?}", cs.connection),
-            Err(e) => status_info!("connection query error: ", "{:?}", e),
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection query error", "{}", e),
         }
     }
 }

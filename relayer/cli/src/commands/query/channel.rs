@@ -2,13 +2,18 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-use relayer::query::channel::query_channel;
+use relayer::query::{query, Request};
 
+use relayer_modules::ics04_channel::channel::ChannelEnd;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
 
 use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer_modules::error::Error;
 use relayer_modules::ics24_host::error::ValidationError;
+use relayer_modules::path::{ChannelEndsPath, Path};
+use std::str::FromStr;
+use tendermint::abci::Path as TendermintPath;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -35,6 +40,17 @@ struct QueryChannelOptions {
     channel_id: ChannelId,
     height: u64,
     proof: bool,
+}
+
+impl Into<Request> for QueryChannelOptions {
+    fn into(self) -> Request {
+        Request {
+            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+            data: ChannelEndsPath::new(self.port_id, self.channel_id).to_string(),
+            height: self.height,
+            prove: self.proof,
+        }
+    }
 }
 
 impl QueryChannelEndCmd {
@@ -94,25 +110,14 @@ impl Runnable for QueryChannelEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer
-        //
         // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query channel end ibc0 transfer ibconexfer -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a channel using the go relayer.
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res = block_on(query_channel(
-            &chain,
-            opts.height,
-            opts.port_id.clone(),
-            opts.channel_id.clone(),
-            opts.proof,
-        ));
+        let res: Result<ChannelEnd, Error> = block_on(query(&chain, opts));
+
         match res {
-            Ok(cs) => status_info!("channel query result: ", "{:?}", cs.channel),
-            Err(e) => status_info!("channel query error: ", "{:?}", e),
+            Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
+            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
         }
     }
 }
@@ -169,9 +174,17 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad port, non-alpha".to_string(),
+                name: "Correct port (alphanumeric)".to_string(),
                 params: QueryChannelEndCmd {
                     port_id: Some("p34".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Incorrect port identifier (contains invalid character)".to_string(),
+                params: QueryChannelEndCmd {
+                    port_id: Some("p34^".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,
