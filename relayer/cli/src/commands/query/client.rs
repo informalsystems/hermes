@@ -8,10 +8,20 @@ use relayer::config::{ChainConfig, Config};
 //use relayer_modules::ics02_client::query::QueryClientFullState;
 use relayer_modules::ics24_host::identifier::ClientId;
 
-//use crate::commands::utils::block_on;
+use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
+use relayer::query::{query, Request};
+use relayer_modules::error::Error;
 use relayer_modules::ics24_host::error::ValidationError;
+use relayer_modules::path::{ClientConnectionsPath, Path};
+use std::str::FromStr;
+use tendermint::abci::Path as TendermintPath;
 use tendermint::chain::Id as ChainId;
+use relayer_modules::ics03_connection::connection::ConnectionEnd;
+
+// *****************************************************************
+// Query client state
+// *****************************************************************
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -94,6 +104,10 @@ impl Runnable for QueryClientStateCmd {
         */
     }
 }
+
+// *****************************************************************
+// Query client consensus
+// *****************************************************************
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
@@ -213,6 +227,95 @@ fn validate_common_options(
 
     Ok((chain_config.clone(), client_id))
 }
+
+// *****************************************************************
+// Query client connections
+// *****************************************************************
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct QueryClientConnectionsCmd {
+    #[options(free, help = "identifier of the chain to query")]
+    chain_id: Option<ChainId>,
+
+    #[options(free, help = "identifier of the client to query")]
+    client_id: Option<String>,
+
+    #[options(help = "height of the state to query", short = "h")]
+    height: Option<u64>,
+
+    #[options(help = "whether proof is required", short = "p")]
+    proof: Option<bool>,
+}
+
+#[derive(Debug)]
+struct QueryClientConnectionsOptions {
+    client_id: ClientId,
+    height: u64,
+    proof: bool,
+}
+
+impl Into<Request> for QueryClientConnectionsOptions {
+    fn into(self) -> Request {
+        Request {
+            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
+            data: ClientConnectionsPath::new(self.client_id).to_string(),
+            height: self.height,
+            prove: self.proof,
+        }
+    }
+}
+
+impl QueryClientConnectionsCmd {
+    fn validate_options(
+        &self,
+        config: &Config,
+    ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
+        let (chain_config, client_id) =
+            validate_common_options(&self.chain_id, &self.client_id, config)?;
+
+        let opts = QueryClientConnectionsOptions {
+            client_id,
+            height: match self.height {
+                Some(h) => h,
+                None => 0 as u64,
+            },
+            proof: match self.proof {
+                Some(proof) => proof,
+                None => true,
+            },
+        };
+        Ok((chain_config, opts))
+    }
+}
+
+impl Runnable for QueryClientConnectionsCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let (chain_config, opts) = match self.validate_options(&config) {
+            Err(err) => {
+                status_err!("invalid options: {}", err);
+                return;
+            }
+            Ok(result) => result,
+        };
+        status_info!("Options", "{:?}", opts);
+
+        // run without proof:
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client connections ibc-test ethbridge --height 3 -p false
+        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let res: Result<ConnectionEnd, Error> = block_on(query(&chain, opts));
+
+        match res {
+            Ok(cs) => status_info!("query client connections result: ", "{:?}", cs),
+            Err(e) => status_info!("query client connections error", "{}", e),
+        }
+    }
+}
+
+// *****************************************************************
+// Tests
+// *****************************************************************
 
 #[cfg(test)]
 mod tests {

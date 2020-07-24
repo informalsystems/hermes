@@ -1,4 +1,5 @@
 use super::{ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath};
+use crate::path::ClientConnectionsPath;
 
 pub fn connection_path(path: &ConnectionPath) -> String {
     format!("connection/{}", path.connection_id)
@@ -10,6 +11,10 @@ pub fn consensus_state_path(path: &ConsensusStatePath) -> String {
 
 pub fn client_state_path(path: &ClientStatePath) -> String {
     format!("clientState/{}", path.client_id)
+}
+
+pub fn client_connections_path(path: &ClientConnectionsPath) -> String {
+    format!("clients/{}/connections", path.client_id)
 }
 
 pub fn channel_path(path: &ChannelPath) -> String {
