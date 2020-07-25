@@ -3,9 +3,33 @@ use std::marker::PhantomData;
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
 
 //use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics03_connection::error::Kind;
 use crate::ics24_host::identifier::ClientId;
 use crate::path::{ClientStatePath, ConsensusStatePath};
+use crate::try_from_raw::TryFromRaw;
 use crate::Height;
+
+//TODO: This might need to be migrated to ibc-proto crate. But ClientConnections (as array of strings)
+// might not be part of an official proto file
+#[derive(::prost::Message)]
+pub struct RawClientConnections {
+    #[prost(string, repeated, tag = "1")]
+    pub connections: ::std::vec::Vec<String>,
+}
+
+impl TryFromRaw for Vec<String> {
+    type RawType = RawClientConnections;
+    type Error = anomaly::Error<Kind>;
+    fn try_from(value: RawClientConnections) -> Result<Self, Self::Error> {
+        let mut client_connections: Vec<String> = vec![];
+        for conn in value.connections {
+            client_connections.push(conn);
+        }
+        Ok(client_connections)
+        // If no connections return error
+        //Err(Kind::MissingCounterparty.into()),
+    }
+}
 
 pub struct QueryClientFullState<CLS> {
     pub chain_height: Height,

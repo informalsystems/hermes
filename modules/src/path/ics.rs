@@ -1,4 +1,6 @@
-use super::{ChannelPath, ClientStatePath, ConnectionPath, ConsensusStatePath, ClientConnectionsPath};
+use super::{
+    ChannelPath, ClientConnectionsPath, ClientStatePath, ConnectionPath, ConsensusStatePath,
+};
 
 pub fn consensus_state_path(path: &ConsensusStatePath) -> String {
     format!("clients/{}/consensusState/{}", path.client_id, path.height)

@@ -17,7 +17,6 @@ use relayer_modules::path::{ClientConnectionsPath, Path};
 use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
 use tendermint::chain::Id as ChainId;
-use relayer_modules::ics03_connection::connection::ConnectionEnd;
 
 // *****************************************************************
 // Query client state
@@ -304,7 +303,7 @@ impl Runnable for QueryClientConnectionsCmd {
         // run without proof:
         // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client connections ibc-test ethbridge --height 3 -p false
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res: Result<ConnectionEnd, Error> = block_on(query(&chain, opts));
+        let res: Result<Vec<String>, Error> = block_on(query(&chain, opts));
 
         match res {
             Ok(cs) => status_info!("query client connections result: ", "{:?}", cs),
