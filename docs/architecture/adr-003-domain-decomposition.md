@@ -63,23 +63,23 @@ Not all stages are listed here because the operations and dependencies outlined 
 
 ### `updateIBCClient` (Relayer)
 
-- get latest height from chain A
-- get client consensus state from chain B
-- get latest header + minimal set from chain A
-- verify client state proof
-- create and submit datagrams to update B's view of A
-- replace full node for B with other full node
-- create and submit proof of fork
-- wait for UpdateClient event
+- get latest height from chain A (Query)
+- get client consensus state from chain B (Query)
+- get latest header + minimal set from chain A (Light Client)
+- verify client state proof (Prover)
+- create and submit datagrams to update B's view of A (Message Builder, Transaction)
+- replace full node for B with other full node (PeerList)
+- create and submit proof of fork (Fork Evidence Reporter)
+- wait for UpdateClient event (Event Subscription)
 
 ### `pendingDatagrams` (Relayer)
 
-- get connection objects from chain A
-- get connection objects from chain B
-- get proof\* that A has a connection in INIT state
-- get proof\* that A has a consensus state in a given state
+- get connection objects from chain A (Query)
+- get connection objects from chain B (Query)
+- get proof\* that A has a connection in INIT state (Query, Prover, Light Client)
+- get proof\* that A has a consensus state in a given state (Query, Prover, Light Client)
   - \* involves querying the chain + get header/minimal set + verify proof
-- build `ConnOpenTry` message
+- build `ConnOpenTry` message (Message Builder)
 
 ### IBC Module
 
