@@ -6,9 +6,6 @@ use crate::Height;
 mod cosmos;
 mod ics;
 
-#[cfg(feature = "paths-cosmos")]
-use cosmos as paths;
-#[cfg(not(feature = "paths-cosmos"))]
 use ics as paths;
 
 pub struct Key<'a, P>(&'a P);
