@@ -318,7 +318,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::client::QueryClientStateCmd;
+    use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
     use relayer::config::parse;
 
     #[test]
@@ -369,6 +369,92 @@ mod tests {
             Test {
                 name: "Bad client id, non-alpha".to_string(),
                 params: QueryClientStateCmd {
+                    client_id: Some("p34".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn parse_query_client_connections_parameters() {
+        let default_params = QueryClientConnectionsCmd {
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            client_id: Some("clientidone".to_string().parse().unwrap()),
+            height: Some(4),
+            proof: Some(false),
+        };
+
+        struct Test {
+            name: String,
+            params: QueryClientConnectionsCmd,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryClientConnectionsCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryClientConnectionsCmd {
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No client id specified".to_string(),
+                params: QueryClientConnectionsCmd {
+                    client_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad client id, non-alpha".to_string(),
+                params: QueryClientConnectionsCmd {
                     client_id: Some("p34".to_string()),
                     ..default_params.clone()
                 },
