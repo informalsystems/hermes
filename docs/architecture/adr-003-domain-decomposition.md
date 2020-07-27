@@ -1,7 +1,8 @@
-# ADR 004: Domain Decomposition
+# ADR 003: Domain Decomposition
 
 ## Changelog
 * 21.7.2020: Initial sketch
+* 27.7.2020: Dependencies outline
 
 ## Context
 
@@ -22,7 +23,7 @@ do we need to mock out to exercise the core logic.
 * Channel Setup
     * With different chain states
 * Datagram Construction
-    * Local lighht client state
+    * Local light client state
     * With different chain states
     * With different light client states
 * Datagram to Transaction
@@ -38,6 +39,55 @@ do we need to mock out to exercise the core logic.
 
 * Operational concerns
     * CLI, embedded
+
+## Dependencies
+
+In this section, we map the operations which need to be performed at different
+stages of both the relayer and the IBC handlers. This gives an outline
+of what operations and depedencies need to be mocked out to test each
+stage in isolation, and will inform the design of the various traits needed
+to mock those out.
+
+Not all stages are listed here because the operations and dependencies outlined below cover all the possible dependencies at each stage.
+
+### Initializing a connection from the relayer
+
+- Need a relayer configuration (relayer.toml)
+- Query chain B for its commitment prefix (ABCI query)
+- Send `MsgConnectionOpenInit` message to chain A (transaction)
+
+### ConnOpenInit (Handler)
+
+- Provable store
+- Private store
+
+### `updateIBCClient` (Relayer)
+
+- get latest height from chain A
+- get client consensus state from chain B
+- get latest header + minimal set from chain A
+- verify client state proof
+- create and submit datagrams to update B's view of A
+- replace full node for B with other full node
+- create and submit proof of fork
+- wait for UpdateClient event
+
+### `pendingDatagrams` (Relayer)
+
+- get connection objects from chain A
+- get connection objects from chain B
+- get proof\* that A has a connection in INIT state
+- get proof\* that A has a consensus state in a given state
+  - \* involves querying the chain + get header/minimal set + verify proof
+- build `ConnOpenTry` message
+
+### IBC Module
+
+On a transaction in a block of height H:
+
+- call appropriate Handler
+- If handler succeeds (transaction is not aborted),
+  get the current height H and emit appropriate events.
 
 ## Objects
 The main domain object will be implemented as a trait. This will allow
