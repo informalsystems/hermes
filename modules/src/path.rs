@@ -3,7 +3,6 @@ use std::fmt;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
-mod cosmos;
 mod ics;
 
 use ics as paths;
