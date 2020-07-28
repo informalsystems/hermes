@@ -1,8 +1,6 @@
 use std::marker::PhantomData;
 
 use crate::ics23_commitment::{CommitmentPath, CommitmentProof};
-
-//use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::error::Kind;
 use crate::ics24_host::identifier::ClientId;
 use crate::path::{ClientStatePath, ConsensusStatePath};
