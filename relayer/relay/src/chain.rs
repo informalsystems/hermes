@@ -9,9 +9,12 @@ use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint_rpc::Client as RpcClient;
 
 use relayer_modules::ics02_client::state::{ClientState, ConsensusState};
+use relayer_modules::ics24_host::Data;
+use relayer_modules::try_from_raw::TryFromRaw;
 
 use crate::config::ChainConfig;
 use crate::error;
+use std::error::Error;
 
 pub mod tendermint;
 
@@ -34,6 +37,19 @@ pub trait Chain {
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type Requester: tmlite::Requester<Self::Commit, Self::Header>;
+
+    /// Error types defined by this chain
+    type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
+
+    /// Perform a generic `query`, and return the corresponding deserialized response data.
+    // This is going to be a blocking request.
+    // From the "Asynchronous Programming in Rust" book:
+    //   Important extensions like `async fn` syntax in trait methods are still unimplemented
+    // https://rust-lang.github.io/async-book/01_getting_started/03_state_of_async_rust.html
+    // Todo: More generic chains might want to deal with domain types differently (no T).
+    fn query<T>(&self, data: Data, height: u64, prove: bool) -> Result<T, Self::Error>
+    where
+        T: TryFromRaw;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {

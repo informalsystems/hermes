@@ -19,7 +19,6 @@
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 
-pub mod error;
 pub mod events;
 pub mod ics02_client;
 pub mod ics03_connection;
@@ -29,7 +28,6 @@ pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
-pub mod path;
 pub mod proofs;
 pub mod try_from_raw;
 pub mod tx_msg;

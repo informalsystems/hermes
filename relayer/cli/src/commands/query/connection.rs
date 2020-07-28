@@ -3,18 +3,14 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
-use relayer::query::{query, Request};
-use relayer_modules::error::Error;
+use relayer::chain::Chain;
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
-use relayer_modules::path::{ConnectionPath, Path};
+use relayer_modules::ics24_host::Data::Connections;
 use tendermint::chain::Id as ChainId;
 
 use relayer_modules::ics03_connection::connection::ConnectionEnd;
-use std::str::FromStr;
-use tendermint::abci::Path as TendermintPath;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -36,17 +32,6 @@ struct QueryConnectionOptions {
     connection_id: ConnectionId,
     height: u64,
     proof: bool,
-}
-
-impl Into<Request> for QueryConnectionOptions {
-    fn into(self) -> Request {
-        Request {
-            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
-            data: ConnectionPath::new(self.connection_id).to_string(),
-            height: self.height,
-            prove: self.proof,
-        }
-    }
 }
 
 impl QueryConnectionEndCmd {
@@ -101,7 +86,8 @@ impl Runnable for QueryConnectionEndCmd {
         let chain = TendermintChain::from_config(chain_config).unwrap();
         // run without proof:
         // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
-        let res: Result<ConnectionEnd, Error> = block_on(query(&chain, opts));
+        let res =
+            chain.query::<ConnectionEnd>(Connections(opts.connection_id), opts.height, opts.proof);
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
