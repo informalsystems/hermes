@@ -21,13 +21,11 @@ impl TryFromRaw for Vec<String> {
     type RawType = RawClientConnections;
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawClientConnections) -> Result<Self, Self::Error> {
-        let mut client_connections: Vec<String> = vec![];
-        for conn in value.connections {
-            client_connections.push(conn);
+        if !value.connections.is_empty() {
+            Ok(value.connections)
+        } else {
+            Err(Kind::ConnectionNotFound.into())
         }
-        Ok(client_connections)
-        // If no connections return error
-        //Err(Kind::MissingCounterparty.into()),
     }
 }
 
