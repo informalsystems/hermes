@@ -7,6 +7,7 @@ use crate::tx_msg::Msg;
 
 use std::time::Duration;
 
+use crate::ics07_tendermint::error::Error;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
 
@@ -36,6 +37,11 @@ impl MsgCreateClient {
             bonding_period,
             signer,
         }
+    }
+
+    /// Given a Tendermint ConsensusState, performs initialisation of an IBC client.
+    pub fn initialise_client(&self, _cs: ConsensusState) -> Result<(), Error> {
+        unimplemented!();
     }
 
     fn get_client_id(&self) -> &ClientId {

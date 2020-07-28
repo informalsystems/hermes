@@ -7,6 +7,9 @@ pub type Error = anomaly::Error<Kind>;
 pub enum Kind {
     #[error("unknown client type")]
     UnknownClientType,
+
+    #[error("a client with the given identifier already exists")]
+    ClientAlreadyExists,
 }
 
 impl Kind {

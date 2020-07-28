@@ -11,3 +11,7 @@ Cargo.lock
 
 # Ignore database folders
 **/*.db/
+
+
+# Intellij IDEA project folder, safe to ignore
+.idea/
