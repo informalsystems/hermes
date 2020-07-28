@@ -7,15 +7,6 @@ authors = [
   "Romain Ruetschi <romain@informal.systems>"
 ]
 
-[features]
-# Default features
-#default = ["paths-cosmos"]
-default = ["paths-ics"]
-
-# In IBC queries, use paths as defined in the Cosmos-SDK Go implementation, rather than in the ICS.
-paths-cosmos = []
-paths-ics = []
-
 [dependencies]
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master", features=["client"] }
