@@ -37,6 +37,7 @@ pub enum Kind {
     #[error("Could not parse/unmarshall response")]
     ResponseParsing,
 
+    /// Response does not contain data
     #[error("Empty response value")]
     EmptyResponseValue,
 }
