@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::path::{ClientStatePath, Path, ClientTypePath};
 use crate::ics02_client::state::ConsensusState;
 
-/// General handler for processing any kind of MsgCreateClient.
+/// General processing logic for any kind of MsgCreateClient.
 /// Cf. https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
 pub fn create_client(
     m: &dyn MsgCreateClient<CStateType, VErrorType>,
@@ -23,7 +23,7 @@ where
     VErrorType: Error
 {
     // Perform validation of client_id, path uniqueness, and type validation.
-    // The validate_basic() method of Msg trait handles validation of client_id field.
+    // The validate_basic() method of Msg trait performs validation of client_id field.
 
     // Ensure no client state (for this client_id) already exists in the private store.
     let cstate_path = ClientStatePath::new(m.client_id().clone()).to_string();
