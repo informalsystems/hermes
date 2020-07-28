@@ -80,7 +80,6 @@ impl Msg for MsgCreateClient {
 
 impl crate::ics02_client::msgs::MsgCreateClient for MsgCreateClient {
     type ConsensusState = ConsensusState;
-    type Error = Self::Error;
 
     fn client_id(&self) -> &ClientId {
         &self.client_id
@@ -100,9 +99,5 @@ impl crate::ics02_client::msgs::MsgCreateClient for MsgCreateClient {
             header.time,
             self.header.validator_set.clone(),
         )
-    }
-
-    fn initialise(&self) -> Result<(), Error> {
-        unimplemented!()
     }
 }
