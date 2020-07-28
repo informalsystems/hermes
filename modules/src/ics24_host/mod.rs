@@ -3,5 +3,5 @@
 pub mod error;
 pub mod identifier;
 mod path;
-pub use path::{Data, Path, IBC_QUERY_PATH};
+pub use path::{Path, IBC_QUERY_PATH};
 pub mod validate;

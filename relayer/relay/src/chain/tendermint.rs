@@ -10,7 +10,7 @@ use tendermint_rpc::Client as RpcClient;
 use core::future::Future;
 use relayer_modules::ics07_tendermint::client_state::ClientState;
 use relayer_modules::ics07_tendermint::consensus_state::ConsensusState;
-use relayer_modules::ics24_host::{Data, Path, IBC_QUERY_PATH};
+use relayer_modules::ics24_host::{Path, IBC_QUERY_PATH};
 use relayer_modules::try_from_raw::TryFromRaw;
 
 use crate::client::rpc_requester::RpcRequester;
@@ -50,7 +50,7 @@ impl Chain for TendermintChain {
     type ClientState = ClientState;
     type Error = anomaly::Error<Kind>;
 
-    fn query<T>(&self, data: Data, height: u64, prove: bool) -> Result<T, Self::Error>
+    fn query<T>(&self, data: Path, height: u64, prove: bool) -> Result<T, Self::Error>
     where
         T: TryFromRaw,
     {
@@ -60,13 +60,7 @@ impl Chain for TendermintChain {
                 .context("requested proof for privateStore path")
                 .into());
         }
-        let response = block_on(abci_query(
-            &self,
-            path,
-            Path::from(data).to_string(),
-            height,
-            prove,
-        ))?;
+        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // Verify response proof, if requested.
         if prove {

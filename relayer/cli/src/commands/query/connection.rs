@@ -7,7 +7,7 @@ use relayer::chain::tendermint::TendermintChain;
 use relayer::chain::Chain;
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
-use relayer_modules::ics24_host::Data::Connections;
+use relayer_modules::ics24_host::Path::Connections;
 use tendermint::chain::Id as ChainId;
 
 use relayer_modules::ics03_connection::connection::ConnectionEnd;

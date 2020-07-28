@@ -5,7 +5,7 @@ use relayer::config::{ChainConfig, Config};
 
 use relayer_modules::ics04_channel::channel::ChannelEnd;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
-use relayer_modules::ics24_host::Data::ChannelEnds;
+use relayer_modules::ics24_host::Path::ChannelEnds;
 
 use relayer::chain::tendermint::TendermintChain;
 use relayer::chain::Chain;

@@ -9,7 +9,7 @@ use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint_rpc::Client as RpcClient;
 
 use relayer_modules::ics02_client::state::{ClientState, ConsensusState};
-use relayer_modules::ics24_host::Data;
+use relayer_modules::ics24_host::Path;
 use relayer_modules::try_from_raw::TryFromRaw;
 
 use crate::config::ChainConfig;
@@ -47,7 +47,7 @@ pub trait Chain {
     //   Important extensions like `async fn` syntax in trait methods are still unimplemented
     // https://rust-lang.github.io/async-book/01_getting_started/03_state_of_async_rust.html
     // Todo: More generic chains might want to deal with domain types differently (no T).
-    fn query<T>(&self, data: Data, height: u64, prove: bool) -> Result<T, Self::Error>
+    fn query<T>(&self, data: Path, height: u64, prove: bool) -> Result<T, Self::Error>
     where
         T: TryFromRaw;
 
