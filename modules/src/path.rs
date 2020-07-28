@@ -84,6 +84,22 @@ impl Path for ClientStatePath {
     }
 }
 
+pub struct ClientTypePath {
+    pub client_id: ClientId,
+}
+
+impl ClientTypePath {
+    pub fn new(client_id: ClientId) -> Self {
+        Self { client_id }
+    }
+}
+
+impl Path for ClientTypePath {
+    fn to_string(&self) -> String {
+        paths::client_type_path(&self)
+    }
+}
+
 pub struct ChannelPath {
     pub port_id: PortId,
     channel_id: ChannelId,
