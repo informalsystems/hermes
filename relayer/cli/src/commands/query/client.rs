@@ -2,10 +2,7 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
-//use relayer::query::client::{query_client_consensus_state, query_client_full_state};
-//use relayer::query::{query, Request};
 
-//use relayer_modules::ics02_client::query::QueryClientFullState;
 use relayer_modules::ics24_host::identifier::ClientId;
 
 use crate::commands::utils::block_on;
@@ -18,10 +15,7 @@ use std::str::FromStr;
 use tendermint::abci::Path as TendermintPath;
 use tendermint::chain::Id as ChainId;
 
-// *****************************************************************
-// Query client state
-// *****************************************************************
-
+/// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
     #[options(free, help = "identifier of the chain to query")]
@@ -104,10 +98,7 @@ impl Runnable for QueryClientStateCmd {
     }
 }
 
-// *****************************************************************
-// Query client consensus
-// *****************************************************************
-
+/// Query client consensus command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the chain to query")]
@@ -227,10 +218,7 @@ fn validate_common_options(
     Ok((chain_config.clone(), client_id))
 }
 
-// *****************************************************************
-// Query client connections
-// *****************************************************************
-
+/// Query client connections command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConnectionsCmd {
     #[options(free, help = "identifier of the chain to query")]
@@ -301,7 +289,7 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client connections ibc-test ethbridge --height 3 -p false
+        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
         let chain = TendermintChain::from_config(chain_config).unwrap();
         let res: Result<Vec<String>, Error> = block_on(query(&chain, opts));
 
@@ -312,10 +300,7 @@ impl Runnable for QueryClientConnectionsCmd {
     }
 }
 
-// *****************************************************************
-// Tests
-// *****************************************************************
-
+/// Tests
 #[cfg(test)]
 mod tests {
     use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
