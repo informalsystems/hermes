@@ -77,7 +77,7 @@ impl Runnable for QueryClientStateCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
         /* Todo: Implement client full state query
         let res = block_on(query_client_full_state(
             &chain,
@@ -170,7 +170,7 @@ impl Runnable for QueryClientConsensusCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
         /* Todo: Implement client consensus state query
         let res = block_on(query_client_consensus_state(
             &chain,
