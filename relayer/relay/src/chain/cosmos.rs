@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tendermint::abci::Path as TendermintPath;
+use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::block::Height;
