@@ -1,3 +1,8 @@
+## [pending_version]
+
+* Refactored `relayer/cli` into `relayer-cli` folder. ([#180](https://github.com/informalsystems/ibc-rs/issues/180))
+* Refactored `relayer/relay` into `relayer` folder. ([#180](https://github.com/informalsystems/ibc-rs/issues/180))
+
 ## [0.0.1]
 
 *July 1st, 2020*

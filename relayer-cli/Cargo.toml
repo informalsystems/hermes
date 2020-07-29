@@ -8,8 +8,8 @@ authors = [
 ]
 
 [dependencies]
-relayer = { path = "../relay" }
-relayer-modules = { path = "../../modules" }
+relayer = { path = "../relayer" }
+relayer-modules = { path = "../modules" }
 tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
 
 abscissa_tokio = "0.5.1"

@@ -3,24 +3,21 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use relayer_modules::ics04_channel::channel::ChannelEnd;
-use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
-use relayer_modules::ics24_host::Path::ChannelEnds;
-
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer_modules::ics24_host::error::ValidationError;
+use relayer_modules::ics24_host::identifier::ConnectionId;
+use relayer_modules::ics24_host::Path::Connections;
 use tendermint::chain::Id as ChainId;
 
+use relayer_modules::ics03_connection::connection::ConnectionEnd;
+
 #[derive(Clone, Command, Debug, Options)]
-pub struct QueryChannelEndCmd {
+pub struct QueryConnectionEndCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the port to query")]
-    port_id: Option<String>,
-
-    #[options(free, help = "identifier of the channel to query")]
-    channel_id: Option<String>,
+    #[options(free, help = "identifier of the connection to query")]
+    connection_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
@@ -30,18 +27,17 @@ pub struct QueryChannelEndCmd {
 }
 
 #[derive(Debug)]
-struct QueryChannelOptions {
-    port_id: PortId,
-    channel_id: ChannelId,
+struct QueryConnectionOptions {
+    connection_id: ConnectionId,
     height: u64,
     proof: bool,
 }
 
-impl QueryChannelEndCmd {
+impl QueryConnectionEndCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<(ChainConfig, QueryChannelOptions), String> {
+    ) -> Result<(ChainConfig, QueryConnectionOptions), String> {
         let chain_id = self
             .chain_id
             .ok_or_else(|| "missing chain identifier".to_string())?;
@@ -51,23 +47,15 @@ impl QueryChannelEndCmd {
             .find(|c| c.id == chain_id)
             .ok_or_else(|| "missing chain configuration".to_string())?;
 
-        let port_id = self
-            .port_id
+        let connection_id = self
+            .connection_id
             .as_ref()
-            .ok_or_else(|| "missing port identifier".to_string())?
+            .ok_or_else(|| "missing connection identifier".to_string())?
             .parse()
             .map_err(|err: ValidationError| err.to_string())?;
 
-        let channel_id = self
-            .channel_id
-            .as_ref()
-            .ok_or_else(|| "missing channel identifier".to_string())?
-            .parse()
-            .map_err(|err: ValidationError| err.to_string())?;
-
-        let opts = QueryChannelOptions {
-            port_id,
-            channel_id,
+        let opts = QueryConnectionOptions {
+            connection_id,
             height: match self.height {
                 Some(h) => h,
                 None => 0 as u64,
@@ -81,7 +69,7 @@ impl QueryChannelEndCmd {
     }
 }
 
-impl Runnable for QueryChannelEndCmd {
+impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -94,40 +82,36 @@ impl Runnable for QueryChannelEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<ChannelEnd>(
-            ChannelEnds(opts.port_id, opts.channel_id),
-            opts.height,
-            opts.proof,
-        );
+        // run without proof:
+        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
+        let res =
+            chain.query::<ConnectionEnd>(Connections(opts.connection_id), opts.height, opts.proof);
 
         match res {
-            Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection query error", "{}", e),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::channel::QueryChannelEndCmd;
+    use crate::commands::query::connection::QueryConnectionEndCmd;
     use relayer::config::parse;
 
     #[test]
-    fn parse_channel_query_end_parameters() {
-        let default_params = QueryChannelEndCmd {
+    fn parse_connection_query_end_parameters() {
+        let default_params = QueryConnectionEndCmd {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
-            port_id: Some("transfer".to_string().parse().unwrap()),
-            channel_id: Some("testchannel".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
             height: None,
             proof: None,
         };
 
         struct Test {
             name: String,
-            params: QueryChannelEndCmd,
+            params: QueryConnectionEndCmd,
             want_pass: bool,
         }
 
@@ -139,7 +123,7 @@ mod tests {
             },
             Test {
                 name: "No chain specified".to_string(),
-                params: QueryChannelEndCmd {
+                params: QueryConnectionEndCmd {
                     chain_id: None,
                     ..default_params.clone()
                 },
@@ -147,48 +131,32 @@ mod tests {
             },
             Test {
                 name: "Chain not configured".to_string(),
-                params: QueryChannelEndCmd {
+                params: QueryConnectionEndCmd {
                     chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "No port id specified".to_string(),
-                params: QueryChannelEndCmd {
-                    port_id: None,
+                name: "No connection id specified".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: None,
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Correct port (alphanumeric)".to_string(),
-                params: QueryChannelEndCmd {
-                    port_id: Some("p34".to_string()),
-                    ..default_params.clone()
-                },
-                want_pass: true,
-            },
-            Test {
-                name: "Incorrect port identifier (contains invalid character)".to_string(),
-                params: QueryChannelEndCmd {
-                    port_id: Some("p34^".to_string()),
+                name: "Bad connection, non-alpha".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("conn01".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "No channel id specified".to_string(),
-                params: QueryChannelEndCmd {
-                    channel_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Bad channel, name too short".to_string(),
-                params: QueryChannelEndCmd {
-                    channel_id: Some("chshort".to_string()),
+                name: "Bad connection, name too short".to_string(),
+                params: QueryConnectionEndCmd {
+                    connection_id: Some("connshort".to_string()),
                     ..default_params.clone()
                 },
                 want_pass: false,
