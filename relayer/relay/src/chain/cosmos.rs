@@ -54,7 +54,7 @@ impl Chain for CosmosSDKChain {
     where
         T: TryFromRaw,
     {
-        let path = TendermintPath::from_str(IBC_QUERY_PATH).unwrap();
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
         if !data.is_provable() & prove {
             return Err(Kind::Store
                 .context("requested proof for privateStore path")
@@ -97,7 +97,7 @@ impl Chain for CosmosSDKChain {
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
 async fn abci_query(
     chain: &CosmosSDKChain,
-    path: TendermintPath,
+    path: TendermintABCIPath,
     data: String,
     height: u64,
     prove: bool,
