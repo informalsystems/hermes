@@ -3,16 +3,11 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use relayer_modules::ics24_host::identifier::ClientId;
-
-use crate::commands::utils::block_on;
 use relayer::chain::tendermint::TendermintChain;
-use relayer::query::{query, Request};
-use relayer_modules::error::Error;
+use relayer::chain::Chain;
 use relayer_modules::ics24_host::error::ValidationError;
-use relayer_modules::path::{ClientConnectionsPath, Path};
-use std::str::FromStr;
-use tendermint::abci::Path as TendermintPath;
+use relayer_modules::ics24_host::identifier::ClientId;
+use relayer_modules::ics24_host::Path::ClientConnections;
 use tendermint::chain::Id as ChainId;
 
 /// Query client state command
@@ -241,24 +236,26 @@ struct QueryClientConnectionsOptions {
     proof: bool,
 }
 
-impl Into<Request> for QueryClientConnectionsOptions {
-    fn into(self) -> Request {
-        Request {
-            path: Some(TendermintPath::from_str(&"store/ibc/key").unwrap()),
-            data: ClientConnectionsPath::new(self.client_id).to_string(),
-            height: self.height,
-            prove: self.proof,
-        }
-    }
-}
-
 impl QueryClientConnectionsCmd {
     fn validate_options(
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
-        let (chain_config, client_id) =
-            validate_common_options(&self.chain_id, &self.client_id, config)?;
+        let chain_id = self
+            .chain_id
+            .ok_or_else(|| "missing chain identifier".to_string())?;
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == chain_id)
+            .ok_or_else(|| "missing chain configuration".to_string())?;
+
+        let client_id = self
+            .client_id
+            .as_ref()
+            .ok_or_else(|| "missing client identifier".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
 
         let opts = QueryClientConnectionsOptions {
             client_id,
@@ -271,10 +268,13 @@ impl QueryClientConnectionsCmd {
                 None => true,
             },
         };
-        Ok((chain_config, opts))
+        Ok((chain_config.clone(), opts))
     }
 }
 
+/// Command to handle query for client connections
+/// To run without proof:
+/// cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();
@@ -288,14 +288,12 @@ impl Runnable for QueryClientConnectionsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
         let chain = TendermintChain::from_config(chain_config).unwrap();
-        let res: Result<Vec<String>, Error> = block_on(query(&chain, opts));
-
+        let res =
+            chain.query::<Vec<String>>(ClientConnections(opts.client_id), opts.height, opts.proof);
         match res {
-            Ok(cs) => status_info!("query client connections result: ", "{:?}", cs),
-            Err(e) => status_info!("query client connections error", "{}", e),
+            Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
+            Err(e) => status_info!("client connections query error", "{}", e),
         }
     }
 }

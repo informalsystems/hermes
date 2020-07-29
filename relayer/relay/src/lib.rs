@@ -17,6 +17,5 @@ pub mod config;
 pub mod error;
 pub mod event_handler;
 pub mod event_monitor;
-pub mod query;
 pub mod store;
 pub mod util;
