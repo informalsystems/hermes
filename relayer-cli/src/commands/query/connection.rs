@@ -84,7 +84,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
+        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
         let res =
             chain.query::<ConnectionEnd>(Connections(opts.connection_id), opts.height, opts.proof);
 

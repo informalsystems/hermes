@@ -95,7 +95,7 @@ impl Runnable for QueryChannelEndCmd {
         status_info!("Options", "{:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
+        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res = chain.query::<ChannelEnd>(
             ChannelEnds(opts.port_id, opts.channel_id),

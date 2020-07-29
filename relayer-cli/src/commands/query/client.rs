@@ -70,10 +70,10 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         // run with proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
+        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
         //
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
+        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
@@ -274,7 +274,7 @@ impl QueryClientConnectionsCmd {
 
 /// Command to handle query for client connections
 /// To run without proof:
-/// cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
+/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();
