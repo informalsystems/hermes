@@ -23,5 +23,7 @@ toml = "0.5"
 tracing = "0.1.13"
 tokio = "0.2"
 serde_json = { version = "1" }
+bytes = "0.5.6"
+prost = "0.6.1"
 
 [dev-dependencies]

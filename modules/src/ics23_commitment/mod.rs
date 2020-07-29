@@ -1,6 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::path::Path;
 use std::fmt;
 use tendermint::merkle::proof::Proof;
 
@@ -9,15 +8,6 @@ pub struct CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPath;
-
-impl CommitmentPath {
-    pub fn from_path<P>(_p: P) -> Self
-    where
-        P: Path,
-    {
-        CommitmentPath {}
-    }
-}
 
 pub type CommitmentProof = Proof;
 /*

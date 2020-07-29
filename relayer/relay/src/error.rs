@@ -28,6 +28,18 @@ pub enum Kind {
     /// Trusted store error, raised by instances of `Store`
     #[error("store error")]
     Store,
+
+    /// Event error (raised by the event monitor)
+    #[error("Bad Notification")]
+    Event,
+
+    /// Response parsing error
+    #[error("Could not parse/unmarshall response")]
+    ResponseParsing,
+
+    /// Response does not contain data
+    #[error("Empty response value")]
+    EmptyResponseValue,
 }
 
 impl Kind {
