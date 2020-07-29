@@ -9,7 +9,7 @@ use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
 use tendermint::lite::Height;
 
-use relayer::chain::tendermint::TendermintChain;
+use relayer::chain::CosmosSDKChain;
 use relayer::client::trust_options::TrustOptions;
 use relayer::config::{ChainConfig, Config};
 use relayer::store::{sled::SledStore, Store};
@@ -93,7 +93,7 @@ impl Runnable for InitCmd {
             )
             .unwrap();
 
-            let mut store: SledStore<TendermintChain> =
+            let mut store: SledStore<CosmosSDKChain> =
                 relayer::store::persistent(format!("store_{}.db", chain_config.id)).unwrap(); // FIXME: unwrap
 
             store.set_trust_options(trust_options).unwrap(); // FIXME: unwrap
