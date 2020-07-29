@@ -9,7 +9,7 @@ use relayer::config::{ChainConfig, Config};
 use relayer_modules::ics24_host::identifier::ClientId;
 
 //use crate::commands::utils::block_on;
-use relayer::chain::tendermint::TendermintChain;
+use relayer::chain::CosmosSDKChain;
 use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
@@ -79,7 +79,7 @@ impl Runnable for QueryClientStateCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
         /* Todo: Implement client full state query
         let res = block_on(query_client_full_state(
             &chain,
@@ -171,7 +171,7 @@ impl Runnable for QueryClientConsensusCmd {
         //
         // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
         // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = TendermintChain::from_config(chain_config).unwrap();
+        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
         /* Todo: Implement client consensus state query
         let res = block_on(query_client_consensus_state(
             &chain,

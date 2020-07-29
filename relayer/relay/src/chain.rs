@@ -16,7 +16,8 @@ use crate::config::ChainConfig;
 use crate::error;
 use std::error::Error;
 
-pub mod tendermint;
+mod cosmos;
+pub use cosmos::CosmosSDKChain;
 
 /// Handy type alias for the type of validator set associated with a chain
 pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
