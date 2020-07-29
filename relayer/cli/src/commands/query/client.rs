@@ -288,7 +288,7 @@ impl Runnable for QueryClientConnectionsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res =
             chain.query::<Vec<String>>(ClientConnections(opts.client_id), opts.height, opts.proof);
         match res {
