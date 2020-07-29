@@ -9,8 +9,7 @@ use abscissa_core::{Command, Options, Runnable};
 use tendermint::lite::types::Header;
 
 use crate::commands::utils::block_on;
-use relayer::chain::tendermint::TendermintChain;
-use relayer::chain::Chain;
+use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::client::Client;
 use relayer::config::ChainConfig;
 
@@ -62,7 +61,7 @@ async fn spawn_client(chain_config: ChainConfig, reset: bool) {
         .expect("could not spawn client task")
 }
 
-async fn client_task(client: Client<TendermintChain, impl Store<TendermintChain>>) {
+async fn client_task(client: Client<CosmosSDKChain, impl Store<CosmosSDKChain>>) {
     let trusted_state = client.last_trusted_state().unwrap();
 
     status_ok!(
@@ -108,9 +107,9 @@ async fn update_client<C: Chain, S: Store<C>>(mut client: Client<C, S>) {
 async fn create_client(
     chain_config: ChainConfig,
     reset: bool,
-) -> Client<TendermintChain, impl Store<TendermintChain>> {
+) -> Client<CosmosSDKChain, impl Store<CosmosSDKChain>> {
     let id = chain_config.id;
-    let chain = TendermintChain::from_config(chain_config).unwrap();
+    let chain = CosmosSDKChain::from_config(chain_config).unwrap();
 
     let store = relayer::store::persistent(format!("store_{}.db", chain.id())).unwrap(); //FIXME: unwrap
     let trust_options = store.get_trust_options().unwrap(); // FIXME: unwrap

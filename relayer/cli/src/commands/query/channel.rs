@@ -7,8 +7,7 @@ use relayer_modules::ics04_channel::channel::ChannelEnd;
 use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
 use relayer_modules::ics24_host::Path::ChannelEnds;
 
-use relayer::chain::tendermint::TendermintChain;
-use relayer::chain::Chain;
+use relayer::chain::{Chain, CosmosSDKChain};
 use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
@@ -97,7 +96,7 @@ impl Runnable for QueryChannelEndCmd {
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
-        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res = chain.query::<ChannelEnd>(
             ChannelEnds(opts.port_id, opts.channel_id),
             opts.height,

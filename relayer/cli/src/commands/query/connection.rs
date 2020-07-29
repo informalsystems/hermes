@@ -3,8 +3,7 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use relayer::chain::tendermint::TendermintChain;
-use relayer::chain::Chain;
+use relayer::chain::{Chain, CosmosSDKChain};
 use relayer_modules::ics24_host::error::ValidationError;
 use relayer_modules::ics24_host::identifier::ConnectionId;
 use relayer_modules::ics24_host::Path::Connections;
@@ -83,7 +82,7 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = TendermintChain::from_config(chain_config).unwrap();
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         // run without proof:
         // cargo run --bin relayer -- -c relayer/relay/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
         let res =

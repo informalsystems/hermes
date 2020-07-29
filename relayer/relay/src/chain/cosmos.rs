@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tendermint::abci::Path as TendermintPath;
+use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::signed_header::SignedHeader as TMCommit;
 use tendermint::block::Header as TMHeader;
 use tendermint::block::Height;
@@ -22,13 +22,13 @@ use bytes::Bytes;
 use prost::Message;
 use std::str::FromStr;
 
-pub struct TendermintChain {
+pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: RpcClient,
     requester: RpcRequester,
 }
 
-impl TendermintChain {
+impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
         // TODO: Derive Clone on RpcClient in tendermint-rs
         let requester = RpcRequester::new(RpcClient::new(config.rpc_addr.clone()));
@@ -42,7 +42,7 @@ impl TendermintChain {
     }
 }
 
-impl Chain for TendermintChain {
+impl Chain for CosmosSDKChain {
     type Header = TMHeader;
     type Commit = TMCommit;
     type ConsensusState = ConsensusState;
@@ -54,7 +54,7 @@ impl Chain for TendermintChain {
     where
         T: TryFromRaw,
     {
-        let path = TendermintPath::from_str(IBC_QUERY_PATH).unwrap();
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
         if !data.is_provable() & prove {
             return Err(Kind::Store
                 .context("requested proof for privateStore path")
@@ -96,8 +96,8 @@ impl Chain for TendermintChain {
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
 async fn abci_query(
-    chain: &TendermintChain,
-    path: TendermintPath,
+    chain: &CosmosSDKChain,
+    path: TendermintABCIPath,
     data: String,
     height: u64,
     prove: bool,
