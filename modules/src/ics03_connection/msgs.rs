@@ -1,3 +1,17 @@
+//! Message definitions for the connection handshake datagrams.
+//!
+//! We define each of the four messages in the connection handshake protocol as a `struct`.
+//! Each such message comprises the same fields as the datagrams defined in ICS03 English spec:
+//! https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics.
+//!
+//! One departure from ICS03 is that we abstract the three counterparty fields (connection id,
+//! prefix, and client id) into a single field of type `Counterparty`; this applies to messages
+//! `MsgConnectionOpenInit` and `MsgConnectionOpenTry`.
+//!
+//! Another difference to ICS03 specs is that each message comprises an additional field called
+//! `signer` which is specific to Cosmos-SDK.
+//! TODO: Separate the Cosmos-SDK specific functionality from canonical ICS types.
+
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
@@ -9,8 +23,29 @@ use crate::tx_msg::Msg;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
 
+/// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 
+/// Message type for the `MsgConnectionOpenTry` message.
+pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
+
+/// Message type for the `MsgConnectionOpenAck` message.
+pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
+
+/// Message type for the `MsgConnectionOpenConfirm` message.
+pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
+
+
+pub enum ICS3Message {
+    ConnectionOpenInit(MsgConnectionOpenInit),
+    ConnectionOpenTry(MsgConnectionOpenTry),
+    ConnectionOpenAck(MsgConnectionOpenAck),
+    ConnectionOpenConfirm(MsgConnectionOpenConfirm),
+}
+
+///
+/// Message definition `MsgConnectionOpenInit`  (i.e., the `ConnOpenInit` datagram).
+///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenInit {
     connection_id: ConnectionId,
@@ -44,6 +79,18 @@ impl MsgConnectionOpenInit {
             signer,
         })
     }
+
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.counterparty
+    }
 }
 
 impl Msg for MsgConnectionOpenInit {
@@ -71,8 +118,9 @@ impl Msg for MsgConnectionOpenInit {
     }
 }
 
-pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
-
+///
+/// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
+///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
@@ -146,8 +194,9 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
-pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
-
+///
+/// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
+///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
@@ -205,8 +254,9 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
-pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
-
+///
+/// Message definition for `MsgConnectionOpenConfirm` (i.e., `ConnOpenConfirm` datagram).
+///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenConfirm {
     connection_id: ConnectionId,

@@ -10,6 +10,9 @@ pub enum Kind {
     #[error("connection state unknown")]
     UnknownState,
 
+    #[error("connection exists (was initialized) already")]
+    ConnectionExistsAlready,
+
     #[error("identifier error")]
     IdentifierError,
 

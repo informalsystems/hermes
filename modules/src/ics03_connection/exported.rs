@@ -68,6 +68,24 @@ impl std::str::FromStr for State {
     }
 }
 
+/// Function required by ICS 03. Returns the list of all possible versions that the connection
+/// handshake protocol supports.
+/// TODO: What are the precise values for the versions which this function returns? Perhaps encode the versions as constants.
+pub fn get_compatible_versions() -> Vec<String> {
+    let mut result = Vec::with_capacity(1);
+    result[0] = String::from("test");
+
+    result
+}
+
+/// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
+/// connection handshake protocol prefers.
+/// TODO: Fix this with proper code.
+pub fn pick_version(candidates: Vec<String>) -> Option<&String> {
+    candidates.get(0)
+}
+
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
