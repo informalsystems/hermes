@@ -1,4 +1,5 @@
 use crate::ics23_commitment::CommitmentProof;
+use crate::Height;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -6,7 +7,7 @@ pub struct Proofs {
     object_proof: CommitmentProof,
     consensus_proof: Option<ConsensusProof>,
     /// Height for both the above proofs
-    proofs_height: u64,
+    proofs_height: Height,
 }
 
 impl Proofs {
@@ -29,12 +30,17 @@ impl Proofs {
             proofs_height,
         })
     }
+
+    /// Getter for the consensus_proof field of this proof.
+    pub fn consensus_proof(&self) -> Option<ConsensusProof> {
+        self.consensus_proof.clone()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusProof {
-    consensus_proof: CommitmentProof,
-    consensus_height: u64,
+    pub consensus_proof: CommitmentProof,
+    pub consensus_height: Height,
 }
 
 impl ConsensusProof {
@@ -45,9 +51,15 @@ impl ConsensusProof {
         if consensus_proof.ops.is_empty() {
             return Err("Proof cannot be empty".to_string());
         }
+
         Ok(Self {
             consensus_proof,
             consensus_height,
         })
+    }
+
+    /// Getter for the consensus_height field of this consensus proof.
+    pub fn consensus_height(&self) -> Height {
+        self.consensus_height
     }
 }

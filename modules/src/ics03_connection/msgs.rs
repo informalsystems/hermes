@@ -6,11 +6,12 @@
 //!
 //! One departure from ICS03 is that we abstract the three counterparty fields (connection id,
 //! prefix, and client id) into a single field of type `Counterparty`; this applies to messages
-//! `MsgConnectionOpenInit` and `MsgConnectionOpenTry`.
+//! `MsgConnectionOpenInit` and `MsgConnectionOpenTry`. One other difference with regards to
+//! abstraction is that all proof-related attributes in a message are encapsulated in `Proofs` type.
 //!
 //! Another difference to ICS03 specs is that each message comprises an additional field called
 //! `signer` which is specific to Cosmos-SDK.
-//! TODO: Separate the Cosmos-SDK specific functionality from canonical ICS types.
+//! TODO: Separate the Cosmos-SDK specific functionality from canonical ICS types. Decorators?
 
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
@@ -20,6 +21,7 @@ use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
+use crate::Height;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
 
@@ -35,6 +37,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 /// Message type for the `MsgConnectionOpenConfirm` message.
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
+/// Enumeration of all possible messages that the ICS3 protocol processes.
 pub enum ICS3Message {
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
@@ -79,14 +82,17 @@ impl MsgConnectionOpenInit {
         })
     }
 
+    /// Getter: borrow the `connection_id` from this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
     }
 
+    /// Getter: borrow the `client_id` from this message.
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
     }
 
+    /// Getter: borrow the `counterparty` from this message.
     pub fn counterparty(&self) -> &Counterparty {
         &self.counterparty
     }
@@ -166,6 +172,25 @@ impl MsgConnectionOpenTry {
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
+    }
+
+    /// Getter for accessing the `consensus_height` field from this message. Returns the special
+    /// value `0` if this field is not set.
+    pub fn consensus_height(&self) -> Height {
+        match self.proofs.consensus_proof() {
+            None => 0,
+            Some(p) => p.consensus_height(),
+        }
+    }
+
+    /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
+    pub fn counterparty(&self) -> Counterparty {
+        self.counterparty.clone()
+    }
+
+    /// Getter for accessing the client identifier from this message.
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 }
 

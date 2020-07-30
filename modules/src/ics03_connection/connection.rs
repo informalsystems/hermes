@@ -55,7 +55,7 @@ impl ConnectionEnd {
     pub fn new(
         client_id: ClientId,
         counterparty: Counterparty,
-        versions: Vec<String>,
+        versions: Vec<String>, // TODO: Use Newtype for aliasing the version to a string
     ) -> Result<Self, Error> {
         Ok(Self {
             state: State::Uninitialized,
@@ -65,8 +65,30 @@ impl ConnectionEnd {
         })
     }
 
+    /// Setter for the `state` field.
     pub fn set_state(&mut self, new_state: State) {
         self.state = new_state;
+    }
+
+    /// Setter for the `version` field.
+    /// TODO: A ConnectionEnd should only store one version.
+    pub fn set_version(&mut self, new_version: String) {
+        self.versions.insert(0, new_version)
+    }
+
+    /// Helper function to compare the counterpary of this end with another counterparty.
+    pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
+        self.counterparty.eq(other)
+    }
+
+    /// Helper function to compare the client id of this end with another client identifier.
+    pub fn client_id_matches(&self, other: &ClientId) -> bool {
+        self.client_id.eq(other)
+    }
+
+    /// Helper function to compare the state of this end with another state.
+    pub fn state_matches(&self, other: &State) -> bool {
+        self.state.eq(other)
     }
 }
 
