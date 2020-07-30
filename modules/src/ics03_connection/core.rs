@@ -37,8 +37,9 @@ pub fn process_conn_open_handshake_msg(
         ICS3Message::ConnectionOpenConfirm(msg) => process_confirm_msg(msg, current_conn_end),
     }?;
 
+    // Post-processing.
     provable_store.insert(conn_id.to_string(), new_ce);
-    // TODO: insert corresponding association into the client namespace of privateStore.
+    // TODO: insert corresponding association into the /clients namespace of privateStore.
 
     return Ok(());
 }
@@ -54,7 +55,6 @@ fn process_init_msg(
             .into());
     }
 
-    // TODO: consider adding `state` modifier to ConnectionEnd constructor.
     let mut connection_end = ConnectionEnd::new(
         msg.client_id().clone(),
         msg.counterparty().clone(),

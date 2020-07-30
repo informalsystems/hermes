@@ -81,10 +81,13 @@ pub fn get_compatible_versions() -> Vec<String> {
 /// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
 /// connection handshake protocol prefers.
 /// TODO: Fix this with proper code.
-pub fn pick_version(candidates: Vec<String>) -> Option<&String> {
-    candidates.get(0)
+pub fn pick_version(candidates: Vec<String>) -> Option<String> {
+    let selection: String = candidates
+        .get(0)
+        .unwrap_or(&String::from("none"))
+        .to_string();
+    Some(selection)
 }
-
 
 #[cfg(test)]
 mod tests {
