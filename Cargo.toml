@@ -2,6 +2,6 @@
 
 members = [
     "modules",
-    "relayer/relay",
-    "relayer/cli",
+    "relayer",
+    "relayer-cli",
 ]
