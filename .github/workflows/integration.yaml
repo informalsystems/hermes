@@ -49,4 +49,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p relayer-cli --test acceptance --no-fail-fast --ignored
+          args: -p relayer-cli --test acceptance --no-fail-fast -- --ignored
