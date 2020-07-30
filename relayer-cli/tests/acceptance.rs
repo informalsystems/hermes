@@ -76,7 +76,11 @@ fn query_connection_id() {
         .args(&["query", "connection", "end", "ibc-test", "connectionidone"])
         .capture_stdout()
         .run();
-    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryConnectionOptions { connection_id: ConnectionId(\"connectionidone\"), height: 0, proof: true }", ); // Todo: find out how to disable colored output
+    // Todo: find out how to disable colored output
+    // Local execution: (with color)
+    //    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryConnectionOptions { connection_id: ConnectionId(\"connectionidone\"), height: 0, proof: true }", );
+    // CI: (without color)
+    cmd.stdout().expect_line("     Options QueryConnectionOptions { connection_id: ConnectionId(\"connectionidone\"), height: 0, proof: true }", );
     cmd.wait().unwrap().expect_success();
 }
 
@@ -97,7 +101,11 @@ fn query_channel_id() {
         ])
         .capture_stdout()
         .run();
-    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryChannelOptions { port_id: PortId(\"firstport\"), channel_id: ChannelId(\"firstchannel\"), height: 0, proof: true }", ); // Todo: find out how to disable colored output
+    // Todo: find out how to disable colored output
+    // Local execution: (with color)
+    //    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryChannelOptions { port_id: PortId(\"firstport\"), channel_id: ChannelId(\"firstchannel\"), height: 0, proof: true }", );
+    // CI: (without color)
+    cmd.stdout().expect_line("     Options QueryChannelOptions { port_id: PortId(\"firstport\"), channel_id: ChannelId(\"firstchannel\"), height: 0, proof: true }", );
     cmd.wait().unwrap().expect_success();
 }
 
@@ -112,6 +120,10 @@ fn query_client_id() {
         .args(&["--proof", "false"])
         .capture_stdout()
         .run();
-    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryClientConnectionsOptions { client_id: ClientId(\"clientidone\"), height: 0, proof: false }", ); // Todo: find out how to disable colored output
+    // Todo: find out how to disable colored output
+    // Local execution: (with color)
+    //    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryClientConnectionsOptions { client_id: ClientId(\"clientidone\"), height: 0, proof: false }", );
+    // CI: (without color)
+    cmd.stdout().expect_line("     Options QueryClientConnectionsOptions { client_id: ClientId(\"clientidone\"), height: 0, proof: false }", );
     cmd.wait().unwrap().expect_success();
 }
