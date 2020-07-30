@@ -21,7 +21,10 @@
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
 
-// use relayer_cli::config::Config;
+use relayer::config::{ChainConfig, Config};
+use std::str::FromStr;
+use tendermint::chain::Id;
+use tendermint::net::Address;
 
 /// Executes your application binary via `cargo run`.
 ///
@@ -31,67 +34,84 @@ use once_cell::sync::Lazy;
 /// invocations as `cargo test` executes tests in parallel by default.
 pub static RUNNER: Lazy<CmdRunner> = Lazy::new(|| CmdRunner::default());
 
+/// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
+fn simd_config() -> Config {
+    let mut config = Config::default();
+    config.chains = vec![ChainConfig {
+        id: Id::from("ibc-test"),
+        rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
+        account_prefix: "cosmos".to_string(),
+        key_name: "testkey".to_string(),
+        store_prefix: "ibc".to_string(),
+        client_ids: vec!["ethbridge".to_string()],
+        gas: 200000,
+        trusting_period: Default::default(),
+    }];
+    config
+}
+
 /// Use `Config::default()` value if no config or args
 #[test]
-#[ignore]
 fn start_no_args() {
-    // let mut runner = RUNNER.clone();
-    // let mut cmd = runner.arg("start").capture_stdout().run();
-    // cmd.stdout().expect_line("Hello, world!");
-    // cmd.wait().unwrap().expect_success();
-}
-
-/// Use command-line argument value
-#[test]
-#[ignore]
-fn start_with_args() {
-    // let mut runner = RUNNER.clone();
-    // let mut cmd = runner
-    //     .args(&["start", "acceptance", "test"])
-    //     .capture_stdout()
-    //     .run();
-
-    // cmd.stdout().expect_line("Hello, acceptance test!");
-    // cmd.wait().unwrap().expect_success();
-}
-
-/// Use configured value
-#[test]
-#[ignore]
-fn start_with_config_no_args() {
-    // let mut config = Config::default();
-    // config.hello.recipient = "configured recipient".to_owned();
-
-    // let expected_line = format!("Hello, {}!", &config.hello.recipient);
-
-    // let mut runner = RUNNER.clone();
-    // let mut cmd = runner.config(&config).arg("start").capture_stdout().run();
-    // cmd.stdout().expect_line(&expected_line);
-    // cmd.wait().unwrap().expect_success();
-}
-
-/// Override configured value with command-line argument
-#[test]
-#[ignore]
-fn start_with_config_and_args() {
-    // let mut config = Config::default();
-    // config.hello.recipient = "configured recipient".to_owned();
-
-    // let mut runner = RUNNER.clone();
-    // let mut cmd = runner
-    //     .config(&config)
-    //     .args(&["start", "acceptance", "test"])
-    //     .capture_stdout()
-    //     .run();
-
-    // cmd.stdout().expect_line("Hello, acceptance test!");
-    // cmd.wait().unwrap().expect_success();
-}
-
-/// Example of a test which matches a regular expression
-#[test]
-fn version_no_args() {
     let mut runner = RUNNER.clone();
-    let mut cmd = runner.arg("version").capture_stdout().run();
-    cmd.stdout().expect_regex(r"\A[\w-]+ [\d\.\-]+\z");
+    let mut cmd = runner.capture_stdout().run();
+    cmd.stdout().expect_regex(
+        format!(
+            "^[^ ]*{} {}$",
+            env!("CARGO_PKG_NAME"),
+            env!("CARGO_PKG_VERSION")
+        )
+        .as_str(),
+    ); // Todo: find out how to disable colored output and then remove the `[^ ]*` part from the regexp.
+    cmd.wait().unwrap().expect_success();
+}
+
+/// Query connection ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn query_connection_id() {
+    let mut runner = RUNNER.clone();
+    let mut cmd = runner
+        .config(&simd_config())
+        .args(&["query", "connection", "end", "ibc-test", "connectionidone"])
+        .capture_stdout()
+        .run();
+    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryConnectionOptions { connection_id: ConnectionId(\"connectionidone\"), height: 0, proof: true }", ); // Todo: find out how to disable colored output
+    cmd.wait().unwrap().expect_success();
+}
+
+/// Query channel ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn query_channel_id() {
+    let mut runner = RUNNER.clone();
+    let mut cmd = runner
+        .config(&simd_config())
+        .args(&[
+            "query",
+            "channel",
+            "end",
+            "ibc-test",
+            "firstport",
+            "firstchannel",
+        ])
+        .capture_stdout()
+        .run();
+    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryChannelOptions { port_id: PortId(\"firstport\"), channel_id: ChannelId(\"firstchannel\"), height: 0, proof: true }", ); // Todo: find out how to disable colored output
+    cmd.wait().unwrap().expect_success();
+}
+
+/// Query channel ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn query_client_id() {
+    let mut runner = RUNNER.clone();
+    let mut cmd = runner
+        .config(&simd_config())
+        .args(&["query", "client", "connections", "ibc-test", "clientidone"])
+        .args(&["--proof", "false"])
+        .capture_stdout()
+        .run();
+    cmd.stdout().expect_line("\u{1b}[0m\u{1b}[0m\u{1b}[1m\u{1b}[36m     Options\u{1b}[0m QueryClientConnectionsOptions { client_id: ClientId(\"clientidone\"), height: 0, proof: false }", ); // Todo: find out how to disable colored output
+    cmd.wait().unwrap().expect_success();
 }

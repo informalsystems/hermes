@@ -14,6 +14,12 @@ jobs:
         ports:
           - 26556:26656
           - 26557:26657
+      simd:
+        image: informaldev/simd
+        ports:
+          - 1317:1317
+          - 26656:26656
+          - 26657:26657
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -44,7 +50,7 @@ jobs:
         with:
           command: run
           args: --bin relayer -- -v -c relayer/tests/config/fixtures/relayer_conf_example.toml query connection end chain_A testconnection
-#      - uses: actions-rs/cargo@v1
-#        with:
-#          command: test
-#          args: --test integration --no-fail-fast
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p relayer-cli --test acceptance --no-fail-fast --ignored
