@@ -1,28 +1,6 @@
 use super::error;
-use crate::ics23_commitment::CommitmentPrefix;
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
-
-pub trait Connection {
-    type ValidationError: std::error::Error;
-
-    fn state(&self) -> &State;
-    fn client_id(&self) -> String;
-    fn counterparty(
-        &self,
-    ) -> Box<dyn ConnectionCounterparty<ValidationError = super::error::Error>>;
-    fn versions(&self) -> Vec<String>;
-    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
-}
-
-pub trait ConnectionCounterparty {
-    type ValidationError: std::error::Error;
-
-    fn client_id(&self) -> String;
-    fn connection_id(&self) -> String;
-    fn prefix(&self) -> &CommitmentPrefix;
-    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {

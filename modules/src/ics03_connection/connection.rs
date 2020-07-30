@@ -1,4 +1,4 @@
-use super::exported::*;
+use super::exported::State;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -6,6 +6,7 @@ use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
+use crate::ics24_host::error::ValidationError;
 use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
 use ibc_proto::connection::Counterparty as RawCounterparty;
 use std::convert::TryFrom;
@@ -90,31 +91,25 @@ impl ConnectionEnd {
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)
     }
-}
 
-impl Connection for ConnectionEnd {
-    type ValidationError = Error;
-
-    fn state(&self) -> &State {
+    /// Getter for the state of this connection end.
+    pub fn state(&self) -> &State {
         &self.state
     }
 
-    fn client_id(&self) -> String {
+    /// Getter for the client id on the local party of this connection end.
+    pub fn client_id(&self) -> String {
         self.client_id.as_str().into()
     }
 
-    fn counterparty(
-        &self,
-    ) -> Box<dyn ConnectionCounterparty<ValidationError = Self::ValidationError>> {
-        Box::new(self.counterparty.clone())
-    }
-
-    fn versions(&self) -> Vec<String> {
+    /// Getter for the list of versions in this connection end.
+    pub fn versions(&self) -> Vec<String> {
         self.versions.clone()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.counterparty().validate_basic()
+    /// TODO: Clean this up, probably not necessary.
+    pub fn validate_basic(&self) -> Result<(), ValidationError> {
+        self.counterparty.validate_basic()
     }
 }
 
@@ -157,25 +152,25 @@ impl Counterparty {
             prefix,
         })
     }
-}
 
-impl ConnectionCounterparty for Counterparty {
-    type ValidationError = Error;
-
-    fn client_id(&self) -> String {
-        self.client_id.as_str().into()
+    /// Getter for the client id.
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 
-    fn connection_id(&self) -> String {
-        self.connection_id.as_str().into()
+    /// Getter for connection id.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
     }
 
-    fn prefix(&self) -> &CommitmentPrefix {
+    /// Getter for the commitment prefix.
+    pub fn prefix(&self) -> &CommitmentPrefix {
         &self.prefix
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // todo!()
+    /// TODO.
+    pub fn validate_basic(&self) -> Result<(), ValidationError> {
+        // TODO!
         Ok(())
     }
 }

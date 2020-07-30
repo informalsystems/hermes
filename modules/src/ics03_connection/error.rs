@@ -37,6 +37,9 @@ pub enum Kind {
     #[error("queried for a non-existing connection")]
     ConnectionNotFound,
 
+    #[error("invalid counterparty")]
+    InvalidCounterparty,
+
     #[error("missing counterparty")]
     MissingCounterparty,
 

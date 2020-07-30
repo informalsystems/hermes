@@ -16,7 +16,6 @@
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
@@ -111,7 +110,9 @@ impl Msg for MsgConnectionOpenInit {
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // All the validation is performed on creation
-        self.counterparty.validate_basic()
+        self.counterparty
+            .validate_basic()
+            .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -192,6 +193,21 @@ impl MsgConnectionOpenTry {
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
     }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    /// Getter for accessing the proofs in this message.
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
+
+    /// Getter for accessing the versions from this message. Returns a `clone()`.
+    pub fn counterparty_versions(&self) -> Vec<String> {
+        self.counterparty_versions.clone()
+    }
 }
 
 impl Msg for MsgConnectionOpenTry {
@@ -206,7 +222,9 @@ impl Msg for MsgConnectionOpenTry {
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.counterparty.validate_basic()
+        self.counterparty
+            .validate_basic()
+            .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
@@ -317,7 +335,7 @@ impl Msg for MsgConnectionOpenConfirm {
         TYPE_MSG_CONNECTION_OPEN_CONFIRM.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
     }
 

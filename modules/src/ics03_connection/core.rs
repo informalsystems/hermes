@@ -5,15 +5,16 @@
 
 use std::collections::HashMap;
 
-use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::exported::{get_compatible_versions, pick_version, Connection, State};
+use crate::ics03_connection::exported::{get_compatible_versions, pick_version, State};
 use crate::ics03_connection::msgs::{
     ICS3Message, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
     MsgConnectionOpenTry,
 };
 use crate::ics24_host::identifier::ConnectionId;
-use crate::ics24_host::introspect::{current_height, trusting_period};
+use crate::ics24_host::introspect::{current_height, get_commitment_prefix, trusting_period};
+use crate::proofs::Proofs;
 
 /// General entry point for processing any type of message related to the ICS03 connection open
 /// handshake protocol.
@@ -83,6 +84,22 @@ fn process_try_msg(
             .context(msg.consensus_height().to_string())
             .into());
     }
+
+    // Proof verification in two steps:
+    // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
+    let mut expected_conn = ConnectionEnd::new(
+        msg.counterparty().client_id().clone(),
+        Counterparty::new(
+            msg.client_id().as_str().into(),
+            msg.connection_id().as_str().into(),
+            get_commitment_prefix(),
+        )?,
+        msg.counterparty_versions(),
+    )?;
+    expected_conn.set_state(State::Init);
+    // 2. Pass the details to our verification function.
+    verify_proofs(expected_conn, msg.proofs())?;
+
     // Verify if the existing connection end matches with the one we're trying to establish.
     match opt_conn {
         Some(old_conn_end) => {
@@ -129,5 +146,9 @@ fn process_confirm_msg(
     _msg: MsgConnectionOpenConfirm,
     _opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
+    unimplemented!()
+}
+
+fn verify_proofs(_expected_conn: ConnectionEnd, _proofs: &Proofs) -> Result<(), Error> {
     unimplemented!()
 }
