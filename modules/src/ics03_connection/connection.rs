@@ -107,6 +107,11 @@ impl ConnectionEnd {
         self.versions.clone()
     }
 
+    /// Getter for the counterparty. Returns a `clone()`.
+    pub fn counterparty(&self) -> Counterparty {
+        self.counterparty.clone()
+    }
+
     /// TODO: Clean this up, probably not necessary.
     pub fn validate_basic(&self) -> Result<(), ValidationError> {
         self.counterparty.validate_basic()

@@ -15,6 +15,7 @@ use crate::ics03_connection::msgs::{
 use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::introspect::{current_height, get_commitment_prefix, trusting_period};
 use crate::proofs::Proofs;
+use crate::Height;
 
 /// General entry point for processing any type of message related to the ICS03 connection open
 /// handshake protocol.
@@ -25,13 +26,13 @@ pub fn process_conn_open_handshake_msg(
     conn_id: &ConnectionId,
     provable_store: &mut HashMap<String, ConnectionEnd>,
 ) -> Result<(), Error> {
-    // Preprocessing of the message. Basic validation was done already when creating the msg.
+    // Preprocessing. Basic validation of `message` was done already when creating it.
     // Fetch from the store the already existing (if any) ConnectionEnd for this conn. identifier.
     let current_conn_end = provable_store.get(conn_id.as_str());
 
     // Process each message with the corresponding process_*_msg function.
-    // After processing a specific message, the outcome consists of a write set, i.e., a list of
-    // <key,value> pairs that must be updated in the provable store.
+    // After processing a specific message, the output consists of a ConnectionEnd, i.e., an updated
+    // version of the `current_conn_end` that should be updated in the provable store.
     let new_ce = match message {
         ICS3Message::ConnectionOpenInit(msg) => process_init_msg(msg, current_conn_end),
         ICS3Message::ConnectionOpenTry(msg) => process_try_msg(msg, current_conn_end),
@@ -51,6 +52,7 @@ fn process_init_msg(
     msg: MsgConnectionOpenInit,
     opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
+    // No connection should exist.
     if opt_conn.is_some() {
         return Err(Kind::ConnectionExistsAlready
             .context(msg.connection_id().to_string())
@@ -72,18 +74,8 @@ fn process_try_msg(
     msg: MsgConnectionOpenTry,
     opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
-    // Fail-fast if the consensus height in the message is too advanced.
-    if msg.consensus_height() > current_height() {
-        return Err(Kind::InvalidConsensusHeight
-            .context(msg.consensus_height().to_string())
-            .into());
-    }
-    // Fail if the consensus height in the message is too old (outside of trusting period).
-    if msg.consensus_height() < (current_height() - trusting_period()) {
-        return Err(Kind::StaleConsensusHeight
-            .context(msg.consensus_height().to_string())
-            .into());
-    }
+    // Check that consensus height (for client proof) in message is not too advanced nor too old.
+    check_client_consensus_height(msg.consensus_height())?;
 
     // Proof verification in two steps:
     // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
@@ -100,46 +92,87 @@ fn process_try_msg(
     // 2. Pass the details to our verification function.
     verify_proofs(expected_conn, msg.proofs())?;
 
-    // Verify if the existing connection end matches with the one we're trying to establish.
-    match opt_conn {
+    // Unwrap the old connection end (if any) and validate it against the message.
+    let mut new_ce = match opt_conn {
         Some(old_conn_end) => {
+            // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
                 && old_conn_end.counterparty_matches(&msg.counterparty())
                 && old_conn_end.client_id_matches(msg.client_id())
             {
-                // A ConnectionEnd already exists and all verification passed.
-                // Transition to state TryOpen.
-                let mut new_conn = old_conn_end.clone();
-                new_conn.set_state(State::TryOpen);
-                // TODO: fix version.
-                new_conn.set_version(pick_version(old_conn_end.versions()).unwrap());
-                Ok(new_conn)
+                // A ConnectionEnd already exists and all validation passed.
+                Ok(old_conn_end.clone())
             } else {
-                // A ConnectionEnd already exists and verification failed.
-                Err(Kind::ConnectionMismatch
-                    .context(msg.consensus_height().to_string())
-                    .into())
+                // A ConnectionEnd already exists and validation failed.
+                Err(Into::<Error>::into(
+                    Kind::ConnectionMismatch.context(msg.connection_id().to_string()),
+                ))
             }
         }
         // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
-        None => {
-            let mut connection_end = ConnectionEnd::new(
-                msg.client_id().clone(),
-                msg.counterparty().clone(),
-                get_compatible_versions(),
-            )?;
-            connection_end.set_state(State::TryOpen);
+        None => Ok(ConnectionEnd::new(
+            msg.client_id().clone(),
+            msg.counterparty().clone(),
+            msg.counterparty_versions(),
+        )?),
+    }?;
 
-            return Ok(connection_end);
-        }
-    }
+    // Transition the connection end to the new state & pick a version.
+    new_ce.set_state(State::TryOpen);
+    new_ce.set_version(pick_version(msg.counterparty_versions()).unwrap());
+    // TODO: fix version.
+    Ok(new_ce)
 }
 
 fn process_ack_msg(
-    _msg: MsgConnectionOpenAck,
-    _opt_conn: Option<&ConnectionEnd>,
+    msg: MsgConnectionOpenAck,
+    opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
-    unimplemented!()
+    // Check the client's (consensus state) proof height.
+    check_client_consensus_height(msg.consensus_height())?;
+
+    // Unwrap the old connection end & validate it.
+    let mut new_conn_end = match opt_conn {
+        // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
+        Some(old_conn_end) => {
+            if !(old_conn_end.state_matches(&State::Init)
+                || old_conn_end.state_matches(&State::TryOpen))
+            {
+                // Old connection end is in incorrect state, propagate the error.
+                Err(Into::<Error>::into(
+                    Kind::ConnectionMismatch.context(msg.connection_id().to_string()),
+                ))
+            } else {
+                Ok(old_conn_end.clone())
+            }
+        }
+        None => {
+            // No connection end exists for this conn. identifier. Impossible to continue handshake.
+            Err(Into::<Error>::into(
+                Kind::UninitializedConnection.context(msg.connection_id().to_string()),
+            ))
+        }
+    }?;
+
+    // Proof verification.
+    let mut versions:Vec<String> = Vec::with_capacity(1);   // Workaround for versions (constructor expects vector).
+    versions.push(msg.version().clone());
+    let mut expected_conn = ConnectionEnd::new(
+        new_conn_end.counterparty().client_id().clone(),
+        Counterparty::new( // the counterparty is the local chain.
+            new_conn_end.client_id(),   // the local client identifier.
+            msg.connection_id().as_str().into(), // local connection id.
+            get_commitment_prefix(), // local commitment prefix.
+        )?,
+        versions,
+    )?;
+    expected_conn.set_state(State::TryOpen);
+    // 2. Pass the details to our verification function.
+    verify_proofs(expected_conn, msg.proofs())?;
+
+    new_conn_end.set_state(State::Open);
+    new_conn_end.set_version(msg.version().clone());
+    Ok(new_conn_end)
 }
 
 fn process_confirm_msg(
@@ -151,4 +184,23 @@ fn process_confirm_msg(
 
 fn verify_proofs(_expected_conn: ConnectionEnd, _proofs: &Proofs) -> Result<(), Error> {
     unimplemented!()
+    // Authenticity and semantic (validity checks), roughly speaking:
+    // - client consensus state (must match our own state for the given height)
+    // - connection state (must match _expected_conn)
+}
+
+fn check_client_consensus_height(reported_height: Height) -> Result<(), Error> {
+    if reported_height > current_height() {
+        // Fail if the consensus height in the message is too advanced.
+        Err(Kind::InvalidConsensusHeight
+            .context(reported_height.to_string())
+            .into())
+    } else if reported_height < (current_height() - trusting_period()) {
+        // Fail if the consensus height in the message is too old (outside of trusting period).
+        Err(Kind::StaleConsensusHeight
+            .context(reported_height.to_string())
+            .into())
+    } else {
+        Ok(())
+    }
 }

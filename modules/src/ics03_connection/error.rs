@@ -16,6 +16,9 @@ pub enum Kind {
     #[error("a different connection exists (was initialized) already for the same connection identifier")]
     ConnectionMismatch,
 
+    #[error("connection end for this identifier was never initialized")]
+    UninitializedConnection,
+
     #[error("consensus height claimed by the client on the other party is too advanced")]
     InvalidConsensusHeight,
 

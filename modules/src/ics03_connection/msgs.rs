@@ -270,6 +270,28 @@ impl MsgConnectionOpenAck {
             signer,
         })
     }
+
+    /// Getter for accessing the `consensus_height` field from this message. Returns the special
+    /// value `0` if this field is not set.
+    pub fn consensus_height(&self) -> Height {
+        match self.proofs.consensus_proof() {
+            None => 0,
+            Some(p) => p.consensus_height(),
+        }
+    }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    /// Getter for the version field.
+    pub fn version(&self) -> &String { &self.version }
+
+    /// Getter for accessing (borrow) the proofs in this message.
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
 }
 
 impl Msg for MsgConnectionOpenAck {
