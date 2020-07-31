@@ -3,16 +3,14 @@
 //!
 //! TODO: in its current state, this module is not compiled nor included in the module tree.
 
-use std::collections::HashMap;
-
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty};
+use crate::ics03_connection::ctx::ICS3Context;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::exported::{get_compatible_versions, pick_version, State};
 use crate::ics03_connection::msgs::{
     ICS3Msg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
     MsgConnectionOpenTry,
 };
-use crate::ics24_host::identifier::ConnectionId;
 use crate::ics24_host::introspect::{current_height, get_commitment_prefix, trusting_period};
 use crate::proofs::Proofs;
 use crate::Height;
@@ -21,39 +19,26 @@ use crate::Height;
 /// handshake protocol.
 /// The `provable_store` parameter is a basic workaround, since there is no KV store yet.
 /// TODO: the provable_store should be abstracted over, e.g., with a Keeper or similar mechanism.
-pub fn process_conn_open_msg(
-    message: ICS3Msg,
-    conn_id: &ConnectionId,
-    provable_store: &mut HashMap<String, ConnectionEnd>,
-) -> Result<(), Error> {
-    // Preprocessing. Basic validation of `message` was done already when creating it.
-    // Fetch from the store the already existing (if any) ConnectionEnd for this conn. identifier.
-    let current_conn_end = provable_store.get(conn_id.as_str());
-
+pub fn process_conn_open_msg(ctx: &ICS3Context, message: ICS3Msg) -> Result<(), Error> {
     // Process each message with the corresponding process_*_msg function.
     // After processing a specific message, the output consists of a ConnectionEnd, i.e., an updated
     // version of the `current_conn_end` that should be updated in the provable store.
-    let new_ce = match message {
-        ICS3Msg::ConnectionOpenInit(msg) => process_init_msg(msg, current_conn_end),
-        ICS3Msg::ConnectionOpenTry(msg) => process_try_msg(msg, current_conn_end),
-        ICS3Msg::ConnectionOpenAck(msg) => process_ack_msg(msg, current_conn_end),
-        ICS3Msg::ConnectionOpenConfirm(msg) => process_confirm_msg(msg, current_conn_end),
+    let _new_ce = match message {
+        ICS3Msg::ConnectionOpenInit(msg) => process_init_msg(ctx, msg),
+        ICS3Msg::ConnectionOpenTry(msg) => process_try_msg(ctx, msg),
+        ICS3Msg::ConnectionOpenAck(msg) => process_ack_msg(ctx, msg),
+        ICS3Msg::ConnectionOpenConfirm(msg) => process_confirm_msg(ctx, msg),
     }?;
 
-    // Post-processing.
-    provable_store.insert(conn_id.to_string(), new_ce);
-    // TODO: insert corresponding association into the /clients namespace of privateStore.
+    // Post-processing?
 
     Ok(())
 }
 
 /// Processing logic specific to messages of type `MsgConnectionOpenInit`.
-fn process_init_msg(
-    msg: MsgConnectionOpenInit,
-    opt_conn: Option<&ConnectionEnd>,
-) -> Result<ConnectionEnd, Error> {
+fn process_init_msg(ctx: &ICS3Context, msg: MsgConnectionOpenInit) -> Result<ConnectionEnd, Error> {
     // No connection should exist.
-    if opt_conn.is_some() {
+    if ctx.current_connection().is_some() {
         Err(Kind::ConnectionExistsAlready
             .context(msg.connection_id().to_string())
             .into())
@@ -69,10 +54,7 @@ fn process_init_msg(
     }
 }
 
-fn process_try_msg(
-    msg: MsgConnectionOpenTry,
-    opt_conn: Option<&ConnectionEnd>,
-) -> Result<ConnectionEnd, Error> {
+fn process_try_msg(ctx: &ICS3Context, msg: MsgConnectionOpenTry) -> Result<ConnectionEnd, Error> {
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
     check_client_consensus_height(msg.consensus_height())?;
 
@@ -92,7 +74,7 @@ fn process_try_msg(
     verify_proofs(expected_conn, msg.proofs())?;
 
     // Unwrap the old connection end (if any) and validate it against the message.
-    let mut new_ce = match opt_conn {
+    let mut new_ce = match ctx.current_connection() {
         Some(old_conn_end) => {
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
@@ -123,15 +105,12 @@ fn process_try_msg(
     Ok(new_ce)
 }
 
-fn process_ack_msg(
-    msg: MsgConnectionOpenAck,
-    opt_conn: Option<&ConnectionEnd>,
-) -> Result<ConnectionEnd, Error> {
+fn process_ack_msg(ctx: &ICS3Context, msg: MsgConnectionOpenAck) -> Result<ConnectionEnd, Error> {
     // Check the client's (consensus state) proof height.
     check_client_consensus_height(msg.consensus_height())?;
 
     // Unwrap the old connection end & validate it.
-    let mut new_conn_end = match opt_conn {
+    let mut new_conn_end = match ctx.current_connection() {
         // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
         Some(old_conn_end) => {
             if !(old_conn_end.state_matches(&State::Init)
@@ -176,11 +155,11 @@ fn process_ack_msg(
 }
 
 fn process_confirm_msg(
+    ctx: &ICS3Context,
     msg: MsgConnectionOpenConfirm,
-    opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
     // Unwrap the old connection end & validate it.
-    let mut new_conn_end = match opt_conn {
+    let mut new_conn_end = match ctx.current_connection() {
         // A connection end must exist and must be in TryOpen state; otherwise return error.
         Some(old_conn_end) => {
             if !(old_conn_end.state_matches(&State::TryOpen)) {
@@ -226,16 +205,16 @@ fn verify_proofs(_expected_conn: ConnectionEnd, _proofs: &Proofs) -> Result<(), 
     // - connection state (must match _expected_conn)
 }
 
-fn check_client_consensus_height(reported_height: Height) -> Result<(), Error> {
-    if reported_height > current_height() {
-        // Fail if the consensus height in the message is too advanced.
+fn check_client_consensus_height(claimed_height: Height) -> Result<(), Error> {
+    if claimed_height > current_height() {
+        // Fail if the consensus height is too advanced.
         Err(Kind::InvalidConsensusHeight
-            .context(reported_height.to_string())
+            .context(claimed_height.to_string())
             .into())
-    } else if reported_height < (current_height() - trusting_period()) {
-        // Fail if the consensus height in the message is too old (outside of trusting period).
+    } else if claimed_height < (current_height() - trusting_period()) {
+        // Fail if the consensus height is too old (outside of trusting period).
         Err(Kind::StaleConsensusHeight
-            .context(reported_height.to_string())
+            .context(claimed_height.to_string())
             .into())
     } else {
         Ok(())
