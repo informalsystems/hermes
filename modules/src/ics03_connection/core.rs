@@ -9,7 +9,7 @@ use crate::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::exported::{get_compatible_versions, pick_version, State};
 use crate::ics03_connection::msgs::{
-    ICS3Message, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
+    ICS3Msg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
     MsgConnectionOpenTry,
 };
 use crate::ics24_host::identifier::ConnectionId;
@@ -21,8 +21,8 @@ use crate::Height;
 /// handshake protocol.
 /// The `provable_store` parameter is a basic workaround, since there is no KV store yet.
 /// TODO: the provable_store should be abstracted over, e.g., with a Keeper or similar mechanism.
-pub fn process_conn_open_handshake_msg(
-    message: ICS3Message,
+pub fn process_conn_open_msg(
+    message: ICS3Msg,
     conn_id: &ConnectionId,
     provable_store: &mut HashMap<String, ConnectionEnd>,
 ) -> Result<(), Error> {
@@ -34,10 +34,10 @@ pub fn process_conn_open_handshake_msg(
     // After processing a specific message, the output consists of a ConnectionEnd, i.e., an updated
     // version of the `current_conn_end` that should be updated in the provable store.
     let new_ce = match message {
-        ICS3Message::ConnectionOpenInit(msg) => process_init_msg(msg, current_conn_end),
-        ICS3Message::ConnectionOpenTry(msg) => process_try_msg(msg, current_conn_end),
-        ICS3Message::ConnectionOpenAck(msg) => process_ack_msg(msg, current_conn_end),
-        ICS3Message::ConnectionOpenConfirm(msg) => process_confirm_msg(msg, current_conn_end),
+        ICS3Msg::ConnectionOpenInit(msg) => process_init_msg(msg, current_conn_end),
+        ICS3Msg::ConnectionOpenTry(msg) => process_try_msg(msg, current_conn_end),
+        ICS3Msg::ConnectionOpenAck(msg) => process_ack_msg(msg, current_conn_end),
+        ICS3Msg::ConnectionOpenConfirm(msg) => process_confirm_msg(msg, current_conn_end),
     }?;
 
     // Post-processing.
@@ -54,20 +54,19 @@ fn process_init_msg(
 ) -> Result<ConnectionEnd, Error> {
     // No connection should exist.
     if opt_conn.is_some() {
-        return Err(Kind::ConnectionExistsAlready
+        Err(Kind::ConnectionExistsAlready
             .context(msg.connection_id().to_string())
-            .into());
+            .into())
+    } else {
+        let mut connection_end = ConnectionEnd::new(
+            msg.client_id().clone(),
+            msg.counterparty().clone(),
+            get_compatible_versions(),
+        )?;
+        connection_end.set_state(State::Init);
+
+        Ok(connection_end)
     }
-
-    let mut connection_end = ConnectionEnd::new(
-        msg.client_id().clone(),
-        msg.counterparty().clone(),
-        get_compatible_versions(),
-    )?;
-
-    connection_end.set_state(State::Init);
-
-    return Ok(connection_end);
 }
 
 fn process_try_msg(
@@ -155,14 +154,15 @@ fn process_ack_msg(
     }?;
 
     // Proof verification.
-    let mut versions:Vec<String> = Vec::with_capacity(1);   // Workaround for versions (constructor expects vector).
+    let mut versions: Vec<String> = Vec::with_capacity(1); // Workaround for versions (constructor expects vector).
     versions.push(msg.version().clone());
     let mut expected_conn = ConnectionEnd::new(
         new_conn_end.counterparty().client_id().clone(),
-        Counterparty::new( // the counterparty is the local chain.
-            new_conn_end.client_id(),   // the local client identifier.
-            msg.connection_id().as_str().into(), // local connection id.
-            get_commitment_prefix(), // local commitment prefix.
+        Counterparty::new(
+            // The counterparty is The local chain.
+            new_conn_end.client_id(), // The local client identifier.
+            msg.connection_id().as_str().into(), // Local connection id.
+            get_commitment_prefix(),  // Local commitment prefix.
         )?,
         versions,
     )?;
@@ -176,10 +176,47 @@ fn process_ack_msg(
 }
 
 fn process_confirm_msg(
-    _msg: MsgConnectionOpenConfirm,
-    _opt_conn: Option<&ConnectionEnd>,
+    msg: MsgConnectionOpenConfirm,
+    opt_conn: Option<&ConnectionEnd>,
 ) -> Result<ConnectionEnd, Error> {
-    unimplemented!()
+    // Unwrap the old connection end & validate it.
+    let mut new_conn_end = match opt_conn {
+        // A connection end must exist and must be in TryOpen state; otherwise return error.
+        Some(old_conn_end) => {
+            if !(old_conn_end.state_matches(&State::TryOpen)) {
+                // Old connection end is in incorrect state, propagate the error.
+                Err(Into::<Error>::into(
+                    Kind::ConnectionMismatch.context(msg.connection_id().to_string()),
+                ))
+            } else {
+                Ok(old_conn_end.clone())
+            }
+        }
+        None => {
+            // No connection end exists for this conn. identifier. Impossible to continue handshake.
+            Err(Into::<Error>::into(
+                Kind::UninitializedConnection.context(msg.connection_id().to_string()),
+            ))
+        }
+    }?;
+
+    // Verify proofs.
+    let mut expected_conn = ConnectionEnd::new(
+        new_conn_end.counterparty().client_id().clone(),
+        Counterparty::new(
+            // The counterparty is the local chain.
+            new_conn_end.client_id(), // The local client identifier.
+            msg.connection_id().as_str().into(), // Local connection id.
+            get_commitment_prefix(),  // Local commitment prefix.
+        )?,
+        new_conn_end.versions(),
+    )?;
+    expected_conn.set_state(State::Open);
+    // 2. Pass the details to our verification function.
+    verify_proofs(expected_conn, msg.proofs())?;
+
+    new_conn_end.set_state(State::Open);
+    Ok(new_conn_end)
 }
 
 fn verify_proofs(_expected_conn: ConnectionEnd, _proofs: &Proofs) -> Result<(), Error> {

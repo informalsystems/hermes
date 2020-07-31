@@ -37,7 +37,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
-pub enum ICS3Message {
+pub enum ICS3Msg {
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
     ConnectionOpenAck(MsgConnectionOpenAck),
@@ -286,7 +286,9 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for the version field.
-    pub fn version(&self) -> &String { &self.version }
+    pub fn version(&self) -> &String {
+        &self.version
+    }
 
     /// Getter for accessing (borrow) the proofs in this message.
     pub fn proofs(&self) -> &Proofs {
@@ -343,6 +345,16 @@ impl MsgConnectionOpenConfirm {
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
+    }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    /// Getter for accessing (borrow) the proofs in this message.
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 }
 
