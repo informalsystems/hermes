@@ -4,11 +4,11 @@
 
 #![forbid(unsafe_code)]
 #![warn(
-missing_docs,
-rust_2018_idioms,
-trivial_casts,
-unused_lifetimes,
-unused_qualifications
+    missing_docs,
+    rust_2018_idioms,
+    trivial_casts,
+    unused_lifetimes,
+    unused_qualifications
 )]
 
 use relayer::chain::{Chain, CosmosSDKChain};
