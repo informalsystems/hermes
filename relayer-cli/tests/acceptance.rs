@@ -21,7 +21,18 @@
 use abscissa_core::testing::prelude::*;
 use once_cell::sync::Lazy;
 
+use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
+use relayer_modules::ics03_connection::connection::ConnectionEnd;
+use relayer_modules::ics03_connection::exported::Connection;
+use relayer_modules::ics03_connection::exported::State as ConnectionState;
+use relayer_modules::ics04_channel::channel::ChannelEnd;
+use relayer_modules::ics04_channel::exported::Channel;
+use relayer_modules::ics04_channel::exported::Order;
+use relayer_modules::ics04_channel::exported::State as ChannelState;
+use relayer_modules::ics23_commitment::CommitmentPrefix;
+use relayer_modules::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use relayer_modules::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
 use std::str::FromStr;
 use tendermint::chain::Id;
 use tendermint::net::Address;
@@ -50,6 +61,11 @@ fn simd_config() -> Config {
     config
 }
 
+/// Chain created for the informaldev/simd DockerHub image running on localhost.
+fn simd_chain() -> CosmosSDKChain {
+    CosmosSDKChain::from_config(simd_config().chains[0].clone()).unwrap()
+}
+
 /// Use `Config::default()` value if no config or args
 #[test]
 fn start_no_args() {
@@ -69,7 +85,7 @@ fn start_no_args() {
 /// Query connection ID. Requires the informaldev/simd Docker image running on localhost.
 #[test]
 #[ignore]
-fn query_connection_id() {
+fn abscissa_query_connection_id() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner
         .config(&simd_config())
@@ -84,10 +100,37 @@ fn query_connection_id() {
     cmd.wait().unwrap().expect_success();
 }
 
+/// Query connection ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn query_connection_id() {
+    let chain = simd_chain();
+    let query = chain
+        .query::<ConnectionEnd>(
+            Connections(ConnectionId::from_str("connectionidone").unwrap()),
+            0,
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(query.state(), &ConnectionState::Init);
+    assert_eq!(query.client_id(), "clientidone");
+    assert_eq!(query.counterparty().client_id(), "clientidtwo");
+    assert_eq!(query.counterparty().connection_id(), "connectionidtwo");
+    assert_eq!(
+        query.counterparty().prefix(),
+        &CommitmentPrefix::new("prefix".as_bytes().to_vec())
+    );
+    assert_eq!(
+        query.versions(),
+        vec!["(1,[ORDER_ORDERED,ORDER_UNORDERED])"]
+    );
+}
+
 /// Query channel ID. Requires the informaldev/simd Docker image running on localhost.
 #[test]
 #[ignore]
-fn query_channel_id() {
+fn abscissa_query_channel_id() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner
         .config(&simd_config())
@@ -112,7 +155,31 @@ fn query_channel_id() {
 /// Query channel ID. Requires the informaldev/simd Docker image running on localhost.
 #[test]
 #[ignore]
-fn query_client_id() {
+fn query_channel_id() {
+    let chain = simd_chain();
+    let query = chain
+        .query::<ChannelEnd>(
+            ChannelEnds(
+                PortId::from_str("firstport").unwrap(),
+                ChannelId::from_str("firstchannel").unwrap(),
+            ),
+            0,
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(query.state(), &ChannelState::Init);
+    assert_eq!(query.ordering(), &Order::Ordered);
+    assert_eq!(query.counterparty().port_id(), "secondport");
+    assert_eq!(query.counterparty().channel_id(), "secondchannel");
+    assert_eq!(query.connection_hops()[0].as_str(), "connectionidatob");
+    assert_eq!(query.version(), "1.0");
+}
+
+/// Query channel ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn abscissa_query_client_id() {
     let mut runner = RUNNER.clone();
     let mut cmd = runner
         .config(&simd_config())
@@ -126,4 +193,20 @@ fn query_client_id() {
     // CI: (without color)
     cmd.stdout().expect_line("     Options QueryClientConnectionsOptions { client_id: ClientId(\"clientidone\"), height: 0, proof: false }", );
     cmd.wait().unwrap().expect_success();
+}
+
+/// Query client connections ID. Requires the informaldev/simd Docker image running on localhost.
+#[test]
+#[ignore]
+fn query_client_id() {
+    let chain = simd_chain();
+    let query = chain
+        .query::<Vec<String>>(
+            ClientConnections(ClientId::from_str("clientidone").unwrap()),
+            0,
+            false,
+        )
+        .unwrap();
+
+    assert_eq!(query[0], "connections/connectionidone");
 }
