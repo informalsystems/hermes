@@ -1,8 +1,8 @@
 # Contributing
 
-Thank you for your interest in contributing to tendermint-rs. The goal
-of tendermint-rs is to provide a high quality, formally verified implementation of
-Tendermint.
+Thank you for your interest in contributing. The goal
+of ibc-rs is to provide a high quality, formally verified implementation of
+the IBC protocol.
 
 All work on the code base should be motivated by a Github
 Issue. Search is a good place start when looking for places to contribute. If you
@@ -28,7 +28,7 @@ Issue. The issue helps capture the problem you're trying to solve and allows for
 early feedback. Once the issue is created, maintainers may request more detailed
 documentation be written in the form of a Request for Comment (RFC) or
 Architectural Decision Record
-([ADR](https://github.com/informalsystems/tendermint-rs/blob/master/docs/architecture/README.md)).
+([ADR](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/README.md)).
 
 Discussion at the RFC stage will build collective understanding of the dimensions
 of the problems and help structure conversations around trade-offs.
