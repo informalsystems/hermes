@@ -4,12 +4,12 @@ use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
 use relayer::chain::{Chain, CosmosSDKChain};
-use relayer_modules::ics24_host::error::ValidationError;
-use relayer_modules::ics24_host::identifier::ConnectionId;
-use relayer_modules::ics24_host::Path::Connections;
+use modules::ics24_host::error::ValidationError;
+use modules::ics24_host::identifier::ConnectionId;
+use modules::ics24_host::Path::Connections;
 use tendermint::chain::Id as ChainId;
 
-use relayer_modules::ics03_connection::connection::ConnectionEnd;
+use modules::ics03_connection::connection::ConnectionEnd;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {

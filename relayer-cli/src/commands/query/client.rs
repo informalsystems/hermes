@@ -5,9 +5,9 @@ use relayer::config::{ChainConfig, Config};
 
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
-use relayer_modules::ics24_host::error::ValidationError;
-use relayer_modules::ics24_host::identifier::ClientId;
-use relayer_modules::ics24_host::Path::ClientConnections;
+use modules::ics24_host::error::ValidationError;
+use modules::ics24_host::identifier::ClientId;
+use modules::ics24_host::Path::ClientConnections;
 use tendermint::chain::Id as ChainId;
 
 /// Query client state command

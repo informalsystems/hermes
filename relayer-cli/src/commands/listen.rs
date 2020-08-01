@@ -14,7 +14,7 @@ use tokio::sync::mpsc::{channel, Sender};
 use crate::config::Config;
 use ::tendermint::chain::Id as ChainId;
 use futures::future::join_all;
-use relayer_modules::events::IBCEvent;
+use modules::events::IBCEvent;
 
 #[derive(Command, Debug, Options)]
 pub struct ListenCmd {
