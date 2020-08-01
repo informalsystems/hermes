@@ -1,6 +1,6 @@
-# Cli
+# relayer-cli
 
-Cli is an application.
+`relayer-cli` is an application.
 
 ## Getting Started
 

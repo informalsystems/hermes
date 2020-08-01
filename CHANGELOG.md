@@ -2,44 +2,46 @@
 
 ## v0.0.2
 
-*July 30, 2020*
+*August 1, 2020*
 
-### SECURITY:
+This release is focused on updating the query system from amino to protobuf,
+implementing a few queries from the CLI, and establishing an initial testing framework
+that will support multiple chain types.
+
+It does not target a stable release of Cosmos-SDK chains, but is tracking
+the latest state of development towards the Cosmos-SDK Stargate release.
 
 ### BREAKING CHANGES:
 
-  - [repo] Moved relayer/cli to relayer-cli, relayer/relay to relayer. [\#183](https://github.com/informalsystems/ibc-rs/pull/183)
+- [modules|relayer] Refactor queries, paths, and Chain trait to reduce code and use
+  protobuf instead of Amino.
+        [\#152](https://github.com/informalsystems/ibc-rs/pull/152),
+        [\#174](https://github.com/informalsystems/ibc-rs/pull/174),
+        [\#155](https://github.com/informalsystems/ibc-rs/pull/155)
+- [repo] Moved relayer/cli to relayer-cli, relayer/relay to relayer. [\#183](https://github.com/informalsystems/ibc-rs/pull/183)
   
 ### FEATURES:
 
-- [modules] Complete example for compiling and decoding ConnectionEnd with Prost. [\#139](https://github.com/informalsystems/ibc-rs/pull/139)
-- [modules] Client Create & Update (ICS 02, 07). [\#178](https://github.com/informalsystems/ibc-rs/pull/178)
-- [modules|relayer] Channel query validation & tests. [\#163](https://github.com/informalsystems/ibc-rs/pull/163)
-- [modules|relayer] Implement query for client connections. [\#169](https://github.com/informalsystems/ibc-rs/pull/169)
-- [relayer] Connection queries for Relayer. [\#136](https://github.com/informalsystems/ibc-rs/pull/136)
-- [relayer-cli] Query tests - testing the queries in the relayer-cli. [\#184](https://github.com/informalsystems/ibc-rs/pull/184)
-- [spec] Creation and handling of channel closing datagrams in the relayer TLA+ specification.[\#141](https://github.com/informalsystems/ibc-rs/pull/141)
+- [relayer] Query connections given client id. [\#169](https://github.com/informalsystems/ibc-rs/pull/169)
+- [relayer] Query connection given connection id. [\#136](https://github.com/informalsystems/ibc-rs/pull/136)
+- [relayer] Query channel given channel id and port [\#163](https://github.com/informalsystems/ibc-rs/pull/163)
+- [spec] Channel closing datagrams in TLA+ [\#141](https://github.com/informalsystems/ibc-rs/pull/141)
 
 ### IMPROVEMENTS:
 
-- [ci] Set of scripts and GitHub Actions that implement a framework for integration testing for IBC and the relayer. [\#140](https://github.com/informalsystems/ibc-rs/pull/140)
-- [ci] Updated simapp and simapp README with SDK-related calls. [\#166](https://github.com/informalsystems/ibc-rs/pull/166)
-- [ci|relayer] Added the simple_config.toml and Fixed the README in the ci folder to show the actual queries. [\#147](https://github.com/informalsystems/ibc-rs/pull/147)
-- [modules] Removed obsolete cosmos-paths feature. [\#171](https://github.com/informalsystems/ibc-rs/pull/171)
-- [modules] Fixed the identifiers limits according to updated ics spec. [\#189](https://github.com/informalsystems/ibc-rs/pull/189)
-- [modules|relayer] Generic query, channel query and reduce code. [\#152](https://github.com/informalsystems/ibc-rs/pull/152)
-- [modules|relayer] Refactored and completed Path; added query to Chain trait; refactored query code into TendermintChain. [\#174](https://github.com/informalsystems/ibc-rs/pull/174)
-- [relayer] Added chain data for running an IBC enabled chain with some initial IBC state that can be queried. [\#133](https://github.com/informalsystems/ibc-rs/pull/133)
-- [relayer] Moved query parameters into the command parameters with Into. [\#155](https://github.com/informalsystems/ibc-rs/pull/155)
-- [relayer] Rename TendermintChain to CosmosSDKChain. [\#179](https://github.com/informalsystems/ibc-rs/pull/179)
+- [ci] Framework (scripts and Github Actions) for integration testing the relayer queries against 
+    the Cosmos-SDK's `simd` binary with prepopulated IBC state in the genesis
+        [\#140](https://github.com/informalsystems/ibc-rs/pull/140),
+        [\#184](https://github.com/informalsystems/ibc-rs/pull/184)
 - [relayer|modules] Implemented better Raw type handling. [\#156](https://github.com/informalsystems/ibc-rs/pull/156)
 - [repo] Add rust-toolchain file. [\#154](https://github.com/informalsystems/ibc-rs/pull/154)
    
 ### BUG FIXES:
 
-- [modules/relayer] Removing some warnings triggered during compilation due to dependency specification. [\#132](https://github.com/informalsystems/ibc-rs/pull/132)
-- [repo] Fix for incomplete licence terms. [\#153](https://github.com/informalsystems/ibc-rs/pull/153)
+- [modules] Fixed the identifiers limits according to updated ics spec. [\#189](https://github.com/informalsystems/ibc-rs/pull/189)
+- [modules/relayer] Remove some warnings triggered during compilation due to dependency specification. [\#132](https://github.com/informalsystems/ibc-rs/pull/132)
 - [modules] Fix nightly runs. [\#161](https://github.com/informalsystems/ibc-rs/pull/161)
+- [repo] Fix for incomplete licence terms. [\#153](https://github.com/informalsystems/ibc-rs/pull/153)
   
 ## 0.0.1
 
