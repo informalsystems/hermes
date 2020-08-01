@@ -7,8 +7,8 @@ use modules::ics04_channel::channel::ChannelEnd;
 use modules::ics24_host::identifier::{ChannelId, PortId};
 use modules::ics24_host::Path::ChannelEnds;
 
-use relayer::chain::{Chain, CosmosSDKChain};
 use modules::ics24_host::error::ValidationError;
+use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]
