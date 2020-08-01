@@ -1,15 +1,16 @@
 [package]
-name = "relayer-modules"
-version = "0.0.1"
+name = "modules"
+version = "0.0.2"
 edition = "2018"
 authors = [
-  "Anca Zamfir <anca@interchain.io>",
-  "Romain Ruetschi <romain@informal.systems>"
+  "Informal Systems <hello@informal.systems>"
 ]
 
 [dependencies]
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master", features=["client"] }
+tendermint = "0.15.0"
+tendermint-rpc = { version = "0.15.0", features=["client"] }
+# tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
+# tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master", features=["client"] }
 
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = "0.1.0"

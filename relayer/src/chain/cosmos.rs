@@ -8,10 +8,10 @@ use tendermint::lite::TrustThresholdFraction;
 use tendermint_rpc::Client as RpcClient;
 
 use core::future::Future;
-use relayer_modules::ics07_tendermint::client_state::ClientState;
-use relayer_modules::ics07_tendermint::consensus_state::ConsensusState;
-use relayer_modules::ics24_host::{Path, IBC_QUERY_PATH};
-use relayer_modules::try_from_raw::TryFromRaw;
+use modules::ics07_tendermint::client_state::ClientState;
+use modules::ics07_tendermint::consensus_state::ConsensusState;
+use modules::ics24_host::{Path, IBC_QUERY_PATH};
+use modules::try_from_raw::TryFromRaw;
 
 use crate::client::rpc_requester::RpcRequester;
 use crate::config::ChainConfig;

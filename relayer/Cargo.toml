@@ -1,16 +1,15 @@
 [package]
 name = "relayer"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2018"
 authors = [
-  "Anca Zamfir <anca@interchain.io>",
-  "Romain Ruetschi <romain@informal.systems>"
+  "Informal Systems <hello@informal.systems>"
 ]
 
 [dependencies]
-relayer-modules = { path = "../modules" }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
-tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master", features=["client"] }
+modules = { path = "../modules" }
+tendermint = "0.15.0"
+tendermint-rpc = { version = "0.15.0", features=["client"] }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"

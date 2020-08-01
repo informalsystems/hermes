@@ -3,12 +3,12 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use relayer_modules::ics04_channel::channel::ChannelEnd;
-use relayer_modules::ics24_host::identifier::{ChannelId, PortId};
-use relayer_modules::ics24_host::Path::ChannelEnds;
+use modules::ics04_channel::channel::ChannelEnd;
+use modules::ics24_host::identifier::{ChannelId, PortId};
+use modules::ics24_host::Path::ChannelEnds;
 
+use modules::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
-use relayer_modules::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
 
 #[derive(Clone, Command, Debug, Options)]

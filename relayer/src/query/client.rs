@@ -1,10 +1,10 @@
-use relayer_modules::ics24_host::identifier::ClientId;
-use relayer_modules::Height;
+use modules::ics24_host::identifier::ClientId;
+use modules::Height;
 
 use crate::chain::Chain;
-use relayer_modules::ics02_client::query::{ClientFullStateResponse, ConsensusStateResponse};
+use modules::ics02_client::query::{ClientFullStateResponse, ConsensusStateResponse};
 
-use relayer_modules::error;
+use modules::error;
 
 pub async fn query_client_full_state<C>(
     _chain: &C,
