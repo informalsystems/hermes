@@ -12,33 +12,45 @@ pub struct ICS3Context {
     local_chain: Chain,
 }
 
-/// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
-impl ICS3Context {
+pub trait ProtocolContext {
     /// Returns a ConnectionEnd with connection_id for the `ICS3Msg` being currently processed.
-    pub fn current_connection(&self) -> Option<&ConnectionEnd> {
-        unimplemented!()
-    }
+    fn current_connection(&self) -> Option<&ConnectionEnd>;
 
-    pub fn current_connection_id(&self) -> &ConnectionId {
-        unimplemented!()
-    }
+    fn current_connection_id(&self) -> &ConnectionId;
 
     /// Returns the current height of the local chain.
     /// Satisfies the ICS024 requirement of getCurrentHeight().
-    pub fn chain_current_height(&self) -> Height {
+    fn chain_current_height(&self) -> Height;
+
+    /// Returns the trusting period (in number of block) for the local chain.
+    fn chain_trusting_period(&self) -> Height;
+
+    /// Returns the prefix that the local chain uses in the KV store.
+    /// Satisfies the ICS024 requirement of getCommitmentPrefix().
+    fn commitment_prefix(&self) -> CommitmentPrefix;
+}
+
+/// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
+impl ProtocolContext for ICS3Context {
+    fn current_connection(&self) -> Option<&ConnectionEnd> {
+        unimplemented!()
+    }
+
+    fn current_connection_id(&self) -> &ConnectionId {
+        unimplemented!()
+    }
+
+    fn chain_current_height(&self) -> Height {
         // TODO: currently this is just a wrapper over ICS024 (unimplemented).
         current_height()
     }
 
-    /// Returns the trusting period (in number of block) for the local chain.
-    pub fn chain_trusting_period(&self) -> Height {
+    fn chain_trusting_period(&self) -> Height {
         // TODO: currently this is just a wrapper over ICS024 (unimplemented).
         trusting_period()
     }
 
-    /// Returns the prefix that the local chain uses in the KV store.
-    /// Satisfies the ICS024 requirement of getCommitmentPrefix().
-    pub fn commitment_prefix(&self) -> CommitmentPrefix {
+    fn commitment_prefix(&self) -> CommitmentPrefix {
         // TODO: currently this is just a wrapper over ICS024 (unimplemented).
         get_commitment_prefix()
     }

@@ -1,15 +1,15 @@
 //! Message definitions for the connection handshake datagrams.
 //!
 //! We define each of the four messages in the connection handshake protocol as a `struct`.
-//! Each such message comprises the same fields as the datagrams defined in ICS03 English spec:
+//! Each such message comprises the same fields as the datagrams defined in ICS3 English spec:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics.
 //!
-//! One departure from ICS03 is that we abstract the three counterparty fields (connection id,
+//! One departure from ICS3 is that we abstract the three counterparty fields (connection id,
 //! prefix, and client id) into a single field of type `Counterparty`; this applies to messages
 //! `MsgConnectionOpenInit` and `MsgConnectionOpenTry`. One other difference with regards to
 //! abstraction is that all proof-related attributes in a message are encapsulated in `Proofs` type.
 //!
-//! Another difference to ICS03 specs is that each message comprises an additional field called
+//! Another difference to ICS3 specs is that each message comprises an additional field called
 //! `signer` which is specific to Cosmos-SDK.
 //! TODO: Separate the Cosmos-SDK specific functionality from canonical ICS types. Decorators?
 
