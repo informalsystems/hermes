@@ -5,24 +5,16 @@
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
 
 use crate::ics24_host::identifier::ClientId;
-use crate::tx_msg::Msg;
 
-pub trait MsgUpdateClient
-where
-    Self: Msg,
-{
-    type Header: Header;
-    fn client_id(&self) -> &ClientId;
-    fn header(&self) -> &Self::Header;
+/// A type of message that triggers the creation of a new on-chain (IBC) client.
+pub struct MsgCreateClient<C: Chain> {
+    client_id: ClientId,
+    client_type: C::ClientType,
+    consensus_state: C::ConsensusState,
 }
 
-pub trait MsgCreateClient
-where
-    Self: Msg,
-{
-    type ConsensusState: ConsensusState;
-
-    fn client_id(&self) -> &ClientId;
-    fn client_type(&self) -> ClientType;
-    fn consensus_state(&self) -> Self::ConsensusState;
+/// A type of message that triggers the update of an on-chain (IBC) client with new headers.
+pub struct MsgUpdateClient<C: Chain> {
+    client_id: ClientId,
+    header: C::Header,
 }
