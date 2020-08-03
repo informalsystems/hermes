@@ -1,12 +1,20 @@
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
+use crate::ics24_host::identifier::ClientId;
+
 pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
     #[error("unknown client type")]
     UnknownClientType,
+
+    #[error("client already exists: {0}")]
+    ClientAlreadyExists(ClientId),
+
+    #[error("client not found: {0}")]
+    ClientNotFound(ClientId),
 }
 
 impl Kind {
