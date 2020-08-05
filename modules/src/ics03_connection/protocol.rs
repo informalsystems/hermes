@@ -100,21 +100,6 @@ fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
-    // Proof verification in two steps:
-    // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
-    let mut expected_conn = ConnectionEnd::new(
-        msg.counterparty().client_id().clone(),
-        Counterparty::new(
-            msg.client_id().as_str().into(),
-            msg.connection_id().as_str().into(),
-            ctx.commitment_prefix(),
-        )?,
-        msg.counterparty_versions(),
-    )?;
-    expected_conn.set_state(State::Init);
-    // 2. Pass the details to our verification function.
-    verify_proofs(ctx, expected_conn, msg.proofs())?;
-
     // Unwrap the old connection end (if any) and validate it against the message.
     let mut new_conn = match ctx.fetch_connection_end_by_id(msg.connection_id()) {
         Some(old_conn_end) => {
@@ -139,6 +124,21 @@ fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<
             msg.counterparty_versions(),
         )?),
     }?;
+
+    // Proof verification in two steps:
+    // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
+    let mut expected_conn = ConnectionEnd::new(
+        msg.counterparty().client_id().clone(),
+        Counterparty::new(
+            msg.client_id().as_str().into(),
+            msg.connection_id().as_str().into(),
+            ctx.commitment_prefix(),
+        )?,
+        msg.counterparty_versions(),
+    )?;
+    expected_conn.set_state(State::Init);
+    // 2. Pass the details to our verification function.
+    verify_proofs(ctx, &new_conn, &expected_conn, msg.proofs())?;
 
     // Transition the connection end to the new state & pick a version.
     new_conn.set_state(State::TryOpen);
@@ -181,15 +181,15 @@ fn process_ack_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenAck) -> Result<
         new_conn.counterparty().client_id().clone(),
         Counterparty::new(
             // The counterparty is The local chain.
-            new_conn.client_id(),                // The local client identifier.
+            new_conn.client_id().to_string(), // The local client identifier.
             msg.connection_id().as_str().into(), // Local connection id.
-            ctx.commitment_prefix(),             // Local commitment prefix.
+            ctx.commitment_prefix(),          // Local commitment prefix.
         )?,
         vec![msg.version().clone()],
     )?;
     expected_conn.set_state(State::TryOpen);
     // 2. Pass the details to our verification function.
-    verify_proofs(ctx, expected_conn, msg.proofs())?;
+    verify_proofs(ctx, &new_conn, &expected_conn, msg.proofs())?;
 
     new_conn.set_state(State::Open);
     new_conn.set_version(msg.version().clone());
@@ -228,15 +228,15 @@ fn process_confirm_msg(
         new_conn.counterparty().client_id().clone(),
         Counterparty::new(
             // The counterparty is the local chain.
-            new_conn.client_id(),                // The local client identifier.
+            new_conn.client_id().to_string(), // The local client identifier.
             msg.connection_id().as_str().into(), // Local connection id.
-            ctx.commitment_prefix(),             // Local commitment prefix.
+            ctx.commitment_prefix(),          // Local commitment prefix.
         )?,
         new_conn.versions(),
     )?;
     expected_conn.set_state(State::Open);
     // 2. Pass the details to our verification function.
-    verify_proofs(ctx, expected_conn, msg.proofs())?;
+    verify_proofs(ctx, &new_conn, &expected_conn, msg.proofs())?;
 
     new_conn.set_state(State::Open);
 
@@ -244,13 +244,41 @@ fn process_confirm_msg(
 }
 
 fn verify_proofs(
-    _ctx: &dyn ICS3Context,
-    _expected_conn: ConnectionEnd,
-    _proofs: &Proofs,
+    ctx: &dyn ICS3Context,
+    connection_end: &ConnectionEnd,
+    expected_conn: &ConnectionEnd,
+    proofs: &Proofs,
 ) -> Result<(), Error> {
-    // TODO. Authenticity and semantic (validity) checks, roughly speaking:
-    // - client consensus state (must match our own state for the given height)
-    // - connection state (must match _expected_conn)
+    // Fetch the client state (IBC client on the local chain).
+    let client = ctx
+        .fetch_client_state_by_id(connection_end.client_id())
+        .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
+
+    // Verify the proof for the connection state against the expected connection end.
+    if client.verify_connection_state(
+        proofs.height(),
+        connection_end.counterparty().prefix(),
+        proofs.object_proof(),
+        connection_end.counterparty().connection_id(),
+        expected_conn,
+    )? == false
+    {
+        return Err(Kind::InvalidProof
+            .context(String::from("invalid connection state"))
+            .into());
+    }
+
+    // Verify the proof for the client's consensus state.
+    // if client.verify_client_consensus_state(
+    //     proofs.height(),
+    //     connection_end.counterparty().prefix(),
+    //     proofs.object_proof(),
+    //     connection_end.counterparty().connection_id(),
+    //     expected_conn,
+    // )? == false
+    // {
+    //     return Err(Kind::InvalidProof.context(String::from("invalid connection state")).into());
+    // }
 
     Ok(())
 }
@@ -306,17 +334,26 @@ pub fn produce_events(ctx: &dyn ICS3Context, msg: &ICS3Msg) -> Vec<IBCEvent> {
 
 #[cfg(test)]
 mod tests {
+    use crate::ics02_client::state::ClientState;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::ctx::{Context, ICS3Context};
+    use crate::ics03_connection::error::Error;
     use crate::ics03_connection::msgs::ICS3Msg;
     use crate::ics03_connection::protocol::process_init_msg;
     use crate::ics23_commitment::CommitmentPrefix;
-    use crate::ics24_host::identifier::ConnectionId;
+    use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
     #[derive(Clone, Debug, Default)]
     struct MockContext {}
     impl ICS3Context for MockContext {
         fn fetch_connection_end_by_id(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
+            unimplemented!()
+        }
+
+        fn fetch_client_state_by_id(
+            &self,
+            client_id: &ClientId,
+        ) -> Option<&dyn ClientState<ValidationError = Error>> {
             unimplemented!()
         }
 
@@ -338,11 +375,15 @@ mod tests {
         }
     }
 
+    fn get_dummy_ics_msg() -> ICS3Msg {
+        unimplemented!()
+    }
+
     #[test]
     fn conn_open_init_msg_processing() {
         #[derive(Clone, Debug, PartialEq)]
         struct ConOpenInitProcessParams {
-            ctx: Context,
+            ctx: MockContext,
             msg: ICS3Msg,
         }
 
@@ -353,8 +394,8 @@ mod tests {
         }
 
         let default_con_params = ConOpenInitProcessParams {
-            ctx: "srcconnection".to_string(),
-            msg: "srcclient".to_string(),
+            ctx: MockContext::new(),
+            msg: get_dummy_ics_msg(),
         };
 
         let tests: Vec<Test> = vec![
@@ -366,7 +407,6 @@ mod tests {
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
                 params: ConOpenInitProcessParams {
-                    ctx: "con007".to_string(),
                     ..default_con_params.clone()
                 },
                 want_pass: false,

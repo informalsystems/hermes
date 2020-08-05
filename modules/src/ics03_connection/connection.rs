@@ -98,8 +98,8 @@ impl ConnectionEnd {
     }
 
     /// Getter for the client id on the local party of this connection end.
-    pub fn client_id(&self) -> String {
-        self.client_id.as_str().into()
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 
     /// Getter for the list of versions in this connection end.

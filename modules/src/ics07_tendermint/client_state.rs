@@ -1,9 +1,10 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::CommitmentRoot;
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 
+use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
-use crate::ics24_host::identifier::ClientId;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::lite::Header as liteHeader;
@@ -87,7 +88,18 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn verify_client_consensus_state(
         &self,
         _root: &CommitmentRoot,
-    ) -> Result<(), Self::ValidationError> {
+    ) -> Result<bool, Self::ValidationError> {
+        unimplemented!()
+    }
+
+    fn verify_connection_state(
+        &self,
+        _height: u64,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _connection_id: &ConnectionId,
+        _connection_end: &ConnectionEnd,
+    ) -> Result<bool, Self::ValidationError> {
         unimplemented!()
     }
 }

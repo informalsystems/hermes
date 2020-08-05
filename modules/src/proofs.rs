@@ -7,16 +7,16 @@ pub struct Proofs {
     object_proof: CommitmentProof,
     consensus_proof: Option<ConsensusProof>,
     /// Height for both the above proofs
-    proofs_height: Height,
+    height: Height,
 }
 
 impl Proofs {
     pub fn new(
         object_proof: CommitmentProof,
         consensus_proof: Option<ConsensusProof>,
-        proofs_height: u64,
+        height: u64,
     ) -> Result<Self, String> {
-        if proofs_height == 0 {
+        if height == 0 {
             return Err("Proofs height cannot be zero".to_string());
         }
 
@@ -27,13 +27,24 @@ impl Proofs {
         Ok(Self {
             object_proof,
             consensus_proof,
-            proofs_height,
+            height,
         })
     }
 
     /// Getter for the consensus_proof field of this proof.
     pub fn consensus_proof(&self) -> Option<ConsensusProof> {
         self.consensus_proof.clone()
+    }
+
+    /// Getter for the height field of this proof (i.e., the consensus height where this proof was
+    /// created).
+    pub fn height(&self) -> Height {
+        self.height
+    }
+
+    /// Getter for the object-specific proof (e.g., proof for connection state or channel state).
+    pub fn object_proof(&self) -> &CommitmentProof {
+        &self.object_proof
     }
 }
 

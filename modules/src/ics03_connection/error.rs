@@ -48,6 +48,9 @@ pub enum Kind {
 
     #[error("missing counterparty prefix")]
     MissingCounterpartyPrefix,
+
+    #[error("the client id does not match any client state")]
+    MissingClient,
 }
 
 impl Kind {

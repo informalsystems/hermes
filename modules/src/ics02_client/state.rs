@@ -1,7 +1,8 @@
 use super::client_type::ClientType;
 
-use crate::ics23_commitment::CommitmentRoot;
-use crate::ics24_host::identifier::ClientId;
+use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
 pub trait ConsensusState {
@@ -39,5 +40,15 @@ pub trait ClientState {
     fn verify_client_consensus_state(
         &self,
         root: &CommitmentRoot,
-    ) -> Result<(), Self::ValidationError>;
+    ) -> Result<bool, Self::ValidationError>;
+
+    // TODO: ValidationError seems wrong here.
+    fn verify_connection_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        connection_id: &ConnectionId,
+        connection_end: &ConnectionEnd,
+    ) -> Result<bool, Self::ValidationError>;
 }
