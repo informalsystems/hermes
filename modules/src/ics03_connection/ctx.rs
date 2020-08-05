@@ -7,16 +7,15 @@ use crate::Height;
 // TODO: Remove this once Romain's code kicks in.
 pub struct Chain {}
 
-// TODO: Introduce a Context. Both ICS3Context & Context should be traits generic over Chain.
-pub struct ICS3Context {
+// TODO: Both ICS3Context & Context should be generic over Chain.
+pub struct Context {
     local_chain: Chain,
 }
 
-pub trait ProtocolContext {
-    /// Returns a ConnectionEnd with connection_id for the `ICS3Msg` being currently processed.
-    fn current_connection(&self) -> Option<&ConnectionEnd>;
-
-    fn current_connection_id(&self) -> &ConnectionId;
+/// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
+pub trait ICS3Context {
+    /// Returns the ConnectionEnd for a given connection_id.
+    fn fetch_connection_end_by_id(&self, cid: &ConnectionId) -> Option<&ConnectionEnd>;
 
     /// Returns the current height of the local chain.
     /// Satisfies the ICS024 requirement of getCurrentHeight().
@@ -30,13 +29,8 @@ pub trait ProtocolContext {
     fn commitment_prefix(&self) -> CommitmentPrefix;
 }
 
-/// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
-impl ProtocolContext for ICS3Context {
-    fn current_connection(&self) -> Option<&ConnectionEnd> {
-        unimplemented!()
-    }
-
-    fn current_connection_id(&self) -> &ConnectionId {
+impl ICS3Context for Context {
+    fn fetch_connection_end_by_id(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
         unimplemented!()
     }
 
