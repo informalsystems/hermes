@@ -64,7 +64,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            next_validator_set: vs.clone(),
+            next_validator_set: vs,
         }
     }
 }

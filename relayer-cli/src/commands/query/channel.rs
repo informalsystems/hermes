@@ -189,7 +189,7 @@ mod tests {
                 name: "Bad channel, name too short".to_string(),
                 params: QueryChannelEndCmd {
                     channel_id: Some("chshort".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

@@ -38,8 +38,8 @@ mod tests {
         let client_type = ClientType::from_str("tendermint");
 
         match client_type {
-            Ok(ClientType::Tendermint) => assert!(true),
-            Err(_) => assert!(false, "parse failed"),
+            Ok(ClientType::Tendermint) => (),
+            _ => panic!("parse failed"),
         }
     }
 
@@ -52,7 +52,7 @@ mod tests {
                 format!("{}", err),
                 "unknown client type: some-random-client-type"
             ),
-            _ => assert!(false, "parse didn't fail"),
+            _ => panic!("parse didn't fail"),
         }
     }
 }

@@ -185,7 +185,7 @@ mod tests {
                 params: ClientStateParams {
                     trusting_period: Duration::from_secs(11),
                     unbonding_period: Duration::from_secs(10),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
