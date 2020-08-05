@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Attribute {
     key: String,
@@ -5,7 +7,7 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    fn new(key: String, value: String) -> Self {
+    pub fn new(key: String, value: String) -> Self {
         Self { key, value }
     }
 }
@@ -23,7 +25,7 @@ pub struct Event {
 }
 
 impl Event {
-    fn new(tpe: EventType, attrs: Vec<(String, String)>) -> Self {
+    pub fn new(tpe: EventType, attrs: Vec<(String, String)>) -> Self {
         Self {
             tpe,
             attributes: attrs
@@ -34,27 +36,61 @@ impl Event {
     }
 }
 
+pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HandlerOutput<T> {
-    result: T,
-    log: Vec<String>,
-    events: Vec<Event>,
+    pub result: T,
+    pub log: Vec<String>,
+    pub events: Vec<Event>,
 }
 
 impl<T> HandlerOutput<T> {
-    fn new(result: T) -> Self {
+    pub fn builder() -> HandlerOutputBuilder<T> {
+        HandlerOutputBuilder::new()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HandlerOutputBuilder<T> {
+    log: Vec<String>,
+    events: Vec<Event>,
+    marker: PhantomData<T>,
+}
+
+impl<T> HandlerOutputBuilder<T> {
+    pub fn new() -> Self {
         Self {
-            result,
             log: vec![],
             events: vec![],
+            marker: PhantomData,
         }
     }
 
-    fn log(&mut self, log: String) {
-        self.log.push(log);
+    pub fn with_log(mut self, log: impl Into<Vec<String>>) -> Self {
+        self.log.append(&mut log.into());
+        self
     }
 
-    fn emit(&mut self, event: impl Into<Event>) {
+    pub fn log(&mut self, log: impl Into<String>) {
+        self.log.push(log.into());
+    }
+
+    pub fn with_events(mut self, events: impl Into<Vec<Event>>) -> Self {
+        self.events.append(&mut events.into());
+        self
+    }
+
+    pub fn emit(&mut self, event: impl Into<Event>) {
         self.events.push(event.into());
     }
+
+    pub fn with_result(self, result: T) -> HandlerOutput<T> {
+        HandlerOutput {
+            result,
+            log: self.log,
+            events: self.events,
+        }
+    }
 }
+

@@ -11,13 +11,14 @@ use crate::ics24_host::identifier::ClientId;
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 pub struct MsgCreateClient<C: ClientDef> {
-    client_id: ClientId,
-    client_type: ClientType,
-    consensus_state: C::ConsensusState,
+    pub client_id: ClientId,
+    pub client_type: ClientType,
+    pub consensus_state: C::ConsensusState,
 }
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 pub struct MsgUpdateClient<C: ClientDef> {
-    client_id: ClientId,
-    header: C::Header,
+    pub client_id: ClientId,
+    pub header: C::Header,
 }
+

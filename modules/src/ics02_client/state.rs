@@ -35,7 +35,9 @@ pub trait ClientState {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
-    // TODO: It's unclear what this function is expected to achieve. Document this.
+    /// Verifies a proof of the consensus state of the specified client stored on the target machine.
+    /// FIXME: Definition is incomplete.
+    ///        See https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#required-functions
     fn verify_client_consensus_state(
         &self,
         root: &CommitmentRoot,

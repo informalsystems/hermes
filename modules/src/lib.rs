@@ -20,6 +20,7 @@
 //! - ICS 24: Host Requirements
 
 pub mod events;
+pub mod handler;
 pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
