@@ -79,7 +79,8 @@ impl From<UpdateClient> for IBCEvent {
 }
 
 /// ClientMisbehavior event signals the update of an on-chain client (IBC Client) with evidence of
-/// misbehavior.#[derive(Debug, Deserialize, Serialize, Clone)]
+/// misbehavior.
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ClientMisbehavior {
     pub height: block::Height,
     pub client_id: ClientId,
