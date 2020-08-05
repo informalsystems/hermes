@@ -5,7 +5,7 @@
  different modules
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets
+EXTENDS Integers, FiniteSets
 
 ChainIDs == {"chainA", "chainB"}
 ClientIDs == {"clA", "clB"}
@@ -23,6 +23,20 @@ ChannelOrder == {"ORDERED", "UNORDERED"}
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x
 
+(********************* TYPE ANNOTATIONS FOR APALACHE **************************)
+\* operator for type annotations
+a <: b == a
+
+\* unordered channel end type
+UnorderedChannelEnd == [state |-> STRING, order |-> STRING, 
+                        channelID |-> STRING, counterpartychannelID |-> STRING]
+\* ordered channel end type
+OrderedChannelEnd == [state |-> STRING, order |-> STRING, 
+                      channelID |-> STRING, counterpartychannelID |-> STRING, 
+                      nextSendSeq |-> Int, nextRcveq |-> Int, nextAckSeq |-> Int]
+                      
+
+
 (******************************* ChannelEnds *******************************
     A set of channel end records. 
     A channel end record contains the following fields:
@@ -31,20 +45,50 @@ Max(S) == CHOOSE x \in S: \A y \in S: y <= x
       Stores the current state of this channel end. It has one of the 
       following values: "UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED".
       
+    - order -- a string
+      Stores whether the channel end is ordered or unordered. It has one of the 
+      following values: "UNORDERED", "ORDERED"
+        
+        * ordered channels have three additional packet sequence fields:
+           nextSendSeq -- stores the sequence number of the next packet that is going to be sent,
+           nextRcvSeq -- stores the sequence number of the next packet that is going to be received,
+           nextAckSeq -- stores the sequence number of the next packet that is going to be acknowledged
+      
     - channelID -- a channel identifier
       Stores the channel identifier of this channel end.  
     
     - counterpartyChannelID -- a channel identifier
-      Stores the channel identifier of the counterparty channel end.
-      
-      (** ignoring channel ordering for now **) 
+      Stores the channel identifier of the counterparty channel end. 
  ***************************************************************************)   
-ChannelEnds ==
+ChannelEnds(channelOrdering, maxPacketSeq) ==
+    IF channelOrdering = "UNORDERED"
+    THEN \* set of unordered channels
+         [
+             state : ChannelStates,
+             order : {"UNORDERED"}, 
+             channelID : ChannelIDs \union {nullChannelID},
+             counterpartyChannelID : ChannelIDs \union {nullChannelID}
+         ] 
+    ELSE \* set of ordered channels
+         [
+             state : ChannelStates,
+             order : {"ORDERED"},
+             nextSendSeq : 0..maxPacketSeq,
+             nextRcvSeq : 0..maxPacketSeq,
+             nextAckSeq : 0..maxPacketSeq, 
+             channelID : ChannelIDs \union {nullChannelID},
+             counterpartyChannelID : ChannelIDs \union {nullChannelID}
+         ]
+    
+(**************************** PacketCommitments ****************************
+ A set of packet commitments.
+ ***************************************************************************)
+ PacketCommitments(maxHeight, maxPacketSeq) ==
     [
-        state : ChannelStates, 
-        channelID : ChannelIDs \union {nullChannelID},
-        counterpartyChannelID : ChannelIDs \union {nullChannelID}
-    ] 
+        channelID : ChannelIDs, 
+        sequence : 1..maxPacketSeq, 
+        timeoutHeight : 1..maxHeight
+    ]    
 
 (***************************** ConnectionEnds *****************************
     A set of connection end records. 
@@ -65,19 +109,21 @@ ChannelEnds ==
       
     - counterpartyClientID -- a client identifier
       Stores the counterparty client identifier associated with this connection end.
+      
+    - channelEnd : a channel end record 
+      Stores data about the channel associated with this connection end.  
  ***************************************************************************)
-ConnectionEnds ==
+ConnectionEnds(channelOrdering, maxPacketSeq) ==
     [
         state : ConnectionStates,
         connectionID : ConnectionIDs \union {nullConnectionID},
         clientID : ClientIDs \union {nullClientID},
         counterpartyConnectionID : ConnectionIDs \union {nullConnectionID},
         counterpartyClientID : ClientIDs \union {nullClientID}, 
-        channelEnd : ChannelEnds
+        channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
     ]  
 
-
-(********************************** Chains *********************************
+(******************************** ChainStores ******************************
     A set of chain records. 
     A chain record contains the following fields:
     
@@ -90,78 +136,148 @@ ConnectionEnds ==
     - connectionEnd : a connection end record 
       Stores data about the connection with the counterparty chain
  ***************************************************************************)
-Chains ==    
+ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==    
     [
-        height : Nat,
-        counterpartyClientHeights : SUBSET(Nat),
-        connectionEnd : ConnectionEnds
+        height : 1..maxHeight,
+        counterpartyClientHeights : SUBSET(1..maxHeight),
+        connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq),
+        packetCommitment : SUBSET(PacketCommitments(maxHeight, maxPacketSeq))
+    ]
+
+(********************************* Packets *********************************
+ A set of packets.
+ ***************************************************************************)
+Packets(maxHeight, maxPacketSeq) ==
+    [
+        sequence : 1..maxPacketSeq,
+        timeoutHeight : 1..maxHeight,
+        srcChannelID : ChannelIDs,
+        dstChannelID : ChannelIDs
     ]
 
 (******************************** Datagrams ********************************
  A set of datagrams.
  ***************************************************************************)
-Datagrams(Heights) ==
-    [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
+Datagrams(maxHeight, maxPacketSeq) ==
+    [type : {"CreateClient"}, clientID : ClientIDs, height : 1..maxHeight]
     \union
-    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
+    [type : {"ClientUpdate"}, clientID : ClientIDs, height : 1..maxHeight]   
     \union
     [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
     \union
     [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs, 
-     clientID : ClientIDs, proofHeight : Heights, consensusHeight : Heights]
+     clientID : ClientIDs, proofHeight : 1..maxHeight, consensusHeight : 1..maxHeight]
     \union
-    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs, proofHeight : Heights, 
-     consensusHeight : Heights ]
+    [type : {"ConnOpenAck"}, connectionID : ConnectionIDs, proofHeight : 1..maxHeight, 
+     consensusHeight : 1..maxHeight ]
     \union
-    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs, proofHeight : Heights] 
+    [type : {"ConnOpenConfirm"}, connectionID : ConnectionIDs, proofHeight : 1..maxHeight] 
     \union
     [type : {"ChanOpenInit"}, channelID : ChannelIDs, counterpartyChannelID : ChannelIDs] 
     \union 
     [type : {"ChanOpenTry"}, channelID : ChannelIDs, counterpartyChannelID : ChannelIDs, 
-     proofHeight : Heights]
+     proofHeight : 1..maxHeight]
     \union 
-    [type : {"ChanOpenAck"}, channelID : ChannelIDs, proofHeight : Heights]
+    [type : {"ChanOpenAck"}, channelID : ChannelIDs, proofHeight : 1..maxHeight]
     \union
-    [type : {"ChanOpenConfirm"}, channelID : ChannelIDs, proofHeight : Heights]
+    [type : {"ChanOpenConfirm"}, channelID : ChannelIDs, proofHeight : 1..maxHeight]
     \union 
     [type : {"ChanCloseInit"}, channelID : ChannelIDs]
     \union 
-    [type : {"ChanCloseConfirm"}, channelID : ChannelIDs, proofHeight : Heights]
+    [type : {"ChanCloseConfirm"}, channelID : ChannelIDs, proofHeight : 1..maxHeight]
+    \union 
+    [type : {"PacketRecv"}, packet : Packets(maxHeight, maxPacketSeq), proofHeight : 1..maxHeight]
+    \union 
+    [type : {"PacketAck"}, packet : Packets(maxHeight, maxPacketSeq), acknowledgement : BOOLEAN, proofHeight : 1..maxHeight]
+
+Histories ==
+    [
+        connInit : BOOLEAN,
+        connTryOpen : BOOLEAN, 
+        connOpen : BOOLEAN,
+        chanInit : BOOLEAN,
+        chanTryOpen : BOOLEAN,
+        chanOpen : BOOLEAN,
+        chanClosed : BOOLEAN
+     ] 
 
 (***************************************************************************
  Initial values of a channel end, connection end, chain
  ***************************************************************************)
-\* Initial value of a channel end:
+\* Initial value of an unordered channel end:
 \*      - state is "UNINIT"
+\*      - order is "UNORDERED"
 \*      - channelID, counterpartyChannelID are uninitialized
-InitChannelEnd ==
+InitUnorderedChannelEnd ==
     [state |-> "UNINIT",
+     order |-> "UNORDERED",
      channelID |-> nullChannelID,
-     counterpartyChannelID |-> nullChannelID]  
+     counterpartyChannelID |-> nullChannelID] <: UnorderedChannelEnd
+     
+\* Initial value of an ordered channel end:
+\*      - state is "UNINIT"
+\*      - order is "ORDERED"
+\*      - nextSendSeq, nextRcvSeq, nextAckSeq are set to 0
+\*      - channelID, counterpartyChannelID are uninitialized
+InitOrderedChannelEnd ==
+    [state |-> "UNINIT",
+     order |-> "ORDERED",
+     nextSendSeq |-> 0,
+     nextRcvSeq |-> 0,
+     nextAckSeq |-> 0,
+     channelID |-> nullChannelID,
+     counterpartyChannelID |-> nullChannelID] <: OrderedChannelEnd
 
 \* Initial value of a connection end:
 \*      - state is "UNINIT"
 \*      - connectionID, counterpartyConnectionID are uninitialized
-\*      - clientID, counterpartyClientID are uninitialized                             
-InitConnectionEnd ==
+\*      - clientID, counterpartyClientID are uninitialized    
+\*      - channelEnd is initialized based on channelOrdering
+InitOrderedConnectionEnd ==
     [state |-> "UNINIT",
-     connectionID |-> nullConnectionID,
-     clientID |-> nullClientID,
-     counterpartyConnectionID |-> nullConnectionID,
-     counterpartyClientID |-> nullClientID,
-     channelEnd |-> InitChannelEnd]  
+          connectionID |-> nullConnectionID,
+          clientID |-> nullClientID,
+          counterpartyConnectionID |-> nullConnectionID,
+          counterpartyClientID |-> nullClientID,
+          channelEnd |-> InitOrderedChannelEnd]
+InitUnorderedConnectionEnd ==
+    [state |-> "UNINIT",
+          connectionID |-> nullConnectionID,
+          clientID |-> nullClientID,
+          counterpartyConnectionID |-> nullConnectionID,
+          counterpartyClientID |-> nullClientID,
+          channelEnd |-> InitUnorderedChannelEnd]  
 
-\* Initial value of the chain: 
+\* Initial value of the chain store: 
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
 \*      - the connection end is initialized to InitConnectionEnd 
-InitChain ==
+InitOrderedChainStore ==
     [height |-> 1,
      counterpartyClientHeights |-> {}, 
-     connectionEnd |-> InitConnectionEnd]
+     connectionEnd |-> InitOrderedConnectionEnd,
+     packetCommitment |-> {}]
 
+InitUnorderedChainStore ==
+    [height |-> 1,
+     counterpartyClientHeights |-> {}, 
+     connectionEnd |-> InitUnorderedConnectionEnd,
+     packetCommitment |-> {}]
+
+\* Initial value of history flags         
+InitHistory ==
+     [
+        connInit |-> FALSE,
+        connTryOpen |-> FALSE, 
+        connOpen |-> FALSE,
+        chanInit |-> FALSE,
+        chanTryOpen |-> FALSE,
+        chanOpen |-> FALSE,
+        chanClosed |-> FALSE
+     ]    
+         
 (***************************************************************************
  Client helper operators
  ***************************************************************************)
@@ -285,5 +401,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jul 10 16:04:18 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Aug 05 12:39:33 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

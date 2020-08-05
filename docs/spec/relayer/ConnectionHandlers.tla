@@ -5,14 +5,14 @@
  connection datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions     
+EXTENDS Integers, FiniteSets, RelayerDefinitions     
 
 (***************************************************************************
  Connection datagram handlers
  ***************************************************************************)
  
 \* Handle "ConnOpenInit" datagrams
-HandleConnOpenInit(chainID, chain, datagrams) ==
+HandleConnOpenInit(chainID, chain, history, datagrams) ==
     \* get "ConnOpenInit" datagrams, with a valid connection ID
     LET connOpenInitDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenInit"
@@ -32,14 +32,18 @@ HandleConnOpenInit(chainID, chain, datagrams) ==
          LET connOpenInitChain == [
              chain EXCEPT !.connectionEnd = connOpenInitConnectionEnd
          ] IN
+         \* update history variable
+         LET connOpenInitHistory == [
+             history EXCEPT !.connInit = TRUE
+         ] IN
         
-         connOpenInitChain
-    \* otherwise, do not update the chain     
-    ELSE chain
+         [store |-> connOpenInitChain, history |-> connOpenInitHistory]
+    \* otherwise, do not update the chain and history   
+    ELSE [store |-> chain, history |-> history]
     
 
 \* Handle "ConnOpenTry" datagrams
-HandleConnOpenTry(chainID, chain, datagrams) ==
+HandleConnOpenTry(chainID, chain, history, datagrams) ==
     \* get "ConnOpenTry" datagrams, with a valid connection ID and valid height
     LET connOpenTryDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenTry"
@@ -72,16 +76,20 @@ HandleConnOpenTry(chainID, chain, datagrams) ==
          THEN LET connOpenTryChain == [
                   chain EXCEPT !.connectionEnd = connOpenTryConnectionEnd
                 ] IN
+              \* update history variable
+              LET connOpenTryHistory == [
+                  history EXCEPT !.connTryOpen = TRUE
+              ] IN
                 
-              connOpenTryChain
-         \* otherwise, do not update the chain
-         ELSE chain
-    \* otherwise, do not update the chain     
-    ELSE chain
+              [store |-> connOpenTryChain, history |-> connOpenTryHistory]
+         \* otherwise, do not update the chain and history
+         ELSE [store |-> chain, history |-> history]
+    \* otherwise, do not update the chain and history   
+    ELSE [store |-> chain, history |-> history]
 
 
 \* Handle "ConnOpenAck" datagrams
-HandleConnOpenAck(chainID, chain, datagrams) ==
+HandleConnOpenAck(chainID, chain, history, datagrams) ==
     \* get "ConnOpenAck" datagrams, with a valid connection ID and valid height
     LET connOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenAck"
@@ -103,15 +111,19 @@ HandleConnOpenAck(chainID, chain, datagrams) ==
               LET connOpenAckChain == [
                   chain EXCEPT !.connectionEnd = connOpenAckConnectionEnd
                 ] IN
+              \* update history variable
+              LET connOpenAckHistory == [
+                  history EXCEPT !.connOpen = TRUE
+              ] IN
               
-              connOpenAckChain                
-         \* otherwise, do not update the chain
-         ELSE chain
-    \* otherwise, do not update the chain     
-    ELSE chain
+              [store |-> connOpenAckChain, history |-> connOpenAckHistory]                
+         \* otherwise, do not update the chain and history
+         ELSE [store |-> chain, history |-> history]
+    \* otherwise, do not update the chain and history     
+    ELSE [store |-> chain, history |-> history]
 
 \* Handle "ConnOpenConfirm" datagrams
-HandleConnOpenConfirm(chainID, chain, datagrams) ==
+HandleConnOpenConfirm(chainID, chain, history, datagrams) ==
     \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
     LET connOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ConnOpenConfirm"
@@ -130,14 +142,18 @@ HandleConnOpenConfirm(chainID, chain, datagrams) ==
               LET connOpenConfirmChain == [
                   chain EXCEPT !.connectionEnd = connOpenConfirmConnectionEnd
                 ] IN
+              \* update history variable
+              LET connOpenConfirmHistory == [
+                  history EXCEPT !.connOpen = TRUE
+              ] IN
               
-              connOpenConfirmChain                
-         \* otherwise, do not update the chain
-         ELSE chain
-    \* otherwise, do not update the chain     
-    ELSE chain
+              [store |-> connOpenConfirmChain, history |-> connOpenConfirmHistory]                
+         \* otherwise, do not update the chain and history
+         ELSE [store |-> chain, history |-> history]
+    \* otherwise, do not update the chain and history     
+    ELSE [store |-> chain, history |-> history]
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jun 22 16:24:40 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Aug 05 12:21:29 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska

@@ -27,16 +27,14 @@ HandleCreateClient(chainID, chain, datagrams) ==
     
     \* new chain record with clients created
     LET clientCreateChain == [
-            height |-> chain.height,
-            counterpartyClientHeights |-> 
+            chain EXCEPT !.counterpartyClientHeights = 
                 \* if the set of counterparty client heights is not empty and
                 \* if the set of heights from datagrams is empty
                 IF chain.counterpartyClientHeights /= {} \/ createClientHeights = {}
                 \* then discard CreateClient datagrams  
                 THEN chain.counterpartyClientHeights
                 \* otherwise, create counterparty client with height Max(createClientHeights)  
-                ELSE {Max(createClientHeights)},
-            connectionEnd |-> chain.connectionEnd
+                ELSE {Max(createClientHeights)}
          ] IN
 
    clientCreateChain
@@ -57,8 +55,7 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
     \* new chain record with clients updated
     LET clientUpdatedChain == [
-            height |-> chain.height,
-            counterpartyClientHeights |-> 
+            chain EXCEPT !.counterpartyClientHeights = 
                 \* if set of counterparty client heights is empty
                 IF chain.counterpartyClientHeights = {}
                 \* then discard ClientUpdate datagrams  
@@ -68,8 +65,7 @@ HandleUpdateClient(chainID, chain, datagrams) ==
                      \* then update counterparty client heights with updateClientHeights
                      THEN chain.counterpartyClientHeights \union updateClientHeights
                      \* otherwise, do not update client heights
-                     ELSE chain.counterpartyClientHeights,
-            connectionEnd |-> chain.connectionEnd
+                     ELSE chain.counterpartyClientHeights
          ] IN
    
     clientUpdatedChain
@@ -77,5 +73,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jul 09 13:12:01 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Jul 27 13:59:29 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

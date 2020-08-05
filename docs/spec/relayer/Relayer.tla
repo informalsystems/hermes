@@ -5,7 +5,7 @@
  process running a relayer algorithm 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, RelayerDefinitions
 
 CONSTANTS GenerateClientDatagrams, \* toggle generation of client datagrams
           GenerateConnectionDatagrams, \* toggle generation of connection datagrams
@@ -15,7 +15,8 @@ ASSUME /\ GenerateClientDatagrams \in BOOLEAN
        /\ GenerateConnectionDatagrams \in BOOLEAN 
        /\ GenerateChannelDatagrams \in BOOLEAN 
 
-CONSTANTS Heights \* set of possible heights of the chains in the system 
+CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
+          MaxPacketSeq  \* maximal packet sequence number
 
 VARIABLES chainAstore, \* store of ChainA
           chainBstore, \* store of ChainB
@@ -23,9 +24,11 @@ VARIABLES chainAstore, \* store of ChainA
                              \* outgoing from the relayer to each chainID 
           relayerHeights, \* a function that assigns a height to each chainID
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
-          closeChannelB \* flag that triggers closing of the channel end at ChainB         
+          closeChannelB, \* flag that triggers closing of the channel end at ChainB
+          packetLog         
           
-vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights>>                     
+vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights, packetLog>>
+Heights == 1..MaxHeight \* set of possible heights of the chains in the system                     
 
 GetChainByID(chainID) ==
     IF chainID = "chainA"
@@ -41,7 +44,7 @@ GetCloseChannelFlag(chainID) ==
  Client datagrams
  ***************************************************************************)
 \* Compute client datagrams designated for dstChainID. 
-\* These are used to update the client for srcChainID on dstChainID in the environment.
+\* These are used to update the client for srcChainID on dstChainID.
 \* Some client updates might trigger an update of the height that 
 \* the relayer stores for srcChainID
 LightClientUpdates(srcChainID, dstChainID, relayer) ==
@@ -82,7 +85,7 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
  Connection datagrams
  ***************************************************************************)    
 \* Compute connection datagrams designated for dstChainID. 
-\* These are used to update the connection end on dstChainID in the environment.
+\* These are used to update the connection end on dstChainID.
 ConnectionDatagrams(srcChainID, dstChainID) ==
     LET srcChain == GetChainByID(srcChainID) IN
     LET dstChain == GetChainByID(dstChainID) IN
@@ -127,10 +130,10 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
     ELSE {}
 
 (***************************************************************************
- Channel datagrams
+ Channel handshake datagrams
  ***************************************************************************)
 \* Compute channel datagrams designated for dstChainID. 
-\* These are used to update the channel end on dstChainID in the environment.
+\* These are used to update the channel end on dstChainID.
 ChannelDatagrams(srcChainID, dstChainID) ==
     LET srcChain == GetChainByID(srcChainID) IN
     LET dstChain == GetChainByID(dstChainID) IN
@@ -168,16 +171,80 @@ ChannelDatagrams(srcChainID, dstChainID) ==
            channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            proofHeight |-> srcHeight]} 
     
+    \* channel closing datagrams creation only for open channels
     ELSE IF dstChannelEnd.state = "OPEN" /\ GetCloseChannelFlag(dstChannelID) THEN
          {[type |-> "ChanCloseInit", 
            channelID |-> dstChannelEnd.channelID]} \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            
-    ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" THEN 
+    ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" THEN 
          {[type |-> "ChanCloseConfirm", 
            channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            proofHeight |-> srcHeight]}
+    
+    (** channel closing datagrams creation for channels which are still in handshake: 
+        the propery ChanOpenInitDelivery is violated
+              
+    ELSE IF dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" /\ GetCloseChannelFlag(dstChannelID) THEN
+         {[type |-> "ChanCloseInit", 
+           channelID |-> dstChannelEnd.channelID]} \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           
+    ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" THEN 
+         {[type |-> "ChanCloseConfirm", 
+           channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           proofHeight |-> srcHeight]}
+    **)
            
     ELSE {}
+
+(***************************************************************************
+ Packet datagrams
+ ***************************************************************************)
+
+\* relay sent packets
+PacketRecvDatagrams(srcChainID, dstChainID) ==
+    LET sentPacketLogs == {logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "sent"} IN
+    
+    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
+    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+    
+    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    
+    LET packetData(logEntry) == [sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> srcChannelID,
+                                 dstChannelID |-> dstChannelID] IN
+    
+    {[type |-> "PacketRecv",
+      packet |-> packetData(logEntry),  
+      proofHeight |-> srcHeight] : logEntry \in sentPacketLogs}
+
+\* relay acknowledgements to received packets
+PacketAckDatagrams(srcChainID, dstChainID) ==
+    LET recvPacketLogs == {logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "recv"} IN
+    
+    LET srcChannelID == GetChannelID(srcChainID) IN
+    LET dstChannelID == GetChannelID(dstChainID) IN
+    
+    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    
+    LET packetData(logEntry) == [sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> srcChannelID,
+                                 dstChannelID |-> dstChannelID] IN
+    
+    {[type |-> "PacketAck",
+      packet |-> packetData(logEntry),
+      acknowledgement |-> logEntry.acknowledgement,  
+      proofHeight |-> srcHeight] : logEntry \in recvPacketLogs}
+
+\* Compute packet datagrams designated for dstChainID. 
+\* These are used to transmit packet on dstChainID 
+PacketDatagrams(srcChainID, dstChainID) ==
+    LET packetRecvDatagrams == PacketRecvDatagrams(srcChainID, dstChainID) IN
+    LET packetAckDatagrams == PacketAckDatagrams(srcChainID, dstChainID) IN
+    
+    packetRecvDatagrams \union packetAckDatagrams
+    
 
 (***************************************************************************
  Compute datagrams (from srcChainID to dstChainID)
@@ -186,7 +253,7 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 \*  -  ICS 002: Client updates
 \*  -  ICS 003: Connection handshake
 \*  -  ICS 004: Channel handshake
-\* TODO: Support the remaining datagrams
+\*  -  ICS 004: Packet transmission
 ComputeDatagrams(srcChainID, dstChainID) ==
     \* ICS 002 : Clients
     \* - Determine if light clients needs to be updated 
@@ -211,7 +278,10 @@ ComputeDatagrams(srcChainID, dstChainID) ==
     
     \* ICS4 : Channels & Packets
     \* - Determine if any packets, acknowledgements, or timeouts need to be relayed
-    \* TODO
+    LET packetDatagrams == 
+        IF GenerateChannelDatagrams 
+        THEN PacketDatagrams(srcChainID, dstChainID) 
+        ELSE {} IN
     
     [datagrams |-> clientDatagrams.datagrams \union 
                    connectionDatagrams \union 
@@ -228,7 +298,7 @@ UpdateRelayerClients(chainID) ==
     /\ relayerHeights' = [relayerHeights EXCEPT 
                             ![chainID] = GetLatestHeight(GetChainByID(chainID))
                          ]
-    /\ UNCHANGED <<chainAstore, chainBstore, outgoingDatagrams>>  
+    /\ UNCHANGED <<chainAstore, chainBstore, outgoingDatagrams, packetLog>>  
 
 \* for two chains, srcChainID and dstChainID, where srcChainID /= dstChainID, 
 \* create the pending datagrams and update the corresponding sets of pending datagrams
@@ -242,7 +312,7 @@ Relay(srcChainID, dstChainID) ==
                                 datagramsAndRelayerUpdate.datagrams
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
-    /\ UNCHANGED <<chainAstore, chainBstore>>
+    /\ UNCHANGED <<chainAstore, chainBstore, packetLog>>
 
 UpdateRelayer ==
     \E chainID \in ChainIDs : UpdateRelayerClients(chainID)
@@ -283,9 +353,9 @@ Fairness ==
 \* Type invariant
 TypeOK ==
     /\ relayerHeights \in [ChainIDs -> Heights \union {nullHeight}]
-    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(Heights)]
+    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq)]
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jul 09 15:51:13 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Aug 05 12:21:26 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
