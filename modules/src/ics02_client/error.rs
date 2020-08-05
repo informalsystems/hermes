@@ -15,6 +15,9 @@ pub enum Kind {
 
     #[error("client not found: {0}")]
     ClientNotFound(ClientId),
+
+    #[error("implementation specific")]
+    ImplementationSpecific,
 }
 
 impl Kind {
