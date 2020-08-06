@@ -1,5 +1,6 @@
 // TODO: Update error types for Connection!!
 
+use crate::ics24_host::identifier::ConnectionId;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -10,8 +11,8 @@ pub enum Kind {
     #[error("connection state unknown")]
     UnknownState,
 
-    #[error("connection exists (was initialized) already")]
-    ConnectionExistsAlready,
+    #[error("connection exists (was initialized) already: {0}")]
+    ConnectionExistsAlready(ConnectionId),
 
     #[error("a different connection exists (was initialized) already for the same connection identifier")]
     ConnectionMismatch,

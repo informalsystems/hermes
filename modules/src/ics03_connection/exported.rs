@@ -50,10 +50,7 @@ impl std::str::FromStr for State {
 /// handshake protocol supports.
 /// TODO: What are the precise values for the versions which this function returns? Perhaps encode the versions as constants.
 pub fn get_compatible_versions() -> Vec<String> {
-    let mut result = Vec::with_capacity(1);
-    result[0] = String::from("test");
-
-    result
+    vec!["test".to_string()]
 }
 
 /// Function required by ICS 03. Returns one version out of the supplied list of versions, which the

@@ -78,9 +78,7 @@ pub fn process_ics3_msg(ctx: &dyn ICS3Context, message: &ICS3Msg) -> ProtocolRes
 fn process_init_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Result<Output, Error> {
     // No connection should exist.
     if ctx.fetch_connection_end(msg.connection_id()).is_some() {
-        Err(Kind::ConnectionExistsAlready
-            .context(msg.connection_id().to_string())
-            .into())
+        Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into())
     } else {
         let mut new_connection_end = ConnectionEnd::new(
             msg.client_id().clone(),
