@@ -50,8 +50,8 @@ impl Proofs {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusProof {
-    pub consensus_proof: CommitmentProof,
-    pub consensus_height: Height,
+    proof: CommitmentProof,
+    height: Height,
 }
 
 impl ConsensusProof {
@@ -64,13 +64,18 @@ impl ConsensusProof {
         }
 
         Ok(Self {
-            consensus_proof,
-            consensus_height,
+            proof: consensus_proof,
+            height: consensus_height,
         })
     }
 
-    /// Getter for the consensus_height field of this consensus proof.
-    pub fn consensus_height(&self) -> Height {
-        self.consensus_height
+    /// Getter for the height field of this consensus proof.
+    pub fn height(&self) -> Height {
+        self.height
+    }
+
+    /// Getter for the proof (CommitmentProof) field of this consensus proof.
+    pub fn proof(&self) -> &CommitmentProof {
+        &self.proof
     }
 }

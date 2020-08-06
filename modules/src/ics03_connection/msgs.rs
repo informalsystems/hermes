@@ -180,7 +180,7 @@ impl MsgConnectionOpenTry {
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
             None => 0,
-            Some(p) => p.consensus_height(),
+            Some(p) => p.height(),
         }
     }
 
@@ -276,7 +276,7 @@ impl MsgConnectionOpenAck {
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
             None => 0,
-            Some(p) => p.consensus_height(),
+            Some(p) => p.height(),
         }
     }
 

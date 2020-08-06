@@ -1,10 +1,12 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 
+use crate::ics02_client::state::ConsensusState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::Height;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::lite::Header as liteHeader;
@@ -14,7 +16,7 @@ pub struct ClientState {
     id: ClientId,
     trusting_period: Duration,
     unbonding_period: Duration,
-    frozen_height: crate::Height,
+    frozen_height: Height,
     latest_header: Header,
 }
 
@@ -24,7 +26,7 @@ impl ClientState {
         trusting_period: Duration,
         unbonding_period: Duration,
         latest_header: Header,
-        frozen_height: crate::Height,
+        frozen_height: Height,
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
@@ -76,7 +78,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
         ClientType::Tendermint
     }
 
-    fn get_latest_height(&self) -> crate::Height {
+    fn get_latest_height(&self) -> Height {
         self.latest_header.signed_header.header.height()
     }
 
@@ -87,17 +89,22 @@ impl crate::ics02_client::state::ClientState for ClientState {
 
     fn verify_client_consensus_state(
         &self,
-        _root: &CommitmentRoot,
+        _counterparty_height: Height,
+        _counterparty_prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _counterparty_client_id: &ClientId,
+        _consensus_height: Height,
+        _consensus_state: &dyn ConsensusState<ValidationError = Self::ValidationError>,
     ) -> Result<bool, Self::ValidationError> {
         unimplemented!()
     }
 
     fn verify_connection_state(
         &self,
-        _height: u64,
-        _prefix: &CommitmentPrefix,
+        _counterparty_height: Height,
+        _counterparty_prefix: &CommitmentPrefix,
         _proof: &CommitmentProof,
-        _connection_id: &ConnectionId,
+        _counterparty_connection_id: &ConnectionId,
         _connection_end: &ConnectionEnd,
     ) -> Result<bool, Self::ValidationError> {
         unimplemented!()

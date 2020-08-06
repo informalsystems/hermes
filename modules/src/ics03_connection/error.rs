@@ -51,6 +51,9 @@ pub enum Kind {
 
     #[error("the client id does not match any client state")]
     MissingClient,
+
+    #[error("the expected consensus state could not be retrieved")]
+    ErrorFetchingConsensusState,
 }
 
 impl Kind {

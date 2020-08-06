@@ -36,19 +36,28 @@ pub trait ClientState {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
-    // TODO: It's unclear what this function is expected to achieve. Document this.
+    /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
+    /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
+    /// height of the counterparty chain that this proof assumes (i.e., the height at which this
+    /// proof was computed).
     fn verify_client_consensus_state(
         &self,
-        root: &CommitmentRoot,
+        counterparty_height: Height,
+        counterparty_prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        counterparty_client_id: &ClientId,
+        consensus_height: Height,
+        consensus_state: &dyn ConsensusState<ValidationError = Self::ValidationError>,
     ) -> Result<bool, Self::ValidationError>;
 
+    /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     // TODO: ValidationError seems wrong here.
     fn verify_connection_state(
         &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
+        counterparty_height: Height,
+        counterparty_prefix: &CommitmentPrefix,
         proof: &CommitmentProof,
-        connection_id: &ConnectionId,
+        counterparty_connection_id: &ConnectionId,
         connection_end: &ConnectionEnd,
     ) -> Result<bool, Self::ValidationError>;
 }

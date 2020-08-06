@@ -16,6 +16,7 @@ use crate::ics03_connection::msgs::{
     ICS3Msg, MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
     MsgConnectionOpenTry,
 };
+// use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::proofs::Proofs;
 use crate::Height;
 
@@ -76,10 +77,7 @@ pub fn process_ics3_msg(ctx: &dyn ICS3Context, message: &ICS3Msg) -> ProtocolRes
 /// Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 fn process_init_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Result<Output, Error> {
     // No connection should exist.
-    if ctx
-        .fetch_connection_end_by_id(msg.connection_id())
-        .is_some()
-    {
+    if ctx.fetch_connection_end(msg.connection_id()).is_some() {
         Err(Kind::ConnectionExistsAlready
             .context(msg.connection_id().to_string())
             .into())
@@ -101,7 +99,7 @@ fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end (if any) and validate it against the message.
-    let mut new_conn = match ctx.fetch_connection_end_by_id(msg.connection_id()) {
+    let mut new_conn = match ctx.fetch_connection_end(msg.connection_id()) {
         Some(old_conn_end) => {
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
@@ -154,7 +152,7 @@ fn process_ack_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenAck) -> Result<
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end & validate it.
-    let mut new_conn = match ctx.fetch_connection_end_by_id(msg.connection_id()) {
+    let mut new_conn = match ctx.fetch_connection_end(msg.connection_id()) {
         // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
         Some(old_conn_end) => {
             if !(old_conn_end.state_matches(&State::Init)
@@ -203,7 +201,7 @@ fn process_confirm_msg(
     msg: &MsgConnectionOpenConfirm,
 ) -> Result<Output, Error> {
     // Unwrap the old connection end & validate it.
-    let mut new_conn = match ctx.fetch_connection_end_by_id(msg.connection_id()) {
+    let mut new_conn = match ctx.fetch_connection_end(msg.connection_id()) {
         // A connection end must exist and must be in TryOpen state; otherwise return error.
         Some(old_conn_end) => {
             if !(old_conn_end.state_matches(&State::TryOpen)) {
@@ -251,36 +249,53 @@ fn verify_proofs(
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
     let client = ctx
-        .fetch_client_state_by_id(connection_end.client_id())
+        .fetch_client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
 
     // Verify the proof for the connection state against the expected connection end.
-    if client.verify_connection_state(
+    let verification_res = client.verify_connection_state(
         proofs.height(),
         connection_end.counterparty().prefix(),
         proofs.object_proof(),
         connection_end.counterparty().connection_id(),
         expected_conn,
-    )? == false
-    {
+    )?;
+    if verification_res == false {
+        // Verification of connection state proof failed.
         return Err(Kind::InvalidProof
-            .context(String::from("invalid connection state"))
+            .context(String::from("connection state proof is invalid"))
             .into());
     }
 
     // Verify the proof for the client's consensus state.
-    // if client.verify_client_consensus_state(
-    //     proofs.height(),
-    //     connection_end.counterparty().prefix(),
-    //     proofs.object_proof(),
-    //     connection_end.counterparty().connection_id(),
-    //     expected_conn,
-    // )? == false
-    // {
-    //     return Err(Kind::InvalidProof.context(String::from("invalid connection state")).into());
-    // }
-
-    Ok(())
+    // The `consensus_proof` may be missing. If so, return Ok(()); otherwise, verify the proof.
+    proofs.consensus_proof().map_or(Ok(()), |consensus_proof| {
+        // Search for the expected consensus state.
+        match ctx.fetch_consensus_state(consensus_proof.height()) {
+            Some(expected_cs) => {
+                let verification_res = client.verify_client_consensus_state(
+                    proofs.height(),
+                    connection_end.counterparty().prefix(),
+                    &consensus_proof.proof(),
+                    connection_end.counterparty().client_id(),
+                    consensus_proof.height(),
+                    expected_cs,
+                )?;
+                if verification_res == false {
+                    Err(Kind::InvalidProof
+                        .context(String::from("consensus state proof is invalid"))
+                        .into())
+                } else {
+                    Ok(())
+                }
+            }
+            // The consensus state at the given height was not found.
+            // It would be bizarre if this happens, but catch it gracefully anyhow.
+            None => Err(Kind::ErrorFetchingConsensusState
+                .context(consensus_proof.height().to_string())
+                .into()),
+        }
+    })
 }
 
 fn check_client_consensus_height(
@@ -334,7 +349,7 @@ pub fn produce_events(ctx: &dyn ICS3Context, msg: &ICS3Msg) -> Vec<IBCEvent> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::state::ClientState;
+    use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::ctx::{Context, ICS3Context};
     use crate::ics03_connection::error::Error;
@@ -346,11 +361,11 @@ mod tests {
     #[derive(Clone, Debug, Default)]
     struct MockContext {}
     impl ICS3Context for MockContext {
-        fn fetch_connection_end_by_id(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
+        fn fetch_connection_end(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
             unimplemented!()
         }
 
-        fn fetch_client_state_by_id(
+        fn fetch_client_state(
             &self,
             client_id: &ClientId,
         ) -> Option<&dyn ClientState<ValidationError = Error>> {
@@ -366,6 +381,13 @@ mod tests {
         }
 
         fn commitment_prefix(&self) -> CommitmentPrefix {
+            unimplemented!()
+        }
+
+        fn fetch_consensus_state(
+            &self,
+            height: u64,
+        ) -> Option<&dyn ConsensusState<ValidationError = Error>> {
             unimplemented!()
         }
     }
@@ -405,7 +427,7 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad connection id, non-alpha".to_string(),
+                name: "Bad parameters".to_string(),
                 params: ConOpenInitProcessParams {
                     ..default_con_params.clone()
                 },
