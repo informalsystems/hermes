@@ -1,9 +1,10 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::CommitmentRoot;
-
+use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
+use crate::ics23_commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ClientId;
+
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::lite::Header as liteHeader;
@@ -61,6 +62,12 @@ impl ClientState {
             latest_header,
             frozen_height,
         })
+    }
+}
+
+impl From<ConsensusState> for ClientState {
+    fn from(_: ConsensusState) -> Self {
+        todo!()
     }
 }
 

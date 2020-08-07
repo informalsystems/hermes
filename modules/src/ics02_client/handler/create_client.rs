@@ -1,5 +1,5 @@
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client::{ClientDef, ClientState};
+use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper};
@@ -39,7 +39,7 @@ where
 
     output.log("success: no client type found");
 
-    let client_state = CD::ClientState::from_consensus_state(consensus_state);
+    let client_state = consensus_state.into();
 
     output.emit(ClientEvent::ClientCreated(client_id.clone()));
 

@@ -43,3 +43,4 @@ pub trait ClientState {
         root: &CommitmentRoot,
     ) -> Result<(), Self::ValidationError>;
 }
+
