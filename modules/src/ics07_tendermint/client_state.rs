@@ -10,11 +10,11 @@ use tendermint::lite::Header as liteHeader;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
-    id: ClientId,
-    trusting_period: Duration,
-    unbonding_period: Duration,
-    frozen_height: crate::Height,
-    latest_header: Header,
+    pub id: ClientId,
+    pub trusting_period: Duration,
+    pub unbonding_period: Duration,
+    pub frozen_height: crate::Height,
+    pub latest_header: Header,
 }
 
 impl ClientState {
@@ -215,3 +215,4 @@ mod tests {
         }
     }
 }
+

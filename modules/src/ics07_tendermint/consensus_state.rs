@@ -5,10 +5,10 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    root: CommitmentRoot,
-    height: crate::Height,
-    timestamp: tendermint::time::Time,
-    validator_set: tendermint::validator::Set,
+    pub root: CommitmentRoot,
+    pub height: crate::Height,
+    pub timestamp: tendermint::time::Time,
+    pub validator_set: tendermint::validator::Set,
 }
 
 impl ConsensusState {
@@ -68,3 +68,4 @@ mod tests {
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 }
+
