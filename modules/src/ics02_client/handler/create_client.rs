@@ -159,26 +159,39 @@ mod tests {
 
     #[derive(Clone, Debug, PartialEq, Eq)]
     struct MockClientContext {
+        client_id: ClientId,
         client_state: Option<MockClientState>,
         client_type: Option<ClientType>,
         consensus_state: Option<MockConsensusState>,
     }
 
     impl ClientContext<MockClient> for MockClientContext {
-        fn client_type(&self, _client_id: &ClientId) -> Option<ClientType> {
-            self.client_type.clone()
+        fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
+            if client_id == &self.client_id {
+                self.client_type.clone()
+            } else {
+                None
+            }
         }
 
-        fn client_state(&self, _client_id: &ClientId) -> Option<MockClientState> {
-            self.client_state
+        fn client_state(&self, client_id: &ClientId) -> Option<MockClientState> {
+            if client_id == &self.client_id {
+                self.client_state
+            } else {
+                None
+            }
         }
 
         fn consensus_state(
             &self,
-            _client_id: &ClientId,
+            client_id: &ClientId,
             _height: Height,
         ) -> Option<MockConsensusState> {
-            self.consensus_state
+            if client_id == &self.client_id {
+                self.consensus_state
+            } else {
+                None
+            }
         }
     }
 
