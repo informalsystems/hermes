@@ -37,6 +37,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
+#[derive(Clone, Debug)]
 pub enum ICS3Msg {
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(MsgConnectionOpenTry),
@@ -384,7 +385,10 @@ impl Msg for MsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics23_commitment::CommitmentProof;
+    use crate::ics03_connection::msgs::MsgConnectionOpenInit;
+    use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
+    use std::str::FromStr;
+    use tendermint::account::Id as AccountId;
     use tendermint::merkle::proof::ProofOp;
 
     pub fn get_dummy_proof() -> CommitmentProof {
@@ -399,23 +403,41 @@ pub mod test_util {
             ops: vec![proof_op],
         }
     }
+
+    pub fn get_dummy_account_id() -> AccountId {
+        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
+        AccountId::from_str(id_hex).unwrap()
+    }
+
+    /// Returns a dummy message, for testing only.
+    /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
+    pub fn get_dummy_msg_conn_open_init() -> MsgConnectionOpenInit {
+        MsgConnectionOpenInit::new(
+            "srcconnection".to_string(),
+            "srcclient".to_string(),
+            "destconnection".to_string(),
+            "destclient".to_string(),
+            CommitmentPrefix::new(vec![]),
+            get_dummy_account_id(),
+        )
+        .unwrap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::test_util::get_dummy_proof;
     use super::MsgConnectionOpenInit;
+    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
     use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
-    use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
 
     #[test]
     fn parse_connection_open_init_msg() {
         #[derive(Clone, Debug, PartialEq)]
-        struct ConOpenInitParams {
+        struct ConnOpenInitParams {
             connection_id: String,
             client_id: String,
             counterparty_connection_id: String,
@@ -425,11 +447,11 @@ mod tests {
 
         struct Test {
             name: String,
-            params: ConOpenInitParams,
+            params: ConnOpenInitParams,
             want_pass: bool,
         }
 
-        let default_con_params = ConOpenInitParams {
+        let default_con_params = ConnOpenInitParams {
             connection_id: "srcconnection".to_string(),
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
@@ -445,7 +467,7 @@ mod tests {
             },
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
-                params: ConOpenInitParams {
+                params: ConnOpenInitParams {
                     connection_id: "con007".to_string(),
                     ..default_con_params.clone()
                 },
@@ -453,7 +475,7 @@ mod tests {
             },
             Test {
                 name: "Bad client id, name too short".to_string(),
-                params: ConOpenInitParams {
+                params: ConnOpenInitParams {
                     client_id: "client".to_string(),
                     ..default_con_params.clone()
                 },
@@ -461,7 +483,7 @@ mod tests {
             },
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
-                params: ConOpenInitParams {
+                params: ConnOpenInitParams {
                     counterparty_connection_id:
                         "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
                             .to_string(),
@@ -476,8 +498,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-            let acc = AccountId::from_str(id_hex).unwrap();
+            let acc = get_dummy_account_id();
 
             let msg = MsgConnectionOpenInit::new(
                 p.connection_id,
@@ -622,8 +643,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-            let acc = AccountId::from_str(id_hex).unwrap();
+            let acc = get_dummy_account_id();
 
             let msg = MsgConnectionOpenTry::new(
                 p.connection_id,
@@ -722,8 +742,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-            let acc = AccountId::from_str(id_hex).unwrap();
+            let acc = get_dummy_account_id();
 
             let msg = MsgConnectionOpenAck::new(
                 p.connection_id,
@@ -796,8 +815,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-            let acc = AccountId::from_str(id_hex).unwrap();
+            let acc = get_dummy_account_id();
 
             let msg =
                 MsgConnectionOpenConfirm::new(p.connection_id, p.proof_ack, p.proof_height, acc);

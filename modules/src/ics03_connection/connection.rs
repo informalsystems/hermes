@@ -77,7 +77,7 @@ impl ConnectionEnd {
         self.versions.insert(0, new_version)
     }
 
-    /// Helper function to compare the counterpary of this end with another counterparty.
+    /// Helper function to compare the counterparty of this end with another counterparty.
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
         self.counterparty.eq(other)
     }

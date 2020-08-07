@@ -24,7 +24,7 @@ type ProtocolResult = Result<ProtocolOutput, Error>;
 
 #[derive(Debug, Clone, Default)]
 pub struct ProtocolOutput {
-    object: Option<Output>, // Vec<u8>? Data?
+    object: Option<Object>, // Vec<u8>? Data?
     events: Vec<IBCEvent>,
 }
 
@@ -33,18 +33,18 @@ impl ProtocolOutput {
         ProtocolOutput::default()
     }
 
-    pub fn set_object(self, ce: ConnectionEnd) -> ProtocolOutput {
-        ProtocolOutput {
+    pub fn set_object(self, ce: ConnectionEnd) -> Self {
+        Self {
             object: Some(ce),
             events: self.events,
         }
     }
 
-    pub fn add_events(self, events: &mut Vec<IBCEvent>) -> ProtocolOutput {
+    pub fn add_events(self, events: &mut Vec<IBCEvent>) -> Self {
         let mut evs = self.events.clone();
         evs.append(events);
 
-        ProtocolOutput {
+        Self {
             events: evs,
             ..self
         }
@@ -52,7 +52,7 @@ impl ProtocolOutput {
 }
 
 // The outcome after processing (delivering) a specific ICS3 message.
-type Output = ConnectionEnd;
+type Object = ConnectionEnd;
 
 /// General entry point for delivering (i.e., processing) any type of message related to the ICS3
 /// connection open handshake protocol.
@@ -75,7 +75,7 @@ pub fn process_ics3_msg(ctx: &dyn ICS3Context, message: &ICS3Msg) -> ProtocolRes
 }
 
 /// Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
-fn process_init_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Result<Output, Error> {
+fn process_init_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Result<Object, Error> {
     // No connection should exist.
     if ctx.fetch_connection_end(msg.connection_id()).is_some() {
         Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into())
@@ -92,7 +92,7 @@ fn process_init_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Resul
 }
 
 /// Protocol logic specific to delivering ICS3 messages of type `MsgConnectionOpenTry`.
-fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<Output, Error> {
+fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<Object, Error> {
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
@@ -145,7 +145,7 @@ fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<
 }
 
 /// Protocol logic specific to delivering ICS3 messages of type `MsgConnectionOpenAck`.
-fn process_ack_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenAck) -> Result<Output, Error> {
+fn process_ack_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenAck) -> Result<Object, Error> {
     // Check the client's (consensus state) proof height.
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
@@ -197,7 +197,7 @@ fn process_ack_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenAck) -> Result<
 fn process_confirm_msg(
     ctx: &dyn ICS3Context,
     msg: &MsgConnectionOpenConfirm,
-) -> Result<Output, Error> {
+) -> Result<Object, Error> {
     // Unwrap the old connection end & validate it.
     let mut new_conn = match ctx.fetch_connection_end(msg.connection_id()) {
         // A connection end must exist and must be in TryOpen state; otherwise return error.
@@ -346,21 +346,50 @@ pub fn produce_events(ctx: &dyn ICS3Context, msg: &ICS3Msg) -> Vec<IBCEvent> {
 }
 
 #[cfg(test)]
+#[allow(warnings)]
 mod tests {
+    use crate::events::IBCEvent;
     use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics03_connection::connection::ConnectionEnd;
-    use crate::ics03_connection::ctx::{Context, ICS3Context};
+    use crate::ics03_connection::ctx::ICS3Context;
     use crate::ics03_connection::error::Error;
-    use crate::ics03_connection::msgs::ICS3Msg;
-    use crate::ics03_connection::protocol::process_init_msg;
+    use crate::ics03_connection::exported::{get_compatible_versions, State};
+    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::{ICS3Msg, MsgConnectionOpenInit};
+    use crate::ics03_connection::protocol::process_ics3_msg;
     use crate::ics23_commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::Height;
+    use std::collections::HashMap;
 
     #[derive(Clone, Debug, Default)]
-    struct MockContext {}
+    struct MockContext {
+        store: HashMap<ConnectionId, ConnectionEnd>,
+        chain_height: Height,
+    }
+
+    impl MockContext {
+        fn new() -> Self {
+            Self::default()
+        }
+
+        fn set_chain_height(self, new_height: Height) -> Self {
+            Self {
+                chain_height: new_height,
+                ..self
+            }
+        }
+
+        fn add_connection_to_store(self, id: ConnectionId, end: ConnectionEnd) -> Self {
+            let mut store = self.store.clone();
+            store.insert(id, end);
+            Self { store, ..self }
+        }
+    }
+
     impl ICS3Context for MockContext {
-        fn fetch_connection_end(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
-            unimplemented!()
+        fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
+            self.store.get(cid)
         }
 
         fn fetch_client_state(
@@ -370,11 +399,11 @@ mod tests {
             unimplemented!()
         }
 
-        fn chain_current_height(&self) -> u64 {
-            unimplemented!()
+        fn chain_current_height(&self) -> Height {
+            self.chain_height
         }
 
-        fn chain_trusting_period(&self) -> u64 {
+        fn chain_trusting_period(&self) -> Height {
             unimplemented!()
         }
 
@@ -389,33 +418,32 @@ mod tests {
             unimplemented!()
         }
     }
-    impl MockContext {
-        fn new() -> Self {
-            Self::default()
-        }
-    }
-
-    fn get_dummy_ics_msg() -> ICS3Msg {
-        unimplemented!()
-    }
 
     #[test]
     fn conn_open_init_msg_processing() {
-        #[derive(Clone, Debug, PartialEq)]
-        struct ConOpenInitProcessParams {
+        #[derive(Clone, Debug)]
+        struct ConnOpenInitProcessParams {
             ctx: MockContext,
             msg: ICS3Msg,
         }
 
         struct Test {
             name: String,
-            params: ConOpenInitProcessParams,
+            params: ConnOpenInitProcessParams,
             want_pass: bool,
         }
 
-        let default_con_params = ConOpenInitProcessParams {
+        let dummy_msg = get_dummy_msg_conn_open_init();
+        let dummy_conn_end = ConnectionEnd::new(
+            dummy_msg.client_id().clone(),
+            dummy_msg.counterparty().clone(),
+            get_compatible_versions(),
+        )
+        .unwrap();
+
+        let default_con_params = ConnOpenInitProcessParams {
             ctx: MockContext::new(),
-            msg: get_dummy_ics_msg(),
+            msg: ICS3Msg::ConnectionOpenInit(dummy_msg.clone()),
         };
 
         let tests: Vec<Test> = vec![
@@ -425,8 +453,18 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad parameters".to_string(),
-                params: ConOpenInitProcessParams {
+                name: "Good parameters, arbitrary chain height".to_string(),
+                params: ConnOpenInitProcessParams {
+                    ctx: MockContext::new().set_chain_height(34),
+                    ..default_con_params.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Protocol fails because connection exists in the store already".to_string(),
+                params: ConnOpenInitProcessParams {
+                    ctx: MockContext::new()
+                        .add_connection_to_store(dummy_msg.connection_id().clone(), dummy_conn_end),
                     ..default_con_params.clone()
                 },
                 want_pass: false,
@@ -435,19 +473,45 @@ mod tests {
         .into_iter()
         .collect();
 
-        for test in tests {
-            let p = test.params.clone();
-
-            // let res = process_init_msg(p.ctx, p.msg);
+        for mut test in tests {
+            let res = process_ics3_msg(&test.params.ctx, &test.params.msg);
 
             assert_eq!(
                 test.want_pass,
-                msg.is_ok(),
-                "process_init_msg() failed for test {}, \nmsg {:?} with error {:?}",
+                res.is_ok(),
+                "process_ics3_msg() failed for test: {}, \nparams {:?} error: {:?}",
                 test.name,
                 test.params.clone(),
-                msg.err(),
+                res.err(),
             );
+            // Additionally check the events and the output objects in the result.
+            res.map(|proto_output| {
+                assert!(proto_output.object.is_some()); // An output object must exist.
+                assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                // The object in the output is a ConnectionEnd
+                proto_output.object.map(|conn_end| {
+                    assert!(conn_end.state_matches(&State::Init));
+                });
+                for e in proto_output.events.iter() {
+                    match e {
+                        IBCEvent::OpenInitConnection(_event) => {
+                            // TODO: Test `_event.height` against the chain height (must be equal).
+                            // Currently such a test cannot compile b/c:
+                            // "no implementation for `u64 == tendermint::block::height::Height`".
+                            // Fixed with: https://github.com/informalsystems/ibc-rs/issues/191.
+                            // assert_eq!(test.params.ctx.chain_current_height(), _event.height);
+                        }
+                        _ => panic!(
+                            "process_ics3_msg() failed for test {}, \nparams {:?}",
+                            test.name,
+                            test.params.clone()
+                        ),
+                    }
+                }
+            });
         }
     }
+
+    // TODO: the other processing functions + implementation for MockContext.
 }
