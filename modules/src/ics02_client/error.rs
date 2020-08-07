@@ -5,7 +5,7 @@ use crate::ics24_host::identifier::ClientId;
 
 pub type Error = anomaly::Error<Kind>;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Kind {
     #[error("unknown client type")]
     UnknownClientType,
@@ -25,3 +25,4 @@ impl Kind {
         Context::new(self, Some(source.into()))
     }
 }
+

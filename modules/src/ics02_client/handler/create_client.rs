@@ -6,6 +6,7 @@ use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper};
 use crate::ics02_client::msgs::MsgCreateClient;
 use crate::ics24_host::identifier::ClientId;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateClientResult<CD: ClientDef> {
     client_id: ClientId,
     client_type: ClientType,
@@ -220,6 +221,52 @@ mod tests {
             Err(err) => {
                 panic!("unexpected error: {}", err);
             }
+        }
+    }
+
+    #[test]
+    fn test_create_client_existing_client_type() {
+        let mock = MockClientContext {
+            client_type: Some(ClientType::Tendermint),
+            client_state: None,
+            consensus_state: None,
+        };
+
+        let msg = MsgCreateClient {
+            client_id: "mockclient".parse().unwrap(),
+            client_type: ClientType::Tendermint,
+            consensus_state: MockConsensusState(42),
+        };
+
+        let output = process(&mock, msg.clone());
+
+        if let Err(err) = output {
+            assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id));
+        } else {
+            panic!("expected an error");
+        }
+    }
+
+    #[test]
+    fn test_create_client_existing_client_state() {
+        let mock = MockClientContext {
+            client_type: None,
+            client_state: Some(MockClientState(0)),
+            consensus_state: None,
+        };
+
+        let msg = MsgCreateClient {
+            client_id: "mockclient".parse().unwrap(),
+            client_type: ClientType::Tendermint,
+            consensus_state: MockConsensusState(42),
+        };
+
+        let output = process(&mock, msg.clone());
+
+        if let Err(err) = output {
+            assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id));
+        } else {
+            panic!("expected an error");
         }
     }
 }
