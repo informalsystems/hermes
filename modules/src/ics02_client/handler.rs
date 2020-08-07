@@ -5,7 +5,7 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::msgs::MsgCreateClient;
 use crate::ics24_host::identifier::ClientId;
 
-use tendermint::lite::Height;
+use crate::Height;
 
 pub mod create_client;
 
@@ -38,6 +38,7 @@ pub trait ClientKeeper<CD: ClientDef> {
     ) -> Result<(), Error>;
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientEvent {
     ClientCreated(ClientId),
     ClientUpdated(ClientId),

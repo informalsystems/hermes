@@ -51,7 +51,7 @@ impl<T> HandlerOutput<T> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HandlerOutputBuilder<T> {
     log: Vec<String>,
     events: Vec<Event>,
