@@ -462,7 +462,9 @@ mod tests {
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
                 params: ConOpenInitParams {
-                    counterparty_connection_id: "abcdefghijklmnopqrstu".to_string(),
+                    counterparty_connection_id:
+                        "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
+                            .to_string(),
                     ..default_con_params.clone()
                 },
                 want_pass: false,
@@ -557,7 +559,9 @@ mod tests {
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
                 params: ConOpenTryParams {
-                    counterparty_connection_id: "abcdefghijklmnopqrstu".to_string(),
+                    counterparty_connection_id:
+                        "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
+                            .to_string(),
                     ..default_con_params.clone()
                 },
                 want_pass: false,

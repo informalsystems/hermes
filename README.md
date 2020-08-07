@@ -12,8 +12,8 @@ THIS PROJECT IS UNDER HEAVY DEVELOPMENT AND IS NOT IN A WORKING STAGE NOW, USE A
 
 ## Releases
 
-This project is still a pre v0.1.0 prototype. Releases can be found
-[here](https://github.com/informalsystems/ibc-rs/releases)
+This project is still a pre v0.1.0 prototype. Releases are made on 
+[Github](https://github.com/informalsystems/ibc-rs/releases)
 
 ## Installation 
 

@@ -11,18 +11,18 @@
     unused_qualifications
 )]
 
+use modules::ics03_connection::connection::ConnectionEnd;
+use modules::ics03_connection::exported::Connection;
+use modules::ics03_connection::exported::State as ConnectionState;
+use modules::ics04_channel::channel::ChannelEnd;
+use modules::ics04_channel::exported::Channel;
+use modules::ics04_channel::exported::Order;
+use modules::ics04_channel::exported::State as ChannelState;
+use modules::ics23_commitment::CommitmentPrefix;
+use modules::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use modules::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
-use relayer_modules::ics03_connection::connection::ConnectionEnd;
-use relayer_modules::ics03_connection::exported::Connection;
-use relayer_modules::ics03_connection::exported::State as ConnectionState;
-use relayer_modules::ics04_channel::channel::ChannelEnd;
-use relayer_modules::ics04_channel::exported::Channel;
-use relayer_modules::ics04_channel::exported::Order;
-use relayer_modules::ics04_channel::exported::State as ChannelState;
-use relayer_modules::ics23_commitment::CommitmentPrefix;
-use relayer_modules::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use relayer_modules::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
 use std::str::FromStr;
 use tendermint::chain::Id;
 use tendermint::net::Address;

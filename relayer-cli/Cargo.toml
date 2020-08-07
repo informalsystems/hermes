@@ -1,16 +1,15 @@
 [package]
 name = "relayer-cli"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2018"
 authors = [
-  "Anca Zamfir <anca@interchain.io>",
-  "Romain Ruetschi <romain@informal.systems>"
+  "Informal Systems <hello@informal.systems>"
 ]
 
 [dependencies]
 relayer = { path = "../relayer" }
-relayer-modules = { path = "../modules" }
-tendermint = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "master" }
+modules = { path = "../modules" }
+tendermint = "0.15.0"
 
 abscissa_tokio = "0.5.1"
 anomaly = "0.2.0"
