@@ -116,7 +116,7 @@ fn process_try_msg(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenTry) -> Result<
         // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
         None => Ok(ConnectionEnd::new(
             msg.client_id().clone(),
-            msg.counterparty().clone(),
+            msg.counterparty(),
             msg.counterparty_versions(),
         )?),
     }?;
@@ -258,7 +258,7 @@ fn verify_proofs(
         connection_end.counterparty().connection_id(),
         expected_conn,
     )?;
-    if verification_res == false {
+    if !verification_res {
         // Verification of connection state proof failed.
         return Err(Kind::InvalidProof
             .context(String::from("connection state proof is invalid"))
@@ -279,7 +279,7 @@ fn verify_proofs(
                     consensus_proof.height(),
                     expected_cs,
                 )?;
-                if verification_res == false {
+                if !verification_res {
                     Err(Kind::InvalidProof
                         .context(String::from("consensus state proof is invalid"))
                         .into())
@@ -346,7 +346,6 @@ pub fn produce_events(ctx: &dyn ICS3Context, msg: &ICS3Msg) -> Vec<IBCEvent> {
 }
 
 #[cfg(test)]
-#[allow(warnings)]
 mod tests {
     use crate::events::IBCEvent;
     use crate::ics02_client::state::{ClientState, ConsensusState};
@@ -355,7 +354,7 @@ mod tests {
     use crate::ics03_connection::error::Error;
     use crate::ics03_connection::exported::{get_compatible_versions, State};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::{ICS3Msg, MsgConnectionOpenInit};
+    use crate::ics03_connection::msgs::ICS3Msg;
     use crate::ics03_connection::protocol::process_ics3_msg;
     use crate::ics23_commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -394,7 +393,7 @@ mod tests {
 
         fn fetch_client_state(
             &self,
-            client_id: &ClientId,
+            _client_id: &ClientId,
         ) -> Option<&dyn ClientState<ValidationError = Error>> {
             unimplemented!()
         }
@@ -413,7 +412,7 @@ mod tests {
 
         fn fetch_consensus_state(
             &self,
-            height: u64,
+            _height: u64,
         ) -> Option<&dyn ConsensusState<ValidationError = Error>> {
             unimplemented!()
         }
@@ -473,43 +472,53 @@ mod tests {
         .into_iter()
         .collect();
 
-        for mut test in tests {
+        for test in tests {
             let res = process_ics3_msg(&test.params.ctx, &test.params.msg);
-
-            assert_eq!(
-                test.want_pass,
-                res.is_ok(),
-                "process_ics3_msg() failed for test: {}, \nparams {:?} error: {:?}",
-                test.name,
-                test.params.clone(),
-                res.err(),
-            );
             // Additionally check the events and the output objects in the result.
-            res.map(|proto_output| {
-                assert!(proto_output.object.is_some()); // An output object must exist.
-                assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+            match res {
+                Ok(proto_output) => {
+                    assert_eq!(
+                        test.want_pass,
+                        true,
+                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?}",
+                        test.name,
+                        test.params.clone()
+                    );
+                    assert!(proto_output.object.is_some()); // An output object must exist.
+                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
-                // The object in the output is a ConnectionEnd
-                proto_output.object.map(|conn_end| {
-                    assert!(conn_end.state_matches(&State::Init));
-                });
-                for e in proto_output.events.iter() {
-                    match e {
-                        IBCEvent::OpenInitConnection(_event) => {
-                            // TODO: Test `_event.height` against the chain height (must be equal).
-                            // Currently such a test cannot compile b/c:
-                            // "no implementation for `u64 == tendermint::block::height::Height`".
-                            // Fixed with: https://github.com/informalsystems/ibc-rs/issues/191.
-                            // assert_eq!(test.params.ctx.chain_current_height(), _event.height);
+                    // The object in the output is a ConnectionEnd, should have init state.
+                    proto_output.object.map(|conn_end| {
+                        assert!(conn_end.state_matches(&State::Init));
+                    });
+                    for e in proto_output.events.iter() {
+                        match e {
+                            IBCEvent::OpenInitConnection(_event) => {
+                                // TODO: Test `_event.height` against the chain height (must be equal).
+                                // Currently such a test cannot compile b/c:
+                                // "no implementation for `u64 == tendermint::block::height::Height`".
+                                // Fixed with: https://github.com/informalsystems/ibc-rs/issues/191.
+                                // assert_eq!(test.params.ctx.chain_current_height(), _event.height);
+                            }
+                            _ => panic!(
+                                "process_ics3_msg() failed for test {}, \nparams {:?}",
+                                test.name,
+                                test.params.clone()
+                            ),
                         }
-                        _ => panic!(
-                            "process_ics3_msg() failed for test {}, \nparams {:?}",
-                            test.name,
-                            test.params.clone()
-                        ),
                     }
                 }
-            });
+                Err(e) => {
+                    assert_eq!(
+                        test.want_pass,
+                        false,
+                        "process_ics3_msg() failed for test: {}, \nparams {:?} error: {:?}",
+                        test.name,
+                        test.params.clone(),
+                        e,
+                    );
+                }
+            }
         }
     }
 

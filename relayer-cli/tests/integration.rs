@@ -12,7 +12,6 @@
 )]
 
 use modules::ics03_connection::connection::ConnectionEnd;
-use modules::ics03_connection::exported::Connection;
 use modules::ics03_connection::exported::State as ConnectionState;
 use modules::ics04_channel::channel::ChannelEnd;
 use modules::ics04_channel::exported::Channel;
