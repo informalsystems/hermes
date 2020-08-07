@@ -112,5 +112,8 @@ fn query_client_id() {
         )
         .unwrap();
 
-    assert_eq!(query[0], ConnectionId::from_str("connections/connectionidone").unwrap());
+    assert_eq!(
+        query[0],
+        ConnectionId::from_str("connections/connectionidone").unwrap()
+    );
 }
