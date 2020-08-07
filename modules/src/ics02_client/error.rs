@@ -2,6 +2,7 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics24_host::identifier::ClientId;
+use crate::Height;
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -15,6 +16,9 @@ pub enum Kind {
 
     #[error("client not found: {0}")]
     ClientNotFound(ClientId),
+
+    #[error("consensus state not found at: {0} at height {1}")]
+    ConsensusStateNotFound(ClientId, Height),
 
     #[error("implementation specific")]
     ImplementationSpecific,
