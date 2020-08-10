@@ -79,7 +79,7 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
                   clientID |-> srcClientID]} 
             ELSE {} IN                   
                     
-    [datagrams|-> dstDatagrams, relayerUpdate |-> updatedRelayer]    
+    [datagrams|-> AsSetDatagrams(dstDatagrams), relayerUpdate |-> updatedRelayer]    
    
 (***************************************************************************
  Connection datagrams
@@ -109,7 +109,7 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
     ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
                                                \/ dstConnectionEnd.state = "INIT" THEN 
          {[type |-> "ConnOpenTry",
-           desiredConnectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+           connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            clientID |-> srcConnectionEnd.counterpartyClientID, \* "clA"
            counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
            counterpartyClientID |-> srcConnectionEnd.clientID, \* "clB" 
@@ -260,32 +260,32 @@ ComputeDatagrams(srcChainID, dstChainID) ==
     LET clientDatagrams == 
         IF GenerateClientDatagrams 
         THEN LightClientUpdates(srcChainID, dstChainID, relayerHeights) 
-        ELSE [datagrams |-> {}, relayerUpdate |-> relayerHeights] IN
+        ELSE [datagrams |-> AsSetDatagrams({}), relayerUpdate |-> relayerHeights] IN
     
     \* ICS3 : Connections
     \* - Determine if any connection handshakes are in progress
     LET connectionDatagrams == 
         IF GenerateConnectionDatagrams
-        THEN ConnectionDatagrams(srcChainID, dstChainID) 
-        ELSE {} IN
+        THEN AsSetDatagrams(ConnectionDatagrams(srcChainID, dstChainID)) 
+        ELSE AsSetDatagrams({}) IN
     
     \* ICS4 : Channels & Packets
     \* - Determine if any channel handshakes are in progress
     LET channelDatagrams == 
         IF GenerateChannelDatagrams 
-        THEN ChannelDatagrams(srcChainID, dstChainID) 
-        ELSE {} IN
+        THEN AsSetDatagrams(ChannelDatagrams(srcChainID, dstChainID)) 
+        ELSE AsSetDatagrams({}) IN
     
     \* ICS4 : Channels & Packets
     \* - Determine if any packets, acknowledgements, or timeouts need to be relayed
     LET packetDatagrams == 
         IF GenerateChannelDatagrams 
-        THEN PacketDatagrams(srcChainID, dstChainID) 
-        ELSE {} IN
+        THEN AsSetDatagrams(PacketDatagrams(srcChainID, dstChainID)) 
+        ELSE AsSetDatagrams({}) IN
     
-    [datagrams |-> clientDatagrams.datagrams \union 
+    [datagrams |-> AsSetDatagrams(clientDatagrams.datagrams \union 
                    connectionDatagrams \union 
-                   channelDatagrams, 
+                   channelDatagrams), 
      relayerUpdate |-> clientDatagrams.relayerUpdate]
 
 (***************************************************************************
@@ -307,9 +307,9 @@ Relay(srcChainID, dstChainID) ==
     /\ srcChainID /= dstChainID
     /\ outgoingDatagrams' = 
             [outgoingDatagrams EXCEPT 
-                ![dstChainID] = outgoingDatagrams[dstChainID] 
+                ![dstChainID] = AsSetDatagrams(outgoingDatagrams[dstChainID] 
                                 \union 
-                                datagramsAndRelayerUpdate.datagrams
+                                datagramsAndRelayerUpdate.datagrams)
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
     /\ UNCHANGED <<chainAstore, chainBstore, packetLog>>
@@ -327,8 +327,8 @@ CreateDatagrams ==
 \*    Initially:
 \*        - the relayer heights are uninitialized (i.e., their height is nullHeight)
 Init == 
-    /\ relayerHeights = [chainID \in ChainIDs |-> nullHeight]
-    /\ outgoingDatagrams = [chainID \in ChainIDs |-> {}]
+    /\ relayerHeights = [chainID \in ChainIDs |-> AsInt(nullHeight)]
+    /\ outgoingDatagrams = [chainID \in ChainIDs |-> AsSetDatagrams({})]
     
 \* Next state action
 \*    The relayer either:
@@ -357,5 +357,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 05 12:21:26 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 10 16:45:20 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

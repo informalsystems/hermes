@@ -7,7 +7,114 @@
 
 EXTENDS Integers, FiniteSets
 
-ChainIDs == {"chainA", "chainB"}
+(********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
+\* operator for type annotations
+a <: b == a
+
+\* unordered channel end type
+UnorderedChannelEndType == 
+    [
+        state |-> STRING, 
+        order |-> STRING, 
+        channelID |-> STRING, 
+        counterpartyChannelID |-> STRING
+    ]
+    
+\* ordered channel end type
+OrderedChannelEndType == 
+    [
+        state |-> STRING, 
+        order |-> STRING, 
+        channelID |-> STRING, 
+        counterpartyChannelID |-> STRING,
+        nextSendSeq |-> Int, 
+        nextRcvSeq |-> Int, 
+        nextAckSeq |-> Int
+    ]
+
+\* to deal with union types, use the supertype    
+ChannelEndType == OrderedChannelEndType    
+       
+\* connection end type
+ConnectionEndType == 
+    [
+        state |-> STRING, 
+        connectionID |-> STRING, 
+        clientID |-> STRING,
+        counterpartyConnectionID |-> STRING, 
+        counterpartyClientID |-> STRING,
+        channelEnd |-> OrderedChannelEndType
+    ]
+
+\* packet commitment type
+PacketCommitmentType == 
+    [
+        channelID |-> STRING, 
+        sequence |-> Int, 
+        timeoutHeight |-> Int
+    ]
+
+\* packet type
+PacketType ==
+    [
+        sequence |-> Int,
+        timeoutHeight |-> Int, 
+        srcChainID |-> STRING,
+        dstChainID |-> STRING
+    ]
+
+\* chain store type 
+ChainStoreType == 
+    [
+        height |-> Int, 
+        counterpartyClientHeights |-> {Int},
+        connectionEnd |-> ConnectionEndType, 
+        packetCommitment |-> {PacketCommitmentType} 
+    ]
+
+\* history variable type
+HistoryType == 
+    [
+        connInit |-> BOOLEAN, 
+        connTryOpen |-> BOOLEAN, 
+        connOpen |-> BOOLEAN,
+        chanInit |-> BOOLEAN, 
+        chanTryOpen |-> BOOLEAN, 
+        chanOpen |-> BOOLEAN, 
+        chanClosed |-> BOOLEAN
+    ]
+                
+\* datagram type (record type containing fields of all datagrams)                  
+DatagramType ==
+    [
+        type |-> STRING,
+        height |-> Int,
+        proofHeight |-> Int,
+        consensusHeight |-> Int,
+        clientID |-> STRING,
+        counterpartyClientID |-> STRING,
+        connectionID |-> STRING,
+        counterpartyConnectionID |-> STRING,
+        channelID |-> STRING,
+        counterpartyChannelID |-> STRING,
+        packet |-> PacketType,
+        acknowledgement |-> BOOLEAN
+    ]
+
+AsID(ID) == ID <: STRING
+AsInt(n) == n <: Int
+AsString(s) == s <: STRING
+AsChannelEnd(channelEnd) == channelEnd <: ChannelEndType
+AsConnectionEnd(connectionEnd) == connectionEnd <: ConnectionEndType  
+AsChainStore(chainStore) == chainStore <: ChainStoreType
+AsHistory(history) == history <: HistoryType
+AsDatagram(dgr) == dgr <: DatagramType
+AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
+AsSetInt(S) == S <: {Int}
+AsSetPacket(P) == P <: {PacketType}
+
+(********************** Common operator definitions ***********************)
+ChainIDs == {"chainA", "chainB"} 
 ClientIDs == {"clA", "clB"}
 ConnectionIDs == {"connAtoB", "connBtoA"}
 ChannelIDs == {"chanAtoB", "chanBtoA"}
@@ -19,23 +126,9 @@ nullChannelID == "none"
 
 ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
-ChannelOrder == {"ORDERED", "UNORDERED"}
+ChannelOrder == {"ORDERED", "UNORDERED"} 
 
-Max(S) == CHOOSE x \in S: \A y \in S: y <= x
-
-(********************* TYPE ANNOTATIONS FOR APALACHE **************************)
-\* operator for type annotations
-a <: b == a
-
-\* unordered channel end type
-UnorderedChannelEnd == [state |-> STRING, order |-> STRING, 
-                        channelID |-> STRING, counterpartychannelID |-> STRING]
-\* ordered channel end type
-OrderedChannelEnd == [state |-> STRING, order |-> STRING, 
-                      channelID |-> STRING, counterpartychannelID |-> STRING, 
-                      nextSendSeq |-> Int, nextRcveq |-> Int, nextAckSeq |-> Int]
-                      
-
+Max(S) == CHOOSE x \in S: \A y \in S: y <= x 
 
 (******************************* ChannelEnds *******************************
     A set of channel end records. 
@@ -78,7 +171,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
              nextAckSeq : 0..maxPacketSeq, 
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
-         ]
+         ] <: {OrderedChannelEndType}
     
 (**************************** PacketCommitments ****************************
  A set of packet commitments.
@@ -88,7 +181,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq, 
         timeoutHeight : 1..maxHeight
-    ]    
+    ] <: {PacketCommitmentType} 
 
 (***************************** ConnectionEnds *****************************
     A set of connection end records. 
@@ -121,7 +214,7 @@ ConnectionEnds(channelOrdering, maxPacketSeq) ==
         counterpartyConnectionID : ConnectionIDs \union {nullConnectionID},
         counterpartyClientID : ClientIDs \union {nullClientID}, 
         channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
-    ]  
+    ] <: {ConnectionEndType} 
 
 (******************************** ChainStores ******************************
     A set of chain records. 
@@ -142,7 +235,7 @@ ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==
         counterpartyClientHeights : SUBSET(1..maxHeight),
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq),
         packetCommitment : SUBSET(PacketCommitments(maxHeight, maxPacketSeq))
-    ]
+    ] <: {ChainStoreType}
 
 (********************************* Packets *********************************
  A set of packets.
@@ -153,7 +246,7 @@ Packets(maxHeight, maxPacketSeq) ==
         timeoutHeight : 1..maxHeight,
         srcChannelID : ChannelIDs,
         dstChannelID : ChannelIDs
-    ]
+    ] <: {PacketType}
 
 (******************************** Datagrams ********************************
  A set of datagrams.
@@ -166,7 +259,7 @@ Datagrams(maxHeight, maxPacketSeq) ==
     [type : {"ConnOpenInit"}, connectionID : ConnectionIDs, clientID : ClientIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs]
     \union
-    [type : {"ConnOpenTry"}, desiredConnectionID : ConnectionIDs, 
+    [type : {"ConnOpenTry"}, connectionID : ConnectionIDs, 
      counterpartyConnectionID : ConnectionIDs, counterpartyClientID : ClientIDs, 
      clientID : ClientIDs, proofHeight : 1..maxHeight, consensusHeight : 1..maxHeight]
     \union
@@ -191,6 +284,7 @@ Datagrams(maxHeight, maxPacketSeq) ==
     [type : {"PacketRecv"}, packet : Packets(maxHeight, maxPacketSeq), proofHeight : 1..maxHeight]
     \union 
     [type : {"PacketAck"}, packet : Packets(maxHeight, maxPacketSeq), acknowledgement : BOOLEAN, proofHeight : 1..maxHeight]
+    <: {DatagramType}
 
 Histories ==
     [
@@ -201,7 +295,7 @@ Histories ==
         chanTryOpen : BOOLEAN,
         chanOpen : BOOLEAN,
         chanClosed : BOOLEAN
-     ] 
+     ] <: {HistoryType}
 
 (***************************************************************************
  Initial values of a channel end, connection end, chain
@@ -214,7 +308,7 @@ InitUnorderedChannelEnd ==
     [state |-> "UNINIT",
      order |-> "UNORDERED",
      channelID |-> nullChannelID,
-     counterpartyChannelID |-> nullChannelID] <: UnorderedChannelEnd
+     counterpartyChannelID |-> nullChannelID] <: ChannelEndType
      
 \* Initial value of an ordered channel end:
 \*      - state is "UNINIT"
@@ -228,43 +322,39 @@ InitOrderedChannelEnd ==
      nextRcvSeq |-> 0,
      nextAckSeq |-> 0,
      channelID |-> nullChannelID,
-     counterpartyChannelID |-> nullChannelID] <: OrderedChannelEnd
+     counterpartyChannelID |-> nullChannelID] <: ChannelEndType
 
 \* Initial value of a connection end:
 \*      - state is "UNINIT"
 \*      - connectionID, counterpartyConnectionID are uninitialized
 \*      - clientID, counterpartyClientID are uninitialized    
-\*      - channelEnd is initialized based on channelOrdering
-InitOrderedConnectionEnd ==
-    [state |-> "UNINIT",
+\*      - channelEnd is initialized based on channelOrdering      
+InitConnectionEnd(channelOrdering) ==
+    IF channelOrdering = "ORDERED"
+    THEN [state |-> "UNINIT",
           connectionID |-> nullConnectionID,
           clientID |-> nullClientID,
           counterpartyConnectionID |-> nullConnectionID,
           counterpartyClientID |-> nullClientID,
           channelEnd |-> InitOrderedChannelEnd]
-InitUnorderedConnectionEnd ==
-    [state |-> "UNINIT",
+    ELSE [state |-> "UNINIT",
           connectionID |-> nullConnectionID,
           clientID |-> nullClientID,
           counterpartyConnectionID |-> nullConnectionID,
           counterpartyClientID |-> nullClientID,
-          channelEnd |-> InitUnorderedChannelEnd]  
+          channelEnd |-> InitUnorderedChannelEnd]   
+    <: ConnectionEndType       
 
 \* Initial value of the chain store: 
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
 \*      - the connection end is initialized to InitConnectionEnd 
-InitOrderedChainStore ==
+InitChainStore(channelOrdering) == 
     [height |-> 1,
      counterpartyClientHeights |-> {}, 
-     connectionEnd |-> InitOrderedConnectionEnd,
-     packetCommitment |-> {}]
-
-InitUnorderedChainStore ==
-    [height |-> 1,
-     counterpartyClientHeights |-> {}, 
-     connectionEnd |-> InitUnorderedConnectionEnd,
-     packetCommitment |-> {}]
+     connectionEnd |-> InitConnectionEnd(channelOrdering),
+     packetCommitment |-> {}] <: ChainStoreType
+        
 
 \* Initial value of history flags         
 InitHistory ==
@@ -276,7 +366,7 @@ InitHistory ==
         chanTryOpen |-> FALSE,
         chanOpen |-> FALSE,
         chanClosed |-> FALSE
-     ]    
+     ]  <: HistoryType  
          
 (***************************************************************************
  Client helper operators
@@ -284,33 +374,33 @@ InitHistory ==
 
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
-    IF chainID = "chainA" THEN "chainB" ELSE "chainA"    
+    IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
  
 \* get the client ID of the client for chainID 
 GetClientID(chainID) ==
-    IF chainID = "chainA" THEN "clA" ELSE "clB"
+    IF chainID = "chainA" THEN AsID("clA") ELSE AsID("clB")
         
 \* get the client ID of the client for chainID's counterparty chain           
 GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN "clB" ELSE "clA"
+    IF chainID = "chainA" THEN AsID("clB") ELSE AsID("clA")
     
 \* get the latest height of chainID
 GetLatestHeight(chain) ==
-    chain.height   
+    AsInt(chain.height)   
       
 \* get the maximal height of the client for chainID's counterparty chain    
 GetMaxCounterpartyClientHeight(chain) ==
     IF chain.counterpartyClientHeights /= {}
-    THEN Max(chain.counterpartyClientHeights)
-    ELSE nullHeight
+    THEN AsInt(Max(chain.counterpartyClientHeights))
+    ELSE AsInt(nullHeight)
 
 \* get the set of heights of the client for chainID's counterparty chain    
 GetCounterpartyClientHeights(chain) ==
-    chain.counterpartyClientHeights        
+    AsSetInt(chain.counterpartyClientHeights)        
 
 \* returns true if the counterparty client is initialized on chainID
 IsCounterpartyClientOnChain(chain) ==
-    chain.counterpartyClientHeights /= {}
+    AsInt(chain.counterpartyClientHeights) /= AsInt({})
 
 \* returns true if the height h is in counterparty client heights on chainID 
 IsCounterpartyClientHeightOnChain(chain, h) ==
@@ -323,25 +413,26 @@ IsCounterpartyClientHeightOnChain(chain, h) ==
 \* get the connection ID of the connection end at chainID
 GetConnectionID(chainID) ==
     IF chainID = "chainA"
-    THEN "connAtoB"
+    THEN AsID("connAtoB")
     ELSE IF chainID = "chainB"
-         THEN "connBtoA"
-         ELSE nullConnectionID      
+         THEN AsID("connBtoA")
+         ELSE AsID(nullConnectionID)      
 
 \* get the connection ID of the connection end at chainID's counterparty chain
 GetCounterpartyConnectionID(chainID) ==
     IF chainID = "chainA"
-    THEN "connBtoA"
+    THEN AsID("connBtoA")
     ELSE IF chainID = "chainB"
-         THEN "connAtoB"
-         ELSE nullConnectionID 
+         THEN AsID("connAtoB")
+         ELSE AsID(nullConnectionID)
+          
 \* get the connection end at chainID
 GetConnectionEnd(chain) == 
-    chain.connectionEnd
+    AsConnectionEnd(chain.connectionEnd)
 
 \* returns true if the connection end on chainID is UNINIT
 IsConnectionUninit(chain) ==
-    chain.connectionEnd.state = "UNINIT"
+    AsString(chain.connectionEnd.state) = "UNINIT"
 
 \* returns true if the connection end on chainID is INIT
 IsConnectionInit(chain) ==
@@ -362,18 +453,18 @@ IsConnectionOpen(chain) ==
 \* get the channel ID of the channel end at the connection end of chainID
 GetChannelID(chainID) ==
     IF chainID = "chainA"
-    THEN "chanAtoB"
+    THEN AsID("chanAtoB")
     ELSE IF chainID = "chainB"
-         THEN "chanBtoA"
-         ELSE nullChannelID
+         THEN AsID("chanBtoA")
+         ELSE AsID(nullChannelID)
          
 \* get the channel ID of the channel end at chainID's counterparty chain
 GetCounterpartyChannelID(chainID) ==
     IF chainID = "chainA"
-    THEN "chanBtoA"
+    THEN AsID("chanBtoA")
     ELSE IF chainID = "chainB"
-         THEN "chanAtoB"
-         ELSE nullChannelID 
+         THEN AsID("chanAtoB")
+         ELSE AsID(nullChannelID) 
                    
 \* get the channel end at the connection end of chainID          
 GetChannelEnd(chain) ==
@@ -401,5 +492,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 05 12:39:33 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 10 18:07:02 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

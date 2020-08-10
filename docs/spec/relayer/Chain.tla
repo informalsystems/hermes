@@ -40,18 +40,18 @@ LightClientUpdate(chainID, store, datagrams) ==
 ConnectionUpdate(chainID, store, hist, datagrams) ==
     \* update the chain store with "ConnOpenInit" datagrams, as well as the history variable
     LET connOpenInitRes == HandleConnOpenInit(chainID, store, hist, datagrams) IN
-    LET connOpenInitStore == connOpenInitRes.store IN
-    LET connOpenInitHistory == connOpenInitRes.history IN
+    LET connOpenInitStore == AsChainStore(connOpenInitRes.store) IN
+    LET connOpenInitHistory == AsHistory(connOpenInitRes.history) IN
     
     \* update the chain store with "ConnOpenTry" datagrams, as well as the history variable 
     LET connOpenTryRes == HandleConnOpenTry(chainID, connOpenInitStore, connOpenInitHistory, datagrams) IN
-    LET connOpenTryStore == connOpenTryRes.store IN
-    LET connOpenTryHistory == connOpenTryRes.history IN
+    LET connOpenTryStore == AsChainStore(connOpenTryRes.store) IN
+    LET connOpenTryHistory == AsHistory(connOpenTryRes.history) IN
     
     \* update the chain store with "ConnOpenAck" datagrams, as well as the history variable 
     LET connOpenAckRes == HandleConnOpenAck(chainID, connOpenTryStore, connOpenTryHistory, datagrams) IN
-    LET connOpenAckStore == connOpenAckRes.store IN
-    LET connOpenAckHistory == connOpenAckRes.history IN
+    LET connOpenAckStore == AsChainStore(connOpenAckRes.store) IN
+    LET connOpenAckHistory == AsHistory(connOpenAckRes.history) IN
     
     \* update the chain store with "ConnOpenConfirm" datagrams, as well as the history variable
     LET connOpenConfirmRes == HandleConnOpenConfirm(chainID, connOpenAckStore, connOpenAckHistory, datagrams) IN
@@ -68,28 +68,28 @@ ConnectionUpdate(chainID, store, hist, datagrams) ==
 ChannelUpdate(chainID, store, hist, datagrams) ==
     \* update the chain store with "ChanOpenInit" datagrams, as well as the history variable
     LET chanOpenInitRes == HandleChanOpenInit(chainID, store, hist, datagrams) IN
-    LET chanOpenInitStore == chanOpenInitRes.store IN
-    LET chanOpenInitHistory == chanOpenInitRes.history IN
+    LET chanOpenInitStore == AsChainStore(chanOpenInitRes.store) IN
+    LET chanOpenInitHistory == AsHistory(chanOpenInitRes.history) IN
     
     \* update the chain store with "ChanOpenTry" datagrams, as well as the history variable
     LET chanOpenTryRes == HandleChanOpenTry(chainID, chanOpenInitStore, chanOpenInitHistory, datagrams) IN
-    LET chanOpenTryStore == chanOpenTryRes.store IN
-    LET chanOpenTryHistory == chanOpenTryRes.history IN
+    LET chanOpenTryStore == AsChainStore(chanOpenTryRes.store) IN
+    LET chanOpenTryHistory == AsHistory(chanOpenTryRes.history) IN
     
     \* update the chain store with "ChanOpenAck" datagrams, as well as the history variable
     LET chanOpenAckRes == HandleChanOpenAck(chainID, chanOpenTryStore, chanOpenTryHistory, datagrams) IN
-    LET chanOpenAckStore == chanOpenAckRes.store IN
-    LET chanOpenAckHistory == chanOpenAckRes.history IN
+    LET chanOpenAckStore == AsChainStore(chanOpenAckRes.store) IN
+    LET chanOpenAckHistory == AsHistory(chanOpenAckRes.history) IN
     
     \* update the chain store with "ChanOpenConfirm" datagrams, as well as the history variable
     LET chanOpenConfirmRes == HandleChanOpenConfirm(chainID, chanOpenAckStore, chanOpenAckHistory, datagrams) IN
-    LET chanOpenConfirmStore == chanOpenConfirmRes.store IN
-    LET chanOpenConfirmHistory == chanOpenConfirmRes.history IN
+    LET chanOpenConfirmStore == AsChainStore(chanOpenConfirmRes.store) IN
+    LET chanOpenConfirmHistory == AsHistory(chanOpenConfirmRes.history) IN
     
     \* update the chain store with "ChanCloseInit" datagrams, as well as the history variable
     LET chanCloseInitRes == HandleChanCloseInit(chainID, chanOpenConfirmStore, chanOpenConfirmHistory, datagrams) IN
-    LET chanCloseInitStore == chanCloseInitRes.store IN
-    LET chanCloseInitHistory == chanCloseInitRes.history IN
+    LET chanCloseInitStore == AsChainStore(chanCloseInitRes.store) IN
+    LET chanCloseInitHistory == AsHistory(chanCloseInitRes.history) IN
     
     \* update the chain store with "ChanCloseConfirm" datagrams, as well as the history variable
     LET chanCloseConfirmRes == HandleChanCloseConfirm(chainID, chanCloseInitStore, chanCloseInitHistory, datagrams) IN
@@ -118,16 +118,17 @@ PacketUpdate(chainID, store, datagrams) ==
 \* Supports ICS2 (Clients), ICS3 (Connections), and ICS4 (Channels).
 UpdateChainStoreAndHistory(chainID, datagrams) == 
     \* ICS 002: Client updates
-    LET clientUpdatedStore == LightClientUpdate(chainID, chainStore, datagrams) IN 
+    LET clientUpdatedStore == LightClientUpdate(chainID, chainStore, datagrams) IN
+     
     \* ICS 003: Connection updates
     LET connectionUpdatedRes == ConnectionUpdate(chainID, clientUpdatedStore, history, datagrams) IN
-    LET connectionUpdatedStore == connectionUpdatedRes.store IN
-    LET connectionUpdatedHistory == connectionUpdatedRes.history IN
+    LET connectionUpdatedStore == AsChainStore(connectionUpdatedRes.store) IN
+    LET connectionUpdatedHistory == AsHistory(connectionUpdatedRes.history) IN
     
     \* ICS 004: Channel updates
     LET channelUpdatedRes == ChannelUpdate(chainID, connectionUpdatedStore, connectionUpdatedHistory, datagrams) IN
-    LET channelUpdatedStore == channelUpdatedRes.store IN
-    LET channelUpdatedHistory == channelUpdatedRes.history IN
+    LET channelUpdatedStore == AsChainStore(channelUpdatedRes.store) IN
+    LET channelUpdatedHistory == AsHistory(channelUpdatedRes.history) IN
     
     \* ICS 004: Packet transmission
 \*    LET packetsUpdatedStore == PacketUpdate(chainID, channelUpdatedStore, datagrams) IN
@@ -140,7 +141,8 @@ UpdateChainStoreAndHistory(chainID, datagrams) ==
         ELSE channelUpdatedStore
     IN
     
-    [store |-> updatedChainStore, history |-> channelUpdatedHistory]
+    [store |-> AsChainStore(updatedChainStore), 
+     history |-> AsHistory(channelUpdatedHistory)] 
 
 (***************************************************************************
  Chain actions
@@ -200,10 +202,10 @@ SendPacket ==
 \* Handle the datagrams and update the chain state        
 HandleIncomingDatagrams ==
     LET updateRes == UpdateChainStoreAndHistory(ChainID, incomingDatagrams) IN
-    /\ incomingDatagrams /= {} 
+    /\ incomingDatagrams /= AsSetDatagrams({}) 
     /\ chainStore' = updateRes.store
     /\ history' = updateRes.history
-    /\ incomingDatagrams' = {}
+    /\ incomingDatagrams' = AsSetDatagrams({})
     /\ UNCHANGED <<appPacketSeq, packetLog>>
 
 (***************************************************************************
@@ -215,11 +217,9 @@ HandleIncomingDatagrams ==
 \*  - pendingDatagrams for each chain is empty
 \*  - the packetSeq is set to 1
 Init == 
-    /\ chainStore = IF ChannelOrdering = "UNORDERED" 
-                    THEN InitUnorderedChainStore
-                    ELSE InitOrderedChainStore
-    /\ incomingDatagrams = {}
-    /\ appPacketSeq = 1
+    /\ chainStore = InitChainStore(ChannelOrdering)
+    /\ incomingDatagrams = AsSetDatagrams({})
+    /\ appPacketSeq = AsInt(1)
     /\ history = InitHistory
 
 \* Next state action
@@ -259,5 +259,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 05 12:29:07 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 10 17:01:54 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

@@ -113,9 +113,9 @@ ChainAction ==
  ***************************************************************************)
 \* Submit datagrams from relayers to chains
 SubmitDatagrams ==
-    /\ incomingDatagramsChainA' = incomingDatagramsChainA \union outgoingDatagrams["chainA"]
-    /\ incomingDatagramsChainB' = incomingDatagramsChainB \union outgoingDatagrams["chainB"]
-    /\ outgoingDatagrams' = [chainID \in ChainIDs |-> {}]
+    /\ incomingDatagramsChainA' = AsSetDatagrams(incomingDatagramsChainA \union outgoingDatagrams["chainA"])
+    /\ incomingDatagramsChainB' = AsSetDatagrams(incomingDatagramsChainB \union outgoingDatagrams["chainB"])
+    /\ outgoingDatagrams' = [chainID \in ChainIDs |-> AsSetDatagrams({})]
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
     /\ UNCHANGED <<closeChannelA, closeChannelB>>
     /\ UNCHANGED <<appPacketSeqChainA, appPacketSeqChainB, historyChainA, historyChainB, packetLog>>
@@ -157,7 +157,7 @@ Init ==
     /\ Relayer2!Init
     /\ closeChannelA = FALSE
     /\ closeChannelB = FALSE
-    /\ packetLog = {}
+    /\ packetLog = AsSetPacket({})
     
 \* Next state action
 Next ==
@@ -550,5 +550,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 05 12:21:12 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 10 16:50:02 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska
