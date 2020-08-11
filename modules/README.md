@@ -9,7 +9,7 @@ Implementation of the Inter-Blockchain Communication Protocol ([IBC]).
 
 ## Documentation
 
-See documentation on [crates.io][docs-link].
+See documentation on [docs.rs][docs-link].
 
 [//]: # (badges)
 
