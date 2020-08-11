@@ -33,7 +33,7 @@ HandleCreateClient(chainID, chain, datagrams) ==
                 IF \/ chain.counterpartyClientHeights /= AsSetInt({}) 
                    \/ createClientHeights = AsSetInt({})
                 \* then discard CreateClient datagrams  
-                THEN chain.counterpartyClientHeights
+                THEN AsSetInt(chain.counterpartyClientHeights)
                 \* otherwise, create counterparty client with height Max(createClientHeights)  
                 ELSE {Max(createClientHeights)}
          ] IN
@@ -74,5 +74,5 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 17:43:38 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 10 19:43:27 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

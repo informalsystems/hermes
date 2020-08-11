@@ -192,10 +192,10 @@ SendPacket ==
                 !.connectionEnd.channelEnd.nextSentSeq = channelEnd.nextSentSeq + 1
               ]               
     \* log sent packet
-    /\ packetLog' = packetLog \union {[type |-> "sent", 
+    /\ packetLog' = AsPacketLog(packetLog \union {[type |-> "sent", 
                                        srcChainID |-> ChainID,  
-                                       sequence |-> packet.sequence,
-                                       timeoutHeight |-> packet.timeoutHeight]}
+                                       sequence |-> packet.sequence ,
+                                       timeoutHeight |-> packet.timeoutHeight]})
     \* increase application packet sequence
     /\ appPacketSeq' = appPacketSeq + 1
 
@@ -259,5 +259,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 17:01:54 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 11 10:57:03 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

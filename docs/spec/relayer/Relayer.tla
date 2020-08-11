@@ -66,18 +66,18 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
     
     \* generate datagrams for dstChainID
     LET dstDatagrams == 
-        IF srcClientHeight = nullHeight
+        IF srcClientHeight = AsInt(nullHeight)
         THEN \* the src client does not exist on dstChainID 
-            {[type |-> "CreateClient", 
+            AsSetDatagrams({[type |-> "CreateClient", 
               height |-> srcChainHeight,
-              clientID |-> srcClientID]} 
+              clientID |-> srcClientID]}) 
         ELSE \* the src client exists on dstChainID
             IF srcClientHeight < srcChainHeight
             THEN \* the height of the src client on dstChainID is smaller than the height of the src chain
-                {[type |-> "ClientUpdate",
+                AsSetDatagrams({[type |-> "ClientUpdate",
                   height |-> srcChainHeight,
-                  clientID |-> srcClientID]} 
-            ELSE {} IN                   
+                  clientID |-> srcClientID]}) 
+            ELSE AsSetDatagrams({}) IN                   
                     
     [datagrams|-> AsSetDatagrams(dstDatagrams), relayerUpdate |-> updatedRelayer]    
    
@@ -100,34 +100,34 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
     LET srcClientHeight == GetMaxCounterpartyClientHeight(srcChain) IN
     
     IF dstConnectionEnd.state = "UNINIT" /\ srcConnectionEnd.state = "UNINIT" THEN 
-         {[type |-> "ConnOpenInit", 
+         AsSetDatagrams({[type |-> "ConnOpenInit", 
            connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            clientID |-> GetCounterpartyClientID(dstChainID), \* "clA"
            counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
-           counterpartyClientID |-> GetCounterpartyClientID(srcChainID)]} \* "clB" 
+           counterpartyClientID |-> GetCounterpartyClientID(srcChainID)]}) \* "clB" 
     
     ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
                                                \/ dstConnectionEnd.state = "INIT" THEN 
-         {[type |-> "ConnOpenTry",
+         AsSetDatagrams({[type |-> "ConnOpenTry",
            connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            clientID |-> srcConnectionEnd.counterpartyClientID, \* "clA"
            counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
            counterpartyClientID |-> srcConnectionEnd.clientID, \* "clB" 
            proofHeight |-> srcHeight,
-           consensusHeight |-> srcClientHeight]}
+           consensusHeight |-> srcClientHeight]})
          
     ELSE IF srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
                                                   \/ dstConnectionEnd.state = "TRYOPEN" THEN
-         {[type |-> "ConnOpenAck",
+         AsSetDatagrams({[type |-> "ConnOpenAck",
            connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
            proofHeight |-> srcHeight,
-           consensusHeight |-> srcClientHeight]} 
+           consensusHeight |-> srcClientHeight]})
          
     ELSE IF srcConnectionEnd.state = "OPEN" /\ dstConnectionEnd.state = "TRYOPEN" THEN
-         {[type |-> "ConnOpenConfirm",
+         AsSetDatagrams({[type |-> "ConnOpenConfirm",
            connectionID |-> dstConnectionEnd.connectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-           proofHeight |-> srcHeight]} 
-    ELSE {}
+           proofHeight |-> srcHeight]}) 
+    ELSE AsSetDatagrams({})
 
 (***************************************************************************
  Channel handshake datagrams
@@ -149,37 +149,37 @@ ChannelDatagrams(srcChainID, dstChainID) ==
     LET dstCloseChannel == GetCloseChannelFlag(dstChainID) IN 
     
     IF dstChannelEnd.state = "UNINIT" /\ srcChannelEnd.state = "UNINIT" THEN 
-         {[type |-> "ChanOpenInit", 
+         AsSetDatagrams({[type |-> "ChanOpenInit", 
            channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-           counterpartyChannelID |-> srcChannelID]} \* "chanAtoB" 
+           counterpartyChannelID |-> srcChannelID]}) \* "chanAtoB" 
     
     ELSE IF srcChannelEnd.state = "INIT" /\ \/ dstChannelEnd.state = "UNINIT"
                                             \/ dstChannelEnd.state = "INIT" THEN 
-         {[type |-> "ChanOpenTry",
+         AsSetDatagrams({[type |-> "ChanOpenTry",
            channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            counterpartyChannelID |-> srcChannelID, \* "chanAtoB"
-           proofHeight |-> srcHeight]} 
+           proofHeight |-> srcHeight]}) 
          
     ELSE IF srcChannelEnd.state = "TRYOPEN" /\ \/ dstChannelEnd.state = "INIT"
                                                \/ dstChannelEnd.state = "TRYOPEN" THEN
-         {[type |-> "ChanOpenAck",
+         AsSetDatagrams({[type |-> "ChanOpenAck",
            channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-           proofHeight |-> srcHeight]} 
+           proofHeight |-> srcHeight]}) 
          
     ELSE IF srcChannelEnd.state = "OPEN" /\ dstChannelEnd.state = "TRYOPEN" THEN
-         {[type |-> "ChanOpenConfirm",
+         AsSetDatagrams({[type |-> "ChanOpenConfirm",
            channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-           proofHeight |-> srcHeight]} 
+           proofHeight |-> srcHeight]}) 
     
     \* channel closing datagrams creation only for open channels
     ELSE IF dstChannelEnd.state = "OPEN" /\ GetCloseChannelFlag(dstChannelID) THEN
-         {[type |-> "ChanCloseInit", 
-           channelID |-> dstChannelEnd.channelID]} \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+         AsSetDatagrams({[type |-> "ChanCloseInit", 
+           channelID |-> dstChannelEnd.channelID]}) \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
            
     ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" THEN 
-         {[type |-> "ChanCloseConfirm", 
+         AsSetDatagrams({[type |-> "ChanCloseConfirm", 
            channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-           proofHeight |-> srcHeight]}
+           proofHeight |-> srcHeight]})
     
     (** channel closing datagrams creation for channels which are still in handshake: 
         the propery ChanOpenInitDelivery is violated
@@ -194,57 +194,8 @@ ChannelDatagrams(srcChainID, dstChainID) ==
            proofHeight |-> srcHeight]}
     **)
            
-    ELSE {}
+    ELSE AsSetDatagrams({})
 
-(***************************************************************************
- Packet datagrams
- ***************************************************************************)
-
-\* relay sent packets
-PacketRecvDatagrams(srcChainID, dstChainID) ==
-    LET sentPacketLogs == {logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "sent"} IN
-    
-    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
-    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-    
-    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
-    
-    LET packetData(logEntry) == [sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 dstChannelID |-> dstChannelID] IN
-    
-    {[type |-> "PacketRecv",
-      packet |-> packetData(logEntry),  
-      proofHeight |-> srcHeight] : logEntry \in sentPacketLogs}
-
-\* relay acknowledgements to received packets
-PacketAckDatagrams(srcChainID, dstChainID) ==
-    LET recvPacketLogs == {logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "recv"} IN
-    
-    LET srcChannelID == GetChannelID(srcChainID) IN
-    LET dstChannelID == GetChannelID(dstChainID) IN
-    
-    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
-    
-    LET packetData(logEntry) == [sequence |-> logEntry.sequence, 
-                                 timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 dstChannelID |-> dstChannelID] IN
-    
-    {[type |-> "PacketAck",
-      packet |-> packetData(logEntry),
-      acknowledgement |-> logEntry.acknowledgement,  
-      proofHeight |-> srcHeight] : logEntry \in recvPacketLogs}
-
-\* Compute packet datagrams designated for dstChainID. 
-\* These are used to transmit packet on dstChainID 
-PacketDatagrams(srcChainID, dstChainID) ==
-    LET packetRecvDatagrams == PacketRecvDatagrams(srcChainID, dstChainID) IN
-    LET packetAckDatagrams == PacketAckDatagrams(srcChainID, dstChainID) IN
-    
-    packetRecvDatagrams \union packetAckDatagrams
-    
 
 (***************************************************************************
  Compute datagrams (from srcChainID to dstChainID)
@@ -276,12 +227,6 @@ ComputeDatagrams(srcChainID, dstChainID) ==
         THEN AsSetDatagrams(ChannelDatagrams(srcChainID, dstChainID)) 
         ELSE AsSetDatagrams({}) IN
     
-    \* ICS4 : Channels & Packets
-    \* - Determine if any packets, acknowledgements, or timeouts need to be relayed
-    LET packetDatagrams == 
-        IF GenerateChannelDatagrams 
-        THEN AsSetDatagrams(PacketDatagrams(srcChainID, dstChainID)) 
-        ELSE AsSetDatagrams({}) IN
     
     [datagrams |-> AsSetDatagrams(clientDatagrams.datagrams \union 
                    connectionDatagrams \union 
@@ -357,5 +302,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 16:45:20 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 11 12:50:40 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

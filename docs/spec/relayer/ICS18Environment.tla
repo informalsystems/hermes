@@ -157,7 +157,7 @@ Init ==
     /\ Relayer2!Init
     /\ closeChannelA = FALSE
     /\ closeChannelB = FALSE
-    /\ packetLog = AsSetPacket({})
+    /\ packetLog = AsPacketLog({})
     
 \* Next state action
 Next ==
@@ -550,5 +550,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 16:50:02 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 11 10:57:28 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

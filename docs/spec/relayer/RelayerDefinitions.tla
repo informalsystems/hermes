@@ -62,6 +62,17 @@ PacketType ==
         srcChainID |-> STRING,
         dstChainID |-> STRING
     ]
+    
+\* packet log entry type    
+PacketLogEntryType ==
+    [
+        type |-> STRING,
+        srcChainID |-> STRING,
+        sequence |-> Int,
+        timeoutHeight |-> Int,
+        acknowledgement |-> BOOLEAN
+    ]
+        
 
 \* chain store type 
 ChainStoreType == 
@@ -111,7 +122,11 @@ AsHistory(history) == history <: HistoryType
 AsDatagram(dgr) == dgr <: DatagramType
 AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
 AsSetInt(S) == S <: {Int}
+AsPacket(packet) == packet <: PacketType
 AsSetPacket(P) == P <: {PacketType}
+AsSetPacketCommitment(P) == P <: {PacketCommitmentType}
+AsPacketLogEntry(logEntry) == logEntry <: PacketLogEntryType
+AsPacketLog(packetLog) == packetLog <: {PacketLogEntryType}
 
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
@@ -351,9 +366,9 @@ InitConnectionEnd(channelOrdering) ==
 \*      - the connection end is initialized to InitConnectionEnd 
 InitChainStore(channelOrdering) == 
     [height |-> 1,
-     counterpartyClientHeights |-> {}, 
+     counterpartyClientHeights |-> AsSetInt({}), 
      connectionEnd |-> InitConnectionEnd(channelOrdering),
-     packetCommitment |-> {}] <: ChainStoreType
+     packetCommitment |-> AsSetPacketCommitment({})] <: ChainStoreType
         
 
 \* Initial value of history flags         
@@ -390,7 +405,7 @@ GetLatestHeight(chain) ==
       
 \* get the maximal height of the client for chainID's counterparty chain    
 GetMaxCounterpartyClientHeight(chain) ==
-    IF chain.counterpartyClientHeights /= {}
+    IF chain.counterpartyClientHeights /= AsSetInt({})
     THEN AsInt(Max(chain.counterpartyClientHeights))
     ELSE AsInt(nullHeight)
 
@@ -492,5 +507,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 18:07:02 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 11 11:22:21 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
