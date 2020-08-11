@@ -65,7 +65,7 @@ pub enum ClientMsg<CD: ClientDef> {
     // UpdateClient(UpdateClientMsg<CD>),
 }
 
-pub fn handler<CD, Ctx>(ctx: &mut Ctx, msg: ClientMsg<CD>) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<CD, Ctx>(ctx: &mut Ctx, msg: ClientMsg<CD>) -> Result<HandlerOutput<()>, Error>
 where
     CD: ClientDef,
     Ctx: ClientContext<CD> + ClientKeeper<CD>,
@@ -87,3 +87,4 @@ where
         }
     }
 }
+
