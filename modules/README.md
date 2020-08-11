@@ -5,7 +5,7 @@ See the [ibc-rs] repo root for more detailed information on this crate can be us
 
 # ibc
 
-Implementation of the Inter-Blockchain Communication Protocol [IBC].
+Implementation of the Inter-Blockchain Communication Protocol ([IBC]).
 
 ## Documentation
 
