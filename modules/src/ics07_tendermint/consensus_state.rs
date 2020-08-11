@@ -68,4 +68,3 @@ mod tests {
         test_serialization_roundtrip::<AbciQuery>(json_data);
     }
 }
-

@@ -23,4 +23,3 @@ pub struct MsgUpdateClient<C: ClientDef> {
     pub client_id: ClientId,
     pub header: C::Header,
 }
-

@@ -7,4 +7,3 @@ pub trait ClientDef {
     type ClientState: ClientState + From<Self::ConsensusState>;
     type ConsensusState: ConsensusState;
 }
-

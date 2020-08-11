@@ -15,4 +15,3 @@ impl ics02::ClientDef for TendermintClient {
     type ClientState = client_state::ClientState;
     type ConsensusState = consensus_state::ConsensusState;
 }
-
