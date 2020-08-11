@@ -3,13 +3,13 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use modules::ics24_host::error::ValidationError;
-use modules::ics24_host::identifier::ConnectionId;
-use modules::ics24_host::Path::Connections;
+use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::identifier::ConnectionId;
+use ibc::ics24_host::Path::Connections;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 
-use modules::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::ConnectionEnd;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
