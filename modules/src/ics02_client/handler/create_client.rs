@@ -197,14 +197,17 @@ mod tests {
 
     #[test]
     fn test_create_client_ok() {
+        let client_id: ClientId = "mockclient".parse().unwrap();
+
         let mock = MockClientContext {
+            client_id: client_id.clone(),
             client_type: None,
             client_state: None,
             consensus_state: None,
         };
 
         let msg = MsgCreateClient {
-            client_id: "mockclient".parse().unwrap(),
+            client_id,
             client_type: ClientType::Tendermint,
             consensus_state: MockConsensusState(42),
         };
@@ -239,14 +242,17 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_type() {
+        let client_id: ClientId = "mockclient".parse().unwrap();
+
         let mock = MockClientContext {
+            client_id: client_id.clone(),
             client_type: Some(ClientType::Tendermint),
             client_state: None,
             consensus_state: None,
         };
 
         let msg = MsgCreateClient {
-            client_id: "mockclient".parse().unwrap(),
+            client_id,
             client_type: ClientType::Tendermint,
             consensus_state: MockConsensusState(42),
         };
@@ -262,14 +268,17 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_state() {
+        let client_id: ClientId = "mockclient".parse().unwrap();
+
         let mock = MockClientContext {
+            client_id: client_id.clone(),
             client_type: None,
             client_state: Some(MockClientState(0)),
             consensus_state: None,
         };
 
         let msg = MsgCreateClient {
-            client_id: "mockclient".parse().unwrap(),
+            client_id,
             client_type: ClientType::Tendermint,
             consensus_state: MockConsensusState(42),
         };
@@ -283,3 +292,4 @@ mod tests {
         }
     }
 }
+
