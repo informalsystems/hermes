@@ -1,14 +1,10 @@
-use super::exported::*;
-use crate::ics04_channel::error;
-use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::try_from_raw::TryFromRaw;
-use serde_derive::{Deserialize, Serialize};
-
-// Import proto declarations.
+use anomaly::fail;
+use core::str::FromStr;
 use ibc_proto::channel::Channel as RawChannel;
-
-use std::str::FromStr;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelEnd {
@@ -83,43 +79,35 @@ impl ChannelEnd {
     pub fn set_state(&mut self, s: State) {
         self.state = s;
     }
-}
 
-impl Channel for ChannelEnd {
-    type ValidationError = Error;
-
-    fn state(&self) -> &State {
+    pub fn state(&self) -> &State {
         &self.state
     }
 
-    fn ordering(&self) -> &Order {
+    pub fn ordering(&self) -> &Order {
         &self.ordering
     }
 
-    fn counterparty(
-        &self,
-    ) -> Box<dyn ChannelCounterparty<ValidationError = Self::ValidationError>> {
-        Box::new(self.remote.clone())
+    pub fn counterparty(&self) -> Counterparty {
+        self.remote.clone()
     }
 
-    fn connection_hops(&self) -> Vec<ConnectionId> {
+    pub fn connection_hops(&self) -> Vec<ConnectionId> {
         self.connection_hops.clone()
     }
 
-    fn version(&self) -> String {
+    pub fn version(&self) -> String {
         self.version.parse().unwrap()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    pub fn validate_basic(&self) -> Result<(), Error> {
         if self.connection_hops.len() != 1 {
-            return Err(error::Kind::InvalidConnectionHopsLength
+            return Err(Kind::InvalidConnectionHopsLength
                 .context("validate channel")
                 .into());
         }
         if self.version().trim() == "" {
-            return Err(error::Kind::InvalidVersion
-                .context("empty version string")
-                .into());
+            return Err(Kind::InvalidVersion.context("empty version string").into());
         }
         self.counterparty().validate_basic()
     }
@@ -142,21 +130,107 @@ impl Counterparty {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
         })
     }
-}
 
-impl ChannelCounterparty for Counterparty {
-    type ValidationError = Error;
-
-    fn port_id(&self) -> String {
+    pub fn port_id(&self) -> String {
         self.port_id.as_str().into()
     }
 
-    fn channel_id(&self) -> String {
+    pub fn channel_id(&self) -> String {
         self.channel_id.as_str().into()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    pub fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum Order {
+    None = 0,
+    Unordered,
+    Ordered,
+}
+
+impl Order {
+    /// Yields the Order as a string
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            Self::None => "UNINITIALIZED",
+            Self::Unordered => "UNORDERED",
+            Self::Ordered => "ORDERED",
+        }
+    }
+
+    // Parses the Order out from a i32.
+    pub fn from_i32(nr: i32) -> Result<Self, Error> {
+        match nr {
+            0 => Ok(Self::None),
+            1 => Ok(Self::Unordered),
+            2 => Ok(Self::Ordered),
+            _ => fail!(error::Kind::UnknownOrderType, nr),
+        }
+    }
+}
+
+impl FromStr for Order {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "UNINITIALIZED" => Ok(Self::None),
+            "UNORDERED" => Ok(Self::Unordered),
+            "ORDERED" => Ok(Self::Ordered),
+            _ => fail!(error::Kind::UnknownOrderType, s),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum State {
+    Uninitialized = 0,
+    Init,
+    TryOpen,
+    Open,
+    Closed,
+}
+
+impl State {
+    /// Yields the state as a string
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            Self::Uninitialized => "UNINITIALIZED",
+            Self::Init => "INIT",
+            Self::TryOpen => "TRYOPEN",
+            Self::Open => "OPEN",
+            Self::Closed => "CLOSED",
+        }
+    }
+
+    // Parses the State out from a i32.
+    pub fn from_i32(s: i32) -> Result<Self, Error> {
+        match s {
+            0 => Ok(Self::Uninitialized),
+            1 => Ok(Self::Init),
+            2 => Ok(Self::TryOpen),
+            3 => Ok(Self::Open),
+            4 => Ok(Self::Closed),
+            _ => fail!(error::Kind::UnknownState, s),
+        }
+    }
+}
+
+impl FromStr for State {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "UNINITIALIZED" => Ok(Self::Uninitialized),
+            "INIT" => Ok(Self::Init),
+            "TRYOPEN" => Ok(Self::TryOpen),
+            "OPEN" => Ok(Self::Open),
+            "CLOSED" => Ok(Self::Closed),
+            _ => fail!(error::Kind::UnknownState, s),
+        }
     }
 }
 
@@ -164,6 +238,7 @@ impl ChannelCounterparty for Counterparty {
 mod tests {
     use crate::ics04_channel::channel::ChannelEnd;
     use crate::try_from_raw::TryFromRaw;
+    use core::str::FromStr;
     use ibc_proto::channel::Channel as RawChannel;
     use ibc_proto::channel::Counterparty as RawCounterparty;
 
@@ -267,6 +342,106 @@ mod tests {
                 test.params.clone(),
                 ce_result.err(),
             );
+        }
+    }
+
+    #[test]
+    fn parse_channel_ordering_type() {
+        use super::Order;
+
+        struct Test {
+            ordering: &'static str,
+            want_res: Order,
+            want_err: bool,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                ordering: "UNINITIALIZED",
+                want_res: Order::None,
+                want_err: false,
+            },
+            Test {
+                ordering: "UNORDERED",
+                want_res: Order::Unordered,
+                want_err: false,
+            },
+            Test {
+                ordering: "ORDERED",
+                want_res: Order::Ordered,
+                want_err: false,
+            },
+            Test {
+                ordering: "UNKNOWN_ORDER",
+                want_res: Order::None,
+                want_err: true,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            match Order::from_str(test.ordering) {
+                Ok(res) => {
+                    assert!(!test.want_err);
+                    assert_eq!(test.want_res, res);
+                }
+                Err(_) => assert!(test.want_err, "parse failed"),
+            }
+        }
+    }
+
+    #[test]
+    fn parse_channel_state() {
+        use super::State;
+
+        struct Test {
+            state: &'static str,
+            want_res: State,
+            want_err: bool,
+        }
+        let tests: Vec<Test> = vec![
+            Test {
+                state: "UNINITIALIZED",
+                want_res: State::Uninitialized,
+                want_err: false,
+            },
+            Test {
+                state: "INIT",
+                want_res: State::Init,
+                want_err: false,
+            },
+            Test {
+                state: "TRYOPEN",
+                want_res: State::TryOpen,
+                want_err: false,
+            },
+            Test {
+                state: "OPEN",
+                want_res: State::Open,
+                want_err: false,
+            },
+            Test {
+                state: "CLOSED",
+                want_res: State::Closed,
+                want_err: false,
+            },
+            Test {
+                state: "INVALID_STATE",
+                want_res: State::Open,
+                want_err: true,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            match State::from_str(test.state) {
+                Ok(res) => {
+                    assert!(!test.want_err);
+                    assert_eq!(test.want_res, res);
+                }
+                Err(_) => assert!(test.want_err, "parse failed"),
+            }
         }
     }
 }

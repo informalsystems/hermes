@@ -1,6 +1,5 @@
 #![allow(clippy::too_many_arguments)]
 use super::channel::{ChannelEnd, Counterparty};
-use super::exported::*;
 use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
