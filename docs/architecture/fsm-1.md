@@ -1,76 +1,77 @@
 # Connection Handshake FSM
+A description of the connection datagram builder FSM for a relayer using async operations for queries and light client header fetching is presented.
+It has explicit states while async operations are in progress and can therefore act on events while in these states.
 
+A connection FSM is instantiated by the relayer's event handler when a connection event is received. The FSM will either successfully build and submit a connection message or it will exit. 
+
+The connection builder FSM is removed by the event handler upon receiving of an invalidating event. For example an active FSM for `MsgConnOpenTry` is removed if the event handler receives a `ConnOpenTry` event for that connection. This document does not detail the event handler's actions.
+
+## FSM states:
+1. __Z__ = uninitialized
+2. __FH[d]__ = fetching headers from destination chain
+3. __FH[s]__ = fetching headers from source chain
+4. __W__ = waiting for new block event (next height) on the source chain
+5. __Q__ = querying connection and consesus state, with proofs, on source chain and connection on destination chain
+6. __X__ = terminated
+
+There is a timer associated with the FSM state, when it fires the FSM terminates. These transitions from * to X are not shown.
 
 ## Input Events:
 
+#### Chain events:
 
-###### Chain events:
+Trigger event is a connection event that occurred at height `ha` and that requires a new datagram to be built:
+- __OpenInit(ha)__ - results in building and submitting a `MsqOpenTry` datagram
+- __OpenTry(ha)__ - results in building and submitting a `MsqOpenAck` datagram
+- __OpenAck(ha)__ - results in building and submitting a `MsqOpenConfirm` datagram
 
-- __OpenInit__
-- __OpenTry__
-- __OpenAck__
-- __OpenConfirm__ (no FSM should be created to handle this event)
-- __NewBlock__
-- __UpdateClient__
+The other chain events the FSM may act upon are:
+- __NewBlock(A, ha)__
+- __UpdateClient(X, cl_h, hx)__ - client on X was updated with consensus state at height cl_h. The update happened in block with height hx on X.
 
+#### Query events:
 
-###### Query results:
+- __LCResp__, parametrized result:
+    * if (hs), then there are new headers (hs) available and, the client on the opposite chain should be updated
+    * if (err), then local light client failed to fetch headers
 
-- __RelayerClientResponse__, parametrized result:
-    * if (y), then there is some new headers are available and the client on the opposite chain should be updated
-    * if (n), then the client on the opposite chain does not need to be updated
+- __ChainQueryResponse__, parametrized result:
+    * if (resp), then a query response is received
+    * if (err), then the query failed or timed out (TODO - errors and timeouts may need to be handled differently)
 
+## Conditions
+- Req_U[A] = update of IBC B-client on chain A is required, true if latest consensus height of IBC B-client on A is more than N blocks behind (N=100) compared to latest on B.
+Note: with the event driven relayer, the `UpdateClient` events update local state of clients, therefore there is no query required.
 
-## FSM states:
+- Pending_Q = queries are pending, true if not all query responses have been received, false otherwise. The FSM keeps track of queries that were sent and responses that were received. There is a maximum of 3 queries performed by the connection FSM, one for the connection on the destination chain, and two for the source chain (client consensus and connection). These queries are sent in the same time and then the FSM waits for all responses. Some optimizations may be done.
 
-1. __Z__ = uninitialized
-2. __Q[d]__ = querying (fetching) headers from destination chain
-3. __Q[s]__ = querying (fetching) headers from source chain
-4. __U[s]__ = updating IBC client on source chain with (newer) headers
-5. __U[d]__ = updating IBC client on destination chain with (newer) headers
-6. __W__ = waiting for new block event (next height) on the source chain
-7. __S__ = submitting the datagram + proofs to destination chain
-8. __X__ = terminated
+## FSM actions:
 
-Proof-related states:
+Async (light client requests and queries):
+ - get_min_set(X, hx) - fetch chain X headers via relayer light client. `hx` is typically the latest height on B. The relayer keeps track of latest chain heights via the `NewBlock` events, therefore no query is required.
+ - query(A, B) - send required queries to source and destination chains.
 
-- __P__ = creating proofs
-- __PCC__ = creating the client (or consensus) proof + connection state proof
-- __PC__ = creating the connection state proof
+Sync (transaction submission) calls, use `broadcast_tx_commit()` blocking until the result is known:
+ - update_client(X, hs) - submit UpdateClient datagram(s) for headers in `hs` to chain X. 
+ - conn_open_datagram(X) - verify connection ends and proofs and submit `ConnOpen..` datagram to chain X. The concrete datagram to be submitted depends on the trigger event and connection information.
 
-
+ Note: the async version can also be used and wait for confirmation via IBC events
+ 
 ## FSM transition table:
 
+|State  | Input Event                  | Condition   |  Action                      | Next State    |  Comment  |
+|:------|:-----------------------------|:------------|:-----------------------------|:--------------|:----------|
+| Z     | OpenInit(ha), OpenTry(ha)    |  Req_U[A]   | get_min_set(B,hb)            | FH[B]         |           |
+| Z     | OpenInit(ha), OpenTry(ha)    | ~Req_U[A]   | _                            | W             |           |  
+| Z     | OpenAck(ha)                  |             | _                            | W             |           |
+| FH[B] | LCResp([..,hb])              |             | err=update_client(A,[..,hb]) | FH[A] or FH[B] | retry on error         |
+| FH[B] | LCResp(err)                  |             | _                            | X             |           |
+| FH[B] | UpdateClient(A, cl_hB, hA)   | cl_hB >= hb | -                            | FH[A]         | another relayer has updated the client |
+| W     | NewBlock(A, hA)              | Req_U[B]    | get_min_set(A,hA)            | FH[A]         |           |
+| FH[A] | LCResp([.., hA])             |             | err=update_client(B,[..,hA]) | FH[B] or FH[A] | retry on error 
+| FH[A] | LCResp(err)                  |             | _                            | X             |           |
+| FH[A] | UpdateClient(B, cl_hA, hB)   | cl_hA >= hA | query(A, B)                  | Q             | another relayer has updated the client |
+| Q     | ChainQueryResponse(resp)     |Pending_Q    | _                            | Q             |
+| Q     | ChainQueryResponse(resp)     |~Pending_Q   | err=conn_open_datagram(B)    | X             |           |
 
-| State|           Input        | Next State |  Output  |
-|:----:|:----------------------:|:----------:|:--------:|
-| Z    | OpenInit \| OpenTry    |   Q[d]     | Query destination chain headers via relayer client |
-| Z    | OpenAck |      W     | _ |
-| Q[d] | RelayerClientResponse(y)|   U[s]     | Submit UpdateClient on source chain |
-| Q[d] | RelayerClientResponse(n)|   W     | _ |
-| U[s] | UpdateClient           |   Q[s]     | Query source chain headers via relayer client |
-| W    | NewBlock               |   Q[s]     | Query source chain headers via relayer client |
-| Q[s] | RelayerClientResponse(y) |   U[d]     | Submit UpdateClient on destination chain |
-| Q[s] | RelayerClientResponse(n) |   P     | [internal] Create proofs |
-| U[d] | UpdateClient           |    P       | [internal] Create proofs |
-| P    | OpenInit \| OpenTry    |   PCC      | Query the IBC client state and the connection state on source chain |
-| P    | OpenAck     |    PC      | Query the connection state on source chain |
-| PC   | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
-| PCC  | RelayerClientResponse(n) |    S      | Submit datagram + proofs to destination chain |
-|  S   | NewBlock               |   X       | FSM Exit |
 
-## Dependencies:
-
-- Relayer client to destination chain (for state __Q[d]__)
-- Relayer client to source chain (for state __Q[s]__)
-- Height of source chain
-- Height of destination chain
-- Height of IBC client on source chain
-- Height of IBC client on destination chain
-- RPC to destination chain (for states __U[d]__ and __S__ and __PC__ and __PCC__)
-- RPC to source chain (for state __U[s]__)
-
-Limitations to this description:
-
-- have to consider height offsets!
-- more details about states __PC__ and __PCC__ are needed 
