@@ -4,7 +4,7 @@ version    = "0.0.2"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
-keywords   = ["blockchain", "bft", "consensus", "cosmos", "ibc", "tendermint"]
+keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository = "https://github.com/informalsystems/ibc-rs"
 authors    = [
   "Informal Systems <hello@informal.systems>"
