@@ -3,5 +3,4 @@
 pub mod connection;
 pub mod error;
 pub mod events;
-pub mod exported;
 pub mod msgs;

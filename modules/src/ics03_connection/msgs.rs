@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::exported::ConnectionCounterparty;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};

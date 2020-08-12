@@ -12,8 +12,7 @@
 )]
 
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics03_connection::exported::Connection;
-use ibc::ics03_connection::exported::State as ConnectionState;
+use ibc::ics03_connection::connection::State as ConnectionState;
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::exported::Channel;
 use ibc::ics04_channel::exported::Order;

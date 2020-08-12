@@ -1,4 +1,3 @@
-use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -6,6 +5,7 @@ use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
+use anomaly::fail;
 use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
 use ibc_proto::connection::Counterparty as RawCounterparty;
 use std::convert::TryFrom;
@@ -68,30 +68,24 @@ impl ConnectionEnd {
     pub fn set_state(&mut self, new_state: State) {
         self.state = new_state;
     }
-}
 
-impl Connection for ConnectionEnd {
-    type ValidationError = Error;
-
-    fn state(&self) -> &State {
+    pub fn state(&self) -> &State {
         &self.state
     }
 
-    fn client_id(&self) -> String {
+    pub fn client_id(&self) -> String {
         self.client_id.as_str().into()
     }
 
-    fn counterparty(
-        &self,
-    ) -> Box<dyn ConnectionCounterparty<ValidationError = Self::ValidationError>> {
-        Box::new(self.counterparty.clone())
+    pub fn counterparty(&self) -> Counterparty {
+        self.counterparty.clone()
     }
 
-    fn versions(&self) -> Vec<String> {
+    pub fn versions(&self) -> Vec<String> {
         self.versions.clone()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         self.counterparty().validate_basic()
     }
 }
@@ -135,25 +129,20 @@ impl Counterparty {
             prefix,
         })
     }
-}
 
-impl ConnectionCounterparty for Counterparty {
-    type ValidationError = Error;
-
-    fn client_id(&self) -> String {
+    pub fn client_id(&self) -> String {
         self.client_id.as_str().into()
     }
 
-    fn connection_id(&self) -> String {
+    pub fn connection_id(&self) -> String {
         self.connection_id.as_str().into()
     }
 
-    fn prefix(&self) -> &CommitmentPrefix {
+    pub fn prefix(&self) -> &CommitmentPrefix {
         &self.prefix
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // todo!()
+    pub fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
     }
 }
@@ -175,4 +164,104 @@ pub fn validate_version(version: String) -> Result<String, String> {
         return Err("empty version string".to_string());
     }
     Ok(version)
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum State {
+    Uninitialized = 0,
+    Init,
+    TryOpen,
+    Open,
+}
+
+impl State {
+    /// Yields the State as a string.
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            Self::Uninitialized => "UNINITIALIZED",
+            Self::Init => "INIT",
+            Self::TryOpen => "TRYOPEN",
+            Self::Open => "OPEN",
+        }
+    }
+
+    /// Parses the State from a i32.
+    pub fn from_i32(nr: i32) -> Self {
+        match nr {
+            1 => Self::Init,
+            2 => Self::TryOpen,
+            3 => Self::Open,
+            _ => Self::Uninitialized,
+        }
+    }
+}
+
+impl std::str::FromStr for State {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "UNINITIALIZED" => Ok(Self::Uninitialized),
+            "INIT" => Ok(Self::Init),
+            "TRYOPEN" => Ok(Self::TryOpen),
+            "OPEN" => Ok(Self::Open),
+            _ => fail!(Kind::UnknownState, s),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    #[test]
+    fn parse_connection_state() {
+        use super::State;
+
+        struct Test {
+            state: &'static str,
+            want_res: State,
+            want_err: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                state: "UNINITIALIZED",
+                want_res: State::Uninitialized,
+                want_err: false,
+            },
+            Test {
+                state: "INIT",
+                want_res: State::Init,
+                want_err: false,
+            },
+            Test {
+                state: "TRYOPEN",
+                want_res: State::TryOpen,
+                want_err: false,
+            },
+            Test {
+                state: "OPEN",
+                want_res: State::Open,
+                want_err: false,
+            },
+            Test {
+                state: "INVALID_STATE",
+                want_res: State::Open,
+                want_err: true,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            match State::from_str(test.state) {
+                Ok(res) => {
+                    assert!(!test.want_err);
+                    assert_eq!(test.want_res, res);
+                }
+                Err(_) => assert!(test.want_err, "parse failed"),
+            }
+        }
+    }
 }
