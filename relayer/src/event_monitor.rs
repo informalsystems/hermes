@@ -1,4 +1,4 @@
-use modules::events::IBCEvent;
+use ibc::events::IBCEvent;
 use tendermint::{net, Error as TMError};
 use tendermint_rpc::{event_listener, event_listener::EventSubscription};
 use tokio::sync::mpsc::Sender;
@@ -82,7 +82,7 @@ impl EventMonitor {
     /// get a TM event and extract the IBC events
     pub async fn collect_events(&mut self) -> Result<(), TMError> {
         if let Some(tm_event) = self.event_listener.get_event().await? {
-            if let Ok(ibc_events) = modules::events::get_all_events(tm_event) {
+            if let Ok(ibc_events) = ibc::events::get_all_events(tm_event) {
                 // TODO - send_timeout()?
                 self.channel_to_handler
                     .send((self.chain_id, ibc_events))

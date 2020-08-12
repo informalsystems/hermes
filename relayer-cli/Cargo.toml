@@ -8,7 +8,7 @@ authors = [
 
 [dependencies]
 relayer = { path = "../relayer" }
-modules = { path = "../modules" }
+ibc = { path = "../modules" }
 tendermint = "0.15.0"
 
 abscissa_tokio = "0.5.1"
