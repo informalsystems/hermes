@@ -619,9 +619,17 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, non-alpha".to_string(),
+                name: "Correct port identifier".to_string(),
                 params: OpenInitParams {
                     port_id: "p34".to_string(),
+                    ..default_params.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Incorrect port identifier, slash (separator) prohibited".to_string(),
+                params: OpenInitParams {
+                    port_id: "p34/".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -651,7 +659,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad connection hops".to_string(),
+                name: "Bad connection hops (conn id too short, must be 10 chars)".to_string(),
                 params: OpenInitParams {
                     connection_hops: vec!["conn124".to_string()].into_iter().collect(),
                     ..default_params.clone()
@@ -732,12 +740,12 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, name non-alpha".to_string(),
+                name: "Correct port".to_string(),
                 params: OpenTryParams {
                     port_id: "p34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
@@ -750,18 +758,18 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 params: OpenTryParams {
-                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    port_id: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad channel, name non-alpha".to_string(),
+                name: "Correct channel identifier".to_string(),
                 params: OpenTryParams {
                     channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
@@ -774,7 +782,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 params: OpenTryParams {
-                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -804,17 +812,17 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad connection hops, non-alpha connection id".to_string(),
+                name: "Correct connection hops (connection id)".to_string(),
                 params: OpenTryParams {
                     connection_hops: vec!["connection124".to_string()].into_iter().collect(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad connection hops, connection id too long".to_string(),
                 params: OpenTryParams {
-                    connection_hops: vec!["abcdefghijklmnopqrstu".to_string()]
+                    connection_hops: vec!["abcdefghadvvxvczxcvzxvxvzxvcsddsfsdsdfasdfasfasdasdgasdfasdfasdfadsfasdfijklmnopqrstu".to_string()]
                         .into_iter()
                         .collect(),
                     ..default_params.clone()
@@ -849,18 +857,18 @@ mod tests {
             Test {
                 name: "Bad counterparty port, name too long".to_string(),
                 params: OpenTryParams {
-                    counterparty_port_id: "abcdefghijklmnopqrstu".to_string(),
+                    counterparty_port_id: "abcdefgaszdsfgasdasdvsdfasdfasdfdfasdfasdfadsgasdfasdfasdfasdfasdfasdfhijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad counterparty channel, name non-alpha".to_string(),
+                name: "Correct counterparty channel identifier".to_string(),
                 params: OpenTryParams {
                     counterparty_channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ]
         .into_iter()
@@ -929,12 +937,12 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, name non-alpha".to_string(),
+                name: "Correct port identifier".to_string(),
                 params: OpenAckParams {
                     port_id: "p34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
@@ -947,18 +955,18 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 params: OpenAckParams {
-                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    port_id: "abcdezdfDfsdfgfddsfsfdsdfdfvxcvzxcvsgdfsdfwefwvsdfdsfdasgagadgsadgsdffghijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad channel, name non-alpha".to_string(),
+                name: "Correct channel identifier".to_string(),
                 params: OpenAckParams {
                     channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
@@ -971,7 +979,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 params: OpenAckParams {
-                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    channel_id: "abcdefghsdfasdfasfdasfdwewefsdfasdfasdfasdfasdfasdfsfdijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -1052,12 +1060,12 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, name non-alpha".to_string(),
+                name: "Correct port".to_string(),
                 params: OpenConfirmParams {
                     port_id: "p34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
@@ -1070,18 +1078,18 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 params: OpenConfirmParams {
-                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    port_id: "abcdesdfasdsdffasdfasdfasfasdgasdfgasdfasdfasdfasdfasdfasdffghijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad channel, name non-alpha".to_string(),
+                name: "Correct channel identifier".to_string(),
                 params: OpenConfirmParams {
                     channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
@@ -1094,7 +1102,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 params: OpenConfirmParams {
-                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    channel_id: "abcdefghijklmnoasdfasdfasdfasdfasdgsdghasdfasdfasdfasdfadsfasgdasdfasdfasfdpqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -1162,12 +1170,12 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, name non-alpha".to_string(),
+                name: "Correct port".to_string(),
                 params: CloseInitParams {
                     port_id: "p34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
@@ -1180,18 +1188,18 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 params: CloseInitParams {
-                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    port_id: "abcdefsdfasdfasdfasdfasdfasdfadsfasdgafsgadfasdfasdfasdfsdfasdfaghijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad channel, name non-alpha".to_string(),
+                name: "Correct channel identifier".to_string(),
                 params: CloseInitParams {
                     channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
@@ -1204,7 +1212,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 params: CloseInitParams {
-                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    channel_id: "abcdeasdfasdfasdfasdfasdfasdfasdfasdfdgasdfasdfasdfghijklmnopqrstu".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -1262,12 +1270,12 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Bad port, name non-alpha".to_string(),
+                name: "Correct port".to_string(),
                 params: CloseConfirmParams {
                     port_id: "p34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
@@ -1280,18 +1288,20 @@ mod tests {
             Test {
                 name: "Bad port, name too long".to_string(),
                 params: CloseConfirmParams {
-                    port_id: "abcdefghijklmnopqrstu".to_string(),
+                    port_id:
+                        "abcdefghijklmnsdfasdfasdfasdfasdgafgadsfasdfasdfasdasfdasdfsadfopqrstu"
+                            .to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad channel, name non-alpha".to_string(),
+                name: "Correct channel identifier".to_string(),
                 params: CloseConfirmParams {
                     channel_id: "channelid34".to_string(),
                     ..default_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
@@ -1304,7 +1314,9 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 params: CloseConfirmParams {
-                    channel_id: "abcdefghijklmnopqrstu".to_string(),
+                    channel_id:
+                        "abcdefghiasdfadsfasdfgdfsadfasdasdfasdasdfasddsfasdfasdjklmnopqrstu"
+                            .to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,

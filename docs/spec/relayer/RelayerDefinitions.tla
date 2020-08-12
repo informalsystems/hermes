@@ -125,6 +125,10 @@ Datagrams(Heights) ==
     [type : {"ChanOpenAck"}, channelID : ChannelIDs, proofHeight : Heights]
     \union
     [type : {"ChanOpenConfirm"}, channelID : ChannelIDs, proofHeight : Heights]
+    \union 
+    [type : {"ChanCloseInit"}, channelID : ChannelIDs]
+    \union 
+    [type : {"ChanCloseConfirm"}, channelID : ChannelIDs, proofHeight : Heights]
 
 (***************************************************************************
  Initial values of a channel end, connection end, chain
@@ -274,9 +278,12 @@ IsChannelTryOpen(chain) ==
 \* returns true if the channel end on chainID is OPEN
 IsChannelOpen(chain) ==
     chain.connectionEnd.channelEnd.state = "OPEN"    
-
+    
+\* returns true if the channel end on chainID is CLOSED
+IsChannelClosed(chain) ==
+    chain.connectionEnd.channelEnd.state = "CLOSED"     
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Jul 06 16:19:06 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Jul 10 16:04:18 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

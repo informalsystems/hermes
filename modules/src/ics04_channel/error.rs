@@ -28,6 +28,9 @@ pub enum Kind {
 
     #[error("acknowledgement too long")]
     AcknowledgementTooLong,
+
+    #[error("missing counterparty")]
+    MissingCounterparty,
 }
 
 impl Kind {

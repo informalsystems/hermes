@@ -40,6 +40,18 @@ impl State {
             Self::Closed => "CLOSED",
         }
     }
+
+    // Parses the State out from a i32.
+    pub fn from_i32(s: i32) -> Result<Self, error::Error> {
+        match s {
+            0 => Ok(Self::Uninitialized),
+            1 => Ok(Self::Init),
+            2 => Ok(Self::TryOpen),
+            3 => Ok(Self::Open),
+            4 => Ok(Self::Closed),
+            _ => fail!(error::Kind::UnknownState, s),
+        }
+    }
 }
 
 impl std::str::FromStr for State {
@@ -71,6 +83,16 @@ impl Order {
             Self::None => "UNINITIALIZED",
             Self::Unordered => "UNORDERED",
             Self::Ordered => "ORDERED",
+        }
+    }
+
+    // Parses the Order out from a i32.
+    pub fn from_i32(nr: i32) -> Result<Self, error::Error> {
+        match nr {
+            0 => Ok(Self::None),
+            1 => Ok(Self::Unordered),
+            2 => Ok(Self::Ordered),
+            _ => fail!(error::Kind::UnknownOrderType, nr),
         }
     }
 }

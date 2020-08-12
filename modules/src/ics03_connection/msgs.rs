@@ -308,7 +308,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix {},
+            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
         };
 
         let tests: Vec<Test> = vec![
@@ -336,7 +336,9 @@ mod tests {
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
                 params: ConOpenInitParams {
-                    counterparty_connection_id: "abcdefghijklmnopqrstu".to_string(),
+                    counterparty_connection_id:
+                        "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
+                            .to_string(),
                     ..default_con_params.clone()
                 },
                 want_pass: false,
@@ -398,7 +400,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix {},
+            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
             proof_consensus: get_dummy_proof(),
@@ -431,18 +433,21 @@ mod tests {
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
                 params: ConOpenTryParams {
-                    counterparty_connection_id: "abcdefghijklmnopqrstu".to_string(),
+                    counterparty_connection_id:
+                        "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
+                            .to_string(),
                     ..default_con_params.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad destination client id, name in uppercase".to_string(),
+                name: "Correct destination client id with lower/upper case and special chars"
+                    .to_string(),
                 params: ConOpenTryParams {
-                    counterparty_client_id: "BadClientId".to_string(),
+                    counterparty_client_id: "ClientId_".to_string(),
                     ..default_con_params.clone()
                 },
-                want_pass: false,
+                want_pass: true,
             },
             Test {
                 name: "Bad counterparty versions, empty versions vec".to_string(),

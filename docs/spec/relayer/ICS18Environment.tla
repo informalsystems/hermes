@@ -16,12 +16,15 @@ VARIABLES chainAstore, \* store of ChainA
           incomingDatagramsChainB, \* set of datagrams incoming to ChainB
           relayer1Heights, \* the client heights of Relayer1
           relayer2Heights, \* the client heights of Relayer2
-          outgoingDatagrams \* sets of datagrams outgoing of the relayers
+          outgoingDatagrams, \* sets of datagrams outgoing of the relayers
+          closeChannelA, \* flag that triggers closing of the channel end at ChainA
+          closeChannelB \* flag that triggers closing of the channel end at ChainB
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,
           relayer1Heights, relayer2Heights,
-          outgoingDatagrams>>
+          outgoingDatagrams,
+          closeChannelA, closeChannelB>>
 chainAvars == <<chainAstore, incomingDatagramsChainA>>
 chainBvars == <<chainBstore, incomingDatagramsChainB>>
 relayerVars == <<relayer1Heights, relayer2Heights, outgoingDatagrams>>
@@ -38,9 +41,6 @@ Relayer1 == INSTANCE Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer1,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer1,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer1,
-                 Heights <- Heights,
-                 chainAstore <- chainAstore,
-                 chainBstore <- chainBstore,
                  relayerHeights <- relayer1Heights
                  
 \* Relayer2 -- Instance of Relayer.tla      
@@ -48,23 +48,18 @@ Relayer2 == INSTANCE Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer2,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer2,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer2,
-                 Heights <- Heights,
-                 chainAstore <- chainAstore,
-                 chainBstore <- chainBstore,
                  relayerHeights <- relayer2Heights
 
 \* We suppose there are two chains that communicate, ChainA and ChainB
 \* ChainA -- Instance of Chain.tla
 ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
-               Heights <- Heights,
                chainStore <- chainAstore,
                incomingDatagrams <- incomingDatagramsChainA
 
 \* ChainB -- Instance of Chain.tla 
 ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
-               Heights <- Heights,
                chainStore <- chainBstore,
                incomingDatagrams <- incomingDatagramsChainB
 
@@ -79,10 +74,12 @@ RelayerAction ==
        /\ UNCHANGED chainAvars
        /\ UNCHANGED chainBvars
        /\ UNCHANGED relayer2Heights
+       /\ UNCHANGED <<closeChannelA, closeChannelB>>
     \/ /\ Relayer2!Next  
        /\ UNCHANGED chainAvars
        /\ UNCHANGED chainBvars
        /\ UNCHANGED relayer1Heights 
+       /\ UNCHANGED <<closeChannelA, closeChannelB>>
 
 \* ChainAction: either chain takes a step, leaving the other 
 \* variables unchanged       
@@ -90,9 +87,11 @@ ChainAction ==
     \/ /\ ChainA!Next
        /\ UNCHANGED chainBvars
        /\ UNCHANGED relayerVars
+       /\ UNCHANGED <<closeChannelA, closeChannelB>>
     \/ /\ ChainB!Next  
        /\ UNCHANGED chainAvars
        /\ UNCHANGED relayerVars  
+       /\ UNCHANGED <<closeChannelA, closeChannelB>>
 
 (***************************************************************************
  ICS18Environment actions
@@ -103,6 +102,20 @@ SubmitDatagrams ==
     /\ incomingDatagramsChainB' = incomingDatagramsChainB \cup outgoingDatagrams["chainB"]
     /\ outgoingDatagrams' = [chainID \in ChainIDs |-> {}]
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
+    /\ UNCHANGED <<closeChannelA, closeChannelB>>
+    
+\* Non-deterministically set channel closing flags
+CloseChannels ==
+    \/ /\ closeChannelA = FALSE
+       /\ closeChannelA' \in BOOLEAN
+       /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
+       /\ UNCHANGED <<incomingDatagramsChainA, incomingDatagramsChainB, outgoingDatagrams>>
+       /\ UNCHANGED closeChannelB
+    \/ /\ closeChannelB = FALSE
+       /\ closeChannelB' \in BOOLEAN
+       /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
+       /\ UNCHANGED <<incomingDatagramsChainA, incomingDatagramsChainB, outgoingDatagrams>>
+       /\ UNCHANGED closeChannelA
 
 \* Faulty relayer action
 FaultyRelayer ==
@@ -111,6 +124,7 @@ FaultyRelayer ==
     
 EnvironmentAction ==
     \/ SubmitDatagrams
+    \/ CloseChannels
 \*    TODO: Uncomment once FaultyRelayer is specified
 \*    \/ FaultyRelayer
         
@@ -123,6 +137,8 @@ Init ==
     /\ ChainB!Init
     /\ Relayer1!Init
     /\ Relayer2!Init
+    /\ closeChannelA = FALSE
+    /\ closeChannelB = FALSE
     
 \* Next state action
 Next ==
@@ -139,6 +155,8 @@ Fairness ==
     /\ ChainB!Fairness
     /\ Relayer1!Fairness
     /\ Relayer2!Fairness
+    /\ <>[]closeChannelA
+    /\ <>[]closeChannelB
 
 \* Specification formula
 Spec == Init /\ [][Next]_vars /\ Fairness
@@ -202,6 +220,14 @@ IsChanOpenInitInOutgoingDatagrams(chainID) ==
     [type |-> "ChanOpenInit", 
      channelID |-> chanID, 
      counterpartyChannelID |-> counterpartyChanID] \in outgoingDatagrams[chainID]
+
+\* returns true if there is a "ChanCloseInit" datagram  
+\* in outgoing datagrams for chainID
+IsChanCloseInitInOutgoingDatagrams(chainID) ==
+    LET chanID == GetChannelID(chainID) IN
+    [type |-> "ChanCloseInit", 
+     channelID |-> chanID] \in outgoingDatagrams[chainID]
+
                
 ----------------------------------------------------------------------------
 (***************************************************************************
@@ -294,7 +320,20 @@ ChannelOpenSafety ==
         /\ IsChannelOpen(GetChainByID(chainID))
         => [](/\ ~IsChannelUninit(GetChainByID(chainID))
               /\ ~IsChannelInit(GetChainByID(chainID))
-              /\ ~IsChannelTryOpen(GetChainByID(chainID)))) 
+              /\ ~IsChannelTryOpen(GetChainByID(chainID))))
+              
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*    * the channel end is in CLOSED
+\*  - then 
+\*    * it NEVER goes to UNINIT, INIT, TRYOPEN, or OPEN              
+ChannelCloseSafety ==     
+    [](\A chainID \in ChainIDs:
+        /\ IsChannelClosed(GetChainByID(chainID))
+        => [](/\ ~IsChannelUninit(GetChainByID(chainID))
+              /\ ~IsChannelInit(GetChainByID(chainID))
+              /\ ~IsChannelTryOpen(GetChainByID(chainID))
+              /\ ~IsChannelOpen(GetChainByID(chainID)))) 
 
 (***************************************************************************
  Safety [ICS18Safety]:
@@ -314,7 +353,8 @@ ICS18Safety ==
     /\ (ChannelDatagramsRelayer1 \/ ChannelDatagramsRelayer2)
          => /\ ChannelInitSafety
             /\ ChannelTryOpenSafety
-            /\ ChannelOpenSafety      
+            /\ ChannelOpenSafety    
+            /\ ChannelCloseSafety  
 
 (***************************************************************************
  Liveness: Eventual delivery of client datagrams
@@ -349,7 +389,7 @@ ClientUpdateDelivery ==
 \*      * EVENTUALLY a ConnOpenInit is sent to chainID
 \*  -  then 
 \*      * EVENTUALLY the connections at chainID and its counterparty are open 
- ConnOpenInitDelivery ==
+ConnOpenInitDelivery ==
     [](\A chainID \in ChainIDs : 
        (<>IsConnOpenInitInOutgoingDatagrams(chainID) 
           => <>(/\ IsConnectionOpen(GetChainByID(chainID))
@@ -358,16 +398,27 @@ ClientUpdateDelivery ==
 (***************************************************************************
  Liveness: Eventual delivery of channel datagrams
  ***************************************************************************)
- \* it ALWAYS holds that, for every chainID
+\* it ALWAYS holds that, for every chainID
 \*  - if 
 \*      * EVENTUALLY a ChanOpenInit is sent to chainID
 \*  -  then 
 \*      * EVENTUALLY the channels at chainID and its counterparty are open
- ChanOpenInitDelivery ==
+ChanOpenInitDelivery ==
     [](\A chainID \in ChainIDs : 
        (<>IsChanOpenInitInOutgoingDatagrams(chainID) 
           => <>(/\ IsChannelOpen(GetChainByID(chainID))
                 /\ IsChannelOpen(GetChainByID(GetCounterpartyChainID(chainID))))))   
+
+\* it ALWAYS holds that, for every chainID
+\*  - if 
+\*      * EVENTUALLY a ChanCloseInit is sent to chainID
+\*  -  then 
+\*      * EVENTUALLY the channels at chainID and its counterparty are closed
+ChanCloseInitDelivery ==
+    [](\A chainID \in ChainIDs : 
+       (<>IsChanCloseInitInOutgoingDatagrams(chainID) 
+          => <>(/\ IsChannelClosed(GetChainByID(chainID))
+                /\ IsChannelClosed(GetChainByID(GetCounterpartyChainID(chainID))))))   
  
 (***************************************************************************
  Liveness [ICS18Delivery]: 
@@ -389,9 +440,10 @@ ICS18Delivery ==
          => ConnOpenInitDelivery 
     \* at least one relayer creates channel datagrams
     /\ (ChannelDatagramsRelayer1 \/ ChannelDatagramsRelayer2)
-         => ChanOpenInitDelivery
+         => /\ ChanOpenInitDelivery
+            /\ ChanCloseInitDelivery
                
 =============================================================================
 \* Modification History
-\* Last modified Tue Jul 07 13:13:08 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Jul 10 16:07:25 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

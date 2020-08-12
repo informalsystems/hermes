@@ -16,8 +16,8 @@ pub enum ValidationKind {
         max: usize,
     },
 
-    #[error("identifier {id} must only contain lowercase alphanumeric characters")]
-    NotLowerAlpha { id: String },
+    #[error("identifier {id} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`")]
+    InvalidCharacter { id: String },
 
     #[error("identifier cannot be empty")]
     Empty,
@@ -37,8 +37,8 @@ impl ValidationKind {
         }
     }
 
-    pub fn not_lower_alpha(id: String) -> Self {
-        Self::NotLowerAlpha { id }
+    pub fn invalid_character(id: String) -> Self {
+        Self::InvalidCharacter { id }
     }
 
     pub fn empty() -> Self {
