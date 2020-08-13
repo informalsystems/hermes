@@ -1,8 +1,9 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper};
+use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
 use crate::ics02_client::msgs::MsgUpdateClient;
+use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -13,7 +14,7 @@ pub struct UpdateClientResult<C: ClientDef> {
 }
 
 pub fn process<CD>(
-    ctx: &dyn ClientContext<CD>,
+    ctx: &dyn ClientReader<CD>,
     msg: MsgUpdateClient<CD>,
 ) -> HandlerResult<UpdateClientResult<CD>, Error>
 where
@@ -23,23 +24,22 @@ where
 
     let MsgUpdateClient { client_id, header } = msg;
 
-    let client_type = ctx
+    let _client_type = ctx
         .client_type(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(msg.client_id))?;
+        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
-    let client_state = ctx
+    let mut client_state = ctx
         .client_state(&client_id)
-        .ok_or_else(|| Kind::ClientNotFound(msg.client_id))?;
+        .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
+    let latest_height = client_state.get_latest_height();
     let consensus_state = ctx
-        .consensus_state(&client_id, client_state.latest_height())
-        .ok_or_else(|| Kind::ConsensusStateNotFound(msg.client_id, client_state.latest_height()))?;
+        .consensus_state(&client_id, latest_height)
+        .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
 
-    // client_type.check_validity_and_update_state(
-    //     &mut client_state,
-    //     &mut consensus_state,
-    //     &header,
-    // )?;
+    CD::check_validity_and_update_state(&mut client_state, &consensus_state, &header).unwrap(); // FIXME
+
+    output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
     Ok(output.with_result(UpdateClientResult {
         client_id,
@@ -64,6 +64,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::header::Header;
     use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics23_commitment::CommitmentRoot;
@@ -148,10 +149,28 @@ mod tests {
     #[derive(Clone, Copy, Debug, PartialEq, Eq)]
     struct MockClient;
 
+    fn new_client_state(
+        client_state: &MockClientState,
+        consensus_state: &MockConsensusState,
+        header: &MockHeader,
+    ) -> MockClientState {
+        MockClientState(client_state.0 * 17 + consensus_state.0 * 13 + header.0 * 7)
+    }
+
     impl ClientDef for MockClient {
+        type Error = MockError;
         type Header = MockHeader;
         type ClientState = MockClientState;
         type ConsensusState = MockConsensusState;
+
+        fn check_validity_and_update_state(
+            client_state: &mut MockClientState,
+            consensus_state: &MockConsensusState,
+            header: &MockHeader,
+        ) -> Result<(), Self::Error> {
+            client_state.0 = new_client_state(client_state, consensus_state, header).0;
+            Ok(())
+        }
     }
 
     #[derive(Clone, Debug, PartialEq, Eq)]
@@ -161,7 +180,7 @@ mod tests {
         consensus_state: Option<MockConsensusState>,
     }
 
-    impl ClientContext<MockClient> for MockClientContext {
+    impl ClientReader<MockClient> for MockClientContext {
         fn client_type(&self, _client_id: &ClientId) -> Option<ClientType> {
             self.client_type.clone()
         }
@@ -189,8 +208,7 @@ mod tests {
 
         let msg = MsgUpdateClient {
             client_id: "mockclient".parse().unwrap(),
-            client_type: ClientType::Tendermint,
-            consensus_state: MockConsensusState(42),
+            header: MockHeader(1),
         };
 
         let output = process(&mock, msg.clone());
@@ -201,19 +219,12 @@ mod tests {
                 events,
                 log,
             }) => {
-                assert_eq!(result.client_type, ClientType::Tendermint);
-                assert_eq!(result.client_state, MockClientState(msg.consensus_state.0));
+                assert_eq!(result.client_state, MockClientState(0));
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientUpdated(msg.client_id).into()]
                 );
-                assert_eq!(
-                    log,
-                    vec![
-                        "success: no client state found".to_string(),
-                        "success: no client type found".to_string()
-                    ]
-                );
+                assert!(log.is_empty());
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
@@ -231,8 +242,7 @@ mod tests {
 
         let msg = MsgUpdateClient {
             client_id: "mockclient".parse().unwrap(),
-            client_type: ClientType::Tendermint,
-            consensus_state: MockConsensusState(42),
+            header: MockHeader(1),
         };
 
         let output = process(&mock, msg.clone());
@@ -248,14 +258,14 @@ mod tests {
     fn test_update_client_existing_client_state() {
         let mock = MockClientContext {
             client_type: None,
-            client_state: Some(MockClientState(0)),
+            client_state: Some(MockClientState(11)),
             consensus_state: None,
         };
 
         #[allow(unreachable_code)]
         let msg = MsgUpdateClient {
             client_id: "mockclient".parse().unwrap(),
-            header: todo!(),
+            header: MockHeader(42),
         };
 
         let output = process(&mock, msg.clone());

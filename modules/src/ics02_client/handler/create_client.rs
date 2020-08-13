@@ -2,7 +2,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper};
+use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
 use crate::ics02_client::msgs::MsgCreateClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -14,7 +14,7 @@ pub struct CreateClientResult<CD: ClientDef> {
 }
 
 pub fn process<CD>(
-    ctx: &dyn ClientContext<CD>,
+    ctx: &dyn ClientReader<CD>,
     msg: MsgCreateClient<CD>,
 ) -> HandlerResult<CreateClientResult<CD>, Error>
 where
@@ -152,20 +152,29 @@ mod tests {
     struct MockClient;
 
     impl ClientDef for MockClient {
+        type Error = MockError;
         type Header = MockHeader;
         type ClientState = MockClientState;
         type ConsensusState = MockConsensusState;
+
+        fn check_validity_and_update_state(
+            _client_state: &mut MockClientState,
+            _consensus_state: &MockConsensusState,
+            _header: &MockHeader,
+        ) -> Result<(), Self::Error> {
+            todo!()
+        }
     }
 
     #[derive(Clone, Debug, PartialEq, Eq)]
-    struct MockClientContext {
+    struct MockClientReader {
         client_id: ClientId,
         client_state: Option<MockClientState>,
         client_type: Option<ClientType>,
         consensus_state: Option<MockConsensusState>,
     }
 
-    impl ClientContext<MockClient> for MockClientContext {
+    impl ClientReader<MockClient> for MockClientReader {
         fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
             if client_id == &self.client_id {
                 self.client_type.clone()
@@ -199,7 +208,7 @@ mod tests {
     fn test_create_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientContext {
+        let mock = MockClientReader {
             client_id: client_id.clone(),
             client_type: None,
             client_state: None,
@@ -244,7 +253,7 @@ mod tests {
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientContext {
+        let mock = MockClientReader {
             client_id: client_id.clone(),
             client_type: Some(ClientType::Tendermint),
             client_state: None,
@@ -270,7 +279,7 @@ mod tests {
     fn test_create_client_existing_client_state() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientContext {
+        let mock = MockClientReader {
             client_id: client_id.clone(),
             client_type: None,
             client_state: Some(MockClientState(0)),
@@ -292,3 +301,4 @@ mod tests {
         }
     }
 }
+

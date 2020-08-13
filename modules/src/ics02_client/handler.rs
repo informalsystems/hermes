@@ -2,15 +2,15 @@ use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::msgs::MsgCreateClient;
+use crate::ics02_client::msgs::{MsgCreateClient, MsgUpdateClient};
 use crate::ics24_host::identifier::ClientId;
 
 use crate::Height;
 
 pub mod create_client;
-// pub mod update_client;
+pub mod update_client;
 
-pub trait ClientContext<CD>
+pub trait ClientReader<CD>
 where
     CD: ClientDef,
 {
@@ -62,13 +62,13 @@ impl From<ClientEvent> for Event {
 
 pub enum ClientMsg<CD: ClientDef> {
     CreateClient(MsgCreateClient<CD>),
-    // UpdateClient(UpdateClientMsg<CD>),
+    UpdateClient(MsgUpdateClient<CD>),
 }
 
 pub fn dispatch<CD, Ctx>(ctx: &mut Ctx, msg: ClientMsg<CD>) -> Result<HandlerOutput<()>, Error>
 where
     CD: ClientDef,
-    Ctx: ClientContext<CD> + ClientKeeper<CD>,
+    Ctx: ClientReader<CD> + ClientKeeper<CD>,
 {
     match msg {
         ClientMsg::CreateClient(msg) => {
@@ -85,5 +85,21 @@ where
                 .with_events(events)
                 .with_result(()))
         }
+
+        ClientMsg::UpdateClient(msg) => {
+            let HandlerOutput {
+                result,
+                log,
+                events,
+            } = update_client::process(ctx, msg)?;
+
+            update_client::keep(ctx, result)?;
+
+            Ok(HandlerOutput::builder()
+                .with_log(log)
+                .with_events(events)
+                .with_result(()))
+        }
     }
 }
+
