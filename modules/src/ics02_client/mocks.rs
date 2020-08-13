@@ -1,4 +1,3 @@
-use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::handler::ClientReader;
 use crate::ics02_client::header::Header;
@@ -29,8 +28,6 @@ impl Header for MockHeader {
 pub struct MockClientState(pub u32);
 
 impl ClientState for MockClientState {
-    type ValidationError = MockError;
-
     fn client_id(&self) -> ClientId {
         todo!()
     }
@@ -50,7 +47,7 @@ impl ClientState for MockClientState {
     fn verify_client_consensus_state(
         &self,
         _root: &CommitmentRoot,
-    ) -> Result<(), Self::ValidationError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
 }
@@ -65,8 +62,6 @@ impl From<MockConsensusState> for MockClientState {
 pub struct MockConsensusState(pub u32);
 
 impl ConsensusState for MockConsensusState {
-    type ValidationError = MockError;
-
     fn client_type(&self) -> ClientType {
         todo!()
     }
@@ -79,25 +74,7 @@ impl ConsensusState for MockConsensusState {
         todo!()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        todo!()
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct MockClient;
-
-impl ClientDef for MockClient {
-    type Error = MockError;
-    type Header = MockHeader;
-    type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
-
-    fn check_validity_and_update_state(
-        _client_state: &mut MockClientState,
-        _consensus_state: &MockConsensusState,
-        _header: &MockHeader,
-    ) -> Result<(), Self::Error> {
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }
 }
@@ -110,7 +87,7 @@ pub struct MockClientReader {
     pub consensus_state: Option<MockConsensusState>,
 }
 
-impl ClientReader<MockClient> for MockClientReader {
+impl ClientReader for MockClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
         if client_id == &self.client_id {
             self.client_type.clone()
@@ -119,17 +96,23 @@ impl ClientReader<MockClient> for MockClientReader {
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Option<MockClientState> {
+    #[allow(trivial_casts)]
+    fn client_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
         if client_id == &self.client_id {
-            self.client_state
+            self.client_state.map(|cs| Box::new(cs) as _)
         } else {
             None
         }
     }
 
-    fn consensus_state(&self, client_id: &ClientId, _height: Height) -> Option<MockConsensusState> {
+    #[allow(trivial_casts)]
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        _height: Height,
+    ) -> Option<Box<dyn ConsensusState>> {
         if client_id == &self.client_id {
-            self.consensus_state
+            self.consensus_state.map(|cs| Box::new(cs) as _)
         } else {
             None
         }

@@ -28,8 +28,6 @@ impl ConsensusState {
 }
 
 impl crate::ics02_client::state::ConsensusState for ConsensusState {
-    type ValidationError = crate::ics07_tendermint::error::Error;
-
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -42,7 +40,7 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
     }
 }

@@ -72,8 +72,6 @@ impl From<ConsensusState> for ClientState {
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
-    type ValidationError = Error;
-
     fn client_id(&self) -> ClientId {
         self.id.clone()
     }
@@ -94,7 +92,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn verify_client_consensus_state(
         &self,
         _root: &CommitmentRoot,
-    ) -> Result<(), Self::ValidationError> {
+    ) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
     }
 }

@@ -1,10 +1,10 @@
 #![allow(unused_imports)]
 
 use crate::handler::{Event, EventType, HandlerOutput};
-use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::msgs::{MsgCreateClient, MsgUpdateClient};
+use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
 
 use crate::Height;
@@ -12,16 +12,19 @@ use crate::Height;
 pub mod create_client;
 pub mod update_client;
 
-pub trait ClientReader<CD>
-where
-    CD: ClientDef,
-{
+pub trait ClientContext {}
+
+pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
-    fn client_state(&self, client_id: &ClientId) -> Option<CD::ClientState>;
-    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<CD::ConsensusState>;
+    fn client_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>>;
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Option<Box<dyn ConsensusState>>;
 }
 
-pub trait ClientKeeper<CD: ClientDef> {
+pub trait ClientKeeper {
     fn store_client_type(
         &mut self,
         client_id: ClientId,
@@ -31,13 +34,13 @@ pub trait ClientKeeper<CD: ClientDef> {
     fn store_client_state(
         &mut self,
         client_id: ClientId,
-        client_state: CD::ClientState,
+        client_state: &dyn ClientState,
     ) -> Result<(), Error>;
 
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,
-        consensus_state: CD::ConsensusState,
+        consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error>;
 }
 
@@ -62,15 +65,14 @@ impl From<ClientEvent> for Event {
     }
 }
 
-pub enum ClientMsg<CD: ClientDef> {
-    CreateClient(MsgCreateClient<CD>),
-    UpdateClient(MsgUpdateClient<CD>),
+pub enum ClientMsg {
+    CreateClient(MsgCreateClient),
+    UpdateClient(MsgUpdateClient),
 }
 
-pub fn dispatch<CD, Ctx>(ctx: &mut Ctx, msg: ClientMsg<CD>) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg) -> Result<HandlerOutput<()>, Error>
 where
-    CD: ClientDef,
-    Ctx: ClientReader<CD> + ClientKeeper<CD>,
+    Ctx: ClientReader + ClientKeeper,
 {
     match msg {
         ClientMsg::CreateClient(msg) => {
@@ -103,4 +105,3 @@ where
         }
     }
 }
-

@@ -1,27 +1,24 @@
 #![allow(unreachable_code, unused_variables)]
 
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
 use crate::ics02_client::msgs::MsgCreateClient;
+use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CreateClientResult<CD: ClientDef> {
+#[derive(Debug)]
+pub struct CreateClientResult {
     client_id: ClientId,
     client_type: ClientType,
-    client_state: CD::ClientState,
+    client_state: Box<dyn ClientState>,
 }
 
-pub fn process<CD>(
-    ctx: &dyn ClientReader<CD>,
-    msg: MsgCreateClient<CD>,
-) -> HandlerResult<CreateClientResult<CD>, Error>
-where
-    CD: ClientDef,
-{
+pub fn process(
+    ctx: &dyn ClientReader,
+    msg: MsgCreateClient,
+) -> HandlerResult<CreateClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgCreateClient {
@@ -42,7 +39,7 @@ where
 
     output.log("success: no client type found");
 
-    let client_state = CD::new_client_state(&consensus_state);
+    let client_state = todo!(); // CD::new_client_state(&consensus_state);
 
     output.emit(ClientEvent::ClientCreated(client_id.clone()));
 
@@ -53,14 +50,8 @@ where
     }))
 }
 
-pub fn keep<CD>(
-    keeper: &mut dyn ClientKeeper<CD>,
-    result: CreateClientResult<CD>,
-) -> Result<(), Error>
-where
-    CD: ClientDef,
-{
-    keeper.store_client_state(result.client_id.clone(), result.client_state)?;
+pub fn keep(keeper: &mut dyn ClientKeeper, result: CreateClientResult) -> Result<(), Error> {
+    keeper.store_client_state(result.client_id.clone(), result.client_state.as_ref())?;
     keeper.store_client_type(result.client_id, result.client_type)?;
 
     Ok(())
@@ -90,7 +81,7 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: MockConsensusState(42),
+            consensus_state: Box::new(MockConsensusState(42)),
         };
 
         let output = process(&mock, msg.clone());
@@ -102,7 +93,10 @@ mod tests {
                 log,
             }) => {
                 assert_eq!(result.client_type, ClientType::Tendermint);
-                assert_eq!(result.client_state, MockClientState(msg.consensus_state.0));
+                // assert_eq!(
+                //     result.client_state.as_ref().0,
+                //     msg.consensus_state.as_ref().0
+                // );
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientCreated(msg.client_id).into()]
@@ -135,7 +129,7 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: MockConsensusState(42),
+            consensus_state: Box::new(MockConsensusState(42)),
         };
 
         let output = process(&mock, msg.clone());
@@ -161,7 +155,7 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: MockConsensusState(42),
+            consensus_state: Box::new(MockConsensusState(42)),
         };
 
         let output = process(&mock, msg.clone());
@@ -173,4 +167,3 @@ mod tests {
         }
     }
 }
-
