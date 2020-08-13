@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
@@ -85,7 +87,6 @@ where
                 .with_events(events)
                 .with_result(()))
         }
-
         ClientMsg::UpdateClient(msg) => {
             let HandlerOutput {
                 result,

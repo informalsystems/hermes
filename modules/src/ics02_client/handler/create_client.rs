@@ -1,3 +1,5 @@
+#![allow(unreachable_code, unused_variables)]
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client::ClientDef;
 use crate::ics02_client::client_type::ClientType;
@@ -40,7 +42,7 @@ where
 
     output.log("success: no client type found");
 
-    let client_state = consensus_state.into();
+    let client_state = CD::new_client_state(&consensus_state);
 
     output.emit(ClientEvent::ClientCreated(client_id.clone()));
 
@@ -68,141 +70,11 @@ where
 mod tests {
     use super::*;
     use crate::ics02_client::header::Header;
+    use crate::ics02_client::mocks::*;
     use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics23_commitment::CommitmentRoot;
     use crate::Height;
     use thiserror::Error;
-
-    #[derive(Debug, Error)]
-    enum MockError {}
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockHeader(u32);
-
-    impl Header for MockHeader {
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn height(&self) -> Height {
-            todo!()
-        }
-    }
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockClientState(u32);
-
-    impl ClientState for MockClientState {
-        type ValidationError = MockError;
-
-        fn client_id(&self) -> ClientId {
-            todo!()
-        }
-
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn get_latest_height(&self) -> Height {
-            todo!()
-        }
-
-        fn is_frozen(&self) -> bool {
-            todo!()
-        }
-
-        fn verify_client_consensus_state(
-            &self,
-            _root: &CommitmentRoot,
-        ) -> Result<(), Self::ValidationError> {
-            todo!()
-        }
-    }
-
-    impl From<MockConsensusState> for MockClientState {
-        fn from(cs: MockConsensusState) -> Self {
-            Self(cs.0)
-        }
-    }
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockConsensusState(u32);
-
-    impl ConsensusState for MockConsensusState {
-        type ValidationError = MockError;
-
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn height(&self) -> Height {
-            todo!()
-        }
-
-        fn root(&self) -> &CommitmentRoot {
-            todo!()
-        }
-
-        fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-            todo!()
-        }
-    }
-
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    struct MockClient;
-
-    impl ClientDef for MockClient {
-        type Error = MockError;
-        type Header = MockHeader;
-        type ClientState = MockClientState;
-        type ConsensusState = MockConsensusState;
-
-        fn check_validity_and_update_state(
-            _client_state: &mut MockClientState,
-            _consensus_state: &MockConsensusState,
-            _header: &MockHeader,
-        ) -> Result<(), Self::Error> {
-            todo!()
-        }
-    }
-
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    struct MockClientReader {
-        client_id: ClientId,
-        client_state: Option<MockClientState>,
-        client_type: Option<ClientType>,
-        consensus_state: Option<MockConsensusState>,
-    }
-
-    impl ClientReader<MockClient> for MockClientReader {
-        fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-            if client_id == &self.client_id {
-                self.client_type.clone()
-            } else {
-                None
-            }
-        }
-
-        fn client_state(&self, client_id: &ClientId) -> Option<MockClientState> {
-            if client_id == &self.client_id {
-                self.client_state
-            } else {
-                None
-            }
-        }
-
-        fn consensus_state(
-            &self,
-            client_id: &ClientId,
-            _height: Height,
-        ) -> Option<MockConsensusState> {
-            if client_id == &self.client_id {
-                self.consensus_state
-            } else {
-                None
-            }
-        }
-    }
 
     #[test]
     fn test_create_client_ok() {

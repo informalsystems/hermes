@@ -66,141 +66,16 @@ mod tests {
     use super::*;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::header::Header;
+    use crate::ics02_client::mocks::*;
     use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics23_commitment::CommitmentRoot;
     use crate::Height;
     use thiserror::Error;
 
-    #[derive(Debug, Error)]
-    enum MockError {}
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockHeader(u32);
-
-    impl Header for MockHeader {
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn height(&self) -> Height {
-            todo!()
-        }
-    }
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockClientState(u32);
-
-    impl ClientState for MockClientState {
-        type ValidationError = MockError;
-
-        fn client_id(&self) -> ClientId {
-            todo!()
-        }
-
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn get_latest_height(&self) -> Height {
-            todo!()
-        }
-
-        fn is_frozen(&self) -> bool {
-            todo!()
-        }
-
-        fn verify_client_consensus_state(
-            &self,
-            _root: &CommitmentRoot,
-        ) -> Result<(), Self::ValidationError> {
-            todo!()
-        }
-    }
-
-    impl From<MockConsensusState> for MockClientState {
-        fn from(cs: MockConsensusState) -> Self {
-            Self(cs.0)
-        }
-    }
-
-    #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-    struct MockConsensusState(u32);
-
-    impl ConsensusState for MockConsensusState {
-        type ValidationError = MockError;
-
-        fn client_type(&self) -> ClientType {
-            todo!()
-        }
-
-        fn height(&self) -> Height {
-            todo!()
-        }
-
-        fn root(&self) -> &CommitmentRoot {
-            todo!()
-        }
-
-        fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-            todo!()
-        }
-    }
-
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-    struct MockClient;
-
-    fn new_client_state(
-        client_state: &MockClientState,
-        consensus_state: &MockConsensusState,
-        header: &MockHeader,
-    ) -> MockClientState {
-        MockClientState(client_state.0 * 17 + consensus_state.0 * 13 + header.0 * 7)
-    }
-
-    impl ClientDef for MockClient {
-        type Error = MockError;
-        type Header = MockHeader;
-        type ClientState = MockClientState;
-        type ConsensusState = MockConsensusState;
-
-        fn check_validity_and_update_state(
-            client_state: &mut MockClientState,
-            consensus_state: &MockConsensusState,
-            header: &MockHeader,
-        ) -> Result<(), Self::Error> {
-            client_state.0 = new_client_state(client_state, consensus_state, header).0;
-            Ok(())
-        }
-    }
-
-    #[derive(Clone, Debug, PartialEq, Eq)]
-    struct MockClientContext {
-        client_state: Option<MockClientState>,
-        client_type: Option<ClientType>,
-        consensus_state: Option<MockConsensusState>,
-    }
-
-    impl ClientReader<MockClient> for MockClientContext {
-        fn client_type(&self, _client_id: &ClientId) -> Option<ClientType> {
-            self.client_type.clone()
-        }
-
-        fn client_state(&self, _client_id: &ClientId) -> Option<MockClientState> {
-            self.client_state
-        }
-
-        fn consensus_state(
-            &self,
-            _client_id: &ClientId,
-            _height: Height,
-        ) -> Option<MockConsensusState> {
-            self.consensus_state
-        }
-    }
-
     #[test]
     fn test_update_client_ok() {
-        let mock = MockClientContext {
+        let mock = MockClientReader {
+            client_id: "mockclient".parse().unwrap(),
             client_type: None,
             client_state: None,
             consensus_state: None,
@@ -234,7 +109,8 @@ mod tests {
 
     #[test]
     fn test_update_client_existing_client_type() {
-        let mock = MockClientContext {
+        let mock = MockClientReader {
+            client_id: "mockclient".parse().unwrap(),
             client_type: Some(ClientType::Tendermint),
             client_state: None,
             consensus_state: None,
@@ -256,7 +132,8 @@ mod tests {
 
     #[test]
     fn test_update_client_existing_client_state() {
-        let mock = MockClientContext {
+        let mock = MockClientReader {
+            client_id: "mockclient".parse().unwrap(),
             client_type: None,
             client_state: Some(MockClientState(11)),
             consensus_state: None,
