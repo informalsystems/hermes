@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientConnections;
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
