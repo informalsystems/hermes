@@ -7,7 +7,7 @@ authors = [
 ]
 
 [dependencies]
-modules = { path = "../modules" }
+ibc = { path = "../modules" }
 tendermint = "0.15.0"
 tendermint-rpc = { version = "0.15.0", features=["client"] }
 anomaly = "0.2.0"

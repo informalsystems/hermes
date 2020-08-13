@@ -1,4 +1,4 @@
-use modules::events::IBCEvent;
+use ibc::events::IBCEvent;
 use tokio::sync::mpsc::Receiver;
 
 use ::tendermint::chain::Id as ChainId;
