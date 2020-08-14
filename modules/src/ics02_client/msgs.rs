@@ -4,22 +4,21 @@
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
 
+use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::header::Header;
-use crate::ics02_client::state::ConsensusState;
 use crate::ics24_host::identifier::ClientId;
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug)]
-pub struct MsgCreateClient {
+pub struct MsgCreateClient<CD: ClientDef> {
     pub client_id: ClientId,
     pub client_type: ClientType,
-    pub consensus_state: Box<dyn ConsensusState>,
+    pub consensus_state: CD::ConsensusState,
 }
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug)]
-pub struct MsgUpdateClient {
+pub struct MsgUpdateClient<CD: ClientDef> {
     pub client_id: ClientId,
-    pub header: Box<dyn Header>,
+    pub header: CD::Header,
 }

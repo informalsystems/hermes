@@ -1,24 +1,25 @@
 #![allow(unreachable_code, unused_variables)]
 
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
+use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper, ClientReader};
 use crate::ics02_client::msgs::MsgCreateClient;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
-pub struct CreateClientResult {
+pub struct CreateClientResult<CD: ClientDef> {
     client_id: ClientId,
     client_type: ClientType,
-    client_state: Box<dyn ClientState>,
+    client_state: CD::ClientState,
 }
 
 pub fn process(
     ctx: &dyn ClientReader,
-    msg: MsgCreateClient,
-) -> HandlerResult<CreateClientResult, Error> {
+    msg: MsgCreateClient<AnyClient>,
+) -> HandlerResult<CreateClientResult<AnyClient>, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgCreateClient {
@@ -50,8 +51,11 @@ pub fn process(
     }))
 }
 
-pub fn keep(keeper: &mut dyn ClientKeeper, result: CreateClientResult) -> Result<(), Error> {
-    keeper.store_client_state(result.client_id.clone(), result.client_state.as_ref())?;
+pub fn keep(
+    keeper: &mut dyn ClientKeeper,
+    result: CreateClientResult<AnyClient>,
+) -> Result<(), Error> {
+    keeper.store_client_state(result.client_id.clone(), result.client_state)?;
     keeper.store_client_type(result.client_id, result.client_type)?;
 
     Ok(())
@@ -71,7 +75,7 @@ mod tests {
     fn test_create_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientReader {
+        let reader = MockClientReader {
             client_id: client_id.clone(),
             client_type: None,
             client_state: None,
@@ -81,10 +85,10 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: Box::new(MockConsensusState(42)),
+            consensus_state: MockConsensusState(42).into(),
         };
 
-        let output = process(&mock, msg.clone());
+        let output = process(&reader, msg.clone());
 
         match output {
             Ok(HandlerOutput {
@@ -119,7 +123,7 @@ mod tests {
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientReader {
+        let reader = MockClientReader {
             client_id: client_id.clone(),
             client_type: Some(ClientType::Tendermint),
             client_state: None,
@@ -129,10 +133,10 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: Box::new(MockConsensusState(42)),
+            consensus_state: MockConsensusState(42).into(),
         };
 
-        let output = process(&mock, msg.clone());
+        let output = process(&reader, msg.clone());
 
         if let Err(err) = output {
             assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id));
@@ -145,7 +149,7 @@ mod tests {
     fn test_create_client_existing_client_state() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let mock = MockClientReader {
+        let reader = MockClientReader {
             client_id: client_id.clone(),
             client_type: None,
             client_state: Some(MockClientState(0)),
@@ -155,10 +159,10 @@ mod tests {
         let msg = MsgCreateClient {
             client_id,
             client_type: ClientType::Tendermint,
-            consensus_state: Box::new(MockConsensusState(42)),
+            consensus_state: MockConsensusState(42).into(),
         };
 
-        let output = process(&mock, msg.clone());
+        let output = process(&reader, msg.clone());
 
         if let Err(err) = output {
             assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id));
@@ -167,3 +171,4 @@ mod tests {
         }
     }
 }
+
