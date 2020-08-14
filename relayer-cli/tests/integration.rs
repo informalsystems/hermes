@@ -102,12 +102,15 @@ fn query_channel_id() {
 fn query_client_id() {
     let chain = simd_chain();
     let query = chain
-        .query::<Vec<String>>(
+        .query::<Vec<ConnectionId>>(
             ClientConnections(ClientId::from_str("clientidone").unwrap()),
             0,
             false,
         )
         .unwrap();
 
-    assert_eq!(query[0], "connections/connectionidone");
+    assert_eq!(
+        query[0],
+        ConnectionId::from_str("connections/connectionidone").unwrap()
+    );
 }
