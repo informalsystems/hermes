@@ -4,7 +4,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientContext, ClientEvent, ClientKeeper, ClientReader};
+use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
 use crate::ics02_client::msgs::MsgCreateClient;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;

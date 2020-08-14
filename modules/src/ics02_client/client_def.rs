@@ -25,11 +25,17 @@ pub enum AnyHeader {
 
 impl Header for AnyHeader {
     fn height(&self) -> Height {
-        todo!()
+        match self {
+            Self::Mock(header) => header.height(),
+            Self::Tendermint(header) => header.height(),
+        }
     }
 
     fn client_type(&self) -> ClientType {
-        todo!()
+        match self {
+            Self::Mock(header) => header.client_type(),
+            Self::Tendermint(header) => header.client_type(),
+        }
     }
 }
 

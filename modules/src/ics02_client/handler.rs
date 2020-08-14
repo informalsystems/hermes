@@ -13,12 +13,6 @@ use crate::Height;
 pub mod create_client;
 pub mod update_client;
 
-pub trait ClientContext {
-    fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
-    fn reader(&self, client_type: &ClientType) -> Box<dyn ClientReader>;
-    fn keeper(&self, client_type: &ClientType) -> Box<dyn ClientKeeper>;
-}
-
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
@@ -73,20 +67,17 @@ pub enum ClientMsg<CD: ClientDef> {
 
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg<AnyClient>) -> Result<HandlerOutput<()>, Error>
 where
-    Ctx: ClientContext,
+    Ctx: ClientReader + ClientKeeper,
 {
     match msg {
         ClientMsg::CreateClient(msg) => {
-            let reader = ctx.reader(&msg.client_type);
-            let mut keeper = ctx.keeper(&msg.client_type);
-
             let HandlerOutput {
                 result,
                 log,
                 events,
-            } = create_client::process(&*reader, msg)?;
+            } = create_client::process(ctx, msg)?;
 
-            create_client::keep(&mut *keeper, result)?;
+            create_client::keep(ctx, result)?;
 
             Ok(HandlerOutput::builder()
                 .with_log(log)
@@ -94,18 +85,13 @@ where
                 .with_result(()))
         }
         ClientMsg::UpdateClient(msg) => {
-            let client_type = ctx.client_type(&msg.client_id).unwrap(); // FIXME
-
-            let reader = ctx.reader(&client_type);
-            let mut keeper = ctx.keeper(&client_type);
-
             let HandlerOutput {
                 result,
                 log,
                 events,
-            } = update_client::process(&*reader, msg)?;
+            } = update_client::process(ctx, msg)?;
 
-            update_client::keep(&mut *keeper, result)?;
+            update_client::keep(ctx, result)?;
 
             Ok(HandlerOutput::builder()
                 .with_log(log)
@@ -114,3 +100,4 @@ where
         }
     }
 }
+

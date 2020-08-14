@@ -2,8 +2,10 @@
 
 ## Changelog
 * 2020-08-06: Initial proposal
+* 2020-08-10: Rename Handler to Message Processor
+* 2020-08-14: Revamp definition of chain-specific messages, readers and keepers
 
-## Context
+## Reader
 
 > This section contains all the context one needs to understand the current state, and why there is a problem. It should be as succinct as possible and introduce the high level idea behind the solution.
 
@@ -147,12 +149,8 @@ the IBC protocol, eg. client lifecycle management, connection lifecycle manageme
 packet relay, etc.
 
 In this section we propose a general approach to implement the message processors for a submodule.
-To make things more concrete, we will use the ICS 002 Client submodule as a
-running example, but the methodology outlined here should apply to any submodule.
-This specific module also has the peculiarity of dealing with datatypes which
-are specific to a given type of chain, eg. Tendermint. This incurs the need for
-abstracting over these datatypes, which introduces additional abstractions which
-may not be needed for other submodules.
+As a running example we will use a dummy submodule that deals with connections, which should not
+be mistaken for the actual ICS 003 Connection submodule.
 
 #### Events
 
@@ -160,83 +158,25 @@ The events which may be emitted by the message processors of a submodule should 
 as an enumeration, while a way of converting those into the generic `Event` type
 defined in a previous section should be provided via the `From` trait.
 
-We provide below an implementation of both for the ICS 002 Client submodule:
-
 ```rust
-pub enum ClientEvent {
-    ClientCreated(ClientId),
-    ClientUpdated(ClientId),
+pub enum ConnectionEvent {
+    ConnectionCreated(ConnectionId),
+    ConnectionUpdated(ConnectionId),
 }
 
-impl From<ClientEvent> for Event {
-    fn from(ce: ClientEvent) -> Event {
+impl From<ConnectionEvent> for Event {
+    fn from(ce: ConnectionEvent) -> Event {
         match ce {
-            ClientEvent::ClientCreated(client_id) => Event::new(
-                EventType::Custom("ClientCreated".to_string()),
-                vec![("client_id".to_string(), client_id.to_string())],
+            ConnectionEvent::ConnectionCreated(client_id) => Event::new(
+                EventType::Custom("ConnectionCreated".to_string()),
+                vec![("connection_id".to_string(), client_id.to_string())],
             ),
-            ClientEvent::ClientUpdated(client_id) => Event::new(
-                EventType::Custom("ClientUpdated".to_string()),
-                vec![("client_id".to_string(), client_id.to_string())],
+            ConnectionEvent::ConnectionUpdated(client_id) => Event::new(
+                EventType::Custom("ConnectionUpdated".to_string()),
+                vec![("connection_id".to_string(), client_id.to_string())],
             ),
         }
     }
-}
-```
-
-#### Abstracting over chain-specific datatypes
-
-To abstract over chain-specific datatypes, we introduce a trait which specifies
-both which types we need to abstract over and their interface. For the Client submodule,
-this trait looks as follow:
-
-```rust
-pub trait ClientDef {
-    type Header: Header;
-    type ClientState: ClientState + From<Self::ConsensusState>;
-    type ConsensusState: ConsensusState;
-}
-```
-
-This trait specifies three datatypes, and their corresponding interface, which is provided
-via a trait defined in the same submodule.
-Additionally, this trait expresses the requirement for a `ClientState` to be built from
-a `ConsensusState`.
-
-A production implementation of this interface would instantiate these types with the concrete
-types used by the chain.
-
-For the purpose of unit-testing, a mock implementation of the `ClientDef` trait could look as
-follows:
-
-```rust
-struct MockHeader(u32);
-impl Header for MockHeader {
-  // omitted
-}
-
-struct MockClientState(u32);
-impl ClientState for MockClientState {
-  // omitted
-}
-
-impl From<MockConsensusState> for MockClientState {
-    fn from(cs: MockConsensusState) -> Self {
-        Self(cs.0)
-    }
-}
-
-struct MockConsensusState(u32);
-impl ConsensusState for MockConsensusState {
-  // omitted
-}
-
-struct MockClient;
-
-impl ClientDef for MockClient {
-    type Header = MockHeader;
-    type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
 }
 ```
 
@@ -246,65 +186,47 @@ A typical message processor will need to read data from the chain state at the c
 via the private and provable stores.
 
 To avoid coupling between the message processor interface and the store API, we introduce an interface
-for accessing this data. This interface is shared between all message processors in a submodule, as
-those typically access the same data.
+for accessing this data. This interface, called a `Reader`, is shared between all message processors
+in a submodule, as those typically access the same data.
 
 Having a high-level interface for this purpose helps avoiding coupling which makes
 writing unit tests for the message processors easier, as one does not need to provide a concrete
 store, or to mock one.
 
-We provide below the definition of such an interface, called a `Reader` for the ICS 02 Client submodule:
-
 ```rust
-pub trait ClientReader<CD>
-where
-    CD: ClientDef,
+pub trait ConnectionReader
 {
-    fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
-    fn client_state(&self, client_id: &ClientId) -> Option<CD::ClientState>;
-    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<CD::ConsensusState>;
+    fn connection_type(&self, connection_id: &ConnectionId) -> Option<ConnectionType>;
+    fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionState>;
 }
 ```
-
-Because the data exposed by this `Reader` is chain-specific, the `Reader` trait is parametrized
-by the type of chain, via the `ClientDef` trait bound. Other submodules may not need the generality
-and do away with the type parameter and trait bound altogether.
 
 A production implementation of this `Reader` would hold references to both the private and provable
 store at the current height where the message processor executes, but we omit the actual implementation as
 the store interfaces are yet to be defined, as is the general IBC top-level module machinery.
 
-A mock implementation of the `ClientReader` trait could look as follows, given the `MockClient`
+A mock implementation of the `ConnectionReader` trait could look as follows, given the `MockConnection`
 definition provided in the previous section.
 
 ```rust
-struct MockClientContext {
-    client_id: ClientId,
-    client_state: Option<MockClientState>,
-    client_type: Option<ClientType>,
-    consensus_state: Option<MockConsensusState>,
+struct MockConnectionReader {
+    connection_id: ConnectionId,
+    connection_type: Option<ConnectionType>,
+    connection_state: Option<ConnectionState>,
 }
 
-impl ClientContext<MockClient> for MockClientContext {
-    fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-        if client_id == &self.client_id {
-            self.client_type.clone()
+impl ConnectionReader for MockConnectionReader {
+    fn connection_type(&self, connection_id: &ConnectionId) -> Option<ConnectionType> {
+        if connection_id == &self.connection_id {
+            self.connection_type.clone()
         } else {
             None
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Option<MockClientState> {
-        if client_id == &self.client_id {
-            self.client_state
-        } else {
-            None
-        }
-    }
-
-    fn consensus_state(&self, client_id: &ClientId, _height: Height) -> Option<MockConsensusState> {
-        if client_id == &self.client_id {
-            self.consensus_state
+    fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionState> {
+        if connection_id == &self.connection_id {
+            self.connection_state
         } else {
             None
         }
@@ -319,32 +241,27 @@ via the private/provable store interfaces. In the same vein as for the reader de
 a submodule should define a trait which provides operations to persist such data.
 The same considerations w.r.t. to coupling and unit-testing apply here as well.
 
-We give below a version of this keeper trait for the Client submodule:
-
 ```rust
-pub trait ClientKeeper<CD: ClientDef> {
+pub trait ConnectionKeeper {
     fn store_client_type(
         &mut self,
-        client_id: ClientId,
-        client_type: ClientType,
+        client_id: ConnectionId,
+        client_type: ConnectionType,
     ) -> Result<(), Error>;
 
     fn store_client_state(
         &mut self,
-        client_id: ClientId,
-        client_state: CD::ClientState,
+        client_id: ConnectionId,
+        client_state: ConnectionState,
     ) -> Result<(), Error>;
 
     fn store_consensus_state(
         &mut self,
-        client_id: ClientId,
-        consensus_state: CD::ConsensusState,
+        client_id: ConnectionId,
+        consensus_state: ConsensusState,
     ) -> Result<(), Error>;
 }
 ```
-
-Other submodules may not need the generality and do away with the type parameter and trait
-bound altogether.
 
 #### Submodule implementation
 
@@ -357,20 +274,13 @@ be defined in `ibc_modules::ics02_client::handler::create_client`.
 ##### Message type
 
 Each message processor must define a datatype which represent the message it can process.
-For the "Create Client" sub-protocol of ICS 002, the message would look as follows:
 
 ```rust
-pub struct MsgCreateClient<C: ClientDef> {
-    pub client_id: ClientId,
-    pub client_type: ClientType,
-    pub consensus_state: C::ConsensusState,
+pub struct MsgCreateConnection {
+    pub connection_id: ConnectionId,
+    pub connection_type: ConnectionType,
 }
 ```
-
-Again, because the message mentions chain-specific datatypes, it must be parametrized by
-the type of chain, bounded by the `ClientDef` trait defined in an earlier section.
-Other submodules may not need the generality and do away with the type parameter and trait
-bound altogether.
 
 ##### Message processor implementation
 
@@ -385,13 +295,10 @@ The actual logic of the message processor is expressed as a pure function, typic
 a `HandlerOutput<T, E>`, where `T` is a concrete datatype and `E` is an error type which defines
 all potential errors yielded by the message processors of the current submodule.
 
-For the "Create Client" sub-protocol of ICS 002, `T` would be defined as the following datatype:
-
 ```rust
-pub struct CreateClientResult<CD: ClientDef> {
-    client_id: ClientId,
-    client_type: ClientType,
-    client_state: CD::ClientState,
+pub struct CreateConnectionResult {
+    client_id: ConnectionId,
+    client_type: ConnectionType,
 }
 ```
 
@@ -401,51 +308,38 @@ datatypes, emit log records and events, and eventually return some data together
 To this end, this `process` function will create and manipulate a `HandlerOutput` value like described in
 the corresponding section.
 
-We provide below the actual implementation of the `process` function for the "Create Client" sub-protocol of ICS 002:
-
 ```rust
-pub fn process<CD>(
-    reader: &dyn ClientReader<CD>,
-    msg: MsgCreateClient<CD>,
-) -> HandlerResult<CreateClientResult<CD>, Error>
+pub fn process(
+    reader: &dyn ConnectionReader,
+    msg: MsgCreateConnection,
+) -> HandlerResult<CreateConnectionResult, Error>
 where
     CD: ClientDef,
 {
     let mut output = HandlerOutput::builder();
 
-    let MsgCreateClient {
-        client_id,
-        client_type,
-        consensus_state,
-    } = msg;
+    let MsgCreateConnection { connection_id, connection_type, } = msg;
 
-    if reader.client_state(&client_id).is_some() {
-        return Err(Kind::ClientAlreadyExists(client_id).into());
+    if reader.connection_state(&connection_id).is_some() {
+        return Err(Kind::ConnectionAlreadyExists(connection_id).into());
     }
 
-    output.log("success: no client state found");
+    output.log("success: no connection state found");
 
-    if reader.client_type(&client_id).is_some() {
-        return Err(Kind::ClientAlreadyExists(client_id).into());
+    if reader.client_type(&connection_id).is_some() {
+        return Err(Kind::ConnectionAlreadyExists(connection_id).into());
     }
 
-    output.log("success: no client type found");
+    output.log("success: no connection type found");
 
-    let client_state = consensus_state.into();
+    output.emit(ConnectionEvent::ConnectionCreated(connection_id.clone()));
 
-    output.emit(ClientEvent::ClientCreated(client_id.clone()));
-
-    Ok(output.with_result(CreateClientResult {
-        client_id,
-        client_type,
-        client_state,
+    Ok(output.with_result(CreateConnectionResult {
+        connection_id,
+        connection_state,
     }))
 }
 ```
-
-Again, because this message processor deals with chain-specific data, the `process` function is parametrized
-by the type of chain, via the `ClientDef` trait bound. Other submodules or messages may not need the generality
-and do away with the type parameter and trait bound altogether.
 
 ###### Persistence
 
@@ -454,18 +348,18 @@ passed to a function named `keep`, which is responsible for persisting the objec
 by the processing function. This `keep` function takes the submodule's `Keeper` and the result
 type defined above, and performs side-effecting calls to the keeper's methods to persist the result.
 
-Below is given an implementation of the `keep` function for the "Create Client" message processors:
+Below is given an implementation of the `keep` function for the "Create Connection" message processors:
 
 ```rust
-pub fn keep<CD>(
-    keeper: &mut dyn ClientKeeper<CD>,
-    result: CreateClientResult<CD>,
+pub fn keep(
+    keeper: &mut dyn ConnectionKeeper,
+    result: CreateConnectionResult,
 ) -> Result<(), Error>
 where
     CD: ClientDef,
 {
-    keeper.store_client_state(result.client_id.clone(), result.client_state)?;
-    keeper.store_client_type(result.client_id, result.client_type)?;
+    keeper.store_connection_state(result.connection_id.clone(), result.connection_state)?;
+    keeper.store_connection_type(result.connection_id, result.connection_type)?;
 
     Ok(())
 }
@@ -485,12 +379,12 @@ function defined in the previous section.
 
 To this end, the submodule should define an enumeration of all messages, in order
 for the top-level submodule dispatcher to forward them to the appropriate processor.
-Such a definition for the ICS 002 Client submodule is given below.
+Such a definition for the ICS 002 Connection submodule is given below.
 
 ```rust
-pub enum ClientMsg<CD: ClientDef> {
-    CreateClient(MsgCreateClient<CD>),
-    UpdateClient(UpdateClientMsg<CD>),
+pub enum ConnectionMsg {
+    CreateConnection(MsgCreateConnection),
+    UpdateConnection(UpdateConnectionMsg),
 }
 ```
 
@@ -500,23 +394,22 @@ Other submodules may not need the generality and do away with the type parameter
 bound altogether.
 
 The actual implementation of a submodule dispatcher is quite straightforward and unlikely to vary
-much in substance between submodules. We give an implementation for the ICS 002 Client module below.
+much in substance between submodules. We give an implementation for the ICS 002 Connection module below.
 
 ```rust
-pub fn dispatch<Client, Ctx>(ctx: &mut Ctx, msg: ClientMsg<Client>) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ConnectionMsg) -> Result<HandlerOutput<()>, Error>
 where
-    Client: ClientDef,
-    Ctx: ClientContext<Client> + ClientKeeper<Client>,
+    Ctx: ConnectionReader + ConnectionKeeper,
 {
     match msg {
-        ClientMsg::CreateClient(msg) => {
+        ConnectionMsg::CreateConnection(msg) => {
             let HandlerOutput {
                 result,
                 log,
                 events,
-            } = create_client::process(ctx, msg)?;
+            } = create_connection::process(ctx, msg)?;
 
-            create_client::keep(ctx, result)?;
+            create_connection::keep(ctx, result)?;
 
             Ok(HandlerOutput::builder()
                 .with_log(log)
@@ -524,7 +417,7 @@ where
                 .with_result(()))
         }
 
-        ClientMsg::UpdateClient(msg) => // omitted
+        ConnectionMsg::UpdateConnection(msg) => // omitted
     }
 }
 ```
@@ -532,10 +425,261 @@ where
 In essence, a top-level dispatcher is a function of a message wrapped in the enumeration introduced above,
 and a "context" which implements both the `Reader` and `Keeper` interfaces.
 
-It is currently not clear if such a requirement is actually viable, as message processors might need to access
-a `Keeper` for various chain types known only at runtime, which would prevent having a static bound
-on the context, as expressed above. Further investigations are required to sort this out, hence the
-disclaimer at the beginning of this section.
+### Dealing with chain-specific datatypes
+
+The ICS 002 Client submodule stands out from the other submodules as it needs
+to deal with chain-specific datatypes, such as `Header`, `ClientState`, and
+`ConsensusState`.
+
+To abstract over chain-specific datatypes, we introduce a trait which specifies
+both which types we need to abstract over, and their interface.
+
+For the ICS 002 Client submodule, this trait looks as follow:
+
+```rust
+pub trait ClientDef {
+    type Header: Header;
+    type ClientState: ClientState;
+    type ConsensusState: ConsensusState;
+}
+```
+
+The `ClientDef` trait specifies three datatypes, and their corresponding interface, which is provided
+via a trait defined in the same submodule.
+
+A production implementation of this interface would instantiate these types with the concrete
+types used by the chain, eg. Tendermint datatypes. Each concrete datatype must be provided
+with a `From` instance to lift it into its corresponding `Any...` enumeration.
+
+For the purpose of unit-testing, a mock implementation of the `ClientDef` trait could look as follows:
+
+```rust
+struct MockHeader(u32);
+
+impl Header for MockHeader {
+  // omitted
+}
+
+impl From<MockHeader> for AnyHeader {
+    fn from(mh: MockHeader) -> Self {
+        Self::Mock(mh)
+    }
+}
+
+struct MockClientState(u32);
+
+impl ClientState for MockClientState {
+  // omitted
+}
+
+impl From<MockClientState> for AnyClientState {
+    fn from(mcs: MockClientState) -> Self {
+        Self::Mock(mcs)
+    }
+}
+
+struct MockConsensusState(u32);
+
+impl ConsensusState for MockConsensusState {
+  // omitted
+}
+
+impl From<MockConsensusState> for AnyConsensusState {
+    fn from(mcs: MockConsensusState) -> Self {
+        Self::Mock(mcs)
+    }
+}
+
+struct MockClient;
+
+impl ClientDef for MockClient {
+    type Header = MockHeader;
+    type ClientState = MockClientState;
+    type ConsensusState = MockConsensusState;
+}
+```
+
+Since the actual type of client can only be determined at runtime, we cannot encode
+the type of client within the message itself.
+
+Because of some limitations of the Rust type system, namely the lack of proper support
+for existential types, it is currently impossible to define `Reader` and `Keeper` traits
+which are agnostic to the actual type of client being used.
+
+We could alternatively model all chain-specific datatypes as boxed trait objects (`Box<dyn Trait>`),
+but this approach runs into a lot of limitations of trait objects, such as the inability to easily
+require such trait objects to be Clonable, or Serializable, or to define an equality relation on them.
+Some support for such functionality can be found in third-party libraries, but the overall experience
+for the developer is too subpar.
+
+We thus settle on a different strategy: lifting chain-specific data into an `enum` over all
+possible chain types.
+
+For example, to model a chain-specific `Header` type, we would define an enumeration in the following
+way:
+
+```rust
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // TODO: Add Eq
+pub enum AnyHeader {
+    Mock(mocks::MockHeader),
+    Tendermint(tendermint::header::Header),
+}
+
+impl Header for AnyHeader {
+    fn height(&self) -> Height {
+        match self {
+            Self::Mock(header) => header.height(),
+            Self::Tendermint(header) => header.height(),
+        }
+    }
+
+    fn client_type(&self) -> ClientType {
+        match self {
+            Self::Mock(header) => header.client_type(),
+            Self::Tendermint(header) => header.client_type(),
+        }
+    }
+}
+```
+
+This enumeration dispatches method calls to the underlying datatype at runtime, while
+hiding the latter, and is thus akin to a proper existential type without running
+into any limitations of the Rust type system (`impl Header` bounds not being allowed
+everywhere, `Header` not being able to be treated as a trait objects because of `Clone`,
+`PartialEq` and `Serialize`, `Deserialize` bounds, etc.)
+
+Other chain-specific datatypes, such as `ClientState` and `ConsensusState` require their own
+enumeration over all possible implementations.
+
+On top of that, we also need to lift the specific client definitions (`ClientDef` instances),
+into their own enumeration, as follows:
+
+```rust
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum AnyClient {
+    Mock(mocks::MockClient),
+    Tendermint(tendermint::TendermintClient),
+}
+
+impl ClientDef for AnyClient {
+    type Header = AnyHeader;
+    type ClientState = AnyClientState;
+    type ConsensusState = AnyConsensusState;
+}
+```
+
+Messages can now be defined generically over the `ClientDef` instance:
+
+
+```rust
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MsgCreateClient<CD: ClientDef> {
+    pub client_id: ClientId,
+    pub client_type: ClientType,
+    pub consensus_state: CD::ConsensusState,
+}
+
+pub struct MsgUpdateClient<CD: ClientDef> {
+    pub client_id: ClientId,
+    pub header: CD::Header,
+}
+```
+
+The `Keeper` and `Reader` traits are defined for any client:
+
+```
+pub trait ClientReader {
+    fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
+    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState>;
+}
+
+pub trait ClientKeeper {
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), Error>;
+
+    fn store_client_state(
+        &mut self,
+        client_id: ClientId,
+        client_state: AnyClientState,
+    ) -> Result<(), Error>;
+
+    fn store_consensus_state(
+        &mut self,
+        client_id: ClientId,
+        consensus_state: AnyConsensusState,
+    ) -> Result<(), Error>;
+}
+```
+
+This way, only one implementation of the `ClientReader` and `ClientKeeper` trait is required,
+as it can delegate eg. the serialization of the underlying datatypes to the `Serialize` bound
+of the `Any...` wrappper.
+
+Both the `process` and `keep` function are defined to take a message generic over
+the actual client type:
+
+```rust
+pub fn process(
+    ctx: &dyn ClientReader,
+    msg: MsgCreateClient<AnyClient>,
+) -> HandlerResult<CreateClientResult<AnyClient>, Error>;
+
+pub fn keep(
+    keeper: &mut dyn ClientKeeper,
+    result: CreateClientResult<AnyClient>,
+) -> Result<(), Error>;
+```
+
+Same for the top-level dispatcher:
+
+```rust
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg<AnyClient>) -> Result<HandlerOutput<()>, Error>
+where
+    Ctx: ClientReader + ClientKeeper;
+```
+
+With this boilerplate out of way, one can write tests using a mock client, and associated mock datatypes
+in a fairly straightforward way, taking advantage of the `From` instance to lift concerete mock datatypes
+into the `Any...` enumeration:
+
+```rust
+  #[test]
+  fn test_create_client_ok() {
+      let client_id: ClientId = "mockclient".parse().unwrap();
+
+      let reader = MockClientReader {
+          client_id: client_id.clone(),
+          client_type: None,
+          client_state: None,
+          consensus_state: None,
+      };
+
+      let msg = MsgCreateClient {
+          client_id,
+          client_type: ClientType::Tendermint,
+          consensus_state: MockConsensusState(42).into(), // lift into `AnyConsensusState`
+      };
+
+      let output = process(&reader, msg.clone());
+
+      match output {
+          Ok(HandlerOutput {
+              result,
+              events,
+              log,
+          }) => {
+            // snip
+          }
+          Err(err) => {
+              panic!("unexpected error: {}", err);
+          }
+      }
+  }
+```
 
 ## Status
 
