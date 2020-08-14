@@ -13,10 +13,7 @@
 
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::connection::State as ConnectionState;
-use ibc::ics04_channel::channel::ChannelEnd;
-use ibc::ics04_channel::exported::Channel;
-use ibc::ics04_channel::exported::Order;
-use ibc::ics04_channel::exported::State as ChannelState;
+use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics23_commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
@@ -104,12 +101,15 @@ fn query_channel_id() {
 fn query_client_id() {
     let chain = simd_chain();
     let query = chain
-        .query::<Vec<String>>(
+        .query::<Vec<ConnectionId>>(
             ClientConnections(ClientId::from_str("clientidone").unwrap()),
             0,
             false,
         )
         .unwrap();
 
-    assert_eq!(query[0], "connections/connectionidone");
+    assert_eq!(
+        query[0],
+        ConnectionId::from_str("connections/connectionidone").unwrap()
+    );
 }
