@@ -160,20 +160,20 @@ defined in a previous section should be provided via the `From` trait.
 
 ```rust
 pub enum ConnectionEvent {
-    ConnectionCreated(ConnectionId),
-    ConnectionUpdated(ConnectionId),
+    ConnectionOpenInit(ConnectionId),
+    ConnectionOpenTry(ConnectionId),
 }
 
 impl From<ConnectionEvent> for Event {
     fn from(ce: ConnectionEvent) -> Event {
         match ce {
-            ConnectionEvent::ConnectionCreated(client_id) => Event::new(
-                EventType::Custom("ConnectionCreated".to_string()),
-                vec![("connection_id".to_string(), client_id.to_string())],
+            ConnectionEvent::ConnectionOpenInit(connection_id) => Event::new(
+                EventType::Custom("ConnectionOpenInit".to_string()),
+                vec![("connection_id".to_string(), connection_id.to_string())],
             ),
-            ConnectionEvent::ConnectionUpdated(client_id) => Event::new(
-                EventType::Custom("ConnectionUpdated".to_string()),
-                vec![("connection_id".to_string(), client_id.to_string())],
+            ConnectionEvent::ConnectionOpenTry(connection_id) => Event::new(
+                EventType::Custom("ConnectionOpenTry".to_string()),
+                vec![("connection_id".to_string(), connection_id.to_string())],
             ),
         }
     }
@@ -196,8 +196,7 @@ store, or to mock one.
 ```rust
 pub trait ConnectionReader
 {
-    fn connection_type(&self, connection_id: &ConnectionId) -> Option<ConnectionType>;
-    fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionState>;
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd>;
 }
 ```
 
@@ -205,28 +204,19 @@ A production implementation of this `Reader` would hold references to both the p
 store at the current height where the message processor executes, but we omit the actual implementation as
 the store interfaces are yet to be defined, as is the general IBC top-level module machinery.
 
-A mock implementation of the `ConnectionReader` trait could look as follows, given the `MockConnection`
-definition provided in the previous section.
+A mock implementation of the `ConnectionReader` trait could look as follows:
 
 ```rust
 struct MockConnectionReader {
     connection_id: ConnectionId,
-    connection_type: Option<ConnectionType>,
-    connection_state: Option<ConnectionState>,
+    connection_end: Option<ConnectionEnd>,
+    client_reader: MockClientReader,
 }
 
 impl ConnectionReader for MockConnectionReader {
-    fn connection_type(&self, connection_id: &ConnectionId) -> Option<ConnectionType> {
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
         if connection_id == &self.connection_id {
-            self.connection_type.clone()
-        } else {
-            None
-        }
-    }
-
-    fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionState> {
-        if connection_id == &self.connection_id {
-            self.connection_state
+            self.connection_end.clone()
         } else {
             None
         }
@@ -243,22 +233,16 @@ The same considerations w.r.t. to coupling and unit-testing apply here as well.
 
 ```rust
 pub trait ConnectionKeeper {
-    fn store_client_type(
+    fn store_connection(
         &mut self,
         client_id: ConnectionId,
         client_type: ConnectionType,
     ) -> Result<(), Error>;
 
-    fn store_client_state(
+    fn add_connection_to_client(
         &mut self,
-        client_id: ConnectionId,
-        client_state: ConnectionState,
-    ) -> Result<(), Error>;
-
-    fn store_consensus_state(
-        &mut self,
-        client_id: ConnectionId,
-        consensus_state: ConsensusState,
+        client_id: ClientId,
+        connection_id: ConnectionId,
     ) -> Result<(), Error>;
 }
 ```
@@ -276,9 +260,10 @@ be defined in `ibc_modules::ics02_client::handler::create_client`.
 Each message processor must define a datatype which represent the message it can process.
 
 ```rust
-pub struct MsgCreateConnection {
-    pub connection_id: ConnectionId,
-    pub connection_type: ConnectionType,
+pub struct MsgConnectionOpenInit {
+    connection_id: ConnectionId,
+    client_id: ClientId,
+    counterparty: Counterparty,
 }
 ```
 
@@ -296,9 +281,9 @@ a `HandlerOutput<T, E>`, where `T` is a concrete datatype and `E` is an error ty
 all potential errors yielded by the message processors of the current submodule.
 
 ```rust
-pub struct CreateConnectionResult {
-    client_id: ConnectionId,
-    client_type: ConnectionType,
+pub struct ConnectionMsgProcessingResult {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
 }
 ```
 
@@ -311,32 +296,31 @@ the corresponding section.
 ```rust
 pub fn process(
     reader: &dyn ConnectionReader,
-    msg: MsgCreateConnection,
-) -> HandlerResult<CreateConnectionResult, Error>
-where
-    CD: ClientDef,
+    msg: MsgConnectionOpenInit,
+) -> HandlerResult<ConnectionMsgProcessingResult, Error>
 {
     let mut output = HandlerOutput::builder();
 
-    let MsgCreateConnection { connection_id, connection_type, } = msg;
+    let MsgConnectionOpenInit { connection_id, client_id, counterparty, } = msg;
 
-    if reader.connection_state(&connection_id).is_some() {
+    if reader.connection_end(&connection_id).is_some() {
         return Err(Kind::ConnectionAlreadyExists(connection_id).into());
     }
 
     output.log("success: no connection state found");
 
-    if reader.client_type(&connection_id).is_some() {
-        return Err(Kind::ConnectionAlreadyExists(connection_id).into());
+    if reader.client_reader.client_state(&client_id).is_none() {
+        return Err(Kind::ClientForConnectionMissing(client_id).into());
     }
 
-    output.log("success: no connection type found");
+    output.log("success: client found");
 
-    output.emit(ConnectionEvent::ConnectionCreated(connection_id.clone()));
+    output.emit(ConnectionEvent::ConnectionOpenInit(connection_id.clone()));
 
-    Ok(output.with_result(CreateConnectionResult {
+    Ok(output.with_result(ConnectionMsgProcessingResult {
         connection_id,
-        connection_state,
+        client_id,
+        counterparty,
     }))
 }
 ```
@@ -353,13 +337,11 @@ Below is given an implementation of the `keep` function for the "Create Connecti
 ```rust
 pub fn keep(
     keeper: &mut dyn ConnectionKeeper,
-    result: CreateConnectionResult,
+    result: ConnectionMsgProcessingResult,
 ) -> Result<(), Error>
-where
-    CD: ClientDef,
 {
-    keeper.store_connection_state(result.connection_id.clone(), result.connection_state)?;
-    keeper.store_connection_type(result.connection_id, result.connection_type)?;
+    keeper.store_connection(result.connection_id.clone(), result.connection_end)?;
+    keeper.add_connection_to_client(result.client_id, result.connection_id)?;
 
     Ok(())
 }
@@ -379,37 +361,32 @@ function defined in the previous section.
 
 To this end, the submodule should define an enumeration of all messages, in order
 for the top-level submodule dispatcher to forward them to the appropriate processor.
-Such a definition for the ICS 002 Connection submodule is given below.
+Such a definition for the ICS 003 Connection submodule is given below.
 
 ```rust
 pub enum ConnectionMsg {
-    CreateConnection(MsgCreateConnection),
-    UpdateConnection(UpdateConnectionMsg),
+    ConnectionOpenInit(MsgConnectionOpenInit),
+    ConnectionOpenTry(MsgConnectionOpenTry),
+    ...
 }
 ```
-
-Because the messages mention chain-specific datatypes, the whole enumeration must be parametrized by
-the type of chain, bounded by the `ClientDef` trait defined in an earlier section.
-Other submodules may not need the generality and do away with the type parameter and trait
-bound altogether.
-
 The actual implementation of a submodule dispatcher is quite straightforward and unlikely to vary
-much in substance between submodules. We give an implementation for the ICS 002 Connection module below.
+much in substance between submodules. We give an implementation for the ICS 003 Connection module below.
 
 ```rust
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ConnectionMsg) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Msg) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: ConnectionReader + ConnectionKeeper,
 {
     match msg {
-        ConnectionMsg::CreateConnection(msg) => {
+        Msg::ConnectionOpenInit(msg) => {
             let HandlerOutput {
                 result,
                 log,
                 events,
-            } = create_connection::process(ctx, msg)?;
+            } = connection_open_init::process(ctx, msg)?;
 
-            create_connection::keep(ctx, result)?;
+            connection::keep(ctx, result)?;
 
             Ok(HandlerOutput::builder()
                 .with_log(log)
@@ -417,7 +394,7 @@ where
                 .with_result(()))
         }
 
-        ConnectionMsg::UpdateConnection(msg) => // omitted
+        Msg::ConnectionOpenTry(msg) => // omitted
     }
 }
 ```
@@ -587,7 +564,7 @@ pub struct MsgUpdateClient<CD: ClientDef> {
 
 The `Keeper` and `Reader` traits are defined for any client:
 
-```
+```rust
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
