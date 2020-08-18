@@ -26,7 +26,8 @@ EXTENDS Naturals, FiniteSets, Sequences
 
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
          MaxBufLen,     \* Length (size) of message buffers.
-         Concurrency    \* Flag for enabling concurrent relayers.
+         Concurrency,    \* Flag for enabling concurrent relayers.
+         MaxVersionNr   \* Maximum version number
 
 
 ASSUME MaxHeight > 4
@@ -48,28 +49,36 @@ VARIABLES
     modeling a single connection in this specification.
  
  ***************************************************************************)
+
+AllChainIDs ==
+    { "chainA", "chainB" }
+    
+AllVersionSeqs ==
+    {<<>>} \union
+    {<<a>> : a \in 1..MaxVersionNr} \union
+    {<<a, b>> \in (1..MaxVersionNr) \X (1..MaxVersionNr) : a /= b}   
+    
 ChainAConnectionEnds == 
     [
         connectionID : { "connAtoB" },
-        clientID : { "clientOnAToB" }
+        clientID : { "clientOnAToB" },
+        version : AllVersionSeqs 
     ]
 ChainBConnectionEnds ==
     [
         connectionID : { "connBtoA" },
-        clientID : { "clientOnBToA" }
+        clientID : { "clientOnBToA" },
+        version : AllVersionSeqs
     ]
 
 AllConnectionEnds ==
-    ChainAConnectionEnds \union ChainBConnectionEnds
-
+    ChainAConnectionEnds \union ChainBConnectionEnds    
+    
 AllClientIDs == 
     { x.clientID : x \in AllConnectionEnds }
 
 AllConnectionIDs ==
-    { x.connectionID : x \in AllConnectionEnds }
-
-AllChainIDs ==
-    { "chainA", "chainB" }
+    { x.connectionID : x \in AllConnectionEnds }    
 
 ChainAClientIDs ==
     { x.clientID : x \in ChainAConnectionEnds }
@@ -82,7 +91,6 @@ ChainAConnectionIDs ==
 
 ChainBConnectionIDs ==
     { x.connectionID : x \in ChainBConnectionEnds }
-
 
 (* Bundle with variables that chain A has access to. *)
 chainAVars == <<inBufChainA,    (* Input message buffer. *)
@@ -111,7 +119,8 @@ chmA == INSTANCE ICS3Module
              outBuf         <- outBufChainA,
              store          <- storeChainA,
              ConnectionIDs  <- ChainAConnectionIDs,
-             ClientIDs      <- ChainAClientIDs
+             ClientIDs      <- ChainAClientIDs,
+             ChainID        <- "chainA"
 
 
 chmB == INSTANCE ICS3Module
@@ -120,7 +129,8 @@ chmB == INSTANCE ICS3Module
              outBuf         <- outBufChainB,
              store          <- storeChainB,
              ConnectionIDs  <- ChainBConnectionIDs,
-             ClientIDs      <- ChainBClientIDs
+             ClientIDs      <- ChainBClientIDs,
+             ChainID        <- "chainB"
 
 
 (***************************************************************************
@@ -135,16 +145,28 @@ chmB == INSTANCE ICS3Module
 
  *)
 InitEnv ==
+    LET VersionedChainAConnectionEnds == 
+            {ce \in ChainAConnectionEnds : ce.version = storeChainA.connection.supportedVersions} IN
+    LET NonVersionedChainAConnectionEnds ==             
+            {ce \in ChainAConnectionEnds : ce.version = <<>>} IN
+    LET VersionedChainBConnectionEnds == 
+            {ce \in ChainBConnectionEnds : ce.version = storeChainB.connection.supportedVersions} IN
+    LET NonVersionedChainBConnectionEnds ==             
+            {ce \in ChainBConnectionEnds : ce.version = <<>>} IN            
     /\ \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
-                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+                        msg \in InitMsgs(NonVersionedChainAConnectionEnds, 
+                                         NonVersionedChainBConnectionEnds)}
           /\ inBufChainB = <<>>
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+                        msg \in InitMsgs(NonVersionedChainBConnectionEnds, 
+                                         NonVersionedChainAConnectionEnds)}
           /\ inBufChainA = <<>>
        \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
+                        msg \in InitMsgs(NonVersionedChainAConnectionEnds, 
+                                         NonVersionedChainBConnectionEnds)}
                       /\ inBufChainB \in {<<msg>> :
-                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+                        msg \in InitMsgs(NonVersionedChainBConnectionEnds, 
+                                         NonVersionedChainAConnectionEnds)}
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
 
@@ -175,11 +197,11 @@ RelayMessage(from, to) ==
 
  *)
 DefaultNextEnv ==
-    \/ \/ /\ MaxHeight - storeChainA.latestHeight > 4
-          /\ chmA!AdvanceChainHeight
+    \/ /\ MaxHeight - storeChainA.latestHeight > 4
+       /\ chmA!AdvanceChainHeight
        /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-    \/ \/ /\ MaxHeight - storeChainB.latestHeight > 4
-          /\ chmB!AdvanceChainHeight
+    \/ /\ MaxHeight - storeChainB.latestHeight > 4
+       /\ chmB!AdvanceChainHeight
        /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
 
@@ -252,6 +274,7 @@ NextEnv ==
     \/ Concurrency /\ ConcurrentUpdateClient
     \/ DefaultNextEnv
     \/ RelayNextEnv
+    \/ UNCHANGED allVars
 
 
 (* Enables when the connection is open on both chains.
@@ -287,10 +310,8 @@ ICS3ImpossibleToAdvance ==
 
 (* Initializes both chains, attributing to each a chainID and a client. *)
 Init ==
-    /\ \E clientA \in InitClients(ChainAClientIDs) :
-            chmA!Init("chainA", clientA)
-    /\ \E clientB \in InitClients(ChainBClientIDs) :
-            chmB!Init("chainB", clientB)
+    /\ chmA!Init 
+    /\ chmB!Init
     /\ InitEnv
 
 
@@ -352,10 +373,17 @@ ConsistencyProperty ==
 
 Consistency ==
     [] ConsistencyProperty
-
+    
+VersionInvariant ==
+    /\ storeChainA.connection.supportedVersions /= <<>>
+    /\ storeChainB.connection.supportedVersions /= <<>>
+    /\ storeChainA.connection.state = "OPEN"
+    /\ storeChainB.connection.state = "OPEN"   
+    => storeChainA.connection.parameters.localEnd.version = storeChainB.connection.parameters.localEnd.version
 
 =============================================================================
 \* Modification History
+\* Last modified Tue Aug 18 16:25:39 CEST 2020 by ilinastoilkovska
 \* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
