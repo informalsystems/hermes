@@ -34,7 +34,7 @@ pub mod try_from_raw;
 pub mod tx_msg;
 
 /// Height of a block, same as in `tendermint` crate
-pub type Height = tendermint::lite::Height;
+pub type Height = tendermint::block::Height;
 
 #[cfg(test)]
 mod test;

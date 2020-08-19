@@ -10,16 +10,16 @@ use crate::ics24_host::identifier::ClientId;
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug)]
-pub struct MsgCreateClient<CD: ClientDef> {
+pub struct MsgCreateAnyClient<CD: ClientDef> {
     pub client_id: ClientId,
     pub client_type: ClientType,
+    pub client_state: CD::ClientState,
     pub consensus_state: CD::ConsensusState,
 }
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug)]
-pub struct MsgUpdateClient<CD: ClientDef> {
+pub struct MsgUpdateAnyClient<CD: ClientDef> {
     pub client_id: ClientId,
     pub header: CD::Header,
 }
-

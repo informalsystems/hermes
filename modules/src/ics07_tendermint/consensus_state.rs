@@ -2,13 +2,14 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::CommitmentRoot;
 
 use serde_derive::{Deserialize, Serialize};
+use tendermint::Hash;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    pub root: CommitmentRoot,
     pub height: crate::Height,
     pub timestamp: tendermint::time::Time,
-    pub validator_set: tendermint::validator::Set,
+    pub root: CommitmentRoot,
+    pub next_validators_hash: Hash,
 }
 
 impl ConsensusState {
@@ -16,13 +17,13 @@ impl ConsensusState {
         root: CommitmentRoot,
         height: crate::Height,
         timestamp: tendermint::time::Time,
-        validator_set: tendermint::validator::Set,
+        next_validators_hash: Hash,
     ) -> Self {
         Self {
             root,
             height,
             timestamp,
-            validator_set,
+            next_validators_hash,
         }
     }
 }

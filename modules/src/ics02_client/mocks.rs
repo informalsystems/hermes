@@ -43,7 +43,7 @@ impl From<MockClientState> for AnyClientState {
 }
 
 impl ClientState for MockClientState {
-    fn client_id(&self) -> ClientId {
+    fn chain_id(&self) -> String {
         todo!()
     }
 
@@ -52,7 +52,7 @@ impl ClientState for MockClientState {
     }
 
     fn get_latest_height(&self) -> Height {
-        todo!()
+        Height::from(self.0 as u64)
     }
 
     fn is_frozen(&self) -> bool {
@@ -183,4 +183,3 @@ impl ClientKeeper for MockClientKeeper {
         todo!()
     }
 }
-

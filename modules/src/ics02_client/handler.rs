@@ -4,7 +4,7 @@ use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::msgs::{MsgCreateClient, MsgUpdateClient};
+use crate::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
 
@@ -61,8 +61,8 @@ impl From<ClientEvent> for Event {
 }
 
 pub enum ClientMsg<CD: ClientDef> {
-    CreateClient(MsgCreateClient<CD>),
-    UpdateClient(MsgUpdateClient<CD>),
+    CreateClient(MsgCreateAnyClient<CD>),
+    UpdateClient(MsgUpdateAnyClient<CD>),
 }
 
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg<AnyClient>) -> Result<HandlerOutput<()>, Error>
@@ -100,4 +100,3 @@ where
         }
     }
 }
-

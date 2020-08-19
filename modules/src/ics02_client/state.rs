@@ -1,7 +1,5 @@
 use super::client_type::ClientType;
-
 use crate::ics23_commitment::CommitmentRoot;
-use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
 #[dyn_clonable::clonable]
@@ -22,7 +20,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug {
 #[dyn_clonable::clonable]
 pub trait ClientState: Clone + std::fmt::Debug {
     /// Client ID of this state
-    fn client_id(&self) -> ClientId;
+    fn chain_id(&self) -> String;
 
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;

@@ -5,6 +5,12 @@ use tendermint::merkle::proof::Proof;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentRoot;
+impl CommitmentRoot {
+    pub fn from_bytes(_bytes: &[u8]) -> Self {
+        // TODO
+        CommitmentRoot {}
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPath;
