@@ -1,5 +1,5 @@
 #![allow(clippy::too_many_arguments)]
-use super::channel::{ChannelEnd, Counterparty};
+use super::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
@@ -26,7 +26,7 @@ impl MsgChannelOpenInit {
         port_id: String,
         channel_id: String,
         version: String,
-        order: String,
+        order: i32,
         connection_hops: Vec<String>,
         counterparty_port_id: String,
         counterparty_channel_id: String,
@@ -45,7 +45,7 @@ impl MsgChannelOpenInit {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             channel: ChannelEnd::new(
-                order.parse()?,
+                Order::from_i32(order)?,
                 Counterparty::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
@@ -97,7 +97,7 @@ impl MsgChannelOpenTry {
         port_id: String,
         channel_id: String,
         channel_version: String,
-        order: String,
+        order: i32,
         connection_hops: Vec<String>,
         counterparty_port_id: String,
         counterparty_channel_id: String,
@@ -122,7 +122,7 @@ impl MsgChannelOpenTry {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             channel: ChannelEnd::new(
-                order.parse()?,
+                Order::from_i32(order)?,
                 Counterparty::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
@@ -571,6 +571,7 @@ impl Msg for MsgAcknowledgement {
 mod tests {
     use super::MsgChannelOpenInit;
     use crate::ics03_connection::msgs::test_util::get_dummy_proof;
+    use crate::ics04_channel::channel::Order;
     use crate::ics04_channel::msgs::{
         MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
         MsgChannelOpenTry,
@@ -589,7 +590,7 @@ mod tests {
             port_id: String,
             channel_id: String,
             version: String,
-            order: String,
+            order: i32,
             connection_hops: Vec<String>,
             counterparty_port_id: String,
             counterparty_channel_id: String,
@@ -599,7 +600,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             version: "1.0".to_string(),
-            order: "ORDERED".to_string(),
+            order: Order::from_str("ORDERED").unwrap() as i32,
             connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
@@ -652,7 +653,7 @@ mod tests {
             Test {
                 name: "Bad order".to_string(),
                 params: OpenInitParams {
-                    order: "MYORER".to_string(),
+                    order: 99,
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -704,7 +705,7 @@ mod tests {
             port_id: String,
             channel_id: String,
             channel_version: String,
-            order: String,
+            order: i32,
             connection_hops: Vec<String>,
             counterparty_port_id: String,
             counterparty_channel_id: String,
@@ -717,7 +718,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             channel_version: "1.0".to_string(),
-            order: "ORDERED".to_string(),
+            order: Order::from_str("ORDERED").unwrap() as i32,
             connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
@@ -805,7 +806,7 @@ mod tests {
             Test {
                 name: "Bad order".to_string(),
                 params: OpenTryParams {
-                    order: "MYORER".to_string(),
+                    order: 99,
                     ..default_params.clone()
                 },
                 want_pass: false,

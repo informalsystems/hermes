@@ -12,8 +12,7 @@
 )]
 
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics03_connection::exported::Connection;
-use ibc::ics03_connection::exported::State as ConnectionState;
+use ibc::ics03_connection::connection::State as ConnectionState;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics23_commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
