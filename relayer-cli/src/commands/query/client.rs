@@ -3,9 +3,9 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use modules::ics24_host::error::ValidationError;
-use modules::ics24_host::identifier::ClientId;
-use modules::ics24_host::Path::ClientConnections;
+use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics24_host::Path::ClientConnections;
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
@@ -274,7 +274,7 @@ impl QueryClientConnectionsCmd {
 
 /// Command to handle query for client connections
 /// To run without proof:
-/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
+/// relayer -c relayer/tests/config/fixtures/relayer_conf_example.toml query client connections chain_A clientidone -h 4 -p false
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();
@@ -289,8 +289,11 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res =
-            chain.query::<Vec<String>>(ClientConnections(opts.client_id), opts.height, opts.proof);
+        let res = chain.query::<Vec<ConnectionId>>(
+            ClientConnections(opts.client_id),
+            opts.height,
+            opts.proof,
+        );
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
             Err(e) => status_info!("client connections query error", "{}", e),

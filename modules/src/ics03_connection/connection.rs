@@ -1,4 +1,3 @@
-use super::exported::*;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -68,30 +67,24 @@ impl ConnectionEnd {
     pub fn set_state(&mut self, new_state: State) {
         self.state = new_state;
     }
-}
 
-impl Connection for ConnectionEnd {
-    type ValidationError = Error;
-
-    fn state(&self) -> &State {
+    pub fn state(&self) -> &State {
         &self.state
     }
 
-    fn client_id(&self) -> String {
+    pub fn client_id(&self) -> String {
         self.client_id.as_str().into()
     }
 
-    fn counterparty(
-        &self,
-    ) -> Box<dyn ConnectionCounterparty<ValidationError = Self::ValidationError>> {
-        Box::new(self.counterparty.clone())
+    pub fn counterparty(&self) -> Counterparty {
+        self.counterparty.clone()
     }
 
-    fn versions(&self) -> Vec<String> {
+    pub fn versions(&self) -> Vec<String> {
         self.versions.clone()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Error> {
         self.counterparty().validate_basic()
     }
 }
@@ -135,25 +128,20 @@ impl Counterparty {
             prefix,
         })
     }
-}
 
-impl ConnectionCounterparty for Counterparty {
-    type ValidationError = Error;
-
-    fn client_id(&self) -> String {
+    pub fn client_id(&self) -> String {
         self.client_id.as_str().into()
     }
 
-    fn connection_id(&self) -> String {
+    pub fn connection_id(&self) -> String {
         self.connection_id.as_str().into()
     }
 
-    fn prefix(&self) -> &CommitmentPrefix {
+    pub fn prefix(&self) -> &CommitmentPrefix {
         &self.prefix
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // todo!()
+    pub fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
     }
 }
@@ -175,4 +163,34 @@ pub fn validate_version(version: String) -> Result<String, String> {
         return Err("empty version string".to_string());
     }
     Ok(version)
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum State {
+    Uninitialized = 0,
+    Init,
+    TryOpen,
+    Open,
+}
+
+impl State {
+    /// Yields the State as a string.
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            Self::Uninitialized => "UNINITIALIZED",
+            Self::Init => "INIT",
+            Self::TryOpen => "TRYOPEN",
+            Self::Open => "OPEN",
+        }
+    }
+
+    /// Parses the State from a i32.
+    pub fn from_i32(nr: i32) -> Self {
+        match nr {
+            1 => Self::Init,
+            2 => Self::TryOpen,
+            3 => Self::Open,
+            _ => Self::Uninitialized,
+        }
+    }
 }

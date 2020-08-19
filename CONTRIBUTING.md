@@ -90,6 +90,19 @@ To pull in updates from the origin repo, run
 
 Every non-trivial PR must update the [CHANGELOG.md].
 
+The Changelog is *not* a record of what Pull Requests were merged;
+the commit history already shows that. The Changelog is a notice to the user
+about how their expectations of the software should be modified. 
+It is part of the UX of a release and is a *critical* user facing integration point.
+The Changelog must be clean, inviting, and readable, with concise, meaningful entries. 
+Entries must be semantically meaningful to users. If a change takes multiple
+Pull Requests to complete, it should likely have only a single entry in the
+Changelog describing the net effect to the user.
+
+When writing Changelog entries, ensure they are targeting users of the software,
+not fellow developers. Developers have much more context and care about more
+things than users do. Changelogs are for users. 
+
 Changelog structure is modeled after 
 [Tendermint
 Core](https://github.com/tendermint/tendermint/blob/master/CHANGELOG.md)
@@ -101,9 +114,11 @@ Changes for a given release should be split between the five sections: Security,
 Changes, Features, Improvements, Bug Fixes.
 
 Changelog entries should be formatted as follows:
+
 ```
 - [pkg] \#xxx Some description about the change (@contributor)
 ```
+
 Here, `pkg` is the part of the code that changed (typically a
 top-level crate, but could be <crate>/<module>), `xxx` is the pull-request number, and `contributor`
 is the author/s of the change.
