@@ -141,7 +141,7 @@ mod tests {
                 name: "No connection id specified".to_string(),
                 params: QueryConnectionEndCmd {
                     connection_id: None,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -149,7 +149,7 @@ mod tests {
                 name: "Bad connection, non-alpha".to_string(),
                 params: QueryConnectionEndCmd {
                     connection_id: Some("conn01".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -157,7 +157,7 @@ mod tests {
                 name: "Bad connection, name too short".to_string(),
                 params: QueryConnectionEndCmd {
                     connection_id: Some("connshort".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

@@ -2,6 +2,7 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
+use crate::ics07_tendermint::consensus_state::ConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
 
@@ -23,12 +24,16 @@ impl MsgUpdateClient {
         }
     }
 
-    fn get_client_id(&self) -> &ClientId {
+    fn client_id(&self) -> &ClientId {
         &self.client_id
     }
 
-    fn get_header(&self) -> &Header {
+    fn header(&self) -> &Header {
         &self.header
+    }
+
+    fn consensus_state(&self) -> ConsensusState {
+        self.header.consensus_state()
     }
 }
 
@@ -54,17 +59,5 @@ impl Msg for MsgUpdateClient {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
-    }
-}
-
-impl crate::ics02_client::msgs::MsgUpdateClient for MsgUpdateClient {
-    type Header = Header;
-
-    fn client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    fn header(&self) -> &Self::Header {
-        &self.header
     }
 }

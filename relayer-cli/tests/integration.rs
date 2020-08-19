@@ -63,7 +63,7 @@ fn query_connection_id() {
     assert_eq!(query.counterparty().connection_id(), "connectionidtwo");
     assert_eq!(
         query.counterparty().prefix(),
-        &CommitmentPrefix::new("prefix".as_bytes().to_vec())
+        &CommitmentPrefix::new(b"prefix".to_vec())
     );
     assert_eq!(
         query.versions(),

@@ -5,14 +5,28 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::consensus_state::ConsensusState;
+use crate::ics23_commitment::CommitmentRoot;
 use crate::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Header {
-    pub signed_header: SignedHeader,
-    pub validator_set: ValidatorSet,
-    pub next_validator_set: ValidatorSet,
+    pub signed_header: SignedHeader, // contains the commitment root
+    pub validator_set: ValidatorSet, // the validator set that signed Header
+    pub trusted_height: Height, // the height of a trusted header seen by client less than or equal to Header
+    pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
+}
+
+impl Header {
+    pub(crate) fn consensus_state(&self) -> ConsensusState {
+        ConsensusState {
+            height: self.signed_header.header.height,
+            timestamp: self.signed_header.header.time,
+            root: CommitmentRoot::from_bytes(&self.signed_header.header.app_hash),
+            next_validators_hash: self.signed_header.header.next_validators_hash,
+        }
+    }
 }
 
 impl crate::ics02_client::header::Header for Header {
@@ -21,9 +35,12 @@ impl crate::ics02_client::header::Header for Header {
     }
 
     fn height(&self) -> Height {
-        use tendermint::lite::types::Header;
-        self.signed_header.header.height()
+        self.signed_header.header.height
     }
+
+    // fn consensus_state(&self) -> &dyn crate::ics02_client::state::ConsensusState {
+    //     &self.consensus_state()
+    // }
 }
 
 #[cfg(test)]
@@ -31,6 +48,7 @@ pub mod test_util {
     use crate::ics07_tendermint::header::Header;
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;
+    use tendermint::block::Height;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::{vote, PublicKey};
@@ -64,7 +82,8 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            next_validator_set: vs.clone(),
+            trusted_height: Height(9),
+            trusted_validator_set: vs,
         }
     }
 }

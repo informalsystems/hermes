@@ -662,7 +662,7 @@ mod tests {
                 name: "Bad connection hops (conn id too short, must be 10 chars)".to_string(),
                 params: OpenInitParams {
                     connection_hops: vec!["conn124".to_string()].into_iter().collect(),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -866,7 +866,7 @@ mod tests {
                 name: "Correct counterparty channel identifier".to_string(),
                 params: OpenTryParams {
                     counterparty_channel_id: "channelid34".to_string(),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: true,
             },
@@ -996,7 +996,7 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenAckParams {
                     proof_height: 0,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -1111,7 +1111,7 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenConfirmParams {
                     proof_height: 0,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -1213,7 +1213,7 @@ mod tests {
                 name: "Bad channel, name too long".to_string(),
                 params: CloseInitParams {
                     channel_id: "abcdeasdfasdfasdfasdfasdfasdfasdfasdfdgasdfasdfasdfghijklmnopqrstu".to_string(),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -1325,7 +1325,7 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 params: CloseConfirmParams {
                     proof_height: 0,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

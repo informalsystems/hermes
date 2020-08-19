@@ -348,7 +348,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientStateCmd {
                     client_id: None,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -356,7 +356,7 @@ mod tests {
                 name: "Bad client id, non-alpha".to_string(),
                 params: QueryClientStateCmd {
                     client_id: Some("p34".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -434,7 +434,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientConnectionsCmd {
                     client_id: None,
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -442,7 +442,7 @@ mod tests {
                 name: "Bad client id, non-alpha".to_string(),
                 params: QueryClientConnectionsCmd {
                     client_id: Some("p34".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

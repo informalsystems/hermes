@@ -338,7 +338,7 @@ mod tests {
                     counterparty_connection_id:
                         "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
                             .to_string(),
-                    ..default_con_params.clone()
+                    ..default_con_params
                 },
                 want_pass: false,
             },
@@ -484,7 +484,7 @@ mod tests {
                 name: "Empty proof".to_string(),
                 params: ConOpenTryParams {
                     proof_init: CommitmentProof { ops: vec![] },
-                    ..default_con_params.clone()
+                    ..default_con_params
                 },
                 want_pass: false,
             },
@@ -584,7 +584,7 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 params: ConOpenAckParams {
                     consensus_height: 0,
-                    ..default_con_params.clone()
+                    ..default_con_params
                 },
                 want_pass: false,
             },
@@ -658,7 +658,7 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 params: ConOpenConfirmParams {
                     proof_height: 0,
-                    ..default_con_params.clone()
+                    ..default_con_params
                 },
                 want_pass: false,
             },

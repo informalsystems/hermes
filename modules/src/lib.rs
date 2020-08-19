@@ -20,6 +20,7 @@
 //! - ICS 24: Host Requirements
 
 pub mod events;
+pub mod handler;
 pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
@@ -33,7 +34,7 @@ pub mod try_from_raw;
 pub mod tx_msg;
 
 /// Height of a block, same as in `tendermint` crate
-pub type Height = tendermint::lite::Height;
+pub type Height = tendermint::block::Height;
 
 #[cfg(test)]
 mod test;

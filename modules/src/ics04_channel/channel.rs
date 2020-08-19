@@ -259,7 +259,7 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Raw channel end with missing counterparty".to_string(),
-                params: empty_raw_channel_end.clone(),
+                params: empty_raw_channel_end,
                 want_pass: false,
             },
             Test {
@@ -307,7 +307,7 @@ mod tests {
             },
             Test {
                 name: "Raw channel end with correct params".to_string(),
-                params: raw_channel_end.clone(),
+                params: raw_channel_end,
                 want_pass: true,
             },
         ]
