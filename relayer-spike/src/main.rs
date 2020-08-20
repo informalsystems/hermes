@@ -1,48 +1,38 @@
-use relayer_spike::{Chain, Datagram, SignedHeader};
+use relayer_spike::chain::{Chain, SignedHeader};
+use relayer_spike::link::{Link, LinkConfig};
+use relayer_spike::types::Datagram;
 
-/*
- * TODO:
- * + Error handling
- * + Spawn multiple paths in a Link abstraction
- */
 
 fn main() {
-    // read a config, setup dependencies and launch a link
-    // Relay from chain a to chain b
-
-    // Asume that creating such a subscription will create
+    let config = LinkConfig::default(); // assume this is read from a file 
     
-    let config = ...;
-    let link = Link::new(config);
-
-    thread::new(move || {
-        launch_link(link);
-        // TODO: Block on 
-    });
-
+    let src_chain =  Chain::new();
+    let dst_chain = Chain::new();
+    match Link::new(src_chain, dst_chain, config) {
+        Ok(link) => {
+            launch_link(link);
+        },
+        Err(err) => panic!("couldn't create a link :("),
+    }
 }
 
-fn launch_link(link: Link) {&chain_b, 
-    // This loop is only for packets
-    // TODO: add details to the subscription mechanics and lifecycle management
-    for events in link.subscribe() { // this is a blocking subscription
-        let target_height = 1;
-        // Don't we need to update client on submission
-        link.src.update_client(&chain_a, target_height);
+// TODO: Think about failure here
+// Full node could fail here
+// This link API might be simpler here
+// perhaps it's just:
+// link.verify_datagrams
+// link.submit_datagrams
+fn launch_link(link: Link) {
+    for datagrams in link.pending_datagrams() { // we batch here to amortize client updates
+        let target_height = 1; // grab from the datagram
+        let header = link.src_chain.light_client.get_header(target_height);
 
-        let header = link.src.light_client.get_header(target_height);
-
-        // XXX: Maybe pending_datagrams should be defined on the 
-        let datagrams = link.create_datagrams(events);
-
-        // verify that these datagrams are actually part of chain_a
-        // Verify that the packet we received from the event was indeed part of chain_a
         verify_proof(&datagrams, &header);
 
-        link.dest.full_node.submit(datagrams); // Maybe put update_client here
+        link.dst_chain.full_node.submit(vec![datagrams]); // Maybe put update_client here
     }
 }
 
 // XXX: Give this better naming
-fn verify_proof(_datagrams: &Vec<Datagram>, _header: &SignedHeader) {
+fn verify_proof(_datagrams: &Datagram, _header: &SignedHeader) {
 }

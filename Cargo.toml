@@ -3,5 +3,6 @@
 members = [
     "modules",
     "relayer",
+    "relayer-spike",
     "relayer-cli",
 ]

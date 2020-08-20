@@ -1,25 +1,42 @@
-struct ConnectionError {
+use crate::chain::Chain;
+use crate::types::{ConnectionId, ChainId, ClientId};
+
+pub struct ConnectionError {
 }
 
-struct Connection {
+pub struct Connection {
 }
-
-
 
 struct ConnectionSideConfig {
-    connection_id,
-    chain_id, 
-    client_id,
+    connection_id: ConnectionId,
+    chain_id: ChainId, 
+    client_id: ClientId,
 }
 
-struct ConnectionConfig {
-    src_config: ConnectionConfig,
-    dest_config: ConnectionConfig,
+pub struct ConnectionConfig {
+    src_config: ConnectionSideConfig,
+    dst_config: ConnectionSideConfig,
+}
+
+impl ConnectionConfig {
+    pub fn default() -> ConnectionConfig {
+        return ConnectionConfig {
+            src_config: ConnectionSideConfig { 
+                connection_id: "".to_string(),
+                 chain_id: 0,
+                 client_id: "".to_string(),
+            },
+            dst_config: ConnectionSideConfig { 
+                connection_id: "".to_string(),
+                chain_id: 0,
+                client_id: "".to_string(),
+            },
+        }
+    }
 }
 
 impl Connection {
-    fn new(src_chain: Chain, dest_chain: Chain, config: ConnectionConfig) -> Result<Connection, ConnectionError> {
-        let connection = src_chain.query_connection(config.connection_id)?
+    pub fn new(src: Chain, dst: Chain, config: ConnectionConfig) -> Result<Connection, ConnectionError> {
         // Check the status of the established connection
         // * query connection on source chain
         // * query the destination chain

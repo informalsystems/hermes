@@ -80,3 +80,40 @@ We need to decide:
 * All these will produce context specific errors that will be mapped to
   relay errors which can be processed by a relay manager
 
+## TODO: 
+* Outline CLI requirements
+
+Here is the configuraiton that we need to establish a link
+```
+{
+  "src": {
+    "chain-id": "ibc0",
+    "client-id": "ibconeclient",
+    "connection-id": "ibconeconnection",
+    "channel-id": "ibconexfer",
+    "port-id": "transfer",
+    "order": "ordered"
+  },
+  "dst": {
+    "chain-id": "ibc1",
+    "client-id": "ibczeroclient",
+    "connection-id": "ibczeroconnection",
+    "channel-id": "ibczeroxfer",
+    "port-id": "transfer",
+    "order": "ordered"
+  },
+  "strategy": {
+    "type": "naive" // what does this mean?
+  }
+}
+```
+
+    * Outline Path construction
+        * Construct a Channel and Connection
+    * Understand the dependency graph between the components
+
+Imagine a polling subscription, pulling data from the full node
+It may get a packet from
+    * A connection
+    * A Channel establishment
+    * A Packet being forwarded
