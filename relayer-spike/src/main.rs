@@ -3,37 +3,46 @@ use relayer_spike::{Chain, Datagram, SignedHeader};
 /*
  * TODO:
  * + Error handling
- * + Spawn multiple paths in a Relay abstraction
+ * + Spawn multiple paths in a Link abstraction
  */
 
 fn main() {
+    // read a config, setup dependencies and launch a link
     // Relay from chain a to chain b
-    let mut chain_a = Chain::new();
-    let mut chain_b = Chain::new();
 
     // Asume that creating such a subscription will create
-    let mut subscription =  chain_a.full_node.subscribe();
+    
+    let config = ...;
+    let link = Link::new(config);
 
-    for event in subscription.iter() {
+    thread::new(move || {
+        launch_link(link);
+        // TODO: Block on 
+    });
+
+}
+
+fn launch_link(link: Link) {&chain_b, 
+    // This loop is only for packets
+    // TODO: add details to the subscription mechanics and lifecycle management
+    for events in link.subscribe() { // this is a blocking subscription
         let target_height = 1;
-        // XXX: Do we want to bundle client update datagrams with packets?
-        // A: This can be asynchronous to client to packet creation
-        // B: Confirming packet submission requires and up to date client
-        chain_b.update_client(&chain_a, target_height);
+        // Don't we need to update client on submission
+        link.src.update_client(&chain_a, target_height);
 
-        let header = chain_a.light_client.get_header(target_height);
+        let header = link.src.light_client.get_header(target_height);
 
-        // What other datagrams are we sending here besides those produced from the event?
-        // we can assume that this
-        let datagrams = chain_a.full_node.pending_datagrams(&chain_b, event); // s/pending_datagrams/create_packet
+        // XXX: Maybe pending_datagrams should be defined on the 
+        let datagrams = link.create_datagrams(events);
 
         // verify that these datagrams are actually part of chain_a
         // Verify that the packet we received from the event was indeed part of chain_a
         verify_proof(&datagrams, &header);
 
-        chain_b.full_node.submit(datagrams); // Maybe put update_client here
+        link.dest.full_node.submit(datagrams); // Maybe put update_client here
     }
 }
 
+// XXX: Give this better naming
 fn verify_proof(_datagrams: &Vec<Datagram>, _header: &SignedHeader) {
 }

@@ -73,7 +73,10 @@ pub enum ChainError {
 pub struct Chain {
     chain_id: ChainID,
     pub full_node: FullNode,
+    // requires rpc address for the full node
     pub light_client: LightClient,
+    // queries require:
+    // account_prefix
 }
 
 
