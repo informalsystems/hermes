@@ -1,6 +1,6 @@
 use crate::ics23_commitment::CommitmentProof;
-use crate::Height;
 use serde_derive::{Deserialize, Serialize};
+use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
@@ -27,7 +27,7 @@ impl Proofs {
         Ok(Self {
             object_proof,
             consensus_proof,
-            height,
+            height: Height(height),
         })
     }
 
@@ -65,7 +65,7 @@ impl ConsensusProof {
 
         Ok(Self {
             proof: consensus_proof,
-            height: consensus_height,
+            height: Height(consensus_height),
         })
     }
 

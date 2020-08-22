@@ -4,10 +4,11 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::{ClientKeeper, ClientReader};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics23_commitment::CommitmentRoot;
-use crate::ics24_host::identifier::ClientId;
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
+use crate::ics03_connection::connection::ConnectionEnd;
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -61,9 +62,25 @@ impl ClientState for MockClientState {
 
     fn verify_client_consensus_state(
         &self,
-        _root: &CommitmentRoot,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        Ok(())
+    }
+
+    fn verify_connection_state(
+        &self,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 }
 

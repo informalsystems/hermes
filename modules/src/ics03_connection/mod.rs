@@ -5,6 +5,6 @@ pub mod connection;
 pub mod ctx;
 pub mod error;
 pub mod events;
-pub mod msgs;
 /// Message processing logic (protocol) for ICS 03.
-pub mod protocol;
+pub mod handler;
+pub mod msgs;

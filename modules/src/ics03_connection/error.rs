@@ -35,7 +35,7 @@ pub enum Kind {
     #[error("invalid address")]
     InvalidAddress,
 
-    #[error("invalid proof")]
+    #[error("invalid connection proof")]
     InvalidProof,
 
     #[error("queried for a non-existing connection")]
@@ -53,8 +53,20 @@ pub enum Kind {
     #[error("the client id does not match any client state")]
     MissingClient,
 
+    #[error("the client is frozen")]
+    FrozenClient,
+
+    #[error("the connection proof verification failed")]
+    ConnectionVerificationFailure,
+
     #[error("the expected consensus state could not be retrieved")]
-    ErrorFetchingConsensusState,
+    MissingClientConsensusState,
+
+    #[error("the local consensus state could not be retrieved")]
+    MissingLocalConsensusState,
+
+    #[error("the consensus proof verification failed")]
+    ConsensusStateVerificationFailure,
 }
 
 impl Kind {

@@ -3,12 +3,14 @@ use serde_derive::{Deserialize, Serialize};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics23_commitment::CommitmentRoot;
+use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::Height;
 
 use crate::ics02_client::mocks;
+use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -67,7 +69,23 @@ impl ClientState for AnyClientState {
 
     fn verify_client_consensus_state(
         &self,
-        _root: &CommitmentRoot,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _expected_consensus_state: &dyn ConsensusState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        todo!()
+    }
+
+    fn verify_connection_state(
+        &self,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
     }

@@ -36,8 +36,8 @@ impl FromStr for ClientId {
 
 /// Equality check against string literal (satisfies &ClientId == &str).
 /// ```
-/// use modules::ics24_host::identifier::ClientId;
 /// use std::str::FromStr;
+/// use ibc::ics24_host::identifier::ClientId;
 /// let client_id = ClientId::from_str("clientidtwo");
 /// assert!(client_id.is_ok());
 /// client_id.map(|id| {assert_eq!(&id, "clientidtwo")});
@@ -80,8 +80,8 @@ impl FromStr for ConnectionId {
 
 /// Equality check against string literal (satisfies &ConnectionId == &str).
 /// ```
-/// use modules::ics24_host::identifier::ConnectionId;
 /// use std::str::FromStr;
+/// use ibc::ics24_host::identifier::ConnectionId;
 /// let conn_id = ConnectionId::from_str("connectionId");
 /// assert!(conn_id.is_ok());
 /// conn_id.map(|id| {assert_eq!(&id, "connectionId")});

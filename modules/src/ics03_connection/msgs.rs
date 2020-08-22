@@ -20,9 +20,9 @@ use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
-use crate::Height;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
+use tendermint::block::Height;
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -180,7 +180,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0,
+            None => Height(0),
             Some(p) => p.height(),
         }
     }
@@ -276,7 +276,7 @@ impl MsgConnectionOpenAck {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0,
+            None => Height(0),
             Some(p) => p.height(),
         }
     }
