@@ -1,13 +1,11 @@
 use super::client_type::ClientType;
-
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
-pub trait ConsensusState {
-    type ValidationError: std::error::Error;
-
+#[dyn_clonable::clonable]
+pub trait ConsensusState: Clone + std::fmt::Debug {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -18,14 +16,13 @@ pub trait ConsensusState {
     fn root(&self) -> &CommitmentRoot;
 
     /// Performs basic validation of the consensus state
-    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>>;
 }
 
-pub trait ClientState {
-    type ValidationError: std::error::Error;
-
+#[dyn_clonable::clonable]
+pub trait ClientState: Clone + std::fmt::Debug {
     /// Client ID of this state
-    fn client_id(&self) -> ClientId;
+    fn chain_id(&self) -> String;
 
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -36,28 +33,31 @@ pub trait ClientState {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
+    /// Verification functions as specified in:
+    /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
+    ///
     /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
     /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
     /// height of the counterparty chain that this proof assumes (i.e., the height at which this
     /// proof was computed).
     fn verify_client_consensus_state(
         &self,
-        counterparty_height: Height,
-        counterparty_prefix: &CommitmentPrefix,
+        height: Height,
+        prefix: &CommitmentPrefix,
         proof: &CommitmentProof,
-        counterparty_client_id: &ClientId,
+        client_id: &ClientId,
         consensus_height: Height,
-        consensus_state: &dyn ConsensusState<ValidationError = Self::ValidationError>,
-    ) -> Result<bool, Self::ValidationError>;
+        expected_consensus_state: &dyn ConsensusState,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     // TODO: ValidationError seems wrong here.
     fn verify_connection_state(
         &self,
-        counterparty_height: Height,
-        counterparty_prefix: &CommitmentPrefix,
+        height: Height,
+        prefix: &CommitmentPrefix,
         proof: &CommitmentProof,
-        counterparty_connection_id: &ConnectionId,
-        connection_end: &ConnectionEnd,
-    ) -> Result<bool, Self::ValidationError>;
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }

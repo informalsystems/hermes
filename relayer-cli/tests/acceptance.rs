@@ -27,7 +27,7 @@ use once_cell::sync::Lazy;
 /// the runner acquire a mutex when executing commands and inspecting
 /// exit statuses, serializing what would otherwise be multithreaded
 /// invocations as `cargo test` executes tests in parallel by default.
-pub static RUNNER: Lazy<CmdRunner> = Lazy::new(|| CmdRunner::default());
+pub static RUNNER: Lazy<CmdRunner> = Lazy::new(CmdRunner::default);
 
 /// Use `Config::default()` value if no config or args
 #[test]

@@ -1,32 +1,36 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 
-use crate::ics02_client::state::ConsensusState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics07_tendermint::header::Header;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::Height;
+
+use crate::ics02_client::state::ConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
-use tendermint::lite::Header as liteHeader;
+use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
-    id: ClientId,
-    trusting_period: Duration,
-    unbonding_period: Duration,
-    frozen_height: Height,
-    latest_header: Header,
+    pub chain_id: String,
+    // pub trust_level: TrustLevel,
+    pub trusting_period: Duration,
+    pub unbonding_period: Duration,
+    pub max_clock_drift: Duration,
+    pub latest_height: Height,
+    pub frozen_height: Height,
 }
 
 impl ClientState {
     pub fn new(
-        id: String,
+        chain_id: String,
+        // trust_level: TrustLevel,
         trusting_period: Duration,
         unbonding_period: Duration,
-        latest_header: Header,
-        frozen_height: Height,
+        max_clock_drift: Duration,
+        latest_height: crate::Height,
+        frozen_height: crate::Height,
+        // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
@@ -46,32 +50,34 @@ impl ClientState {
         }
 
         // Basic validation for the frozen_height parameter.
-        if frozen_height != 0 {
+        if frozen_height != Height(0) {
             return Err(Kind::ValidationError
                 .context("ClientState cannot be frozen at creation time")
                 .into());
         }
 
-        // Initially, no validation is needed for the `latest_header`. This has to be validated
-        // upon updating a client (see `update_client.rs` and fn
-        // `ClientState::verify_client_consensus_state`).
+        // Basic validation for the frozen_height parameter.
+        if latest_height <= Height(0) {
+            return Err(Kind::ValidationError
+                .context("ClientState latest height cannot be smaller than zero")
+                .into());
+        }
 
         Ok(Self {
             // TODO: Consider adding a specific 'IdentifierError' Kind, akin to the one in ICS04.
-            id: id.parse().map_err(|e| Kind::ValidationError.context(e))?,
+            chain_id,
             trusting_period,
             unbonding_period,
-            latest_header,
+            max_clock_drift,
             frozen_height,
+            latest_height,
         })
     }
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
-    type ValidationError = Error;
-
-    fn client_id(&self) -> ClientId {
-        self.id.clone()
+    fn chain_id(&self) -> String {
+        self.chain_id.clone()
     }
 
     fn client_type(&self) -> ClientType {
@@ -79,45 +85,44 @@ impl crate::ics02_client::state::ClientState for ClientState {
     }
 
     fn get_latest_height(&self) -> Height {
-        self.latest_header.signed_header.header.height()
+        self.latest_height
     }
 
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
-        self.frozen_height != 0
+        self.frozen_height != Height(0)
     }
 
     fn verify_client_consensus_state(
         &self,
-        _counterparty_height: Height,
-        _counterparty_prefix: &CommitmentPrefix,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProof,
-        _counterparty_client_id: &ClientId,
+        _client_id: &ClientId,
         _consensus_height: Height,
-        _consensus_state: &dyn ConsensusState<ValidationError = Self::ValidationError>,
-    ) -> Result<bool, Self::ValidationError> {
-        unimplemented!()
+        _expected_consensus_state: &dyn ConsensusState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 
     fn verify_connection_state(
         &self,
-        _counterparty_height: Height,
-        _counterparty_prefix: &CommitmentPrefix,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProof,
-        _counterparty_connection_id: &ConnectionId,
-        _connection_end: &ConnectionEnd,
-    ) -> Result<bool, Self::ValidationError> {
-        unimplemented!()
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ics07_tendermint::client_state::ClientState;
-    use crate::ics07_tendermint::header::test_util::get_dummy_header;
-    use crate::ics07_tendermint::header::Header;
     use crate::test::test_serialization_roundtrip;
     use std::time::Duration;
+    use tendermint::block::Height;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
@@ -142,17 +147,19 @@ mod tests {
             id: String,
             trusting_period: Duration,
             unbonding_period: Duration,
-            latest_header: Header,
+            max_clock_drift: Duration,
+            latest_height: crate::Height,
             frozen_height: crate::Height,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
-            id: "abcdefghijkl".to_string(),
+            id: "thisisthechainid".to_string(),
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
-            latest_header: get_dummy_header(),
-            frozen_height: 0,
+            max_clock_drift: Duration::from_millis(3000),
+            latest_height: Height(10),
+            frozen_height: Height(0),
         };
 
         struct Test {
@@ -168,17 +175,9 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Invalid client id".to_string(),
-                params: ClientStateParams {
-                    id: "9000".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Invalid frozen height parameter (should be 0)".to_string(),
                 params: ClientStateParams {
-                    frozen_height: 1,
+                    frozen_height: Height(1),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -204,7 +203,7 @@ mod tests {
                 params: ClientStateParams {
                     trusting_period: Duration::from_secs(11),
                     unbonding_period: Duration::from_secs(10),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -219,7 +218,8 @@ mod tests {
                 p.id,
                 p.trusting_period,
                 p.unbonding_period,
-                p.latest_header,
+                p.max_clock_drift,
+                p.latest_height,
                 p.frozen_height,
             );
 

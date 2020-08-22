@@ -8,9 +8,9 @@ use ::tendermint::lite::types as tmlite;
 use ::tendermint::lite::{self, Height, TrustThresholdFraction};
 use ::tendermint_rpc::Client as RpcClient;
 
-use modules::ics02_client::state::{ClientState, ConsensusState};
-use modules::ics24_host::Path;
-use modules::try_from_raw::TryFromRaw;
+use ibc::ics02_client::state::{ClientState, ConsensusState};
+use ibc::ics24_host::Path;
+use ibc::try_from_raw::TryFromRaw;
 
 use crate::config::ChainConfig;
 use crate::error;

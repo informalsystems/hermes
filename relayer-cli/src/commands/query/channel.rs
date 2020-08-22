@@ -3,11 +3,11 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
-use modules::ics04_channel::channel::ChannelEnd;
-use modules::ics24_host::identifier::{ChannelId, PortId};
-use modules::ics24_host::Path::ChannelEnds;
+use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::Path::ChannelEnds;
 
-use modules::ics24_host::error::ValidationError;
+use ibc::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 
@@ -189,7 +189,7 @@ mod tests {
                 name: "Bad channel, name too short".to_string(),
                 params: QueryChannelEndCmd {
                     channel_id: Some("chshort".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

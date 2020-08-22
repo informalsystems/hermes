@@ -2,13 +2,14 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::CommitmentRoot;
 
 use serde_derive::{Deserialize, Serialize};
+use tendermint::Hash;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    root: CommitmentRoot,
-    height: crate::Height,
-    timestamp: tendermint::time::Time,
-    validator_set: tendermint::validator::Set,
+    pub height: crate::Height,
+    pub timestamp: tendermint::time::Time,
+    pub root: CommitmentRoot,
+    pub next_validators_hash: Hash,
 }
 
 impl ConsensusState {
@@ -16,20 +17,18 @@ impl ConsensusState {
         root: CommitmentRoot,
         height: crate::Height,
         timestamp: tendermint::time::Time,
-        validator_set: tendermint::validator::Set,
+        next_validators_hash: Hash,
     ) -> Self {
         Self {
             root,
             height,
             timestamp,
-            validator_set,
+            next_validators_hash,
         }
     }
 }
 
 impl crate::ics02_client::state::ConsensusState for ConsensusState {
-    type ValidationError = crate::ics07_tendermint::error::Error;
-
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -42,7 +41,7 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
     }
 }

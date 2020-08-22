@@ -1,4 +1,3 @@
-use super::exported::State;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -7,8 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
 use crate::ics24_host::error::ValidationError;
-use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
-use ibc_proto::connection::Counterparty as RawCounterparty;
+use ibc_proto::connection::{ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty};
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -168,14 +166,11 @@ impl Counterparty {
         &self.connection_id
     }
 
-    /// Getter for the commitment prefix.
     pub fn prefix(&self) -> &CommitmentPrefix {
         &self.prefix
     }
 
-    /// TODO.
     pub fn validate_basic(&self) -> Result<(), ValidationError> {
-        // TODO!
         Ok(())
     }
 }
@@ -197,4 +192,52 @@ pub fn validate_version(version: String) -> Result<String, String> {
         return Err("empty version string".to_string());
     }
     Ok(version)
+}
+
+/// Function required by ICS 03. Returns the list of all possible versions that the connection
+/// handshake protocol supports.
+/// TODO: What are the precise values for the versions which this function returns? Perhaps encode the versions as constants.
+pub fn get_compatible_versions() -> Vec<String> {
+    vec!["test".to_string()]
+}
+
+/// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
+/// connection handshake protocol prefers.
+/// TODO: Fix this with proper code.
+pub fn pick_version(candidates: Vec<String>) -> Option<String> {
+    let selection: String = candidates
+        .get(0)
+        .unwrap_or(&String::from("none"))
+        .to_string();
+    Some(selection)
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum State {
+    Uninitialized = 0,
+    Init,
+    TryOpen,
+    Open,
+}
+
+impl State {
+    /// Yields the State as a string.
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            Self::Uninitialized => "UNINITIALIZED",
+            Self::Init => "INIT",
+            Self::TryOpen => "TRYOPEN",
+            Self::Open => "OPEN",
+        }
+    }
+
+    /// Parses the State from a i32.
+    pub fn from_i32(nr: i32) -> Self {
+        match nr {
+            1 => Self::Init,
+            2 => Self::TryOpen,
+            3 => Self::Open,
+            _ => Self::Uninitialized,
+        }
+    }
 }

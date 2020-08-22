@@ -11,15 +11,12 @@
     unused_qualifications
 )]
 
-use modules::ics03_connection::connection::ConnectionEnd;
-use modules::ics03_connection::exported::State as ConnectionState;
-use modules::ics04_channel::channel::ChannelEnd;
-use modules::ics04_channel::exported::Channel;
-use modules::ics04_channel::exported::Order;
-use modules::ics04_channel::exported::State as ChannelState;
-use modules::ics23_commitment::CommitmentPrefix;
-use modules::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use modules::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::State as ConnectionState;
+use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
+use ibc::ics23_commitment::CommitmentPrefix;
+use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 use std::str::FromStr;
@@ -66,7 +63,7 @@ fn query_connection_id() {
     assert_eq!(query.counterparty().connection_id(), "connectionidtwo");
     assert_eq!(
         query.counterparty().prefix(),
-        &CommitmentPrefix::new("prefix".as_bytes().to_vec())
+        &CommitmentPrefix::new(b"prefix".to_vec())
     );
     assert_eq!(
         query.versions(),
@@ -104,12 +101,15 @@ fn query_channel_id() {
 fn query_client_id() {
     let chain = simd_chain();
     let query = chain
-        .query::<Vec<String>>(
+        .query::<Vec<ConnectionId>>(
             ClientConnections(ClientId::from_str("clientidone").unwrap()),
             0,
             false,
         )
         .unwrap();
 
-    assert_eq!(query[0], "connections/connectionidone");
+    assert_eq!(
+        query[0],
+        ConnectionId::from_str("connections/connectionidone").unwrap()
+    );
 }
