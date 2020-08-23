@@ -1,14 +1,11 @@
-#![allow(unreachable_code, unused_variables)]
-
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
+use crate::ics02_client::handler::ClientEvent;
 use crate::ics02_client::msgs::MsgCreateAnyClient;
-use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics24_host::identifier::ClientId;
-use std::time::Duration;
 
 #[derive(Debug)]
 pub struct CreateClientResult<CD: ClientDef> {
@@ -67,16 +64,12 @@ pub fn keep(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ics02_client::header::Header;
+    use crate::ics02_client::context_mock::MockClientReader;
     use crate::ics02_client::mocks::*;
-    use crate::ics02_client::state::{ClientState, ConsensusState};
-    use crate::ics07_tendermint::client_def::TendermintClient;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics07_tendermint::msgs::create_client::MsgCreateClient;
-    use crate::ics23_commitment::CommitmentRoot;
-    use crate::Height;
     use std::str::FromStr;
-    use thiserror::Error;
+    use std::time::Duration;
 
     #[test]
     fn test_create_client_ok() {

@@ -1,5 +1,5 @@
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::ctx::ICS3Context;
+use crate::ics03_connection::context::ICS3Context;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;

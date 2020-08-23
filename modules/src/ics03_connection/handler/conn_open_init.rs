@@ -1,5 +1,5 @@
 use crate::ics03_connection::connection::{get_compatible_versions, ConnectionEnd, State};
-use crate::ics03_connection::ctx::ICS3Context;
+use crate::ics03_connection::context::ICS3Context;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::Object;
 use crate::ics03_connection::msgs::MsgConnectionOpenInit;
@@ -24,76 +24,12 @@ pub(crate) fn process(ctx: &dyn ICS3Context, msg: &MsgConnectionOpenInit) -> Res
 #[cfg(test)]
 mod tests {
     use crate::events::IBCEvent;
-    use crate::ics02_client::state::{ClientState, ConsensusState};
     use crate::ics03_connection::connection::{get_compatible_versions, ConnectionEnd, State};
-    use crate::ics03_connection::ctx::ICS3Context;
+    use crate::ics03_connection::context_mock::MockContext;
     use crate::ics03_connection::handler::process_ics3_msg;
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::ICS3Msg;
-    use crate::ics23_commitment::CommitmentPrefix;
-    use crate::ics24_host::identifier::{ClientId, ConnectionId};
-    use std::collections::HashMap;
     use tendermint::block::Height;
-
-    #[derive(Clone, Debug, Default)]
-    struct MockContext {
-        store: HashMap<ConnectionId, ConnectionEnd>,
-        chain_height: Height,
-    }
-
-    impl MockContext {
-        fn new() -> Self {
-            Self::default()
-        }
-
-        fn set_chain_height(self, new_height: Height) -> Self {
-            Self {
-                chain_height: new_height,
-                ..self
-            }
-        }
-
-        fn add_connection_to_store(self, id: ConnectionId, end: ConnectionEnd) -> Self {
-            let mut store = self.store.clone();
-            store.insert(id, end);
-            Self { store, ..self }
-        }
-    }
-
-    impl ICS3Context for MockContext {
-        fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
-            self.store.get(cid)
-        }
-
-        fn fetch_client_state(&self, _client_id: &ClientId) -> Option<&dyn ClientState> {
-            unimplemented!()
-        }
-
-        fn chain_current_height(&self) -> Height {
-            self.chain_height
-        }
-
-        /// Returns the number of consensus state historical entries for the local chain.
-        fn chain_consensus_states_history_size(&self) -> u32 {
-            unimplemented!()
-        }
-
-        fn commitment_prefix(&self) -> CommitmentPrefix {
-            unimplemented!()
-        }
-
-        fn fetch_client_consensus_state(
-            &self,
-            _client_id: &ClientId,
-            _height: Height,
-        ) -> Option<&dyn ConsensusState> {
-            unimplemented!()
-        }
-
-        fn fetch_self_consensus_state(&self, _height: Height) -> Option<&dyn ConsensusState> {
-            unimplemented!()
-        }
-    }
 
     #[test]
     fn conn_open_init_msg_processing() {

@@ -8,7 +8,7 @@ use crate::events::IBCEvent::{
     OpenAckConnection, OpenConfirmConnection, OpenInitConnection, OpenTryConnection,
 };
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::ctx::ICS3Context;
+use crate::ics03_connection::context::ICS3Context;
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics03_connection::msgs::ICS3Msg;

@@ -2,10 +2,12 @@
 
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientKeeper, ClientReader};
+use crate::ics02_client::handler::ClientEvent;
+
 use crate::ics02_client::msgs::MsgUpdateAnyClient;
-use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
@@ -66,12 +68,8 @@ pub fn keep(
 mod tests {
     use super::*;
     use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::header::Header;
+    use crate::ics02_client::context_mock::MockClientReader;
     use crate::ics02_client::mocks::*;
-    use crate::ics02_client::state::{ClientState, ConsensusState};
-    use crate::ics23_commitment::CommitmentRoot;
-    use crate::Height;
-    use thiserror::Error;
 
     #[test]
     fn test_update_client_ok() {

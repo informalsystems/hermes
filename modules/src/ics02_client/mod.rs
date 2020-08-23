@@ -2,6 +2,8 @@
 
 pub mod client_def;
 pub mod client_type;
+pub mod context;
+pub mod context_mock;
 pub mod error;
 pub mod events;
 pub mod handler;

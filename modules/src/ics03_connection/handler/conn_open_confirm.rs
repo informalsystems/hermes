@@ -1,5 +1,5 @@
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use crate::ics03_connection::ctx::ICS3Context;
+use crate::ics03_connection::context::ICS3Context;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::verify_proofs;
 use crate::ics03_connection::handler::Object;

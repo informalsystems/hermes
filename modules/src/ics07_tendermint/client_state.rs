@@ -1,3 +1,5 @@
+#![allow(unreachable_code, unused_variables)]
+
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
 
@@ -95,23 +97,23 @@ impl crate::ics02_client::state::ClientState for ClientState {
 
     fn verify_client_consensus_state(
         &self,
-        _height: Height,
-        _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
-        _client_id: &ClientId,
-        _consensus_height: Height,
-        _expected_consensus_state: &dyn ConsensusState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
 
     fn verify_connection_state(
         &self,
-        _height: Height,
-        _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
-        _connection_id: &ConnectionId,
-        _expected_connection_end: &ConnectionEnd,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }
