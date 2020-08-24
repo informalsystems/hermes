@@ -24,12 +24,17 @@ pub struct ConnectionResult {
 #[derive(Clone, Debug)]
 pub enum ConnectionEvent {
     ConnOpenInit(ConnectionResult),
+    ConnOpenTry(ConnectionResult),
 }
 
 impl From<ConnectionEvent> for Event {
     fn from(ev: ConnectionEvent) -> Event {
         match ev {
             ConnectionEvent::ConnOpenInit(conn) => Event::new(
+                EventType::Custom("connection_open_init".to_string()),
+                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+            ),
+            ConnectionEvent::ConnOpenTry(conn) => Event::new(
                 EventType::Custom("connection_open_init".to_string()),
                 vec![("connection_id".to_string(), conn.connection_id.to_string())],
             ),

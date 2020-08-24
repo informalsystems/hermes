@@ -15,26 +15,26 @@ pub(crate) fn process(
 
     // No connection should exist.
     if ctx.fetch_connection_end(msg.connection_id()).is_some() {
-        Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into())
-    } else {
-        let mut new_connection_end = ConnectionEnd::new(
-            msg.client_id().clone(),
-            msg.counterparty().clone(),
-            get_compatible_versions(),
-        )?;
-
-        output.log("success: no connection found");
-        new_connection_end.set_state(State::Init);
-
-        let result = ConnectionResult {
-            connection_id: msg.connection_id().clone(),
-            connection_end: new_connection_end,
-        };
-
-        output.emit(ConnOpenInit(result.clone()));
-
-        Ok(output.with_result(result))
+        return Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into());
     }
+
+    let mut new_connection_end = ConnectionEnd::new(
+        msg.client_id().clone(),
+        msg.counterparty().clone(),
+        get_compatible_versions(),
+    )?;
+
+    output.log("success: no connection found");
+    new_connection_end.set_state(State::Init);
+
+    let result = ConnectionResult {
+        connection_id: msg.connection_id().clone(),
+        connection_end: new_connection_end,
+    };
+
+    output.emit(ConnOpenInit(result.clone()));
+
+    Ok(output.with_result(result))
 }
 
 #[cfg(test)]
