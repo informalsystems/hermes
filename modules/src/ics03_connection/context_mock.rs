@@ -1,39 +1,42 @@
+use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::context::ConnectionReader;
+use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
-#[derive(Clone, Debug, Default)]
-pub struct MockContext {
-    store: HashMap<ConnectionId, ConnectionEnd>,
-    chain_height: Height,
+#[derive(Clone, Debug, PartialEq)]
+pub struct MockConnectionContext {
+    pub(crate) connections: HashMap<ConnectionId, ConnectionEnd>,
+    client_reader: MockClientContext,
+    chain_height: Height, // TODO - doesn't belong here
 }
 
-impl MockContext {
-    pub(crate) fn new() -> Self {
-        Self::default()
-    }
-
-    pub(crate) fn set_chain_height(self, new_height: Height) -> Self {
-        Self {
-            chain_height: new_height,
-            ..self
+impl MockConnectionContext {
+    pub fn new(client_id: &ClientId, chain_height: Height) -> Self {
+        MockConnectionContext {
+            connections: Default::default(),
+            client_reader: MockClientContext::new(client_id),
+            chain_height,
         }
     }
 
-    pub(crate) fn add_connection_to_store(self, id: ConnectionId, end: ConnectionEnd) -> Self {
-        let mut store = self.store.clone();
-        store.insert(id, end);
-        Self { store, ..self }
+    pub fn add_connection(self, id: ConnectionId, end: ConnectionEnd) -> Self {
+        let mut connections = self.connections.clone();
+        connections.insert(id, end);
+        Self {
+            connections,
+            ..self
+        }
     }
 }
 
-impl ConnectionReader for MockContext {
+impl ConnectionReader for MockConnectionContext {
     fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
-        self.store.get(cid)
+        self.connections.get(cid)
     }
 
     fn fetch_client_state(&self, _client_id: &ClientId) -> Option<&dyn ClientState> {
@@ -63,5 +66,17 @@ impl ConnectionReader for MockContext {
 
     fn fetch_self_consensus_state(&self, _height: Height) -> Option<&dyn ConsensusState> {
         unimplemented!()
+    }
+}
+
+impl ConnectionKeeper for MockConnectionContext {
+    fn store_connection(
+        &mut self,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> Result<(), Error> {
+        let mut connections = self.connections.clone();
+        connections.insert(connection_id, connection_end);
+        Ok(())
     }
 }

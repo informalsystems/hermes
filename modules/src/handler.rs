@@ -20,8 +20,8 @@ pub enum EventType {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Event {
-    tpe: EventType,
-    attributes: Vec<Attribute>,
+    pub tpe: EventType,
+    pub attributes: Vec<Attribute>,
 }
 
 impl Event {

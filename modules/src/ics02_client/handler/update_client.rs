@@ -68,12 +68,12 @@ pub fn keep(
 mod tests {
     use super::*;
     use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::context_mock::MockClientReader;
+    use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics02_client::mocks::*;
 
     #[test]
     fn test_update_client_ok() {
-        let mock = MockClientReader {
+        let mock = MockClientContext {
             client_id: "mockclient".parse().unwrap(),
             client_type: Some(ClientType::Tendermint),
             client_state: MockClientState(42).into(),

@@ -64,7 +64,7 @@ pub fn keep(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ics02_client::context_mock::MockClientReader;
+    use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics02_client::mocks::*;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics07_tendermint::msgs::create_client::MsgCreateClient;
@@ -75,12 +75,7 @@ mod tests {
     fn test_create_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let reader = MockClientReader {
-            client_id: client_id.clone(),
-            client_type: None,
-            client_state: None,
-            consensus_state: None,
-        };
+        let reader = MockClientContext::new(&client_id);
 
         let msg = MsgCreateAnyClient {
             client_id,
@@ -120,7 +115,7 @@ mod tests {
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let reader = MockClientReader {
+        let reader = MockClientContext {
             client_id: client_id.clone(),
             client_type: Some(ClientType::Tendermint),
             client_state: None,
@@ -147,7 +142,7 @@ mod tests {
     fn test_create_client_existing_client_state() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let reader = MockClientReader {
+        let reader = MockClientContext {
             client_id: client_id.clone(),
             client_type: None,
             client_state: Some(MockClientState(0)),
@@ -175,7 +170,7 @@ mod tests {
 
         let client_id: ClientId = "tendermint".parse().unwrap();
 
-        let reader = MockClientReader {
+        let reader = MockClientContext {
             client_id: client_id.clone(),
             client_type: None,
             client_state: None,

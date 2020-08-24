@@ -62,10 +62,14 @@ type Object = ConnectionEnd;
 
 pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
     keeper.store_connection(result.connection_id, result.connection_end)?;
+    // TODO - associate connection with client
     Ok(())
 }
 
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ConnectionMsg) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(
+    ctx: &mut Ctx,
+    msg: ConnectionMsg,
+) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
     Ctx: ConnectionReader + ConnectionKeeper,
 {
@@ -77,11 +81,11 @@ where
                 events,
             } = conn_open_init::process(ctx, msg)?;
 
-            keep(ctx, result)?;
+            keep(ctx, result.clone())?;
             Ok(HandlerOutput::builder()
                 .with_log(log)
                 .with_events(events)
-                .with_result(()))
+                .with_result(result))
         }
     }
 }

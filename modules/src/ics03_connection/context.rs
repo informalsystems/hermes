@@ -3,16 +3,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::ics24_host::introspect::{current_height, get_commitment_prefix};
 use crate::Height;
-
-// TODO: Remove this once Romain's code kicks in.
-pub struct Chain {}
-
-// TODO: Both ConnectionReader & Context should be generic over Chain.
-pub struct Context {
-    local_chain: Chain,
-}
 
 /// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
 pub trait ConnectionReader {
@@ -47,41 +38,4 @@ pub trait ConnectionKeeper {
         connection_id: ConnectionId,
         connection_end: ConnectionEnd,
     ) -> Result<(), Error>;
-}
-
-impl ConnectionReader for Context {
-    fn fetch_connection_end(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
-        unimplemented!()
-    }
-
-    fn fetch_client_state(&self, _client_id: &ClientId) -> Option<&dyn ClientState> {
-        unimplemented!()
-    }
-
-    fn chain_current_height(&self) -> Height {
-        // TODO: currently this is just a wrapper over ICS024 (unimplemented).
-        current_height()
-    }
-
-    fn chain_consensus_states_history_size(&self) -> u32 {
-        unimplemented!()
-    }
-
-    fn commitment_prefix(&self) -> CommitmentPrefix {
-        // TODO: currently this is just a wrapper over ICS024 (unimplemented).
-        get_commitment_prefix()
-    }
-
-    fn fetch_client_consensus_state(
-        &self,
-        _client_id: &ClientId,
-        _height: Height,
-    ) -> Option<&dyn ConsensusState> {
-        // Should call on a function that satisfies the ICS24 of getConsensusState().
-        unimplemented!()
-    }
-
-    fn fetch_self_consensus_state(&self, _height: Height) -> Option<&dyn ConsensusState> {
-        unimplemented!()
-    }
 }

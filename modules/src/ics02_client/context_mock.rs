@@ -8,19 +8,24 @@ use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MockClientContext {
-    reader: MockClientReader,
-    keeper: MockClientKeeper,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct MockClientReader {
     pub client_id: ClientId,
     pub client_state: Option<MockClientState>,
     pub client_type: Option<ClientType>,
     pub consensus_state: Option<MockConsensusState>,
 }
 
-impl ClientReader for MockClientReader {
+impl MockClientContext {
+    pub fn new(client_id: &ClientId) -> Self {
+        MockClientContext {
+            client_id: client_id.clone(),
+            client_type: None,
+            client_state: None,
+            consensus_state: None,
+        }
+    }
+}
+
+impl ClientReader for MockClientContext {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
         if client_id == &self.client_id {
             self.client_type.clone()
@@ -48,14 +53,7 @@ impl ClientReader for MockClientReader {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Default)]
-pub struct MockClientKeeper {
-    pub client_state: Option<MockClientState>,
-    pub client_type: Option<ClientType>,
-    pub consensus_state: Option<MockConsensusState>,
-}
-
-impl ClientKeeper for MockClientKeeper {
+impl ClientKeeper for MockClientContext {
     fn store_client_type(
         &mut self,
         _client_id: ClientId,
