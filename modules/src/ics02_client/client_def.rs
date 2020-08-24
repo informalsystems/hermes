@@ -8,11 +8,13 @@ use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::Height;
 
-use crate::ics02_client::mocks;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::mock_client::client_def::MockClient;
+use crate::mock_client::header::MockHeader;
+use crate::mock_client::state::{MockClientState, MockConsensusState};
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -23,7 +25,7 @@ pub trait ClientDef: Clone {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // TODO: Add Eq
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
-    Mock(mocks::MockHeader),
+    Mock(MockHeader),
     Tendermint(tendermint::header::Header),
 }
 
@@ -45,7 +47,7 @@ impl Header for AnyHeader {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AnyClientState {
-    Mock(mocks::MockClientState),
+    Mock(MockClientState),
     Tendermint(crate::ics07_tendermint::client_state::ClientState),
 }
 
@@ -95,7 +97,7 @@ impl ClientState for AnyClientState {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum AnyConsensusState {
-    Mock(mocks::MockConsensusState),
+    Mock(MockConsensusState),
     Tendermint(crate::ics07_tendermint::consensus_state::ConsensusState),
 }
 
@@ -119,7 +121,7 @@ impl ConsensusState for AnyConsensusState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnyClient {
-    Mock(mocks::MockClient),
+    Mock(MockClient),
     Tendermint(TendermintClient),
 }
 

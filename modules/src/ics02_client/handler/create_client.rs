@@ -65,9 +65,9 @@ pub fn keep(
 mod tests {
     use super::*;
     use crate::ics02_client::context_mock::MockClientContext;
-    use crate::ics02_client::mocks::*;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics07_tendermint::msgs::create_client::MsgCreateClient;
+    use crate::mock_client::state::{MockClientState, MockConsensusState};
     use std::str::FromStr;
     use std::time::Duration;
 

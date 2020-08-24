@@ -2,8 +2,8 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error;
-use crate::ics02_client::mocks::{MockClientState, MockConsensusState};
 use crate::ics24_host::identifier::ClientId;
+use crate::mock_client::state::{MockClientState, MockConsensusState};
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq)]

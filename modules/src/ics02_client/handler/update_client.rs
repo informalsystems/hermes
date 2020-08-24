@@ -69,7 +69,8 @@ mod tests {
     use super::*;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::context_mock::MockClientContext;
-    use crate::ics02_client::mocks::*;
+    use crate::mock_client::header::MockHeader;
+    use crate::mock_client::state::{MockClientState, MockConsensusState};
 
     #[test]
     fn test_update_client_ok() {
