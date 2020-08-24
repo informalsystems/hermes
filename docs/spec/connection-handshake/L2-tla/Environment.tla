@@ -27,12 +27,29 @@ EXTENDS Naturals, FiniteSets, Sequences
 CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
          MaxBufLen,     \* Length (size) of message buffers.
          Concurrency,    \* Flag for enabling concurrent relayers.
-         MaxVersionNr   \* Maximum version number
+         MaxVersionNr,   \* Maximum version number
+         VersionPickMode   \* the mode for picking versions
 
 
 ASSUME MaxHeight > 4
 ASSUME MaxBufLen >= 1
+ASSUME VersionPickMode \in {"onTryDet", "onTryNonDet", "onAckDet", "onAckNonDet"}
 
+(*
+VersionPickMode: 
+    * "onTryDet" -- the version is picked deterministically when handling 
+                 ICS3MsgTry from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgAck, which accepts it
+    * "onTryNonDet" -- same as "onTryDet", except the version is picked 
+                 non-deterministically
+    * "onAckDet" -- the version is picked deterministically when handling  
+                 ICS3MsgAck from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgConfirm, which accepts it
+    * "onAckNonDet" -- same as "onAckDet", except the version is picked 
+                 non-deterministically              
+*)
 
 VARIABLES
     inBufChainA,    \* A buffer (sequence) for messages inbound to chain A.
@@ -61,14 +78,12 @@ AllVersionSeqs ==
 ChainAConnectionEnds == 
     [
         connectionID : { "connAtoB" },
-        clientID : { "clientOnAToB" },
-        version : AllVersionSeqs 
+        clientID : { "clientOnAToB" }
     ]
 ChainBConnectionEnds ==
     [
         connectionID : { "connBtoA" },
-        clientID : { "clientOnBToA" },
-        version : AllVersionSeqs
+        clientID : { "clientOnBToA" }
     ]
 
 AllConnectionEnds ==
@@ -144,29 +159,17 @@ chmB == INSTANCE ICS3Module
     msg to either of the two chains (or both).
 
  *)
-InitEnv ==
-    LET VersionedChainAConnectionEnds == 
-            {ce \in ChainAConnectionEnds : ce.version = storeChainA.connection.supportedVersions} IN
-    LET NonVersionedChainAConnectionEnds ==             
-            {ce \in ChainAConnectionEnds : ce.version = <<>>} IN
-    LET VersionedChainBConnectionEnds == 
-            {ce \in ChainBConnectionEnds : ce.version = storeChainB.connection.supportedVersions} IN
-    LET NonVersionedChainBConnectionEnds ==             
-            {ce \in ChainBConnectionEnds : ce.version = <<>>} IN            
+InitEnv ==            
     /\ \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
-                        msg \in InitMsgs(NonVersionedChainAConnectionEnds, 
-                                         NonVersionedChainBConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
           /\ inBufChainB = <<>>
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-                        msg \in InitMsgs(NonVersionedChainBConnectionEnds, 
-                                         NonVersionedChainAConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
           /\ inBufChainA = <<>>
        \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-                        msg \in InitMsgs(NonVersionedChainAConnectionEnds, 
-                                         NonVersionedChainBConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
                       /\ inBufChainB \in {<<msg>> :
-                        msg \in InitMsgs(NonVersionedChainBConnectionEnds, 
-                                         NonVersionedChainAConnectionEnds)}
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
 
@@ -329,8 +332,8 @@ Next ==
 
 
 FairProgress ==
-    /\ WF_chainAVars(chmA!Next)
-    /\ WF_chainBVars(chmB!Next)
+    /\ chmA!Fairness
+    /\ chmB!Fairness
     /\ WF_<<chainAVars, chainBVars>>(RelayNextEnv)
 
 
@@ -375,15 +378,15 @@ Consistency ==
     [] ConsistencyProperty
     
 VersionInvariant ==
-    /\ storeChainA.connection.supportedVersions /= <<>>
-    /\ storeChainB.connection.supportedVersions /= <<>>
     /\ storeChainA.connection.state = "OPEN"
     /\ storeChainB.connection.state = "OPEN"   
-    => storeChainA.connection.parameters.localEnd.version = storeChainB.connection.parameters.localEnd.version
+    => /\ Len(storeChainA.connection.version) = 1
+       /\ Len(storeChainB.connection.version) = 1
+       /\ storeChainA.connection.version = storeChainB.connection.version
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 18 16:25:39 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Aug 24 17:43:30 CEST 2020 by ilinastoilkovska
 \* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

@@ -121,8 +121,7 @@ NullConnectionID ==
 NullConnectionEnd ==
     [
         connectionID |-> NullConnectionID,
-        clientID |-> NullClientID,
-        version |-> <<>>
+        clientID |-> NullClientID
     ]
 
 
@@ -153,8 +152,7 @@ NullConnectionParameters ==
 ConnectionEnds ==
     [
         connectionID : AllConnectionIDs,
-        clientID : AllClientIDs,
-        version : AllVersionSeqs
+        clientID : AllClientIDs
     ]
 
 
@@ -191,7 +189,7 @@ ConnectionParameters ==
 NullConnections == [
     parameters : {NullConnectionParameters},
     state : {"UNINIT"},
-    supportedVersions : AllVersionSeqs
+    version : AllVersionSeqs \ {<<>>}
 ]
 
 
@@ -210,7 +208,7 @@ Connections ==
     [
         parameters : ConnectionParameters,
         state : ICS3ConnectionStates, 
-        supportedVersions : AllVersionSeqs
+        version : AllVersionSeqs
     ]
 
 
@@ -281,7 +279,8 @@ ConnectionHandshakeMessages ==
         parameters : ConnectionParameters,
         proofHeight : Heights,
         connProof : ConnProofs,
-        clientProof : ClientProofs
+        clientProof : ClientProofs,
+        version : AllVersionSeqs
     ]
     \union
     [
@@ -289,7 +288,8 @@ ConnectionHandshakeMessages ==
         parameters : ConnectionParameters,
         proofHeight : Heights,
         connProof : ConnProofs,
-        clientProof : ClientProofs
+        clientProof : ClientProofs,
+        version : AllVersionSeqs
     ]
     \union
     [
@@ -358,7 +358,7 @@ Stores ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 18 15:27:48 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Aug 20 14:14:03 CEST 2020 by ilinastoilkovska
 \* Last modified Tue Jun 23 13:47:17 CEST 2020 by adi
 \* Created Mon May 18 17:53:08 CEST 2020 by adi
 
