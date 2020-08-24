@@ -2,18 +2,12 @@
 //! connection open handshake messages.
 //!
 //! TODO: in its current state, this module is not compiled nor included in the module tree.
-
-use crate::events::IBCEvent;
-use crate::events::IBCEvent::{
-    OpenAckConnection, OpenConfirmConnection, OpenInitConnection, OpenTryConnection,
-};
+use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::context::ICS3Context;
+use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
-use crate::ics03_connection::events as ConnectionEvents;
-use crate::ics03_connection::msgs::ICS3Msg;
-
-type ProtocolResult = Result<ProtocolOutput, Error>;
+use crate::ics03_connection::msgs::ConnectionMsg;
+use crate::ics24_host::identifier::ConnectionId;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;
@@ -21,31 +15,24 @@ pub mod conn_open_init;
 pub mod conn_open_try;
 pub mod verify;
 
-#[derive(Debug, Clone, Default)]
-pub struct ProtocolOutput {
-    object: Option<Object>, // Vec<u8>? Data?
-    events: Vec<IBCEvent>,
+#[derive(Clone, Debug)]
+pub struct ConnectionResult {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
 }
 
-impl ProtocolOutput {
-    pub fn new() -> ProtocolOutput {
-        ProtocolOutput::default()
-    }
+#[derive(Clone, Debug)]
+pub enum ConnectionEvent {
+    ConnOpenInit(ConnectionResult),
+}
 
-    pub fn set_object(self, ce: ConnectionEnd) -> Self {
-        Self {
-            object: Some(ce),
-            events: self.events,
-        }
-    }
-
-    pub fn add_events(self, events: &mut Vec<IBCEvent>) -> Self {
-        let mut evs = self.events.clone();
-        evs.append(events);
-
-        Self {
-            events: evs,
-            ..self
+impl From<ConnectionEvent> for Event {
+    fn from(ev: ConnectionEvent) -> Event {
+        match ev {
+            ConnectionEvent::ConnOpenInit(conn) => Event::new(
+                EventType::Custom("connection_open_init".to_string()),
+                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+            ),
         }
     }
 }
@@ -55,50 +42,46 @@ type Object = ConnectionEnd;
 
 /// General entry point for delivering (i.e., processing) any type of message related to the ICS3
 /// connection open handshake protocol.
-pub fn process_ics3_msg(ctx: &dyn ICS3Context, message: &ICS3Msg) -> ProtocolResult {
-    // Process each message with the corresponding process_*_msg function.
-    // After processing a specific message, the output consists of a ConnectionEnd.
-    let conn_object = match message {
-        ICS3Msg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
-        ICS3Msg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, msg),
-        ICS3Msg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, msg),
-        ICS3Msg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
-    }?;
+// pub fn process_ics3_msg(ctx: &dyn ConnectionReader, message: &ConnectionMsg) -> ProtocolResult {
+//     // Process each message with the corresponding process_*_msg function.
+//     // After processing a specific message, the output consists of a ConnectionEnd.
+//     let conn_object = match message {
+//         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
+//         ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, msg),
+//         ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, msg),
+//         ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
+//     }?;
+//
+//     // Post-processing: emit events.
+//     let mut events = produce_events(ctx, message);
+//
+//     Ok(ProtocolOutput::new()
+//         .set_object(conn_object)
+//         .add_events(&mut events))
+// }
 
-    // Post-processing: emit events.
-    let mut events = produce_events(ctx, message);
-
-    Ok(ProtocolOutput::new()
-        .set_object(conn_object)
-        .add_events(&mut events))
+pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
+    keeper.store_connection(result.connection_id, result.connection_end)?;
+    Ok(())
 }
 
-/// Given a context and a message, produces the corresponding events.
-pub fn produce_events(ctx: &dyn ICS3Context, msg: &ICS3Msg) -> Vec<IBCEvent> {
-    let event = match msg {
-        ICS3Msg::ConnectionOpenInit(msg) => OpenInitConnection(ConnectionEvents::OpenInit {
-            height: ctx.chain_current_height(),
-            connection_id: msg.connection_id().clone(),
-            client_id: msg.client_id().clone(),
-            counterparty_client_id: msg.counterparty().client_id().clone(),
-        }),
-        ICS3Msg::ConnectionOpenTry(msg) => OpenTryConnection(ConnectionEvents::OpenTry {
-            height: ctx.chain_current_height(),
-            connection_id: msg.connection_id().clone(),
-            client_id: msg.client_id().clone(),
-            counterparty_client_id: msg.counterparty().client_id().clone(),
-        }),
-        ICS3Msg::ConnectionOpenAck(msg) => OpenAckConnection(ConnectionEvents::OpenAck {
-            height: ctx.chain_current_height(),
-            connection_id: msg.connection_id().clone(),
-        }),
-        ICS3Msg::ConnectionOpenConfirm(msg) => {
-            OpenConfirmConnection(ConnectionEvents::OpenConfirm {
-                height: ctx.chain_current_height(),
-                connection_id: msg.connection_id().clone(),
-            })
-        }
-    };
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ConnectionMsg) -> Result<HandlerOutput<()>, Error>
+where
+    Ctx: ConnectionReader + ConnectionKeeper,
+{
+    match msg {
+        ConnectionMsg::ConnectionOpenInit(msg) => {
+            let HandlerOutput {
+                result,
+                log,
+                events,
+            } = conn_open_init::process(ctx, msg)?;
 
-    vec![event]
+            keep(ctx, result)?;
+            Ok(HandlerOutput::builder()
+                .with_log(log)
+                .with_events(events)
+                .with_result(()))
+        }
+    }
 }

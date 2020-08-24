@@ -1,7 +1,7 @@
 use crate::handler::{Event, EventType, HandlerOutput};
-use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::client_def::AnyClient;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
+use crate::ics02_client::msgs::ClientMsg;
 use crate::ics24_host::identifier::ClientId;
 
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -28,11 +28,6 @@ impl From<ClientEvent> for Event {
             ),
         }
     }
-}
-
-pub enum ClientMsg<CD: ClientDef> {
-    CreateClient(MsgCreateAnyClient<CD>),
-    UpdateClient(MsgUpdateAnyClient<CD>),
 }
 
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg<AnyClient>) -> Result<HandlerOutput<()>, Error>

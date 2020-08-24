@@ -1,5 +1,6 @@
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::introspect::{current_height, get_commitment_prefix};
@@ -8,13 +9,13 @@ use crate::Height;
 // TODO: Remove this once Romain's code kicks in.
 pub struct Chain {}
 
-// TODO: Both ICS3Context & Context should be generic over Chain.
+// TODO: Both ConnectionReader & Context should be generic over Chain.
 pub struct Context {
     local_chain: Chain,
 }
 
 /// A context supplying all the necessary dependencies for processing any `ICS3Msg`.
-pub trait ICS3Context {
+pub trait ConnectionReader {
     /// Returns the ConnectionEnd for the given identifier `conn_id`.
     fn fetch_connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd>;
 
@@ -40,7 +41,15 @@ pub trait ICS3Context {
     fn fetch_self_consensus_state(&self, height: Height) -> Option<&dyn ConsensusState>;
 }
 
-impl ICS3Context for Context {
+pub trait ConnectionKeeper {
+    fn store_connection(
+        &mut self,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> Result<(), Error>;
+}
+
+impl ConnectionReader for Context {
     fn fetch_connection_end(&self, _cid: &ConnectionId) -> Option<&ConnectionEnd> {
         unimplemented!()
     }

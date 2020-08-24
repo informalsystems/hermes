@@ -1,5 +1,5 @@
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::context::ICS3Context;
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
@@ -7,7 +7,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use tendermint::block::Height;
 
 pub fn verify_proofs(
-    ctx: &dyn ICS3Context,
+    ctx: &dyn ConnectionReader,
     id: &ConnectionId,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -35,7 +35,7 @@ pub fn verify_proofs(
 }
 
 pub fn verify_connection_proof(
-    ctx: &dyn ICS3Context,
+    ctx: &dyn ConnectionReader,
     id: &ConnectionId,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -65,7 +65,7 @@ pub fn verify_connection_proof(
 }
 
 pub fn verify_consensus_proof(
-    ctx: &dyn ICS3Context,
+    ctx: &dyn ConnectionReader,
     connection_end: &ConnectionEnd,
     proof_height: Height,
     proof: &ConsensusProof,
@@ -99,7 +99,7 @@ pub fn verify_consensus_proof(
 }
 
 pub fn check_client_consensus_height(
-    ctx: &dyn ICS3Context,
+    ctx: &dyn ConnectionReader,
     claimed_height: Height,
 ) -> Result<(), Error> {
     // Fail if the consensus height is too advanced.

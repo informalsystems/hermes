@@ -1,6 +1,6 @@
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::context::ICS3Context;
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics23_commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
@@ -31,7 +31,7 @@ impl MockContext {
     }
 }
 
-impl ICS3Context for MockContext {
+impl ConnectionReader for MockContext {
     fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
         self.store.get(cid)
     }

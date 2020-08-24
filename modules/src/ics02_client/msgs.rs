@@ -8,6 +8,11 @@ use crate::ics02_client::client_def::ClientDef;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 
+pub enum ClientMsg<CD: ClientDef> {
+    CreateClient(MsgCreateAnyClient<CD>),
+    UpdateClient(MsgUpdateAnyClient<CD>),
+}
+
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug)]
 pub struct MsgCreateAnyClient<CD: ClientDef> {
