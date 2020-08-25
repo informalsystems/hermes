@@ -164,12 +164,12 @@ InitEnv ==
                         msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
           /\ inBufChainB = <<>>
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
           /\ inBufChainA = <<>>
        \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
                         msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
                       /\ inBufChainB \in {<<msg>> :
-                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
 
@@ -386,7 +386,7 @@ VersionInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 24 17:43:30 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 13:30:58 CEST 2020 by ilinastoilkovska
 \* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 
