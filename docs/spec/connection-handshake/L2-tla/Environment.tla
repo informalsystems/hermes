@@ -37,6 +37,11 @@ ASSUME VersionPickMode \in {"overwrite", "onTryDet", "onTryNonDet", "onAckDet", 
 
 (*
 VersionPickMode: 
+    * "overwrite" -- the version is picked deterministically when handling 
+                 ICS3MsgTry from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgAck, which overwrites its
+                 own version with the one from the message
     * "onTryDet" -- the version is picked deterministically when handling 
                  ICS3MsgTry from the intersection of versions sent in the 
                  message and locally supported versions. The picked version 
@@ -386,8 +391,6 @@ VersionInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 15:59:22 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 17:48:37 CEST 2020 by ilinastoilkovska
 \* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
-
-

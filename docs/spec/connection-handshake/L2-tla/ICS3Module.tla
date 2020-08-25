@@ -187,15 +187,13 @@ SequenceAsSet(seq) ==
     {seq[x] : x \in DOMAIN seq}  
 
 \* get all possible version sequences from a set of versions     
-SetAsSequences(S) ==
+VersionSetAsVersionSequences(S) ==
     LET E == 1..Cardinality(S) IN
     LET AllSeqs == [E -> S] IN
     {seq \in AllSeqs : seq \in AllVersionSeqs}      
 
-\* create a set     
-SingleElemSeq(S) ==
-    {<<elem>> : elem \in S}     
-    
+\* check if two version sequences overlap by taking the intersection of their 
+\* set representation
 VersionOverlap(versionSeq1, versionSeq2) ==
     SequenceAsSet(versionSeq1) 
      \intersect 
@@ -275,7 +273,7 @@ PreconditionsTryMsg(m) ==
 
 (* Pick a version depending on the value of the constant VersionPickMode 
 
- - if VersionPickMode = "onTryNonDet"
+ - if VersionPickMode = "onTryNonDet" or VersionPickMode = "overwrite" 
     -> pick a version from (m.version \intersect store.connection.version) non-deterministically,  
        send the picked version to counterparty in ICS3MsgAck
  - if VersionPickMode = "onTryNonDet"
@@ -291,22 +289,20 @@ PickVersionOnTry(m) ==
     LET feasibleVersions == SequenceAsSet(m.version) 
                             \intersect 
                             SequenceAsSet(store.connection.version) IN
-    
-    IF VersionPickMode = "overwrite"
-    \* the version is picked non-deterministically
-    THEN {<<newVersion>> : newVersion \in feasibleVersions}
-    ELSE IF feasibleVersions /= {}                       
-         THEN IF VersionPickMode = "onTryNonDet"
-              \* the version is picked non-deterministically
-              THEN {<<newVersion>> : newVersion \in feasibleVersions}
-              ELSE IF VersionPickMode = "onTryDet"
-                   \* the version is picked deterministically,
-                   \* using MAXSet as a deterministic choice function 
-                   THEN {<<MAXSet(feasibleVersions)>>} 
-                   \* the version will be picked when handling ICS3MsgAck,
-                   \* send a sequence which consists of elements in the 
-                   \* set feasibleVersions 
-                   ELSE SetAsSequences(feasibleVersions)
+ 
+    IF feasibleVersions /= {}                       
+    THEN IF \/ VersionPickMode = "overwrite"
+            \/ VersionPickMode = "onTryNonDet"
+         \* the version is picked non-deterministically
+         THEN {<<newVersion>> : newVersion \in feasibleVersions}
+         ELSE IF VersionPickMode = "onTryDet"
+              \* the version is picked deterministically,
+              \* using MAXSet as a deterministic choice function 
+              THEN {<<MAXSet(feasibleVersions)>>} 
+              \* the version will be picked when handling ICS3MsgAck,
+              \* send a sequence which consists of elements in the 
+              \* set feasibleVersions 
+              ELSE VersionSetAsVersionSequences(feasibleVersions)
     ELSE {}
 
 (* Reply message to an ICS3MsgTry message *)
@@ -346,14 +342,17 @@ PreconditionsAckMsg(m) ==
     /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
     /\ VerifyConnProof(m.connProof, "TRYOPEN", m.parameters)
     /\ VerifyClientProof(m.clientProof)
-    \* check if the locally stored versions overlap with the versions sent in 
-    \* the ICS3MsgAck message
     /\ IF VersionPickMode /= "overwrite"
+       \* check if the locally stored versions overlap with the versions sent in 
+       \* the ICS3MsgAck message if VersionPickMode /= "overwrite"
        THEN VersionOverlap(store.connection.version, m.version)
+       \* if VersionPickMode = "overwrite", do not check for version overlap
        ELSE TRUE
     
 (* Pick a version depending on the value of the constant VersionPickMode 
  
+ - if VersionPickMode = "overwrite"
+    -> take the picked version from the message
  - if VersionPickMode = "onAckNonDet"
     -> pick a version from (m.version \intersect store.connection.version) non-deterministically,  
        send the picked version to counterparty in ICS3MsgConfirm
@@ -372,21 +371,20 @@ PickVersionOnAck(m) ==
                             \intersect 
                             SequenceAsSet(store.connection.version) IN
     
-    IF feasibleVersions /= {}                       
-    THEN IF VersionPickMode = "onAckNonDet"
-         \* the version is picked non-deterministically 
-         THEN {<<newVersion>> : newVersion \in feasibleVersions}
-         ELSE IF VersionPickMode = "onAckDet"
-              \* the version is picked deterministically,
-              \* using MAXSet as a deterministic choice function  
-              THEN {<<MAXSet(feasibleVersions)>>}
-              ELSE IF VersionPickMode = "overwrite"
-                   THEN {m.version}
+    IF VersionPickMode = "overwrite"
+    \* take the picked version from the message 
+    THEN {m.version}
+    ELSE IF feasibleVersions /= {}                       
+         THEN IF VersionPickMode = "onAckNonDet"
+              \* the version is picked non-deterministically 
+              THEN {<<newVersion>> : newVersion \in feasibleVersions}
+              ELSE IF VersionPickMode = "onAckDet"
+                   \* the version is picked deterministically,
+                   \* using MAXSet as a deterministic choice function  
+                   THEN {<<MAXSet(feasibleVersions)>>}
                    \* the version was picked when handling ICS3MsgTry, 
                    \* use the picked version from the ICS3MsgAck message
                    ELSE {m.version}
-    ELSE IF VersionPickMode = "overwrite"
-         THEN {m.version}
          ELSE {}
     
 (* Reply message to an ICS3MsgAck message *)
@@ -421,19 +419,22 @@ PreconditionsConfirmMsg(m) ==
     /\ ValidConnectionParameters(m.parameters)
     /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
     /\ VerifyConnProof(m.connProof, "OPEN", m.parameters)
-    \* check if the locally stored versions overlap with the versions sent in 
-    \* the ICS3MsgComfirm message
     /\ IF VersionPickMode /= "overwrite"
+       \* check if the locally stored versions overlap with the versions sent in 
+       \* the ICS3MsgComfirm message if VersionPickMode /= "overwrite"
        THEN IF \/ VersionPickMode = "onAckNonDet"
                \/ VersionPickMode = "onAckDet"
             \* if the version was picked on handling ICS3MsgAck, check for intersection
             THEN VersionOverlap(store.connection.version, m.version)
             \* if the version was picked on handling ICS3MsgTry, check for equality
             ELSE store.connection.version = m.version
+       \* if VersionPickMode = "overwrite", do not check for version overlap
        ELSE TRUE
 
 (* Pick a version depending on the value of the constant VersionPickMode 
-
+ 
+ - if VersionPickMode = "overwrite"
+    -> take the picked version from the message
  - if VersionPickMode = "onAckNonDet"
     -> pick a version from store.connection.version non-deterministically
  - if VersionPickMode = "onAckDet"
@@ -449,15 +450,16 @@ PreconditionsConfirmMsg(m) ==
 
 *)
 PickVersionOnConfirm(m) ==
-    IF VersionPickMode = "onAckNonDet"
+    IF VersionPickMode = "overwrite"
+    \* take the picked version from the message
+    THEN {m.version}
+    ELSE IF VersionPickMode = "onAckNonDet"
          \* the version is picked non-deterministically 
-    THEN {<<newVersion>> : newVersion \in SequenceAsSet(store.connection.version)}
-    ELSE IF VersionPickMode = "onAckDet"
-         \* the version is picked deterministically,
-         \* using MAXSet as a deterministic choice function  
-         THEN {<<MAXSet(SequenceAsSet(store.connection.version))>>} 
-         ELSE IF VersionPickMode = "overwrite"
-              THEN {m.version}
+         THEN {<<newVersion>> : newVersion \in SequenceAsSet(store.connection.version)}
+         ELSE IF VersionPickMode = "onAckDet"
+              \* the version is picked deterministically,
+              \* using MAXSet as a deterministic choice function  
+              THEN {<<MAXSet(SequenceAsSet(store.connection.version))>>} 
               \* the version was picked when handling ICS3MsgTry, 
               \* use the picked version from the ICS3MsgAck message
               ELSE {store.connection.version}
@@ -560,8 +562,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 16:19:35 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 17:48:30 CEST 2020 by ilinastoilkovska
 \* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
-
-
