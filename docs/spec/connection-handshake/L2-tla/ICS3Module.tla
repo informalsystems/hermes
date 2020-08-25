@@ -44,36 +44,6 @@ CONSTANTS MaxChainHeight,   \* Maximum height of the local chain.
 ASSUME Cardinality(ConnectionIDs) >= 1
 ASSUME Cardinality(ClientIDs) >= 1
 
-(*
-
-            |   HandleMsgTry(m)                     |   HandleMsgAck(m)                         |   HandleMsgConfirm(m)
-------------|---------------------------------------|--------------------———————————————————————|————————————————- 
-onTryNonDet |pick a version from        |                                       |
-            |(m.versions                |
-            | \intersect                |
-            |conn.versions)            |                                       |
-            |non-deterministically,     | 
-            |send the picked version to |                                           |
-            |counterparty in ICS3MsgAck | check if received version in ICS3MsgAck is    | check if received version is 
-------------|---------------------------------------| in list of local versions, accept it if it is, send it  | the same as one stored in 
-onTryDet    | pick a version from                   | to counterparty in ICS3MsgConfirm         | connection end
-            | m.versions \intersect conn.versions   |                                       |
-            | deterministically (e.g. maximum), send|                                       |
-            | the picked version to counterparty in |                                       |
-            | ICS3MsgAck                            |                                       |
-------------|---------------------------------------|——————————————————————--|-————————————————
-onAckNonDet |                                   | pick a version from                       | pick a version from
-            |                                   | m.versions \intersect conn.versions           | m.versions \intersect conn.versions
-            |                                   | non-deterministically, send the intersection      | non-deterministically
-            | send the value of the intersection        | to counterparty in ICS3MsgConfirm             |
-------------| m.versions \intersect conn.versions        |———————————————————————|————————————————-
-onAckDet    | to counterparty in ICS3MsgAck         | pick a version from                       | pick a version from
-            |                                   | m.versions \intersect conn.versions           | m.versions \intersect conn.versions
-            |                                   | deterministically (e.g. maximum), send the        | deterministically (e.g. maximum)
-            |                                   | intersection to counterparty in ICS3MsgConfirm    |
-————————————————————————————————————————————————————————————————————-
-*)
-
 
 VARIABLES
 (******************************* Store *****************************
@@ -555,7 +525,6 @@ ProcessMsg ==
  Connection Handshake Module (ICS3) main spec.
  ***************************************************************************)
 
-
 Init ==
     store \in [chainID : {ChainID},
                latestHeight : {1},
@@ -578,7 +547,7 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 24 19:37:06 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 13:11:02 CEST 2020 by ilinastoilkovska
 \* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
