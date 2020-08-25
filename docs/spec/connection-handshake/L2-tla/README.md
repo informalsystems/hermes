@@ -34,3 +34,22 @@ See more details in the [disclosure log](https://github.com/informalsystems/ibc-
 3. add the invariant `ConsistencyInv` and `TypeInvariant` as well as the property (temporal formula) `Termination`.
 
 4. run the model checker.
+
+## Versions
+
+We introduce different version picking modes, which are used to parameterize the way in which versions are picked during the connection handshake. That is, the constant `VersionPickMode` can take one of the following values:
+ - `overwrite` : a version is picked non-deterministically when handling `ICS3MsgTry`, local version gets overwritten from versions sent in datagrams; 
+ - `onTryNonDet` : a version is picked non-deterministically when handling `ICS3MsgTry`, local version is chosen from intersection of local and datagram versions,
+ - `onTryDet` : a version is picked deterministically when handling `ICS3MsgTry`, local version is chosen from intersection of local and datagram versions,
+ - `onAckNonDet` : a version is picked non-deterministically when handling `ICS3MsgTry`, local version is chosen from intersection of local and datagram versions,
+ - `onAckDet` : a version is picked non-deterministically when handling `ICS3MsgTry`, local version is chosen from intersection of local and datagram versions.
+ 
+ The table below details the p
+
+|			        |	`HandleMsgTry(m)`					              |	`HandleMsgAck(m)` 					|	`HandleMsgConfirm(m)`       |
+|-------------|-----------------------------------------|-----------------------------|-----------------------------|
+|`overwrite`  | pick a version from `m.versions \intersect conn.versions` non-deterministically, send the picked	version to counterparty in `ICS3MsgAck` | store `m.version` locally, send it to counterparty in `ICS3MsgConfirm` | store `m.version` locally |
+|`onTryNonDet`| pick a version from  `m.versions \intersect conn.versions` non-deterministically, send the picked	version to counterparty in `ICS3MsgAck` | check if received version in `ICS3MsgAck` is in list of local versions, accept it if it is, send it to counterparty in `ICS3MsgConfirm` | check if received version is the same as one stored in connection end|				          
+|`onTryDet`	  | pick a version from `m.versions \intersect conn.versionsd` eterministically (e.g. maximum), send the picked version to counterparty in `ICS3MsgAck` | check if received version in `ICS3MsgAck` is in list of local versions, accept it if it is, send it to counterparty in `ICS3MsgConfirm` | check if received version is the same as one stored in connection end|				          
+|`onAckNonDet`| send the value of the intersection `m.versions \intersect conn.versions` to counterparty in `ICS3MsgAck`, store the intersection locally | pick a version from `m.versions \intersect conn.versions` non-deterministically, send the intersection to counterparty in `ICS3MsgConfirm` | pick a version from `conn.versions` non-deterministically |
+|`onAckNonDet`| send the value of the intersection `m.versions \intersect conn.versions` to counterparty in `ICS3MsgAck`, store the intersection locally | pick a version from `m.versions \intersect conn.versions` deterministically (e.g. maximum), send the intersection to counterparty in `ICS3MsgConfirm` | pick a version from `conn.versions` deterministically (e.g. maximum)
