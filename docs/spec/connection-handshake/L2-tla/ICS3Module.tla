@@ -271,7 +271,7 @@ PreconditionsTryMsg(m) ==
     /\ VerifyClientProof(m.clientProof)
     \* check if the locally stored versions overlap with the versions sent in 
     \* the ICS3MsgTry message
-    /\ VersionOverlap(store.connection.version, m.version)
+    /\ VersionOverlap(store.connection.version, m.version) 
 
 (* Pick a version depending on the value of the constant VersionPickMode 
 
@@ -294,7 +294,7 @@ PickVersionOnTry(m) ==
     
     IF VersionPickMode = "overwrite"
     \* the version is picked non-deterministically
-    THEN {<<newVersion>> : newVersion \in store.connection.version}
+    THEN {<<newVersion>> : newVersion \in feasibleVersions}
     ELSE IF feasibleVersions /= {}                       
          THEN IF VersionPickMode = "onTryNonDet"
               \* the version is picked non-deterministically
@@ -348,7 +348,9 @@ PreconditionsAckMsg(m) ==
     /\ VerifyClientProof(m.clientProof)
     \* check if the locally stored versions overlap with the versions sent in 
     \* the ICS3MsgAck message
-    /\ VersionOverlap(store.connection.version, m.version)
+    /\ IF VersionPickMode /= "overwrite"
+       THEN VersionOverlap(store.connection.version, m.version)
+       ELSE TRUE
     
 (* Pick a version depending on the value of the constant VersionPickMode 
  
@@ -421,12 +423,14 @@ PreconditionsConfirmMsg(m) ==
     /\ VerifyConnProof(m.connProof, "OPEN", m.parameters)
     \* check if the locally stored versions overlap with the versions sent in 
     \* the ICS3MsgComfirm message
-    /\ IF \/ VersionPickMode = "onAckNonDet"
-          \/ VersionPickMode = "onAckDet"
-       \* if the version was picked on handling ICS3MsgAck, check for intersection
-       THEN VersionOverlap(store.connection.version, m.version)
-       \* if the version was picked on handling ICS3MsgTry, check for equality
-       ELSE store.connection.version = m.version
+    /\ IF VersionPickMode /= "overwrite"
+       THEN IF \/ VersionPickMode = "onAckNonDet"
+               \/ VersionPickMode = "onAckDet"
+            \* if the version was picked on handling ICS3MsgAck, check for intersection
+            THEN VersionOverlap(store.connection.version, m.version)
+            \* if the version was picked on handling ICS3MsgTry, check for equality
+            ELSE store.connection.version = m.version
+       ELSE TRUE
 
 (* Pick a version depending on the value of the constant VersionPickMode 
 
@@ -556,7 +560,7 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 16:07:09 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 16:19:35 CEST 2020 by ilinastoilkovska
 \* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
