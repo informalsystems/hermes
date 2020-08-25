@@ -33,7 +33,7 @@ CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
 
 ASSUME MaxHeight > 4
 ASSUME MaxBufLen >= 1
-ASSUME VersionPickMode \in {"onTryDet", "onTryNonDet", "onAckDet", "onAckNonDet"}
+ASSUME VersionPickMode \in {"overwrite", "onTryDet", "onTryNonDet", "onAckDet", "onAckNonDet"}
 
 (*
 VersionPickMode: 
@@ -386,7 +386,7 @@ VersionInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 13:30:58 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 15:59:22 CEST 2020 by ilinastoilkovska
 \* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
 

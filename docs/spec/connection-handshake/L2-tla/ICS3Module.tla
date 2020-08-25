@@ -292,18 +292,21 @@ PickVersionOnTry(m) ==
                             \intersect 
                             SequenceAsSet(store.connection.version) IN
     
-    IF feasibleVersions /= {}                       
-    THEN IF VersionPickMode = "onTryNonDet"
-         \* the version is picked non-deterministically
-         THEN {<<newVersion>> : newVersion \in feasibleVersions}
-         ELSE IF VersionPickMode = "onTryDet"
-              \* the version is picked deterministically,
-              \* using MAXSet as a deterministic choice function 
-              THEN {<<MAXSet(feasibleVersions)>>} 
-              \* the version will be picked when handling ICS3MsgAck,
-              \* send a sequence which consists of elements in the 
-              \* set feasibleVersions
-              ELSE SetAsSequences(feasibleVersions)
+    IF VersionPickMode = "overwrite"
+    \* the version is picked non-deterministically
+    THEN {<<newVersion>> : newVersion \in store.connection.version}
+    ELSE IF feasibleVersions /= {}                       
+         THEN IF VersionPickMode = "onTryNonDet"
+              \* the version is picked non-deterministically
+              THEN {<<newVersion>> : newVersion \in feasibleVersions}
+              ELSE IF VersionPickMode = "onTryDet"
+                   \* the version is picked deterministically,
+                   \* using MAXSet as a deterministic choice function 
+                   THEN {<<MAXSet(feasibleVersions)>>} 
+                   \* the version will be picked when handling ICS3MsgAck,
+                   \* send a sequence which consists of elements in the 
+                   \* set feasibleVersions 
+                   ELSE SetAsSequences(feasibleVersions)
     ELSE {}
 
 (* Reply message to an ICS3MsgTry message *)
@@ -374,11 +377,15 @@ PickVersionOnAck(m) ==
          ELSE IF VersionPickMode = "onAckDet"
               \* the version is picked deterministically,
               \* using MAXSet as a deterministic choice function  
-              THEN {<<MAXSet(feasibleVersions)>>} 
-              \* the version was picked when handling ICS3MsgTry, 
-              \* use the picked version from the ICS3MsgAck message
-              ELSE {m.version}
-    ELSE {}
+              THEN {<<MAXSet(feasibleVersions)>>}
+              ELSE IF VersionPickMode = "overwrite"
+                   THEN {m.version}
+                   \* the version was picked when handling ICS3MsgTry, 
+                   \* use the picked version from the ICS3MsgAck message
+                   ELSE {m.version}
+    ELSE IF VersionPickMode = "overwrite"
+         THEN {m.version}
+         ELSE {}
     
 (* Reply message to an ICS3MsgAck message *)
 MsgAckReply(chainStore) ==
@@ -445,9 +452,11 @@ PickVersionOnConfirm(m) ==
          \* the version is picked deterministically,
          \* using MAXSet as a deterministic choice function  
          THEN {<<MAXSet(SequenceAsSet(store.connection.version))>>} 
-         \* the version was picked when handling ICS3MsgTry, 
-         \* use the picked version from the ICS3MsgAck message
-         ELSE {store.connection.version}
+         ELSE IF VersionPickMode = "overwrite"
+              THEN {m.version}
+              \* the version was picked when handling ICS3MsgTry, 
+              \* use the picked version from the ICS3MsgAck message
+              ELSE {store.connection.version}
 
 (* Handles a "ICS3MsgConfirm" message.
  *)
@@ -547,7 +556,7 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 13:11:02 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Aug 25 16:07:09 CEST 2020 by ilinastoilkovska
 \* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
 
