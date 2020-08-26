@@ -1,5 +1,8 @@
+use crate::context::{ChainReader, SelfHeader};
+use crate::context_mock::MockChainContext;
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::context_mock::MockClientContext;
-use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
@@ -10,17 +13,17 @@ use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MockConnectionContext {
-    pub(crate) connections: HashMap<ConnectionId, ConnectionEnd>,
-    client_reader: MockClientContext,
-    chain_height: Height, // TODO - doesn't belong here
+    chain_context: MockChainContext,
+    client_context: MockClientContext,
+    connections: HashMap<ConnectionId, ConnectionEnd>,
 }
 
 impl MockConnectionContext {
     pub fn new(client_id: &ClientId, chain_height: Height) -> Self {
         MockConnectionContext {
+            chain_context: MockChainContext::new(chain_height),
+            client_context: MockClientContext::new(client_id),
             connections: Default::default(),
-            client_reader: MockClientContext::new(client_id),
-            chain_height,
         }
     }
 
@@ -39,12 +42,12 @@ impl ConnectionReader for MockConnectionContext {
         self.connections.get(cid)
     }
 
-    fn fetch_client_state(&self, _client_id: &ClientId) -> Option<&dyn ClientState> {
-        unimplemented!()
+    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+        self.client_context.client_state(client_id)
     }
 
     fn chain_current_height(&self) -> Height {
-        self.chain_height
+        self.chain_context.latest
     }
 
     /// Returns the number of consensus state historical entries for the local chain.
@@ -58,14 +61,17 @@ impl ConnectionReader for MockConnectionContext {
 
     fn fetch_client_consensus_state(
         &self,
-        _client_id: &ClientId,
-        _height: Height,
-    ) -> Option<&dyn ConsensusState> {
-        unimplemented!()
+        client_id: &ClientId,
+        height: Height,
+    ) -> Option<AnyConsensusState> {
+        self.client_context.consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, _height: Height) -> Option<&dyn ConsensusState> {
-        unimplemented!()
+    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        let hi = self.chain_context.self_historical_info(height)?.header;
+        match hi {
+            SelfHeader::Mock(h) => Some(h.into()),
+        }
     }
 }
 

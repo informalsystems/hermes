@@ -1,4 +1,4 @@
-use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::CommitmentPrefix;
@@ -11,7 +11,7 @@ pub trait ConnectionReader {
     fn fetch_connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd>;
 
     /// Returns the ClientState for the given identifier `client_id`.
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<&dyn ClientState>;
+    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
 
     /// Returns the current height of the local chain.
     fn chain_current_height(&self) -> Height;
@@ -27,9 +27,9 @@ pub trait ConnectionReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Option<&dyn ConsensusState>;
+    ) -> Option<AnyConsensusState>;
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<&dyn ConsensusState>;
+    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState>;
 }
 
 pub trait ConnectionKeeper {

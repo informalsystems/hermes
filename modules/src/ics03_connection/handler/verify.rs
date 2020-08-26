@@ -1,3 +1,4 @@
+use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
@@ -93,7 +94,7 @@ pub fn verify_consensus_proof(
             proof.proof(),
             connection_end.counterparty().client_id(),
             proof.height(),
-            expected_consensus,
+            &expected_consensus,
         )
         .map_err(|_| Kind::ConsensusStateVerificationFailure.context(proof.height().to_string()))?)
 }

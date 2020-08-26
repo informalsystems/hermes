@@ -7,6 +7,12 @@ use tendermint::block::Height;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockHeader(pub u32);
 
+impl MockHeader {
+    pub fn height(&self) -> Height {
+        Height(self.0 as u64)
+    }
+}
+
 impl From<MockHeader> for AnyHeader {
     fn from(mh: MockHeader) -> Self {
         Self::Mock(mh)

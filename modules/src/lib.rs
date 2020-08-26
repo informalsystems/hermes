@@ -19,6 +19,8 @@
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 
+pub mod context;
+pub mod context_mock;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
