@@ -118,21 +118,21 @@ mod tests {
         }
 
         let tests: Vec<Test> = vec![
-            // Test {
-            //     name: "Add no prune".to_string(),
-            //     ctx: MockChainContext::new(Height(0)),
-            //     args: [1].to_vec(),
-            // },
+            Test {
+                name: "Add no prune".to_string(),
+                ctx: MockChainContext::new(Height(0)),
+                args: [1].to_vec(),
+            },
             Test {
                 name: "Add with prune".to_string(),
                 ctx: MockChainContext::new(Height(2)),
                 args: [3, 4].to_vec(),
             },
-            // Test {
-            //     name: "Attempt to add non sequential headers".to_string(),
-            //     ctx: MockChainContext::new(Height(2)),
-            //     args: [3, 5, 7].to_vec(),
-            // },
+            Test {
+                name: "Attempt to add non sequential headers".to_string(),
+                ctx: MockChainContext::new(Height(2)),
+                args: [3, 5, 7].to_vec(),
+            },
         ];
 
         for mut test in tests {
