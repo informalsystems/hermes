@@ -529,10 +529,10 @@ ProcessMsg ==
                           [] m.type = "ICS3MsgAck" -> HandleAckMsg(m)
                           [] m.type = "ICS3MsgConfirm" -> HandleConfirmMsg(m) IN
         /\ store' \in resStores
-        /\ outBuf' = CASE m.type = "ICS3MsgInit" -> Append(outBuf, MsgInitReply(store'))
-                        [] m.type = "ICS3MsgTry" -> Append(outBuf, MsgTryReply(store'))
-                        [] m.type = "ICS3MsgAck" -> Append(outBuf, MsgAckReply(store'))
-                        [] m.type = "ICS3MsgConfirm" -> outBuf (* Never need to reply to a confirm msg. *)
+        /\ outBuf' = CASE m.type = "ICS3MsgInit" /\ store'.connection.state = "INIT" -> Append(outBuf, MsgInitReply(store'))
+                        [] m.type = "ICS3MsgTry" /\ store'.connection.state = "TRYOPEN" -> Append(outBuf, MsgTryReply(store'))
+                        [] m.type = "ICS3MsgAck" /\ store'.connection.state = "OPEN" -> Append(outBuf, MsgAckReply(store'))
+                        [] TRUE -> outBuf (* default case. *)
         /\ inBuf' = Tail(inBuf)                 
 
 
@@ -562,6 +562,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 25 17:48:30 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Aug 26 17:05:35 CEST 2020 by ilinastoilkovska
 \* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
