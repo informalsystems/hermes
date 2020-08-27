@@ -21,14 +21,14 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, Sequences
+EXTENDS Naturals, FiniteSets, Sequences, ICS3Utils
 
 
-CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
-         MaxBufLen,     \* Length (size) of message buffers.
+CONSTANT MaxHeight,      \* Maximum height of any chain in the system.
+         MaxBufLen,      \* Length (size) of message buffers.
          Concurrency,    \* Flag for enabling concurrent relayers.
-         MaxVersionNr,   \* Maximum version number
-         VersionPickMode   \* the mode for picking versions
+         MaxVersionNr,   \* Maximum version number.
+         VersionPickMode \* The mode for picking versions.
 
 
 ASSUME MaxHeight > 4
@@ -171,9 +171,9 @@ InitEnv ==
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
                         msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
           /\ inBufChainA = <<>>
-       \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
+       \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
                         msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
-                      /\ inBufChainB \in {<<msg>> :
+          /\ inBufChainB \in {<<msg>> :
                         msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
@@ -320,6 +320,7 @@ ICS3ImpossibleToAdvance ==
 Init ==
     /\ chmA!Init 
     /\ chmB!Init
+    /\ ChainVersionsOverlap(storeChainA, storeChainB) (* Necessary for termination *)
     /\ InitEnv
 
 
@@ -356,7 +357,7 @@ TypeInvariant ==
 (* Liveness property.
 
     We expect to eventually always reach an OPEN connection on both chains.
-    
+
     Naturally, this property may not hold if the two chains do not have
     sufficient number of heights they can advance to. In other words, the
     `MaxHeight` constant should be at least `4` for this property to hold.
@@ -364,8 +365,10 @@ TypeInvariant ==
     The `Concurrency` constant may also affect liveness.
 *)
 Termination ==
-       <> [](/\ storeChainA.connection.state = "OPEN"
-             /\ storeChainB.connection.state = "OPEN")
+       <> [](/\ \/ storeChainA.connection.state = "OPEN"
+                \/ storeChainA.latestHeight = MaxHeight
+             /\ \/ storeChainB.connection.state = "OPEN"
+                \/ storeChainB.latestHeight = MaxHeight)
 
 (* Safety property.
 
@@ -381,7 +384,12 @@ ConsistencyProperty ==
 
 Consistency ==
     [] ConsistencyProperty
-    
+
+(* Complementary to the safety property above.
+
+    If the connections in the two chains are both OPEN, then the
+        connection version must be identical.
+ *)
 VersionInvariant ==
     /\ storeChainA.connection.state = "OPEN"
     /\ storeChainB.connection.state = "OPEN"   
@@ -391,6 +399,6 @@ VersionInvariant ==
 
 =============================================================================
 \* Modification History
+\* Last modified Thu Aug 27 16:04:16 CEST 2020 by adi
 \* Last modified Tue Aug 25 17:48:37 CEST 2020 by ilinastoilkovska
-\* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi

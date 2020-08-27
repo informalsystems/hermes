@@ -7,7 +7,7 @@ The spec has three modules:
   - `Environment.tla` (main model lives here).
   - `ICS3Module.tla` (the spec for the ICS3 module).
   - `ICS3Types.tla` (common domain definitions).
-
+  - `ICS3Utils.tla` (common actions live here).
 
 To run this spec:
 
@@ -52,4 +52,4 @@ We introduce different version picking modes, which are used to parameterize the
 |`onTryNonDet`| pick a version from  `m.versions \intersect conn.versions` non-deterministically, send the picked	version to counterparty in `ICS3MsgAck` | check if received version in `ICS3MsgAck` is in list of local versions, accept it if it is, send it to counterparty in `ICS3MsgConfirm` | check if received version is the same as one stored in connection end|				          
 |`onTryDet`	  | pick a version from `m.versions \intersect conn.versionsd` eterministically (e.g. maximum), send the picked version to counterparty in `ICS3MsgAck` | check if received version in `ICS3MsgAck` is in list of local versions, accept it if it is, send it to counterparty in `ICS3MsgConfirm` | check if received version is the same as one stored in connection end|				          
 |`onAckNonDet`| send the value of the intersection `m.versions \intersect conn.versions` to counterparty in `ICS3MsgAck`, store the intersection locally | pick a version from `m.versions \intersect conn.versions` non-deterministically, send the intersection to counterparty in `ICS3MsgConfirm` | pick a version from `conn.versions` non-deterministically |
-|`onAckNonDet`| send the value of the intersection `m.versions \intersect conn.versions` to counterparty in `ICS3MsgAck`, store the intersection locally | pick a version from `m.versions \intersect conn.versions` deterministically (e.g. maximum), send the intersection to counterparty in `ICS3MsgConfirm` | pick a version from `conn.versions` deterministically (e.g. maximum)
+|`onAckDet`| send the value of the intersection `m.versions \intersect conn.versions` to counterparty in `ICS3MsgAck`, store the intersection locally | pick a version from `m.versions \intersect conn.versions` deterministically (e.g. maximum), send the intersection to counterparty in `ICS3MsgConfirm` | pick a version from `conn.versions` deterministically (e.g. maximum)

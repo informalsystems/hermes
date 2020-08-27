@@ -30,7 +30,7 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, Sequences, ICS3Types
+EXTENDS Naturals, FiniteSets, Sequences, ICS3Utils, ICS3Types
 
 
 CONSTANTS MaxChainHeight,   \* Maximum height of the local chain.
@@ -181,23 +181,14 @@ VerifyConnProof(cp, expectedState, expectedParams) ==
 VerifyClientProof(cp) ==
     /\ cp.latestHeight <= store.latestHeight   (* Consistency height check. *)
     /\ cp.latestHeight \in cp.consensusHeights (* Client verification step. *)
-    
-\* obtain a set from the given sequence    
-SequenceAsSet(seq) ==
-    {seq[x] : x \in DOMAIN seq}  
 
-\* get all possible version sequences from a set of versions     
+
+(* Get all possible version sequences from a set of versions.
+ *)     
 VersionSetAsVersionSequences(S) ==
     LET E == 1..Cardinality(S) IN
     LET AllSeqs == [E -> S] IN
-    {seq \in AllSeqs : seq \in AllVersionSeqs}      
-
-\* check if two version sequences overlap by taking the intersection of their 
-\* set representation
-VersionOverlap(versionSeq1, versionSeq2) ==
-    SequenceAsSet(versionSeq1) 
-     \intersect 
-    SequenceAsSet(versionSeq2) /= {}
+    {seq \in AllSeqs : seq \in AllVersionSeqs}    
 
 (***************************************************************************
  Connection Handshake Module actions & operators.
@@ -214,6 +205,10 @@ NewStore(newCon) ==
                   !.latestHeight = @ + 1]
 
 
+(**********************************
+ ICS3 spec related to Init messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Init msg.
 
     If any of these preconditions does not hold, the message
@@ -223,7 +218,8 @@ PreconditionsInitMsg(m) ==
     /\ ValidLocalEnd(m.parameters)  (* Basic validation of localEnd in parameters. *)
     /\ store.connection.state = "UNINIT"
 
-(* Reply message to an ICS3MsgInit message *)
+(* Reply message to an ICS3MsgInit message.
+ *)
 MsgInitReply(chainStore) ==
     LET conn == chainStore.connection
         myConnProof == GetConnProof(conn)
@@ -234,9 +230,8 @@ MsgInitReply(chainStore) ==
                      connProof |-> myConnProof,
                      clientProof |-> myClientProof,
                      version |-> conn.version] IN
-    
     replyMsg
-    
+
 (* Handles a "ICS3MsgInit" message 'm'.
 
     Primes the store.connection to become initialized with the parameters
@@ -254,6 +249,10 @@ HandleInitMsg(m) ==
     ELSE {store}
 
 
+(**********************************
+ ICS3 spec related to Try messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Try msg.
 
     If any of these preconditions does not hold, the message
@@ -269,7 +268,7 @@ PreconditionsTryMsg(m) ==
     /\ VerifyClientProof(m.clientProof)
     \* check if the locally stored versions overlap with the versions sent in 
     \* the ICS3MsgTry message
-    /\ VersionOverlap(store.connection.version, m.version) 
+    /\ VersionSequencesOverlap(store.connection.version, m.version) 
 
 (* Pick a version depending on the value of the constant VersionPickMode 
 
@@ -305,7 +304,8 @@ PickVersionOnTry(m) ==
               ELSE VersionSetAsVersionSequences(feasibleVersions)
     ELSE {}
 
-(* Reply message to an ICS3MsgTry message *)
+(* Reply message to an ICS3MsgTry message.
+ *)
 MsgTryReply(chainStore) ==
     LET conn == chainStore.connection
         myConnProof == GetConnProof(conn)
@@ -317,7 +317,7 @@ MsgTryReply(chainStore) ==
                      clientProof |-> myClientProof,
                      version |-> conn.version] IN
     replyMsg
-    
+
 (* Handles a "ICS3MsgTry" message.
  *)
 HandleTryMsg(m) ==
@@ -333,6 +333,11 @@ HandleTryMsg(m) ==
     THEN newStoreSet
     ELSE {store}
 
+
+(**********************************
+ ICS3 spec related to Ack messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Ack msg. 
  *)
 PreconditionsAckMsg(m) ==
@@ -345,7 +350,7 @@ PreconditionsAckMsg(m) ==
     /\ IF VersionPickMode /= "overwrite"
        \* check if the locally stored versions overlap with the versions sent in 
        \* the ICS3MsgAck message if VersionPickMode /= "overwrite"
-       THEN VersionOverlap(store.connection.version, m.version)
+       THEN VersionSequencesOverlap(store.connection.version, m.version)
        \* if VersionPickMode = "overwrite", do not check for version overlap
        ELSE TRUE
     
@@ -387,7 +392,8 @@ PickVersionOnAck(m) ==
                    ELSE {m.version}
          ELSE {}
     
-(* Reply message to an ICS3MsgAck message *)
+(* Reply message to an ICS3MsgAck message.
+ *)
 MsgAckReply(chainStore) ==
     LET conn == chainStore.connection
         myConnProof == GetConnProof(conn)
@@ -396,7 +402,6 @@ MsgAckReply(chainStore) ==
                      type |-> "ICS3MsgConfirm",
                      connProof |-> myConnProof,
                      version |-> conn.version] IN
-    
     replyMsg                     
 
 (* Handles a "ICS3MsgAck" message.
@@ -412,6 +417,11 @@ HandleAckMsg(m) ==
     THEN newStoreSet
     ELSE {store}
 
+
+(**************************************
+ ICS3 spec related to Confirm messages.
+ **************************************)
+
 (* State predicate, guarding the handler for the Confirm msg. 
  *)
 PreconditionsConfirmMsg(m) ==
@@ -421,11 +431,11 @@ PreconditionsConfirmMsg(m) ==
     /\ VerifyConnProof(m.connProof, "OPEN", m.parameters)
     /\ IF VersionPickMode /= "overwrite"
        \* check if the locally stored versions overlap with the versions sent in 
-       \* the ICS3MsgComfirm message if VersionPickMode /= "overwrite"
+       \* the ICS3MsgConfirm message if VersionPickMode /= "overwrite"
        THEN IF \/ VersionPickMode = "onAckNonDet"
                \/ VersionPickMode = "onAckDet"
             \* if the version was picked on handling ICS3MsgAck, check for intersection
-            THEN VersionOverlap(store.connection.version, m.version)
+            THEN VersionSequencesOverlap(store.connection.version, m.version)
             \* if the version was picked on handling ICS3MsgTry, check for equality
             ELSE store.connection.version = m.version
        \* if VersionPickMode = "overwrite", do not check for version overlap
@@ -516,9 +526,9 @@ CanUpdateClient(newHeight) ==
 (* Generic action for handling any type of inbound message.
 
     Expects as parameter a message.
-    Takes care of invoking priming the 'store' and any reply msg in 'outBuf'.
+    Takes care of priming the 'store' and adding any reply msg in 'outBuf'.
     This action assumes the message type is valid, therefore one of the
-    disjunctions will always enable.
+    disjunctions (in the CASE statements) will always enable.
  *)
 ProcessMsg ==
     /\ inBuf /= <<>>
@@ -529,10 +539,13 @@ ProcessMsg ==
                           [] m.type = "ICS3MsgAck" -> HandleAckMsg(m)
                           [] m.type = "ICS3MsgConfirm" -> HandleConfirmMsg(m) IN
         /\ store' \in resStores
-        /\ outBuf' = CASE m.type = "ICS3MsgInit" /\ store'.connection.state = "INIT" -> Append(outBuf, MsgInitReply(store'))
-                        [] m.type = "ICS3MsgTry" /\ store'.connection.state = "TRYOPEN" -> Append(outBuf, MsgTryReply(store'))
-                        [] m.type = "ICS3MsgAck" /\ store'.connection.state = "OPEN" -> Append(outBuf, MsgAckReply(store'))
-                        [] TRUE -> outBuf (* default case. *)
+        /\ outBuf' = CASE m.type = "ICS3MsgInit" (* Get reply to the Init msg. *)
+                            /\ store'.connection.state = "INIT" -> Append(outBuf, MsgInitReply(store'))
+                       [] m.type = "ICS3MsgTry"  (* Get reply to the Try msg. *)
+                            /\ store'.connection.state = "TRYOPEN" -> Append(outBuf, MsgTryReply(store'))
+                       [] m.type = "ICS3MsgAck"  (* Get reply to the Ack msg. *)
+                            /\ store'.connection.state = "OPEN" -> Append(outBuf, MsgAckReply(store'))
+                       [] TRUE -> outBuf (* Default case: no reply necessary. *)
         /\ inBuf' = Tail(inBuf)                 
 
 
@@ -562,6 +575,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
+\* Last modified Thu Aug 27 16:00:21 CEST 2020 by adi
 \* Last modified Wed Aug 26 17:05:35 CEST 2020 by ilinastoilkovska
-\* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi

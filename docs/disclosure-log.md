@@ -56,6 +56,8 @@ Note that it is also possible for relayer `r2` to have submitted the same item `
 
 ##### TLA+ trace
 
+> Note that the TLA+ spec below may change in time. Here we refer to the spec as [existing at this commit](https://github.com/informalsystems/ibc-rs/tree/788c36be9e14725c542bd586b4fe4593edb3ca80/docs/spec/connection-handshake/L2-tla) (unchanged up to [release 0.0.2](https://github.com/informalsystems/ibc-rs/releases/tag/v0.0.2)).  
+
 To obtain an execution in TLA+ that depicts the above liveness problem, it is sufficient to enable the `Concurrency` flag in the L2 default TLA+ spec for ICS3.
 This spec is located in [spec/connection-handshake/L2-tla/](./spec/connection-handshake/L2-tla/).
 In this spec we make a few simplifications compared to the real system, most importantly: to verify an item at height `h`, a light client can use the consensus state at the same height `h` (no need for smaller height `h-1`).
@@ -94,3 +96,40 @@ This action does not enable because the light client on `B` has a more recent co
 Chain `B` drops this message.
 
 From this point on, the model stutters, i.e., is unable to progress further in the connection handshake protocol.
+
+
+### 2. ICS3 problems due to version negotiation
+
+##### Case (.). Liveness issue caused by overwriting the version
+Setup:
+- Model parameters:
+```
+Concurrency <- FALSE
+MaxBufLen <- 2
+MaxHeight <- 7
+MaxVersionNr <- 2
+VersionPickMode <- "onTryNonDet"
+```
+- Check for _Deadlock_ and property _Termination_.
+
+Outcome:
+- Model checking halts with exception "Temporal properties were violated."
+- The issue is that the version in the two chains diverges
+
+
+##### Case (a). Liveness issue caused by empty version intersection
+
+Model checking details in TLA+:
+- Model parameters:
+```
+Concurrency <- FALSE
+MaxBufLen <- 2
+MaxHeight <- 7
+MaxVersionNr <- 2
+VersionPickMode <- "overwrite"
+```
+- Check for _Deadlock_ and property _Termination_.
+- Model checking halts with exception "Temporal properties were violated."
+
+Trace: the two chains start off with different versions ("1" for A, and "2" for B),
+consequently the version sets do not intersect.
