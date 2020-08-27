@@ -60,10 +60,10 @@ impl ClientState for AnyClientState {
         todo!()
     }
 
-    fn get_latest_height(&self) -> Height {
+    fn latest_height(&self) -> Height {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.get_latest_height(),
-            AnyClientState::Mock(mock_state) => mock_state.get_latest_height(),
+            AnyClientState::Tendermint(tm_state) => tm_state.latest_height(),
+            AnyClientState::Mock(mock_state) => mock_state.latest_height(),
         }
     }
 

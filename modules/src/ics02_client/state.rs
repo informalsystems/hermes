@@ -28,7 +28,7 @@ pub trait ClientState: Clone + std::fmt::Debug {
     fn client_type(&self) -> ClientType;
 
     /// Latest height of consensus state
-    fn get_latest_height(&self) -> Height;
+    fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;

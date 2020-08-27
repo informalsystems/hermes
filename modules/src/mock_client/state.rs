@@ -27,7 +27,7 @@ impl ClientState for MockClientState {
         todo!()
     }
 
-    fn get_latest_height(&self) -> Height {
+    fn latest_height(&self) -> Height {
         Height::from(self.0 as u64)
     }
 

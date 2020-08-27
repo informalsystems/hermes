@@ -6,9 +6,6 @@ use tendermint::block::Height;
 
 const MAX_HISTORY_SIZE: u32 = 3;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MockSelfHeader(pub u32);
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MockChainContext {
     pub max_size: usize,

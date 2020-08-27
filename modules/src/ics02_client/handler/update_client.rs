@@ -33,7 +33,7 @@ pub fn process(
         .client_state(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
-    let latest_height = client_state.get_latest_height();
+    let latest_height = client_state.latest_height();
     let consensus_state = ctx
         .consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;

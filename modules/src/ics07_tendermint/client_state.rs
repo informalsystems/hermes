@@ -86,7 +86,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
         ClientType::Tendermint
     }
 
-    fn get_latest_height(&self) -> Height {
+    fn latest_height(&self) -> Height {
         self.latest_height
     }
 
