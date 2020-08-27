@@ -100,6 +100,9 @@ From this point on, the model stutters, i.e., is unable to progress further in t
 
 ### 2. ICS3 problems due to version negotiation
 
+The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ics/issues/459).
+This section is still WIP.
+
 ##### Case (.). Liveness issue caused by overwriting the version
 Setup:
 - Model parameters:
