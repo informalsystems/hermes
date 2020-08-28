@@ -316,11 +316,13 @@ ICS3ImpossibleToAdvance ==
  *****************************************************************************)
 
 
-(* Initializes both chains, attributing to each a chainID and a client. *)
+(* Initializes both chains, attributing to each a chainID and a client.
+    The ChainVersionsOverlap predicate is a necessary assumption for termination. 
+ *)
 Init ==
     /\ chmA!Init 
     /\ chmB!Init
-    /\ ChainVersionsOverlap(storeChainA, storeChainB) (* Necessary for termination *)
+    /\ ChainVersionsOverlap(storeChainA, storeChainB)
     /\ InitEnv
 
 
@@ -399,6 +401,6 @@ VersionInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Aug 27 16:04:16 CEST 2020 by adi
+\* Last modified Fri Aug 28 09:11:35 CEST 2020 by adi
 \* Last modified Tue Aug 25 17:48:37 CEST 2020 by ilinastoilkovska
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi

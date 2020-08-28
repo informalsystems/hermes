@@ -98,12 +98,138 @@ Chain `B` drops this message.
 From this point on, the model stutters, i.e., is unable to progress further in the connection handshake protocol.
 
 
-### 2. ICS3 problems due to version negotiation
+### 3. ICS3 problems due to version negotiation
 
 The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ics/issues/459).
-This section is still WIP.
 
-##### Case (.). Liveness issue caused by overwriting the version
+TODO -- add an overview of this problem with conclusions for each individual case.
+
+##### Case (a). Empty version intersection causes liveness issue
+
+Model checking details in TLA+:
+- Model parameters:
+```
+Concurrency <- FALSE
+MaxBufLen <- 2
+MaxHeight <- 7
+MaxVersionNr <- 2
+VersionPickMode <- "overwrite"
+```
+- Check for _Deadlock_ and property _Termination_.
+
+Outcome:
+- Model checking halts with exception "Temporal properties were violated."
+
+###### Trace 
+
+The two chains start off with different versions (`1` for A, and `2` for B).
+So the __compatible version__ sets on these chains do not intersect.
+
+1. The environment submits a `ICS3MsgInit` message chain `A`.
+
+2. The environment triggers the `AdvanceChainHeight` action of chain `B`, so this chain transitions from height `1` to height `2`.
+
+3. The environment triggers the `AdvanceChainHeight` action of chain `B`, so this chain transitions from height `2` to height `3`.
+
+4. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `1` to height `2`.
+
+5. Chain `A` processes the `ICS3MsgInit`, advances to height `3`, and prepares a `ICS3MsgTry` for chain `B`.
+The version in this message is `<<1>>`, the same as the version field that chain `A` started with.
+
+7. The environment relays the `ICS3MsgTry` message to the input buffer of chain `B`.
+This message has proofs for height `3` so chain `B` gets updated with consensus state for height `4`.
+With this update, chain `B` also advances to height `4`.
+
+8. Chain `B` drops the `ICS3MsgTry` message because the version field does not match any of the compatible versions of this chain.
+Therefore, the model cannot progress.
+
+###### Fix
+
+To fix this issue, the model requires an explicit assumption that the compatible versions on the two chains must have a non-empty intersection.
+We capture this assumption in the `Init` action, via the `ChainVersionsOverlap` predicate:
+
+```tla
+Init ==
+    /\ chmA!Init 
+    /\ chmB!Init
+    /\ ChainVersionsOverlap(storeChainA, storeChainB)
+    /\ InitEnv  
+```
+
+Once we add the `ChainVersionsOverlap` assumptions, this model no longer has liveness issues.
+But the "overwrite" mode can lead to safety problems, however, which we document below.
+
+##### Case (b). Strategy `overwrite` causes safety issue
+
+Model checking details in TLA+:
+- Model parameters:
+```
+Concurrency <- FALSE
+MaxBufLen <- 2
+MaxHeight <- 7
+MaxVersionNr <- 2
+VersionPickMode <- "overwrite"
+```
+- Check for invariant _VersionInvariant, as well as _Deadlock_ and property _Termination_.
+- Make sure the `Init` action includes the `ChainVersionsOverlap` predicate.
+
+Outcome:
+- Model checking halts with exception "Invariant VersionInvariant is violated."
+
+###### Trace 
+
+Both chains `A` and `B` start with the compatible versions `<<1, 2>>`.
+
+1. The environment submits a `ICS3MsgInit` message to both chains.
+
+2. Chain `A` processes the `ICS3MsgInit`, advances to height `2`, and prepares a `ICS3MsgTry` for chain `B`.
+The versions in this message are `<<1, 2>>`, the same as the version field in chain `A`.
+The connection on this chain goes from state `UNINIT` to state `INIT`.
+
+3. Chain `B` processes the `ICS3MsgInit`, advances to height `2`, and prepares a `ICS3MsgTry` for chain `A`.
+The versions in this message are `<<1, 2>>`, the same as the version field in chain `B`.
+The connection on this chain goes from state `UNINIT` to state `INIT`.
+
+4. The environment relays the `ICS3MsgTry` message to the input buffer of chain `B`.
+This message has proofs for height `2`, so the environment triggers `UpdateClient` on chain `B` for consensus state at height `2`.
+With this update, chain `B` advances to height `3`.
+
+5. The environment relays the `ICS3MsgTry` message to the input buffer of chain `A`.
+This message has proofs for height `2`, so the environment triggers `UpdateClient` on chain `A` for consensus state at height `2`.
+With this update, chain `A` advances to height `3`.
+
+6. Chain `A` processes the `ICS3MsgTry` message, advances to height `4`, and prepares a `ICS3MsgAck` message for `B`.
+The version in this message is `1`.
+The connection in this chain goes into state `TRYOPEN`, with version chosen to be `1`.
+
+7. Chain `B` processes the `ICS3MsgTry` message, advances to height `4`, and prepares a `ICS3MsgAck` message for `A`.
+The version in this message is `2`.
+The connection in this chain goes into state `TRYOPEN`, with version chosen to be `2`.
+
+8. The environment relays the `ICS3MsgAck` message to the input buffer of chain `B`.
+This message has proofs for height `4`, so the environment triggers `UpdateClient` on chain `B` for consensus state at height `4`.
+With this update, chain `B` advances to height `5`.
+
+9. Chain `B` processes the `ICS3MsgAck` message (which had version `1` -- see step 6 above), advances to height `6`, and prepares a `ICS3MsgConfirm` message for `A`.
+Chain `B` overwrites its local version (namely, `2`) with the version in the `ICS3MsgAck` message (that is, `1`).
+The connection in this chain goes into state `OPEN`, with version chosen to be `1`.
+The `ICS3MsgConfirm` that chain `B` creates contains version `1`.
+
+10. The environment relays the `ICS3MsgAck` message to the input buffer of chain `A`.
+This message has proofs for height `4`, so the environment triggers `UpdateClient` on chain `A` for consensus state at height `4`.
+With this update, chain `A` also advances to height `5`.
+
+11. Chain `A` processes the `ICS3MsgAck` message; recall that the version in this message is `2` (see step 7 above).
+Upon processing this message, chain `A` overwrites its local version (which was `1`) with the version in the `ICS3MsgAck` message (concretely, `2`).
+The connection in this chain goes into state `OPEN`, with version chosen to be `2`.
+Chain `A` also advances to height `6` and prepares a `ICS3MsgConfirm` message for `B`; the `ICS3MsgConfirm` contains version `2`.
+
+At this point, the connection is `OPEN` at both chains, but the version numbers do not match.
+Hence, the invariant `VersionInvariant` is violated.
+
+
+##### Case (c). Strategy `onTryNonDet` causes liveness issue 
+
 Setup:
 - Model parameters:
 ```
@@ -117,10 +243,49 @@ VersionPickMode <- "onTryNonDet"
 
 Outcome:
 - Model checking halts with exception "Temporal properties were violated."
-- The issue is that the version in the two chains diverges
+- The issue is that the version in the two chains diverges and can never reconcile
 
+###### Trace
 
-##### Case (a). Liveness issue caused by empty version intersection
+Both chains `A` and `B` start with the field `<<1, 2>>`, that is, with two compatible versions.
+
+1. The environment submits a `ICS3MsgInit` message to both chains.
+
+2. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `1` to height `2`.
+
+3. The environment triggers the `AdvanceChainHeight` action of chain `A`, so this chain transitions from height `2` to height `3`.
+
+4. Chain `B` processes the `ICS3MsgInit`, advances to height `2`, and prepares a `ICS3MsgTry` message destined for chain `A`.
+The versions in this message are `<<1, 2>>`, the same as the version field in chain `B`.
+
+5. The environment triggers the `AdvanceChainHeight` action of chain `B`, so this chain transitions from height `2` to height `3`.
+
+6. Chain `A` processes the `ICS3MsgInit`, advances to height `4`, and prepares a `ICS3MsgTry` message destined for chain `B`.
+The versions in this message are `<<1, 2>>`, the same as the version field in chain `A`.
+
+7. The environment passes (i.e., relays) the `ICS3MsgTry` message to the input buffer of chain `B`.
+This message has proofs for height `4`; consequently, the environment also triggers `UpdateClient` on chain `B` for consensus state at height `4`, preparing this chain to process the message in the input buffer.
+With this update, chain `B` advances to height `4`.
+
+8. The environment passes (i.e., relays) the `ICS3MsgTry` message to the input buffer of chain `A`.
+This message has proofs for height `2`, so the environment also does a `UpdateClient` on chain `A` for consensus state at height `2`.
+With this update, chain `A` advances to height `5`.
+
+9. Chain `A` processes the `ICS3MsgTry`, advances to height `6`, and prepares a `ICS3MsgAck` for chain `B`.
+The version in this message is `<<2>>`, which is the version which chain `A` choose for this connection.
+The connection on chain `A` is now in state `TRYOPEN`.
+
+10. Chain `B` processes the `ICS3MsgTry`, advances to height `5`, and prepares a `ICS3MsgAck` for chain `A`.
+The version in this message is `<<1>>`, which chain `B` choose for this connection.
+The connection on chain `B` is now in state `TRYOPEN`.
+
+From this point on, the two chain can no longer progress in the handshake, since they chose different versions.
+Neither of the two chains can process the `ICS3MsgAck` message because the version in this message does not match with the version the chain stores locally.
+Therefore, the model stutters (cannot progress anymore).
+
+##### Case (d). Strategy `onAckNonDet` causes liveness issue
+
+WIP!
 
 Model checking details in TLA+:
 - Model parameters:
@@ -129,10 +294,46 @@ Concurrency <- FALSE
 MaxBufLen <- 2
 MaxHeight <- 7
 MaxVersionNr <- 2
-VersionPickMode <- "overwrite"
+VersionPickMode <- "onAckNonDet"
 ```
-- Check for _Deadlock_ and property _Termination_.
+- Check for invariant _VersionInvariant, as well as _Deadlock_ and property _Termination_.
+
+Outcome:
 - Model checking halts with exception "Temporal properties were violated."
 
-Trace: the two chains start off with different versions ("1" for A, and "2" for B),
-consequently the version sets do not intersect.
+###### Trace
+
+Both chains `A` and `B` start with the compatible versions `<<1, 2>>`.
+
+1. The environment submits a `ICS3MsgInit` message chain `A`.
+
+2. Chain `A` processes the `ICS3MsgInit`, advances to height `2`, and prepares a `ICS3MsgTry` for chain `B`.
+The versions in this message are `<<1, 2>>`, the same as the version field in chain `A`.
+The connection on this chain goes from state `UNINIT` to state `INIT`.
+
+3. The environment relays the `ICS3MsgTry` message to the input buffer of chain `B`.
+This message has proofs for height `2`, so the environment triggers `UpdateClient` on chain `B` for consensus state at height `2`.
+With this update, chain `B` advances to height `2`.
+
+4. Chain `B` processes the `ICS3MsgTry` message, advances to height `3`, and prepares a `ICS3MsgAck` message for `A`.
+The version in this message is `<<1, 2>>`.
+The connection in this chain goes into state `TRYOPEN`; chain `B` does not choose a specific version yet, so the connection on `B` still has versions `<<1, 2>>`.
+
+5. The environment relays the `ICS3MsgAck` message to the input buffer of chain `A`.
+This message has proofs for height `3`, so the environment triggers `UpdateClient` on chain `A` for consensus state at height `3`.
+With this update, chain `A` advances to height `3`.
+
+6. Chain `A` processes the `ICS3MsgAck` message (which has versions `<<1, 2>>`), advances to height `4` and prepares a `ICS3MsgConfirm` message for `B`.
+Chain `A` locks on version `1` (non-deterministic choice between `<<1, 2>>`), which it also reports in the `ICS3MsgConfirm` message.
+The connection in this chain goes into state `OPEN`, with version chosen to `1`.
+
+7. The environment relays the `ICS3MsgConfirm` message to the input buffer of chain `B`.
+This message has proofs for height `4`, so the environment triggers `UpdateClient` on chain `B` for consensus state at height `4`.
+With this update, chain `B` also advances to height `4`.
+
+8. Chain `B` processes the `ICS3MsgConfirm` message (which has version `1`).
+Chain `B` locks on version `1` (non-deterministic choice between `<<1, 2>>`), which it also reports in the `ICS3MsgConfirm` message.
+The connection in this chain goes into state `OPEN`, with version chosen to `1`.
+
+At this point, the connection is `OPEN` at both chains, but the version numbers do not match.
+Hence, the invariant `VersionInvariant` is violated.
