@@ -100,9 +100,19 @@ From this point on, the model stutters, i.e., is unable to progress further in t
 
 ### 3. ICS3 problems due to version negotiation
 
+__Context__.
 The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ics/issues/459).
+Briefly, version negotiation in the ICS3 handshake can interfere in various ways, breaking either the safety or liveness of this protocol.
+Several solution candidates exist, which we classify by their "mode", i.e., a strategy for picking the version at some point or another in the protocol.
+For a full description of the modes, please consult [L2-tla/readme.md#version-negotiation-modes](L2-tla/README.md#version-negotiation-modes).
 
-TODO -- add an overview of this problem with conclusions for each individual case.
+__Overview__.
+Below we use TLA+ traces to explore and report on the exact problems that can occur. We also show how the solution candidates fare.
+These are the takeaways from the discussion below:
+
+1. The set of compatible versions that chains start off with (return values of `getCompatibleVersions()` in ICS3) have to intersect, otherwise a liveness issue occurs. This assumption is independent of the version negotiation mode. We report this in __case (a)__ below.
+2. Modes "overwrite", "onTryNonDet", and "onAckNonDet" all result in breaking the handshake protocol. See __cases (b), (c), and (d)__ below for traces.
+3. The deterministic modes "onTryDet" and "onAckDet" pass model checking, so a solution should be chosen among these two candidates (see the original issue for follow-up on the solution).
 
 ##### Case (a). Empty version intersection causes liveness issue
 
@@ -159,7 +169,7 @@ Init ==
 Once we add the `ChainVersionsOverlap` assumptions, this model no longer has liveness issues.
 But the "overwrite" mode can lead to safety problems, however, which we document below.
 
-##### Case (b). Strategy `overwrite` causes safety issue
+##### Case (b). Mode `overwrite` causes safety issue
 
 Model checking details in TLA+:
 - Model parameters:
@@ -228,7 +238,7 @@ At this point, the connection is `OPEN` at both chains, but the version numbers 
 Hence, the invariant `VersionInvariant` is violated.
 
 
-##### Case (c). Strategy `onTryNonDet` causes liveness issue 
+##### Case (c). Mode `onTryNonDet` causes liveness issue
 
 Setup:
 - Model parameters:
@@ -272,20 +282,19 @@ This message has proofs for height `2`, so the environment also does a `UpdateCl
 With this update, chain `A` advances to height `5`.
 
 9. Chain `A` processes the `ICS3MsgTry`, advances to height `6`, and prepares a `ICS3MsgAck` for chain `B`.
-The version in this message is `<<2>>`, which is the version which chain `A` choose for this connection.
+The version in this message is `<<2>>`, which is the version which chain `A` choose non-deterministically for this connection.
 The connection on chain `A` is now in state `TRYOPEN`.
 
 10. Chain `B` processes the `ICS3MsgTry`, advances to height `5`, and prepares a `ICS3MsgAck` for chain `A`.
-The version in this message is `<<1>>`, which chain `B` choose for this connection.
+The version in this message is `<<1>>`, which chain `B` choose non-deterministically for this connection.
 The connection on chain `B` is now in state `TRYOPEN`.
 
-From this point on, the two chain can no longer progress in the handshake, since they chose different versions.
+From this point on, the two chains can not make further progress in the handshake, since they chose different versions.
 Neither of the two chains can process the `ICS3MsgAck` message because the version in this message does not match with the version the chain stores locally.
+(A chain should not overwrite its local version either, otherwise the safety issue from case (b) can appear.)
 Therefore, the model stutters (cannot progress anymore).
 
-##### Case (d). Strategy `onAckNonDet` causes liveness issue
-
-WIP!
+##### Case (d). Mode `onAckNonDet` causes liveness issue
 
 Model checking details in TLA+:
 - Model parameters:
@@ -331,9 +340,9 @@ The connection in this chain goes into state `OPEN`, with version chosen to `1`.
 This message has proofs for height `4`, so the environment triggers `UpdateClient` on chain `B` for consensus state at height `4`.
 With this update, chain `B` also advances to height `4`.
 
-8. Chain `B` processes the `ICS3MsgConfirm` message (which has version `1`).
-Chain `B` locks on version `1` (non-deterministic choice between `<<1, 2>>`), which it also reports in the `ICS3MsgConfirm` message.
-The connection in this chain goes into state `OPEN`, with version chosen to `1`.
+8. Chain `B` processes the `ICS3MsgConfirm` message (which contains version `1`).
+Chain `B` locks on version `2` (non-deterministic choice between its local versions `<<1, 2>>`).
+The connection in this chain goes into state `OPEN`.
 
 At this point, the connection is `OPEN` at both chains, but the version numbers do not match.
 Hence, the invariant `VersionInvariant` is violated.
