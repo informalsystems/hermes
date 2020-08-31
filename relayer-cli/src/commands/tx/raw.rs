@@ -5,6 +5,7 @@ use relayer::config::{ChainConfig, Config};
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::error::ValidationError;
 use tendermint::chain::Id as ChainId;
+use relayer::chain::{CosmosSDKChain, Chain};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
@@ -39,7 +40,7 @@ impl TxRawConnInitCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<(ChainConfig, ChainConfig, MsgConnectionOpenInitOptions), String> {
+    ) -> Result<(ChainConfig, MsgConnectionOpenInitOptions), String> {
         let local_chain_id = self
             .local_chain_id
             .ok_or_else(|| "missing local chain identifier".to_string())?;
@@ -94,24 +95,31 @@ impl TxRawConnInitCmd {
             remote_client_id,
             remote_connection_id
         };
-        Ok((local_chain_config.clone(), remote_chain_config.clone(), opts))
+        Ok((local_chain_config.clone(), opts))
     }
 }
 
 
 impl Runnable for TxRawConnInitCmd {
     fn run(&self) {
-        // let config = app_config();
-        //
-        // let (_local_chain_config, _remote_chain_config, opts) = match self.validate_options(&config) {
-        //     Err(err) => {
-        //         status_err!("invalid options: {}", err);
-        //         return;
-        //     }
-        //     Ok(result) => result,
-        // };
-        // status_info!("Options", "{:?}", opts);
+        let config = app_config();
 
-        status_err!("Not implemented yet");
+        let (chain_config, msg) = match self.validate_options(&config) {
+            Err(err) => {
+                status_err!("invalid options: {}", err);
+                return;
+            }
+            Ok(result) => result,
+        };
+        status_info!("Message", "{:?}", msg);
+
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let signed = chain.build_sign_tx(vec![msg]);
+
+
+        // match res {
+        //     Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
+        //     Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
+        // }
     }
 }

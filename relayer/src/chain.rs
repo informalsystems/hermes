@@ -18,6 +18,7 @@ use std::error::Error;
 
 mod cosmos;
 pub use cosmos::CosmosSDKChain;
+use ibc::tx_msg::Msg;
 
 /// Handy type alias for the type of validator set associated with a chain
 pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
@@ -71,6 +72,9 @@ pub trait Chain {
 
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThresholdFraction;
+
+    /// Takes messages and builds, signs and marshals in a Tx to prepare for broadcast
+    fn build_sign_tx(&self, msgs: Vec<Msg>) -> Result<Vec<u8>, Error>;
 }
 
 /// Query the latest height the chain is at via a RPC query

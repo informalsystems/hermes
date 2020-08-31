@@ -7,10 +7,13 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::account::Id as AccountId;
+use ibc_proto::tx::v1beta1::{SignDoc, TxBody, TxRaw};
+use crate::ics02_client::msgs::MsgCreateAnyClient;
+use prost_type::Any;
 
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, prost::Message)]
 pub struct MsgConnectionOpenInit {
     connection_id: ConnectionId,
     client_id: ClientId,
@@ -62,7 +65,32 @@ impl Msg for MsgConnectionOpenInit {
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
+        let msgs = vec![];
+        // let any: //TODO How self can be 'Any'
+        let raw = TxRaw {
+            body_bytes: vec![],
+            auth_info_bytes: vec![],
+            signatures: vec![]
+        };
+        let body = TxBody {
+            messages: vec![self.as_any().],
+            memo: TYPE_MSG_CONNECTION_OPEN_INIT.to_string(),
+            timeout_height: 0,
+            extension_options: vec![],
+            non_critical_extension_options: vec![]
+        };
+
+
+        // let doc = SignDoc {
+        //     bodyBytes: body..length > 0 ? body : null, // normalize empty bytes to unset
+        //     authInfoBytes: authInfo.length > 0 ? authInfo : null, // normalize empty bytes to unset
+        //     chainId: chainId || null, // normalize "" to unset
+        //     accountNumber: accountNumber || null, // normalize 0 to unset
+        //     accountSequence: accountSequence || null, // normalize 0 to unset
+        // }).finish();
+
+
+        doc.
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

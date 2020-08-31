@@ -21,6 +21,7 @@ use super::Chain;
 use bytes::Bytes;
 use prost::Message;
 use std::str::FromStr;
+use ibc::tx_msg::Msg;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -91,6 +92,12 @@ impl Chain for CosmosSDKChain {
 
     fn trust_threshold(&self) -> TrustThresholdFraction {
         TrustThresholdFraction::default()
+    }
+
+    fn build_sign_tx(&self, msgs: Vec<Msg>) -> Result<Vec<u8>, Error> {
+        //Retrieve Account
+        //Create Tx builder
+        //Tx Buildandsign
     }
 }
 
