@@ -4,7 +4,8 @@
 
 *September 1, 2020*
 
-This release focuses on the IBC message processor framework (formerly known as handler framework) and initial implementations in ICS02 and ICS03. It also introduces an initial specification for the relayer algorithm.
+This release focuses on the IBC message processor framework (formerly known as handler framework) and initial
+implementations in ICS02 and ICS07. It also introduces an initial specification for the relayer algorithm.
 
 Other highlights:
 - A new `ibc` crate is released from the previous `modules` crate.
@@ -19,7 +20,7 @@ Other highlights:
 
 ### FEATURES:
 - [modules/ics02] partial implementation of message handler ([#119], [#194])
-- [modules/ics03] partial implementation of message handler ([#119], [#194])
+- [modules/ics07] partial implementation of message handler ([#119], [#194])
 - [architecture/ADR-003] Proposal for IBC handler architecture ([#119], [#194])
 - [spec/relayer] Detailed technical specification of the relayer algorithm with focus on client update ([#84])
 - [architecture/ADR-001] Documentation for the repository structure ([#1])
@@ -57,6 +58,7 @@ Other highlights:
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
 [modules/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics24_host
 [#168]: https://github.com/informalsystems/ibc-rs/issues/168
+[modules/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics07_tendermint
 
 ## v0.0.2
 
