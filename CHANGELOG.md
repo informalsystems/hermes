@@ -19,7 +19,7 @@ This release focuses mostly on the IBC handler framework and implementation of I
 - [modules] Cleanup
         [\#200](https://github.com/informalsystems/ibc-rs/pull/200),
         [\#203](https://github.com/informalsystems/ibc-rs/pull/203),
-- [modules and relayer-clie] Refactor ConnectionId decoding
+- [modules and relayer-cli] Refactor ConnectionId decoding
         [\#196](https://github.com/informalsystems/ibc-rs/pull/196),
 - [modules] Alignment with recent ICS changes in identifiers
         [\#189](https://github.com/informalsystems/ibc-rs/pull/189),
