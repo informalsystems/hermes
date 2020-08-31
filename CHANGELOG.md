@@ -4,8 +4,7 @@
 
 *September 1, 2020*
 
-This release focuses on the IBC message processor framework (formerly known as handler framework) and initial implementations
-in ICS02 and ICS03. It also introduces an initial specification for the relayer algorithm.
+This release focuses on the IBC message processor framework (formerly known as handler framework) and initial implementations in ICS02 and ICS03. It also introduces an initial specification for the relayer algorithm.
 
 Other highlights:
 - A new `ibc` crate is released from the previous `modules` crate.
