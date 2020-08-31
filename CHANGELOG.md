@@ -22,7 +22,7 @@ Other highlights:
 - [architecture/ADR-003] Proposal for IBC handler (message processor) architecture ([#119], [#194])
 - [spec/relayer] Detailed technical specification of the relayer algorithm with focus on client update ([#84])
 - [architecture/ADR-001] Documentation for the repository structure ([#1])
-- [architecture/FSM-1] Connection Handshake FSM English description added ([#122])
+- [architecture/FSM-1] Connection Handshake FSM English description ([#122])
 
 ### IMPROVEMENTS:
 - [contributing] Updated CONTRIBUTING.md. Please read before opening PRs ([#195])
