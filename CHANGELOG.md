@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.0.3
+
+*September 1, 2020*
+
+This release is focused on the IBC handler framework and implementation of ICS02 and ICS07.
+
+### BREAKING CHANGES:
+  
+### FEATURES:
+- [modules] Proposal for IBC handler architecture and partial implementation of ICS02 and ICS03 message handlers.
+        [\#197](https://github.com/informalsystems/ibc-rs/pull/197),
+
+- [spec] Detailed technical specification of the relayer algorithm with focus on client update [\#110](https://github.com/informalsystems/ibc-rs/pull/110)
+
+### IMPROVEMENTS:
+
+- [modules] Cleanup
+        [\#200](https://github.com/informalsystems/ibc-rs/pull/200),
+        [\#203](https://github.com/informalsystems/ibc-rs/pull/203),
+           
+### BUG FIXES:
+
+
 ## v0.0.2
 
 *August 1, 2020*
