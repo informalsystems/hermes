@@ -4,17 +4,33 @@
 
 *September 1, 2020*
 
-This release focuses mostly on the IBC handler framework and implementation of ICS02 and ICS07.
+This release focuses on the IBC message processor framework (formerly known as handler framework) and initial implementations
+in ICS02 and ICS03. It also introduces an initial specification for the relayer algorithm.
+
+A new `ibc` crate is released from the previous `modules` crate.
+
+ADR-001 is complete. 🎉
 
 ### BREAKING CHANGES:
-  
+
+- [modules] Renamed `modules` crate to `ibc` crate. Version number for the new crate is not reset. ([#198])
+- [modules/ics02] `ConnectionId`s are now decoded to `Vec<ConnectionId>` and validated instead of `Vec<String>` ([#185])
+- [modules/ics03] Removed `Connection` and `ConnectionCounterparty` traits ([#193])
+- [modules/ics04] Removed `Channel` and `ChannelCounterparty` traits ([#192])
+
 ### FEATURES:
-- [modules] Proposal for IBC handler architecture and partial implementation of ICS02 and ICS03 message handlers.
-        [\#197](https://github.com/informalsystems/ibc-rs/pull/197),
-- [spec] Detailed technical specification of the relayer algorithm with focus on client update [\#110](https://github.com/informalsystems/ibc-rs/pull/110)
-- [spec] Documentation for the repository structure [\#100](https://github.com/informalsystems/ibc-rs/pull/100)
+- [modules/ics02] partial implementation of message handler ([#119], [#194])
+- [modules/ics03] partial implementation of message handler ([#119], [#194])
+- [architecture/ADR-003] Proposal for IBC handler architecture ([#119], [#194])
+- [spec/relayer] Detailed technical specification of the relayer algorithm with focus on client update ([#84])
+- [architecture/ADR-001] Documentation for the repository structure ([#1])
+- [architecture/FSM-1] Connection Handshake FSM English description added ([#122])
 
 ### IMPROVEMENTS:
+
+- [contributing] Updated CONTRIBUTING.md. Please read before opening PRs ([#195])
+- [relayer-cli] Refactor ConnectionId decoding in `query client` ([#185])
+- Tests implemented for breaking changes
 
 - [modules] Cleanup
         [\#200](https://github.com/informalsystems/ibc-rs/pull/200),
@@ -26,6 +42,28 @@ This release focuses mostly on the IBC handler framework and implementation of I
            
 ### BUG FIXES:
 
+- None
+
+[spec/relayer]: https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.md
+[#84]: https://github.com/informalsystems/ibc-rs/issues/84
+[architecture/ADR-001]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-001-repo.md
+[#1]: https://github.com/informalsystems/ibc-rs/issues/1
+[contributing]: https://github.com/informalsystems/ibc-rs/blob/master/CONTRIBUTING.md
+[#195]: https://github.com/informalsystems/ibc-rs/pull/195
+[modules]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[#198]: https://github.com/informalsystems/ibc-rs/issues/198
+[modules/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics02_client
+[#185]: https://github.com/informalsystems/ibc-rs/issues/185
+[modules/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics03_connection
+[#193]: https://github.com/informalsystems/ibc-rs/issues/193
+[modules/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics04_channel
+[#192]: https://github.com/informalsystems/ibc-rs/issues/192
+[relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
+[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/fsm-async-connection.md
+[#122]: https://github.com/informalsystems/ibc-rs/issues/122
+[architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
+[#119]: https://github.com/informalsystems/ibc-rs/issues/119
+[#194]: https://github.com/informalsystems/ibc-rs/issues/194
 
 ## v0.0.2
 
