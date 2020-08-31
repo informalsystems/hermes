@@ -7,9 +7,9 @@
 This release focuses on the IBC message processor framework (formerly known as handler framework) and initial implementations
 in ICS02 and ICS03. It also introduces an initial specification for the relayer algorithm.
 
-A new `ibc` crate is released from the previous `modules` crate.
-
-ADR-001 is complete. 🎉
+Other highlights:
+- A new `ibc` crate is released from the previous `modules` crate.
+- ADR-001 is complete. 🎉
 
 ### BREAKING CHANGES:
 
