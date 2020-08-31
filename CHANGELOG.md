@@ -21,7 +21,7 @@ Other highlights:
 ### FEATURES:
 - [modules/ics02] partial implementation of message handler ([#119], [#194])
 - [modules/ics07] partial implementation of message handler ([#119], [#194])
-- [architecture/ADR-003] Proposal for IBC handler architecture ([#119], [#194])
+- [architecture/ADR-003] Proposal for IBC handler (message processor) architecture ([#119], [#194])
 - [spec/relayer] Detailed technical specification of the relayer algorithm with focus on client update ([#84])
 - [architecture/ADR-001] Documentation for the repository structure ([#1])
 - [architecture/FSM-1] Connection Handshake FSM English description added ([#122])
@@ -120,4 +120,3 @@ Includes:
     - Note: the event handler just displays the events.
 - IBC Modules partial implementation for datastructures, messages and queries.
 - Some English and TLA+ specifications for Connection & Channel Handshake as well as naive relayer algorithm.
-
