@@ -1,7 +1,6 @@
 # Changelog
 
 ## v0.0.3
-
 *September 1, 2020*
 
 This release focuses on the IBC message processor framework and initial
@@ -12,7 +11,6 @@ Other highlights:
 - ADR-001 and ADR-003 are complete. 🎉
 
 ### BREAKING CHANGES:
-
 - [modules] Renamed `modules` crate to `ibc` crate. Version number for the new crate is not reset. ([#198])
 - [modules/ics02] `ConnectionId`s are now decoded to `Vec<ConnectionId>` and validated instead of `Vec<String>` ([#185])
 - [modules/ics03] Removed `Connection` and `ConnectionCounterparty` traits ([#193])
@@ -27,13 +25,10 @@ Other highlights:
 - [architecture/FSM-1] Connection Handshake FSM English description added ([#122])
 
 ### IMPROVEMENTS:
-
 - [contributing] Updated CONTRIBUTING.md. Please read before opening PRs ([#195])
 - [relayer-cli] Refactor ConnectionId decoding in `query client` ([#185])
-- Tests implemented for breaking changes
 
 ### BUG FIXES:
-
 - [modules/ics24] Identifiers limit update according to ICS specs ([#168])
 
 [spec/relayer]: https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.md
