@@ -9,7 +9,7 @@ This release focuses mostly on the IBC handler framework and implementation of I
 ### BREAKING CHANGES:
   
 ### FEATURES:
-- [modules] Proposal for IBC handler architecture and partial implementation of ICS02 and ICS03 message handlers.
+- [modules] Proposal for IBC handler architecture and partial implementation of ICS02 and ICS07 message handlers.
         [\#197](https://github.com/informalsystems/ibc-rs/pull/197),
 - [spec] Detailed technical specification of the relayer algorithm with focus on client update [\#110](https://github.com/informalsystems/ibc-rs/pull/110)
 - [spec] Documentation for the repository structure [\#100](https://github.com/informalsystems/ibc-rs/pull/100)
