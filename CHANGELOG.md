@@ -32,17 +32,9 @@ Other highlights:
 - [relayer-cli] Refactor ConnectionId decoding in `query client` ([#185])
 - Tests implemented for breaking changes
 
-- [modules] Cleanup
-        [\#200](https://github.com/informalsystems/ibc-rs/pull/200),
-        [\#203](https://github.com/informalsystems/ibc-rs/pull/203),
-- [modules and relayer-cli] Refactor ConnectionId decoding
-        [\#196](https://github.com/informalsystems/ibc-rs/pull/196),
-- [modules] Alignment with recent ICS changes in identifiers
-        [\#189](https://github.com/informalsystems/ibc-rs/pull/189),
-           
 ### BUG FIXES:
 
-- None
+- [modules/ics24] Identifiers limit update according to ICS specs ([#168])
 
 [spec/relayer]: https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.md
 [#84]: https://github.com/informalsystems/ibc-rs/issues/84
@@ -64,6 +56,8 @@ Other highlights:
 [architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
 [#119]: https://github.com/informalsystems/ibc-rs/issues/119
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
+[modules/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/ics24_host
+[#168]: https://github.com/informalsystems/ibc-rs/issues/168
 
 ## v0.0.2
 
