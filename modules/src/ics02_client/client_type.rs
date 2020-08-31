@@ -6,6 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ClientType {
     Tendermint = 1,
+    Mock,
 }
 
 impl ClientType {
@@ -13,6 +14,7 @@ impl ClientType {
     pub fn as_string(&self) -> &'static str {
         match self {
             Self::Tendermint => "tendermint",
+            Self::Mock => "mock",
         }
     }
 }

@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::Height;
 
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -51,6 +51,31 @@ pub enum AnyClientState {
     Tendermint(crate::ics07_tendermint::client_state::ClientState),
 }
 
+impl AnyClientState {
+    pub fn check_header_and_update_state(
+        &self,
+        header: AnyHeader,
+    ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
+        match self {
+            AnyClientState::Tendermint(tm_state) => {
+                let (new_state, new_consensus) = tm_state.check_header_and_update_state(header)?;
+                Ok((
+                    AnyClientState::Tendermint(new_state),
+                    AnyConsensusState::Tendermint(new_consensus),
+                ))
+            }
+            AnyClientState::Mock(mock_state) => {
+                let (new_state, new_consensus) =
+                    mock_state.check_header_and_update_state(header)?;
+                Ok((
+                    AnyClientState::Mock(new_state),
+                    AnyConsensusState::Mock(new_consensus),
+                ))
+            }
+        }
+    }
+}
+
 impl ClientState for AnyClientState {
     fn chain_id(&self) -> String {
         todo!()
@@ -71,6 +96,16 @@ impl ClientState for AnyClientState {
         todo!()
     }
 
+    // fn check_header_and_update_state(
+    //     &self,
+    //     header: &dyn Header,
+    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
+    //     match self {
+    //         AnyClientState::Tendermint(tm_state) => tm_state.check_header_and_update_state(header),
+    //         AnyClientState::Mock(mock_state) => mock_state.check_header_and_update_state(header),
+    //     }
+    // }
+
     fn verify_client_consensus_state(
         &self,
         height: Height,
@@ -80,7 +115,24 @@ impl ClientState for AnyClientState {
         consensus_height: Height,
         expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.verify_client_consensus_state(
+                height,
+                prefix,
+                proof,
+                client_id,
+                consensus_height,
+                expected_consensus_state,
+            ),
+            AnyClientState::Mock(mock_state) => mock_state.verify_client_consensus_state(
+                height,
+                prefix,
+                proof,
+                client_id,
+                consensus_height,
+                expected_consensus_state,
+            ),
+        }
     }
 
     fn verify_connection_state(

@@ -1,4 +1,4 @@
-use crate::ics23_commitment::CommitmentPrefix;
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::Height;
 
 // TODO: The functions in this module are provisional. They should be implemented against a Chain.

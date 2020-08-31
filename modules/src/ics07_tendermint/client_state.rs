@@ -1,13 +1,15 @@
 #![allow(unreachable_code, unused_variables)]
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
+use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::state::ConsensusState;
+use crate::ics07_tendermint::consensus_state::ConsensusState as tmConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::block::Height;
@@ -75,6 +77,12 @@ impl ClientState {
             latest_height,
         })
     }
+    pub fn check_header_and_update_state(
+        &self,
+        header: AnyHeader,
+    ) -> Result<(ClientState, tmConsensusState), Box<dyn std::error::Error>> {
+        todo!()
+    }
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
@@ -94,6 +102,19 @@ impl crate::ics02_client::state::ClientState for ClientState {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         self.frozen_height != Height(0)
     }
+
+    // fn check_header_and_update_state(
+    //     &self,
+    //     header: &dyn Header,
+    // ) -> Result<
+    //     (
+    //         Box<dyn crate::ics02_client::state::ClientState>,
+    //         Box<dyn ConsensusState>,
+    //     ),
+    //     Box<dyn std::error::Error>,
+    // > {
+    //     todo!()
+    // }
 
     fn verify_client_consensus_state(
         &self,

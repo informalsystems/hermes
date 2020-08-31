@@ -92,5 +92,18 @@ where
                 .with_events(events)
                 .with_result(result))
         }
+        ConnectionMsg::ConnectionOpenTry(msg) => {
+            let HandlerOutput {
+                result,
+                log,
+                events,
+            } = conn_open_try::process(ctx, msg)?;
+
+            keep(ctx, result.clone())?;
+            Ok(HandlerOutput::builder()
+                .with_log(log)
+                .with_events(events)
+                .with_result(result))
+        }
     }
 }

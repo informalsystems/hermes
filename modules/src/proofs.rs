@@ -1,4 +1,4 @@
-use crate::ics23_commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 

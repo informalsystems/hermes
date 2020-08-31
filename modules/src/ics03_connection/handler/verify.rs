@@ -2,7 +2,7 @@ use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics23_commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use tendermint::block::Height;

@@ -3,7 +3,7 @@ use super::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::proofs::Proofs;
 use crate::tx_msg::Msg;
@@ -576,7 +576,7 @@ mod tests {
         MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
         MsgChannelOpenTry,
     };
-    use crate::ics23_commitment::CommitmentProof;
+    use crate::ics23_commitment::commitment::CommitmentProof;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
 

@@ -38,6 +38,9 @@ pub enum Kind {
     #[error("invalid connection proof")]
     InvalidProof,
 
+    #[error("invalid signer")]
+    InvalidSigner,
+
     #[error("queried for a non-existing connection")]
     ConnectionNotFound,
 

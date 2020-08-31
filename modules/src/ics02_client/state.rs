@@ -1,6 +1,6 @@
 use super::client_type::ClientType;
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
@@ -32,6 +32,13 @@ pub trait ClientState: Clone + std::fmt::Debug {
 
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
+
+    // fn check_header_and_update_state(
+    //     &self,
+    //     _header: &dyn Header,
+    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
+    //     todo!()
+    // }
 
     /// Verification functions as specified in:
     /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics

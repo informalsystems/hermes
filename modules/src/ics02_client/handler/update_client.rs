@@ -41,16 +41,16 @@ pub fn process(
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
-    // FIXME
-    // (new_client_state, new_consensus_state) =
-    //    CD::check_validity_and_update_state(client_state, consensus_state, &header)?;
+    let (new_client_state, new_consensus_state) = client_state
+        .check_header_and_update_state(header)
+        .map_err(|_| Kind::HeaderVerificationFailure)?;
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
     Ok(output.with_result(UpdateClientResult {
         client_id,
-        client_state,    // new_client_state
-        consensus_state, // new_consensus_state
+        client_state: new_client_state,
+        consensus_state: new_consensus_state,
     }))
 }
 

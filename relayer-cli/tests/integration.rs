@@ -14,7 +14,6 @@
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::connection::State as ConnectionState;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
-use ibc::ics23_commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections, Connections};
 use relayer::chain::{Chain, CosmosSDKChain};
@@ -61,10 +60,7 @@ fn query_connection_id() {
     assert_eq!(query.client_id(), "clientidone");
     assert_eq!(query.counterparty().client_id(), "clientidtwo");
     assert_eq!(query.counterparty().connection_id(), "connectionidtwo");
-    assert_eq!(
-        query.counterparty().prefix(),
-        &CommitmentPrefix::new(b"prefix".to_vec())
-    );
+    assert_eq!(query.counterparty().prefix(), &b"prefix".to_vec().into());
     assert_eq!(
         query.versions(),
         vec!["(1,[ORDER_ORDERED,ORDER_UNORDERED])"]

@@ -16,11 +16,15 @@
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::try_from_raw::TryFromRaw;
 use crate::tx_msg::Msg;
+use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryInto;
+use std::str::{from_utf8, FromStr};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
@@ -40,7 +44,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 #[derive(Clone, Debug)]
 pub enum ConnectionMsg {
     ConnectionOpenInit(MsgConnectionOpenInit),
-    // ConnectionOpenTry(MsgConnectionOpenTry),
+    ConnectionOpenTry(MsgConnectionOpenTry),
     // ConnectionOpenAck(MsgConnectionOpenAck),
     // ConnectionOpenConfirm(MsgConnectionOpenConfirm),
 }
@@ -54,6 +58,31 @@ pub struct MsgConnectionOpenInit {
     client_id: ClientId,
     counterparty: Counterparty,
     signer: AccountId,
+}
+
+impl TryFromRaw for MsgConnectionOpenInit {
+    type RawType = RawMsgConnectionOpenInit;
+    type Error = anomaly::Error<Kind>;
+    fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
+        Ok(Self {
+            connection_id: msg
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: msg
+                .client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty: msg
+                .counterparty
+                .ok_or_else(|| Kind::MissingCounterparty)?
+                .try_into()?,
+            signer: AccountId::from_str(
+                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
+            )
+            .map_err(|e| Kind::InvalidSigner.context(e))?,
+        })
+    }
 }
 
 impl MsgConnectionOpenInit {
@@ -386,7 +415,7 @@ impl Msg for MsgConnectionOpenConfirm {
 #[cfg(test)]
 pub mod test_util {
     use crate::ics03_connection::msgs::MsgConnectionOpenInit;
-    use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
+    use crate::ics23_commitment::commitment::CommitmentProof;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
     use tendermint::merkle::proof::ProofOp;
@@ -417,7 +446,7 @@ pub mod test_util {
             "srcclient".to_string(),
             "destconnection".to_string(),
             "destclient".to_string(),
-            CommitmentPrefix::new(vec![]),
+            "ibc".as_bytes().to_vec().into(),
             get_dummy_account_id(),
         )
         .unwrap()
@@ -432,62 +461,71 @@ mod tests {
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
-    use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof};
+    use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+    use crate::try_from_raw::TryFromRaw;
+    use ibc_proto::commitment::MerklePrefix;
+    use ibc_proto::connection::Counterparty as RawCounterparty;
+    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     #[test]
     fn parse_connection_open_init_msg() {
         #[derive(Clone, Debug, PartialEq)]
-        struct ConnOpenInitParams {
-            connection_id: String,
-            client_id: String,
-            counterparty_connection_id: String,
-            counterparty_client_id: String,
-            counterparty_commitment_prefix: CommitmentPrefix,
-        }
 
         struct Test {
             name: String,
-            params: ConnOpenInitParams,
+            raw: RawMsgConnectionOpenInit,
             want_pass: bool,
         }
 
-        let default_con_params = ConnOpenInitParams {
+        let default_counterparty = RawCounterparty {
+            connection_id: "destconnection".to_string(),
+            client_id: "destclient".to_string(),
+            prefix: Some(MerklePrefix {
+                key_prefix: "ibc".as_bytes().to_vec(),
+            }),
+        };
+
+        let default_init_msg = RawMsgConnectionOpenInit {
             connection_id: "srcconnection".to_string(),
             client_id: "srcclient".to_string(),
-            counterparty_connection_id: "destconnection".to_string(),
-            counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
+            counterparty: Some(default_counterparty.clone()),
+            signer: "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C"
+                .as_bytes()
+                .to_vec(),
         };
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_con_params.clone(),
+                raw: default_init_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
-                params: ConnOpenInitParams {
+                raw: RawMsgConnectionOpenInit {
                     connection_id: "con007".to_string(),
-                    ..default_con_params.clone()
+                    ..default_init_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad client id, name too short".to_string(),
-                params: ConnOpenInitParams {
+                raw: RawMsgConnectionOpenInit {
                     client_id: "client".to_string(),
-                    ..default_con_params.clone()
+                    ..default_init_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
-                params: ConnOpenInitParams {
-                    counterparty_connection_id:
-                        "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
-                            .to_string(),
-                    ..default_con_params
+                raw: RawMsgConnectionOpenInit {
+                    counterparty: Some(RawCounterparty {
+                        connection_id:
+                            "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
+                                .to_string(),
+                        ..default_counterparty.clone()
+                    }),
+                    ..default_init_msg
                 },
                 want_pass: false,
             },
@@ -496,25 +534,14 @@ mod tests {
         .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let acc = get_dummy_account_id();
-
-            let msg = MsgConnectionOpenInit::new(
-                p.connection_id,
-                p.client_id,
-                p.counterparty_connection_id,
-                p.counterparty_client_id,
-                p.counterparty_commitment_prefix,
-                acc,
-            );
+            let msg = MsgConnectionOpenInit::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
                 "MsgConnOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
+                test.raw,
                 msg.err(),
             );
         }
@@ -547,7 +574,7 @@ mod tests {
             client_id: "srcclient".to_string(),
             counterparty_connection_id: "destconnection".to_string(),
             counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: CommitmentPrefix::new(vec![]),
+            counterparty_commitment_prefix: "ibc".as_bytes().to_vec().into(),
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
             proof_consensus: get_dummy_proof(),

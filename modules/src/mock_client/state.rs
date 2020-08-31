@@ -1,16 +1,40 @@
 #![allow(unreachable_code, unused_variables)]
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics23_commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::Path;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub u32);
+
+impl MockClientState {
+    pub fn check_header_and_update_state(
+        &self,
+        header: AnyHeader,
+    ) -> Result<(MockClientState, MockConsensusState), Box<dyn std::error::Error>> {
+        match header {
+            AnyHeader::Mock(mock_header) => {
+                if self.latest_height() >= header.height() {
+                    return Err("header height is lower than client latest".into());
+                }
+
+                Ok((
+                    MockClientState(header.height().value() as u32),
+                    MockConsensusState(header.height().value() as u32),
+                ))
+            }
+            _ => Err("bad header type for mock client state".into()),
+        }
+    }
+}
 
 impl From<MockClientState> for AnyClientState {
     fn from(mcs: MockClientState) -> Self {
@@ -35,6 +59,20 @@ impl ClientState for MockClientState {
         todo!()
     }
 
+    // fn check_header_and_update_state(
+    //     &self,
+    //     header: &dyn Header,
+    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
+    //     if self.latest_height() >= header.height() {
+    //         return Err("header height is lower than client latest".into());
+    //     }
+    //
+    //     Ok((
+    //         Box::new(AnyClientState::Mock(MockClientState(header.height().value() as u32))),
+    //         Box::new(AnyConsensusState::Mock(MockConsensusState(header.height().value() as u32))),
+    //     ))
+    // }
+
     fn verify_client_consensus_state(
         &self,
         height: Height,
@@ -44,6 +82,13 @@ impl ClientState for MockClientState {
         consensus_height: Height,
         expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        let client_prefixed_path =
+            Path::ConsensusState(client_id.clone(), height.value()).to_string();
+        let _path = apply_prefix(prefix, client_prefixed_path)?;
+        // TODO - add ctx to all client verification functions
+        // let cs = ctx.fetch_self_consensus_state(height);
+        // TODO - implement this
+        // proof.verify_membership(cs.root(), path, expected_consensus_state)
         Ok(())
     }
 

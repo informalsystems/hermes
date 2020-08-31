@@ -1,5 +1,5 @@
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics23_commitment::CommitmentPrefix;
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 // Import proto declarations.
 use crate::ics24_host::error::ValidationError;
 use ibc_proto::connection::{ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -21,32 +21,22 @@ impl TryFromRaw for ConnectionEnd {
     type RawType = RawConnectionEnd;
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
-        // Todo: Is validation complete here? (Code was moved from `from_proto_connection_end`.)
         if value.id == "" {
             return Err(Kind::ConnectionNotFound.into());
         }
 
-        // The Counterparty field is an Option, may be missing.
-        match value.counterparty {
-            Some(cp) => {
-                let mut conn = ConnectionEnd::new(
-                    value
-                        .client_id
-                        .parse()
-                        .map_err(|e| Kind::IdentifierError.context(e))?,
-                    Counterparty::try_from(cp)?,
-                    value.versions,
-                )
-                .unwrap();
-
-                // Set the state.
-                conn.set_state(State::from_i32(value.state));
-                Ok(conn)
-            }
-
-            // If no counterparty was set, signal the error.
-            None => Err(Kind::MissingCounterparty.into()),
-        }
+        Ok(Self {
+            client_id: value
+                .client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty: value
+                .counterparty
+                .ok_or_else(|| Kind::MissingCounterparty)?
+                .try_into()?,
+            state: State::from_i32(value.state),
+            versions: value.versions,
+        })
     }
 }
 
@@ -123,22 +113,26 @@ pub struct Counterparty {
     prefix: CommitmentPrefix,
 }
 
+// Converts from the wire format RawCounterparty. Typically used from the relayer side
+// during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
-        // Todo: Is validation complete here? (code was moved from `from_proto_counterparty`)
-        match value.prefix {
-            Some(prefix) => Counterparty::new(
-                value.client_id,
-                value.connection_id,
-                CommitmentPrefix::new(prefix.key_prefix),
-            ),
-            None => Err(Kind::MissingCounterpartyPrefix.into()),
-        }
+        Ok(Counterparty::new(
+            value.client_id,
+            value.connection_id,
+            value
+                .prefix
+                .ok_or_else(|| Kind::MissingCounterparty)?
+                .key_prefix
+                .into(),
+        )?)
     }
 }
 
+// Validates and creates new Counterparty structure. Used by the relayer queries but also
+// by handlers of MsgConnOpenInit, etc.
 impl Counterparty {
     pub fn new(
         client_id: String,

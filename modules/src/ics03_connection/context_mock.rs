@@ -6,7 +6,7 @@ use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
-use crate::ics23_commitment::CommitmentPrefix;
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
