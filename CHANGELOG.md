@@ -7,7 +7,7 @@ This release focuses on the IBC message processor framework and initial
 implementations in ICS02 and ICS07. It also introduces an initial specification for the relayer algorithm.
 
 Other highlights:
-- A new `ibc` crate is released from the previous `modules` crate.
+- The modules crate is published as [ibc](https://crates.io/crates/ibc) in crates.io
 - ADR-001 and ADR-003 are complete. 🎉
 
 ### BREAKING CHANGES:
