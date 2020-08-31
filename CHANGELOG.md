@@ -4,12 +4,12 @@
 
 *September 1, 2020*
 
-This release focuses on the IBC message processor framework (formerly known as handler framework) and initial
+This release focuses on the IBC message processor framework and initial
 implementations in ICS02 and ICS07. It also introduces an initial specification for the relayer algorithm.
 
 Other highlights:
 - A new `ibc` crate is released from the previous `modules` crate.
-- ADR-001 is complete. 🎉
+- ADR-001 and ADR-003 are complete. 🎉
 
 ### BREAKING CHANGES:
 
