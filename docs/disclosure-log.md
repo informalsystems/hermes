@@ -29,7 +29,7 @@ The TLA+ spec we have for depicting this liveness problem is for the ICS3 protoc
 ##### Problem statement
 
 Related issues: [#71](https://github.com/informalsystems/ibc-rs/issues/71) and [#61](https://github.com/informalsystems/ibc-rs/issues/61).
-The problem is more thorougly described in #61, but for completeness sake we restated it here in a compact form.
+The problem is more thoroughly described in #61, but for the sake of completenes we restated it here in a compact form.
 
 The liveness property that a correct relayer should provide is eventual delivery.
 Assuming some source chain `A`, destination chain `B`, and an IBC item `X` (e.g., connection, channel, or packet) on chain `A`, we can define this property as follows:
@@ -59,7 +59,7 @@ Note that it is also possible for relayer `r2` to have submitted the same item `
 > Note that the TLA+ spec below may change in time. Here we refer to the spec as [existing at this commit](https://github.com/informalsystems/ibc-rs/tree/788c36be9e14725c542bd586b4fe4593edb3ca80/docs/spec/connection-handshake/L2-tla) (unchanged up to [release 0.0.2](https://github.com/informalsystems/ibc-rs/releases/tag/v0.0.2)).  
 
 To obtain an execution in TLA+ that depicts the above liveness problem, it is sufficient to enable the `Concurrency` flag in the L2 default TLA+ spec for ICS3.
-This spec is located in [spec/connection-handshake/L2-tla/](./spec/connection-handshake/L2-tla/).
+This spec is located in [spec/connection-handshake/L2-tla/](spec/connection-handshake/L2-tla/).
 In this spec we make a few simplifications compared to the real system, most importantly: to verify an item at height `h`, a light client can use the consensus state at the same height `h` (no need for smaller height `h-1`).
 Below we summarize the parameters as well as the sequence of actions that lead to the liveness problem.
 
@@ -104,15 +104,25 @@ __Context__.
 The original issue triggering this discussion is here: [cosmos/ics/#459](https://github.com/cosmos/ics/issues/459).
 Briefly, version negotiation in the ICS3 handshake can interfere in various ways, breaking either the safety or liveness of this protocol.
 Several solution candidates exist, which we classify by their "mode", i.e., a strategy for picking the version at some point or another in the protocol.
-For a full description of the modes, please consult [L2-tla/readme.md#version-negotiation-modes](L2-tla/README.md#version-negotiation-modes).
+For a full description of the modes, please consult [L2-tla/readme.md#version-negotiation-modes](spec/connection-handshake/L2-tla/README.md#version-negotiation-modes).
 
 __Overview__.
 Below we use TLA+ traces to explore and report on the exact problems that can occur. We also show how the solution candidates fare.
-These are the takeaways from the discussion below:
+The table below summarizes our results for the four cases we consider:
+
+|	Case  |         Property violation |
+|---------|----------------------------|
+| (a) Empty version intersection | liveness|
+| (b) Mode `overwrite`           | safety|
+| (c) Mode `onTryNonDet`         | liveness|
+| (d) Mode `onAckNonDet`         | safety|
+
+
+These are the main takeaways from this discussion:
 
 1. The set of compatible versions that chains start off with (return values of `getCompatibleVersions()` in ICS3) have to intersect, otherwise a liveness issue occurs. This assumption is independent of the version negotiation mode. We report this in __case (a)__ below.
 2. Modes "overwrite", "onTryNonDet", and "onAckNonDet" all result in breaking the handshake protocol. See __cases (b), (c), and (d)__ below for traces.
-3. The deterministic modes "onTryDet" and "onAckDet" pass model checking, so a solution should be chosen among these two candidates (see the original issue for follow-up on the solution).
+3. The deterministic modes "onTryDet" and "onAckDet" pass model checking, so a solution should be chosen among these two candidates (see the [original issue](https://github.com/cosmos/ics/issues/459) for follow-up on the solution).
 
 ##### Case (a). Empty version intersection causes liveness issue
 
@@ -294,7 +304,7 @@ Neither of the two chains can process the `ICS3MsgAck` message because the versi
 (A chain should not overwrite its local version either, otherwise the safety issue from case (b) can appear.)
 Therefore, the model stutters (cannot progress anymore).
 
-##### Case (d). Mode `onAckNonDet` causes liveness issue
+##### Case (d). Mode `onAckNonDet` causes safety issue
 
 Model checking details in TLA+:
 - Model parameters:
@@ -308,7 +318,7 @@ VersionPickMode <- "onAckNonDet"
 - Check for invariant _VersionInvariant, as well as _Deadlock_ and property _Termination_.
 
 Outcome:
-- Model checking halts with exception "Temporal properties were violated."
+- Model checking halts with exception "Invariant VersionInvariant is violated."
 
 ###### Trace
 
