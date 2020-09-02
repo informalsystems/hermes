@@ -75,9 +75,9 @@ mod tests {
 
     #[test]
     fn test_create_client_ok() {
-        let reader = MockClientContext::new(&"oldclientid".parse().unwrap());
-
         let client_id: ClientId = "mockclient".parse().unwrap();
+        let reader = MockClientContext::new(&client_id);
+
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Mock,
@@ -115,7 +115,8 @@ mod tests {
     #[test]
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
-        let reader = MockClientContext::new(&client_id);
+        let mut reader = MockClientContext::new(&client_id);
+        reader.with_client_type(ClientType::Mock);
 
         let msg = MsgCreateAnyClient {
             client_id,
@@ -136,13 +137,8 @@ mod tests {
     #[test]
     fn test_create_client_existing_client_state() {
         let client_id: ClientId = "mockclient".parse().unwrap();
-
-        let reader = MockClientContext {
-            client_id: client_id.clone(),
-            client_type: None,
-            client_state: MockClientState(MockHeader(Height(0))).into(),
-            consensus_state: None,
-        };
+        let mut reader = MockClientContext::new(&client_id);
+        reader.with_client_state(&client_id, 30);
 
         let msg = MsgCreateAnyClient {
             client_id,
@@ -162,15 +158,8 @@ mod tests {
     #[test]
     fn test_tm_create_client_ok() {
         use tendermint::account::Id as AccountId;
-
         let client_id: ClientId = "tendermint".parse().unwrap();
-
-        let reader = MockClientContext {
-            client_id: client_id.clone(),
-            client_type: None,
-            client_state: None,
-            consensus_state: None,
-        };
+        let reader = MockClientContext::new(&client_id);
 
         let ics_msg = MsgCreateClient {
             client_id,

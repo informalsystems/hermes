@@ -30,10 +30,14 @@ impl MockClientContext {
     pub fn new(client_id: &ClientId) -> Self {
         MockClientContext {
             client_id: client_id.clone(),
-            client_type: Option::from(ClientType::Mock),
+            client_type: None,
             client_state: None,
             consensus_state: None,
         }
+    }
+
+    pub fn with_client_type(&mut self, client_type: ClientType) {
+        self.client_type = Option::from(client_type);
     }
 
     pub fn with_client_state(&mut self, client_id: &ClientId, h: u64) {
