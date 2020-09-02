@@ -17,7 +17,7 @@ pub struct HistoricalInfo {
 
 impl From<MockHeader> for AnyConsensusState {
     fn from(h: MockHeader) -> Self {
-        MockConsensusState(h.height().value() as u32).into()
+        AnyConsensusState::Mock(MockConsensusState(h))
     }
 }
 

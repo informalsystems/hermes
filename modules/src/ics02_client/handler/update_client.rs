@@ -71,19 +71,20 @@ mod tests {
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
+    use tendermint::block::Height;
 
     #[test]
     fn test_update_client_ok() {
         let mock = MockClientContext {
             client_id: "mockclient".parse().unwrap(),
             client_type: Some(ClientType::Tendermint),
-            client_state: MockClientState(42).into(),
-            consensus_state: MockConsensusState(42).into(),
+            client_state: MockClientState(MockHeader(Height(42))).into(),
+            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
         };
 
         let msg = MsgUpdateAnyClient {
             client_id: "mockclient".parse().unwrap(),
-            header: MockHeader(46).into(),
+            header: MockHeader(Height(46)).into(),
         };
 
         let output = process(&mock, msg.clone());

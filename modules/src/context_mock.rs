@@ -16,9 +16,9 @@ impl MockChainContext {
         Self {
             max_size,
             latest: n,
-            history: (0..n.value() as u32)
+            history: (0..n.value())
                 .map(|i| HistoricalInfo {
-                    header: SelfHeader::Mock(MockHeader(i + 1)),
+                    header: SelfHeader::Mock(MockHeader(Height(i).increment())),
                 })
                 .collect(),
         }
@@ -29,12 +29,12 @@ impl MockChainContext {
     }
 
     /// Used for testing
-    pub fn populate(&mut self, hs: Vec<u32>) {
+    pub fn populate(&mut self, hs: Vec<u64>) {
         for h in hs {
             self.store_historical_info(
-                Height(h as u64),
+                Height(h),
                 HistoricalInfo {
-                    header: SelfHeader::Mock(MockHeader(h)),
+                    header: SelfHeader::Mock(MockHeader(Height(h))),
                 },
             );
         }
@@ -107,11 +107,11 @@ mod tests {
         pub struct Test {
             name: String,
             ctx: MockChainContext,
-            args: Vec<u32>,
+            args: Vec<u64>,
         }
 
         impl Test {
-            pub fn apply(&mut self, hs: Vec<u32>) {
+            pub fn apply(&mut self, hs: Vec<u64>) {
                 self.ctx.populate(hs);
             }
         }

@@ -443,16 +443,19 @@ pub mod test_util {
         }
     }
 
-    pub fn get_dummy_msg_conn_open_try() -> RawMsgConnectionOpenTry {
+    pub fn get_dummy_msg_conn_open_try(
+        proof_height: u64,
+        consensus_height: u64,
+    ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
-            proof_height: 10,
+            proof_height,
             proof_consensus: get_dummy_proof(),
-            consensus_height: 33,
+            consensus_height,
             signer: get_dummy_account_id(),
         }
     }
@@ -569,7 +572,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_try_msg = get_dummy_msg_conn_open_try();
+        let default_try_msg = get_dummy_msg_conn_open_try(10, 34);
 
         let tests: Vec<Test> = vec![
             Test {

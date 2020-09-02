@@ -91,7 +91,6 @@ mod tests {
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenTry};
     use crate::try_from_raw::TryFromRaw;
-    use tendermint::block::Height;
 
     #[test]
     fn conn_open_try_msg_processing() {
@@ -108,7 +107,10 @@ mod tests {
             want_pass: bool,
         }
 
-        let dummy_msg = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try()).unwrap();
+        let dummy_msg =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
+        let mut default_context = MockConnectionContext::new(34, 3);
+        default_context.with_client_state(dummy_msg.client_id(), 10);
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
@@ -117,8 +119,6 @@ mod tests {
             get_compatible_versions(),
         )
         .unwrap();
-
-        let default_context = MockConnectionContext::new(dummy_msg.client_id(), Height(34));
 
         let tests: Vec<Test> = vec![
             Test {

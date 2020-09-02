@@ -67,21 +67,22 @@ mod tests {
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics07_tendermint::msgs::create_client::MsgCreateClient;
+    use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
     use std::str::FromStr;
     use std::time::Duration;
+    use tendermint::block::Height;
 
     #[test]
     fn test_create_client_ok() {
+        let reader = MockClientContext::new(&"oldclientid".parse().unwrap());
+
         let client_id: ClientId = "mockclient".parse().unwrap();
-
-        let reader = MockClientContext::new(&client_id, None);
-
         let msg = MsgCreateAnyClient {
             client_id,
-            client_type: ClientType::Tendermint,
-            client_state: MockClientState(42).into(),
-            consensus_state: MockConsensusState(42).into(),
+            client_type: ClientType::Mock,
+            client_state: MockClientState(MockHeader(Height(42))).into(),
+            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
         };
 
         let output = process(&reader, msg.clone());
@@ -92,7 +93,7 @@ mod tests {
                 events,
                 log,
             }) => {
-                assert_eq!(result.client_type, ClientType::Tendermint);
+                assert_eq!(result.client_type, ClientType::Mock);
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientCreated(msg.client_id).into()]
@@ -114,19 +115,13 @@ mod tests {
     #[test]
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
-
-        let reader = MockClientContext {
-            client_id: client_id.clone(),
-            client_type: Some(ClientType::Tendermint),
-            client_state: None,
-            consensus_state: None,
-        };
+        let reader = MockClientContext::new(&client_id);
 
         let msg = MsgCreateAnyClient {
             client_id,
-            client_type: ClientType::Tendermint,
-            client_state: MockClientState(42).into(),
-            consensus_state: MockConsensusState(42).into(),
+            client_type: ClientType::Mock,
+            client_state: MockClientState(MockHeader(Height(42))).into(),
+            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
         };
 
         let output = process(&reader, msg.clone());
@@ -145,15 +140,15 @@ mod tests {
         let reader = MockClientContext {
             client_id: client_id.clone(),
             client_type: None,
-            client_state: Some(MockClientState(0)),
+            client_state: MockClientState(MockHeader(Height(0))).into(),
             consensus_state: None,
         };
 
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Tendermint,
-            client_state: MockClientState(42).into(),
-            consensus_state: MockConsensusState(42).into(),
+            client_state: MockClientState(MockHeader(Height(42))).into(),
+            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
         };
 
         let output = process(&reader, msg.clone());

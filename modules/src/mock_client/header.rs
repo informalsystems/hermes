@@ -5,11 +5,11 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MockHeader(pub u32);
+pub struct MockHeader(pub Height);
 
 impl MockHeader {
     pub fn height(&self) -> Height {
-        Height(self.0 as u64)
+        self.0
     }
 }
 

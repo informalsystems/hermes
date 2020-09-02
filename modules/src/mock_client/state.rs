@@ -9,11 +9,12 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, Com
 use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
+use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MockClientState(pub u32);
+pub struct MockClientState(pub MockHeader);
 
 impl MockClientState {
     pub fn check_header_and_update_state(
@@ -27,8 +28,8 @@ impl MockClientState {
                 }
 
                 Ok((
-                    MockClientState(header.height().value() as u32),
-                    MockConsensusState(header.height().value() as u32),
+                    MockClientState(mock_header),
+                    MockConsensusState(mock_header),
                 ))
             }
             _ => Err("bad header type for mock client state".into()),
@@ -52,7 +53,7 @@ impl ClientState for MockClientState {
     }
 
     fn latest_height(&self) -> Height {
-        Height::from(self.0 as u64)
+        self.0.height()
     }
 
     fn is_frozen(&self) -> bool {
@@ -112,7 +113,7 @@ impl From<MockConsensusState> for MockClientState {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MockConsensusState(pub u32);
+pub struct MockConsensusState(pub MockHeader);
 
 impl From<MockConsensusState> for AnyConsensusState {
     fn from(mcs: MockConsensusState) -> Self {

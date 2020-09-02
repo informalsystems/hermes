@@ -33,6 +33,7 @@ pub trait ClientState: Clone + std::fmt::Debug {
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
 
+    // TODO - to be cleaned up by Romain
     // fn check_header_and_update_state(
     //     &self,
     //     _header: &dyn Header,

@@ -19,12 +19,17 @@ pub struct MockConnectionContext {
 }
 
 impl MockConnectionContext {
-    pub fn new(client_id: &ClientId, chain_height: Height) -> Self {
+    pub fn new(chain_height: u64, max_history_size: usize) -> Self {
         MockConnectionContext {
-            chain_context: MockChainContext::new(3, chain_height),
-            client_context: MockClientContext::new(client_id, Some(chain_height.value() as u32)),
+            chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
+            client_context: Default::default(),
             connections: Default::default(),
         }
+    }
+
+    pub fn with_client_state(&mut self, client_id: &ClientId, latest_client_height: u64) {
+        self.client_context
+            .with_client_state(client_id, latest_client_height)
     }
 
     pub fn max_size(&self) -> usize {
@@ -85,8 +90,7 @@ impl ConnectionKeeper for MockConnectionContext {
         connection_id: ConnectionId,
         connection_end: ConnectionEnd,
     ) -> Result<(), Error> {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
+        self.connections.insert(connection_id, connection_end);
         Ok(())
     }
 }
