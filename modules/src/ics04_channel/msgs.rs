@@ -723,7 +723,7 @@ mod tests {
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_init: get_dummy_proof(),
+            proof_init: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -920,7 +920,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_try: get_dummy_proof(),
+            proof_try: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -1043,7 +1043,7 @@ mod tests {
         let default_params = OpenConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_ack: get_dummy_proof(),
+            proof_ack: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -1253,7 +1253,7 @@ mod tests {
         let default_params = CloseConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_init: get_dummy_proof(),
+            proof_init: get_dummy_proof().into(),
             proof_height: 10,
         };
 

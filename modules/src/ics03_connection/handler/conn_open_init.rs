@@ -18,14 +18,14 @@ pub(crate) fn process(
         return Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into());
     }
 
-    let mut new_connection_end = ConnectionEnd::new(
+    let new_connection_end = ConnectionEnd::new(
+        State::Init,
         msg.client_id().clone(),
         msg.counterparty().clone(),
         get_compatible_versions(),
     )?;
 
     output.log("success: no connection found");
-    new_connection_end.set_state(State::Init);
 
     let result = ConnectionResult {
         connection_id: msg.connection_id().clone(),
@@ -44,7 +44,8 @@ mod tests {
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenInit};
+    use crate::try_from_raw::TryFromRaw;
     use tendermint::block::Height;
 
     #[test]
@@ -62,8 +63,10 @@ mod tests {
             want_pass: bool,
         }
 
-        let dummy_msg = get_dummy_msg_conn_open_init();
-        let dummy_conn_end = &ConnectionEnd::new(
+        let dummy_msg = MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+
+        let init_conn_end = &ConnectionEnd::new(
+            State::Init,
             dummy_msg.client_id().clone(),
             dummy_msg.counterparty().clone(),
             get_compatible_versions(),
@@ -81,7 +84,7 @@ mod tests {
             Test {
                 name: "Protocol fails because connection exists in the store already".to_string(),
                 ctx: default_context
-                    .add_connection(dummy_msg.connection_id().clone(), dummy_conn_end.clone()),
+                    .add_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
                 want_pass: false,
             },

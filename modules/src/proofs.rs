@@ -20,7 +20,7 @@ impl Proofs {
             return Err("Proofs height cannot be zero".to_string());
         }
 
-        if object_proof.ops.is_empty() {
+        if object_proof.is_empty() {
             return Err("Proof cannot be empty".to_string());
         }
 
@@ -59,7 +59,7 @@ impl ConsensusProof {
         if consensus_height == 0 {
             return Err("Consensus height cannot be zero".to_string());
         }
-        if consensus_proof.ops.is_empty() {
+        if consensus_proof.is_empty() {
             return Err("Proof cannot be empty".to_string());
         }
 

@@ -1,7 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
 use std::fmt;
-use tendermint::merkle::proof::Proof;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentRoot;
@@ -15,25 +14,26 @@ impl CommitmentRoot {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPath;
 
-pub type CommitmentProof = Proof;
-/*
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CommitmentProof(Vec<u8>);
 impl CommitmentProof {
-    pub fn from_bytes(_bytes: &[u8]) -> Self {
-        todo!()
-    }
-
-    pub fn validate_basic() -> Result<CommitmentProof, Error> {
-        todo!()
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 0
     }
 }
-*/
+
+impl From<Vec<u8>> for CommitmentProof {
+    fn from(v: Vec<u8>) -> Self {
+        Self { 0: v }
+    }
+}
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPrefix(Vec<u8>);
 
 impl CommitmentPrefix {
     pub fn is_empty(&self) -> bool {
-        self.0.len() != 0
+        self.0.len() == 0
     }
 }
 

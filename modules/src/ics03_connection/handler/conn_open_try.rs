@@ -36,6 +36,7 @@ pub(crate) fn process(
         }
         // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
         None => Ok(ConnectionEnd::new(
+            State::Init,
             msg.client_id().clone(),
             msg.counterparty(),
             msg.counterparty_versions(),
@@ -44,16 +45,17 @@ pub(crate) fn process(
 
     // Proof verification in two steps:
     // 1. Setup: build the ConnectionEnd as we expect to find it on the other party.
-    let mut expected_conn = ConnectionEnd::new(
+    let expected_conn = ConnectionEnd::new(
+        State::Init,
         msg.counterparty().client_id().clone(),
         Counterparty::new(
-            msg.client_id().as_str().into(),
-            msg.connection_id().as_str().into(),
+            msg.client_id().clone(),
+            msg.connection_id().clone(),
             ctx.commitment_prefix(),
         )?,
         msg.counterparty_versions(),
     )?;
-    expected_conn.set_state(State::Init);
+
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,

@@ -25,29 +25,30 @@ impl TryFromRaw for ConnectionEnd {
             return Err(Kind::ConnectionNotFound.into());
         }
 
-        Ok(Self {
-            client_id: value
+        Ok(Self::new(
+            State::from_i32(value.state),
+            value
                 .client_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty: value
+            value
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .try_into()?,
-            state: State::from_i32(value.state),
-            versions: value.versions,
-        })
+            value.versions,
+        )?)
     }
 }
 
 impl ConnectionEnd {
     pub fn new(
+        state: State,
         client_id: ClientId,
         counterparty: Counterparty,
         versions: Vec<String>, // TODO: Use Newtype for aliasing the version to a string
     ) -> Result<Self, Error> {
         Ok(Self {
-            state: State::Uninitialized,
+            state,
             client_id,
             counterparty,
             versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
@@ -120,8 +121,14 @@ impl TryFrom<RawCounterparty> for Counterparty {
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
         Ok(Counterparty::new(
-            value.client_id,
-            value.connection_id,
+            value
+                .client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            value
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
             value
                 .prefix
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -131,21 +138,15 @@ impl TryFrom<RawCounterparty> for Counterparty {
     }
 }
 
-// Validates and creates new Counterparty structure. Used by the relayer queries but also
-// by handlers of MsgConnOpenInit, etc.
 impl Counterparty {
     pub fn new(
-        client_id: String,
-        connection_id: String,
+        client_id: ClientId,
+        connection_id: ConnectionId,
         prefix: CommitmentPrefix,
     ) -> Result<Self, Error> {
         Ok(Self {
-            client_id: client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            connection_id: connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id,
+            connection_id,
             prefix,
         })
     }

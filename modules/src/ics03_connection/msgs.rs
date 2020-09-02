@@ -16,12 +16,15 @@
 #![allow(clippy::too_many_arguments)]
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::try_from_raw::TryFromRaw;
 use crate::tx_msg::Msg;
+use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::str::{from_utf8, FromStr};
@@ -60,6 +63,23 @@ pub struct MsgConnectionOpenInit {
     signer: AccountId,
 }
 
+impl MsgConnectionOpenInit {
+    /// Getter: borrow the `connection_id` from this message.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    /// Getter: borrow the `client_id` from this message.
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    /// Getter: borrow the `counterparty` from this message.
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.counterparty
+    }
+}
+
 impl TryFromRaw for MsgConnectionOpenInit {
     type RawType = RawMsgConnectionOpenInit;
     type Error = anomaly::Error<Kind>;
@@ -82,48 +102,6 @@ impl TryFromRaw for MsgConnectionOpenInit {
             )
             .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
-    }
-}
-
-impl MsgConnectionOpenInit {
-    pub fn new(
-        connection_id: String,
-        client_id: String,
-        counterparty_connection_id: String,
-        counterparty_client_id: String,
-        counterparty_commitment_prefix: CommitmentPrefix,
-        signer: AccountId,
-    ) -> Result<MsgConnectionOpenInit, Error> {
-        Ok(Self {
-            connection_id: connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            client_id: client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty: Counterparty::new(
-                counterparty_client_id,
-                counterparty_connection_id,
-                counterparty_commitment_prefix,
-            )
-            .map_err(|e| Kind::IdentifierError.context(e))?,
-            signer,
-        })
-    }
-
-    /// Getter: borrow the `connection_id` from this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
-    /// Getter: borrow the `client_id` from this message.
-    pub fn client_id(&self) -> &ClientId {
-        &self.client_id
-    }
-
-    /// Getter: borrow the `counterparty` from this message.
-    pub fn counterparty(&self) -> &Counterparty {
-        &self.counterparty
     }
 }
 
@@ -168,43 +146,6 @@ pub struct MsgConnectionOpenTry {
 }
 
 impl MsgConnectionOpenTry {
-    pub fn new(
-        connection_id: String,
-        client_id: String,
-        counterparty_connection_id: String,
-        counterparty_client_id: String,
-        counterparty_commitment_prefix: CommitmentPrefix,
-        counterparty_versions: Vec<String>,
-        init_proof: CommitmentProof,
-        consensus_proof: CommitmentProof,
-        proofs_height: u64,
-        consensus_height: u64,
-        signer: AccountId,
-    ) -> Result<MsgConnectionOpenTry, Error> {
-        let consensus_proof_obj = ConsensusProof::new(consensus_proof, consensus_height)
-            .map_err(|e| Kind::InvalidProof.context(e))?;
-
-        Ok(Self {
-            connection_id: connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            client_id: client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty: Counterparty::new(
-                counterparty_client_id,
-                counterparty_connection_id,
-                counterparty_commitment_prefix,
-            )
-            .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_versions: validate_versions(counterparty_versions)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(init_proof, Option::from(consensus_proof_obj), proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
-        })
-    }
-
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
@@ -266,6 +207,43 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
+impl TryFromRaw for MsgConnectionOpenTry {
+    type RawType = RawMsgConnectionOpenTry;
+    type Error = anomaly::Error<Kind>;
+    fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
+        let consensus_proof_obj =
+            ConsensusProof::new(msg.proof_consensus.into(), msg.consensus_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        Ok(Self {
+            connection_id: msg
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: msg
+                .client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty: msg
+                .counterparty
+                .ok_or_else(|| Kind::MissingCounterparty)?
+                .try_into()?,
+            counterparty_versions: validate_versions(msg.counterparty_versions)
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            proofs: Proofs::new(
+                msg.proof_init.into(),
+                Some(consensus_proof_obj),
+                msg.proof_height,
+            )
+            .map_err(|e| Kind::InvalidProof.context(e))?,
+            signer: AccountId::from_str(
+                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
+            )
+            .map_err(|e| Kind::InvalidSigner.context(e))?,
+        })
+    }
+}
+
 ///
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
 ///
@@ -278,29 +256,6 @@ pub struct MsgConnectionOpenAck {
 }
 
 impl MsgConnectionOpenAck {
-    pub fn new(
-        connection_id: String,
-        proof_try: CommitmentProof,
-        proof_consensus: CommitmentProof,
-        proofs_height: u64,
-        consensus_height: u64,
-        version: String,
-        signer: AccountId,
-    ) -> Result<MsgConnectionOpenAck, Error> {
-        let consensus_proof_obj = ConsensusProof::new(proof_consensus, consensus_height)
-            .map_err(|e| Kind::InvalidProof.context(e))?;
-
-        Ok(Self {
-            connection_id: connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_try, Option::from(consensus_proof_obj), proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            version: validate_version(version).map_err(|e| Kind::InvalidVersion.context(e))?,
-            signer,
-        })
-    }
-
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
@@ -350,6 +305,35 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
+impl TryFromRaw for MsgConnectionOpenAck {
+    type RawType = RawMsgConnectionOpenAck;
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
+        let consensus_proof_obj =
+            ConsensusProof::new(msg.proof_consensus.into(), msg.consensus_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        Ok(Self {
+            connection_id: msg
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
+            proofs: Proofs::new(
+                msg.proof_try.into(),
+                Option::from(consensus_proof_obj),
+                msg.proof_height,
+            )
+            .map_err(|e| Kind::InvalidProof.context(e))?,
+            signer: AccountId::from_str(
+                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
+            )
+            .map_err(|e| Kind::InvalidSigner.context(e))?,
+        })
+    }
+}
+
 ///
 /// Message definition for `MsgConnectionOpenConfirm` (i.e., `ConnOpenConfirm` datagram).
 ///
@@ -361,22 +345,6 @@ pub struct MsgConnectionOpenConfirm {
 }
 
 impl MsgConnectionOpenConfirm {
-    pub fn new(
-        connection_id: String,
-        proof_ack: CommitmentProof,
-        proofs_height: u64,
-        signer: AccountId,
-    ) -> Result<MsgConnectionOpenConfirm, Error> {
-        Ok(Self {
-            connection_id: connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
-        })
-    }
-
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
@@ -412,87 +380,132 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
+impl TryFromRaw for MsgConnectionOpenConfirm {
+    type RawType = RawMsgConnectionOpenConfirm;
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
+        Ok(Self {
+            connection_id: msg
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            proofs: Proofs::new(msg.proof_ack.into(), None, msg.proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
+            signer: AccountId::from_str(
+                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
+            )
+            .map_err(|e| Kind::InvalidSigner.context(e))?,
+        })
+    }
+}
+
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::msgs::MsgConnectionOpenInit;
-    use crate::ics23_commitment::commitment::CommitmentProof;
-    use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
-    use tendermint::merkle::proof::ProofOp;
+    use ibc_proto::connection::Counterparty as RawCounterparty;
+    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    pub fn get_dummy_proof() -> CommitmentProof {
-        let proof_op = ProofOp {
-            field_type: "iavl:v".to_string(),
-            key: "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy".as_bytes().to_vec(),
-            data: "8QEK7gEKKAgIEAwYHCIgG9RAkJgHlxNjmyzOW6bUAidhiRSja0x6+GXCVENPG1oKKAgGEAUYFyIgwRns+dJvjf1Zk2BaFrXz8inPbvYHB7xx2HCy9ima5f8KKAgEEAMYFyogOr8EGajEV6fG5fzJ2fAAvVMgRLhdMJTzCPlogl9rxlIKKAgCEAIYFyIgcjzX/a+2bFbnNldpawQqZ+kYhIwz5r4wCUzuu1IFW04aRAoeY29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIyEiAZ1uuG60K4NHJZZMuS9QX6o4eEhica5jIHYwflRiYkDBgX"
-                .as_bytes().to_vec()
-        };
+    use ibc_proto::commitment::MerklePrefix;
 
-        CommitmentProof {
-            ops: vec![proof_op],
-        }
+    pub fn get_dummy_proof() -> Vec<u8> {
+        "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
+            .as_bytes()
+            .to_vec()
     }
 
-    pub fn get_dummy_account_id() -> AccountId {
-        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-        AccountId::from_str(id_hex).unwrap()
+    pub fn get_dummy_account_id() -> Vec<u8> {
+        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C"
+            .as_bytes()
+            .to_vec()
+    }
+
+    pub fn get_dummy_counterparty() -> RawCounterparty {
+        RawCounterparty {
+            client_id: "destclient".to_string(),
+            connection_id: "destconnection".to_string(),
+            prefix: Some(MerklePrefix {
+                key_prefix: "ibc".as_bytes().to_vec(),
+            }),
+        }
     }
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
-    pub fn get_dummy_msg_conn_open_init() -> MsgConnectionOpenInit {
-        MsgConnectionOpenInit::new(
-            "srcconnection".to_string(),
-            "srcclient".to_string(),
-            "destconnection".to_string(),
-            "destclient".to_string(),
-            "ibc".as_bytes().to_vec().into(),
-            get_dummy_account_id(),
-        )
-        .unwrap()
+    pub fn get_dummy_msg_conn_open_init() -> RawMsgConnectionOpenInit {
+        RawMsgConnectionOpenInit {
+            client_id: "srcclient".to_string(),
+            connection_id: "srcconnection".to_string(),
+            counterparty: Some(get_dummy_counterparty()),
+            signer: get_dummy_account_id(),
+        }
+    }
+
+    pub fn get_dummy_msg_conn_open_try() -> RawMsgConnectionOpenTry {
+        RawMsgConnectionOpenTry {
+            client_id: "srcclient".to_string(),
+            connection_id: "srcconnection".to_string(),
+            counterparty: Some(get_dummy_counterparty()),
+            counterparty_versions: vec!["1.0.0".to_string()],
+            proof_init: get_dummy_proof(),
+            proof_height: 10,
+            proof_consensus: get_dummy_proof(),
+            consensus_height: 10,
+            signer: get_dummy_account_id(),
+        }
+    }
+
+    pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
+        RawMsgConnectionOpenAck {
+            connection_id: "srcconnection".to_string(),
+            version: "1.0.0".to_string(),
+            proof_try: get_dummy_proof(),
+            proof_height: 10,
+            proof_consensus: get_dummy_proof(),
+            consensus_height: 10,
+            signer: get_dummy_account_id(),
+        }
+    }
+
+    pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
+        RawMsgConnectionOpenConfirm {
+            connection_id: "srcconnection".to_string(),
+            proof_ack: get_dummy_proof(),
+            proof_height: 10,
+            signer: get_dummy_account_id(),
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::test_util::get_dummy_proof;
     use super::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics03_connection::msgs::test_util::{
+        get_dummy_counterparty, get_dummy_msg_conn_open_ack, get_dummy_msg_conn_open_confirm,
+        get_dummy_msg_conn_open_init, get_dummy_msg_conn_open_try,
+    };
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
-    use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
     use crate::try_from_raw::TryFromRaw;
-    use ibc_proto::commitment::MerklePrefix;
     use ibc_proto::connection::Counterparty as RawCounterparty;
+    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
     use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     #[test]
     fn parse_connection_open_init_msg() {
         #[derive(Clone, Debug, PartialEq)]
-
         struct Test {
             name: String,
             raw: RawMsgConnectionOpenInit,
             want_pass: bool,
         }
 
-        let default_counterparty = RawCounterparty {
-            connection_id: "destconnection".to_string(),
-            client_id: "destclient".to_string(),
-            prefix: Some(MerklePrefix {
-                key_prefix: "ibc".as_bytes().to_vec(),
-            }),
-        };
-
-        let default_init_msg = RawMsgConnectionOpenInit {
-            connection_id: "srcconnection".to_string(),
-            client_id: "srcclient".to_string(),
-            counterparty: Some(default_counterparty.clone()),
-            signer: "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C"
-                .as_bytes()
-                .to_vec(),
-        };
+        let default_init_msg = get_dummy_msg_conn_open_init();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -523,7 +536,7 @@ mod tests {
                         connection_id:
                             "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
                                 .to_string(),
-                        ..default_counterparty.clone()
+                        ..get_dummy_counterparty()
                     }),
                     ..default_init_msg
                 },
@@ -550,116 +563,98 @@ mod tests {
     #[test]
     fn parse_connection_open_try_msg() {
         #[derive(Clone, Debug, PartialEq)]
-        struct ConOpenTryParams {
-            connection_id: String,
-            client_id: String,
-            counterparty_connection_id: String,
-            counterparty_client_id: String,
-            counterparty_commitment_prefix: CommitmentPrefix,
-            counterparty_versions: Vec<String>,
-            proof_init: CommitmentProof,
-            proof_consensus: CommitmentProof,
-            proof_height: u64,
-            consensus_height: u64,
-        }
-
         struct Test {
             name: String,
-            params: ConOpenTryParams,
+            raw: RawMsgConnectionOpenTry,
             want_pass: bool,
         }
 
-        let default_con_params = ConOpenTryParams {
-            connection_id: "srcconnection".to_string(),
-            client_id: "srcclient".to_string(),
-            counterparty_connection_id: "destconnection".to_string(),
-            counterparty_client_id: "destclient".to_string(),
-            counterparty_commitment_prefix: "ibc".as_bytes().to_vec().into(),
-            counterparty_versions: vec!["1.0.0".to_string()],
-            proof_init: get_dummy_proof(),
-            proof_consensus: get_dummy_proof(),
-            proof_height: 10,
-            consensus_height: 10,
-        };
+        let default_try_msg = get_dummy_msg_conn_open_try();
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_con_params.clone(),
+                raw: default_try_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     connection_id: "con007".to_string(),
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad client id, name too short".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     client_id: "client".to_string(),
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad destination connection id, name too long".to_string(),
-                params: ConOpenTryParams {
-                    counterparty_connection_id:
-                        "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
-                            .to_string(),
-                    ..default_con_params.clone()
+                raw: RawMsgConnectionOpenTry {
+                    counterparty: Some(RawCounterparty {
+                        connection_id:
+                            "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
+                                .to_string(),
+                        ..get_dummy_counterparty()
+                    }),
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Correct destination client id with lower/upper case and special chars"
                     .to_string(),
-                params: ConOpenTryParams {
-                    counterparty_client_id: "ClientId_".to_string(),
-                    ..default_con_params.clone()
+                raw: RawMsgConnectionOpenTry {
+                    counterparty: Some(RawCounterparty {
+                        client_id: "ClientId_".to_string(),
+                        ..get_dummy_counterparty()
+                    }),
+                    ..default_try_msg.clone()
                 },
                 want_pass: true,
             },
             Test {
                 name: "Bad counterparty versions, empty versions vec".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     counterparty_versions: vec![],
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad counterparty versions, empty version string".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     counterparty_versions: vec!["".to_string()],
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad proof height, height is 0".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     proof_height: 0,
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad consensus height, height is 0".to_string(),
-                params: ConOpenTryParams {
+                raw: RawMsgConnectionOpenTry {
                     consensus_height: 0,
-                    ..default_con_params.clone()
+                    ..default_try_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Empty proof".to_string(),
-                params: ConOpenTryParams {
-                    proof_init: CommitmentProof { ops: vec![] },
-                    ..default_con_params
+                raw: RawMsgConnectionOpenTry {
+                    proof_init: "".as_bytes().to_vec().into(),
+                    ..default_try_msg
                 },
                 want_pass: false,
             },
@@ -668,30 +663,14 @@ mod tests {
         .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let acc = get_dummy_account_id();
-
-            let msg = MsgConnectionOpenTry::new(
-                p.connection_id,
-                p.client_id,
-                p.counterparty_connection_id,
-                p.counterparty_client_id,
-                p.counterparty_commitment_prefix,
-                p.counterparty_versions,
-                p.proof_init,
-                p.proof_consensus,
-                p.proof_height,
-                p.consensus_height,
-                acc,
-            );
+            let msg = MsgConnectionOpenTry::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} \nwith error {:?}",
+                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
+                test.raw,
                 msg.err(),
             );
         }
@@ -700,65 +679,49 @@ mod tests {
     #[test]
     fn parse_connection_open_ack_msg() {
         #[derive(Clone, Debug, PartialEq)]
-        struct ConOpenAckParams {
-            connection_id: String,
-            proof_try: CommitmentProof,
-            proof_consensus: CommitmentProof,
-            proof_height: u64,
-            consensus_height: u64,
-            version: String,
-        }
-
         struct Test {
             name: String,
-            params: ConOpenAckParams,
+            raw: RawMsgConnectionOpenAck,
             want_pass: bool,
         }
 
-        let default_con_params = ConOpenAckParams {
-            connection_id: "srcconnection".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_consensus: get_dummy_proof(),
-            proof_height: 10,
-            consensus_height: 10,
-            version: "1.0.0".to_string(),
-        };
+        let default_ack_msg = get_dummy_msg_conn_open_ack();
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_con_params.clone(),
+                raw: default_ack_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
-                params: ConOpenAckParams {
+                raw: RawMsgConnectionOpenAck {
                     connection_id: "con007".to_string(),
-                    ..default_con_params.clone()
+                    ..default_ack_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad version, empty version string".to_string(),
-                params: ConOpenAckParams {
+                raw: RawMsgConnectionOpenAck {
                     version: "".to_string(),
-                    ..default_con_params.clone()
+                    ..default_ack_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad proof height, height is 0".to_string(),
-                params: ConOpenAckParams {
+                raw: RawMsgConnectionOpenAck {
                     proof_height: 0,
-                    ..default_con_params.clone()
+                    ..default_ack_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad consensus height, height is 0".to_string(),
-                params: ConOpenAckParams {
+                raw: RawMsgConnectionOpenAck {
                     consensus_height: 0,
-                    ..default_con_params
+                    ..default_ack_msg
                 },
                 want_pass: false,
             },
@@ -767,27 +730,15 @@ mod tests {
         .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let acc = get_dummy_account_id();
-
-            let msg = MsgConnectionOpenAck::new(
-                p.connection_id,
-                p.proof_try,
-                p.proof_consensus,
-                p.proof_height,
-                p.consensus_height,
-                p.version,
-                acc,
-            );
+            let msg = MsgConnectionOpenAck::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenAck::new failed for test {}, \nmsg {:?} \nwith error {:?}",
+                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
-                msg.err()
+                test.raw,
+                msg.err(),
             );
         }
     }
@@ -795,43 +746,32 @@ mod tests {
     #[test]
     fn parse_connection_open_confirm_msg() {
         #[derive(Clone, Debug, PartialEq)]
-        struct ConOpenConfirmParams {
-            connection_id: String,
-            proof_ack: CommitmentProof,
-            proof_height: u64,
-        }
-
         struct Test {
             name: String,
-            params: ConOpenConfirmParams,
+            raw: RawMsgConnectionOpenConfirm,
             want_pass: bool,
         }
 
-        let default_con_params = ConOpenConfirmParams {
-            connection_id: "srcconnection".to_string(),
-            proof_ack: get_dummy_proof(),
-            proof_height: 10,
-        };
-
+        let default_ack_msg = get_dummy_msg_conn_open_confirm();
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_con_params.clone(),
+                raw: default_ack_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Bad connection id, non-alpha".to_string(),
-                params: ConOpenConfirmParams {
+                raw: RawMsgConnectionOpenConfirm {
                     connection_id: "con007".to_string(),
-                    ..default_con_params.clone()
+                    ..default_ack_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad proof height, height is 0".to_string(),
-                params: ConOpenConfirmParams {
+                raw: RawMsgConnectionOpenConfirm {
                     proof_height: 0,
-                    ..default_con_params
+                    ..default_ack_msg
                 },
                 want_pass: false,
             },
@@ -840,20 +780,15 @@ mod tests {
         .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let acc = get_dummy_account_id();
-
-            let msg =
-                MsgConnectionOpenConfirm::new(p.connection_id, p.proof_ack, p.proof_height, acc);
+            let msg = MsgConnectionOpenConfirm::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenConfirm::new failed for test {}, \nmsg {:?} \nwith error {:?}",
+                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
-                msg.err()
+                test.raw,
+                msg.err(),
             );
         }
     }
