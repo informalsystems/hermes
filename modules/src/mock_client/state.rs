@@ -56,7 +56,8 @@ impl ClientState for MockClientState {
     }
 
     fn is_frozen(&self) -> bool {
-        todo!()
+        // TODO
+        false
     }
 
     // fn check_header_and_update_state(

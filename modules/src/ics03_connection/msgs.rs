@@ -452,7 +452,7 @@ pub mod test_util {
             proof_init: get_dummy_proof(),
             proof_height: 10,
             proof_consensus: get_dummy_proof(),
-            consensus_height: 10,
+            consensus_height: 33,
             signer: get_dummy_account_id(),
         }
     }

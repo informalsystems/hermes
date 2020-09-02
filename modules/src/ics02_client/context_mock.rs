@@ -15,12 +15,21 @@ pub struct MockClientContext {
 }
 
 impl MockClientContext {
-    pub fn new(client_id: &ClientId) -> Self {
-        MockClientContext {
-            client_id: client_id.clone(),
-            client_type: None,
-            client_state: None,
-            consensus_state: None,
+    pub fn new(client_id: &ClientId, h: Option<u32>) -> Self {
+        // TODO - new + store?
+        match h {
+            Some(h) => MockClientContext {
+                client_id: client_id.clone(),
+                client_type: Option::from(ClientType::Mock),
+                client_state: Option::from(MockClientState(h)),
+                consensus_state: Option::from(MockConsensusState(h)),
+            },
+            None => MockClientContext {
+                client_id: client_id.clone(),
+                client_type: None,
+                client_state: None,
+                consensus_state: None,
+            },
         }
     }
 }

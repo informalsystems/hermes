@@ -35,7 +35,7 @@ impl From<ConnectionEvent> for Event {
                 vec![("connection_id".to_string(), conn.connection_id.to_string())],
             ),
             ConnectionEvent::ConnOpenTry(conn) => Event::new(
-                EventType::Custom("connection_open_init".to_string()),
+                EventType::Custom("connection_open_try".to_string()),
                 vec![("connection_id".to_string(), conn.connection_id.to_string())],
             ),
         }

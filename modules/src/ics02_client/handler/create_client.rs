@@ -75,7 +75,7 @@ mod tests {
     fn test_create_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
 
-        let reader = MockClientContext::new(&client_id);
+        let reader = MockClientContext::new(&client_id, None);
 
         let msg = MsgCreateAnyClient {
             client_id,

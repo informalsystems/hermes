@@ -4,8 +4,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::error::Error;
 use tendermint::block::Height;
 
-const MAX_HISTORY_SIZE: u32 = 3;
-
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MockChainContext {
     pub max_size: usize,
@@ -14,9 +12,9 @@ pub struct MockChainContext {
 }
 
 impl MockChainContext {
-    pub fn new(n: Height) -> Self {
+    pub fn new(max_size: usize, n: Height) -> Self {
         Self {
-            max_size: MAX_HISTORY_SIZE as usize,
+            max_size,
             latest: n,
             history: (0..n.value() as u32)
                 .map(|i| HistoricalInfo {
@@ -24,6 +22,10 @@ impl MockChainContext {
                 })
                 .collect(),
         }
+    }
+
+    pub fn max_size(&self) -> usize {
+        self.max_size
     }
 
     /// Used for testing
@@ -117,17 +119,17 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Add no prune".to_string(),
-                ctx: MockChainContext::new(Height(0)),
+                ctx: MockChainContext::new(3, Height(0)),
                 args: [1].to_vec(),
             },
             Test {
                 name: "Add with prune".to_string(),
-                ctx: MockChainContext::new(Height(2)),
+                ctx: MockChainContext::new(3, Height(2)),
                 args: [3, 4].to_vec(),
             },
             Test {
                 name: "Attempt to add non sequential headers".to_string(),
-                ctx: MockChainContext::new(Height(2)),
+                ctx: MockChainContext::new(3, Height(2)),
                 args: [3, 5, 7].to_vec(),
             },
         ];

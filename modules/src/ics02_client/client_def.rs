@@ -93,7 +93,10 @@ impl ClientState for AnyClientState {
     }
 
     fn is_frozen(&self) -> bool {
-        todo!()
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
+            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
+        }
     }
 
     // fn check_header_and_update_state(
@@ -143,7 +146,22 @@ impl ClientState for AnyClientState {
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.verify_connection_state(
+                height,
+                prefix,
+                proof,
+                connection_id,
+                expected_connection_end,
+            ),
+            AnyClientState::Mock(mock_state) => mock_state.verify_connection_state(
+                height,
+                prefix,
+                proof,
+                connection_id,
+                expected_connection_end,
+            ),
+        }
     }
 }
 

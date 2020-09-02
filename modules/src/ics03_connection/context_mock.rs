@@ -21,10 +21,14 @@ pub struct MockConnectionContext {
 impl MockConnectionContext {
     pub fn new(client_id: &ClientId, chain_height: Height) -> Self {
         MockConnectionContext {
-            chain_context: MockChainContext::new(chain_height),
-            client_context: MockClientContext::new(client_id),
+            chain_context: MockChainContext::new(3, chain_height),
+            client_context: MockClientContext::new(client_id, Some(chain_height.value() as u32)),
             connections: Default::default(),
         }
+    }
+
+    pub fn max_size(&self) -> usize {
+        self.chain_context.max_size()
     }
 
     pub fn add_connection(self, id: ConnectionId, end: ConnectionEnd) -> Self {
@@ -51,8 +55,8 @@ impl ConnectionReader for MockConnectionContext {
     }
 
     /// Returns the number of consensus state historical entries for the local chain.
-    fn chain_consensus_states_history_size(&self) -> u32 {
-        unimplemented!()
+    fn chain_consensus_states_history_size(&self) -> usize {
+        self.chain_context.max_size()
     }
 
     fn commitment_prefix(&self) -> CommitmentPrefix {
