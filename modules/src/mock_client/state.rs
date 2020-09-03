@@ -22,6 +22,7 @@ impl MockClientState {
         header: AnyHeader,
     ) -> Result<(MockClientState, MockConsensusState), Box<dyn std::error::Error>> {
         match header {
+            #[cfg(test)]
             AnyHeader::Mock(mock_header) => {
                 if self.latest_height() >= header.height() {
                     return Err("header height is lower than client latest".into());
@@ -37,6 +38,7 @@ impl MockClientState {
     }
 }
 
+#[cfg(test)]
 impl From<MockClientState> for AnyClientState {
     fn from(mcs: MockClientState) -> Self {
         Self::Mock(mcs)
@@ -115,6 +117,7 @@ impl From<MockConsensusState> for MockClientState {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockConsensusState(pub MockHeader);
 
+#[cfg(test)]
 impl From<MockConsensusState> for AnyConsensusState {
     fn from(mcs: MockConsensusState) -> Self {
         Self::Mock(mcs)
