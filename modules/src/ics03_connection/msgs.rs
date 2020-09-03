@@ -427,7 +427,7 @@ pub mod test_util {
             client_id: "destclient".to_string(),
             connection_id: "destconnection".to_string(),
             prefix: Some(MerklePrefix {
-                key_prefix: "ibc".as_bytes().to_vec(),
+                key_prefix: b"ibc".to_vec(),
             }),
         }
     }
@@ -656,7 +656,7 @@ mod tests {
             Test {
                 name: "Empty proof".to_string(),
                 raw: RawMsgConnectionOpenTry {
-                    proof_init: "".as_bytes().to_vec().into(),
+                    proof_init: b"".to_vec(),
                     ..default_try_msg
                 },
                 want_pass: false,

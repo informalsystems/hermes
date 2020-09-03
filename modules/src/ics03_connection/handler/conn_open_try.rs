@@ -115,7 +115,7 @@ mod tests {
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
             dummy_msg.client_id().clone(),
-            dummy_msg.counterparty().clone(),
+            dummy_msg.counterparty(),
             get_compatible_versions(),
         )
         .unwrap();
