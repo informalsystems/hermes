@@ -1,40 +1,57 @@
-use crate::ics23_commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use serde_derive::{Deserialize, Serialize};
+use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
     object_proof: CommitmentProof,
     consensus_proof: Option<ConsensusProof>,
     /// Height for both the above proofs
-    proofs_height: u64,
+    height: Height,
 }
 
 impl Proofs {
     pub fn new(
         object_proof: CommitmentProof,
         consensus_proof: Option<ConsensusProof>,
-        proofs_height: u64,
+        height: u64,
     ) -> Result<Self, String> {
-        if proofs_height == 0 {
+        if height == 0 {
             return Err("Proofs height cannot be zero".to_string());
         }
 
-        if object_proof.ops.is_empty() {
+        if object_proof.is_empty() {
             return Err("Proof cannot be empty".to_string());
         }
 
         Ok(Self {
             object_proof,
             consensus_proof,
-            proofs_height,
+            height: Height(height),
         })
+    }
+
+    /// Getter for the consensus_proof field of this proof.
+    pub fn consensus_proof(&self) -> Option<ConsensusProof> {
+        self.consensus_proof.clone()
+    }
+
+    /// Getter for the height field of this proof (i.e., the consensus height where this proof was
+    /// created).
+    pub fn height(&self) -> Height {
+        self.height
+    }
+
+    /// Getter for the object-specific proof (e.g., proof for connection state or channel state).
+    pub fn object_proof(&self) -> &CommitmentProof {
+        &self.object_proof
     }
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusProof {
-    consensus_proof: CommitmentProof,
-    consensus_height: u64,
+    proof: CommitmentProof,
+    height: Height,
 }
 
 impl ConsensusProof {
@@ -42,12 +59,23 @@ impl ConsensusProof {
         if consensus_height == 0 {
             return Err("Consensus height cannot be zero".to_string());
         }
-        if consensus_proof.ops.is_empty() {
+        if consensus_proof.is_empty() {
             return Err("Proof cannot be empty".to_string());
         }
+
         Ok(Self {
-            consensus_proof,
-            consensus_height,
+            proof: consensus_proof,
+            height: Height(consensus_height),
         })
+    }
+
+    /// Getter for the height field of this consensus proof.
+    pub fn height(&self) -> Height {
+        self.height
+    }
+
+    /// Getter for the proof (CommitmentProof) field of this consensus proof.
+    pub fn proof(&self) -> &CommitmentProof {
+        &self.proof
     }
 }

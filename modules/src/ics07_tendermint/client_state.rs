@@ -1,8 +1,15 @@
+#![allow(unreachable_code, unused_variables)]
+// TODO -- clean this up
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::consensus_state::ConsensusState;
-use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics23_commitment::CommitmentRoot;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 
+use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+
+use crate::ics02_client::client_def::AnyHeader;
+use crate::ics02_client::state::ConsensusState;
+use crate::ics07_tendermint::consensus_state::ConsensusState as tmConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 use tendermint::block::Height;
@@ -14,9 +21,8 @@ pub struct ClientState {
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
-    pub latest_height: crate::Height,
-    pub frozen_height: crate::Height,
-    //pub proof_specs: Specs
+    pub latest_height: Height,
+    pub frozen_height: Height,
 }
 
 impl ClientState {
@@ -71,10 +77,10 @@ impl ClientState {
             latest_height,
         })
     }
-}
-
-impl From<ConsensusState> for ClientState {
-    fn from(_: ConsensusState) -> Self {
+    pub fn check_header_and_update_state(
+        &self,
+        header: AnyHeader,
+    ) -> Result<(ClientState, tmConsensusState), Box<dyn std::error::Error>> {
         todo!()
     }
 }
@@ -88,7 +94,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
         ClientType::Tendermint
     }
 
-    fn get_latest_height(&self) -> crate::Height {
+    fn latest_height(&self) -> Height {
         self.latest_height
     }
 
@@ -97,11 +103,40 @@ impl crate::ics02_client::state::ClientState for ClientState {
         self.frozen_height != Height(0)
     }
 
+    // fn check_header_and_update_state(
+    //     &self,
+    //     header: &dyn Header,
+    // ) -> Result<
+    //     (
+    //         Box<dyn crate::ics02_client::state::ClientState>,
+    //         Box<dyn ConsensusState>,
+    //     ),
+    //     Box<dyn std::error::Error>,
+    // > {
+    //     todo!()
+    // }
+
     fn verify_client_consensus_state(
         &self,
-        _root: &CommitmentRoot,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        unimplemented!()
+        Ok(())
+    }
+
+    fn verify_connection_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
     }
 }
 

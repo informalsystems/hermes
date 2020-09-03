@@ -34,6 +34,20 @@ impl FromStr for ClientId {
     }
 }
 
+/// Equality check against string literal (satisfies &ClientId == &str).
+/// ```
+/// use std::str::FromStr;
+/// use ibc::ics24_host::identifier::ClientId;
+/// let client_id = ClientId::from_str("clientidtwo");
+/// assert!(client_id.is_ok());
+/// client_id.map(|id| {assert_eq!(&id, "clientidtwo")});
+/// ```
+impl PartialEq<str> for ClientId {
+    fn eq(&self, other: &str) -> bool {
+        self.as_str().eq(other)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ConnectionId(String);
 
@@ -61,6 +75,20 @@ impl FromStr for ConnectionId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_connection_identifier(s).map(|_| Self(s.to_string()))
+    }
+}
+
+/// Equality check against string literal (satisfies &ConnectionId == &str).
+/// ```
+/// use std::str::FromStr;
+/// use ibc::ics24_host::identifier::ConnectionId;
+/// let conn_id = ConnectionId::from_str("connectionId");
+/// assert!(conn_id.is_ok());
+/// conn_id.map(|id| {assert_eq!(&id, "connectionId")});
+/// ```
+impl PartialEq<str> for ConnectionId {
+    fn eq(&self, other: &str) -> bool {
+        self.as_str().eq(other)
     }
 }
 

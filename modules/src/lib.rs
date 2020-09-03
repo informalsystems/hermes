@@ -19,6 +19,7 @@
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 
+pub mod context;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
@@ -32,6 +33,12 @@ pub mod keys;
 pub mod proofs;
 pub mod try_from_raw;
 pub mod tx_msg;
+
+#[cfg(test)]
+pub mod context_mock;
+
+#[cfg(test)]
+pub mod mock_client;
 
 /// Height of a block, same as in `tendermint` crate
 pub type Height = tendermint::block::Height;

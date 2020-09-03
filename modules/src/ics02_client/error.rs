@@ -22,6 +22,9 @@ pub enum Kind {
 
     #[error("implementation specific")]
     ImplementationSpecific,
+
+    #[error("header verification failed")]
+    HeaderVerificationFailure,
 }
 
 impl Kind {
