@@ -45,7 +45,7 @@ impl From<Vec<u8>> for CommitmentPrefix {
 
 impl fmt::Debug for CommitmentPrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let converted = String::from_utf8(self.clone().0);
+        let converted = std::str::from_utf8(&self.0);
         match converted {
             Ok(s) => write!(f, "{}", s),
             Err(_e) => write!(f, "{:?}", &self.0),
