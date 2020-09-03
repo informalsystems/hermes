@@ -1,5 +1,3 @@
-#![allow(unreachable_code, unused_variables)]
-
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;

@@ -1,7 +1,5 @@
 //! This module implements the protocol for ICS3, that is, the processing logic for ICS3
 //! connection open handshake messages.
-//!
-//! TODO: in its current state, this module is not compiled nor included in the module tree.
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
