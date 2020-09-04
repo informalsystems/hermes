@@ -77,12 +77,16 @@ mod tests {
     #[test]
     fn test_update_client_ok() {
         let mut mock = MockClientContext {
-            client_id: "mockclient".parse().unwrap(),
+            // client_id: ,
             client_type: Some(ClientType::Tendermint),
-            client_state: MockClientState(MockHeader(Height(42))).into(),
+            client_states: HashMap::with_capacity(1),
             consensus_states: HashMap::with_capacity(1),
         };
 
+        mock.client_states.insert(
+            "mockclient".parse().unwrap(),
+            MockClientState(MockHeader(Height(42))).into(),
+        );
         mock.consensus_states
             .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
 
