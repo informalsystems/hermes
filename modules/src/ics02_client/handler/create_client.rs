@@ -116,7 +116,7 @@ mod tests {
     fn test_create_client_existing_client_type() {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let mut reader = MockClientContext::default();
-        reader.with_client_type(ClientType::Mock);
+        reader.with_client_type(&client_id, ClientType::Mock);
 
         let msg = MsgCreateAnyClient {
             client_id,

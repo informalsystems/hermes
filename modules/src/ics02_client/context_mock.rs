@@ -34,7 +34,8 @@ impl Default for MockClientContext {
 }
 
 impl MockClientContext {
-    pub fn with_client_type(&mut self, client_type: ClientType) {
+    pub fn with_client_type(&mut self, _client_id: &ClientId, client_type: ClientType) {
+        // self.client_states.insert(*client_id, MockClientState(MockHeader(Height(h))));
         self.client_type = Option::from(client_type);
     }
 
