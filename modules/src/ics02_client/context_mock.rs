@@ -1,3 +1,4 @@
+use crate::ics02_client::client_def::AnyConsensusState::Mock;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -5,6 +6,7 @@ use crate::ics02_client::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientState, MockConsensusState};
+use std::collections::HashMap;
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -12,7 +14,7 @@ pub struct MockClientContext {
     pub client_id: ClientId,
     pub client_state: Option<MockClientState>,
     pub client_type: Option<ClientType>,
-    pub consensus_state: Option<MockConsensusState>,
+    pub consensus_states: HashMap<Height, MockConsensusState>,
 }
 
 impl Default for MockClientContext {
@@ -21,7 +23,7 @@ impl Default for MockClientContext {
             client_id: "defaultclientid".to_string().parse().unwrap(),
             client_state: None,
             client_type: None,
-            consensus_state: None,
+            consensus_states: Default::default(),
         }
     }
 }
@@ -32,7 +34,7 @@ impl MockClientContext {
             client_id: client_id.clone(),
             client_type: None,
             client_state: None,
-            consensus_state: None,
+            consensus_states: Default::default(),
         }
     }
 
@@ -44,7 +46,9 @@ impl MockClientContext {
         self.client_id = client_id.clone();
         self.client_type = Option::from(ClientType::Mock);
         self.client_state = Option::from(MockClientState(MockHeader(Height(h))));
-        self.consensus_state = Option::from(MockConsensusState(MockHeader(Height(h))));
+        self.consensus_states = HashMap::with_capacity(1);
+        self.consensus_states
+            .insert(Height(h), MockConsensusState(MockHeader(Height(h))));
     }
 }
 
@@ -57,6 +61,7 @@ impl ClientReader for MockClientContext {
         }
     }
 
+    /// why this allow?
     #[allow(trivial_casts)]
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         if client_id == &self.client_id {
@@ -67,9 +72,12 @@ impl ClientReader for MockClientContext {
     }
 
     #[allow(trivial_casts)]
-    fn consensus_state(&self, client_id: &ClientId, _height: Height) -> Option<AnyConsensusState> {
+    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
         if client_id == &self.client_id {
-            self.consensus_state.map(Into::into)
+            match self.consensus_states.get(&height) {
+                Some(cs) => Some(Mock(*cs)),
+                None => None,
+            }
         } else {
             None
         }
