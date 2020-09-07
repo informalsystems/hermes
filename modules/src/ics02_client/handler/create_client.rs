@@ -114,15 +114,16 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_type() {
+        let height = Height(42);
         let client_id: ClientId = "mockclient".parse().unwrap();
         let mut reader = MockClientContext::default();
-        reader.with_client_type(&client_id, ClientType::Mock);
+        reader.with_client_type(&client_id, ClientType::Mock, height);
 
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Mock,
-            client_state: MockClientState(MockHeader(Height(42))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
+            client_state: MockClientState(MockHeader(height)).into(),
+            consensus_state: MockConsensusState(MockHeader(height)).into(),
         };
 
         let output = process(&reader, msg.clone());
