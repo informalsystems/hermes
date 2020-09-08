@@ -18,8 +18,8 @@ pub struct MockClientContext {
     /// All clients in this context have this (same) type.
     pub client_type: Option<ClientType>,
     /// Mapping of heights to consensus states. All clients share these states. A future, more
-    /// sophisticated implementation of this mock would permit individual sets of consensus states
-    /// per client.
+    /// sophisticated implementation of this mock, would permit each client to have their own set
+    /// of consensus states.
     pub consensus_states: HashMap<Height, MockConsensusState>,
 }
 
@@ -35,18 +35,19 @@ impl Default for MockClientContext {
 
 impl MockClientContext {
     pub fn with_client_type(&mut self, client_id: &ClientId, client_type: ClientType, h: Height) {
-        self.client_states.insert(client_id.clone(), MockClientState(MockHeader(h)));
+        self.client_states
+            .insert(client_id.clone(), MockClientState(MockHeader(h)));
         self.client_type = Option::from(client_type);
     }
 
-    pub fn with_client_state(&mut self, client_id: &ClientId, h: u64) {
+    pub fn with_client_state(&mut self, client_id: &ClientId, h: Height) {
         self.client_type = Option::from(ClientType::Mock);
         self.client_states = HashMap::with_capacity(1);
         self.client_states
-            .insert(client_id.clone(), MockClientState(MockHeader(Height(h))));
+            .insert(client_id.clone(), MockClientState(MockHeader(h)));
         self.consensus_states = HashMap::with_capacity(1);
         self.consensus_states
-            .insert(Height(h), MockConsensusState(MockHeader(Height(h))));
+            .insert(h, MockConsensusState(MockHeader(h)));
     }
 }
 

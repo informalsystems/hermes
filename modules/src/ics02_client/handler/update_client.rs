@@ -76,18 +76,17 @@ mod tests {
 
     #[test]
     fn test_update_client_ok() {
-        let mut mock = MockClientContext {
-            // client_id: ,
+        let mut ctx = MockClientContext {
             client_type: Some(ClientType::Tendermint),
             client_states: HashMap::with_capacity(1),
             consensus_states: HashMap::with_capacity(1),
         };
 
-        mock.client_states.insert(
+        ctx.client_states.insert(
             "mockclient".parse().unwrap(),
             MockClientState(MockHeader(Height(42))).into(),
         );
-        mock.consensus_states
+        ctx.consensus_states
             .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
 
         let msg = MsgUpdateAnyClient {
@@ -95,7 +94,7 @@ mod tests {
             header: MockHeader(Height(46)).into(),
         };
 
-        let output = process(&mock, msg.clone());
+        let output = process(&ctx, msg.clone());
 
         match output {
             Ok(HandlerOutput {
@@ -103,7 +102,6 @@ mod tests {
                 events,
                 log,
             }) => {
-                // assert_eq!(result.client_state, MockClientState(0));
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientUpdated(msg.client_id).into()]
@@ -112,6 +110,93 @@ mod tests {
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_nonexisting_client() {
+        let mut ctx = MockClientContext {
+            client_type: Some(ClientType::Tendermint),
+            client_states: HashMap::with_capacity(1),
+            consensus_states: HashMap::with_capacity(1),
+        };
+
+        ctx.client_states.insert(
+            "mockclient1".parse().unwrap(),
+            MockClientState(MockHeader(Height(42))).into(),
+        );
+        ctx.consensus_states
+            .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
+
+        let msg = MsgUpdateAnyClient {
+            client_id: "nonexistingclient".parse().unwrap(),
+            header: MockHeader(Height(46)).into(),
+        };
+
+        let output = process(&ctx, msg.clone());
+
+        match output {
+            Ok(_) => {
+                panic!("unexpected success (expected error)");
+            }
+            Err(err) => {
+                assert_eq!(err.kind(), &Kind::ClientNotFound(msg.client_id));
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_client_ok_multiple() {
+        let client_ids: Vec<ClientId> = vec![
+            "mockclient1".parse().unwrap(),
+            "mockclient2".parse().unwrap(),
+            "mockclient3".parse().unwrap(),
+        ];
+
+        let initial_height = Height(45);
+        let update_height = Height(49);
+
+        let mut ctx = MockClientContext {
+            client_type: Some(ClientType::Tendermint),
+            client_states: HashMap::with_capacity(client_ids.len()),
+            consensus_states: HashMap::with_capacity(client_ids.len()),
+        };
+
+        for cid in &client_ids {
+            ctx.client_states.insert(
+                cid.clone(),
+                MockClientState(MockHeader(initial_height)).into(),
+            );
+            ctx.consensus_states.insert(
+                initial_height,
+                MockConsensusState(MockHeader(initial_height)),
+            );
+        }
+
+        for cid in &client_ids {
+            let msg = MsgUpdateAnyClient {
+                client_id: cid.clone(),
+                header: MockHeader(update_height).into(),
+            };
+
+            let output = process(&ctx, msg.clone());
+
+            match output {
+                Ok(HandlerOutput {
+                    result: _,
+                    events,
+                    log,
+                }) => {
+                    assert_eq!(
+                        events,
+                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                    );
+                    assert!(log.is_empty());
+                }
+                Err(err) => {
+                    panic!("unexpected error: {}", err);
+                }
             }
         }
     }

@@ -29,7 +29,7 @@ impl MockConnectionContext {
 
     pub fn with_client_state(&mut self, client_id: &ClientId, latest_client_height: u64) {
         self.client_context
-            .with_client_state(client_id, latest_client_height)
+            .with_client_state(client_id, Height(latest_client_height))
     }
 
     pub fn max_size(&self) -> usize {
