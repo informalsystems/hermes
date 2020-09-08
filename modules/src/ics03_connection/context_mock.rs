@@ -16,6 +16,7 @@ pub struct MockConnectionContext {
     chain_context: MockChainContext,
     client_context: MockClientContext,
     connections: HashMap<ConnectionId, ConnectionEnd>,
+    client_connections: HashMap<ClientId, ConnectionId>,
 }
 
 impl MockConnectionContext {
@@ -24,6 +25,7 @@ impl MockConnectionContext {
             chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
             client_context: Default::default(),
             connections: Default::default(),
+            client_connections: Default::default(),
         }
     }
 
@@ -95,18 +97,18 @@ impl ConnectionKeeper for MockConnectionContext {
         connection_id: &ConnectionId,
         connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
-        self.connections.insert(connection_id.clone(), connection_end.clone());
+        self.connections
+            .insert(connection_id.clone(), connection_end.clone());
         Ok(())
     }
 
-    /// TODO: implement.
-    /// This function should check that a client with client_id exists, and also
-    /// check that this client does not have already a connection with connection_id associated.
-    /// Since these checks need to rely on a reader, all this functionality should probably be
-    /// implemented already in the `process` function of ConnOpenInit.
-    /// If all checks pass, then the functionality here should consist of inserting a new record to
-    /// associate the client id with the conneciton id.
-    fn store_connection_to_client(&mut self, _connection_id: &ConnectionId, _client_id: &ClientId) -> Result<(), Error> {
+    fn store_connection_to_client(
+        &mut self,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
+    ) -> Result<(), Error> {
+        self.client_connections
+            .insert(client_id.clone(), connection_id.clone());
         Ok(())
     }
 }

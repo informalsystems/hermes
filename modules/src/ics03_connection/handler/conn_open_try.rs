@@ -122,12 +122,20 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                ctx: default_context.clone().with_client_state(dummy_msg.client_id(), 10),
+                ctx: default_context
+                    .clone()
+                    .with_client_state(dummy_msg.client_id(), 10),
                 msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),
                 want_pass: true,
             },
             Test {
-                name: "Protocol fails because connection exists in the store already".to_string(),
+                name: "Processing fails because no client exists".to_string(),
+                ctx: default_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
                     .add_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),

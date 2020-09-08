@@ -84,7 +84,7 @@ mod tests {
 
         ctx.client_states.insert(
             "mockclient".parse().unwrap(),
-            MockClientState(MockHeader(Height(42))).into(),
+            MockClientState(MockHeader(Height(42))),
         );
         ctx.consensus_states
             .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
@@ -124,7 +124,7 @@ mod tests {
 
         ctx.client_states.insert(
             "mockclient1".parse().unwrap(),
-            MockClientState(MockHeader(Height(42))).into(),
+            MockClientState(MockHeader(Height(42))),
         );
         ctx.consensus_states
             .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
@@ -166,7 +166,7 @@ mod tests {
         for cid in &client_ids {
             ctx.client_states.insert(
                 cid.clone(),
-                MockClientState(MockHeader(initial_height)).into(),
+                MockClientState(MockHeader(initial_height)),
             );
             ctx.consensus_states.insert(
                 initial_height,
