@@ -164,10 +164,8 @@ mod tests {
         };
 
         for cid in &client_ids {
-            ctx.client_states.insert(
-                cid.clone(),
-                MockClientState(MockHeader(initial_height)),
-            );
+            ctx.client_states
+                .insert(cid.clone(), MockClientState(MockHeader(initial_height)));
             ctx.consensus_states.insert(
                 initial_height,
                 MockConsensusState(MockHeader(initial_height)),
