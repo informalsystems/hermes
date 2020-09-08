@@ -34,12 +34,17 @@ impl Default for MockClientContext {
 }
 
 impl MockClientContext {
+    /// Given a client type, an id, and a height, this function registers a new client in the
+    /// context for that type and also associates to this client a new mock client state for the
+    /// given height.
     pub fn with_client_type(&mut self, client_id: &ClientId, client_type: ClientType, h: Height) {
         self.client_states
             .insert(client_id.clone(), MockClientState(MockHeader(h)));
         self.client_type = Option::from(client_type);
     }
 
+    /// Given a client id and a height, registers a new client in the context and also associates
+    /// to this client a mock client state and a mock consensus state for the input height.
     pub fn with_client_state(&mut self, client_id: &ClientId, h: Height) {
         self.client_type = Option::from(ClientType::Mock);
         self.client_states = HashMap::with_capacity(1);

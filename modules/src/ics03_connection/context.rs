@@ -35,7 +35,13 @@ pub trait ConnectionReader {
 pub trait ConnectionKeeper {
     fn store_connection(
         &mut self,
-        connection_id: ConnectionId,
-        connection_end: ConnectionEnd,
+        connection_id: &ConnectionId,
+        connection_end: &ConnectionEnd,
+    ) -> Result<(), Error>;
+
+    fn store_connection_to_client(
+        &mut self,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
     ) -> Result<(), Error>;
 }

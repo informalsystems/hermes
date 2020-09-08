@@ -63,8 +63,7 @@ mod tests {
         }
 
         let dummy_msg = MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let mut default_context = MockConnectionContext::new(34, 3);
-        default_context.with_client_state(dummy_msg.client_id(), 10);
+        let default_context = MockConnectionContext::new(34, 3);
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
@@ -77,12 +76,19 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                ctx: default_context.clone(),
+                ctx: default_context.clone().with_client_state(dummy_msg.client_id(), 10),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
                 want_pass: true,
             },
+            // not implemented yet, see store_connection_to_client()
+            // Test {
+            //     name: "Processing fails because no client exists in the context".to_string(),
+            //     ctx: default_context.clone(),
+            //     msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+            //     want_pass: false,
+            // },
             Test {
-                name: "Protocol fails because connection exists in the store already".to_string(),
+                name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
                     .add_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),

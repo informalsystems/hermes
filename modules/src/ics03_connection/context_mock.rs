@@ -27,9 +27,13 @@ impl MockConnectionContext {
         }
     }
 
-    pub fn with_client_state(&mut self, client_id: &ClientId, latest_client_height: u64) {
-        self.client_context
-            .with_client_state(client_id, Height(latest_client_height))
+    pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
+        let mut client_context = self.client_context.clone();
+        client_context.with_client_state(client_id, Height(latest_client_height));
+        Self {
+            client_context,
+            ..self
+        }
     }
 
     pub fn max_size(&self) -> usize {
@@ -88,10 +92,21 @@ impl ConnectionReader for MockConnectionContext {
 impl ConnectionKeeper for MockConnectionContext {
     fn store_connection(
         &mut self,
-        connection_id: ConnectionId,
-        connection_end: ConnectionEnd,
+        connection_id: &ConnectionId,
+        connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
-        self.connections.insert(connection_id, connection_end);
+        self.connections.insert(connection_id.clone(), connection_end.clone());
+        Ok(())
+    }
+
+    /// TODO: implement.
+    /// This function should check that a client with client_id exists, and also
+    /// check that this client does not have already a connection with connection_id associated.
+    /// Since these checks need to rely on a reader, all this functionality should probably be
+    /// implemented already in the `process` function of ConnOpenInit.
+    /// If all checks pass, then the functionality here should consist of inserting a new record to
+    /// associate the client id with the conneciton id.
+    fn store_connection_to_client(&mut self, _connection_id: &ConnectionId, _client_id: &ClientId) -> Result<(), Error> {
         Ok(())
     }
 }
