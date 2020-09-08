@@ -21,7 +21,6 @@ impl TryFromRaw for ConnectionEnd {
     type RawType = RawConnectionEnd;
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
-
         Ok(Self::new(
             State::from_i32(value.state),
             value

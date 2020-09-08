@@ -211,13 +211,16 @@ impl TryFromRaw for MsgConnectionOpenTry {
     type RawType = RawMsgConnectionOpenTry;
     type Error = anomaly::Error<Kind>;
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        let proof_height = msg.proof_height
-            .ok_or_else(||Kind::MissingProofHeight)?.epoch_height;
-        let consensus_height = msg.consensus_height
-            .ok_or_else(|| Kind::MissingConsesusHeight)?.epoch_height;
-        let consensus_proof_obj =
-            ConsensusProof::new(msg.proof_consensus.into(),consensus_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?;
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .epoch_height;
+        let consensus_height = msg
+            .consensus_height
+            .ok_or_else(|| Kind::MissingConsesusHeight)?
+            .epoch_height;
+        let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
 
         Ok(Self {
             connection_id: msg
@@ -314,13 +317,16 @@ impl TryFromRaw for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let proof_height = msg.proof_height
-            .ok_or_else(||Kind::MissingProofHeight)?.epoch_height;
-        let consensus_height = msg.consensus_height
-            .ok_or_else(|| Kind::MissingConsesusHeight)?.epoch_height;
-        let consensus_proof_obj =
-            ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?;
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .epoch_height;
+        let consensus_height = msg
+            .consensus_height
+            .ok_or_else(|| Kind::MissingConsesusHeight)?
+            .epoch_height;
+        let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
 
         Ok(Self {
             connection_id: msg
@@ -393,8 +399,10 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
-        let proof_height = msg.proof_height
-            .ok_or_else(||Kind::MissingProofHeight)?.epoch_height;
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .epoch_height;
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -418,8 +426,8 @@ pub mod test_util {
     use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
     use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    use ibc_proto::commitment::MerklePrefix;
     use ibc_proto::client::Height;
+    use ibc_proto::commitment::MerklePrefix;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -465,11 +473,17 @@ pub mod test_util {
             counterparty: Some(get_dummy_counterparty()),
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
-            proof_height: Some(Height{ epoch_number: 1, epoch_height: proof_height }),
+            proof_height: Some(Height {
+                epoch_number: 1,
+                epoch_height: proof_height,
+            }),
             proof_consensus: get_dummy_proof(),
-            consensus_height: Some(Height{ epoch_number: 1, epoch_height: consensus_height }),
+            consensus_height: Some(Height {
+                epoch_number: 1,
+                epoch_height: consensus_height,
+            }),
             signer: get_dummy_account_id(),
-            proof_client: vec![]
+            proof_client: vec![],
         }
     }
 
@@ -478,12 +492,18 @@ pub mod test_util {
             connection_id: "srcconnection".to_string(),
             version: "1.0.0".to_string(),
             proof_try: get_dummy_proof(),
-            proof_height: Some(Height{ epoch_number: 1, epoch_height: 10 }),
+            proof_height: Some(Height {
+                epoch_number: 1,
+                epoch_height: 10,
+            }),
             proof_consensus: get_dummy_proof(),
-            consensus_height: Some(Height{ epoch_number: 1, epoch_height: 10 }),
+            consensus_height: Some(Height {
+                epoch_number: 1,
+                epoch_height: 10,
+            }),
             signer: get_dummy_account_id(),
             client_state: None,
-            proof_client: vec![]
+            proof_client: vec![],
         }
     }
 
@@ -491,7 +511,10 @@ pub mod test_util {
         RawMsgConnectionOpenConfirm {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
-            proof_height: Some(Height{ epoch_number: 1, epoch_height: 10 }),
+            proof_height: Some(Height {
+                epoch_number: 1,
+                epoch_height: 10,
+            }),
             signer: get_dummy_account_id(),
         }
     }
@@ -508,12 +531,12 @@ mod tests {
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
     use crate::try_from_raw::TryFromRaw;
+    use ibc_proto::client::Height;
     use ibc_proto::connection::Counterparty as RawCounterparty;
     use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
     use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
     use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
     use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-    use ibc_proto::client::Height;
 
     #[test]
     fn parse_connection_open_init_msg() {
@@ -590,7 +613,8 @@ mod tests {
 
         let default_try_msg = get_dummy_msg_conn_open_try(10, 34);
 
-        let tests: Vec<Test> = vec![
+        let tests: Vec<Test> =
+            vec![
             Test {
                 name: "Good parameters".to_string(),
                 raw: default_try_msg.clone(),
@@ -678,8 +702,8 @@ mod tests {
                 want_pass: false,
             },
         ]
-        .into_iter()
-        .collect();
+            .into_iter()
+            .collect();
 
         for test in tests {
             let msg = MsgConnectionOpenTry::try_from(test.raw.clone());
@@ -731,7 +755,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
-                    proof_height: Some(Height{ epoch_number: 1, epoch_height: 0 }),
+                    proof_height: Some(Height {
+                        epoch_number: 1,
+                        epoch_height: 0,
+                    }),
                     ..default_ack_msg.clone()
                 },
                 want_pass: false,
@@ -739,7 +766,10 @@ mod tests {
             Test {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
-                    consensus_height: Some(Height{ epoch_number: 1, epoch_height: 0 }),
+                    consensus_height: Some(Height {
+                        epoch_number: 1,
+                        epoch_height: 0,
+                    }),
                     ..default_ack_msg
                 },
                 want_pass: false,
@@ -789,7 +819,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenConfirm {
-                    proof_height: Some(Height{ epoch_number: 1, epoch_height: 0 }),
+                    proof_height: Some(Height {
+                        epoch_number: 1,
+                        epoch_height: 0,
+                    }),
                     ..default_ack_msg
                 },
                 want_pass: false,
