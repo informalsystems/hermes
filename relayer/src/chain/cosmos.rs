@@ -94,10 +94,16 @@ impl Chain for CosmosSDKChain {
         TrustThresholdFraction::default()
     }
 
-    fn build_sign_tx(&self, msgs: Vec<Msg>) -> Result<Vec<u8>, Error> {
-        //Retrieve Account
+    fn build_sign_tx<T: std::error::Error, U: Msg<ValidationError = T>>(&self, _msgs: Vec<Box<U>>) -> Result<Vec<u8>, Error> {
         //Create Tx builder
-        //Tx Buildandsign
+        //TODO: TxBuilder to build and sign msg
+
+        unimplemented!()
+    }
+
+    fn send_msg<T: std::error::Error, U: Msg<ValidationError = T>>(&self, _msgs: Vec<Box<U>>) -> Result<Vec<u8>, Error> {
+        //TODO: Broadcast the signed transaction
+        unimplemented!()
     }
 }
 

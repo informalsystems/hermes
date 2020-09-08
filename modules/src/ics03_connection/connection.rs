@@ -5,8 +5,7 @@ use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 
 // Import proto declarations.
-use ibc_proto::connection::ConnectionEnd as RawConnectionEnd;
-use ibc_proto::connection::Counterparty as RawCounterparty;
+use ibc_proto::connection::{IdentifiedConnection as RawConnectionEnd, Counterparty as RawCounterparty};
 use std::convert::TryFrom;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
