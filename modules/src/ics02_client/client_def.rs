@@ -51,7 +51,7 @@ impl Header for AnyHeader {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AnyClientState {
     Tendermint(crate::ics07_tendermint::client_state::ClientState),
 

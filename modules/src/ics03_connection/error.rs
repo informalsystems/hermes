@@ -62,6 +62,9 @@ pub enum Kind {
     #[error("the client id does not match any client state")]
     MissingClient,
 
+    #[error("client proof must be present")]
+    NullClientProof,
+
     #[error("the client is frozen")]
     FrozenClient,
 

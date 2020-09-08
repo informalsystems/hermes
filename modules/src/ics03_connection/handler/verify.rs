@@ -1,3 +1,4 @@
+use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
@@ -10,6 +11,7 @@ use tendermint::block::Height;
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
     id: &ConnectionId,
+    client_state: Option<AnyClientState>,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
@@ -22,6 +24,20 @@ pub fn verify_proofs(
         proofs.height(),
         proofs.object_proof(),
     )?;
+
+    // If a client proof is present verify it.
+    match client_state {
+        None => (),
+        Some(state) => verify_client_proof(
+            ctx,
+            state,
+            proofs.height(),
+            proofs
+                .client_proof()
+                .as_ref()
+                .ok_or_else(|| Kind::NullClientProof)?,
+        )?,
+    };
 
     // If a consensus proof is present verify it.
     match proofs.consensus_proof() {
@@ -63,6 +79,16 @@ pub fn verify_connection_proof(
             expected_conn,
         )
         .map_err(|_| Kind::InvalidProof.context(id.to_string()))?)
+}
+
+pub fn verify_client_proof(
+    _ctx: &dyn ConnectionReader,
+    _client_state: AnyClientState,
+    _proof_height: Height,
+    _proof: &CommitmentProof,
+) -> Result<(), Error> {
+    // TODO
+    Ok(())
 }
 
 pub fn verify_consensus_proof(

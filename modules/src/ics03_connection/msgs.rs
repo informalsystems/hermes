@@ -25,6 +25,7 @@ use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfi
 use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
+use crate::ics02_client::client_def::AnyClientState;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::str::{from_utf8, FromStr};
@@ -139,6 +140,7 @@ impl Msg for MsgConnectionOpenInit {
 pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
+    client_state: Option<AnyClientState>,
     counterparty: Counterparty,
     counterparty_versions: Vec<String>,
     proofs: Proofs,
@@ -146,18 +148,9 @@ pub struct MsgConnectionOpenTry {
 }
 
 impl MsgConnectionOpenTry {
-    /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
-    pub fn consensus_height(&self) -> Height {
-        match self.proofs.consensus_proof() {
-            None => Height(0),
-            Some(p) => p.height(),
-        }
-    }
-
-    /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
-    pub fn counterparty(&self) -> Counterparty {
-        self.counterparty.clone()
+    /// Getter for accessing the connection identifier of this message.
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
     }
 
     /// Getter for accessing the client identifier from this message.
@@ -165,9 +158,19 @@ impl MsgConnectionOpenTry {
         &self.client_id
     }
 
-    /// Getter for accessing the connection identifier of this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
+    /// Getter for accessing the client state.
+    pub fn client_state(&self) -> Option<AnyClientState> {
+        self.client_state.clone()
+    }
+
+    /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
+    pub fn counterparty(&self) -> Counterparty {
+        self.counterparty.clone()
+    }
+
+    /// Getter for accessing the versions from this message. Returns a `clone()`.
+    pub fn counterparty_versions(&self) -> Vec<String> {
+        self.counterparty_versions.clone()
     }
 
     /// Getter for accessing the proofs in this message.
@@ -175,9 +178,13 @@ impl MsgConnectionOpenTry {
         &self.proofs
     }
 
-    /// Getter for accessing the versions from this message. Returns a `clone()`.
-    pub fn counterparty_versions(&self) -> Vec<String> {
-        self.counterparty_versions.clone()
+    /// Getter for accessing the `consensus_height` field from this message. Returns the special
+    /// value `0` if this field is not set.
+    pub fn consensus_height(&self) -> Height {
+        match self.proofs.consensus_proof() {
+            None => Height(0),
+            Some(p) => p.height(),
+        }
     }
 }
 
@@ -207,6 +214,19 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
+pub fn unpack_client_state(
+    any_client_raw: ::std::option::Option<::prost_types::Any>,
+) -> Result<Option<AnyClientState>, anomaly::Error<Kind>> {
+    match any_client_raw {
+        None => Ok(None),
+        Some(_client_raw) => {
+            // TODO deserialize
+            //let _cs = client_raw.value.into();
+            Ok(None)
+        }
+    }
+}
+
 impl TryFromRaw for MsgConnectionOpenTry {
     type RawType = RawMsgConnectionOpenTry;
     type Error = anomaly::Error<Kind>;
@@ -222,6 +242,11 @@ impl TryFromRaw for MsgConnectionOpenTry {
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
+        let client_proof = match msg.client_state {
+            None => None,
+            Some(_) => Some(msg.proof_client.into()),
+        };
+
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -231,6 +256,8 @@ impl TryFromRaw for MsgConnectionOpenTry {
                 .client_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_state: unpack_client_state(msg.client_state)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             counterparty: msg
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -239,6 +266,7 @@ impl TryFromRaw for MsgConnectionOpenTry {
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(
                 msg.proof_init.into(),
+                client_proof,
                 Some(consensus_proof_obj),
                 proof_height,
             )
@@ -257,24 +285,26 @@ impl TryFromRaw for MsgConnectionOpenTry {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
+    client_state: Option<AnyClientState>,
     proofs: Proofs,
     version: String,
     signer: AccountId,
 }
 
 impl MsgConnectionOpenAck {
-    /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
-    pub fn consensus_height(&self) -> Height {
-        match self.proofs.consensus_proof() {
-            None => Height(0),
-            Some(p) => p.height(),
-        }
-    }
-
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    /// Getter for accessing the client state.
+    pub fn client_state(&self) -> Option<AnyClientState> {
+        self.client_state.clone()
+    }
+
+    /// Getter for accessing (borrow) the proofs in this message.
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
     }
 
     /// Getter for the version field.
@@ -282,9 +312,13 @@ impl MsgConnectionOpenAck {
         &self.version
     }
 
-    /// Getter for accessing (borrow) the proofs in this message.
-    pub fn proofs(&self) -> &Proofs {
-        &self.proofs
+    /// Getter for accessing the `consensus_height` field from this message. Returns the special
+    /// value `0` if this field is not set.
+    pub fn consensus_height(&self) -> Height {
+        match self.proofs.consensus_proof() {
+            None => Height(0),
+            Some(p) => p.height(),
+        }
     }
 }
 
@@ -328,14 +362,22 @@ impl TryFromRaw for MsgConnectionOpenAck {
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
+        let client_proof = match msg.client_state {
+            None => None,
+            Some(_) => Some(msg.proof_client.into()),
+        };
+
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_state: unpack_client_state(msg.client_state)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(
                 msg.proof_try.into(),
+                client_proof,
                 Option::from(consensus_proof_obj),
                 proof_height,
             )
@@ -408,7 +450,7 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, proof_height)
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer: AccountId::from_str(
                 from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,

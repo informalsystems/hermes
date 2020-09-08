@@ -60,6 +60,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.connection_id(),
+        msg.client_state(),
         &new_connection_end,
         &expected_conn,
         msg.proofs(),
