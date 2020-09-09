@@ -1,5 +1,5 @@
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
@@ -8,17 +8,17 @@ use crate::ics02_client::msgs::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
-pub struct CreateClientResult<CD: ClientDef> {
+pub struct CreateClientResult {
     client_id: ClientId,
     client_type: ClientType,
-    client_state: CD::ClientState,
-    consensus_state: CD::ConsensusState,
+    client_state: AnyClientState,
+    consensus_state: AnyConsensusState,
 }
 
 pub fn process(
     ctx: &dyn ClientReader,
-    msg: MsgCreateAnyClient<AnyClient>,
-) -> HandlerResult<CreateClientResult<AnyClient>, Error> {
+    msg: MsgCreateAnyClient,
+) -> HandlerResult<CreateClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgCreateAnyClient {
@@ -50,10 +50,7 @@ pub fn process(
     }))
 }
 
-pub fn keep(
-    keeper: &mut dyn ClientKeeper,
-    result: CreateClientResult<AnyClient>,
-) -> Result<(), Error> {
+pub fn keep(keeper: &mut dyn ClientKeeper, result: CreateClientResult) -> Result<(), Error> {
     keeper.store_client_type(result.client_id.clone(), result.client_type)?;
     keeper.store_client_state(result.client_id.clone(), result.client_state)?;
     keeper.store_consensus_state(result.client_id, result.consensus_state)?;

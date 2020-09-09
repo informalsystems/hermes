@@ -9,7 +9,7 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(dead_code)]
+#![allow(dead_code, unused_imports, unused_variables)]
 
 //! Implementation of the following ICS modules:
 //!

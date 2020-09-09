@@ -2,7 +2,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics24_host::identifier::ClientId;
-use crate::Height;
+use tendermint::block::Height;
 
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;

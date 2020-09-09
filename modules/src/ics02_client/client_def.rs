@@ -3,13 +3,13 @@ use serde_derive::{Deserialize, Serialize};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-use crate::Height;
-
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+
+use ::tendermint::block::Height;
 
 #[cfg(test)]
 use crate::mock_client::client_def::MockClient;
@@ -22,6 +22,43 @@ pub trait ClientDef: Clone {
     type Header: Header;
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
+
+    /// TODO
+    fn check_header_and_update_state(
+        &self,
+        client_state: Self::ClientState,
+        header: Self::Header,
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
+
+    /// Verification functions as specified in:
+    /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
+    ///
+    /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
+    /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
+    /// height of the counterparty chain that this proof assumes (i.e., the height at which this
+    /// proof was computed).
+    #[allow(clippy::too_many_arguments)]
+    fn verify_client_consensus_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &Self::ConsensusState,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Verify a `proof` that a connection state matches that of the input `connection_end`.
+    fn verify_connection_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)] // TODO: Add Eq
@@ -37,6 +74,7 @@ impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(header) => header.client_type(),
+
             #[cfg(test)]
             Self::Mock(header) => header.client_type(),
         }
@@ -45,6 +83,7 @@ impl Header for AnyHeader {
     fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
+
             #[cfg(test)]
             Self::Mock(header) => header.height(),
         }
@@ -59,125 +98,35 @@ pub enum AnyClientState {
     Mock(MockClientState),
 }
 
-impl AnyClientState {
-    pub fn check_header_and_update_state(
-        &self,
-        header: AnyHeader,
-    ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
-        match self {
-            AnyClientState::Tendermint(tm_state) => {
-                let (new_state, new_consensus) = tm_state.check_header_and_update_state(header)?;
-                Ok((
-                    AnyClientState::Tendermint(new_state),
-                    AnyConsensusState::Tendermint(new_consensus),
-                ))
-            }
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => {
-                let (new_state, new_consensus) =
-                    mock_state.check_header_and_update_state(header)?;
-                Ok((
-                    AnyClientState::Mock(new_state),
-                    AnyConsensusState::Mock(new_consensus),
-                ))
-            }
-        }
-    }
-}
-
 impl ClientState for AnyClientState {
     fn chain_id(&self) -> String {
         todo!()
     }
 
     fn client_type(&self) -> ClientType {
-        todo!()
+        match self {
+            Self::Tendermint(state) => state.client_type(),
+
+            #[cfg(test)]
+            Self::Mock(state) => state.client_type(),
+        }
     }
 
     fn latest_height(&self) -> Height {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.latest_height(),
+            Self::Tendermint(tm_state) => tm_state.latest_height(),
 
             #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.latest_height(),
+            Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
 
     fn is_frozen(&self) -> bool {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
+            Self::Tendermint(tm_state) => tm_state.is_frozen(),
 
             #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
-        }
-    }
-
-    // fn check_header_and_update_state(
-    //     &self,
-    //     header: &dyn Header,
-    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
-    //     match self {
-    //         AnyClientState::Tendermint(tm_state) => tm_state.check_header_and_update_state(header),
-    //         AnyClientState::Mock(mock_state) => mock_state.check_header_and_update_state(header),
-    //     }
-    // }
-
-    fn verify_client_consensus_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &dyn ConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.verify_client_consensus_state(
-                height,
-                prefix,
-                proof,
-                client_id,
-                consensus_height,
-                expected_consensus_state,
-            ),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.verify_client_consensus_state(
-                height,
-                prefix,
-                proof,
-                client_id,
-                consensus_height,
-                expected_consensus_state,
-            ),
-        }
-    }
-
-    fn verify_connection_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.verify_connection_state(
-                height,
-                prefix,
-                proof,
-                connection_id,
-                expected_connection_end,
-            ),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.verify_connection_state(
-                height,
-                prefix,
-                proof,
-                connection_id,
-                expected_connection_end,
-            ),
+            Self::Mock(mock_state) => mock_state.is_frozen(),
         }
     }
 }
@@ -216,8 +165,143 @@ pub enum AnyClient {
     Mock(MockClient),
 }
 
+impl AnyClient {
+    pub fn from_client_type(client_type: ClientType) -> AnyClient {
+        match client_type {
+            ClientType::Tendermint => Self::Tendermint(TendermintClient),
+
+            #[cfg(test)]
+            ClientType::Mock => Self::Mock(MockClient),
+        }
+    }
+}
+
 impl ClientDef for AnyClient {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;
+
+    fn check_header_and_update_state(
+        &self,
+        client_state: AnyClientState,
+        header: AnyHeader,
+    ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
+        // We have to split and nest the following match because one cannot
+        // bind patterns both by-move and by-ref within the same pattern.
+        match self {
+            Self::Tendermint(client) => match (client_state, header) {
+                (AnyClientState::Tendermint(client_state), AnyHeader::Tendermint(header)) => {
+                    let (new_state, new_consensus) =
+                        client.check_header_and_update_state(client_state, header)?;
+
+                    Ok((
+                        AnyClientState::Tendermint(new_state),
+                        AnyConsensusState::Tendermint(new_consensus),
+                    ))
+                }
+
+                #[allow(unreachable_patterns)]
+                _ => panic!("Type mismatch between client and arguments: {:?}", self),
+            },
+
+            #[cfg(test)]
+            Self::Mock(client) => match (client_state, header) {
+                (AnyClientState::Mock(client_state), AnyHeader::Mock(header)) => {
+                    let (new_state, new_consensus) =
+                        client.check_header_and_update_state(client_state, header)?;
+
+                    Ok((
+                        AnyClientState::Mock(new_state),
+                        AnyConsensusState::Mock(new_consensus),
+                    ))
+                }
+
+                #[allow(unreachable_patterns)]
+                _ => panic!("Type mismatch between client and arguments: {:?}", self),
+            },
+        }
+    }
+
+    fn verify_client_consensus_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &AnyConsensusState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match (self, client_state, expected_consensus_state) {
+            (
+                Self::Tendermint(client),
+                AnyClientState::Tendermint(client_state),
+                AnyConsensusState::Tendermint(expected_consensus_state),
+            ) => client.verify_client_consensus_state(
+                client_state,
+                height,
+                prefix,
+                proof,
+                client_id,
+                consensus_height,
+                expected_consensus_state,
+            ),
+
+            #[cfg(test)]
+            (
+                Self::Mock(client),
+                AnyClientState::Mock(client_state),
+                AnyConsensusState::Mock(expected_consensus_state),
+            ) => client.verify_client_consensus_state(
+                client_state,
+                height,
+                prefix,
+                proof,
+                client_id,
+                consensus_height,
+                expected_consensus_state,
+            ),
+
+            // The compiler is confused, and this pattern is actually reachable
+            #[allow(unreachable_patterns)]
+            _ => panic!("Type mismatch between client and arguments: {:?}", self),
+        }
+    }
+
+    fn verify_connection_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProof,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match (self, client_state) {
+            (Self::Tendermint(client), AnyClientState::Tendermint(client_state)) => client
+                .verify_connection_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    connection_id,
+                    expected_connection_end,
+                ),
+
+            #[cfg(test)]
+            (Self::Mock(client), AnyClientState::Mock(client_state)) => client
+                .verify_connection_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    connection_id,
+                    expected_connection_end,
+                ),
+
+            // The compiler is confused, and this pattern is actually reachable
+            #[allow(unreachable_patterns)]
+            _ => panic!("Type mismatch between client and arguments: {:?}", self),
+        }
+    }
 }
