@@ -10,7 +10,7 @@ EXTENDS Naturals, FiniteSets, RelayerDefinitions
 (***************************************************************************
  Client datagram handlers
  ***************************************************************************)
-    
+   
 \* client heights: 
 \* good version: add all client heights from datagrams to counterpartyClientHeights
 \* bad version: add only Max of client heights from datagrams to counterpartyClientHeights
@@ -38,10 +38,10 @@ HandleCreateClient(chainID, chain, datagrams) ==
                 ELSE {Max(createClientHeights)}
          ] IN
 
-   clientCreateChain
- 
+    clientCreateChain
+
 \* Handle "ClientUpdate" datagrams
-HandleUpdateClient(chainID, chain, datagrams) ==     
+HandleClientUpdate(chainID, chain, datagrams) ==     
     \* max client height of chain
     LET maxClientHeight == IF chain.counterpartyClientHeights /= AsSetInt({})
                            THEN Max(chain.counterpartyClientHeights)
@@ -69,10 +69,9 @@ HandleUpdateClient(chainID, chain, datagrams) ==
                      ELSE chain.counterpartyClientHeights
          ] IN
    
-    clientUpdatedChain
-        
+    clientUpdatedChain    
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 19:43:27 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 09 14:21:40 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

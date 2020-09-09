@@ -10,9 +10,9 @@ EXTENDS Naturals, FiniteSets, RelayerDefinitions
 (***************************************************************************
  Channel datagram handlers
  ***************************************************************************)
- 
+
 \* Handle "ChanOpenInit" datagrams
-HandleChanOpenInit(chainID, chain, history, datagrams) ==
+HandleChanOpenInit(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenInit" datagrams, with a valid channel ID
@@ -47,18 +47,13 @@ HandleChanOpenInit(chainID, chain, history, datagrams) ==
          LET chanOpenInitChain == AsChainStore([
             chain EXCEPT !.connectionEnd = chanOpenInitConnectionEnd            
          ]) IN
-         \* update history variable
-         LET chanOpenInitHistory == AsHistory([
-             history EXCEPT !.chanInit = TRUE
-         ]) IN
-                 
-         [store |-> AsChainStore(chanOpenInitChain), 
-          history |-> AsHistory(chanOpenInitHistory)]
-    \* otherwise, do not update the chain     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+         
+         chanOpenInitChain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 \* Handle "ChanOpenTry" datagrams
-HandleChanOpenTry(chainID, chain, history, datagrams) ==
+HandleChanOpenTry(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenTry" datagrams, with a valid channel ID
@@ -100,22 +95,16 @@ HandleChanOpenTry(chainID, chain, history, datagrams) ==
               LET chanOpenTryChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = chanOpenTryConnectionEnd
               ]) IN
-              
-              \* update history variable
-              LET chanOpenTryHistory == AsHistory([
-                  history EXCEPT !.chanTryOpen = TRUE
-              ]) IN
                  
-              [store |-> AsChainStore(chanOpenTryChain), 
-               history |-> AsHistory(chanOpenTryHistory)]
+              chanOpenTryChain
 
-         \* otherwise, do not update the chain
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+         \* otherwise, do not update the chain store
+         ELSE chain
+    \* otherwise, do not update the chain store    
+    ELSE chain
 
 \* Handle "ChanOpenAck" datagrams
-HandleChanOpenAck(chainID, chain, history, datagrams) ==
+HandleChanOpenAck(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenAck" datagrams, with a valid channel ID
@@ -144,21 +133,16 @@ HandleChanOpenAck(chainID, chain, history, datagrams) ==
                   chain EXCEPT !.connectionEnd = chanOpenAckConnectionEnd
               ]) IN
               
-              \* update history variable
-              LET chanOpenAckHistory == AsHistory([
-                  history EXCEPT !.chanOpen = TRUE
-              ]) IN
-                 
-              [store |-> AsChainStore(chanOpenAckChain), 
-               history |-> AsHistory(chanOpenAckHistory)]                
-         \* otherwise, do not update the chain
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+              chanOpenAckChain
+
+         \* otherwise, do not update the chain store
+         ELSE chain
+    \* otherwise, do not update the chain store     
+    ELSE chain
     
 
 \* Handle "ChanOpenConfirm" datagrams
-HandleChanOpenConfirm(chainID, chain, history, datagrams) ==
+HandleChanOpenConfirm(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenConfirm" datagrams, with a valid channel ID 
@@ -184,21 +168,16 @@ HandleChanOpenConfirm(chainID, chain, history, datagrams) ==
               LET chanOpenConfirmChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = chanOpenConfirmConnectionEnd
               ]) IN
-              
-              \* update history variable
-              LET chanOpenConfirmHistory == AsHistory([
-                  history EXCEPT !.chanOpen = TRUE
-              ]) IN
                  
-              [store |-> AsChainStore(chanOpenConfirmChain), 
-               history |-> AsHistory(chanOpenConfirmHistory)]                
-         \* otherwise, do not update the chain
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)] 
+              chanOpenConfirmChain
+         \* otherwise, do not update the chain store
+         
+         ELSE chain
+    \* otherwise, do not update the chain store
+    ELSE chain
     
 \* Handle "ChanCloseInit" datagrams
-HandleChanCloseInit(chainID, chain, history, datagrams) ==
+HandleChanCloseInit(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanCloseInit" datagrams, with a valid channel ID 
@@ -223,17 +202,12 @@ HandleChanCloseInit(chainID, chain, history, datagrams) ==
              chain EXCEPT !.connectionEnd = chanCloseInitConnectionEnd
          ]) IN
          
-         \* update history variable
-         LET chanCloseInitHistory == AsHistory([
-             history EXCEPT !.chanClosed = TRUE
-         ]) IN
-         [store |-> AsChainStore(chanCloseInitChain), 
-          history |-> AsHistory(chanCloseInitHistory)]              
-    \* otherwise, do not update the chain
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+         chanCloseInitChain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 \* Handle "ChanCloseConfirm" datagrams
-HandleChanCloseConfirm(chainID, chain, history, datagrams) ==
+HandleChanCloseConfirm(chainID, chain, datagrams) ==
     \* get chainID's channel end
     LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanCloseConfirm" datagrams, with a valid channel ID 
@@ -259,16 +233,11 @@ HandleChanCloseConfirm(chainID, chain, history, datagrams) ==
              chain EXCEPT !.connectionEnd = chanCloseConfirmConnectionEnd
          ]) IN
          
-         \* update history variable
-         LET chanCloseConfirmHistory == AsHistory([
-             history EXCEPT !.chanClosed = TRUE
-         ]) IN
-         [store |-> AsChainStore(chanCloseConfirmChain), 
-          history |-> AsHistory(chanCloseConfirmHistory)]              
-    \* otherwise, do not update the chain
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]    
+         chanCloseConfirmChain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 17:01:30 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 09 14:21:15 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

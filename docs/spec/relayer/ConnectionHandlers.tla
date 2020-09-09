@@ -12,13 +12,14 @@ EXTENDS Integers, FiniteSets, RelayerDefinitions
  ***************************************************************************)
  
 \* Handle "ConnOpenInit" datagrams
-HandleConnOpenInit(chainID, chain, history, datagrams) ==
+HandleConnOpenInit(chainID, chain, datagrams) ==
     \* get "ConnOpenInit" datagrams, with a valid connection ID
     LET connOpenInitDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenInit"
                             /\ dgr.connectionID = GetConnectionID(chainID)} IN
     
-    \* if there are valid "ConnOpenInit" datagrams, create a new connection end and update the chain
+    \* if there are valid "ConnOpenInit" datagrams, create a new connection end 
+    \* and update the chain store
     IF /\ connOpenInitDgrs /= AsSetDatagrams({}) 
        /\ chain.connectionEnd.state = "UNINIT"
     THEN LET connOpenInitDgr == CHOOSE dgr \in connOpenInitDgrs : TRUE IN
@@ -33,26 +34,22 @@ HandleConnOpenInit(chainID, chain, history, datagrams) ==
          LET connOpenInitChain == AsChainStore([
              chain EXCEPT !.connectionEnd = connOpenInitConnectionEnd
          ]) IN
-         \* update history variable
-         LET connOpenInitHistory == AsHistory([
-             history EXCEPT !.connInit = TRUE
-         ]) IN
-        
-         [store |-> AsChainStore(connOpenInitChain), 
-          history |-> AsHistory(connOpenInitHistory)]
-    \* otherwise, do not update the chain and history   
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    
+         
+         connOpenInitChain
+
+    \* otherwise, do not update the chain store
+    ELSE chain
+
 
 \* Handle "ConnOpenTry" datagrams
-HandleConnOpenTry(chainID, chain, history, datagrams) ==
+HandleConnOpenTry(chainID, chain, datagrams) ==
     \* get "ConnOpenTry" datagrams, with a valid connection ID and valid height
     LET connOpenTryDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenTry"
                             /\ dgr.connectionID = GetConnectionID(chainID)
                             /\ dgr.consensusHeight <= chain.height
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
-    
+
     IF connOpenTryDgrs /= AsSetDatagrams({})
     \* if there are valid "ConnOpenTry" datagrams, update the connection end 
     THEN LET connOpenTryDgr == CHOOSE dgr \in connOpenTryDgrs : TRUE IN
@@ -78,21 +75,15 @@ HandleConnOpenTry(chainID, chain, history, datagrams) ==
          THEN LET connOpenTryChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = connOpenTryConnectionEnd
               ]) IN
-              \* update history variable
-              LET connOpenTryHistory == AsHistory([
-                  history EXCEPT !.connTryOpen = TRUE
-              ]) IN
                 
-              [store |-> AsChainStore(connOpenTryChain), 
-               history |-> AsHistory(connOpenTryHistory)]
-         \* otherwise, do not update the chain and history
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain and history   
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-
+              connOpenTryChain
+         \* otherwise, do not update the chain store
+         ELSE chain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 \* Handle "ConnOpenAck" datagrams
-HandleConnOpenAck(chainID, chain, history, datagrams) ==
+HandleConnOpenAck(chainID, chain, datagrams) ==
     \* get "ConnOpenAck" datagrams, with a valid connection ID and valid height
     LET connOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenAck"
@@ -114,20 +105,17 @@ HandleConnOpenAck(chainID, chain, history, datagrams) ==
               LET connOpenAckChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = connOpenAckConnectionEnd
               ]) IN
-              \* update history variable
-              LET connOpenAckHistory == AsHistory([
-                  history EXCEPT !.connOpen = TRUE
-              ]) IN
               
-              [store |-> AsChainStore(connOpenAckChain), 
-               history |-> AsHistory(connOpenAckHistory)]                
-         \* otherwise, do not update the chain and history
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain and history     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+              connOpenAckChain
+         \* otherwise, do not update the chain store
+         ELSE chain
+    \* otherwise, do not update the chain store
+    ELSE chain
+
+    
 
 \* Handle "ConnOpenConfirm" datagrams
-HandleConnOpenConfirm(chainID, chain, history, datagrams) ==
+HandleConnOpenConfirm(chainID, chain, datagrams) ==
     \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
     LET connOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ConnOpenConfirm"
@@ -146,19 +134,14 @@ HandleConnOpenConfirm(chainID, chain, history, datagrams) ==
               LET connOpenConfirmChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = connOpenConfirmConnectionEnd
               ]) IN
-              \* update history variable
-              LET connOpenConfirmHistory == AsHistory([
-                  history EXCEPT !.connOpen = TRUE
-              ]) IN
               
-              [store |-> AsChainStore(connOpenConfirmChain), 
-               history |-> AsHistory(connOpenConfirmHistory)]                
-         \* otherwise, do not update the chain and history
-         ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
-    \* otherwise, do not update the chain and history     
-    ELSE [store |-> AsChainStore(chain), history |-> AsHistory(history)]
+              connOpenConfirmChain
+         \* otherwise, do not update the chain store
+         ELSE chain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Aug 10 16:57:39 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 09 14:21:25 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska

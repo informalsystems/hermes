@@ -3,6 +3,7 @@
 (***************************************************************************
  This module contains definitions of operators that are used to handle
  packet datagrams
+ (WIP, not finished)
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, RelayerDefinitions    
@@ -62,5 +63,5 @@ HandlePacketAck(chainID, chain, datagrams) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 05 12:21:16 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 09 16:50:19 CEST 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

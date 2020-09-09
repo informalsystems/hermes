@@ -5,7 +5,7 @@
  different modules
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets
+EXTENDS Integers, FiniteSets, Sequences
 
 (********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
 \* operator for type annotations
@@ -43,7 +43,7 @@ ConnectionEndType ==
         clientID |-> STRING,
         counterpartyConnectionID |-> STRING, 
         counterpartyClientID |-> STRING,
-        channelEnd |-> OrderedChannelEndType
+        channelEnd |-> ChannelEndType
     ]
 
 \* packet commitment type
@@ -94,7 +94,45 @@ HistoryType ==
         chanOpen |-> BOOLEAN, 
         chanClosed |-> BOOLEAN
     ]
-                
+
+\* client datagram type
+ClientDatagramType ==
+    [
+        type |-> STRING,
+        clientID |-> STRING,
+        height |-> Int   
+    ]
+
+\* connection datagram type
+ConnectionDatagramType ==
+    [
+        type |-> STRING,
+        connectionID |-> STRING,
+        clientID |-> STRING,
+        counterpartyConnectionID |-> STRING,
+        counterpartyClientID |-> STRING,
+        proofHeight |-> Int,
+        consensusHeight |-> Int
+    ]
+
+\* channel datagram type
+ChannelDatagramType ==
+    [
+        type |-> STRING,
+        channelID |-> STRING,
+        counterpartyChannelID |-> STRING,
+        proofHeight |-> Int
+    ]
+
+\* packet datagram type
+PacketDatagramType ==
+    [
+        type |-> STRING,
+        packet |-> PacketType,
+        acknowledgement |-> BOOLEAN,
+        proofHeight |-> Int
+    ]
+
 \* datagram type (record type containing fields of all datagrams)                  
 DatagramType ==
     [
@@ -116,11 +154,21 @@ AsID(ID) == ID <: STRING
 AsInt(n) == n <: Int
 AsString(s) == s <: STRING
 AsChannelEnd(channelEnd) == channelEnd <: ChannelEndType
+AsSetChannelEnd(CE) == CE <: {ChannelEndType}
 AsConnectionEnd(connectionEnd) == connectionEnd <: ConnectionEndType  
 AsChainStore(chainStore) == chainStore <: ChainStoreType
 AsHistory(history) == history <: HistoryType
 AsDatagram(dgr) == dgr <: DatagramType
+AsClientDatagram(dgr) == dgr <: ClientDatagramType
+AsSetClientDatagrams(Dgrs) == Dgrs <: {ClientDatagramType}
+AsConnectionDatagram(dgr) == dgr <: ConnectionDatagramType
+AsSetConnectionDatagrams(Dgrs) == Dgrs <: {ConnectionDatagramType}
+AsChannelDatagram(dgr) == dgr <: ChannelDatagramType
+AsSetChannelDatagrams(Dgrs) == Dgrs <: {ChannelDatagramType}
+AsPacketDatagram(dgr) == dgr <: PacketDatagramType
+AsSetPacketDatagrams(Dgrs) == Dgrs <: {PacketDatagramType}
 AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
+AsSeqDatagrams(SeqDgrs) == SeqDgrs <: Seq(DatagramType)
 AsSetInt(S) == S <: {Int}
 AsPacket(packet) == packet <: PacketType
 AsSetPacket(P) == P <: {PacketType}
@@ -142,6 +190,10 @@ nullChannelID == "none"
 ConnectionStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN"}
 ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
 ChannelOrder == {"ORDERED", "UNORDERED"} 
+
+ClientDatagramTypes == {"CreateClient", "UpdateClient"} <: {STRING}
+ConnectionDatagramTypes == {"ConnOpenInit", "ConnOpenTry", "ConnOpenAck", "ConnOpenConfirm"} <: {STRING}
+ChannelDatagramTypes == {"ChanOpenInit", "ChanOpenTry", "ChanOpenAck", "ChanOpenConfirm", "ChanCloseInit", "ChanCloseConfirm"} <: {STRING}
 
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x 
 
@@ -176,7 +228,7 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
              order : {"UNORDERED"}, 
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
-         ] 
+         ] <: {ChannelEndType}
     ELSE \* set of ordered channels
          [
              state : ChannelStates,
@@ -186,7 +238,8 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
              nextAckSeq : 0..maxPacketSeq, 
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
-         ] <: {OrderedChannelEndType}
+         ] <: {ChannelEndType}
+    
     
 (**************************** PacketCommitments ****************************
  A set of packet commitments.
@@ -503,9 +556,9 @@ IsChannelOpen(chain) ==
     
 \* returns true if the channel end on chainID is CLOSED
 IsChannelClosed(chain) ==
-    chain.connectionEnd.channelEnd.state = "CLOSED"     
+    chain.connectionEnd.channelEnd.state = "CLOSED"                                   
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Aug 11 11:22:21 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 09 14:21:56 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
