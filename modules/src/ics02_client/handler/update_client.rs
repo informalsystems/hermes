@@ -70,27 +70,16 @@ mod tests {
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::mock_client::header::MockHeader;
-    use crate::mock_client::state::{MockClientState, MockConsensusState};
-    use std::collections::HashMap;
     use tendermint::block::Height;
 
     #[test]
     fn test_update_client_ok() {
-        let mut ctx = MockClientContext {
-            client_type: Some(ClientType::Tendermint),
-            client_states: HashMap::with_capacity(1),
-            consensus_states: HashMap::with_capacity(1),
-        };
-
-        ctx.client_states.insert(
-            "mockclient".parse().unwrap(),
-            MockClientState(MockHeader(Height(42))),
-        );
-        ctx.consensus_states
-            .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
+        let client_id: ClientId = "mockclient".parse().unwrap();
+        let mut ctx = MockClientContext::default();
+        ctx.with_client(&client_id, ClientType::Tendermint, Height(42));
 
         let msg = MsgUpdateAnyClient {
-            client_id: "mockclient".parse().unwrap(),
+            client_id,
             header: MockHeader(Height(46)).into(),
         };
 
@@ -116,18 +105,9 @@ mod tests {
 
     #[test]
     fn test_update_nonexisting_client() {
-        let mut ctx = MockClientContext {
-            client_type: Some(ClientType::Tendermint),
-            client_states: HashMap::with_capacity(1),
-            consensus_states: HashMap::with_capacity(1),
-        };
-
-        ctx.client_states.insert(
-            "mockclient1".parse().unwrap(),
-            MockClientState(MockHeader(Height(42))),
-        );
-        ctx.consensus_states
-            .insert(Height(42), MockConsensusState(MockHeader(Height(42))));
+        let client_id: ClientId = "mockclient1".parse().unwrap();
+        let mut ctx = MockClientContext::default();
+        ctx.with_client_consensus_state(&client_id, Height(42));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
@@ -157,19 +137,10 @@ mod tests {
         let initial_height = Height(45);
         let update_height = Height(49);
 
-        let mut ctx = MockClientContext {
-            client_type: Some(ClientType::Tendermint),
-            client_states: HashMap::with_capacity(client_ids.len()),
-            consensus_states: HashMap::with_capacity(client_ids.len()),
-        };
+        let mut ctx = MockClientContext::default();
 
         for cid in &client_ids {
-            ctx.client_states
-                .insert(cid.clone(), MockClientState(MockHeader(initial_height)));
-            ctx.consensus_states.insert(
-                initial_height,
-                MockConsensusState(MockHeader(initial_height)),
-            );
+            ctx.with_client_consensus_state(cid, initial_height);
         }
 
         for cid in &client_ids {

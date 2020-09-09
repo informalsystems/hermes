@@ -119,6 +119,8 @@ mod tests {
         let mut ctx = MockClientContext::default();
         ctx.with_client_type(&client_id, ClientType::Mock, height);
 
+        ctx.with_client_type(&client_id, ClientType::Tendermint, height);
+
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Mock,
@@ -140,7 +142,7 @@ mod tests {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let mut ctx = MockClientContext::default();
         let height = Height(30);
-        ctx.with_client_state(&client_id, height);
+        ctx.with_client_consensus_state(&client_id, height);
 
         let msg = MsgCreateAnyClient {
             client_id,
@@ -163,7 +165,7 @@ mod tests {
         let existing_client_id: ClientId = "existingmockclient".parse().unwrap();
         let height = Height(80);
         let mut ctx = MockClientContext::default();
-        ctx.with_client_state(&existing_client_id, height);
+        ctx.with_client_consensus_state(&existing_client_id, height);
 
         let create_client_msgs: Vec<MsgCreateAnyClient<AnyClient>> = vec![
             MsgCreateAnyClient {
@@ -180,7 +182,7 @@ mod tests {
             },
             MsgCreateAnyClient {
                 client_id: "newmockclient3".parse().unwrap(),
-                client_type: ClientType::Mock,
+                client_type: ClientType::Tendermint,
                 client_state: MockClientState(MockHeader(Height(50))).into(),
                 consensus_state: MockConsensusState(MockHeader(Height(50))).into(),
             },
@@ -197,7 +199,7 @@ mod tests {
                     events,
                     log,
                 }) => {
-                    assert_eq!(result.client_type, ClientType::Mock);
+                    assert_eq!(result.client_type, msg.client_type);
                     assert_eq!(
                         events,
                         vec![ClientEvent::ClientCreated(msg.client_id).into()]

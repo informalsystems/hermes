@@ -11,7 +11,7 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct MockConnectionContext {
     chain_context: MockChainContext,
     client_context: MockClientContext,
@@ -31,7 +31,7 @@ impl MockConnectionContext {
 
     pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
         let mut client_context = self.client_context.clone();
-        client_context.with_client_state(client_id, Height(latest_client_height));
+        client_context.with_client_consensus_state(client_id, Height(latest_client_height));
         Self {
             client_context,
             ..self
