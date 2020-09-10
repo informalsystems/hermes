@@ -76,11 +76,11 @@ pub fn verify_consensus_proof(
     proof: &ConsensusProof,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
-    let client = ctx
+    let client_state = ctx
         .fetch_client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
 
-    if client.is_frozen() {
+    if client_state.is_frozen() {
         return Err(Kind::FrozenClient
             .context(connection_end.client_id().to_string())
             .into());
@@ -91,17 +91,19 @@ pub fn verify_consensus_proof(
         .fetch_self_consensus_state(proof.height())
         .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
 
-    todo!()
-    // Ok(client
-    //     .verify_client_consensus_state(
-    //         proof_height,
-    //         connection_end.counterparty().prefix(),
-    //         proof.proof(),
-    //         connection_end.counterparty().client_id(),
-    //         proof.height(),
-    //         &expected_consensus,
-    //     )
-    //     .map_err(|_| Kind::ConsensusStateVerificationFailure.context(proof.height().to_string()))?)
+    let client = AnyClient::from_client_type(client_state.client_type());
+
+    Ok(client
+        .verify_client_consensus_state(
+            &client_state,
+            proof_height,
+            connection_end.counterparty().prefix(),
+            proof.proof(),
+            connection_end.counterparty().client_id(),
+            proof.height(),
+            &expected_consensus,
+        )
+        .map_err(|_| Kind::ConsensusStateVerificationFailure.context(proof.height().to_string()))?)
 }
 
 pub fn check_client_consensus_height(
