@@ -70,24 +70,20 @@ mod tests {
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::mock_client::header::MockHeader;
-    use crate::mock_client::state::{MockClientState, MockConsensusState};
     use tendermint::block::Height;
 
     #[test]
     fn test_update_client_ok() {
-        let mock = MockClientContext {
-            client_id: "mockclient".parse().unwrap(),
-            client_type: Some(ClientType::Tendermint),
-            client_state: MockClientState(MockHeader(Height(42))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
-        };
+        let client_id: ClientId = "mockclient".parse().unwrap();
+        let mut ctx = MockClientContext::default();
+        ctx.with_client(&client_id, ClientType::Tendermint, Height(42));
 
         let msg = MsgUpdateAnyClient {
-            client_id: "mockclient".parse().unwrap(),
+            client_id,
             header: MockHeader(Height(46)).into(),
         };
 
-        let output = process(&mock, msg.clone());
+        let output = process(&ctx, msg.clone());
 
         match output {
             Ok(HandlerOutput {
@@ -95,7 +91,6 @@ mod tests {
                 events,
                 log,
             }) => {
-                // assert_eq!(result.client_state, MockClientState(0));
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientUpdated(msg.client_id).into()]
@@ -104,6 +99,73 @@ mod tests {
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_nonexisting_client() {
+        let client_id: ClientId = "mockclient1".parse().unwrap();
+        let mut ctx = MockClientContext::default();
+        ctx.with_client_consensus_state(&client_id, Height(42));
+
+        let msg = MsgUpdateAnyClient {
+            client_id: "nonexistingclient".parse().unwrap(),
+            header: MockHeader(Height(46)).into(),
+        };
+
+        let output = process(&ctx, msg.clone());
+
+        match output {
+            Ok(_) => {
+                panic!("unexpected success (expected error)");
+            }
+            Err(err) => {
+                assert_eq!(err.kind(), &Kind::ClientNotFound(msg.client_id));
+            }
+        }
+    }
+
+    #[test]
+    fn test_update_client_ok_multiple() {
+        let client_ids: Vec<ClientId> = vec![
+            "mockclient1".parse().unwrap(),
+            "mockclient2".parse().unwrap(),
+            "mockclient3".parse().unwrap(),
+        ];
+
+        let initial_height = Height(45);
+        let update_height = Height(49);
+
+        let mut ctx = MockClientContext::default();
+
+        for cid in &client_ids {
+            ctx.with_client_consensus_state(cid, initial_height);
+        }
+
+        for cid in &client_ids {
+            let msg = MsgUpdateAnyClient {
+                client_id: cid.clone(),
+                header: MockHeader(update_height).into(),
+            };
+
+            let output = process(&ctx, msg.clone());
+
+            match output {
+                Ok(HandlerOutput {
+                    result: _,
+                    events,
+                    log,
+                }) => {
+                    assert_eq!(
+                        events,
+                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                    );
+                    assert!(log.is_empty());
+                }
+                Err(err) => {
+                    panic!("unexpected error: {}", err);
+                }
             }
         }
     }

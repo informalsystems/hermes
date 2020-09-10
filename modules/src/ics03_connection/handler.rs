@@ -64,8 +64,8 @@ type Object = ConnectionEnd;
 // }
 
 pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(result.connection_id, result.connection_end)?;
-    // TODO - associate connection with client
+    keeper.store_connection(&result.connection_id, &result.connection_end)?;
+    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
     Ok(())
 }
 
