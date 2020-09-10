@@ -35,11 +35,11 @@ pub enum Kind {
     #[error("invalid address")]
     InvalidAddress,
 
-    #[error("missing consensus proof height in opentTry")]
+    #[error("missing consensus proof height")]
     MissingProofHeight,
 
-    #[error("missing consensus proof height in opentTry")]
-    MissingConsesusHeight,
+    #[error("missing consensus proof height")]
+    MissingConsensusHeight,
 
     #[error("invalid connection proof")]
     InvalidProof,

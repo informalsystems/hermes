@@ -237,7 +237,7 @@ impl TryFromRaw for MsgConnectionOpenTry {
             .epoch_height;
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsesusHeight)?
+            .ok_or_else(|| Kind::MissingConsensusHeight)?
             .epoch_height;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
@@ -357,7 +357,7 @@ impl TryFromRaw for MsgConnectionOpenAck {
             .epoch_height;
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsesusHeight)?
+            .ok_or_else(|| Kind::MissingConsensusHeight)?
             .epoch_height;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;

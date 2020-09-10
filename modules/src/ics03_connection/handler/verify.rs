@@ -26,9 +26,8 @@ pub fn verify_proofs(
     )?;
 
     // If a client proof is present verify it.
-    match client_state {
-        None => (),
-        Some(state) => verify_client_proof(
+    if let Some(state) = client_state {
+        verify_client_proof(
             ctx,
             connection_end,
             state,
@@ -37,8 +36,8 @@ pub fn verify_proofs(
                 .client_proof()
                 .as_ref()
                 .ok_or_else(|| Kind::NullClientProof)?,
-        )?,
-    };
+        )?;
+    }
 
     // If a consensus proof is present verify it.
     match proofs.consensus_proof() {
