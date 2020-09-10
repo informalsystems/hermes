@@ -91,7 +91,7 @@ pub fn verify_client_proof(
 ) -> Result<(), Error> {
     let client = ctx
         .fetch_client_state(connection_end.client_id())
-        .ok_or_else(|| { Kind::MissingClient(connection_end.client_id().clone())})?;
+        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     let consensus_state = ctx
         .fetch_client_consensus_state(connection_end.client_id(), proof_height)
