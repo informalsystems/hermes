@@ -46,7 +46,7 @@ pub fn verify_connection_proof(
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .fetch_client_state(connection_end.client_id())
-        .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
+        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
         return Err(Kind::FrozenClient
@@ -78,7 +78,7 @@ pub fn verify_consensus_proof(
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .fetch_client_state(connection_end.client_id())
-        .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
+        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
         return Err(Kind::FrozenClient

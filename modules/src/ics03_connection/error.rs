@@ -1,6 +1,6 @@
 // TODO: Update error types for Connection!!
 
-use crate::ics24_host::identifier::ConnectionId;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -53,8 +53,8 @@ pub enum Kind {
     #[error("missing counterparty prefix")]
     MissingCounterpartyPrefix,
 
-    #[error("the client id does not match any client state")]
-    MissingClient,
+    #[error("the client id does not match any client state: {0}")]
+    MissingClient(ClientId),
 
     #[error("the client is frozen")]
     FrozenClient,

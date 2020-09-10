@@ -11,8 +11,24 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
 use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 use tendermint::block::Height;
 
+/// A mock of an IBC client record as it is stored in a mock context.
+/// For testing ICS02 handlers mostly, cf. `MockClientContext`.
+#[derive(Clone, Debug)]
+pub struct MockClientRecord {
+    /// The type of this client.
+    pub client_type: ClientType,
+    /// Mapping of heights to consensus states for this client.
+    pub consensus_states: HashMap<Height, MockConsensusState>,
+    /// The client state (representing only the latest height at the moment).
+    pub client_state: MockClientState,
+}
+
+/// A mock of a client state. For an example of a real structure that this mocks, you can see
+/// `ClientState` of ics07_tendermint/client_state.rs.
+/// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub MockHeader);
 
