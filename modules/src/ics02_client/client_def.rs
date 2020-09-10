@@ -189,8 +189,6 @@ impl ClientDef for AnyClient {
         client_state: AnyClientState,
         header: AnyHeader,
     ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
-        // We have to split and nest the following match because patterns containing
-        // both by-move and by-ref bindings are still unstable (feature: move_ref_pattern).
         match self {
             Self::Tendermint(client) => {
                 let (client_state, header) = downcast!(
