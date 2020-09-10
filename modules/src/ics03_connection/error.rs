@@ -77,6 +77,9 @@ pub enum Kind {
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
 
+    #[error("the client state proof verification failed")]
+    ClientStateVerificationFailure,
+
     #[error("the consensus proof verification failed")]
     ConsensusStateVerificationFailure,
 }

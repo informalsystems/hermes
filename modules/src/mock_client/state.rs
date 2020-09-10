@@ -63,6 +63,18 @@ impl ClientState for MockClientState {
         false
     }
 
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        root: &CommitmentRoot,
+        prefix: &CommitmentPrefix,
+        client_id: &ClientId,
+        proof: &CommitmentProof,
+        expected_client_state: &dyn ClientState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        unimplemented!()
+    }
+
     // fn check_header_and_update_state(
     //     &self,
     //     header: &dyn Header,

@@ -44,6 +44,17 @@ pub trait ClientState: Clone + std::fmt::Debug {
     /// Verification functions as specified in:
     /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
     ///
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        root: &CommitmentRoot,
+        prefix: &CommitmentPrefix,
+        client_id: &ClientId,
+        proof: &CommitmentProof,
+        expected_client_state: &dyn ClientState,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
+    ///
     /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
     /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
     /// height of the counterparty chain that this proof assumes (i.e., the height at which this

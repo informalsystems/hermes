@@ -1,7 +1,7 @@
 #![allow(unreachable_code, unused_variables)]
 // TODO -- clean this up
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
@@ -101,6 +101,18 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         self.frozen_height != Height(0)
+    }
+
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        root: &CommitmentRoot,
+        prefix: &CommitmentPrefix,
+        client_id: &ClientId,
+        proof: &CommitmentProof,
+        expected_client_state: &dyn crate::ics02_client::state::ClientState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        unimplemented!()
     }
 
     // fn check_header_and_update_state(

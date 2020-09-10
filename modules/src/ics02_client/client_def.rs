@@ -112,6 +112,37 @@ impl ClientState for AnyClientState {
         }
     }
 
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        root: &CommitmentRoot,
+        prefix: &CommitmentPrefix,
+        client_id: &ClientId,
+        proof: &CommitmentProof,
+        expected_client_state: &dyn ClientState,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.verify_client_full_state(
+                height,
+                root,
+                prefix,
+                client_id,
+                proof,
+                expected_client_state,
+            ),
+
+            #[cfg(test)]
+            AnyClientState::Mock(mock_state) => mock_state.verify_client_full_state(
+                height,
+                root,
+                prefix,
+                client_id,
+                proof,
+                expected_client_state,
+            ),
+        }
+    }
+
     // fn check_header_and_update_state(
     //     &self,
     //     header: &dyn Header,

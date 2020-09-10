@@ -1,5 +1,5 @@
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics02_client::state::ClientState;
+use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
@@ -30,6 +30,7 @@ pub fn verify_proofs(
         None => (),
         Some(state) => verify_client_proof(
             ctx,
+            connection_end,
             state,
             proofs.height(),
             proofs
@@ -82,13 +83,34 @@ pub fn verify_connection_proof(
 }
 
 pub fn verify_client_proof(
-    _ctx: &dyn ConnectionReader,
-    _client_state: AnyClientState,
-    _proof_height: Height,
-    _proof: &CommitmentProof,
+    ctx: &dyn ConnectionReader,
+    connection_end: &ConnectionEnd,
+    client_state: AnyClientState,
+    proof_height: Height,
+    proof: &CommitmentProof,
 ) -> Result<(), Error> {
-    // TODO
-    Ok(())
+    let client = ctx
+        .fetch_client_state(connection_end.client_id())
+        .ok_or_else(|| Kind::MissingClient.context(connection_end.client_id().to_string()))?;
+
+    let consensus_state = ctx
+        .fetch_client_consensus_state(connection_end.client_id(), proof_height)
+        .ok_or_else(|| {
+            Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
+        })?;
+
+    Ok(client
+        .verify_client_full_state(
+            proof_height,
+            consensus_state.root(),
+            connection_end.counterparty().prefix(),
+            connection_end.counterparty().client_id(),
+            proof,
+            &client_state,
+        )
+        .map_err(|_| {
+            Kind::ClientStateVerificationFailure.context(connection_end.client_id().to_string())
+        })?)
 }
 
 pub fn verify_consensus_proof(
