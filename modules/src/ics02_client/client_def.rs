@@ -176,6 +176,7 @@ impl AnyClient {
     }
 }
 
+// /!\ Beware of the awful boilerplate below /!\
 impl ClientDef for AnyClient {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
@@ -186,8 +187,8 @@ impl ClientDef for AnyClient {
         client_state: AnyClientState,
         header: AnyHeader,
     ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
-        // We have to split and nest the following match because one cannot
-        // bind patterns both by-move and by-ref within the same pattern.
+        // We have to split and nest the following match because patterns containing
+        // both by-move and by-ref bindings are still unstable (feature: move_ref_pattern).
         match self {
             Self::Tendermint(client) => match (client_state, header) {
                 (AnyClientState::Tendermint(client_state), AnyHeader::Tendermint(header)) => {
@@ -262,8 +263,9 @@ impl ClientDef for AnyClient {
                 expected_consensus_state,
             ),
 
-            // The compiler is confused, and this pattern is actually reachable
-            #[allow(unreachable_patterns)]
+            // We need to tell the compiler that this pattern is currently reachable in test mode,
+            // and will be actually reachable when we add more client types.
+            #[cfg_attr(not(test), allow(unreachable_patterns))]
             _ => panic!("Type mismatch between client and arguments: {:?}", self),
         }
     }
@@ -299,8 +301,9 @@ impl ClientDef for AnyClient {
                     expected_connection_end,
                 ),
 
-            // The compiler is confused, and this pattern is actually reachable
-            #[allow(unreachable_patterns)]
+            // We need to tell the compiler that this pattern is currently reachable in test mode,
+            // and will be actually reachable when we add more client types.
+            #[cfg_attr(not(test), allow(unreachable_patterns))]
             _ => panic!("Type mismatch between client and arguments: {:?}", self),
         }
     }
