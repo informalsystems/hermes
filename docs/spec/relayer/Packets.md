@@ -152,11 +152,20 @@ func handleSendPacketEvent(ev, chainA) {
     // if packet commitment is empty, then packet is already received by the counter party
     if packetCommitment == null return
     if packetCommitment != hash(ev.data, ev.timeoutHeight, ev.timeoutTimestamp {
-        panic  // invalid data; probably
+        panic  // invalid data; probably fork
     }
 
     // we now check if this packet is already received by the destination chain
-    
+    if (channel.order === ORDERED) {
+          // TODO: All get call should either return from the relayer state, or if needed
+          // query full node of the chain. In the latter case, proof verification should be done 
+          // in the call.     
+          nextSequenceRecv = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel) 
+          if ev.sequence != nextSequenceRecv return // packet has already been delivered by another relayer
+    } else {
+        packetAcknowledgement = GetPacketAcknowledgement(ev.destPort, ev.destChannel, ev.sequence)
+        if packetAcknowledgement != null return
+    }
     
     packetData = Packet{logEntry.sequence, logEntry.timeoutHeight, logEntry.timeoutTimestamp,
     localEnd.portIdentifier, localEnd.channelIdentifier,
