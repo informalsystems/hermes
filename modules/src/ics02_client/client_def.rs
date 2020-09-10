@@ -1,6 +1,8 @@
 use serde_derive::{Deserialize, Serialize};
 
+use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -190,36 +192,38 @@ impl ClientDef for AnyClient {
         // We have to split and nest the following match because patterns containing
         // both by-move and by-ref bindings are still unstable (feature: move_ref_pattern).
         match self {
-            Self::Tendermint(client) => match (client_state, header) {
-                (AnyClientState::Tendermint(client_state), AnyHeader::Tendermint(header)) => {
-                    let (new_state, new_consensus) =
-                        client.check_header_and_update_state(client_state, header)?;
+            Self::Tendermint(client) => {
+                let (client_state, header) = downcast!(
+                    client_state => AnyClientState::Tendermint,
+                    header => AnyHeader::Tendermint,
+                )
+                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
-                    Ok((
-                        AnyClientState::Tendermint(new_state),
-                        AnyConsensusState::Tendermint(new_consensus),
-                    ))
-                }
+                let (new_state, new_consensus) =
+                    client.check_header_and_update_state(client_state, header)?;
 
-                #[allow(unreachable_patterns)]
-                _ => panic!("Type mismatch between client and arguments: {:?}", self),
-            },
+                Ok((
+                    AnyClientState::Tendermint(new_state),
+                    AnyConsensusState::Tendermint(new_consensus),
+                ))
+            }
 
             #[cfg(test)]
-            Self::Mock(client) => match (client_state, header) {
-                (AnyClientState::Mock(client_state), AnyHeader::Mock(header)) => {
-                    let (new_state, new_consensus) =
-                        client.check_header_and_update_state(client_state, header)?;
+            Self::Mock(client) => {
+                let (client_state, header) = downcast!(
+                    client_state => AnyClientState::Mock,
+                    header => AnyHeader::Mock,
+                )
+                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
-                    Ok((
-                        AnyClientState::Mock(new_state),
-                        AnyConsensusState::Mock(new_consensus),
-                    ))
-                }
+                let (new_state, new_consensus) =
+                    client.check_header_and_update_state(client_state, header)?;
 
-                #[allow(unreachable_patterns)]
-                _ => panic!("Type mismatch between client and arguments: {:?}", self),
-            },
+                Ok((
+                    AnyClientState::Mock(new_state),
+                    AnyConsensusState::Mock(new_consensus),
+                ))
+            }
         }
     }
 
@@ -233,40 +237,43 @@ impl ClientDef for AnyClient {
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        match (self, client_state, expected_consensus_state) {
-            (
-                Self::Tendermint(client),
-                AnyClientState::Tendermint(client_state),
-                AnyConsensusState::Tendermint(expected_consensus_state),
-            ) => client.verify_client_consensus_state(
-                client_state,
-                height,
-                prefix,
-                proof,
-                client_id,
-                consensus_height,
-                expected_consensus_state,
-            ),
+        match self {
+            Self::Tendermint(client) => {
+                let (client_state, expected_consensus_state) = downcast!(
+                    client_state => AnyClientState::Tendermint,
+                    expected_consensus_state => AnyConsensusState::Tendermint,
+                )
+                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_client_consensus_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    client_id,
+                    consensus_height,
+                    expected_consensus_state,
+                )
+            }
 
             #[cfg(test)]
-            (
-                Self::Mock(client),
-                AnyClientState::Mock(client_state),
-                AnyConsensusState::Mock(expected_consensus_state),
-            ) => client.verify_client_consensus_state(
-                client_state,
-                height,
-                prefix,
-                proof,
-                client_id,
-                consensus_height,
-                expected_consensus_state,
-            ),
+            Self::Mock(client) => {
+                let (client_state, expected_consensus_state) = downcast!(
+                    client_state => AnyClientState::Mock,
+                    expected_consensus_state => AnyConsensusState::Mock,
+                )
+                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
-            // We need to tell the compiler that this pattern is currently reachable in test mode,
-            // and will be actually reachable when we add more client types.
-            #[cfg_attr(not(test), allow(unreachable_patterns))]
-            _ => panic!("Type mismatch between client and arguments: {:?}", self),
+                client.verify_client_consensus_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    client_id,
+                    consensus_height,
+                    expected_consensus_state,
+                )
+            }
         }
     }
 
@@ -279,32 +286,35 @@ impl ClientDef for AnyClient {
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        match (self, client_state) {
-            (Self::Tendermint(client), AnyClientState::Tendermint(client_state)) => client
-                .verify_connection_state(
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Tendermint)
+                    .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_connection_state(
                     client_state,
                     height,
                     prefix,
                     proof,
                     connection_id,
                     expected_connection_end,
-                ),
+                )
+            }
 
             #[cfg(test)]
-            (Self::Mock(client), AnyClientState::Mock(client_state)) => client
-                .verify_connection_state(
+            Self::Mock(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Mock)
+                    .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_connection_state(
                     client_state,
                     height,
                     prefix,
                     proof,
                     connection_id,
                     expected_connection_end,
-                ),
-
-            // We need to tell the compiler that this pattern is currently reachable in test mode,
-            // and will be actually reachable when we add more client types.
-            #[cfg_attr(not(test), allow(unreachable_patterns))]
-            _ => panic!("Type mismatch between client and arguments: {:?}", self),
+                )
+            }
         }
     }
 }

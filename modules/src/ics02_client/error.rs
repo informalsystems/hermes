@@ -1,7 +1,9 @@
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
+use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
+
 use tendermint::block::Height;
 
 pub type Error = anomaly::Error<Kind>;
@@ -25,6 +27,9 @@ pub enum Kind {
 
     #[error("header verification failed")]
     HeaderVerificationFailure,
+
+    #[error("mismatch between client and arguments types, expected: {0:?}")]
+    ClientArgsTypeMismatch(ClientType),
 }
 
 impl Kind {

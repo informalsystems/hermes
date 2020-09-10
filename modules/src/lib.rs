@@ -30,6 +30,7 @@ pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod keys;
+pub mod macros;
 pub mod proofs;
 pub mod try_from_raw;
 pub mod tx_msg;
