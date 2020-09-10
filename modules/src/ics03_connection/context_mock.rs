@@ -11,11 +11,12 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct MockConnectionContext {
     chain_context: MockChainContext,
     client_context: MockClientContext,
     connections: HashMap<ConnectionId, ConnectionEnd>,
+    client_connections: HashMap<ClientId, ConnectionId>,
 }
 
 impl MockConnectionContext {
@@ -24,12 +25,17 @@ impl MockConnectionContext {
             chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
             client_context: Default::default(),
             connections: Default::default(),
+            client_connections: Default::default(),
         }
     }
 
-    pub fn with_client_state(&mut self, client_id: &ClientId, latest_client_height: u64) {
-        self.client_context
-            .with_client_state(client_id, latest_client_height)
+    pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
+        let mut client_context = self.client_context.clone();
+        client_context.with_client_consensus_state(client_id, Height(latest_client_height));
+        Self {
+            client_context,
+            ..self
+        }
     }
 
     pub fn max_size(&self) -> usize {
@@ -88,10 +94,21 @@ impl ConnectionReader for MockConnectionContext {
 impl ConnectionKeeper for MockConnectionContext {
     fn store_connection(
         &mut self,
-        connection_id: ConnectionId,
-        connection_end: ConnectionEnd,
+        connection_id: &ConnectionId,
+        connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
-        self.connections.insert(connection_id, connection_end);
+        self.connections
+            .insert(connection_id.clone(), connection_end.clone());
+        Ok(())
+    }
+
+    fn store_connection_to_client(
+        &mut self,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
+    ) -> Result<(), Error> {
+        self.client_connections
+            .insert(client_id.clone(), connection_id.clone());
         Ok(())
     }
 }
