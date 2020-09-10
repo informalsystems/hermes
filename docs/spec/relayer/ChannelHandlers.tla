@@ -5,7 +5,7 @@
  channel datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions         
+EXTENDS Integers, FiniteSets, RelayerDefinitions         
 
 (***************************************************************************
  Channel datagram handlers
@@ -239,5 +239,5 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 14:21:15 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:43:25 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

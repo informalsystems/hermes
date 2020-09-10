@@ -1,6 +1,6 @@
 -------------------------- MODULE ICS18Environment --------------------------
 
-EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
+EXTENDS Integers, FiniteSets, RelayerDefinitions
 
 CONSTANTS MaxHeight, \* maximal height of all the chains in the system
           MaxPacketSeq, \* maximal packet sequence number (will be used later)
@@ -539,5 +539,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 14:53:57 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:41:47 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

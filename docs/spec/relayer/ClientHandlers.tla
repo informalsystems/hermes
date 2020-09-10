@@ -5,7 +5,7 @@
  client datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, RelayerDefinitions
 
 (***************************************************************************
  Client datagram handlers
@@ -73,5 +73,5 @@ HandleClientUpdate(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 14:21:40 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:43:27 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

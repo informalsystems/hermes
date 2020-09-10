@@ -1,7 +1,7 @@
 ---------------------------- MODULE Chain ----------------------------
 
-EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions, 
-        ClientHandlers, ConnectionHandlers, ChannelHandlers, PacketHandlers
+EXTENDS Integers, FiniteSets, RelayerDefinitions, 
+        ClientHandlers, ConnectionHandlers, ChannelHandlers
         
 CONSTANTS MaxHeight, \* maximal chain height
           ChainID, \* chain identifier
@@ -182,5 +182,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 14:52:55 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:43:42 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

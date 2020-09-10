@@ -5,7 +5,7 @@
  different modules
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, Sequences
+EXTENDS Integers, FiniteSets
 
 (********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
 \* operator for type annotations
@@ -168,7 +168,6 @@ AsSetChannelDatagrams(Dgrs) == Dgrs <: {ChannelDatagramType}
 AsPacketDatagram(dgr) == dgr <: PacketDatagramType
 AsSetPacketDatagrams(Dgrs) == Dgrs <: {PacketDatagramType}
 AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
-AsSeqDatagrams(SeqDgrs) == SeqDgrs <: Seq(DatagramType)
 AsSetInt(S) == S <: {Int}
 AsPacket(packet) == packet <: PacketType
 AsSetPacket(P) == P <: {PacketType}
@@ -560,5 +559,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 14:21:56 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:42:52 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
