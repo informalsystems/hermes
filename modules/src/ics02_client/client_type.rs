@@ -1,5 +1,4 @@
 use super::error;
-use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 
 /// Type of the client, depending on the specific consensus algorithm.

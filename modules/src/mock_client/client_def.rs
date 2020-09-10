@@ -31,32 +31,35 @@ impl ClientDef for MockClient {
 
     fn verify_client_consensus_state(
         &self,
-        client_state: &Self::ClientState,
+        _client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
+        _proof: &CommitmentProof,
         client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &Self::ConsensusState,
+        _consensus_height: Height,
+        _expected_consensus_state: &Self::ConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client_prefixed_path =
             Path::ConsensusState(client_id.clone(), height.value()).to_string();
+
         let _path = apply_prefix(prefix, client_prefixed_path)?;
+
         // TODO - add ctx to all client verification functions
         // let cs = ctx.fetch_self_consensus_state(height);
         // TODO - implement this
         // proof.verify_membership(cs.root(), path, expected_consensus_state)
+
         Ok(())
     }
 
     fn verify_connection_state(
         &self,
-        client_state: &Self::ClientState,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProof,
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }

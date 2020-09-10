@@ -2,7 +2,6 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use tendermint::block::Height;
 
-use crate::ics02_client::client_def::AnyHeader;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
 

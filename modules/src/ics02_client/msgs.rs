@@ -4,7 +4,7 @@
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader, ClientDef};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 

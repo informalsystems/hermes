@@ -4,11 +4,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHead
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-use crate::ics23_commitment::merkle::apply_prefix;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::ics24_host::Path;
+use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
