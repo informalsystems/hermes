@@ -137,6 +137,8 @@ mod tests {
         correct_conn_end.set_state(State::Init);
         correct_conn_end.set_version(dummy_msg.version().clone());
 
+        // TODO: These tests are insufficient, as they do not exercise the successful path.
+        // Should add a test where want_pass: true.
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
