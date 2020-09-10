@@ -51,7 +51,7 @@ impl ClientState for MockClientState {
     }
 
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn latest_height(&self) -> Height {

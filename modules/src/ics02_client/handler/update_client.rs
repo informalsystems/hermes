@@ -76,7 +76,7 @@ mod tests {
     fn test_update_client_ok() {
         let mock = MockClientContext {
             client_id: "mockclient".parse().unwrap(),
-            client_type: Some(ClientType::Tendermint),
+            client_type: Some(ClientType::Mock),
             client_state: MockClientState(MockHeader(Height(42))).into(),
             consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
         };
