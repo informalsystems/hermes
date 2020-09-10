@@ -178,7 +178,7 @@ impl AnyClient {
     }
 }
 
-// /!\ Beware of the awful boilerplate below /!\
+// ⚠️  Beware of the awful boilerplate below ⚠️
 impl ClientDef for AnyClient {
     type Header = AnyHeader;
     type ClientState = AnyClientState;
