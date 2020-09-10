@@ -74,11 +74,15 @@ succeed. The interface between stage 2 and stage 3 is a set of datagrams.
 We assume that the corresponding light client is correctly installed on each chain. 
 
 ```golang
-func handleEvent(ev, chainA, chainB) {
+func handleEvent(ev, chainA) {
     // NOTE: we don't verify if event data are valid at this point. We trust full node we are connected to
     // until some verification fails. Otherwise, we can have Stage 2 (datagram creation being done first).
-   
+    
     // Stage 1.
+    // Determine destination chain
+    chainB = GetDestinationInfo(ev, chainA)   
+
+    // Stage 2.
     // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
     targetHeight = ev.height + 1
     // See the code for `updateIBCClient` below.
@@ -87,22 +91,15 @@ func handleEvent(ev, chainA, chainB) {
        return error
     }
 
-    // Stage 2.
-    // Create the IBC datagrams including `ev` & verify them.
-    
-    sh = chainA.lc.get_header(installedHeight)
-    while (true) { 
-        datagrams = pendingDatagrams(installedHeight - 1, chainA, chainB)
-        if verifyProof(datagrams, sh.appHash) {
-            break;  
-        }
-        // Full node for `chainA` is faulty. Connect to different node of `chainA` and retry.
-        replaceFullNode(src)        
-     }
-    
     // Stage 3.
+    // Create the IBC datagrams including `ev` & verify them.
+    datagram = createDatagram(ev, chainA, chainB, installedHeight)
+    
+    // Stage 4.
     // Submit datagrams.
-    chainB.submit(datagrams)
+    if datagram != nil {
+        chainB.submit(datagram)
+    }   
 }
 
 
