@@ -13,12 +13,16 @@ pub enum TxCmd {
 
     /// The `tx raw` subcommand
     #[options(help = "tx raw")]
-    Raw(TxRawCmds),
+    Raw(raw::TxRawConnInitCmd),
 }
 
-#[derive(Command, Debug, Options, Runnable)]
-pub enum TxRawCmds {
-    /// The `tx raw conninit` subcommand
-    #[options(help = "tx raw conninit")]
-    Handler(raw::TxRawConnInitCmd),
-}
+// #[derive(Command, Debug, Options, Runnable)]
+// pub enum TxRawCmds {
+//     /// The `help` subcommand
+//     #[options(help = "get usage information")]
+//     Help(Help<Self>),
+//
+//     /// The `tx raw conninit` subcommand
+//     #[options(help = "tx raw conninit")]
+//     ConnInit(raw::TxRawConnInitCmd),
+// }

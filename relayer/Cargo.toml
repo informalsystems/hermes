@@ -8,6 +8,8 @@ authors = [
 
 [dependencies]
 ibc = { path = "../modules" }
+ibc-proto = "0.2.2"
+prost-types = "0.6.1"
 tendermint = "0.15.0"
 tendermint-rpc = { version = "0.15.0", features=["client"] }
 anomaly = "0.2.0"

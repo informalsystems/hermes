@@ -16,6 +16,7 @@ use ibc::try_from_raw::TryFromRaw;
 use crate::client::rpc_requester::RpcRequester;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::auth::tx::TxBuilder;
 
 use super::Chain;
 use bytes::Bytes;
@@ -94,9 +95,11 @@ impl Chain for CosmosSDKChain {
         TrustThresholdFraction::default()
     }
 
-    fn build_sign_tx<T: std::error::Error, U: Msg<ValidationError = T>>(&self, _msgs: Vec<Box<U>>) -> Result<Vec<u8>, Error> {
+    fn build_sign_tx<T: std::error::Error, U: Msg<ValidationError = T>>(&self, msgs: Vec<Box<U>>) -> Result<Vec<u8>, Error> {
         //Create Tx builder
         //TODO: TxBuilder to build and sign msg
+        // What height ?
+        TxBuilder::new_builder(msgs, "tx".to_string(), 10);
 
         unimplemented!()
     }
