@@ -1,5 +1,4 @@
 use crate::handler::{Event, EventType, HandlerOutput};
-use crate::ics02_client::client_def::AnyClient;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics24_host::identifier::ClientId;
@@ -30,7 +29,7 @@ impl From<ClientEvent> for Event {
     }
 }
 
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg<AnyClient>) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: ClientReader + ClientKeeper,
 {

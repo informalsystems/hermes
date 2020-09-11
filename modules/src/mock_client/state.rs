@@ -4,11 +4,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHead
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-use crate::ics23_commitment::merkle::apply_prefix;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::ics24_host::Path;
+use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -67,7 +63,7 @@ impl ClientState for MockClientState {
     }
 
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn latest_height(&self) -> Height {
@@ -77,50 +73,6 @@ impl ClientState for MockClientState {
     fn is_frozen(&self) -> bool {
         // TODO
         false
-    }
-
-    // fn check_header_and_update_state(
-    //     &self,
-    //     header: &dyn Header,
-    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
-    //     if self.latest_height() >= header.height() {
-    //         return Err("header height is lower than client latest".into());
-    //     }
-    //
-    //     Ok((
-    //         Box::new(AnyClientState::Mock(MockClientState(header.height().value() as u32))),
-    //         Box::new(AnyConsensusState::Mock(MockConsensusState(header.height().value() as u32))),
-    //     ))
-    // }
-
-    fn verify_client_consensus_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &dyn ConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let client_prefixed_path =
-            Path::ConsensusState(client_id.clone(), height.value()).to_string();
-        let _path = apply_prefix(prefix, client_prefixed_path)?;
-        // TODO - add ctx to all client verification functions
-        // let cs = ctx.fetch_self_consensus_state(height);
-        // TODO - implement this
-        // proof.verify_membership(cs.root(), path, expected_consensus_state)
-        Ok(())
-    }
-
-    fn verify_connection_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
     }
 }
 

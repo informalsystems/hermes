@@ -1,18 +1,9 @@
-#![allow(unreachable_code, unused_variables)]
-// TODO -- clean this up
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
-
-use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use tendermint::block::Height;
 
-use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::state::ConsensusState;
-use crate::ics07_tendermint::consensus_state::ConsensusState as tmConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::time::Duration;
-use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -32,8 +23,8 @@ impl ClientState {
         trusting_period: Duration,
         unbonding_period: Duration,
         max_clock_drift: Duration,
-        latest_height: crate::Height,
-        frozen_height: crate::Height,
+        latest_height: Height,
+        frozen_height: Height,
         // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
@@ -77,12 +68,6 @@ impl ClientState {
             latest_height,
         })
     }
-    pub fn check_header_and_update_state(
-        &self,
-        header: AnyHeader,
-    ) -> Result<(ClientState, tmConsensusState), Box<dyn std::error::Error>> {
-        todo!()
-    }
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
@@ -101,42 +86,6 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         self.frozen_height != Height(0)
-    }
-
-    // fn check_header_and_update_state(
-    //     &self,
-    //     header: &dyn Header,
-    // ) -> Result<
-    //     (
-    //         Box<dyn crate::ics02_client::state::ClientState>,
-    //         Box<dyn ConsensusState>,
-    //     ),
-    //     Box<dyn std::error::Error>,
-    // > {
-    //     todo!()
-    // }
-
-    fn verify_client_consensus_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &dyn ConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
-    }
-
-    fn verify_connection_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
     }
 }
 
@@ -171,8 +120,8 @@ mod tests {
             trusting_period: Duration,
             unbonding_period: Duration,
             max_clock_drift: Duration,
-            latest_height: crate::Height,
-            frozen_height: crate::Height,
+            latest_height: Height,
+            frozen_height: Height,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.
