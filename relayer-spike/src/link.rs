@@ -1,7 +1,8 @@
 use crate::types::{ChainId, ChannelId, ClientId, PortId, Datagram};
 use crate::connection::{Connection, ConnectionConfig, ConnectionError};
 use crate::channel::{Channel, ChannelConfig, ChannelError};
-use crate::chain::Chain;
+use crate::foreign_client::{ForeignClient, ForeignClientConfig, ForeignClientError};
+use crate::chain::{Chain, SignedHeader};
 
 pub struct LinkError {}
 
@@ -60,16 +61,20 @@ impl From<ChannelError> for LinkError {
     }
 }
 
-// TODO: Map between error types
+impl From<ForeignClientError> for LinkError {
+    fn from(error: ForeignClientError) -> Self {
+        return LinkError {}
+    }
+}
+
 impl Link {
     // We can probably pass in the connection and channel
     pub fn new(src: Chain, dst: Chain, config: LinkConfig) -> Result<Link, LinkError> {
-        // we need to create to proper configs here
-        //
-        
+        // There will probably dependencies between foreign_client, connection and handhsake which
+        // will require references to each other..
+        let foreign_client = ForeignClient::new(src, dst, ForeignClientConfig::default())?;
         let connection = Connection::new(src, dst, ConnectionConfig::default())?;
         let channel = Channel::new(src, dst, ChannelConfig::default())?;
-        // XXX: What about client, we need to establish a client
 
         return Ok(Link {
             src_chain: src,
@@ -80,7 +85,26 @@ impl Link {
     // Assume subscription returns an iterator of all pending datagrams
     // pre-condition: connection and channel have been established
     // Iterator will error if channel or connection are broken
-    pub fn pending_datagrams(&self) -> Vec<Datagram> {
+    fn pending_datagrams(&self) -> Vec<Datagram> {
         return vec![Datagram::NoOp()];
     }
+
+    // Failures
+    // * LightClient Failure
+    // * FullNode Failures
+    // * Verification Failure
+    pub fn run(self) { // TODO: Error
+        for datagrams in self.pending_datagrams() { // we batch here to amortize client updates
+            let target_height = 1; // grab from the datagram
+            let header = self.src_chain.light_client.get_header(target_height);
+
+            verify_proof(&datagrams, &header);
+
+            self.dst_chain.full_node.submit(vec![datagrams]); // Maybe put update_client here
+        }
+    }
+}
+
+// XXX: Give this better naming
+fn verify_proof(_datagrams: &Datagram, _header: &SignedHeader) {
 }
