@@ -107,6 +107,7 @@ pub fn verify_client_proof(
 
     Ok(client_def
         .verify_client_full_state(
+            &client_state,
             proof_height,
             consensus_state.root(),
             connection_end.counterparty().prefix(),

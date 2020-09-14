@@ -7,6 +7,7 @@ use crate::{ics03_connection::connection::ConnectionEnd, ics24_host::Path};
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientState, MockConsensusState};
 
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use tendermint::block::Height;
 
@@ -38,7 +39,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProof,
         client_id: &ClientId,
         _consensus_height: Height,
-        _expected_consensus_state: &Self::ConsensusState,
+        _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client_prefixed_path =
             Path::ConsensusState(client_id.clone(), height.value()).to_string();
@@ -67,12 +68,13 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
+        _client_state: &Self::ClientState,
         _height: Height,
         _root: &CommitmentRoot,
         _prefix: &CommitmentPrefix,
         _client_id: &ClientId,
         _proof: &CommitmentProof,
-        _expected_client_state: &Self::ClientState,
+        _expected_client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }

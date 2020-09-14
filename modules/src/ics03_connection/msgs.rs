@@ -742,8 +742,8 @@ mod tests {
                     ..default_try_msg
                 },
                 want_pass: false,
-            },
-        ]
+            }
+            ]
             .into_iter()
             .collect();
 

@@ -48,7 +48,7 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProof,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &Self::ConsensusState,
+        expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
@@ -62,14 +62,16 @@ pub trait ClientDef: Clone {
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
+    /// Verify the client state for this chain that it is stored on the counterparty chain.
     fn verify_client_full_state(
         &self,
+        _client_state: &Self::ClientState,
         height: Height,
         root: &CommitmentRoot,
         prefix: &CommitmentPrefix,
         client_id: &ClientId,
         proof: &CommitmentProof,
-        expected_client_state: &Self::ClientState,
+        client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
@@ -247,9 +249,8 @@ impl ClientDef for AnyClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::Tendermint(client) => {
-                let (client_state, expected_consensus_state) = downcast!(
-                    client_state => AnyClientState::Tendermint,
-                    expected_consensus_state => AnyConsensusState::Tendermint,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
                 )
                 .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
@@ -266,9 +267,8 @@ impl ClientDef for AnyClient {
 
             #[cfg(test)]
             Self::Mock(client) => {
-                let (client_state, expected_consensus_state) = downcast!(
-                    client_state => AnyClientState::Mock,
-                    expected_consensus_state => AnyConsensusState::Mock,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
                 )
                 .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
@@ -287,7 +287,7 @@ impl ClientDef for AnyClient {
 
     fn verify_connection_state(
         &self,
-        client_state: &Self::ClientState,
+        client_state: &AnyClientState,
         height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProof,
@@ -330,44 +330,47 @@ impl ClientDef for AnyClient {
     ///
     fn verify_client_full_state(
         &self,
+        client_state: &Self::ClientState,
         height: Height,
         root: &CommitmentRoot,
         prefix: &CommitmentPrefix,
         client_id: &ClientId,
         proof: &CommitmentProof,
-        expected_client_state: &Self::ClientState,
+        client_state_on_counterparty: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {
             Self::Tendermint(client) => {
-                let expected_client_state = downcast!(
-                    expected_client_state => AnyClientState::Tendermint
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
                 )
                 .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
                 client.verify_client_full_state(
+                    client_state,
                     height,
                     root,
                     prefix,
                     client_id,
                     proof,
-                    expected_client_state,
+                    client_state_on_counterparty,
                 )
             }
 
             #[cfg(test)]
             Self::Mock(client) => {
-                let expected_client_state = downcast!(
-                    expected_client_state => AnyClientState::Mock
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
                 )
                 .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
                 client.verify_client_full_state(
+                    client_state,
                     height,
                     root,
                     prefix,
                     client_id,
                     proof,
-                    expected_client_state,
+                    client_state_on_counterparty,
                 )
             }
         }
