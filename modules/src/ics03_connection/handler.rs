@@ -95,7 +95,7 @@ where
                 result,
                 log,
                 events,
-            } = conn_open_try::process(ctx, msg)?;
+            } = conn_open_try::process(ctx, *msg)?;
 
             keep(ctx, result.clone())?;
             Ok(HandlerOutput::builder()
