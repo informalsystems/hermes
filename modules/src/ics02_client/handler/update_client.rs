@@ -1,7 +1,7 @@
 #![allow(unreachable_code, unused_variables)]
 
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics02_client::client_def::{AnyClient, ClientDef};
+use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientEvent;
@@ -11,16 +11,16 @@ use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
-pub struct UpdateClientResult<CD: ClientDef> {
+pub struct UpdateClientResult {
     client_id: ClientId,
-    client_state: CD::ClientState,
-    consensus_state: CD::ConsensusState,
+    client_state: AnyClientState,
+    consensus_state: AnyConsensusState,
 }
 
 pub fn process(
     ctx: &dyn ClientReader,
-    msg: MsgUpdateAnyClient<AnyClient>,
-) -> HandlerResult<UpdateClientResult<AnyClient>, Error> {
+    msg: MsgUpdateAnyClient,
+) -> HandlerResult<UpdateClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient { client_id, header } = msg;
@@ -28,6 +28,8 @@ pub fn process(
     let client_type = ctx
         .client_type(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
+
+    let client_def = AnyClient::from_client_type(client_type);
 
     let client_state = ctx
         .client_state(&client_id)
@@ -41,8 +43,8 @@ pub fn process(
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
-    let (new_client_state, new_consensus_state) = client_state
-        .check_header_and_update_state(header)
+    let (new_client_state, new_consensus_state) = client_def
+        .check_header_and_update_state(client_state, header)
         .map_err(|_| Kind::HeaderVerificationFailure)?;
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
@@ -54,10 +56,7 @@ pub fn process(
     }))
 }
 
-pub fn keep(
-    keeper: &mut dyn ClientKeeper,
-    result: UpdateClientResult<AnyClient>,
-) -> Result<(), Error> {
+pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
     keeper.store_client_state(result.client_id.clone(), result.client_state)?;
     keeper.store_consensus_state(result.client_id, result.consensus_state)?;
 
@@ -76,7 +75,7 @@ mod tests {
     fn test_update_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Tendermint, Height(42));
+        ctx.with_client(&client_id, ClientType::Mock, Height(42));
 
         let msg = MsgUpdateAnyClient {
             client_id,

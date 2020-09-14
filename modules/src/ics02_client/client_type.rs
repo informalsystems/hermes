@@ -1,5 +1,4 @@
 use super::error;
-use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 
 /// Type of the client, depending on the specific consensus algorithm.
@@ -29,7 +28,11 @@ impl std::str::FromStr for ClientType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "tendermint" => Ok(Self::Tendermint),
-            _ => fail!(error::Kind::UnknownClientType, s),
+
+            #[cfg(test)]
+            "mock" => Ok(Self::Mock),
+
+            _ => Err(error::Kind::UnknownClientType(s.to_string()).into()),
         }
     }
 }
@@ -45,6 +48,16 @@ mod tests {
 
         match client_type {
             Ok(ClientType::Tendermint) => (),
+            _ => panic!("parse failed"),
+        }
+    }
+
+    #[test]
+    fn parse_mock_client_type() {
+        let client_type = ClientType::from_str("mock");
+
+        match client_type {
+            Ok(ClientType::Mock) => (),
             _ => panic!("parse failed"),
         }
     }

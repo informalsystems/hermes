@@ -3,7 +3,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::Height;
+use tendermint::block::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ICS3Msg`.
 pub trait ConnectionReader {
