@@ -1,11 +1,11 @@
 #![allow(unreachable_code, unused_variables)]
 // TODO -- clean this up
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::try_from_raw::TryFromRaw;
 
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::state::ConsensusState;

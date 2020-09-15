@@ -23,10 +23,10 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::try_from_raw::TryFromRaw;
 use crate::tx_msg::Msg;
 
-use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
@@ -459,14 +459,14 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::connection::Counterparty as RawCounterparty;
-    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    use ibc_proto::client::Height;
-    use ibc_proto::commitment::MerklePrefix;
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::commitment::MerklePrefix;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -570,12 +570,12 @@ mod tests {
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
     use crate::try_from_raw::TryFromRaw;
-    use ibc_proto::client::Height;
-    use ibc_proto::connection::Counterparty as RawCounterparty;
-    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     #[test]
     fn parse_connection_open_init_msg() {

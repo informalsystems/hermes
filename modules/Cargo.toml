@@ -16,10 +16,10 @@ description = """
 
 [dependencies]
 tendermint = "0.15.0"
-tendermint-rpc = { version = "0.15.0", features=["client"] }
+tendermint-rpc = { version = "0.15.0", features = ["client"] }
 
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = "0.2.2"
+ibc-proto = { version = "0.2.2", path = "../../ibc-proto/ibc_proto" }
 
 anomaly = "0.2.0"
 thiserror = "1.0.11"

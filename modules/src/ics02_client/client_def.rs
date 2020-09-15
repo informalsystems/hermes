@@ -1,6 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
@@ -11,6 +10,9 @@ use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
+use crate::{ics02_client::client_type::ClientType, try_from_raw::TryFromRaw};
+
+use ibc_proto::ibc::tendermint::ClientState as RawTendermintClientState;
 
 #[cfg(test)]
 use crate::mock_client::client_def::MockClient;

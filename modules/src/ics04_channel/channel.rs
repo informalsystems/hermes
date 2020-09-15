@@ -1,10 +1,12 @@
 use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::try_from_raw::TryFromRaw;
+
+use ibc_proto::ibc::channel::Channel as RawChannel;
+
 use anomaly::fail;
-use core::str::FromStr;
-use ibc_proto::channel::Channel as RawChannel;
 use serde_derive::{Deserialize, Serialize};
+use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelEnd {
@@ -221,11 +223,13 @@ impl State {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::ics04_channel::channel::ChannelEnd;
     use crate::try_from_raw::TryFromRaw;
-    use core::str::FromStr;
-    use ibc_proto::channel::Channel as RawChannel;
-    use ibc_proto::channel::Counterparty as RawCounterparty;
+
+    use ibc_proto::ibc::channel::Channel as RawChannel;
+    use ibc_proto::ibc::channel::Counterparty as RawCounterparty;
 
     #[test]
     fn channel_end_try_from_raw() {
