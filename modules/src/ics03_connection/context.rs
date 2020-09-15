@@ -1,9 +1,10 @@
+use crate::context::SelfChainType;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::Height;
+use tendermint::block::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ICS3Msg`.
 pub trait ConnectionReader {
@@ -18,6 +19,8 @@ pub trait ConnectionReader {
 
     /// Returns the number of consensus state historical entries for the local chain.
     fn chain_consensus_states_history_size(&self) -> usize;
+
+    fn chain_type(&self) -> SelfChainType;
 
     /// Returns the prefix that the local chain uses in the KV store.
     fn commitment_prefix(&self) -> CommitmentPrefix;
