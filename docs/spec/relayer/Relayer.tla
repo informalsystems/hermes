@@ -24,9 +24,10 @@ VARIABLES chainAstore, \* store of ChainA
                              \* outgoing from the relayer to each chainID 
           relayerHeights, \* a function that assigns a height to each chainID
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
-          closeChannelB  \* flag that triggers closing of the channel end at ChainB
+          closeChannelB,  \* flag that triggers closing of the channel end at ChainB
+          packetLog \* packet log
           
-vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights>>
+vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights, packetLog>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system                     
 
 GetChainByID(chainID) ==
@@ -46,7 +47,7 @@ GetCloseChannelFlag(chainID) ==
 \* These are used to update the client for srcChainID on dstChainID.
 \* Some client updates might trigger an update of the height that 
 \* the relayer stores for srcChainID
-LightClientUpdates(srcChainID, dstChainID, relayer) ==
+ClientDatagrams(srcChainID, dstChainID, relayer) ==
     LET srcChain == GetChainByID(srcChainID) IN
     LET dstChain == GetChainByID(dstChainID) IN
     LET srcChainHeight == GetLatestHeight(srcChain) IN    
@@ -55,7 +56,6 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
 
     LET emptySetDatagrams == AsSetDatagrams({}) IN
 
-    
     \* check if the relayer chain height for srcChainID should be updated
     LET srcRelayerChainHeight == 
         IF relayer[srcChainID] < srcChainHeight
@@ -233,6 +233,59 @@ ChannelDatagrams(srcChainID, dstChainID) ==
     dstDatagrams
 
 (***************************************************************************
+ Packet datagrams
+ ***************************************************************************)
+\* Compute packet datagrams designated for dstChainID. 
+\* Relay sent packets by creating PacketRecvDatagrams
+PacketRecvDatagrams(srcChainID, dstChainID) ==
+    LET sentPacketLog == AsPacketLog({logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "sent"}) IN
+    
+    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
+    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+    
+    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    
+    LET packetData(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> srcChannelID,
+                                 dstChannelID |-> dstChannelID]) IN
+    
+    IF sentPacketLog /= AsPacketLog({})
+    THEN {AsDatagram([type |-> "PacketRecv",
+          packet |-> packetData(AsPacketLogEntry(logEntry)),  
+          proofHeight |-> srcHeight]) : logEntry \in sentPacketLog}
+    ELSE AsSetDatagrams({})
+
+\* Relay acknowledgements to received packets
+PacketAckDatagrams(srcChainID, dstChainID) ==
+    LET recvPacketLog == AsPacketLog({logEntry \in packetLog : logEntry.srcChainID = srcChainID /\ logEntry.type = "recv"}) IN
+    
+    LET srcChannelID == GetChannelID(srcChainID) IN
+    LET dstChannelID == GetChannelID(dstChainID) IN
+    
+    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    
+    LET packetData(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> srcChannelID,
+                                 dstChannelID |-> dstChannelID]) IN
+    
+    IF recvPacketLog /= AsPacketLog({})
+    THEN {AsDatagram([type |-> "PacketAck",
+          packet |-> packetData(AsPacketLogEntry(logEntry)),
+          acknowledgement |-> logEntry.acknowledgement,  
+          proofHeight |-> srcHeight]) : logEntry \in recvPacketLog}
+    ELSE AsSetDatagrams({})         
+             
+\* Compute packet datagrams designated for dstChainID. 
+\* These are used to transmit packet on dstChainID 
+PacketDatagrams(srcChainID, dstChainID) ==
+    LET packetRecvDatagrams == PacketRecvDatagrams(srcChainID, dstChainID) IN
+    LET packetAckDatagrams == PacketAckDatagrams(srcChainID, dstChainID) IN
+    
+    AsSetDatagrams(packetRecvDatagrams \union packetAckDatagrams)
+
+(***************************************************************************
  Compute datagrams (from srcChainID to dstChainID)
  ***************************************************************************)
 \* Currently supporting:
@@ -245,7 +298,7 @@ ComputeDatagrams(srcChainID, dstChainID) ==
     \* - Determine if light clients needs to be updated 
     LET clientDatagrams == 
         IF GenerateClientDatagrams 
-        THEN LightClientUpdates(srcChainID, dstChainID, relayerHeights) 
+        THEN ClientDatagrams(srcChainID, dstChainID, relayerHeights) 
         ELSE [datagrams |-> AsSetDatagrams({}), relayerUpdate |-> relayerHeights] IN
     
     \* ICS3 : Connections
@@ -261,8 +314,7 @@ ComputeDatagrams(srcChainID, dstChainID) ==
         IF GenerateChannelDatagrams 
         THEN ChannelDatagrams(srcChainID, dstChainID)
         ELSE AsSetDatagrams({}) IN
-    
-    
+
     [datagrams |-> clientDatagrams.datagrams \union 
                    connectionDatagrams \union 
                    channelDatagrams, 
@@ -337,5 +389,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 16:22:49 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Sep 15 15:58:24 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -22,17 +22,22 @@ VARIABLES chainAstore, \* store of ChainA
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
           closeChannelB, \* flag that triggers closing of the channel end at ChainB
           historyChainA, \* history variables for ChainA
-          historyChainB \* history variables for ChainB
+          historyChainB, \* history variables for ChainB
+          packetLog, \* a set of packets sent by both chains
+          appPacketSeqChainA, \* packet sequence number from the application on ChainA
+          appPacketSeqChainB \* packet sequence number from the application on ChainA
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,
           relayer1Heights, relayer2Heights,
           outgoingDatagrams,
           closeChannelA, closeChannelB, 
-          historyChainA, historyChainB>>
+          historyChainA, historyChainB,
+          packetLog,
+          appPacketSeqChainA, appPacketSeqChainB>>
           
-chainAvars == <<chainAstore, incomingDatagramsChainA, historyChainA>>
-chainBvars == <<chainBstore, incomingDatagramsChainB, historyChainB>>
+chainAvars == <<chainAstore, incomingDatagramsChainA, historyChainA, appPacketSeqChainA>>
+chainBvars == <<chainBstore, incomingDatagramsChainB, historyChainB,  appPacketSeqChainB>>
 relayerVars == <<relayer1Heights, relayer2Heights, outgoingDatagrams>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system                      
       
@@ -62,14 +67,16 @@ ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
                chainStore <- chainAstore,
                incomingDatagrams <- incomingDatagramsChainA,
-               history <- historyChainA
+               history <- historyChainA,
+               appPacketSeq <- appPacketSeqChainA
 
 \* ChainB -- Instance of Chain.tla 
 ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
                chainStore <- chainBstore,
                incomingDatagrams <- incomingDatagramsChainB,
-               history <- historyChainB
+               history <- historyChainB,
+               appPacketSeq <- appPacketSeqChainB
 
 (***************************************************************************
  Component actions
@@ -112,6 +119,7 @@ SubmitDatagrams ==
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
     /\ UNCHANGED <<closeChannelA, closeChannelB>>
     /\ UNCHANGED <<historyChainA, historyChainB>>
+    /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
     
 \* Non-deterministically set channel closing flags
 CloseChannels ==
@@ -121,12 +129,14 @@ CloseChannels ==
        /\ UNCHANGED <<incomingDatagramsChainA, incomingDatagramsChainB, outgoingDatagrams>>
        /\ UNCHANGED closeChannelB
        /\ UNCHANGED <<historyChainA, historyChainB>>
+       /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
     \/ /\ closeChannelB = FALSE
        /\ closeChannelB' \in BOOLEAN
        /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
        /\ UNCHANGED <<incomingDatagramsChainA, incomingDatagramsChainB, outgoingDatagrams>>
        /\ UNCHANGED closeChannelA
        /\ UNCHANGED <<historyChainA, historyChainB>>
+       /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
 
 \* Faulty relayer action
 FaultyRelayer ==
@@ -150,6 +160,7 @@ Init ==
     /\ Relayer2!Init
     /\ closeChannelA = FALSE
     /\ closeChannelB = FALSE
+    /\ packetLog = AsPacketLog({})
     
 \* Next state action
 Next ==
