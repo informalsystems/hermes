@@ -225,11 +225,11 @@ impl TryFromRaw for MsgConnectionOpenTry {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -348,11 +348,11 @@ impl TryFromRaw for MsgConnectionOpenAck {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -441,7 +441,7 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         Ok(Self {
             connection_id: msg
                 .connection_id
