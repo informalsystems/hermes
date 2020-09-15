@@ -5,12 +5,12 @@
  client datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, RelayerDefinitions
 
 (***************************************************************************
  Client datagram handlers
  ***************************************************************************)
-    
+   
 \* client heights: 
 \* good version: add all client heights from datagrams to counterpartyClientHeights
 \* bad version: add only Max of client heights from datagrams to counterpartyClientHeights
@@ -23,28 +23,27 @@ HandleCreateClient(chainID, chain, datagrams) ==
                             /\ dgr.type = "CreateClient"
                             /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
-    LET createClientHeights == {dgr.height : dgr \in createClientDgrs} IN  
+    LET createClientHeights == AsSetInt({dgr.height : dgr \in createClientDgrs}) IN  
     
     \* new chain record with clients created
     LET clientCreateChain == [
-            height |-> chain.height,
-            counterpartyClientHeights |-> 
-                \* if the set of counterparty client heights is not empty and
+            chain EXCEPT !.counterpartyClientHeights = 
+                \* if the set of counterparty client heights is not empty or
                 \* if the set of heights from datagrams is empty
-                IF chain.counterpartyClientHeights /= {} \/ createClientHeights = {}
+                IF \/ chain.counterpartyClientHeights /= AsSetInt({}) 
+                   \/ createClientHeights = AsSetInt({})
                 \* then discard CreateClient datagrams  
-                THEN chain.counterpartyClientHeights
+                THEN AsSetInt(chain.counterpartyClientHeights)
                 \* otherwise, create counterparty client with height Max(createClientHeights)  
-                ELSE {Max(createClientHeights)},
-            connectionEnd |-> chain.connectionEnd
+                ELSE {Max(createClientHeights)}
          ] IN
 
-   clientCreateChain
- 
+    clientCreateChain
+
 \* Handle "ClientUpdate" datagrams
-HandleUpdateClient(chainID, chain, datagrams) ==     
+HandleClientUpdate(chainID, chain, datagrams) ==     
     \* max client height of chain
-    LET maxClientHeight == IF chain.counterpartyClientHeights /= {}
+    LET maxClientHeight == IF chain.counterpartyClientHeights /= AsSetInt({})
                            THEN Max(chain.counterpartyClientHeights)
                            ELSE 0 IN 
     \* get "ClientUpdate" datagrams with valid clientID
@@ -57,25 +56,22 @@ HandleUpdateClient(chainID, chain, datagrams) ==
 
     \* new chain record with clients updated
     LET clientUpdatedChain == [
-            height |-> chain.height,
-            counterpartyClientHeights |-> 
+            chain EXCEPT !.counterpartyClientHeights = 
                 \* if set of counterparty client heights is empty
-                IF chain.counterpartyClientHeights = {}
+                IF chain.counterpartyClientHeights = AsSetInt({})
                 \* then discard ClientUpdate datagrams  
                 THEN chain.counterpartyClientHeights
                 \* otherwise, if set of heights from datagrams is not empty
-                ELSE IF updateClientHeights /= {}
+                ELSE IF updateClientHeights /= AsSetInt({})
                      \* then update counterparty client heights with updateClientHeights
                      THEN chain.counterpartyClientHeights \union updateClientHeights
                      \* otherwise, do not update client heights
-                     ELSE chain.counterpartyClientHeights,
-            connectionEnd |-> chain.connectionEnd
+                     ELSE chain.counterpartyClientHeights
          ] IN
    
-    clientUpdatedChain
-        
+    clientUpdatedChain    
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jul 09 13:12:01 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:43:27 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska
