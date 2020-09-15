@@ -10,9 +10,11 @@ use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
 use crate::mock_client::header::MockHeader;
+
+use tendermint::block::Height;
+
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tendermint::block::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.

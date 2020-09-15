@@ -1,15 +1,16 @@
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
-use crate::Height;
-
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
+use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::Height;
 
 #[cfg(test)]
 use crate::mock_client::client_def::MockClient;
@@ -53,7 +54,7 @@ impl Header for AnyHeader {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AnyClientState {
-    Tendermint(crate::ics07_tendermint::client_state::ClientState),
+    Tendermint(TendermintClientState),
 
     #[cfg(test)]
     Mock(MockClientState),
@@ -83,6 +84,26 @@ impl AnyClientState {
             }
         }
     }
+
+    pub fn from_any(any: prost_types::Any) -> Result<Self, Error> {
+        match any.type_url.as_str() {
+            "ibc.tendermint.ClientState" => decode_proto::<TendermintClientState>(any.value)
+                .map(|client_state| AnyClientState::Tendermint(client_state)),
+
+            #[cfg(test)]
+            "ibc.mock.ClientState" => decode_proto::<MockClientState>(any.value)
+                .map(|client_state| AnyClientState::Mock(client_state)),
+
+            _ => Err(Kind::UnknownClientStateType(any.type_url).into()),
+        }
+    }
+}
+
+fn decode_proto<A>(bytes: Vec<u8>) -> Result<A, Error>
+where
+    A: prost::Message,
+{
+    todo!()
 }
 
 impl ClientState for AnyClientState {

@@ -25,6 +25,9 @@ pub enum Kind {
 
     #[error("header verification failed")]
     HeaderVerificationFailure,
+
+    #[error("unknown client state type: {0}")]
+    UnknownClientStateType(String),
 }
 
 impl Kind {
