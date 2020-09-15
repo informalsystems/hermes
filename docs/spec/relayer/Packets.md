@@ -100,49 +100,37 @@ type ClientState {
 We assume the existence of the following helper functions:
 
 ```go
-// Returns channel end with a commitment proof. If proof != nil, then it is being verified with the corresponding light client.
-// Channel end is queried at the given chain at the height proofHeight. If LATEST_HEIGHT is passed as a parameter,
-// the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns channel end with a commitment proof. 
 GetChannel(chain Chain, 
            portId Identifier, 
            channelId Identifier,  
            proofHeight Height) (ChannelEnd, CommitmentProof)
  
-// Returns connection end with a commitment proof. If proof != nil, then it is being verified with the corresponding light client.
-// Connection end is queried at the given chain at the height proofHeight. If LATEST_HEIGHT is passed as a parameter,
-// the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns connection end with a commitment proof. 
 GetConnection(chain Chain, 
               connectionId Identifier, 
               proofHeight Height) (ConnectionEnd, CommitmentProof)
 
 
-// Returns client connection with a commitment proof. If proof != nil, then it is being verified with the corresponding light client.
-// Client state is queried at the given chain at the height proofHeight. If LATEST_HEIGHT is passed as a parameter,
-// the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns client state with a commitment proof. 
 GetClientState(chain Chain, 
                clientId Identifier, 
                proofHeight Height) (ClientState, CommitmentProof)
 
-// Returns packet commitment with a commitment proof. If proof != nil, then it is being verified with the corresponding light client.
-// Packet commitment is queried at the given chain at the height proofHeight. If LATEST_HEIGHT is passed as a parameter,
-// the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns packet commitment with a commitment proof. 
 GetPacketCommitment(chain Chain, 
                     portId Identifier, 
                     channelId Identifier, 
                     sequence uint64, 
                     proofHeight Height) (bytes, CommitmentProof)
 
-// Returns next recv sequence number a commitment proof. If proof != nil, then it is being verified with the corresponding 
-// light client. It is queried at the given chain at the height proofHeight. If LATEST_HEIGHT is passed as a parameter,
-// the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns next recv sequence number with a commitment proof. 
 GetNextSequenceRecv(chain Chain, 
                     portId Identifier, 
                     channelId Identifier,  
                     proofHeight Height) (uint64, CommitmentProof)
 
-// Returns packet acknowledgment with a commitment proof. If proof != nil, then it is being verified with the 
-// corresponding light client. Packet acknowledgment is queried at the given chain at the height proofHeight. 
-// If LATEST_HEIGHT is passed as a parameter, the query should be for latest height for which proof exists (MAX_HEIGHT - 1).
+// Returns packet acknowledgment with a commitment proof. 
 GetPacketAcknowledgement(chain Chain, 
                          portId Identifier, 
                          channelId Identifier, 
@@ -157,21 +145,50 @@ GetCurrentTimestamp(chainB) uint64
  
 ```
 
+For functions that return proof, if proof != nil, then the returned value is being verified. 
+The value is being verified using the header's app hash that is provided by the corresponding light client.
+We now show the pseudocode for one of those functions:
+
+```go
+GetChannel(chain Chain, 
+           portId Identifier, 
+           channelId Identifier,  
+           proofHeight Height) (ChannelEnd, CommitmentProof) {
+
+    // Query provable store exposed by the full node of chain. 
+    // The path for the channel end is at channelEnds/ports/{portId}/channels/{channelId}".
+    // The membership proof returned is read at height proofHeight. 
+    channel, proof = QueryChannel(chain, portId, channelId, proofHeight) 
+    if proof == nil return { (nil, nil) }
+    
+    header = GetHeader(chain.lc, proofHeight) // get header for height proofHeight using light client of the given chain
+    
+    // verify membership of the channel at path channelEnds/ports/{portId}/channels/{channelId} using 
+    // the root hash header.AppHash
+    if verifyMembership(header.AppHash, proofHeight, proof, channelPath(portId, channelId), channel) {
+        return channel, proof
+    } else { return (nil, nil) }
+}
+```
+If LATEST_HEIGHT is passed as a parameter, the data should be read (and the corresponding proof created) 
+at the most recent height. 
+
+
 ## Computing destination chain
 
 ```golang
 func GetDestinationInfo(ev IBCEvent, chainA Chain) Chain {
     switch ev.type {
         case SendPacketEvent: 
-            channel, proof = GetChannel(chainA, ev.sourcePort, ev.sourceChannel, ev.Height)
+            channel, proof = GetChannel(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
             if proof == nil return nil
                 
             connectionId = channel.connectionHops[0]
-            connection, proof = GetConnection(chainA, connectionId, ev.Height) 
+            connection, proof = GetConnection(chain, connectionId, ev.Height) 
             if proof == nil return nil
                 
-            clientState = GetClientState(chainA, connection.clientIdentifier, ev.Height) 
-            return getHostInfo(clientStateA.chainID) 
+            clientState = GetClientState(chain, connection.clientIdentifier, ev.Height) 
+            return getHostInfo(clientState.chainID) 
         ...    
     }
 }
@@ -182,7 +199,7 @@ func GetDestinationInfo(ev IBCEvent, chainA Chain) Chain {
 ### PacketRecv datagram creation
 
 ```golang
-func createDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, installedHeight Height) PacketRecv {        
+func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, installedHeight Height) PacketRecv {        
     
     // Stage 1 
     // Verify if packet is committed to chain A and it is still pending (commitment exists)
@@ -210,7 +227,7 @@ func createDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, installedHei
     connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
     if proof != nil { return nil }
     
-    if connectionB == null OR connectionB.state != OPEN { return nil } 
+    if connection == null OR connection.state != OPEN { return nil } 
     
     if ev.timeoutHeight != 0 AND GetConsensusHeight(chainB) >= ev.timeoutHeight { return nil }
     if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return nil }
