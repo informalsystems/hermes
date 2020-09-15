@@ -1,4 +1,4 @@
-use crate::ics02_client::state::ClientState;
+use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef, state::ClientState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
@@ -44,18 +44,22 @@ pub fn verify_connection_proof(
     proof: &CommitmentProof,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
-    let client = ctx
+    let client_state = ctx
         .fetch_client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
-    if client.is_frozen() {
+
+    if client_state.is_frozen() {
         return Err(Kind::FrozenClient
             .context(connection_end.client_id().to_string())
             .into());
     }
 
+    let client_def = AnyClient::from_client_type(client_state.client_type());
+
     // Verify the proof for the connection state against the expected connection end.
-    Ok(client
+    Ok(client_def
         .verify_connection_state(
+            &client_state,
             proof_height,
             connection_end.counterparty().prefix(),
             proof,
@@ -72,11 +76,11 @@ pub fn verify_consensus_proof(
     proof: &ConsensusProof,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
-    let client = ctx
+    let client_state = ctx
         .fetch_client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
-    if client.is_frozen() {
+    if client_state.is_frozen() {
         return Err(Kind::FrozenClient
             .context(connection_end.client_id().to_string())
             .into());
@@ -87,8 +91,11 @@ pub fn verify_consensus_proof(
         .fetch_self_consensus_state(proof.height())
         .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
 
+    let client = AnyClient::from_client_type(client_state.client_type());
+
     Ok(client
         .verify_client_consensus_state(
+            &client_state,
             proof_height,
             connection_end.counterparty().prefix(),
             proof.proof(),
