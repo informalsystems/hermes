@@ -2,14 +2,14 @@ use crate::types::*;
 
 #[derive(std::cmp::PartialEq)]
 pub struct Header {
-    height: Height,
-    hash: Hash,
-    app_hash: Hash,
+    pub height: Height,
+    pub hash: Hash,
+    pub app_hash: Hash,
 }
 
 
 pub struct MembershipProof {
-    height: Height,
+    pub height: Height,
 }
 
 impl Header {
@@ -57,14 +57,11 @@ impl LightClient {
 }
 
 pub enum ChainError {
-    VerificationError(),
-    HeaderMismatch(),
 }
-
 
 #[derive(Debug, Copy, Clone)]
 pub struct Chain {
-    chain_id: ChainId,
+    pub chain_id: ChainId,
     pub full_node: FullNode,
     // requires rpc address for the full node
     pub light_client: LightClient,
@@ -74,8 +71,8 @@ pub struct Chain {
 
 
 pub struct ConsensusState {
-    height: Height, // Is this superflous?
-    signed_header: SignedHeader,
+    pub height: Height, // Is this superflous?
+    pub signed_header: SignedHeader,
 }
 
 impl ConsensusState {
@@ -87,8 +84,8 @@ impl ConsensusState {
     }
 }
 pub struct SignedHeader {
-    header: Header,
-    commit: (),
+    pub header: Header,
+    pub commit: (),
 }
 
 impl SignedHeader {
@@ -106,7 +103,8 @@ pub enum Event {
 
 
 impl Chain {
-   pub fn new() -> Chain {
+    // Maybe return a chainError Here?
+    pub fn new() -> Chain {
         return Chain { 
             chain_id: 0,
             full_node: FullNode {},
@@ -114,50 +112,8 @@ impl Chain {
         }
     }
 
-    // XXX: This will always return target_height_a or ClientError
-    pub fn update_client(&mut self, dest: &Chain, self_target_height: Height) -> Result<Height, ChainError> {
-        let (mut self_consensus_state, mut dest_membership_proof) = dest.full_node.consensus_state(self.chain_id, self_target_height);
-
-        let dest_sh = dest.light_client.get_header(dest_membership_proof.height + 1);
-        // type verifyMembership = (root: CommitmentRoot, proof: CommitmentProof, path: CommitmentPath, value: Value) => boolean (ICS-023)
-        if ! verify_consensus_state_inclusion(&self_consensus_state, &dest_membership_proof, &(dest_sh.header.app_hash)) {
-            // Error: Destination chain provided invalid consensus_state
-            return Err(ChainError::VerificationError())
-        }
-
-        // verify client_state on self
-        if self.light_client.get_header(self_consensus_state.height).header == self_consensus_state.signed_header.header {
-            return Err(ChainError::HeaderMismatch())
-        }
-
-        while self_consensus_state.height < self_target_height {
-            let self_signed_headers = self.light_client.get_minimal_set(self_consensus_state.height, self_target_height);
-
-            // This might fail semantically due to competing relayers
-            // Even if this fails, we need to continue
-            dest.full_node.submit(vec![create_client_update_datagram(self_signed_headers)]);
-
-            let (self_consensus_state, dest_membership_proof) = dest.full_node.consensus_state(self.chain_id, self_target_height);
-            let dest_sh = dest.light_client.get_header(dest_membership_proof.height + 1);
-            if ! verify_consensus_state_inclusion(&self_consensus_state, &dest_membership_proof, &(dest_sh.header.app_hash)) {
-                // Error: Destination chain provided invalid client_state
-                return Err(ChainError::VerificationError())
-            }
-
-            if self.light_client.get_header(self_consensus_state.height).header == self_consensus_state.signed_header.header {
-                // Error: consesus_state isn't verified by self light client
-                return  Err(ChainError::HeaderMismatch())
-            }
-        }
-
-        return Ok(self_target_height)
-    }
+   pub fn run(self) -> Result<(), ChainError> {
+       return Ok(())
+   }
 }
 
-fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membership_proof: &MembershipProof, _hash: &Hash) -> bool {
-    return true
-}
-
-fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram  {
-    return Datagram::NoOp()
-}

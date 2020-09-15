@@ -2,7 +2,6 @@ use relayer_spike::chain::{Chain, SignedHeader};
 use relayer_spike::link::{Link, LinkConfig};
 use relayer_spike::types::Datagram;
 
-
 fn main() {
     let config = LinkConfig::default(); // assume this is read from a file 
 

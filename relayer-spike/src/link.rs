@@ -2,7 +2,7 @@ use crate::types::{ChainId, ChannelId, ClientId, PortId, Datagram};
 use crate::connection::{Connection, ConnectionConfig, ConnectionError};
 use crate::channel::{Channel, ChannelConfig, ChannelError};
 use crate::foreign_client::{ForeignClient, ForeignClientConfig, ForeignClientError};
-use crate::chain::{Chain, SignedHeader};
+use crate::chain::{Chain, SignedHeader, ConsensusState};
 
 pub struct LinkError {}
 
@@ -77,6 +77,7 @@ impl Link {
         let channel = Channel::new(src, dst, ChannelConfig::default())?;
 
         return Ok(Link {
+            // XXX: We need a ForeignClient here
             src_chain: src,
             dst_chain: dst,
         })
