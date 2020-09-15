@@ -97,11 +97,11 @@ impl Link {
     pub fn run(self) { // TODO: Error
         for datagrams in self.pending_datagrams() { // we batch here to amortize client updates
             let target_height = 1; // grab from the datagram
-            let header = self.src_chain.light_client.get_header(target_height);
+            let header = self.src_chain.get_header(target_height);
 
             verify_proof(&datagrams, &header);
 
-            self.dst_chain.full_node.submit(vec![datagrams]); // Maybe put update_client here
+            self.dst_chain.submit(vec![datagrams]); // Maybe put update_client here
         }
     }
 }

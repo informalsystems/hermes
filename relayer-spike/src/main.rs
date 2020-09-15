@@ -1,16 +1,25 @@
-use relayer_spike::chain::{Chain, SignedHeader};
+use relayer_spike::chain::{ChainRuntime, SignedHeader};
 use relayer_spike::link::{Link, LinkConfig};
 use relayer_spike::types::Datagram;
+use std::thread;
 
 fn main() {
     let config = LinkConfig::default(); // assume this is read from a file 
 
-    let src_chain = Chain::new(); // TODO: Pass chain config
-    let dst_chain = Chain::new();  // TODO: Pass chain config
+    let src_chain = ChainRuntime::new(); // TODO: Pass chain config
+    let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
 
-    // TODO: Run the chain runtimes
+    let src_chain_handle = src_chain.handle();
+    thread::spawn(move || {
+        src_chain.run();
+    });
 
-    match Link::new(src_chain, dst_chain, config) { // TODO: Error Handling
+    let dst_chain_handle = dst_chain.handle();
+    thread::spawn(move || {
+        dst_chain.run();
+    });
+
+    match Link::new(src_chain_handle, dst_chain_handle, config) { // TODO: Error Handling
         Ok(link) => {
             link.run();
         },
@@ -20,4 +29,6 @@ fn main() {
         // * Channel Failure
         Err(err) => panic!("couldn't create a link :("),
     }
+
+    // We need to cooridinate the lifeitme of the chain and link runtimes
 }

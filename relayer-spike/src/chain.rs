@@ -1,4 +1,5 @@
 use crate::types::*;
+use crossbeam_channel as channel;
 
 #[derive(std::cmp::PartialEq)]
 pub struct Header {
@@ -6,7 +7,6 @@ pub struct Header {
     pub hash: Hash,
     pub app_hash: Hash,
 }
-
 
 pub struct MembershipProof {
     pub height: Height,
@@ -25,50 +25,8 @@ impl Header {
 pub type Subscription = Vec<Event>;
 
 #[derive(Debug, Copy, Clone)]
-pub struct FullNode {}
-
-impl FullNode {
-    pub fn subscribe(&self) -> Subscription {
-        return vec![Event::NoOp()]
-    }
-
-    pub fn submit(&self, datagrams: Vec<Datagram>) {
-    }
-
-    pub fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
-        // In practice this will query the client_state, get the height and perform a second query
-        // for the consensus_state. it's possible that the client.state.height < target_height in which case this function will return the highest possible height
-
-        return (ConsensusState::default(), MembershipProof{height: target_height})
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct LightClient { }
-
-impl LightClient {
-    pub fn get_header(&self, height: Height) -> SignedHeader {
-        return SignedHeader::default()
-    }
-
-    pub fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader> {
-        return vec![SignedHeader::default()]
-    }
-}
-
 pub enum ChainError {
 }
-
-#[derive(Debug, Copy, Clone)]
-pub struct Chain {
-    pub chain_id: ChainId,
-    pub full_node: FullNode,
-    // requires rpc address for the full node
-    pub light_client: LightClient,
-    // queries require:
-    // account_prefix
-}
-
 
 pub struct ConsensusState {
     pub height: Height, // Is this superflous?
@@ -101,19 +59,79 @@ pub enum Event {
     NoOp(),
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct Chain {
+    pub chain_id: ChainId,
+    // TODO: account_prefix
+}
 
+// XXX: This should be a trait allowing a mock implementation
 impl Chain {
-    // Maybe return a chainError Here?
+    // Maybe return a ChainError Here?
     pub fn new() -> Chain {
-        return Chain { 
+        return Chain {
             chain_id: 0,
-            full_node: FullNode {},
-            light_client: LightClient {},
         }
     }
 
-   pub fn run(self) -> Result<(), ChainError> {
-       return Ok(())
-   }
+    // XXX: These methods will be proxies to the runtime
+    pub fn get_header(&self, height: Height) -> SignedHeader {
+        return SignedHeader::default()
+    }
+
+    pub fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader> {
+        return vec![SignedHeader::default()]
+    }
+
+    pub fn subscribe(&self) -> Subscription {
+        return vec![Event::NoOp()]
+    }
+
+    pub fn submit(&self, datagrams: Vec<Datagram>) {
+    }
+
+    pub fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
+        // In practice this will query the client_state, get the height and perform a second query
+        // for the consensus_state. it's possible that the client.state.height < target_height in which case this function will return the highest possible height
+
+        return (ConsensusState::default(), MembershipProof{height: target_height})
+    }
+}
+
+enum HandleInput {
+    Terminate(channel::Sender<()>),
+}
+
+pub struct ChainRuntime {
+    sender: channel::Sender<HandleInput>,
+    receiver: channel::Receiver<HandleInput>,
+}
+
+impl ChainRuntime {
+    // XXX: ChainConfig
+    pub fn new() -> ChainRuntime {
+        let (sender, receiver) = channel::unbounded::<HandleInput>();
+
+        return Self {
+            sender,
+            receiver,
+        }
+    }
+
+    pub fn handle(&self) -> Chain {
+        return Chain::new();
+    }
+
+    pub fn run(mut self) -> Result<(), ChainError> {
+        loop {
+            let event = self.receiver.recv().unwrap();
+            match event {
+                HandleInput::Terminate(sender) => {
+                    sender.send(()).unwrap();
+                    return Ok(())
+                }
+            }
+        }
+    }
 }
 
