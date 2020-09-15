@@ -103,7 +103,9 @@ pub fn verify_consensus_proof(
             proof.height(),
             &expected_consensus,
         )
-        .map_err(|_| Kind::ConsensusStateVerificationFailure.context(proof.height().to_string()))?)
+        .map_err(|e| {
+            Kind::ConsensusStateVerificationFailure(proof.height()).context(e.to_string())
+        })?)
 }
 
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough to fall within the

@@ -122,6 +122,7 @@ mod tests {
         .unwrap();
         let default_context = MockConnectionContext::new(10, 3);
 
+        // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Open,
             client_id.clone(),
@@ -130,15 +131,32 @@ mod tests {
         )
         .unwrap();
 
+        // A connection end (with correct state but incorrect versions); exercises unsuccessful
+        // processing path.
         let mut incorrect_conn_end_vers = incorrect_conn_end_state.clone();
         incorrect_conn_end_vers.set_state(State::Init);
 
-        let mut correct_conn_end = incorrect_conn_end_state.clone();
-        correct_conn_end.set_state(State::Init);
-        correct_conn_end.set_version(dummy_msg.version().clone());
+        // A connection end (with correct versions and correct state, but incorrect prefix for the
+        // counterparty) that will be part of the context to exercise unsuccessful path.
+        let mut incorrect_conn_end_prefix = incorrect_conn_end_state.clone();
+        incorrect_conn_end_prefix.set_state(State::Init);
+        incorrect_conn_end_prefix.set_version(dummy_msg.version().clone());
 
-        // TODO: These tests are insufficient, as they do not exercise the successful path.
-        // Should add a test where want_pass: true.
+        // Build a connection end that will exercise the successful path.
+        let correct_counterparty = Counterparty::new(
+            client_id.clone(),
+            dummy_msg.connection_id().clone(),
+            CommitmentPrefix::from(b"ibc".to_vec()),
+        )
+        .unwrap();
+        let correct_conn_end = ConnectionEnd::new(
+            State::Init,
+            client_id.clone(),
+            correct_counterparty,
+            vec![dummy_msg.version().clone()],
+        )
+        .unwrap();
+
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
@@ -166,12 +184,21 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails due to ConsensusStateVerificationFailure".to_string(),
+                name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
+                ctx: default_context
+                    .clone()
+                    .with_client_state(&client_id, 10)
+                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_prefix),
+                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Successful processing of Ack message".to_string(),
                 ctx: default_context
                     .with_client_state(&client_id, 10)
                     .add_connection(dummy_msg.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
-                want_pass: false,
+                want_pass: true,
             },
         ]
         .into_iter()
