@@ -31,6 +31,12 @@ pub enum Kind {
 
     #[error("invalid raw client state")]
     InvalidRawClientState,
+
+    #[error("invalid raw header")]
+    InvalidRawHeader,
+
+    #[error("Protobuf decoding failure")]
+    ProtoDecodingFailure,
 }
 
 impl Kind {

@@ -2,6 +2,8 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Error;
+use crate::ics02_client::error::Kind;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -10,6 +12,7 @@ use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
 use crate::mock_client::header::MockHeader;
+use crate::try_from_raw::TryFromRaw;
 
 use tendermint::block::Height;
 
@@ -56,10 +59,22 @@ impl MockClientState {
     }
 }
 
-#[cfg(test)]
 impl From<MockClientState> for AnyClientState {
     fn from(mcs: MockClientState) -> Self {
         Self::Mock(mcs)
+    }
+}
+
+impl TryFromRaw for MockClientState {
+    type Error = Error;
+    type RawType = ibc_proto::ibc::mock::ClientState;
+
+    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+        let raw_header = raw
+            .header
+            .ok_or_else(|| Kind::InvalidRawClientState.context("missing header"))?;
+
+        Ok(Self(MockHeader::try_from(raw_header)?))
     }
 }
 

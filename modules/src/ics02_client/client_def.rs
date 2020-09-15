@@ -1,3 +1,4 @@
+use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::error::{Error, Kind};
@@ -15,11 +16,12 @@ use crate::{ics02_client::client_type::ClientType, try_from_raw::TryFromRaw};
 use ibc_proto::ibc::tendermint::ClientState as RawTendermintClientState;
 
 #[cfg(test)]
-use crate::mock_client::client_def::MockClient;
-#[cfg(test)]
-use crate::mock_client::header::MockHeader;
-#[cfg(test)]
-use crate::mock_client::state::{MockClientState, MockConsensusState};
+use {
+    crate::mock_client::client_def::MockClient,
+    crate::mock_client::header::MockHeader,
+    crate::mock_client::state::{MockClientState, MockConsensusState},
+    ibc_proto::ibc::mock::ClientState as RawMockClientState,
+};
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -90,7 +92,8 @@ impl AnyClientState {
     pub fn from_any(any: prost_types::Any) -> Result<Self, Error> {
         match any.type_url.as_str() {
             "ibc.tendermint.ClientState" => {
-                let raw = decode_proto::<RawTendermintClientState>(any.value)?;
+                let raw = RawTendermintClientState::decode(any.value.as_ref())
+                    .map_err(|e| Kind::ProtoDecodingFailure.context(e))?;
                 let client_state = TendermintClientState::try_from(raw)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?;
 
@@ -98,18 +101,18 @@ impl AnyClientState {
             }
 
             #[cfg(test)]
-            "ibc.mock.ClientState" => todo!(),
+            "ibc.mock.ClientState" => {
+                let raw = RawMockClientState::decode(any.value.as_ref())
+                    .map_err(|e| Kind::ProtoDecodingFailure.context(e))?;
+                let client_state = MockClientState::try_from(raw)
+                    .map_err(|e| Kind::InvalidRawClientState.context(e))?;
+
+                Ok(AnyClientState::Mock(client_state))
+            }
 
             _ => Err(Kind::UnknownClientStateType(any.type_url).into()),
         }
     }
-}
-
-fn decode_proto<A>(_bytes: Vec<u8>) -> Result<A, Error>
-where
-    A: prost::Message,
-{
-    todo!()
 }
 
 impl ClientState for AnyClientState {
