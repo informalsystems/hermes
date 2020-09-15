@@ -89,19 +89,23 @@ impl AnyClientState {
 
     pub fn from_any(any: prost_types::Any) -> Result<Self, Error> {
         match any.type_url.as_str() {
-            "ibc.tendermint.ClientState" => decode_proto::<TendermintClientState>(any.value)
-                .map(|client_state| AnyClientState::Tendermint(client_state)),
+            "ibc.tendermint.ClientState" => {
+                let raw = decode_proto::<RawTendermintClientState>(any.value)?;
+                let client_state = TendermintClientState::try_from(raw)
+                    .map_err(|e| Kind::InvalidRawClientState.context(e))?;
+
+                Ok(AnyClientState::Tendermint(client_state))
+            }
 
             #[cfg(test)]
-            "ibc.mock.ClientState" => decode_proto::<MockClientState>(any.value)
-                .map(|client_state| AnyClientState::Mock(client_state)),
+            "ibc.mock.ClientState" => todo!(),
 
             _ => Err(Kind::UnknownClientStateType(any.type_url).into()),
         }
     }
 }
 
-fn decode_proto<A>(bytes: Vec<u8>) -> Result<A, Error>
+fn decode_proto<A>(_bytes: Vec<u8>) -> Result<A, Error>
 where
     A: prost::Message,
 {

@@ -152,6 +152,15 @@ impl crate::ics02_client::state::ClientState for ClientState {
     }
 }
 
+impl TryFromRaw for ClientState {
+    type Error = Error;
+    type RawType = ibc_proto::ibc::tendermint::ClientState;
+
+    fn try_from(value: Self::RawType) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::ics07_tendermint::client_state::ClientState;

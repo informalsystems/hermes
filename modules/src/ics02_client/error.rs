@@ -28,6 +28,9 @@ pub enum Kind {
 
     #[error("unknown client state type: {0}")]
     UnknownClientStateType(String),
+
+    #[error("invalid raw client state")]
+    InvalidRawClientState,
 }
 
 impl Kind {
