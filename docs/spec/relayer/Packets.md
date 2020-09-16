@@ -254,7 +254,10 @@ func GetDestinationInfo(ev IBCEvent, chain Chain) Chain {
 ### PacketRecv datagram creation
 
 ```golang
-func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, installedHeight Height) PacketRecv {        
+func createPacketRecvDatagram(ev SendPacketEvent, 
+                              chainA Chain, 
+                              chainB Chain, 
+                              installedHeight Height) (PacketRecv, Error) {        
     
     // Stage 1 
     // Verify if packet is committed to chain A and it is still pending (commitment exists)
@@ -262,46 +265,52 @@ func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, in
     proofHeight = installedHeight - 1
     packetCommitment, packetCommitmentProof = 
         GetPacketCommitment(chainA, ev.sourcePort, ev.sourceChannel, ev.sequence, proofHeight)     
-    if packetCommitmentProof != nil { return nil }
+    if packetCommitmentProof == nil { return (nil, Error.RETRY) }
         
     if packetCommitment == nil OR
-       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { return nil }
+       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
+            // invalid event; replace provider
+            ReplaceProvider(chainA)
+            return (nil, Error.DROP) 
+    }
             
     // Stage 2 
     // Execute checks IBC handler on chainB will execute
     
     channel, proof = GetChannel(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT)
-    if proof == nil { return nil }
+    if proof == nil { return (nil, Error.RETRY) }
     
-    // TODO: not necessarily fatal error as optimistic packet send might be taking place
-    if channel == nil OR
-       channel.state != OPEN OR
-       ev.sourcePort != channel.counterpartyPortIdentifier OR
-       ev.sourceChannel != channel.counterpartyChannelIdentifier { return nil }
+    if channel != nil AND
+       (channel.state == CLOSED OR
+        ev.sourcePort != channel.counterpartyPortIdentifier OR
+        ev.sourceChannel != channel.counterpartyChannelIdentifier) { (nil, Error.DROP) } 
     
+    if channel == nil OR channel.state != OPEN  { (nil, Error.RETRY) } 
+    // TODO: Maybe we shouldn't even enter handle loop for packets if the corresponding channel is not open!
+           
     connectionId = channel.connectionHops[0]
     connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
-    if proof == nil { return nil }
+    if proof == nil { return (nil, Error.RETRY) }
     
-    if connection == nil OR connection.state != OPEN { return nil } 
+    if connection == nil OR connection.state != OPEN { return (nil, Error.RETRY) } 
     
-    if ev.timeoutHeight != 0 AND GetConsensusHeight(chainB) >= ev.timeoutHeight { return nil }
-    if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return nil }
+    if ev.timeoutHeight != 0 AND GetConsensusHeight(chainB) >= ev.timeoutHeight { return (nil, Error.DROP) }
+    if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return (nil, Error.DROP) }
     
     // we now check if this packet is already received by the destination chain
     if (channel.ordering === ORDERED) {    
         nextSequenceRecv, proof = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
-        if proof == nil { return nil }
+        if proof == nil { return (nil, Error.RETRY) }
         
-        if ev.sequence != nextSequenceRecv { return nil } // packet has already been delivered by another relayer
+        if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     
     } else {
-        // TODO: Can be proof of absence also and we should be able to verify it. 
+        // Note that absence of ack (packetAcknowledgment == nil) is also proven also and we should be able to verify it. 
         packetAcknowledgement, proof = 
             GetPacketAcknowledgement(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
-        if proof == nil { return nil }
+        if proof == nil { return (nil, Error.RETRY) }
 
-        if packetAcknowledgement != nil { return nil }
+        if packetAcknowledgement != nil { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     }
     
     // Stage 3
@@ -317,7 +326,7 @@ func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, in
                 data: ev.data
     }   
     
-    return PacketRecv { packet, packetCommitmentProof, proofHeight }
+    return (PacketRecv { packet, packetCommitmentProof, proofHeight }, nil)
 }    
 ```
 

@@ -76,11 +76,15 @@ We assume that the corresponding light client is correctly installed on each cha
 
 ```golang
 enum Error {
-  INIT,
-  TRYOPEN,
-  OPEN,
+  RETRY,
+  DROP,
 }
 ``` 
+
+The semantic of the returned error is to signal to the caller whether there was an error in the event processing that 
+could be transient (for example not able to establish connection to a correct full node), in which case
+the event can be reprocessed later, or event should be dropped as it is already been received by the destination
+chain (due to activity of concurrent relayer). 
 
 ```golang
 func handleEvent(ev, chainA) Error {
@@ -90,27 +94,24 @@ func handleEvent(ev, chainA) Error {
     // Stage 1.
     // Determine destination chain
     chainB = GetDestinationInfo(ev, chainA) 
-    if chainB == nil { return } // TODO: return correct error type  
+    if chainB == nil { return Error.RETRY }  
 
     // Stage 2.
     // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
     targetHeight = ev.height + 1
     // See the code for `updateIBCClient` below.
     installedHeight, error := updateIBCClient(chainB, chainA, targetHeight)
-    if error != nil {
-       return Error
-    }
+    if error != nil { return Error.RETRY }
 
     // Stage 3.
     // Create the IBC datagrams including `ev` & verify them.
-    datagram = createDatagram(ev, chainA, chainB, installedHeight)
+    datagram, error = createDatagram(ev, chainA, chainB, installedHeight)
+    if error != nil { return Error.RETRY }
     
     // Stage 4.
     // Submit datagrams.
-    if datagram != nil {
-        error = chainB.submit(datagram)
-        if error != nil { return Error } 
-    }   
+    error = chainB.submit(datagram)
+    if error != nil { return Error.RETRY }      
 }
 
 
@@ -123,20 +124,20 @@ func handleEvent(ev, chainA) Error {
 func updateIBCClient(dest Chain, src Chain, targetHeight Height) -> (Height, Error) {
     
     clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-    if proof == nil { return (nil, Error) } 
+    if proof == nil { return (nil, Error.RETRY) } 
     // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
     
     // if installed height is smaller than the targetHeight, we need to update client with targetHeight
     while (clientState.latestHeight < targetHeight) {
         // Do an update to IBC client for `src` on `dest`.
         shs, error = src.lc.getMinimalSet(clientState.latestHeight, targetHeight)
-        if error != nil { return (nil, Error) }    
+        if error != nil { return (nil, Error.RETRY) }    
     
         error = dest.submit(createUpdateClientDatagrams(shs))
-        if error != nil { return (nil, Error) } 
+        if error != nil { return (nil, Error.RETRY) } 
         
         clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-        if proof == nil { return (nil, Error) }    
+        if proof == nil { return (nil, Error.RETRY) }    
     }
     
     // NOTE: semantic check of the installed header is done using fork detection component
