@@ -14,19 +14,19 @@ pub enum Kind {
     ConfigIo,
 
     /// Invalid configuration
-    #[error("invalid configuration")]
+    #[error("Invalid configuration")]
     Config,
 
-    /// RPC error (typcally raised by the RPC client or the RPC requester)
+    /// RPC error (typically raised by the RPC client or the RPC requester)
     #[error("RPC error")]
     Rpc,
 
     /// Light client error, typically raised by a `Client`
-    #[error("light client error")]
+    #[error("Light client error")]
     LightClient,
 
     /// Trusted store error, raised by instances of `Store`
-    #[error("store error")]
+    #[error("Store error")]
     Store,
 
     /// Event error (raised by the event monitor)

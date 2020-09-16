@@ -5,10 +5,12 @@ use relayer::config::{ChainConfig, Config};
 
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc::ics24_host::Path::ClientConnections;
+use ibc::ics24_host::Path::{ClientConnections, ClientState, ClientConsensusState};
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -19,7 +21,7 @@ pub struct QueryClientStateCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
     #[options(help = "whether proof is required", short = "p")]
@@ -56,6 +58,12 @@ impl QueryClientStateCmd {
     }
 }
 
+/// Command for handling a query for a client's state.
+/// To run with proof:
+/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
+///
+/// Run without proof:
+/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
@@ -69,27 +77,16 @@ impl Runnable for QueryClientStateCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
-        //
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        /* Todo: Implement client full state query
-        let res = block_on(query_client_full_state(
-            &chain,
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let res = chain.query::<AnyClientState>(
+            ClientState(opts.client_id),
             opts.height,
-            opts.client_id.clone(),
-            opts.proof,
-        ));
+            opts.proof
+        );
         match res {
-            Ok(cs) => status_info!("client state query result: ", "{:?}", cs.client_state),
+            Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
             Err(e) => status_info!("client state query error: ", "{:?}", e),
         }
-        */
     }
 }
 
@@ -102,10 +99,10 @@ pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(free, help = "height of the consensus state to query")]
+    #[options(free, help = "height of the client's consensus state to query")]
     consensus_height: Option<u64>,
 
-    #[options(help = "height of the consensus state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
     #[options(help = "whether proof is required", short = "p")]
@@ -149,6 +146,13 @@ impl QueryClientConsensusCmd {
     }
 }
 
+
+/// Implementation of the query for a client's consensus state at a certain height.
+/// Run with proof:
+/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
+///
+/// Run without proof:
+/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
@@ -162,33 +166,16 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
-        //
-        // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        /* Todo: Implement client consensus state query
-        let res = block_on(query_client_consensus_state(
-            &chain,
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let res = chain.query::<AnyConsensusState>(
+            ClientConsensusState(opts.client_id, opts.consensus_height),
             opts.height,
-            opts.client_id,
-            opts.consensus_height,
             opts.proof,
-        ));
+        );
         match res {
-            Ok(cs) => status_info!(
-                "client consensus state query result: ",
-                "{:?}",
-                cs.consensus_state
-            ),
+            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
             Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
         }
-
-         */
     }
 }
 
@@ -222,7 +209,7 @@ pub struct QueryClientConnectionsCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
     #[options(help = "whether proof is required", short = "p")]
