@@ -23,7 +23,8 @@ impl Header {
     }
 }
 
-pub type Subscription = Vec<Event>;
+pub type Datagrams = Vec<Datagram>;
+pub type Subscription = channel::Receiver<Datagrams>;
 
 #[derive(Debug, Clone)]
 pub enum ChainError {
@@ -68,7 +69,7 @@ pub struct Chain {
     // TODO: account_prefix
 }
 
-// XXX: This should be a trait allowing a mock implementation
+// TODO: This should be a trait allowing a mock implementation
 impl Chain {
     // Maybe return a ChainError Here?
     fn new(sender: channel::Sender<HandleInput>) -> Chain {
@@ -78,8 +79,8 @@ impl Chain {
         }
     }
 
-    pub fn subscribe(&self, _chain_id: ChainId) -> channel::Receiver<Vec<Datagram>> {
-        let (sender, receiver) = channel::bounded::<channel::Receiver<Vec<Datagram>>>(1);
+    pub fn subscribe(&self, _chain_id: ChainId) -> Subscription {
+        let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
         return receiver.recv().unwrap();
     }
@@ -106,7 +107,7 @@ impl Chain {
 
 enum HandleInput {
     Terminate(channel::Sender<()>),
-    Subscribe(channel::Sender<channel::Receiver<Vec<Datagram>>>),
+    Subscribe(channel::Sender<Subscription>),
 }
 
 pub struct ChainRuntime {
@@ -129,15 +130,12 @@ impl ChainRuntime {
         let sender = self.sender.clone();
         return Chain::new(sender);
     }
-    // We need to:
-    // * forward outgoing requests to external components (light_client, full_node)
-    // * Read incomming events from the full_node
-    //  * Relay Link specific messages to subscriptions
+
     pub fn run(mut self) -> Result<(), ChainError> {
-        // XXX: Mock for now
+        // TODO: Replace with a websocket
         let event_monitor = channel::tick(Duration::from_millis(1000));
 
-        let mut subscriptions: Vec<channel::Sender<Vec<Datagram>>> = vec![];
+        let mut subscriptions: Vec<channel::Sender<Datagrams>> = vec![];
         loop {
             channel::select! {
                 recv(event_monitor) -> tick => {
@@ -146,11 +144,10 @@ impl ChainRuntime {
                         subscription.send(vec![Datagram::NoOp()]).unwrap();
                     }
                 },
-                recv(self.receiver) -> foo => {
-                    let event = foo.unwrap();
+                recv(self.receiver) -> maybe_event => {
+                    let event = maybe_event.unwrap();
                     match event {
                         HandleInput::Subscribe(sender) => {
-                            println!("Subscribing!");
                             let (sub_sender, sub_receiver) = channel::unbounded::<Vec<Datagram>>();
                             subscriptions.push(sub_sender);
                             sender.send(sub_receiver).unwrap();
