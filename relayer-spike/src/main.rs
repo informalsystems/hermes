@@ -6,6 +6,7 @@ use std::thread;
 fn main() {
     let config = LinkConfig::default(); // assume this is read from a file 
 
+    // We need:
     let src_chain = ChainRuntime::new(); // TODO: Pass chain config
     let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
 
@@ -30,5 +31,5 @@ fn main() {
         Err(err) => panic!("couldn't create a link :("),
     }
 
-    // We need to cooridinate the lifeitme of the chain and link runtimes
+    // TODO: Coordinate runtime shutdown
 }

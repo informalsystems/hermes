@@ -45,6 +45,7 @@ impl LinkConfig {
 }
 
 pub struct Link {
+    foreign_client: ForeignClient,
     pub src_chain: Chain,
     pub dst_chain: Chain,
 }
@@ -72,12 +73,12 @@ impl Link {
     pub fn new(src: Chain, dst: Chain, config: LinkConfig) -> Result<Link, LinkError> {
         // There will probably dependencies between foreign_client, connection and handhsake which
         // will require references to each other..
-        let foreign_client = ForeignClient::new(src, dst, ForeignClientConfig::default())?;
-        let connection = Connection::new(src, dst, ConnectionConfig::default())?;
-        let channel = Channel::new(src, dst, ChannelConfig::default())?;
+        let foreign_client = ForeignClient::new(src.clone(), dst.clone(), ForeignClientConfig::default())?;
+        let connection = Connection::new(src.clone(), dst.clone(), ConnectionConfig::default())?;
+        let channel = Channel::new(src.clone(), dst.clone(), ChannelConfig::default())?;
 
         return Ok(Link {
-            // XXX: We need a ForeignClient here
+            foreign_client: foreign_client,
             src_chain: src,
             dst_chain: dst,
         })
@@ -95,17 +96,18 @@ impl Link {
     // * FullNode Failures
     // * Verification Failure
     pub fn run(self) { // TODO: Error
-        for datagrams in self.pending_datagrams() { // we batch here to amortize client updates
+        let subscription = self.src_chain.subscribe(self.dst_chain.chain_id);
+        for datagrams in subscription.iter() {
             let target_height = 1; // grab from the datagram
             let header = self.src_chain.get_header(target_height);
 
             verify_proof(&datagrams, &header);
 
-            self.dst_chain.submit(vec![datagrams]); // Maybe put update_client here
+            self.dst_chain.submit(datagrams); // XXX: Maybe put update_client here
         }
     }
 }
 
 // XXX: Give this better naming
-fn verify_proof(_datagrams: &Datagram, _header: &SignedHeader) {
+fn verify_proof(_datagrams: &Vec<Datagram>, _header: &SignedHeader) {
 }
