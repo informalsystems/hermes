@@ -27,9 +27,10 @@ then m was sent by the module A to the module B.
 ## Data Types
 
 ```go
-type ClientState struct {
-    Height          Height
-    SignedHeader    SignedHeader	
+type ConsensusState {
+  timestamp           uint64
+  validatorSet        List<Pair<Address, uint64>>
+  commitmentRoot     []byte
 }
 ```
 
@@ -49,7 +50,7 @@ We assume the existence of the following helper functions:
 // We assume that this function handles non-responsive full node error by switching to a different full node.
 queryClientConsensusState(chainA, targetHeight) (ClientState, MembershipProof)
 verifyClientStateProof(clientStateAonB, membershipProof, sh.appHash) boolean
-pendingDatagrams(height, chainA, chainB) IBCDatagram[]
+createDatagrams(height, chainA, chainB, installedHeight) IBCDatagram[]
 verifyProof(datagrams, sh.appHash) boolean
 createUpdateClientDatagrams(shs) IBCDatagram[]
 submit(datagrams) error
@@ -60,8 +61,8 @@ The main relayer event loop is a pipeline of three stages. Assuming some IBC eve
 the relayer:
 
 1. Updates (on `chainB`) the IBC client for `chainA` to a certain height `H` where `H >= h+1`.
-2. Create IBC datagrams at height `H-1`.
-3. Submit the datagrams from stage (2) to `chainB`.
+2. Create IBC datagram at height `H-1`.
+3. Submit the datagram from stage (2) to `chainB`.
 
 Note that an IBC event at height `h` corresponds to the modifications to the data store made as part of executing
 block at height `h`. The corresponding proof (that data is indeed written to the data store) can be verified using
@@ -69,18 +70,27 @@ the data store root hash that is part of the header at height `h+1`.
 
 Once stage 1 finishes correctly, stage 2 should succeed assuming that `chainB` has not already processed the event. The 
 interface between stage 1 and stage 2 is just the height `H`. Once stage 2 finishes correctly, stage 3 should 
-succeed. The interface between stage 2 and stage 3 is a set of datagrams.
+succeed. The interface between stage 2 and stage 3 is an IBC datagram.
 
-We assume that the corresponding light client is correctly installed on each chain. 
+We assume that the corresponding light client is correctly installed on each chain.
 
 ```golang
-func handleEvent(ev, chainA) {
+enum Error {
+  INIT,
+  TRYOPEN,
+  OPEN,
+}
+``` 
+
+```golang
+func handleEvent(ev, chainA) Error {
     // NOTE: we don't verify if event data are valid at this point. We trust full node we are connected to
     // until some verification fails. Otherwise, we can have Stage 2 (datagram creation being done first).
     
     // Stage 1.
     // Determine destination chain
-    chainB = GetDestinationInfo(ev, chainA)   
+    chainB = GetDestinationInfo(ev, chainA) 
+    if chainB == nil { return } // TODO: return correct error type  
 
     // Stage 2.
     // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
@@ -88,7 +98,7 @@ func handleEvent(ev, chainA) {
     // See the code for `updateIBCClient` below.
     installedHeight, error := updateIBCClient(chainB, chainA, targetHeight)
     if error != nil {
-       return error
+       return Error
     }
 
     // Stage 3.
@@ -98,7 +108,8 @@ func handleEvent(ev, chainA) {
     // Stage 4.
     // Submit datagrams.
     if datagram != nil {
-        chainB.submit(datagram)
+        error = chainB.submit(datagram)
+        if error != nil { return Error } 
     }   
 }
 
@@ -109,67 +120,27 @@ func handleEvent(ev, chainA) {
 //    Postconditions:
 //      - returns the installedHeight >= targetHeight
 //      - return error if verification of client state fails
-func updateIBCClient(dest, src, targetHeight) -> {installedHeight, error} {
+func updateIBCClient(dest Chain, src Chain, targetHeight Height) -> (Height, Error) {
     
-    while (true) { 
-        // Check if targetHeight exists already on destination chain.
-        // Query state of IBC client for `src` on chain `dest`.
-        clientState, membershipProof = dest.queryClientConsensusState(src, targetHeight)    
-        // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
-        
-        // Verify the result of the query
-        sh = dest.lc.get_header(membershipProof.Height + 1)
-        // NOTE: Headers we obtain from the light client are trusted. 
-        if verifyClientStateProof(clientState, membershipProof, sh.appHash) {
-            break;
-        }
-        replaceFullNode(dst)        
-    }
+    clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+    if proof == nil { return (nil, Error) } 
+    // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
     
-    // At this point we know that clientState is indeed part of the state on dest chain.              
-    // Verify if installed header is equal to the header obtained the from the local client 
-    // at the same height.  
-    if !src.lc.get_header(clientState.Height) == clientState.SignedHeader.Header {
-        // We know at this point that conflicting header is installed at the dst chain.
-        // We need to create proof of fork and submit it to src chain and to dst chain so light client is frozen.
-        src.lc.createAndSubmitProofOfFork(dst, clientState)
-        return {nil, error}
-    }
-               
-    while (clientState.Height < targetHeight) {
-        // Installed height is smaller than the target height.
+    // if installed height is smaller than the targetHeight, we need to update client with targetHeight
+    while (clientState.latestHeight < targetHeight) {
         // Do an update to IBC client for `src` on `dest`.
-        shs = src.lc.get_minimal_set(clientState.Height, targetHeight)
-        // Blocking call. Wait until transaction is committed to the dest chain.
-        dest.submit(createUpdateClientDatagrams(shs))
+        shs, error = src.lc.getMinimalSet(clientState.latestHeight, targetHeight)
+        if error != nil { return (nil, Error) }    
     
-        while (true) { 
-            // Check if targetHeight exists already on destination chain.
-            // Query state of IBC client for `src` on chain `dest`.
-            clientState, membershipProof = dest.queryClientConsensusState(src, targetHeight)    
-            // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
-                
-            // Verify the result of the query
-            sh = dest.lc.get_header(membershipProof.Height + 1)
-            // NOTE: Headers we obtain from the light client are trusted. 
-            if verifyClientStateProof(clientState, membershipProof, sh.appHash) {
-                break;
-            }
-            replaceFullNode(dst)        
-        }
-            
-        // At this point we know that clientState is indeed part of the state on dest chain.              
-        // Verify if installed header is equal to the header obtained the from the local client 
-        // at the same height.  
-        if !src.lc.get_header(clientState.Height) == clientState.SignedHeader.Header {
-            // We know at this point that conflicting header is installed at the dst chain.
-            // We need to create proof of fork and submit it to src chain and to dst chain so light client is frozen.
-            src.lc.createAndSubmitProofOfFork(dst, clientState)
-            return {nil, error}
-        }
+        error = dest.submit(createUpdateClientDatagrams(shs))
+        if error != nil { return (nil, Error) } 
+        
+        clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+        if proof == nil { return (nil, Error) }    
     }
-
-    return {clientState.Height, nil}
+    
+    // NOTE: semantic check of the installed header is done using fork detection component
+    return { clientState.Height, nil }        
 }
 ```
 
@@ -230,10 +201,3 @@ chain at height *h*. The trusted header is provided by the corresponding light c
 
  
 
-- it transfers data between two chains: chainA and chainB. This implies that a 
-relayer has connections with full nodes from chainA and chainB in order to inspect their
-state. We assume that blockchain applications that operates on top of chainA and chainB writes
-relevant data into publicly available data store (for example IBC packets). 
-- in order to verify data written by the application to its store, a relayer needs
-light client node for each connected chain. Light client will on its own establish connections
-with multiple 
