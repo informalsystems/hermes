@@ -24,127 +24,6 @@ eventually received by the module B.
 **[ICS18-Validity]**: If a module B receives an IBC datagram m from a module A, 
 then m was sent by the module A to the module B.
 
-## Data Types
-
-```go
-type ConsensusState {
-  timestamp           uint64
-  validatorSet        List<Pair<Address, uint64>>
-  commitmentRoot     []byte
-}
-```
-
-```go
-type MembershipProof struct {
-    Height          Height
-    Proof           Proof	
-}
-```
-
-## Relayer algorithm
-
-We assume the existence of the following helper functions:
-
-```go
-// returns ClientState for the targetHeight if it exists; otherwise returns ClientState at the latest height.
-// We assume that this function handles non-responsive full node error by switching to a different full node.
-queryClientConsensusState(chainA, targetHeight) (ClientState, MembershipProof)
-verifyClientStateProof(clientStateAonB, membershipProof, sh.appHash) boolean
-createDatagrams(height, chainA, chainB, installedHeight) IBCDatagram[]
-verifyProof(datagrams, sh.appHash) boolean
-createUpdateClientDatagrams(shs) IBCDatagram[]
-submit(datagrams) error
-replaceFullNode(chain)   
-```
-
-The main relayer event loop is a pipeline of three stages. Assuming some IBC event at height `h` on `chainA`, 
-the relayer:
-
-1. Updates (on `chainB`) the IBC client for `chainA` to a certain height `H` where `H >= h+1`.
-2. Create IBC datagram at height `H-1`.
-3. Submit the datagram from stage (2) to `chainB`.
-
-Note that an IBC event at height `h` corresponds to the modifications to the data store made as part of executing
-block at height `h`. The corresponding proof (that data is indeed written to the data store) can be verified using
-the data store root hash that is part of the header at height `h+1`.
-
-Once stage 1 finishes correctly, stage 2 should succeed assuming that `chainB` has not already processed the event. The 
-interface between stage 1 and stage 2 is just the height `H`. Once stage 2 finishes correctly, stage 3 should 
-succeed. The interface between stage 2 and stage 3 is an IBC datagram.
-
-We assume that the corresponding light client is correctly installed on each chain.
-
-```golang
-enum Error {
-  RETRY,
-  DROP,
-}
-``` 
-
-The semantic of the returned error is to signal to the caller whether there was an error in the event processing that 
-could be transient (for example not able to establish connection to a correct full node), in which case
-the event can be reprocessed later, or event should be dropped as it is already been received by the destination
-chain (due to activity of concurrent relayer). 
-
-```golang
-func handleEvent(ev, chainA) Error {
-    // NOTE: we don't verify if event data are valid at this point. We trust full node we are connected to
-    // until some verification fails. Otherwise, we can have Stage 2 (datagram creation being done first).
-    
-    // Stage 1.
-    // Determine destination chain
-    chainB = GetDestinationInfo(ev, chainA) 
-    if chainB == nil { return Error.RETRY }  
-
-    // Stage 2.
-    // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
-    targetHeight = ev.height + 1
-    // See the code for `updateIBCClient` below.
-    installedHeight, error := updateIBCClient(chainB, chainA, targetHeight)
-    if error != nil { return Error.RETRY }
-
-    // Stage 3.
-    // Create the IBC datagrams including `ev` & verify them.
-    datagram, error = createDatagram(ev, chainA, chainB, installedHeight)
-    if error != nil { return Error.RETRY }
-    
-    // Stage 4.
-    // Submit datagrams.
-    error = chainB.submit(datagram)
-    if error != nil { return Error.RETRY }      
-}
-
-
-// Perform an update on `dest` chain for the IBC client for `src` chain.
-//    Preconditions:
-//      - `src` chain has height greater or equal to `targetHeight`
-//    Postconditions:
-//      - returns the installedHeight >= targetHeight
-//      - return error if verification of client state fails
-func updateIBCClient(dest Chain, src Chain, targetHeight Height) -> (Height, Error) {
-    
-    clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-    if proof == nil { return (nil, Error.RETRY) } 
-    // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
-    
-    // if installed height is smaller than the targetHeight, we need to update client with targetHeight
-    while (clientState.latestHeight < targetHeight) {
-        // Do an update to IBC client for `src` on `dest`.
-        shs, error = src.lc.getMinimalSet(clientState.latestHeight, targetHeight)
-        if error != nil { return (nil, Error.RETRY) }    
-    
-        error = dest.submit(createUpdateClientDatagrams(shs))
-        if error != nil { return (nil, Error.RETRY) } 
-        
-        clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-        if proof == nil { return (nil, Error.RETRY) }    
-    }
-    
-    // NOTE: semantic check of the installed header is done using fork detection component
-    return { clientState.Height, nil }        
-}
-```
-
 ## System model
 
 We assume that a correct relayer operates in the following model:
@@ -153,8 +32,8 @@ We assume that a correct relayer operates in the following model:
 
 Relayer transfers data between two chains: chainA and chainB. For simplicity, we assume Tendermint chains. 
 Each chain operates under Tendermint security model:
-- given a block b at height h committed at time t = b.Header.Time, +2/3 of voting power behaves correctly
-at least before t + UNBONDING_PERIOD, where UNBONDING_PERIOD is a system parameter (typically order of weeks).
+- given a block b at height h committed at time `t = b.Header.Time`, `+2/3` of voting power behaves correctly
+at least before `t + UNBONDING_PERIOD`, where `UNBONDING_PERIOD` is a system parameter (typically order of weeks).
 Validators sets can be changed in every block, and we don't assume any constraint on the way validators are changed
 (application specific logic).  
 
@@ -192,9 +71,119 @@ More details about light client assumptions and protocols can be found
 [here](https://github.com/tendermint/spec/tree/master/rust-spec/lightclient). For the purpose of this document, we assume
 that a relayer has access to the light client node that provides trusted headers.
 Given a data d read at a given path at height h with a proof p, we assume existence of a function 
-`verifyMembership(header.AppHash, h, proof, path, d)` that returns `true` if data was committed by the corresponding
+`VerifyMembership(header.AppHash, h, proof, path, d)` that returns `true` if data was committed by the corresponding
 chain at height *h*. The trusted header is provided by the corresponding light client. 
   
+## Relayer algorithm
+
+The main relayer event loop is a pipeline of four stages. Assuming some IBC event at height `h` on `chainA`, 
+the relayer:
+
+1. Determine destination chain (`chainB`)
+2. Updates (on `chainB`) the IBC client for `chainA` to a certain height `H` where `H >= h+1`.
+3. Create IBC datagram at height `H-1`.
+4. Submit the datagram from stage (2) to `chainB`.
+
+Note that an IBC event at height `h` corresponds to the modifications to the data store made as part of executing
+block at height `h`. The corresponding proof (that data is indeed written to the data store) can be verified using
+the data store root hash that is part of the header at height `h+1`.
+
+Once stage 2 finishes correctly, stage 3 should succeed assuming that `chainB` has not already processed the event. The 
+interface between stage 2 and stage 3 is just the height `H`. Once stage 3 finishes correctly, stage 4 should 
+succeed. The interface between stage 3 and stage 4 is an IBC datagram.
+
+We assume that the corresponding light client is correctly installed on each chain.
+
+The semantic of the returned error is to signal to the caller whether there was an error in the event processing that 
+could be transient (for example not able to establish connection to a correct full node), in which case
+the event can be reprocessed later (`Error.RETRY`), or the event should be dropped as it has already been 
+received by the destination chain due to activity of a concurrent relayer (`Error.DROP`).
+
+Data structures and helper function definitions are provided 
+[here](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Definitions.md). 
+
+```golang
+enum Error {
+  RETRY,
+  DROP,
+}
+```
+
+```golang
+func handleEvent(ev, chainA) Error {
+    // NOTE: we don't verify if event data are valid at this point. We trust full node we are connected to
+    // until some verification fails. 
+    
+    // Stage 1.
+    // Determine destination chain
+    chainB = getDestinationInfo(ev, chainA) 
+    if chainB == nil { return Error.RETRY }  
+
+    // Stage 2.
+    // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
+    targetHeight = ev.height + 1
+    // See the code for `updateIBCClient` below.
+    installedHeight, error := updateIBCClient(chainB, chainA, targetHeight)
+    if error != nil { return Error.RETRY }
+
+    // Stage 3.
+    // Create the IBC datagrams including `ev` & verify them.
+    datagram, error = CreateDatagram(ev, chainA, chainB, installedHeight)
+    if error != nil { return Error.RETRY }
+    
+    // Stage 4.
+    // Submit datagrams.
+    error = Submit(chainB, datagram)
+    if error != nil { return Error.RETRY }      
+}
+
+func getDestinationInfo(ev IBCEvent, chain Chain) Chain {
+    switch ev.type {
+        case SendPacketEvent: 
+            channel, proof = GetChannel(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
+            if proof == nil { return nil }
+                
+            connectionId = channel.connectionHops[0]
+            connection, proof = GetConnection(chain, connectionId, ev.Height) 
+            if proof == nil { return nil }
+                
+            clientState, proof = GetClientState(chain, connection.clientIdentifier, ev.Height) 
+            if proof == nil { return nil }
+        
+            return GetChain(clientState.chainID) 
+        ...    
+    }
+}
+
+// Perform an update on `dest` chain for the IBC client for `src` chain.
+//    Preconditions:
+//      - `src` chain has height greater or equal to `targetHeight`
+//    Postconditions:
+//      - returns the installedHeight >= targetHeight
+//      - return error if some of verification steps fail
+func updateIBCClient(dest Chain, src Chain, targetHeight Height) -> (Height, Error) {
+    
+    clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+    if proof == nil { return (nil, Error.RETRY) } 
+    // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
+    
+    // if installed height is smaller than the targetHeight, we need to update client with targetHeight
+    while (clientState.latestHeight < targetHeight) {
+        // Do an update to IBC client for `src` on `dest`.
+        shs, error = src.lc.getMinimalSet(clientState.latestHeight, targetHeight)
+        if error != nil { return (nil, Error.RETRY) }    
+    
+        error = dest.submit(createUpdateClientDatagrams(shs))
+        if error != nil { return (nil, Error.RETRY) } 
+        
+        clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+        if proof == nil { return (nil, Error.RETRY) }    
+    }
+    
+    // NOTE: semantic check of the installed header is done using fork detection component
+    return { clientState.Height, nil }        
+}
+```
 
   
      
