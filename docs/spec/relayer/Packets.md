@@ -26,12 +26,11 @@ type SendPacketEvent {
 func CreateDatagram(ev SendPacketEvent, 
                     chainA Chain, 
                     chainB Chain, 
-                    installedHeight Height) (PacketRecv, Error) {        
+                    proofHeight Height) (PacketRecv, Error) {        
     
     // Stage 1 
     // Verify if packet is committed to chain A and it is still pending (commitment exists)
     
-    proofHeight = installedHeight - 1
     packetCommitment, packetCommitmentProof = 
         GetPacketCommitment(chainA, ev.sourcePort, ev.sourceChannel, ev.sequence, proofHeight)     
     if packetCommitmentProof == nil { return (nil, Error.RETRY) }
