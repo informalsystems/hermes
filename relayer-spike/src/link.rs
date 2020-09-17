@@ -2,7 +2,7 @@ use crate::types::{ChainId, ChannelId, ClientId, PortId, Datagram};
 use crate::connection::{Connection, ConnectionConfig, ConnectionError};
 use crate::channel::{Channel, ChannelConfig, ChannelError};
 use crate::foreign_client::{ForeignClient, ForeignClientConfig, ForeignClientError};
-use crate::chain::{Chain, SignedHeader, ConsensusState};
+use crate::chain::{Chain, ChainError, SignedHeader};
 
 pub struct LinkError {}
 
@@ -45,9 +45,8 @@ impl LinkConfig {
 }
 
 pub struct Link {
-    foreign_client: ForeignClient,
-    pub src_chain: Chain,
-    pub dst_chain: Chain,
+    pub src_chain: Box<dyn Chain>, // XXX: Can these be private?
+    pub dst_chain: Box<dyn Chain>,
 }
 
 impl From<ConnectionError> for LinkError {
@@ -68,19 +67,20 @@ impl From<ForeignClientError> for LinkError {
     }
 }
 
+impl From<ChainError> for LinkError {
+    fn from(error: ChainError ) -> Self {
+        return LinkError {}
+    }
+}
+
 impl Link {
     // We can probably pass in the connection and channel
-    pub fn new(src: Chain, dst: Chain, config: LinkConfig) -> Result<Link, LinkError> {
-        // There will probably dependencies between foreign_client, connection and handhsake which
-        // will require references to each other..
-        let foreign_client = ForeignClient::new(src.clone(), dst.clone(), ForeignClientConfig::default())?;
-        let connection = Connection::new(src.clone(), dst.clone(), ConnectionConfig::default())?;
-        let channel = Channel::new(src.clone(), dst.clone(), ChannelConfig::default())?;
+    pub fn new(channel: Channel, config: LinkConfig) -> Result<Link, LinkError> {
+        // We used to clone these chain objects but if they are traits it's just not possible.
 
         return Ok(Link {
-            foreign_client: foreign_client,
-            src_chain: src,
-            dst_chain: dst,
+            src_chain: channel.src_chain,
+            dst_chain: channel.dst_chain,
         })
     }
 
@@ -95,8 +95,8 @@ impl Link {
     // * LightClient Failure
     // * FullNode Failures
     // * Verification Failure
-    pub fn run(self) { // TODO: Error
-        let subscription = self.src_chain.subscribe(self.dst_chain.chain_id);
+    pub fn run(self) -> Result<(), LinkError> {
+        let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
         for datagrams in subscription.iter() {
             let target_height = 1; // grab from the datagram
             let header = self.src_chain.get_header(target_height);
@@ -105,6 +105,8 @@ impl Link {
 
             self.dst_chain.submit(datagrams); // XXX: Maybe put update_client here
         }
+
+        return Ok(())
     }
 }
 

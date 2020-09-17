@@ -57,53 +57,71 @@ impl SignedHeader {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Event {
-    NoOp(),
+pub trait Chain: Send {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError>;
+
+    // TODO: Error Handling
+    fn get_header(&self, height: Height) -> SignedHeader;
+
+    // TODO: Error handling
+    fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader>;
+
+    // TODO: Error handling
+    fn submit(&self, datagrams: Vec<Datagram>);
+
+    // TODO: Error handling
+    fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof);
+
+
+    fn id(&self) -> ChainId;
 }
 
 #[derive(Debug, Clone)]
-pub struct Chain {
+pub struct ProdChain {
     pub chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     // TODO: account_prefix
 }
 
-// TODO: This should be a trait allowing a mock implementation
-impl Chain {
-    // Maybe return a ChainError Here?
-    fn new(sender: channel::Sender<HandleInput>) -> Chain {
-        return Chain {
+impl ProdChain {
+    fn new(sender: channel::Sender<HandleInput>) -> Self {
+        return Self {
             chain_id: 0,
             sender,
         }
     }
+}
 
-    pub fn subscribe(&self, _chain_id: ChainId) -> Subscription {
+impl Chain for ProdChain {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
         let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
-        return receiver.recv().unwrap();
+        return Ok(receiver.recv().unwrap());
     }
 
-    // XXX: These methods will be proxies to the runtime
-    pub fn get_header(&self, height: Height) -> SignedHeader {
+    fn get_header(&self, height: Height) -> SignedHeader {
         return SignedHeader::default()
     }
 
-    pub fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader> {
+    fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader> {
         return vec![SignedHeader::default()]
     }
 
-    pub fn submit(&self, datagrams: Vec<Datagram>) {
+    fn submit(&self, datagrams: Vec<Datagram>) {
     }
 
-    pub fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
+    fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
         // In practice this will query the client_state, get the height and perform a second query
         // for the consensus_state. it's possible that the client.state.height < target_height in which case this function will return the highest possible height
 
         return (ConsensusState::default(), MembershipProof{height: target_height})
     }
+
+    fn id(&self) -> ChainId {
+        return self.chain_id
+    }
 }
+
 
 enum HandleInput {
     Terminate(channel::Sender<()>),
@@ -126,9 +144,9 @@ impl ChainRuntime {
         }
     }
 
-    pub fn handle(&self) -> Chain {
+    pub fn handle(&self) -> ProdChain {
         let sender = self.sender.clone();
-        return Chain::new(sender);
+        return ProdChain::new(sender);
     }
 
     pub fn run(mut self) -> Result<(), ChainError> {

@@ -1,10 +1,14 @@
 use crate::chain::Chain;
+use crate::foreign_client::ForeignClient;
 use crate::types::{ConnectionId, ChainId, ClientId};
 
+#[derive(Debug)]
 pub struct ConnectionError {
 }
 
 pub struct Connection {
+    pub src_chain: Box<dyn Chain>,
+    pub dst_chain: Box<dyn Chain>,
 }
 
 struct ConnectionSideConfig {
@@ -36,12 +40,15 @@ impl ConnectionConfig {
 }
 
 impl Connection {
-    pub fn new(src: Chain, dst: Chain, config: ConnectionConfig) -> Result<Connection, ConnectionError> {
+    pub fn new(foreign_client: ForeignClient, config: ConnectionConfig) -> Result<Connection, ConnectionError> {
         // Check the status of the established connection
         // * query connection on source chain
         // * query the destination chain
         // ** based on the status on the status from src and dest, we know what to do
         // * then we proceed with Handshake protocol
-        return Ok(Connection{})
+        return Ok(Connection{
+            src_chain: foreign_client.src_chain,
+            dst_chain: foreign_client.dst_chain,
+        })
     }
 }

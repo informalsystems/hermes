@@ -1,12 +1,12 @@
-use relayer_spike::chain::{ChainRuntime, SignedHeader};
+use relayer_spike::chain::ChainRuntime;
+use relayer_spike::foreign_client::{ForeignClient, ForeignClientConfig};
+use relayer_spike::connection::{Connection, ConnectionConfig};
+use relayer_spike::channel::{Channel, ChannelConfig};
 use relayer_spike::link::{Link, LinkConfig};
-use relayer_spike::types::Datagram;
+
 use std::thread;
 
 fn main() {
-    let config = LinkConfig::default(); // assume this is read from a file 
-
-    // We need:
     let src_chain = ChainRuntime::new(); // TODO: Pass chain config
     let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
 
@@ -20,7 +20,12 @@ fn main() {
         dst_chain.run();
     });
 
-    match Link::new(src_chain_handle, dst_chain_handle, config) { // TODO: Error Handling
+    let foreign_client = ForeignClient::new(src_chain_handle, dst_chain_handle, ForeignClientConfig::default()).unwrap();
+    let connection = Connection::new(foreign_client, ConnectionConfig::default()).unwrap();
+    let channel = Channel::new(connection, ChannelConfig::default()).unwrap();
+
+    // What if we create the clients and stuff here and then pass the link
+    match Link::new(channel, LinkConfig::default()) { // TODO: Error Handling
         Ok(link) => {
             link.run();
         },
@@ -30,6 +35,4 @@ fn main() {
         // * Channel Failure
         Err(err) => panic!("couldn't create a link :("),
     }
-
-    // TODO: Coordinate runtime shutdown
 }

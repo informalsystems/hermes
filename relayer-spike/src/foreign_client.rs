@@ -1,6 +1,7 @@
 use crate::types::{ChainId, ClientId, Datagram, Hash, Height};
 use crate::chain::{Chain, SignedHeader, ConsensusState, MembershipProof};
 
+#[derive(Debug)]
 pub enum ForeignClientError {
     VerificationError(),
     HeaderMismatch(),
@@ -22,22 +23,23 @@ impl ForeignClientConfig {
 
 
 pub struct ForeignClient {
-    src_chain: Chain,
-    dst_chain: Chain,
+    pub src_chain: Box<dyn Chain>,
+    pub dst_chain: Box<dyn Chain>,
 }
 
 impl ForeignClient {
     pub fn new(
-        src_chain: Chain,
-        dst_chain: Chain,
+        src_chain: impl Chain + 'static,
+        dst_chain: impl Chain + 'static,
         _config: ForeignClientConfig) -> Result<ForeignClient, ForeignClientError> {
         // TODO: Client Handshake
         return Ok(ForeignClient {
-            src_chain,
-            dst_chain,
+            src_chain: Box::new(src_chain),
+            dst_chain: Box::new(dst_chain),
         })
     }
 
+    /* TODO: This has to move to the Chain
     pub fn update(&mut self, src_target_height: Height) -> Result<Height, ForeignClientError> {
         let (mut src_consensus_state, mut dst_membership_proof) =
             self.dst_chain.consensus_state(self.src_chain.chain_id, src_target_height);
@@ -76,6 +78,7 @@ impl ForeignClient {
 
         return Ok(src_target_height)
     }
+    */
 }
 
 fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membership_proof: &MembershipProof, _hash: &Hash) -> bool {
