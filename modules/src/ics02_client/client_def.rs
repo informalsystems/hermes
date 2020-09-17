@@ -1,24 +1,30 @@
+use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
+use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::try_from_raw::TryFromRaw;
+
+use ibc_proto::ibc::tendermint::ClientState as RawTendermintClientState;
 
 use ::tendermint::block::Height;
 
 #[cfg(test)]
-use crate::mock_client::client_def::MockClient;
-#[cfg(test)]
-use crate::mock_client::header::MockHeader;
-#[cfg(test)]
-use crate::mock_client::state::{MockClientState, MockConsensusState};
+use {
+    crate::mock_client::client_def::MockClient,
+    crate::mock_client::header::MockHeader,
+    crate::mock_client::state::{MockClientState, MockConsensusState},
+    ibc_proto::ibc::mock::ClientState as RawMockClientState,
+};
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -63,6 +69,7 @@ pub trait ClientDef: Clone {
     ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
+    #[allow(clippy::too_many_arguments)]
     fn verify_client_full_state(
         &self,
         _client_state: &Self::ClientState,
@@ -106,10 +113,37 @@ impl Header for AnyHeader {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum AnyClientState {
-    Tendermint(crate::ics07_tendermint::client_state::ClientState),
+    Tendermint(TendermintClientState),
 
     #[cfg(test)]
     Mock(MockClientState),
+}
+
+impl AnyClientState {
+    pub fn from_any(any: prost_types::Any) -> Result<Self, Error> {
+        match any.type_url.as_str() {
+            "ibc.tendermint.ClientState" => {
+                let raw = RawTendermintClientState::decode(any.value.as_ref())
+                    .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
+                let client_state = TendermintClientState::try_from(raw)
+                    .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
+
+                Ok(AnyClientState::Tendermint(client_state))
+            }
+
+            #[cfg(test)]
+            "ibc.mock.ClientState" => {
+                let raw = RawMockClientState::decode(any.value.as_ref())
+                    .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
+                let client_state = MockClientState::try_from(raw)
+                    .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
+
+                Ok(AnyClientState::Mock(client_state))
+            }
+
+            _ => Err(error::Kind::UnknownClientStateType(any.type_url).into()),
+        }
+    }
 }
 
 impl ClientState for AnyClientState {

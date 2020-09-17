@@ -28,6 +28,18 @@ pub enum Kind {
     #[error("header verification failed")]
     HeaderVerificationFailure,
 
+    #[error("unknown client state type: {0}")]
+    UnknownClientStateType(String),
+
+    #[error("invalid raw client state")]
+    InvalidRawClientState,
+
+    #[error("invalid raw header")]
+    InvalidRawHeader,
+
+    #[error("Protobuf decoding failure")]
+    ProtoDecodingFailure,
+
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),
 }

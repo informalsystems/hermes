@@ -14,23 +14,26 @@
 //! TODO: Separate the Cosmos-SDK specific functionality from canonical ICS types. Decorators?
 
 #![allow(clippy::too_many_arguments)]
+
+use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::{validate_version, validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::try_from_raw::TryFromRaw;
 use crate::tx_msg::Msg;
-use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-use crate::ics02_client::client_def::AnyClientState;
+use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
+use tendermint::account::Id as AccountId;
+use tendermint::block::Height;
+
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryInto;
 use std::str::{from_utf8, FromStr};
-use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -48,7 +51,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 #[derive(Clone, Debug)]
 pub enum ConnectionMsg {
     ConnectionOpenInit(MsgConnectionOpenInit),
-    ConnectionOpenTry(MsgConnectionOpenTry),
+    ConnectionOpenTry(Box<MsgConnectionOpenTry>),
     // ConnectionOpenAck(MsgConnectionOpenAck),
     // ConnectionOpenConfirm(MsgConnectionOpenConfirm),
 }
@@ -214,31 +217,19 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
-pub fn unpack_client_state(
-    any_client_raw: ::std::option::Option<::prost_types::Any>,
-) -> Result<Option<AnyClientState>, anomaly::Error<Kind>> {
-    match any_client_raw {
-        None => Ok(None),
-        Some(_client_raw) => {
-            // TODO deserialize
-            //let _cs = client_raw.value.into();
-            Ok(None)
-        }
-    }
-}
-
 impl TryFromRaw for MsgConnectionOpenTry {
+    type Error = Error;
     type RawType = RawMsgConnectionOpenTry;
-    type Error = anomaly::Error<Kind>;
+
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -256,7 +247,10 @@ impl TryFromRaw for MsgConnectionOpenTry {
                 .client_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            client_state: unpack_client_state(msg.client_state)
+            client_state: msg
+                .client_state
+                .map(AnyClientState::from_any)
+                .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             counterparty: msg
                 .counterparty
@@ -354,11 +348,11 @@ impl TryFromRaw for MsgConnectionOpenAck {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -372,7 +366,10 @@ impl TryFromRaw for MsgConnectionOpenAck {
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            client_state: unpack_client_state(msg.client_state)
+            client_state: msg
+                .client_state
+                .map(AnyClientState::from_any)
+                .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(
@@ -444,7 +441,7 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height;
+            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -462,14 +459,14 @@ impl TryFromRaw for MsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::connection::Counterparty as RawCounterparty;
-    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    use ibc_proto::client::Height;
-    use ibc_proto::commitment::MerklePrefix;
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::commitment::MerklePrefix;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -573,12 +570,12 @@ mod tests {
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
     use crate::try_from_raw::TryFromRaw;
-    use ibc_proto::client::Height;
-    use ibc_proto::connection::Counterparty as RawCounterparty;
-    use ibc_proto::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-    use ibc_proto::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-    use ibc_proto::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-    use ibc_proto::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     #[test]
     fn parse_connection_open_init_msg() {
