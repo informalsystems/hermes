@@ -10,11 +10,14 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::try_from_raw::TryFromRaw;
 
-use ibc_proto::ibc::tendermint::ClientState as RawTendermintClientState;
+use ibc_proto::ibc::tendermint::{
+    ClientState as RawTendermintClientState, ConsensusState as RawTendermintConsensusState,
+};
 
 use ::tendermint::block::Height;
 
@@ -188,6 +191,36 @@ pub enum AnyConsensusState {
 
     #[cfg(test)]
     Mock(MockConsensusState),
+}
+
+impl TryFromRaw for AnyConsensusState {
+    type RawType = prost_types::Any;
+    type Error = Error;
+
+    fn try_from(value: Self::RawType) -> Result<Self, Self::Error> {
+        match value.type_url.as_str() {
+            "ibc.tendermint.ConsensusState" => {
+                let raw = RawTendermintConsensusState::decode(value.value.as_ref())
+                    .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
+                let consensus_state = TendermintConsensusState::try_from(raw)
+                    .map_err(|e| error::Kind::InvalidRawConsensusState.context(e))?;
+
+                Ok(AnyConsensusState::Tendermint(consensus_state))
+            }
+
+            // TODO get this to compile! -- Add the ClientConsensusState definition in ibc-proto.
+            // #[cfg(test)]
+            // "ibc.mock.ConsensusState" => {
+            //     let raw = RawMockConsensusState::decode(value.value.as_ref())
+            //         .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
+            //     let client_state = MockClientState::try_from(raw)
+            //         .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
+            //
+            //     Ok(AnyClientState::Mock(client_state))
+            // }
+            _ => Err(error::Kind::UnknownConsensusStateType(value.type_url).into()),
+        }
+    }
 }
 
 impl ConsensusState for AnyConsensusState {

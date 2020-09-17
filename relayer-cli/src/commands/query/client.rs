@@ -3,14 +3,13 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc::ics24_host::Path::{ClientConnections, ClientState, ClientConsensusState};
+use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -78,11 +77,8 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<AnyClientState>(
-            ClientState(opts.client_id),
-            opts.height,
-            opts.proof
-        );
+        let res =
+            chain.query::<AnyClientState>(ClientState(opts.client_id), opts.height, opts.proof);
         match res {
             Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
             Err(e) => status_info!("client state query error: ", "{:?}", e),
@@ -146,7 +142,6 @@ impl QueryClientConsensusCmd {
     }
 }
 
-
 /// Implementation of the query for a client's consensus state at a certain height.
 /// Run with proof:
 /// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
@@ -166,16 +161,16 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        // let res = chain.query::<AnyConsensusState>(
-        //     ClientConsensusState(opts.client_id, opts.consensus_height),
-        //     opts.height,
-        //     opts.proof,
-        // );
-        // match res {
-        //     Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
-        //     Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
-        // }
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let res = chain.query::<AnyConsensusState>(
+            ClientConsensusState(opts.client_id, opts.consensus_height),
+            opts.height,
+            opts.proof,
+        );
+        match res {
+            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
+            Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
+        }
     }
 }
 

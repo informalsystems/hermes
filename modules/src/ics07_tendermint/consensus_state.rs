@@ -1,6 +1,8 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
+use crate::ics07_tendermint::error::Error;
+use crate::try_from_raw::TryFromRaw;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::Hash;
 
@@ -10,6 +12,15 @@ pub struct ConsensusState {
     pub timestamp: tendermint::time::Time,
     pub root: CommitmentRoot,
     pub next_validators_hash: Hash,
+}
+
+impl TryFromRaw for ConsensusState {
+    type RawType = ibc_proto::ibc::tendermint::ConsensusState;
+    type Error = Error;
+
+    fn try_from(_raw: Self::RawType) -> Result<Self, Self::Error> {
+        unimplemented!()
+    }
 }
 
 impl ConsensusState {
