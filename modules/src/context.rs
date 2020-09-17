@@ -3,19 +3,27 @@ use tendermint::block::Height;
 
 #[cfg(test)]
 use crate::ics02_client::client_def::AnyConsensusState;
+use crate::ics07_tendermint;
 #[cfg(test)]
 use crate::mock_client::header::MockHeader;
 #[cfg(test)]
 use crate::mock_client::state::MockConsensusState;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SelfChainType {
+    Tendermint,
+    #[cfg(test)]
+    Mock,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SelfHeader {
-    // Tendermint(tendermint::header::Header),
+    Tendermint(ics07_tendermint::header::Header),
     #[cfg(test)]
     Mock(MockHeader),
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct HistoricalInfo {
     pub header: SelfHeader,
 }
@@ -28,7 +36,8 @@ impl From<MockHeader> for AnyConsensusState {
 }
 
 pub trait ChainReader {
-    fn self_historical_info(&self, height: Height) -> Option<&HistoricalInfo>;
+    fn chain_type(&self) -> SelfChainType;
+    fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo>;
 }
 
 pub trait ChainKeeper {

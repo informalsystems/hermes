@@ -19,6 +19,9 @@ pub enum Kind {
 
     #[error("validation error")]
     ValidationError,
+
+    #[error("invalid raw client state")]
+    InvalidRawClientState,
 }
 
 impl Kind {

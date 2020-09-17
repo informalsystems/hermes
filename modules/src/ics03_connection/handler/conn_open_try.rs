@@ -60,6 +60,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.connection_id(),
+        msg.client_state(),
         &new_connection_end,
         &expected_conn,
         msg.proofs(),
@@ -125,20 +126,20 @@ mod tests {
                 ctx: default_context
                     .clone()
                     .with_client_state(dummy_msg.client_id(), 10),
-                msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: true,
             },
             Test {
                 name: "Processing fails because no client exists".to_string(),
                 ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
                     .add_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenTry(dummy_msg.clone()),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: false,
             },
         ]
