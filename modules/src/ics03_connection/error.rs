@@ -36,6 +36,12 @@ pub enum Kind {
     #[error("invalid address")]
     InvalidAddress,
 
+    #[error("missing consensus proof height")]
+    MissingProofHeight,
+
+    #[error("missing consensus proof height")]
+    MissingConsensusHeight,
+
     #[error("invalid connection proof")]
     InvalidProof,
 
@@ -57,6 +63,9 @@ pub enum Kind {
     #[error("the client id does not match any client state: {0}")]
     MissingClient(ClientId),
 
+    #[error("client proof must be present")]
+    NullClientProof,
+
     #[error("the client is frozen")]
     FrozenClient,
 
@@ -69,8 +78,12 @@ pub enum Kind {
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
 
+
     #[error("the consensus proof verification failed (height: {0})")]
     ConsensusStateVerificationFailure(Height),
+
+    #[error("the client state proof verification failed")]
+    ClientStateVerificationFailure,
 }
 
 impl Kind {

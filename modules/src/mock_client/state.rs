@@ -2,13 +2,18 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Error;
+use crate::ics02_client::error::Kind;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
+use crate::try_from_raw::TryFromRaw;
+
+use tendermint::block::Height;
+
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tendermint::block::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
@@ -50,10 +55,22 @@ impl MockClientState {
     }
 }
 
-#[cfg(test)]
 impl From<MockClientState> for AnyClientState {
     fn from(mcs: MockClientState) -> Self {
         Self::Mock(mcs)
+    }
+}
+
+impl TryFromRaw for MockClientState {
+    type Error = Error;
+    type RawType = ibc_proto::ibc::mock::ClientState;
+
+    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+        let raw_header = raw
+            .header
+            .ok_or_else(|| Kind::InvalidRawClientState.context("missing header"))?;
+
+        Ok(Self(MockHeader::try_from(raw_header)?))
     }
 }
 
