@@ -3,12 +3,7 @@
 // Todo: automate the creation of this module setup based on the dots in the filenames.
 //  This module setup is necessary because the generated code contains "super::" calls for dependencies.
 
-#![deny(
-    warnings,
-    trivial_casts,
-    trivial_numeric_casts,
-    unused_import_braces
-)]
+#![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.1.0")]

@@ -6,3 +6,7 @@ members = [
     "relayer-cli",
     "proto"
 ]
+
+exclude = [
+    "proto-compiler"
+]
