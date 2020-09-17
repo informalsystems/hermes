@@ -1,9 +1,11 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
-use tendermint::block::Height;
+use crate::try_from_raw::TryFromRaw;
 
 use serde_derive::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{convert::TryInto, time::Duration};
+
+use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -87,6 +89,44 @@ impl crate::ics02_client::state::ClientState for ClientState {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         self.frozen_height != Height(0)
     }
+}
+
+impl TryFromRaw for ClientState {
+    type Error = Error;
+    type RawType = ibc_proto::ibc::tendermint::ClientState;
+
+    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+        Ok(Self {
+            chain_id: raw.chain_id,
+            trusting_period: raw
+                .trusting_period
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative trusting period"))?,
+            unbonding_period: raw
+                .unbonding_period
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing unbonding period"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative unbonding period"))?,
+            max_clock_drift: raw
+                .max_clock_drift
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing max clock drift"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative max clock drift"))?,
+            latest_height: decode_height(
+                raw.latest_height
+                    .ok_or_else(|| Kind::InvalidRawClientState.context("missing latest height"))?,
+            ),
+            frozen_height: decode_height(
+                raw.frozen_height
+                    .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
+            ),
+        })
+    }
+}
+
+fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
+    Height(height.epoch_height) // FIXME: This is wrong as it does not take the epoch into account
 }
 
 #[cfg(test)]

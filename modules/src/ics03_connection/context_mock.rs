@@ -1,4 +1,4 @@
-use crate::context::{ChainReader, SelfHeader};
+use crate::context::{ChainReader, SelfChainType, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::context::ClientReader;
@@ -82,11 +82,16 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context.consensus_state(client_id, height)
     }
 
+    fn chain_type(&self) -> SelfChainType {
+        SelfChainType::Mock
+    }
+
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.chain_context.self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]
             SelfHeader::Mock(h) => Some(h.into()),
+            _ => None,
         }
     }
 }

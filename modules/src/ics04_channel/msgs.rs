@@ -130,7 +130,7 @@ impl MsgChannelOpenTry {
             ),
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_init, None, proofs_height)
+            proofs: Proofs::new(proof_init, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -190,7 +190,7 @@ impl MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_try, None, proofs_height)
+            proofs: Proofs::new(proof_try, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -248,7 +248,7 @@ impl MsgChannelOpenConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, proofs_height)
+            proofs: Proofs::new(proof_ack, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -359,7 +359,7 @@ impl MsgChannelCloseConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_init, None, proofs_height)
+            proofs: Proofs::new(proof_init, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -412,7 +412,7 @@ impl MsgPacket {
             packet: packet
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -474,7 +474,7 @@ impl MsgTimeout {
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -534,7 +534,7 @@ impl MsgAcknowledgement {
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })

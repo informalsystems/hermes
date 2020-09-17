@@ -1,12 +1,14 @@
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
+use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::try_from_raw::TryFromRaw;
-use serde_derive::{Deserialize, Serialize};
 
-// Import proto declarations.
-use crate::ics24_host::error::ValidationError;
-use ibc_proto::connection::{ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty};
+use ibc_proto::ibc::connection::{
+    ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
+};
+
+use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,10 +23,6 @@ impl TryFromRaw for ConnectionEnd {
     type RawType = RawConnectionEnd;
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
-        if value.id == "" {
-            return Err(Kind::ConnectionNotFound.into());
-        }
-
         Ok(Self::new(
             State::from_i32(value.state),
             value

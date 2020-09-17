@@ -1,6 +1,6 @@
-use crate::ics02_client::client_type::ClientType;
+use super::client_type::ClientType;
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use tendermint::block::Height;
+use crate::Height;
 
 #[dyn_clonable::clonable]
 pub trait ConsensusState: Clone + std::fmt::Debug {

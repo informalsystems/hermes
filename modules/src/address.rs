@@ -1,1 +1,1 @@
-pub struct AccAddress(Vec<u8>;
+pub struct AccAddress(Vec<u8>);

@@ -1,4 +1,6 @@
-use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef, state::ClientState};
+use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
@@ -10,6 +12,7 @@ use tendermint::block::Height;
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
     id: &ConnectionId,
+    client_state: Option<AnyClientState>,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
@@ -22,6 +25,20 @@ pub fn verify_proofs(
         proofs.height(),
         proofs.object_proof(),
     )?;
+
+    // If a client proof is present verify it.
+    if let Some(state) = client_state {
+        verify_client_proof(
+            ctx,
+            connection_end,
+            state,
+            proofs.height(),
+            proofs
+                .client_proof()
+                .as_ref()
+                .ok_or_else(|| Kind::NullClientProof)?,
+        )?;
+    }
 
     // If a consensus proof is present verify it.
     match proofs.consensus_proof() {
@@ -67,6 +84,40 @@ pub fn verify_connection_proof(
             expected_conn,
         )
         .map_err(|_| Kind::InvalidProof.context(id.to_string()))?)
+}
+
+pub fn verify_client_proof(
+    ctx: &dyn ConnectionReader,
+    connection_end: &ConnectionEnd,
+    expected_client_state: AnyClientState,
+    proof_height: Height,
+    proof: &CommitmentProof,
+) -> Result<(), Error> {
+    let client_state = ctx
+        .fetch_client_state(connection_end.client_id())
+        .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
+
+    let consensus_state = ctx
+        .fetch_client_consensus_state(connection_end.client_id(), proof_height)
+        .ok_or_else(|| {
+            Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
+        })?;
+
+    let client_def = AnyClient::from_client_type(client_state.client_type());
+
+    Ok(client_def
+        .verify_client_full_state(
+            &client_state,
+            proof_height,
+            consensus_state.root(),
+            connection_end.counterparty().prefix(),
+            connection_end.counterparty().client_id(),
+            proof,
+            &expected_client_state,
+        )
+        .map_err(|_| {
+            Kind::ClientStateVerificationFailure.context(connection_end.client_id().to_string())
+        })?)
 }
 
 pub fn verify_consensus_proof(

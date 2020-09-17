@@ -5,6 +5,7 @@ use tendermint::block::Height;
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
     object_proof: CommitmentProof,
+    client_proof: Option<CommitmentProof>,
     consensus_proof: Option<ConsensusProof>,
     /// Height for both the above proofs
     height: Height,
@@ -13,6 +14,7 @@ pub struct Proofs {
 impl Proofs {
     pub fn new(
         object_proof: CommitmentProof,
+        client_proof: Option<CommitmentProof>,
         consensus_proof: Option<ConsensusProof>,
         height: u64,
     ) -> Result<Self, String> {
@@ -26,6 +28,7 @@ impl Proofs {
 
         Ok(Self {
             object_proof,
+            client_proof,
             consensus_proof,
             height: Height(height),
         })
@@ -45,6 +48,11 @@ impl Proofs {
     /// Getter for the object-specific proof (e.g., proof for connection state or channel state).
     pub fn object_proof(&self) -> &CommitmentProof {
         &self.object_proof
+    }
+
+    /// Getter for the client_proof
+    pub fn client_proof(&self) -> &Option<CommitmentProof> {
+        &self.client_proof
     }
 }
 
