@@ -34,6 +34,14 @@ pub trait ConnectionReader {
 
     /// Returns the ConsensusState of the local chain at a specific height.
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState>;
+
+    /// Function required by ICS 03. Returns the list of all possible versions that the connection
+    /// handshake protocol supports.
+    fn get_compatible_versions(&self) -> Vec<String>;
+
+    /// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
+    /// connection handshake protocol prefers.
+    fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage functionalities)

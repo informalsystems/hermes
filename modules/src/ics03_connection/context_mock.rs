@@ -71,7 +71,7 @@ impl ConnectionReader for MockConnectionContext {
     }
 
     fn commitment_prefix(&self) -> CommitmentPrefix {
-        unimplemented!()
+        CommitmentPrefix::from(vec![])
     }
 
     fn fetch_client_consensus_state(
@@ -93,6 +93,17 @@ impl ConnectionReader for MockConnectionContext {
             SelfHeader::Mock(h) => Some(h.into()),
             _ => None,
         }
+    }
+
+    fn get_compatible_versions(&self) -> Vec<String> {
+        vec!["test".to_string()]
+    }
+
+    fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String {
+        counterparty_candidate_versions
+            .get(0)
+            .unwrap_or(&String::from("none"))
+            .to_string()
     }
 }
 

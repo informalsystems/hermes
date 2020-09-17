@@ -1,5 +1,4 @@
-//! This module implements the protocol for ICS3, that is, the processing logic for ICS3
-//! connection open handshake messages.
+//! This module implements the the processing logic for ICS3 (connection open handshake) messages.
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
@@ -23,6 +22,8 @@ pub struct ConnectionResult {
 pub enum ConnectionEvent {
     ConnOpenInit(ConnectionResult),
     ConnOpenTry(ConnectionResult),
+    ConnOpenAck(ConnectionResult),
+    ConnOpenConfirm(ConnectionResult),
 }
 
 impl From<ConnectionEvent> for Event {
@@ -34,6 +35,14 @@ impl From<ConnectionEvent> for Event {
             ),
             ConnectionEvent::ConnOpenTry(conn) => Event::new(
                 EventType::Custom("connection_open_try".to_string()),
+                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+            ),
+            ConnectionEvent::ConnOpenAck(conn) => Event::new(
+                EventType::Custom("connection_open_ack".to_string()),
+                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+            ),
+            ConnectionEvent::ConnOpenConfirm(conn) => Event::new(
+                EventType::Custom("connection_open_confirm".to_string()),
                 vec![("connection_id".to_string(), conn.connection_id.to_string())],
             ),
         }
@@ -63,12 +72,6 @@ type Object = ConnectionEnd;
 //         .add_events(&mut events))
 // }
 
-pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(&result.connection_id, &result.connection_end)?;
-    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
-    Ok(())
-}
-
 pub fn dispatch<Ctx>(
     ctx: &mut Ctx,
     msg: ConnectionMsg,
@@ -76,6 +79,7 @@ pub fn dispatch<Ctx>(
 where
     Ctx: ConnectionReader + ConnectionKeeper,
 {
+    // TODO: generalize this to reduce duplicate code across the match arms.
     match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => {
             let HandlerOutput {
@@ -84,7 +88,7 @@ where
                 events,
             } = conn_open_init::process(ctx, msg)?;
 
-            keep(ctx, result.clone())?;
+            conn_open_init::keep(ctx, result.clone())?;
             Ok(HandlerOutput::builder()
                 .with_log(log)
                 .with_events(events)
@@ -97,7 +101,33 @@ where
                 events,
             } = conn_open_try::process(ctx, *msg)?;
 
-            keep(ctx, result.clone())?;
+            conn_open_try::keep(ctx, result.clone())?;
+            Ok(HandlerOutput::builder()
+                .with_log(log)
+                .with_events(events)
+                .with_result(result))
+        }
+        ConnectionMsg::ConnectionOpenAck(msg) => {
+            let HandlerOutput {
+                result,
+                log,
+                events,
+            } = conn_open_ack::process(ctx, msg)?;
+
+            conn_open_ack::keep(ctx, result.clone())?;
+            Ok(HandlerOutput::builder()
+                .with_log(log)
+                .with_events(events)
+                .with_result(result))
+        }
+        ConnectionMsg::ConnectionOpenConfirm(msg) => {
+            let HandlerOutput {
+                result,
+                log,
+                events,
+            } = conn_open_confirm::process(ctx, msg)?;
+
+            conn_open_confirm::keep(ctx, result.clone())?;
             Ok(HandlerOutput::builder()
                 .with_log(log)
                 .with_events(events)

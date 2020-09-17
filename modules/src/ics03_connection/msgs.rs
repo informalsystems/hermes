@@ -52,8 +52,8 @@ pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 pub enum ConnectionMsg {
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(Box<MsgConnectionOpenTry>),
-    // ConnectionOpenAck(MsgConnectionOpenAck),
-    // ConnectionOpenConfirm(MsgConnectionOpenConfirm),
+    ConnectionOpenAck(MsgConnectionOpenAck),
+    ConnectionOpenConfirm(MsgConnectionOpenConfirm),
 }
 
 ///
