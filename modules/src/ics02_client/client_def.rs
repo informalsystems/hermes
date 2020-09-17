@@ -359,9 +359,7 @@ impl ClientDef for AnyClient {
             }
         }
     }
-    /// Verification functions as specified in:
-    /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
-    ///
+
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
