@@ -119,11 +119,14 @@ pub enum AnyClientState {
     Mock(MockClientState),
 }
 
-impl AnyClientState {
-    pub fn from_any(any: prost_types::Any) -> Result<Self, Error> {
-        match any.type_url.as_str() {
+impl TryFromRaw for AnyClientState {
+    type RawType = prost_types::Any;
+    type Error = Error;
+
+    fn try_from(value: Self::RawType) -> Result<Self, Self::Error> {
+        match value.type_url.as_str() {
             "ibc.tendermint.ClientState" => {
-                let raw = RawTendermintClientState::decode(any.value.as_ref())
+                let raw = RawTendermintClientState::decode(value.value.as_ref())
                     .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
                 let client_state = TendermintClientState::try_from(raw)
                     .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
@@ -133,7 +136,7 @@ impl AnyClientState {
 
             #[cfg(test)]
             "ibc.mock.ClientState" => {
-                let raw = RawMockClientState::decode(any.value.as_ref())
+                let raw = RawMockClientState::decode(value.value.as_ref())
                     .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
                 let client_state = MockClientState::try_from(raw)
                     .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
@@ -141,7 +144,7 @@ impl AnyClientState {
                 Ok(AnyClientState::Mock(client_state))
             }
 
-            _ => Err(error::Kind::UnknownClientStateType(any.type_url).into()),
+            _ => Err(error::Kind::UnknownClientStateType(value.type_url).into()),
         }
     }
 }
@@ -160,21 +163,21 @@ impl ClientState for AnyClientState {
         }
     }
 
-    fn is_frozen(&self) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
-
-            #[cfg(test)]
-            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
-        }
-    }
-
     fn latest_height(&self) -> Height {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
 
             #[cfg(test)]
             Self::Mock(mock_state) => mock_state.latest_height(),
+        }
+    }
+
+    fn is_frozen(&self) -> bool {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
+
+            #[cfg(test)]
+            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
         }
     }
 }

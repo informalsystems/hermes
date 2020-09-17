@@ -92,8 +92,8 @@ impl crate::ics02_client::state::ClientState for ClientState {
 }
 
 impl TryFromRaw for ClientState {
-    type Error = Error;
     type RawType = ibc_proto::ibc::tendermint::ClientState;
+    type Error = Error;
 
     fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
         Ok(Self {

@@ -62,8 +62,8 @@ impl From<MockClientState> for AnyClientState {
 }
 
 impl TryFromRaw for MockClientState {
-    type Error = Error;
     type RawType = ibc_proto::ibc::mock::ClientState;
+    type Error = Error;
 
     fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
         let raw_header = raw

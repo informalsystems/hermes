@@ -166,16 +166,16 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<AnyConsensusState>(
-            ClientConsensusState(opts.client_id, opts.consensus_height),
-            opts.height,
-            opts.proof,
-        );
-        match res {
-            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
-            Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
-        }
+        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        // let res = chain.query::<AnyConsensusState>(
+        //     ClientConsensusState(opts.client_id, opts.consensus_height),
+        //     opts.height,
+        //     opts.proof,
+        // );
+        // match res {
+        //     Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
+        //     Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
+        // }
     }
 }
 

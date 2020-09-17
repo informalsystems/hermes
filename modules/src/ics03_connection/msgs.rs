@@ -218,8 +218,8 @@ impl Msg for MsgConnectionOpenTry {
 }
 
 impl TryFromRaw for MsgConnectionOpenTry {
-    type Error = Error;
     type RawType = RawMsgConnectionOpenTry;
+    type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let proof_height = msg
@@ -249,7 +249,7 @@ impl TryFromRaw for MsgConnectionOpenTry {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
                 .client_state
-                .map(AnyClientState::from_any)
+                .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             counterparty: msg
@@ -368,7 +368,7 @@ impl TryFromRaw for MsgConnectionOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
                 .client_state
-                .map(AnyClientState::from_any)
+                .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
