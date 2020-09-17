@@ -1,10 +1,15 @@
-use crate::types::{ChainId, ChannelId, ClientId, PortId, Datagram};
+use crate::types::{Height, Hash, ChainId, ChannelId, ClientId, PortId, Datagram};
 use crate::connection::{Connection, ConnectionConfig, ConnectionError};
 use crate::channel::{Channel, ChannelConfig, ChannelError};
 use crate::foreign_client::{ForeignClient, ForeignClientConfig, ForeignClientError};
-use crate::chain::{Chain, ChainError, SignedHeader};
+use crate::chain::{Chain, ChainError, SignedHeader, MembershipProof, ConsensusState};
 
-pub struct LinkError {}
+#[derive(Debug)]
+pub enum LinkError {
+    NoOp(),
+    VerificationError(),
+    HeaderMismatch(),
+}
 
 enum Order {
     Ordered(),
@@ -51,25 +56,25 @@ pub struct Link {
 
 impl From<ConnectionError> for LinkError {
     fn from(error: ConnectionError) -> Self {
-        return LinkError {}
+        return LinkError::NoOp()
     }
 }
 
 impl From<ChannelError> for LinkError {
     fn from(error: ChannelError ) -> Self {
-        return LinkError {}
+        return LinkError::NoOp()
     }
 }
 
 impl From<ForeignClientError> for LinkError {
     fn from(error: ForeignClientError) -> Self {
-        return LinkError {}
+        return LinkError::NoOp()
     }
 }
 
 impl From<ChainError> for LinkError {
     fn from(error: ChainError ) -> Self {
-        return LinkError {}
+        return LinkError::NoOp()
     }
 }
 
@@ -84,18 +89,11 @@ impl Link {
         })
     }
 
-    // Assume subscription returns an iterator of all pending datagrams
-    // pre-condition: connection and channel have been established
-    // Iterator will error if channel or connection are broken
-    fn pending_datagrams(&self) -> Vec<Datagram> {
-        return vec![Datagram::NoOp()];
-    }
-
     // Failures
     // * LightClient Failure
     // * FullNode Failures
     // * Verification Failure
-    pub fn run(self) -> Result<(), LinkError> {
+    pub fn run(mut self) -> Result<(), LinkError> {
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
         for datagrams in subscription.iter() {
             let target_height = 1; // grab from the datagram
@@ -103,13 +101,61 @@ impl Link {
 
             verify_proof(&datagrams, &header);
 
-            self.dst_chain.submit(datagrams); // XXX: Maybe put update_client here
+            self.update_client(target_height);
+            self.dst_chain.submit(datagrams);
         }
 
         return Ok(())
+    }
+
+    fn update_client(&mut self, src_target_height: Height) -> Result<Height, LinkError> {
+        let (mut src_consensus_state, mut dst_membership_proof) =
+            self.dst_chain.consensus_state(self.src_chain.id(), src_target_height);
+
+        let dst_sh = self.dst_chain.get_header(dst_membership_proof.height + 1);
+        // type verifyMembership = (root: CommitmentRoot, proof: CommitmentProof, path: CommitmentPath, value: Value) => boolean (ICS-023)
+        if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
+            // Error: Destination chain provided invalid consensus_state
+            return Err(LinkError::VerificationError())
+        }
+
+        // verify client_state on self
+        if self.src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
+            return Err(LinkError::HeaderMismatch())
+        }
+
+        while src_consensus_state.height < src_target_height {
+            let src_signed_headers = self.src_chain.get_minimal_set(src_consensus_state.height, src_target_height);
+
+            // This might fail semantically due to competing relayers
+            // Even if this fails, we need to continue
+            self.dst_chain.submit(vec![create_client_update_datagram(src_signed_headers)]);
+
+            let (src_consensus_state, dst_membership_proof) = self.dst_chain.consensus_state(self.src_chain.id(), src_target_height);
+            let dst_sh = self.dst_chain.get_header(dst_membership_proof.height + 1);
+            if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
+                // Error: Destination chain provided invalid client_state
+                return Err(LinkError::VerificationError())
+            }
+
+            if self.src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
+                // Error: consesus_state isn't verified by self light client
+                return  Err(LinkError::HeaderMismatch())
+            }
+        }
+
+        return Ok(src_target_height)
     }
 }
 
 // XXX: Give this better naming
 fn verify_proof(_datagrams: &Vec<Datagram>, _header: &SignedHeader) {
+}
+
+fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membership_proof: &MembershipProof, _hash: &Hash) -> bool {
+    return true
+}
+
+fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram  {
+    return Datagram::NoOp()
 }

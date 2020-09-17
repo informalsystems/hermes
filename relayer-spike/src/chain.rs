@@ -72,7 +72,6 @@ pub trait Chain: Send {
     // TODO: Error handling
     fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof);
 
-
     fn id(&self) -> ChainId;
 }
 
@@ -90,9 +89,16 @@ impl ProdChain {
             sender,
         }
     }
+
+    // TODO: Figure this out
+    // XXX: Move this to ChainRuntime
 }
 
 impl Chain for ProdChain {
+    fn id(&self) -> ChainId {
+        return self.chain_id
+    }
+
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
         let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
@@ -115,10 +121,6 @@ impl Chain for ProdChain {
         // for the consensus_state. it's possible that the client.state.height < target_height in which case this function will return the highest possible height
 
         return (ConsensusState::default(), MembershipProof{height: target_height})
-    }
-
-    fn id(&self) -> ChainId {
-        return self.chain_id
     }
 }
 
@@ -166,6 +168,7 @@ impl ChainRuntime {
                     let event = maybe_event.unwrap();
                     match event {
                         HandleInput::Subscribe(sender) => {
+                            println!("Subscribing!");
                             let (sub_sender, sub_receiver) = channel::unbounded::<Vec<Datagram>>();
                             subscriptions.push(sub_sender);
                             sender.send(sub_receiver).unwrap();
