@@ -91,65 +91,6 @@ impl ClientState for MockClientState {
         // TODO
         false
     }
-
-    /*
-    fn verify_client_full_state(
-        &self,
-        height: Height,
-        root: &CommitmentRoot,
-        prefix: &CommitmentPrefix,
-        client_id: &ClientId,
-        proof: &CommitmentProof,
-        expected_client_state: &dyn ClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        unimplemented!()
-    }
-
-    // fn check_header_and_update_state(
-    //     &self,
-    //     header: &dyn Header,
-    // ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Box<dyn std::error::Error>> {
-    //     if self.latest_height() >= header.height() {
-    //         return Err("header height is lower than client latest".into());
-    //     }
-    //
-    //     Ok((
-    //         Box::new(AnyClientState::Mock(MockClientState(header.height().value() as u32))),
-    //         Box::new(AnyConsensusState::Mock(MockConsensusState(header.height().value() as u32))),
-    //     ))
-    // }
-
-    fn verify_client_consensus_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        client_id: &ClientId,
-        consensus_height: Height,
-        expected_consensus_state: &dyn ConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let client_prefixed_path =
-            Path::ConsensusState(client_id.clone(), height.value()).to_string();
-        let _path = apply_prefix(prefix, client_prefixed_path)?;
-        // TODO - add ctx to all client verification functions
-        // let cs = ctx.fetch_self_consensus_state(height);
-        // TODO - implement this
-        // proof.verify_membership(cs.root(), path, expected_consensus_state)
-        Ok(())
-    }
-
-    fn verify_connection_state(
-        &self,
-        height: Height,
-        prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
-        connection_id: &ConnectionId,
-        expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        Ok(())
-    }
-
-     */
 }
 
 impl From<MockConsensusState> for MockClientState {

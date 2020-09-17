@@ -37,7 +37,7 @@ impl From<MockHeader> for AnyConsensusState {
 
 pub trait ChainReader {
     fn chain_type(&self) -> SelfChainType;
-    fn self_historical_info(&self, height: Height) -> Option<&HistoricalInfo>;
+    fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo>;
 }
 
 pub trait ChainKeeper {

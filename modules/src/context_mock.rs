@@ -8,7 +8,7 @@ use tendermint::block::Height;
 pub struct MockChainContext {
     pub max_size: usize,
     pub latest: Height,
-    pub history: Vec<HistoricalInfo>,
+    pub history: Vec<MockHeader>,
 }
 
 impl MockChainContext {
@@ -17,9 +17,7 @@ impl MockChainContext {
             max_size,
             latest: n,
             history: (0..n.value())
-                .map(|i| HistoricalInfo {
-                    header: SelfHeader::Mock(MockHeader(Height(i).increment())),
-                })
+                .map(|i| MockHeader(Height(i).increment()))
                 .collect(),
         }
     }
@@ -71,7 +69,7 @@ impl ChainReader for MockChainContext {
         SelfChainType::Mock
     }
 
-    fn self_historical_info(&self, height: Height) -> Option<&HistoricalInfo> {
+    fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo> {
         let l = height.value() as usize;
         let h = self.latest.value() as usize;
 
@@ -79,7 +77,9 @@ impl ChainReader for MockChainContext {
             // header with height not in the history
             None
         } else {
-            Some(&self.history[h - l])
+            Some(HistoricalInfo {
+                header: SelfHeader::Mock(self.history[h - l]),
+            })
         }
     }
 }
@@ -89,16 +89,17 @@ impl ChainKeeper for MockChainContext {
         if height != self.latest.increment() {
             return;
         }
-        let mut history = self.history.clone();
-        if history.len() >= self.max_size {
-            history.rotate_left(1);
-            history[self.max_size - 1] = info;
-        } else {
-            history.push(info);
+        if let SelfHeader::Mock(header) = info.header {
+            let mut history = self.history.clone();
+            if history.len() >= self.max_size {
+                history.rotate_left(1);
+                history[self.max_size - 1] = header;
+            } else {
+                history.push(header);
+            }
+            self.history = history;
+            self.latest = height;
         }
-        //history.insert(height, info);
-        self.history = history;
-        self.latest = height;
     }
 }
 

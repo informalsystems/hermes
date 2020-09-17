@@ -87,11 +87,7 @@ impl ConnectionReader for MockConnectionContext {
     }
 
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let hi = self
-            .chain_context
-            .self_historical_info(height)?
-            .header
-            .clone();
+        let hi = self.chain_context.self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]
             SelfHeader::Mock(h) => Some(h.into()),
