@@ -35,7 +35,7 @@
 //!
 //! Requirements:
 //! * The DomainType trait requires the struct to implement the Clone trait.
-//! * Any RawType structures implements the prost::Message trait. (protobuf struct)
+//! * Any RawType structure implements the prost::Message trait. (protobuf struct)
 //! * The DomainType trait requires that the TryFrom<RawType> implemented on the structure has an
 //!   error type that implements Into<BoxError>. (The current implementations with anomaly are
 //!   fine.)
