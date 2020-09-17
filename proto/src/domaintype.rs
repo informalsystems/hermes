@@ -35,21 +35,16 @@
 //!
 //! Requirements:
 //! * The DomainType trait requires the struct to implement the Clone trait.
-//! * The DomainType trait requires the struct to have a #[rawtype(MYRAWTYPE)] attribute set where
-//!   the MYRAWTYPE is a structure that has the prost::Message trait implemented. (protobuf type)
+//! * Any RawType structures implements the prost::Message trait. (protobuf struct)
 //! * The DomainType trait requires that the TryFrom<RawType> implemented on the structure has an
 //!   error type that implements Into<BoxError>. (The current implementations with anomaly are
 //!   fine.)
 //!
 //! How to implement a DomainType struct:
 //! 1. Implement your struct based on your expectations for the developer
-//! 2. Add the derive macro `#[derive(DomainType)]` on top of it
-//! 3. Add the Raw type as a parameter of the DomainType trait (`[rawtype(MyRawType)]`)
+//! 2. Add `impl DomainType<MyRawType> for MyDomainType {}` blanket implementation of the trait
 //! 4. Implement the `TryFrom<MyRawType> for MyDomainType` trait
 //! 5. Implement the `From<MyDomainType> for MyRawType` trait
-//!
-//! Note: the `[rawtype()]` parameter is similar to how `serde` implements serialization through a
-//! `[serde(with="")]` interim type.
 
 use crate::{Error, Kind};
 use anomaly::BoxError;
