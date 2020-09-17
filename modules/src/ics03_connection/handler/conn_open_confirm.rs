@@ -51,6 +51,7 @@ pub(crate) fn process(
     verify_proofs(
         ctx,
         msg.connection_id(),
+        None,
         &new_conn_end,
         &expected_conn,
         msg.proofs(),

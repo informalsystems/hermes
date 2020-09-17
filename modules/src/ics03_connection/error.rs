@@ -78,7 +78,6 @@ pub enum Kind {
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
 
-
     #[error("the consensus proof verification failed (height: {0})")]
     ConsensusStateVerificationFailure(Height),
 
