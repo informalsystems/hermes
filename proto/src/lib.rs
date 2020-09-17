@@ -114,3 +114,14 @@ pub mod tendermint {
         include!("prost/tendermint.version.rs");
     }
 }
+
+mod domaintype;
+pub use domaintype::DomainType;
+
+mod error;
+pub use error::{Error, Kind};
+
+// Re-export the DomainType derive macro #[derive(DomainType)]
+#[cfg(feature = "ibc-proto-derive")]
+#[doc(hidden)]
+pub use ibc_proto_derive::DomainType;

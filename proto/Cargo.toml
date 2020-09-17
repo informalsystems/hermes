@@ -17,6 +17,13 @@ description = """
 [package.metadata.docs.rs]
 all-features = true
 
+[features]
+default = ["ibc-proto-derive"]
+
 [dependencies]
 prost = { version = "0.6" }
 prost-types = { version = "0.6" }
+anomaly = "0.2"
+bytes = "0.5"
+thiserror = "1.0"
+ibc-proto-derive = { path = "../proto-derive", optional = true }
