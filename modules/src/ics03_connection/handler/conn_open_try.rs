@@ -1,13 +1,13 @@
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics03_connection::connection::{pick_version, ConnectionEnd, Counterparty, State};
-use crate::ics03_connection::context::ConnectionReader;
+use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::MsgConnectionOpenTry;
 
-/// Protocol logic specific to delivering ICS3 messages of type `MsgConnectionOpenTry`.
+/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,
@@ -29,9 +29,9 @@ pub(crate) fn process(
                 Ok(old_conn_end.clone())
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(
-                    Kind::ConnectionMismatch.context(msg.connection_id().to_string()),
-                ))
+                Err(Into::<Error>::into(Kind::ConnectionMismatch(
+                    msg.connection_id().clone(),
+                )))
             }
         }
         // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
@@ -51,7 +51,7 @@ pub(crate) fn process(
         Counterparty::new(
             msg.client_id().clone(),
             msg.connection_id().clone(),
-            msg.counterparty().prefix().clone(),
+            ctx.commitment_prefix(),
         )?,
         msg.counterparty_versions(),
     )?;
@@ -68,8 +68,16 @@ pub(crate) fn process(
 
     // Transition the connection end to the new state & pick a version.
     new_connection_end.set_state(State::TryOpen);
-    new_connection_end.set_version(pick_version(msg.counterparty_versions()).unwrap());
-    // TODO: fix version unwrap above.
+
+    // Pick the version.
+    let local_versions = ctx.get_compatible_versions();
+    let intersection: Vec<String> = msg
+        .counterparty_versions()
+        .iter()
+        .filter(|cv| local_versions.contains(cv))
+        .cloned()
+        .collect();
+    new_connection_end.set_version(ctx.pick_version(intersection));
 
     output.log("success: connection verification passed");
 
@@ -83,10 +91,17 @@ pub(crate) fn process(
     Ok(output.with_result(result))
 }
 
+pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
+    keeper.store_connection(&result.connection_id, &result.connection_end)?;
+    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
-    use crate::ics03_connection::connection::{get_compatible_versions, ConnectionEnd, State};
+    use crate::ics03_connection::connection::{ConnectionEnd, State};
+    use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_try;
@@ -116,7 +131,7 @@ mod tests {
             State::TryOpen,
             dummy_msg.client_id().clone(),
             dummy_msg.counterparty(),
-            get_compatible_versions(),
+            default_context.get_compatible_versions(),
         )
         .unwrap();
 

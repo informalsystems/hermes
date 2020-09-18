@@ -1,6 +1,7 @@
 // TODO: Update error types for Connection!!
 
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::Height;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -14,17 +15,17 @@ pub enum Kind {
     #[error("connection exists (was initialized) already: {0}")]
     ConnectionExistsAlready(ConnectionId),
 
-    #[error("a different connection exists (was initialized) already for the same connection identifier")]
-    ConnectionMismatch,
+    #[error("a different connection exists (was initialized) already for the same connection identifier {0}")]
+    ConnectionMismatch(ConnectionId),
 
-    #[error("connection end for this identifier was never initialized")]
-    UninitializedConnection,
+    #[error("connection end for identifier {0} was never initialized")]
+    UninitializedConnection(ConnectionId),
 
-    #[error("consensus height claimed by the client on the other party is too advanced")]
-    InvalidConsensusHeight,
+    #[error("consensus height claimed by the client on the other party is too advanced: {0}")]
+    InvalidConsensusHeight(Height),
 
-    #[error("consensus height claimed by the client on the other party falls outside of trusting period")]
-    StaleConsensusHeight,
+    #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0}")]
+    StaleConsensusHeight(Height),
 
     #[error("identifier error")]
     IdentifierError,
@@ -77,11 +78,11 @@ pub enum Kind {
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
 
+    #[error("the consensus proof verification failed (height: {0})")]
+    ConsensusStateVerificationFailure(Height),
+
     #[error("the client state proof verification failed")]
     ClientStateVerificationFailure,
-
-    #[error("the consensus proof verification failed")]
-    ConsensusStateVerificationFailure,
 }
 
 impl Kind {

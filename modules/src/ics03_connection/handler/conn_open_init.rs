@@ -1,6 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
-use crate::ics03_connection::connection::{get_compatible_versions, ConnectionEnd, State};
-use crate::ics03_connection::context::ConnectionReader;
+use crate::ics03_connection::connection::{ConnectionEnd, State};
+use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
@@ -27,7 +27,7 @@ pub(crate) fn process(
         State::Init,
         msg.client_id().clone(),
         msg.counterparty().clone(),
-        get_compatible_versions(),
+        ctx.get_compatible_versions(),
     )?;
 
     output.log("success: no connection found");
@@ -42,10 +42,17 @@ pub(crate) fn process(
     Ok(output.with_result(result))
 }
 
+pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
+    keeper.store_connection(&result.connection_id, &result.connection_end)?;
+    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
-    use crate::ics03_connection::connection::{get_compatible_versions, ConnectionEnd, State};
+    use crate::ics03_connection::connection::{ConnectionEnd, State};
+    use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
@@ -74,7 +81,7 @@ mod tests {
             State::Init,
             dummy_msg.client_id().clone(),
             dummy_msg.counterparty().clone(),
-            get_compatible_versions(),
+            default_context.get_compatible_versions(),
         )
         .unwrap();
 

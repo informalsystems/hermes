@@ -154,28 +154,27 @@ pub fn verify_consensus_proof(
             proof.height(),
             &expected_consensus,
         )
-        .map_err(|_| Kind::ConsensusStateVerificationFailure.context(proof.height().to_string()))?)
+        .map_err(|e| {
+            Kind::ConsensusStateVerificationFailure(proof.height()).context(e.to_string())
+        })?)
 }
 
+/// Checks that `claimed_height` is within normal bounds, i.e., fresh enough to fall within the
+/// trusting period, but not newer than the current (actual) height of the local chain.
 pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
 ) -> Result<(), Error> {
-    // Fail if the consensus height is too advanced.
     if claimed_height > ctx.chain_current_height() {
-        return Err(Kind::InvalidConsensusHeight
-            .context(claimed_height.to_string())
-            .into());
-    }
-
-    // Fail if the consensus height is too old (outside of trusting period).
-    if claimed_height.value()
+        // Fail if the consensus height is too advanced.
+        Err(Kind::InvalidConsensusHeight(claimed_height).into())
+    } else if claimed_height.value()
         < (ctx.chain_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
     {
-        return Err(Kind::StaleConsensusHeight
-            .context(claimed_height.to_string())
-            .into());
+        // Fail if the consensus height is too old (outside of trusting period).
+        Err(Kind::StaleConsensusHeight(claimed_height).into())
+    } else {
+        // Height check is within normal bounds, check passes.
+        Ok(())
     }
-
-    Ok(())
 }
