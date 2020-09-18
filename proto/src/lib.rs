@@ -6,7 +6,7 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.1.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.3.0")]
 
 pub mod cosmos {
     pub mod base {
