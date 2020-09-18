@@ -116,19 +116,19 @@ func handleEvent(ev, chainA) Error {
     
     // Stage 1.
     // Determine destination chain
-    chainB = getDestinationInfo(ev, chainA) 
-    if chainB == nil { return Error.RETRY }  
+    chainB, error = getDestinationInfo(ev, chainA) 
+    if error != nil { return error }  
 
     // Stage 2.
     // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
     targetHeight = ev.height + 1
     // See the code for `updateIBCClient` below.
-    installedHeight, error := updateIBCClient(chainB, chainA, targetHeight)
+    proofHeight, error := updateIBCClient(chainB, chainA, targetHeight)
     if error != nil { return Error.RETRY }
 
     // Stage 3.
     // Create the IBC datagrams including `ev` & verify them.
-    datagram, error = CreateDatagram(ev, chainA, chainB, installedHeight)
+    datagram, error = CreateDatagram(ev, chainA, chainB, proofHeight)
     if error != nil { return Error.RETRY }
     
     // Stage 4.
@@ -137,19 +137,25 @@ func handleEvent(ev, chainA) Error {
     if error != nil { return Error.RETRY }      
 }
 
-func getDestinationInfo(ev IBCEvent, chain Chain) Chain {
+func getDestinationInfo(ev IBCEvent, chain Chain) (Chain, Error) {
     switch ev.type {
         case SendPacketEvent: 
             chainId = getChainId(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
-            if chainId == nil { return nil }        
+            if chainId == nil { return (nil, Error.RETRY) }        
                         
-            return GetChain(chainId) 
+            chain = GetChain(chainId)
+            if chain == nil { return (nil, Error.DROP) }
+                        
+            return (chain, nil)   
         
         case WriteAcknowledgementEvent:
             chainId = getChainId(chain, ev.Port, ev.Channel, ev.Height)
-            if chainId == nil { return nil }        
+            if chainId == nil { return nil, Error.RETRY }        
             
-            return GetChain(chainId)  
+            chain = GetChain(chainId)
+            if chain == nil { nil, Error.DROP }
+            
+            return (chain, nil)   
     }
 }
 

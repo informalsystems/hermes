@@ -142,8 +142,9 @@ func CreateDatagram(ev WriteAcknowledgementEvent,
 
     // Stage 2 
     // Execute checks IBC handler on chainB will execute
-
-    channelA, proof = GetChannel(chainA, ev.port, ev.channel, LATEST_HEIGHT)
+    
+    // Fetch channelEnd from the chainA to be able to compute port and chain ids on destination chain
+    channelA, proof = GetChannel(chainA, ev.port, ev.channel, ev.height)
     if proof == nil { return (nil, Error.RETRY) }
     
     channelB, proof = 

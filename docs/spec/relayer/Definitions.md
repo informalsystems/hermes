@@ -258,7 +258,7 @@ func GetChannel(chain Chain,
     while(true) {
         // Query provable store exposed by the full node of chain. 
         // The path for the channel end is at channelEnds/ports/{portId}/channels/{channelId}".
-        // The membership proof returned is read at height proofHeight. 
+        // The channel and the membership proof returned is read at height proofHeight - 1. 
         channel, proof, error = QueryChannel(chain.provider, portId, channelId, proofHeight) 
         if error != nil {
             // elect a new provider from the peer list
