@@ -19,20 +19,6 @@ type SendPacketEvent {
 ```
 
 ```go
-type ReceivePacket {
-    height             Height
-    sourcePort         Identifier
-    sourceChannel      Identifier
-    destPort           Identifier
-    destChannel        Identifier
-    sequence           uint64
-    timeoutHeight      Height
-    timeoutTimestamp   uint64
-    data               []byte             
-}
-```
-
-```go
 type WriteAcknowledgementEvent {
     height             Height
     port               Identifier
@@ -45,46 +31,6 @@ type WriteAcknowledgementEvent {
 }
 ```
 
-```go
-type AcknowledgePacket {
-    height             Height
-    sourcePort         Identifier
-    sourceChannel      Identifier
-    destPort           Identifier
-    destChannel        Identifier
-    sequence           uint64
-    timeoutHeight      Height
-    timeoutTimestamp   uint64
-}
-```
-
-```go
-type CleanupPacket {
-    height             Height
-    sourcePort         Identifier
-    sourceChannel      Identifier
-    destPort           Identifier
-    destChannel        Identifier
-    sequence           uint64
-    timeoutHeight      Height
-    timeoutTimestamp   uint64
-}
-```
-
-```go
-type TimeoutPacket {
-    height             Height
-    sourcePort         Identifier
-    sourceChannel      Identifier
-    destPort           Identifier
-    destChannel        Identifier
-    sequence           uint64
-    timeoutHeight      Height
-    timeoutTimestamp   uint64
-}
-```
-TODO: Figure out more concise way to define these types as most of them are the same
-
 ## Event handlers 
 
 ### SendPacketEvent handler 
@@ -96,8 +42,8 @@ Successful handling of *SendPacketEvent* leads to *PacketRecv* datagram creation
 
 ```golang
 func CreateDatagram(ev SendPacketEvent, 
-                    chainA Chain, 
-                    chainB Chain, 
+                    chainA Chain,  // source chain
+                    chainB Chain,  // destination chain
                     proofHeight Height) (PacketRecv, Error) {        
     
     // Stage 1 
@@ -145,7 +91,7 @@ func CreateDatagram(ev SendPacketEvent,
        if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     
     } else {
-        // Note that absence of ack (packetAcknowledgment == nil) is also proven also and we should be able to verify it. 
+        // Note that absence of receipt (packetReceipt == nil) is also proven also and we should be able to verify it. 
         packetReceipt, proof = 
             GetPacketReceipt(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
         if proof == nil { return (nil, Error.RETRY) }
@@ -188,11 +134,10 @@ func CreateDatagram(ev WriteAcknowledgementEvent,
         GetPacketAcknowledgement(chainA, ev.port, ev.channel, ev.sequence, proofHeight) 
     if packetAckCommitmentProof == nil { return (nil, Error.RETRY) } 
     
-    if packetAck == nil OR
-       packetAck != hash(ev.acknowledgement) { 
-            // invalid event; replace provider
-            ReplaceProvider(chainA)  // TODO: We shouldn't replace provider here; it should be communicated with the error type
-            return (nil, Error.DROP) 
+    if packetAck == nil OR packetAck != hash(ev.acknowledgement) { 
+        // invalid event; replace provider
+        ReplaceProvider(chainA)  // TODO: We shouldn't replace provider here; it should be communicated with the error type
+        return (nil, Error.DROP) 
     }
 
     // Stage 2 
@@ -248,14 +193,8 @@ func CreateDatagram(ev WriteAcknowledgementEvent,
                 destPort: ev.port,           
                 destChannel: ev.channel,        
                 data: ev.data
-    }   
-    
-    type PacketAcknowledgement {
-         packet           Packet
-         acknowledgement  byte[]
-         proof            CommitmentProof
-         proofHeight      Height
-    }
+             }   
+
     return (PacketAcknowledgement { packet, ev.acknowledgement, packetAckCommitmentProof, proofHeight }, nil)
 }    
 ```
