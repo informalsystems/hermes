@@ -11,11 +11,12 @@ use tendermint::lite::types::Header;
 use crate::commands::utils::block_on;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::client::Client;
-use relayer::config::ChainConfig;
+use relayer::config::{ChainConfig, LocalChainConfig};
 
 use relayer::store::Store;
 
 use crate::commands::listen::relayer_task;
+use relayer::local_chain::LocalChain;
 
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
@@ -31,6 +32,9 @@ impl Runnable for StartCmd {
         // abscissa_tokio::run(&APPLICATION, ...).unwrap();
 
         debug!("launching 'start' command");
+        if ! config.local_chains.is_empty() {
+            debug!("found the following local chains: {:?}", config.local_chains);
+        }
 
         // Spawn all tasks on the same thread that calls `block_on`, ie. the main thread.
         // This allows us to spawn tasks which do not implement `Send`,
@@ -38,6 +42,12 @@ impl Runnable for StartCmd {
         let local = tokio::task::LocalSet::new();
 
         block_on(local.run_until(async move {
+            // Start the local chains
+            for lc_config in &config.local_chains {
+                info!(local_chain.id = %lc_config.id, "spawning local chain");
+                tokio::task::spawn_local(create_local_chain(lc_config.clone()));
+            }
+            // Start the clients
             for chain_config in &config.chains {
                 info!(chain.id = %chain_config.id, "spawning light client");
                 tokio::task::spawn_local(spawn_client(chain_config.clone(), self.reset));
@@ -126,4 +136,17 @@ async fn create_client(
         }
         client
     }
+}
+
+async fn create_local_chain(
+    local_chain_config: LocalChainConfig,
+) -> LocalChain {
+    let chain = LocalChain::from_config(local_chain_config.clone()).unwrap();
+
+    // Create clients, if any are specified.
+    for client_id in &local_chain_config.client_ids {
+        chain.create_client(client_id);
+    }
+
+    chain
 }
