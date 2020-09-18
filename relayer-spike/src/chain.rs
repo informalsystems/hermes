@@ -151,7 +151,7 @@ impl ChainRuntime {
         return ProdChain::new(sender);
     }
 
-    pub fn run(mut self) -> Result<(), ChainError> {
+    pub fn run(self) -> Result<(), ChainError> {
         // TODO: Replace with a websocket
         let event_monitor = channel::tick(Duration::from_millis(1000));
 

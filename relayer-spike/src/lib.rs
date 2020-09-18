@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 pub mod types;
 pub mod link;
 pub mod chain;

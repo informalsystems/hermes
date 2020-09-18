@@ -1,7 +1,7 @@
 use crate::types::{Height, Hash, ChainId, ChannelId, ClientId, PortId, Datagram};
-use crate::connection::{Connection, ConnectionConfig, ConnectionError};
-use crate::channel::{Channel, ChannelConfig, ChannelError};
-use crate::foreign_client::{ForeignClient, ForeignClientConfig, ForeignClientError};
+use crate::connection::ConnectionError;
+use crate::channel::{Channel, ChannelError};
+use crate::foreign_client::ForeignClientError;
 use crate::chain::{Chain, ChainError, SignedHeader, MembershipProof, ConsensusState};
 
 #[derive(Debug)]
@@ -55,32 +55,32 @@ pub struct Link {
 }
 
 impl From<ConnectionError> for LinkError {
-    fn from(error: ConnectionError) -> Self {
+    fn from(_error: ConnectionError) -> Self {
         return LinkError::NoOp()
     }
 }
 
 impl From<ChannelError> for LinkError {
-    fn from(error: ChannelError ) -> Self {
+    fn from(_error: ChannelError ) -> Self {
         return LinkError::NoOp()
     }
 }
 
 impl From<ForeignClientError> for LinkError {
-    fn from(error: ForeignClientError) -> Self {
+    fn from(_error: ForeignClientError) -> Self {
         return LinkError::NoOp()
     }
 }
 
 impl From<ChainError> for LinkError {
-    fn from(error: ChainError ) -> Self {
+    fn from(_error: ChainError ) -> Self {
         return LinkError::NoOp()
     }
 }
 
 impl Link {
     // We can probably pass in the connection and channel
-    pub fn new(channel: Channel, config: LinkConfig) -> Result<Link, LinkError> {
+    pub fn new(channel: Channel, _config: LinkConfig) -> Result<Link, LinkError> {
         // We used to clone these chain objects but if they are traits it's just not possible.
 
         return Ok(Link {
@@ -101,7 +101,7 @@ impl Link {
 
             verify_proof(&datagrams, &header);
 
-            self.update_client(target_height);
+            self.update_client(target_height).unwrap();
             self.dst_chain.submit(datagrams);
         }
 
@@ -109,7 +109,7 @@ impl Link {
     }
 
     fn update_client(&mut self, src_target_height: Height) -> Result<Height, LinkError> {
-        let (mut src_consensus_state, mut dst_membership_proof) =
+        let (src_consensus_state, dst_membership_proof) =
             self.dst_chain.consensus_state(self.src_chain.id(), src_target_height);
 
         let dst_sh = self.dst_chain.get_header(dst_membership_proof.height + 1);

@@ -1,5 +1,5 @@
-use crate::types::{ChainId, ClientId, Datagram, Hash, Height};
-use crate::chain::{Chain, SignedHeader, ConsensusState, MembershipProof};
+use crate::types::{ChainId, ClientId};
+use crate::chain::Chain;
 
 #[derive(Debug)]
 pub enum ForeignClientError {
