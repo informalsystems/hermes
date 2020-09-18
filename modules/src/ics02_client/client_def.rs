@@ -126,10 +126,11 @@ impl TryFromRaw for AnyClientState {
     type RawType = prost_types::Any;
     type Error = Error;
 
-    fn try_from(value: Self::RawType) -> Result<Self, Self::Error> {
-        match value.type_url.as_str() {
-            "ibc.tendermint.ClientState" => {
-                let raw = RawTendermintClientState::decode(value.value.as_ref())
+    // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
+    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+        match raw.type_url.as_str() {
+            "/ibc.tendermint.ClientState" => {
+                let raw = RawTendermintClientState::decode(raw.value.as_ref())
                     .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
                 let client_state = TendermintClientState::try_from(raw)
                     .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
@@ -138,8 +139,8 @@ impl TryFromRaw for AnyClientState {
             }
 
             #[cfg(test)]
-            "ibc.mock.ClientState" => {
-                let raw = RawMockClientState::decode(value.value.as_ref())
+            "/ibc.mock.ClientState" => {
+                let raw = RawMockClientState::decode(raw.value.as_ref())
                     .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
                 let client_state = MockClientState::try_from(raw)
                     .map_err(|e| error::Kind::InvalidRawClientState.context(e))?;
@@ -147,7 +148,7 @@ impl TryFromRaw for AnyClientState {
                 Ok(AnyClientState::Mock(client_state))
             }
 
-            _ => Err(error::Kind::UnknownClientStateType(value.type_url).into()),
+            _ => Err(error::Kind::UnknownClientStateType(raw.type_url).into()),
         }
     }
 }
@@ -199,7 +200,7 @@ impl TryFromRaw for AnyConsensusState {
 
     fn try_from(value: Self::RawType) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
-            "ibc.tendermint.ConsensusState" => {
+            "/ibc.tendermint.ConsensusState" => {
                 let raw = RawTendermintConsensusState::decode(value.value.as_ref())
                     .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
                 let consensus_state = TendermintConsensusState::try_from(raw)
@@ -210,7 +211,7 @@ impl TryFromRaw for AnyConsensusState {
 
             // TODO get this to compile! -- Add the ClientConsensusState definition in ibc-proto.
             // #[cfg(test)]
-            // "ibc.mock.ConsensusState" => {
+            // "/ibc.mock.ConsensusState" => {
             //     let raw = RawMockConsensusState::decode(value.value.as_ref())
             //         .map_err(|e| error::Kind::ProtoDecodingFailure.context(e))?;
             //     let client_state = MockClientState::try_from(raw)

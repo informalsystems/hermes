@@ -27,7 +27,6 @@ impl Path {
     /// Indication if the path is provable.
     pub fn is_provable(&self) -> bool {
         match &self {
-            Path::ClientState(_) => false,
             Path::ClientConnections(_) => false,
             Path::Ports(_) => false,
             _ => true,
