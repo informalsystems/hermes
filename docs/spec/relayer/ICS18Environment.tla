@@ -1,6 +1,6 @@
 -------------------------- MODULE ICS18Environment --------------------------
 
-EXTENDS Integers, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
 
 CONSTANTS MaxHeight, \* maximal height of all the chains in the system
           MaxPacketSeq, \* maximal packet sequence number (will be used later)
@@ -16,9 +16,12 @@ VARIABLES chainAstore, \* store of ChainA
           chainBstore, \* store of ChainB
           incomingDatagramsChainA, \* set of datagrams incoming to ChainA
           incomingDatagramsChainB, \* set of datagrams incoming to ChainB
+          incomingPacketDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
+          incomingPacketDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
           relayer1Heights, \* the client heights of Relayer1
           relayer2Heights, \* the client heights of Relayer2
           outgoingDatagrams, \* sets of datagrams outgoing of the relayers
+          outgoingPacketDatagrams, \* sequences of packet datagrams outgoing of the relayers
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
           closeChannelB, \* flag that triggers closing of the channel end at ChainB
           historyChainA, \* history variables for ChainA
@@ -29,16 +32,18 @@ VARIABLES chainAstore, \* store of ChainA
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,
+          incomingPacketDatagramsChainA, incomingPacketDatagramsChainB,
           relayer1Heights, relayer2Heights,
           outgoingDatagrams,
+          outgoingPacketDatagrams,
           closeChannelA, closeChannelB, 
           historyChainA, historyChainB,
           packetLog,
           appPacketSeqChainA, appPacketSeqChainB>>
           
-chainAvars == <<chainAstore, incomingDatagramsChainA, historyChainA, appPacketSeqChainA>>
-chainBvars == <<chainBstore, incomingDatagramsChainB, historyChainB,  appPacketSeqChainB>>
-relayerVars == <<relayer1Heights, relayer2Heights, outgoingDatagrams>>
+chainAvars == <<chainAstore, incomingDatagramsChainA, incomingPacketDatagramsChainA, historyChainA, appPacketSeqChainA>>
+chainBvars == <<chainBstore, incomingDatagramsChainB, incomingPacketDatagramsChainB, historyChainB, appPacketSeqChainB>>
+relayerVars == <<relayer1Heights, relayer2Heights, outgoingDatagrams, outgoingPacketDatagrams>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system                      
       
 
@@ -67,6 +72,7 @@ ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
                chainStore <- chainAstore,
                incomingDatagrams <- incomingDatagramsChainA,
+               incomingPacketDatagrams <- incomingPacketDatagramsChainA,
                history <- historyChainA,
                appPacketSeq <- appPacketSeqChainA
 
@@ -75,6 +81,7 @@ ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
                chainStore <- chainBstore,
                incomingDatagrams <- incomingDatagramsChainB,
+               incomingPacketDatagrams <- incomingPacketDatagramsChainB,
                history <- historyChainB,
                appPacketSeq <- appPacketSeqChainB
 
@@ -103,6 +110,7 @@ ChainAction ==
        /\ UNCHANGED chainBvars
        /\ UNCHANGED relayerVars
        /\ UNCHANGED <<closeChannelA, closeChannelB>>
+\*       /\ UNCHANGED incomingDatagramsChainB
     \/ /\ ChainB!Next  
        /\ UNCHANGED chainAvars
        /\ UNCHANGED relayerVars  
@@ -116,6 +124,13 @@ SubmitDatagrams ==
     /\ incomingDatagramsChainA' = AsSetDatagrams(incomingDatagramsChainA \union outgoingDatagrams["chainA"])
     /\ incomingDatagramsChainB' = AsSetDatagrams(incomingDatagramsChainB \union outgoingDatagrams["chainB"])
     /\ outgoingDatagrams' = [chainID \in ChainIDs |-> AsSetDatagrams({})]
+    /\ incomingPacketDatagramsChainA' = AsSeqPacketDatagrams(incomingPacketDatagramsChainA 
+                                                             \o
+                                                             outgoingPacketDatagrams["chainA"]) 
+    /\ incomingPacketDatagramsChainB' = AsSeqPacketDatagrams(incomingPacketDatagramsChainB
+                                                             \o
+                                                             outgoingPacketDatagrams["chainB"])
+    /\ outgoingPacketDatagrams' = [chainID \in ChainIDs |-> AsSeqPacketDatagrams(<<>>)]                                                          
     /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
     /\ UNCHANGED <<closeChannelA, closeChannelB>>
     /\ UNCHANGED <<historyChainA, historyChainB>>
@@ -130,6 +145,7 @@ CloseChannels ==
        /\ UNCHANGED closeChannelB
        /\ UNCHANGED <<historyChainA, historyChainB>>
        /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
+       /\ UNCHANGED <<incomingPacketDatagramsChainA, incomingPacketDatagramsChainB, outgoingPacketDatagrams>>
     \/ /\ closeChannelB = FALSE
        /\ closeChannelB' \in BOOLEAN
        /\ UNCHANGED <<chainAstore, chainBstore, relayer1Heights, relayer2Heights>>
@@ -137,6 +153,7 @@ CloseChannels ==
        /\ UNCHANGED closeChannelA
        /\ UNCHANGED <<historyChainA, historyChainB>>
        /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
+       /\ UNCHANGED <<incomingPacketDatagramsChainA, incomingPacketDatagramsChainB, outgoingPacketDatagrams>>
 
 \* Faulty relayer action
 FaultyRelayer ==
@@ -160,7 +177,7 @@ Init ==
     /\ Relayer2!Init
     /\ closeChannelA = FALSE
     /\ closeChannelB = FALSE
-    /\ packetLog = AsPacketLog({})
+    /\ packetLog = AsPacketLog(<<>>)
     
 \* Next state action
 Next ==
@@ -550,5 +567,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Thu Sep 10 15:41:47 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Sep 18 17:17:41 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska
