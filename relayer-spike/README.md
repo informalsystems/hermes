@@ -108,12 +108,17 @@ Here is the configuraiton that we need to establish a link
 }
 ```
 
-    * Outline Path construction
-        * Construct a Channel and Connection
-    * Understand the dependency graph between the components
+* Outline Path construction
+    * Construct a Channel and Connection
+* Understand the dependency graph between the components
 
 Imagine a polling subscription, pulling data from the full node
 It may get a packet from
-    * A connection
+    * A Connection
     * A Channel establishment
     * A Packet being forwarded
+
+## Subscription setup
+* How do we ensure that we don't miss any messages?
+* Setup the subscription first and buffer them before starting the
+  client, connection and channel setups
