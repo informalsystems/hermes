@@ -124,6 +124,15 @@ type PacketRecv {
 }
 ```
 
+```go
+type PacketAcknowledgement {
+     packet           Packet
+     acknowledgement  byte[]
+     proof            CommitmentProof
+     proofHeight      Height
+}
+```
+
 ## Helper functions
 
 We assume the existence of the following helper functions:
@@ -166,12 +175,29 @@ GetNextSequenceRecv(chain Chain,
                     channelId Identifier,  
                     proofHeight Height) (uint64, CommitmentProof)
 
+
+// Returns next recv sequence number with a commitment proof. 
+GetNextSequenceAck(chain Chain, 
+                   portId Identifier, 
+                   channelId Identifier,  
+                   proofHeight Height) (uint64, CommitmentProof)
+
+
 // Returns packet acknowledgment with a commitment proof. 
 GetPacketAcknowledgement(chain Chain, 
                          portId Identifier, 
                          channelId Identifier, 
                          sequence uint64, 
                          proofHeight Height) (bytes, CommitmentProof)
+
+
+// Returns packet receipt with a commitment proof. 
+GetPacketReceipt(chain Chain, 
+                 portId Identifier, 
+                 channelId Identifier, 
+                 sequence uint64, 
+                 proofHeight Height) (String, CommitmentProof)
+
  
 // Returns estimate of the consensus height on the given chain. 
 GetConsensusHeight(chain Chain) Height

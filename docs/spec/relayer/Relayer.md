@@ -140,19 +140,32 @@ func handleEvent(ev, chainA) Error {
 func getDestinationInfo(ev IBCEvent, chain Chain) Chain {
     switch ev.type {
         case SendPacketEvent: 
-            channel, proof = GetChannel(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
-            if proof == nil { return nil }
-                
-            connectionId = channel.connectionHops[0]
-            connection, proof = GetConnection(chain, connectionId, ev.Height) 
-            if proof == nil { return nil }
-                
-            clientState, proof = GetClientState(chain, connection.clientIdentifier, ev.Height) 
-            if proof == nil { return nil }
+            chainId = getChainId(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
+            if chainId == nil { return nil }        
+                        
+            return GetChain(chainId) 
         
-            return GetChain(clientState.chainID) 
-        ...    
+        case WriteAcknowledgementEvent:
+            chainId = getChainId(chain, ev.Port, ev.Channel, ev.Height)
+            if chainId == nil { return nil }        
+            
+            return GetChain(chainId)  
     }
+}
+
+// Return chaindId of the destination chain based on port and channel info for the given chain
+func getChainId(chain Chain, port Identifier, channel Identifier, height Height) String {
+    channel, proof = GetChannel(chain, port, channel, height)
+    if proof == nil { return nil }
+                                
+    connectionId = channel.connectionHops[0]
+    connection, proof = GetConnection(chain, connectionId, height) 
+    if proof == nil { return nil }
+                                
+    clientState, proof = GetClientState(chain, connection.clientIdentifier, height) 
+    if proof == nil { return nil }
+    
+    return clientState.chainID 
 }
 
 // Perform an update on `dest` chain for the IBC client for `src` chain.

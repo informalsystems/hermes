@@ -14,13 +14,85 @@ type SendPacketEvent {
     sourceChannel      Identifier
     destPort           Identifier
     destChannel        Identifier
-    data               bytes	
+    data               []byte	
 }
 ```
 
-## Datagram creation logic
+```go
+type ReceivePacket {
+    height             Height
+    sourcePort         Identifier
+    sourceChannel      Identifier
+    destPort           Identifier
+    destChannel        Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64
+    data               []byte             
+}
+```
 
-### PacketRecv datagram creation
+```go
+type WriteAcknowledgementEvent {
+    height             Height
+    port               Identifier
+    channel            Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64    
+    data               []byte
+    acknowledgement    []byte
+}
+```
+
+```go
+type AcknowledgePacket {
+    height             Height
+    sourcePort         Identifier
+    sourceChannel      Identifier
+    destPort           Identifier
+    destChannel        Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64
+}
+```
+
+```go
+type CleanupPacket {
+    height             Height
+    sourcePort         Identifier
+    sourceChannel      Identifier
+    destPort           Identifier
+    destChannel        Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64
+}
+```
+
+```go
+type TimeoutPacket {
+    height             Height
+    sourcePort         Identifier
+    sourceChannel      Identifier
+    destPort           Identifier
+    destChannel        Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64
+}
+```
+TODO: Figure out more concise way to define these types as most of them are the same
+
+## Event handlers 
+
+### SendPacketEvent handler 
+
+Successful handling of *SendPacketEvent* leads to *PacketRecv* datagram creation.
+
+// NOTE: Stateful relayer might keep packet that are not acked in the state so the following logic
+// can be a bit simpler.
 
 ```golang
 func CreateDatagram(ev SendPacketEvent, 
@@ -66,19 +138,19 @@ func CreateDatagram(ev SendPacketEvent,
     if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return (nil, Error.DROP) }
     
     // we now check if this packet is already received by the destination chain
-    if (channel.ordering === ORDERED) {    
-        nextSequenceRecv, proof = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
-        if proof == nil { return (nil, Error.RETRY) }
+    if channel.ordering === ORDERED {    
+       nextSequenceRecv, proof = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
+       if proof == nil { return (nil, Error.RETRY) }
         
-        if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
+       if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     
     } else {
         // Note that absence of ack (packetAcknowledgment == nil) is also proven also and we should be able to verify it. 
-        packetAcknowledgement, proof = 
-            GetPacketAcknowledgement(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
+        packetReceipt, proof = 
+            GetPacketReceipt(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
         if proof == nil { return (nil, Error.RETRY) }
 
-        if packetAcknowledgement != nil { return (nil, Error.DROP) } // packet has already been delivered by another relayer
+        if packetReceipt != nil { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     }
     
     // Stage 3
@@ -98,4 +170,92 @@ func CreateDatagram(ev SendPacketEvent,
 }    
 ```
 
+### WriteAcknowledgementEvent handler
 
+Successful handling of *WriteAcknowledgementEvent* leads to *PacketAcknowledgement* datagram creation.
+
+```golang
+func CreateDatagram(ev WriteAcknowledgementEvent, 
+                    chainA Chain,    // source chain
+                    chainB Chain,    // destination chain
+                    proofHeight Height) (PacketAcknowledgement, Error) {   
+
+    // Stage 1 
+    // Verify if acknowledment is committed to chain A and it is still pending
+    
+    // TODO: Figure out what should be the height at which this info is read!
+    packetAck, packetAckCommitmentProof = 
+        GetPacketAcknowledgement(chainA, ev.port, ev.channel, ev.sequence, proofHeight) 
+    if packetAckCommitmentProof == nil { return (nil, Error.RETRY) } 
+    
+    if packetAck == nil OR
+       packetAck != hash(ev.acknowledgement) { 
+            // invalid event; replace provider
+            ReplaceProvider(chainA)  // TODO: We shouldn't replace provider here; it should be communicated with the error type
+            return (nil, Error.DROP) 
+    }
+
+    // Stage 2 
+    // Execute checks IBC handler on chainB will execute
+
+    channelA, proof = GetChannel(chainA, ev.port, ev.channel, LATEST_HEIGHT)
+    if proof == nil { return (nil, Error.RETRY) }
+    
+    channelB, proof = 
+        GetChannel(chainB, channelA.counterpartyPortIdentifier, channelA.counterpartyChannelIdentifier, LATEST_HEIGHT)
+    if proof == nil { return (nil, Error.RETRY) }
+    
+    if channelB == nil OR channel.state != OPEN  { (nil, Error.DROP) } 
+    // Note that we checked implicitly above that counterparty identifiers match each other
+               
+    connectionId = channelB.connectionHops[0]
+    connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
+    if proof == nil { return (nil, Error.RETRY) }
+        
+    if connection == nil OR connection.state != OPEN { return (nil, Error.DROP) }
+        
+    // verify the packet is sent by chainB and hasn't been cleared out yet
+    packetCommitment, packetCommitmentProof = 
+        GetPacketCommitment(chainB, channelA.counterpartyPortIdentifier, 
+                            channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)     
+    if packetCommitmentProof == nil { return (nil, Error.RETRY) }
+            
+    if packetCommitment == nil OR
+       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
+            // invalid event; replace provider
+            ReplaceProvider(chainB)
+            return (nil, Error.DROP) 
+    }
+    
+    // abort transaction unless acknowledgement is processed in order
+    if channelB.ordering === ORDERED {
+        nextSequenceAck, proof = 
+            GetNextSequenceAck(chainB, channelA.counterpartyPortIdentifier, 
+                               channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)  
+        if proof == nil { return (nil, Error.RETRY) }                                                   
+
+        if ev.sequence != nextSequenceAck { return (nil, Error.DROP) }       
+    }
+    
+    // Stage 3
+    // Build datagram as all checks has passed  
+    packet = Packet {
+                sequence: ev.sequence,
+                timeoutHeight: ev.timeoutHeight,
+                timeoutTimestamp: ev.timeoutTimestamp,
+                sourcePort: channelA.counterpartyPortIdentifier,          
+                sourceChannel: channelA.counterpartyChannelIdentifier,
+                destPort: ev.port,           
+                destChannel: ev.channel,        
+                data: ev.data
+    }   
+    
+    type PacketAcknowledgement {
+         packet           Packet
+         acknowledgement  byte[]
+         proof            CommitmentProof
+         proofHeight      Height
+    }
+    return (PacketAcknowledgement { packet, ev.acknowledgement, packetAckCommitmentProof, proofHeight }, nil)
+}    
+```
