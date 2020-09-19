@@ -1,19 +1,28 @@
 // Signer
-use signatory_secp256k1::{SecretKey, EcdsaSigner};
-use ecdsa::curve::Secp256k1;
+//use signatory_secp256k1::{SecretKey, EcdsaSigner};
+//use ecdsa::curve::Secp256k1;
 
-use ecdsa::FixedSignature;
-use signature::Signer;
-use std::convert::TryInto;
-use signatory_secp256k1::signatory::sha2;
-use signatory_secp256k1::signatory::public_key::PublicKeyed;
+//use ecdsa::FixedSignature;
+//use signature::Signer;
+//use signatory_secp256k1::signatory::sha2;
+//use signatory_secp256k1::signatory::public_key::PublicKeyed;
 use sha2::{Digest, Sha256};
 use std::num::ParseIntError;
-use ecdsa::elliptic_curve::generic_array::GenericArray;
+use tendermint::account::Id;
+use tendermint::public_key::Ed25519 as TMEd25519;
+use tendermint::public_key::PublicKey as TMPublicKey;
+use tendermint::TendermintKey;
+use crypto::ripemd160::Ripemd160;
 
-pub type FSignature = FixedSignature<Secp256k1>;
+use secp256k1::{Secp256k1, Message, SecretKey, PublicKey};
 
-// Proto types
+//use ed25519_dalek::{Keypair, Signature, Signer};
+use std::error::Error;
+
+pub struct KeyPair {
+    pub secret: SecretKey,
+    pub public: PublicKey
+}
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Coin {
@@ -37,7 +46,9 @@ pub struct MsgSend {
 #[derive(Clone, PartialEq, ::prost::Oneof)]
 pub enum PKSum {
     #[prost(bytes, tag="1")]
-    Secp256k1(std::vec::Vec<u8>)
+    Secp256k1(std::vec::Vec<u8>),
+    #[prost(bytes, tag="2")]
+    Ed25519(std::vec::Vec<u8>),
 }
 
 /// SignDoc is the type used for generating sign bytes for SIGN_MODE_DIRECT.
@@ -141,7 +152,7 @@ pub struct SignerInfo {
     /// that already exist in state. If unset, the verifier can use the required \
     /// signer address for this position and lookup the public key.
     #[prost(message, optional, tag="1")]
-    pub public_key: ::std::option::Option<PublicKey>,
+    pub public_key: ::std::option::Option<PK>,
     /// mode_info describes the signing mode of the signer and is a nested
     /// structure to support nested multisig pubkey's
     #[prost(message, optional, tag="2")]
@@ -207,7 +218,7 @@ pub enum Sum {
 
 /// PublicKey specifies a public key
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PublicKey {
+pub struct PK {
     /// sum specifies which type of public key is wrapped
     #[prost(oneof="PKSum", tags="1, 2, 3, 4, 5, 15")]
     pub sum: ::std::option::Option<PKSum>,
@@ -231,53 +242,83 @@ pub struct TxRaw {
     pub signatures: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 
-fn main() {
+// pub fn generate_keypair() -> Keypair {
+//     use crypto::sha2::Sha512;
+//     use crypto::digest::Digest;
+//
+//     let phrase = "sheriff forum protect song adjust bike fury add ginger dance diamond seat orange bean insect scrap deposit barely scare have tortoise little quote bicycle";
+//     let mut seed = Sha512::new();
+//     seed.input_str(&phrase);
+//     let mut bytes = vec![0; seed.output_bytes()];
+//     seed.result(&mut bytes);
+//     let seed_length = phrase.as_bytes().len();
+//     let keypair = Keypair::from_bytes(&bytes).unwrap();
+//
+//     //let (private_key, public_key) = ed25519::keypair(&bytes); // expects slice
+//     println!("Keypair |{:?}", keypair);
+//     keypair
+// }
 
-    // Signer
-    const VALIDATOR_ADDR: &'static str = "064A6FC334BADB830F1C7192641F6E99BC85BE0C";
-    const BOB_ADDR: &'static str = "7B72B907C4EE8B46D19B9C4A34BDA0CC285F6488";
-    const VALIDATOR_PRIVATE_KEY: &'static str = "BEB22FAAEE71750277290BA57606ABFC75AD02A0C4A08700F8CF6CFD9108D4D44FBCFD6F8293968AB8E414399BF8499D91A00EFA4AF42BDB26DEA0CF5158A29F" ;
-
-    use crypto::ed25519;
+pub fn get_msg_hash(msg: Vec<u8>) -> Vec<u8> {
     use crypto::sha2::Sha256;
     use crypto::digest::Digest;
-
-    let phrase = "purchase hobby popular celery evil fantasy someone party position gossip host gather";
     let mut seed = Sha256::new();
-    seed.input_str(&phrase);
+    seed.input(msg.as_slice());
+    let mut bytes = vec![0; seed.output_bytes()];
+    seed.result(&mut bytes);
+    bytes
+}
+
+pub fn generate_keypair(seed_phrase: &str) -> KeyPair {
+    use crypto::sha2::Sha256;
+    use crypto::digest::Digest;
+    let mut seed = Sha256::new();
+    seed.input_str(seed_phrase);
     let mut bytes = vec![0; seed.output_bytes()];
     seed.result(&mut bytes);
 
-    let (_priv, _publ) = ed25519::keypair(&bytes); // expects slice
-    println!("{:?}|{:?}", _priv.to_vec(), _publ.to_vec());
-    //let priv_key = decode_hex(VALIDATOR_PRIVATE_KEY).unwrap();
-    /*let secret = &SecretKey::from_bytes(priv_key.as_slice());
-    let s2 = &SecretKey::new(priv_key.as_slice());
-    match secret {
-        Ok(s) => {
-            let signer = EcdsaSigner::from(secret);
-            let pk_value = signer.public_key().unwrap();
-            println!("Public Key:{:?}", pk_value.as_bytes().to_vec());
-        }
-        Err(e) => println!("Error getting secret:{:?}", e)
-    }
+    let secp = Secp256k1::new();
+    let secret_key = SecretKey::from_slice(bytes.as_slice()).expect("32 bytes, within curve order");
+    let public_key = PublicKey::from_secret_key(&secp, &secret_key);
+    let keypair = KeyPair {
+        secret: secret_key,
+        public: public_key
+    };
+
+    // This is unsafe unless the supplied byte slice is the output of a cryptographic hash function.
+    // See the above example for how to use this library together with bitcoin_hashes.
+    let message = Message::from_slice(bytes.as_slice()).expect("32 bytes");
+    let sig = secp.sign(&message, &secret_key);
+    assert!(secp.verify(&message, &sig, &public_key).is_ok());
+    keypair
+}
 
 
-    std::process::abort();*/
+fn main() {
 
-/*    let sha_digest = Sha256::digest(pk_value.as_bytes());
+    //  address: cosmos14xffavlsek6zrjdfjhdjq0kkmn9ffx5v704k0r
+    //   pubkey: cosmospub1addwnpepq0665tlx0ef0z3c6p8c6pjfs7eh9pgj76yyymy9dx04qks3sjax0uyjp9jk
+    let VALIDATOR_ADDR: Vec<u8> = decode_hex("A9929EB3F0CDB421C9A995DB203ED6DCCA949A8C").unwrap();
+    let BOB_ADDR: Vec<u8> = decode_hex("7B72B907C4EE8B46D19B9C4A34BDA0CC285F6488").unwrap();
+
+    let phrase = "sheriff forum protect song adjust bike fury add ginger dance diamond seat orange bean insect scrap deposit barely scare have tortoise little quote bicycle";
+    let keypair = generate_keypair(phrase);
+
+   /* let mut sha256 = Sha256::new();
+    sha256.update()
+    let sha_digest = Sha256::digest(tm_pk.as_bytes());
     let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
     let mut addr = [0u8; 20];
     addr.copy_from_slice(&ripemd_digest[..20]);*/
-/*
+
     let coin = Coin {
         denom: "stake".to_string(),
         amount: "1000".to_string()
     };
 
     let msg = MsgSend {
-        from_address: decode_hex(VALIDATOR_ADDR).unwrap(),
-        to_address: decode_hex(BOB_ADDR).unwrap(),
+        from_address: Vec::from(VALIDATOR_ADDR),
+        to_address: Vec::from(BOB_ADDR),
         amount: vec![coin]
     };
 
@@ -306,10 +347,8 @@ fn main() {
         non_critical_extension_options: Vec::<prost_types::Any>::new(),
     };
 
-//    let pk_value = VALIDATOR_PUBKEY.to_string().into_bytes();
-
-    let sum = Some(PKSum::Secp256k1(pk_value.as_bytes().to_vec()));
-    let pk = Some(PublicKey { sum });
+    let sum = Some(PKSum::Ed25519(keypair.public.serialize().to_vec()));
+    let pk = Some(PK { sum });
 
     let single = Single { mode: 1 };
     let sum_single = Some(Sum::Single(single));
@@ -354,24 +393,24 @@ fn main() {
     // A protobuf serialization of a SignDoc
     let mut signdoc_buf = Vec::new();
     prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
-    //println!("{:?}", decode(signdoc_buf.clone()));
-    // Sign the sign_doc. This is not a proper signing yet.
 
-    let signed: FSignature = signer.sign(signdoc_buf.as_slice());
-    //println!("{:?}", signed_doc);
+    // Sign the doc
+    let secp = Secp256k1::new();
+    let message = Message::from_slice(get_msg_hash(signdoc_buf).as_slice()).expect("32 bytes");
+    let signature = secp.sign(&message, &keypair.secret);
+    assert!(secp.verify(&message, &signature, &keypair.public).is_ok());
 
     let tx_raw = TxRaw {
         body_bytes,
         auth_info_bytes: auth_bytes,
-        signatures: vec![signdoc_buf]
+        signatures: vec![signature.serialize_compact().to_vec()]
     };
 
     let mut txraw_buf = Vec::new();
     prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
     println!("TxRAW {:?}", decode(txraw_buf.clone()));
-
-*/
 }
+
 
 pub fn decode(v: Vec<u8>) -> String {
     let mut decoded: String = String::new();
