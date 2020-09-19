@@ -1,25 +1,19 @@
-// Signer
-//use signatory_secp256k1::{SecretKey, EcdsaSigner};
-//use ecdsa::curve::Secp256k1;
-
-//use ecdsa::FixedSignature;
-//use signature::Signer;
-//use signatory_secp256k1::signatory::sha2;
-//use signatory_secp256k1::signatory::public_key::PublicKeyed;
-use sha2::{Digest, Sha256};
 use std::num::ParseIntError;
-use tendermint::account::Id;
-use tendermint::public_key::Ed25519 as TMEd25519;
-use tendermint::public_key::PublicKey as TMPublicKey;
-use tendermint::TendermintKey;
-use crypto::ripemd160::Ripemd160;
-
 use secp256k1::{Secp256k1, Message, SecretKey, PublicKey};
 
-//use ed25519_dalek::{Keypair, Signature, Signer};
-use std::error::Error;
+use ed25519_dalek::Keypair;
+use prost::bytes::Buf;
 
-pub struct KeyPair {
+// Use this for account
+// use tendermint::amino_types::message::AminoMessage;
+// use tendermint::account::Id;
+// use tendermint::public_key::Ed25519 as TMEd25519;
+// use tendermint::public_key::PublicKey as TMPublicKey;
+// use tendermint::TendermintKey;
+// use subtle_encoding::{base64, bech32, hex};
+
+#[derive(Debug)]
+pub struct KeyPairSecp256k1 {
     pub secret: SecretKey,
     pub public: PublicKey
 }
@@ -242,23 +236,6 @@ pub struct TxRaw {
     pub signatures: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 
-// pub fn generate_keypair() -> Keypair {
-//     use crypto::sha2::Sha512;
-//     use crypto::digest::Digest;
-//
-//     let phrase = "sheriff forum protect song adjust bike fury add ginger dance diamond seat orange bean insect scrap deposit barely scare have tortoise little quote bicycle";
-//     let mut seed = Sha512::new();
-//     seed.input_str(&phrase);
-//     let mut bytes = vec![0; seed.output_bytes()];
-//     seed.result(&mut bytes);
-//     let seed_length = phrase.as_bytes().len();
-//     let keypair = Keypair::from_bytes(&bytes).unwrap();
-//
-//     //let (private_key, public_key) = ed25519::keypair(&bytes); // expects slice
-//     println!("Keypair |{:?}", keypair);
-//     keypair
-// }
-
 pub fn get_msg_hash(msg: Vec<u8>) -> Vec<u8> {
     use crypto::sha2::Sha256;
     use crypto::digest::Digest;
@@ -269,47 +246,89 @@ pub fn get_msg_hash(msg: Vec<u8>) -> Vec<u8> {
     bytes
 }
 
-pub fn generate_keypair(seed_phrase: &str) -> KeyPair {
+// This can be used to generate a ed25519 keypair
+pub fn generate_keypair_ed25519(mnemonic_phrase: &str) -> Keypair {
+    use crypto::sha2::Sha512;
+    use crypto::digest::Digest;
+
+    let mut seed = Sha512::new();
+    seed.input_str(&mnemonic_phrase);
+    let mut bytes = vec![0; seed.output_bytes()];
+    seed.result(&mut bytes);
+    let keypair = Keypair::from_bytes(&bytes);
+
+    println!("Keypair ED25519 |{:?}", keypair);
+    keypair.unwrap()
+}
+
+pub fn generate_keypair_secp256k1(mnemonic_phrase: &str) -> KeyPairSecp256k1 {
     use crypto::sha2::Sha256;
     use crypto::digest::Digest;
     let mut seed = Sha256::new();
-    seed.input_str(seed_phrase);
+    seed.input_str(mnemonic_phrase);
     let mut bytes = vec![0; seed.output_bytes()];
     seed.result(&mut bytes);
 
     let secp = Secp256k1::new();
     let secret_key = SecretKey::from_slice(bytes.as_slice()).expect("32 bytes, within curve order");
     let public_key = PublicKey::from_secret_key(&secp, &secret_key);
-    let keypair = KeyPair {
+    let keypair = KeyPairSecp256k1 {
         secret: secret_key,
         public: public_key
     };
 
-    // This is unsafe unless the supplied byte slice is the output of a cryptographic hash function.
-    // See the above example for how to use this library together with bitcoin_hashes.
+    // Verify keypair
     let message = Message::from_slice(bytes.as_slice()).expect("32 bytes");
     let sig = secp.sign(&message, &secret_key);
     assert!(secp.verify(&message, &sig, &public_key).is_ok());
+
     keypair
 }
 
+fn get_account(pk: Vec<u8>) -> Vec<u8> {
+    use crypto::sha2::Sha256;
+    use crypto::ripemd160::Ripemd160;
+    use crypto::digest::Digest;
+    let mut seed = Sha256::new();
+    seed.input(pk.as_slice());
+    let mut bytes = vec![0; seed.output_bytes()];
+    seed.result(&mut bytes);
+
+    let mut hash = Ripemd160::new();
+    hash.input(bytes.as_slice());
+    let mut acct = vec![0; hash.output_bytes()];
+    hash.result(&mut acct);
+    acct.to_vec()
+}
+
+// Couldnt get this to work because of conflicting with other secp256k1 library
+/*fn get_bech32(acct: &str) -> String {
+    let pk = PublicKey::Secp256k1(Secp256k1::from_bytes(&hex::decode_upper(acct)));
+    let tmkey = TendermintKey::AccountKey(pk);
+    tmkey.to_bech32("cosmospub")
+}*/
 
 fn main() {
 
-    //  address: cosmos14xffavlsek6zrjdfjhdjq0kkmn9ffx5v704k0r
-    //   pubkey: cosmospub1addwnpepq0665tlx0ef0z3c6p8c6pjfs7eh9pgj76yyymy9dx04qks3sjax0uyjp9jk
-    let VALIDATOR_ADDR: Vec<u8> = decode_hex("A9929EB3F0CDB421C9A995DB203ED6DCCA949A8C").unwrap();
-    let BOB_ADDR: Vec<u8> = decode_hex("7B72B907C4EE8B46D19B9C4A34BDA0CC285F6488").unwrap();
+    // Validator Keypair
+    let mnemonic_validator = "sheriff forum protect song adjust bike fury add ginger dance diamond seat orange bean insect scrap deposit barely scare have tortoise little quote bicycle";
+    let val_keypair = generate_keypair_secp256k1(mnemonic_validator);
+    println!("KeyPair:{:?}", val_keypair);
 
-    let phrase = "sheriff forum protect song adjust bike fury add ginger dance diamond seat orange bean insect scrap deposit barely scare have tortoise little quote bicycle";
-    let keypair = generate_keypair(phrase);
+    // Andy Keypair - replace this with mnemonic when creating key with `gaiad keys add andy`
+    let mnemonic_andy = "diary lucky winner bid matrix disagree disorder excuse soft depend live cattle gauge strong moment metal repeat weasel busy rent jacket bar stumble fever";
 
-   /* let mut sha256 = Sha256::new();
-    sha256.update()
-    let sha_digest = Sha256::digest(tm_pk.as_bytes());
-    let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
-    let mut addr = [0u8; 20];
-    addr.copy_from_slice(&ripemd_digest[..20]);*/
+    // Keypair - secp256k1
+    let andy_keypair = generate_keypair_secp256k1(mnemonic_andy);
+    let andy_pubkey= andy_keypair.public.serialize().to_vec();
+    println!("PubKey Andy:{:?}", andy_pubkey);
+    println!("Account Andy:{:?}", get_account(andy_keypair.public.serialize().to_vec()));
+
+    // Keypair - ed25519
+  //  let andy_keypair = generate_keypair_ed25519(mnemonic_andy);
+    //let andy_pubkey = andy_keypair.public.to_bytes().to_vec();
+  //  println!("PubKey Andy:{:?}", decode(andy_keypair.public.to_bytes().to_vec()));
+   // println!("Account Andy:{:?}", get_account(andy_keypair.public.to_bytes().to_vec()));
 
     let coin = Coin {
         denom: "stake".to_string(),
@@ -317,8 +336,8 @@ fn main() {
     };
 
     let msg = MsgSend {
-        from_address: Vec::from(VALIDATOR_ADDR),
-        to_address: Vec::from(BOB_ADDR),
+        from_address: get_account(val_keypair.public.serialize().to_vec()),
+        to_address: andy_pubkey.as_slice().to_bytes().to_vec(),
         amount: vec![coin]
     };
 
@@ -347,7 +366,7 @@ fn main() {
         non_critical_extension_options: Vec::<prost_types::Any>::new(),
     };
 
-    let sum = Some(PKSum::Ed25519(keypair.public.serialize().to_vec()));
+    let sum = Some(PKSum::Ed25519(val_keypair.public.serialize().to_vec()));
     let pk = Some(PK { sum });
 
     let single = Single { mode: 1 };
@@ -397,8 +416,8 @@ fn main() {
     // Sign the doc
     let secp = Secp256k1::new();
     let message = Message::from_slice(get_msg_hash(signdoc_buf).as_slice()).expect("32 bytes");
-    let signature = secp.sign(&message, &keypair.secret);
-    assert!(secp.verify(&message, &signature, &keypair.public).is_ok());
+    let signature = secp.sign(&message, &val_keypair.secret);
+    assert!(secp.verify(&message, &signature, &val_keypair.public).is_ok());
 
     let tx_raw = TxRaw {
         body_bytes,
@@ -408,11 +427,11 @@ fn main() {
 
     let mut txraw_buf = Vec::new();
     prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-    println!("TxRAW {:?}", decode(txraw_buf.clone()));
+    println!("TxRAW {:?}", to_hex(txraw_buf.clone()));
 }
 
 
-pub fn decode(v: Vec<u8>) -> String {
+pub fn to_hex(v: Vec<u8>) -> String {
     let mut decoded: String = String::new();
     for b in v.iter() {
         let byte = format!("{:01$x}",b, 2);
@@ -432,7 +451,7 @@ pub fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
 #[cfg(test)]
 mod tests {
 
-    use super::decode;
+    use super::to_hex;
 
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Article {
@@ -495,7 +514,7 @@ mod tests {
         prost::Message::encode(&article, &mut article_buf).unwrap();
 
         //println!("{:?}", convert(article_buf.clone()));
-        assert_eq!(decode(article_buf), adr_27);
+        assert_eq!(to_hex(article_buf), adr_27);
     }
 }
 
