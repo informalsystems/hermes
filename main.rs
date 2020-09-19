@@ -1,21 +1,17 @@
 // Signer
 use signatory_secp256k1::{SecretKey, EcdsaSigner};
 use ecdsa::curve::Secp256k1;
+
 use ecdsa::FixedSignature;
 use signature::Signer;
 use std::convert::TryInto;
-//use ecdsa::signature::digest::Digest;
 use signatory_secp256k1::signatory::sha2;
 use signatory_secp256k1::signatory::public_key::PublicKeyed;
-//use ripemd160::Ripemd160;
 use sha2::{Digest, Sha256};
-//use ripemd160::Ripemd160;
+use std::num::ParseIntError;
+use ecdsa::elliptic_curve::generic_array::GenericArray;
 
 pub type FSignature = FixedSignature<Secp256k1>;
-
-const VALIDATOR_ADDR: &'static str = "064A6FC334BADB830F1C7192641F6E99BC85BE0C";
-const BOB_ADDR: &'static str = "7B72B907C4EE8B46D19B9C4A34BDA0CC285F6488";
-const VALIDATOR_PUBKEY: &'static str = "0a90010a8d010a1c2f636f736d6f732e62616e6b2e763162657461312e4d736753656e64126d0a2d636f736d6f73317272663633707739366861397065767330613276327a67637973726e6e65657532356d716730122d636f736d6f7331306465746a703779613639356435766d6e333972663064716573353937657967336e6a7130331a0d0a057374616b65120431303030126e0a570a4f0a4d636f736d6f7370756231616464776e70657071306832797374337770393735646c666c71756c63666d6473367373717663366d766179656b677872797866326d37703579766b3675796d73616312040a02080112130a0d0a057374616b6512043130303110b0ea01";
 
 // Proto types
 
@@ -235,62 +231,53 @@ pub struct TxRaw {
     pub signatures: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Article {
-    #[prost(string, tag="1")]
-    pub title: std::string::String,
-    #[prost(string, tag="2")]
-    pub description: std::string::String,
-    #[prost(uint64, tag="3")]
-    pub created: u64,
-    #[prost(uint64, tag="4")]
-    pub updated: u64,
-    #[prost(bool, tag="5")]
-    pub public: bool,
-    #[prost(bool, tag="6")]
-    pub promoted: bool,
-    #[prost(enumeration="Type", tag="7")]
-    pub r#type: i32,
-    #[prost(enumeration="Review", tag="8")]
-    pub review: i32,
-    #[prost(string, repeated, tag="9")]
-    pub comments: ::std::vec::Vec<std::string::String>,
-    #[prost(string, repeated, tag="10")]
-    pub backlinks: ::std::vec::Vec<std::string::String>,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum Type {
-    Unset = 0,
-    Images = 1,
-    News = 2,
-}
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum Review {
-    Unspecified = 0,
-    Accepted = 1,
-    Rejected = 2,
-}
-
 fn main() {
-    let coin = Coin {
-        denom: "stake".to_string(),
-        amount: "1000".to_string()
-    };
+
+    // Signer
+    const VALIDATOR_ADDR: &'static str = "064A6FC334BADB830F1C7192641F6E99BC85BE0C";
+    const BOB_ADDR: &'static str = "7B72B907C4EE8B46D19B9C4A34BDA0CC285F6488";
+    const VALIDATOR_PRIVATE_KEY: &'static str = "BEB22FAAEE71750277290BA57606ABFC75AD02A0C4A08700F8CF6CFD9108D4D44FBCFD6F8293968AB8E414399BF8499D91A00EFA4AF42BDB26DEA0CF5158A29F" ;
+
+    use crypto::ed25519;
+    use crypto::sha2::Sha256;
+    use crypto::digest::Digest;
+
+    let phrase = "purchase hobby popular celery evil fantasy someone party position gossip host gather";
+    let mut seed = Sha256::new();
+    seed.input_str(&phrase);
+    let mut bytes = vec![0; seed.output_bytes()];
+    seed.result(&mut bytes);
+
+    let (_priv, _publ) = ed25519::keypair(&bytes); // expects slice
+    println!("{:?}|{:?}", _priv.to_vec(), _publ.to_vec());
+    //let priv_key = decode_hex(VALIDATOR_PRIVATE_KEY).unwrap();
+    /*let secret = &SecretKey::from_bytes(priv_key.as_slice());
+    let s2 = &SecretKey::new(priv_key.as_slice());
+    match secret {
+        Ok(s) => {
+            let signer = EcdsaSigner::from(secret);
+            let pk_value = signer.public_key().unwrap();
+            println!("Public Key:{:?}", pk_value.as_bytes().to_vec());
+        }
+        Err(e) => println!("Error getting secret:{:?}", e)
+    }
 
 
-    let signer = EcdsaSigner::from(&SecretKey::generate());
-    let pk_value = signer.public_key().unwrap();
+    std::process::abort();*/
 
 /*    let sha_digest = Sha256::digest(pk_value.as_bytes());
     let ripemd_digest = Ripemd160::digest(&sha_digest[..]);
     let mut addr = [0u8; 20];
     addr.copy_from_slice(&ripemd_digest[..20]);*/
+/*
+    let coin = Coin {
+        denom: "stake".to_string(),
+        amount: "1000".to_string()
+    };
 
     let msg = MsgSend {
-        from_address: VALIDATOR_ADDR.to_string().into_bytes(),
-        to_address: BOB_ADDR.to_string().into_bytes(),
+        from_address: decode_hex(VALIDATOR_ADDR).unwrap(),
+        to_address: decode_hex(BOB_ADDR).unwrap(),
         amount: vec![coin]
     };
 
@@ -367,7 +354,7 @@ fn main() {
     // A protobuf serialization of a SignDoc
     let mut signdoc_buf = Vec::new();
     prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
-    println!("{:?}", convert(signdoc_buf.clone()));
+    //println!("{:?}", decode(signdoc_buf.clone()));
     // Sign the sign_doc. This is not a proper signing yet.
 
     let signed: FSignature = signer.sign(signdoc_buf.as_slice());
@@ -381,38 +368,96 @@ fn main() {
 
     let mut txraw_buf = Vec::new();
     prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-    println!("TxRAW {:?}", convert(txraw_buf.clone()));
+    println!("TxRAW {:?}", decode(txraw_buf.clone()));
 
-    // ADR27 Test Case
-    let article = Article {
-        title: "The world needs change 🌳".to_string(),
-        description: "".to_string(),
-        created: 1596806111080,
-        updated: 0,
-        public: true,
-        promoted: false,
-        r#type: Type::News as i32,
-        review: Review::Unspecified as i32,
-        comments: vec!["Nice one".to_string(), "Thank you".to_string()],
-        backlinks: vec![]
-    };
-
-    let adr_27 = "0a1b54686520776f726c64206e65656473206368616e676520f09f8cb318e8bebec8bc2e280138024a084e696365206f6e654a095468616e6b20796f75".to_string();
-    // A protobuf serialization of a Article
-    let mut article_buf = Vec::new();
-    prost::Message::encode(&article, &mut article_buf).unwrap();
-
-    //println!("{:?}", convert(article_buf.clone()));
-    assert_eq!(convert(article_buf), adr_27);
+*/
 }
 
-fn convert(v: Vec<u8>) -> String {
-    let mut encoded: String = String::new();
+pub fn decode(v: Vec<u8>) -> String {
+    let mut decoded: String = String::new();
     for b in v.iter() {
         let byte = format!("{:01$x}",b, 2);
-        encoded.push_str(byte.as_str());
+        decoded.push_str(byte.as_str());
         // print!("{}",byte);
     }
-    encoded
+    decoded
 }
+
+pub fn decode_hex(s: &str) -> Result<Vec<u8>, ParseIntError> {
+    (0..s.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::decode;
+
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Article {
+        #[prost(string, tag="1")]
+        pub title: std::string::String,
+        #[prost(string, tag="2")]
+        pub description: std::string::String,
+        #[prost(uint64, tag="3")]
+        pub created: u64,
+        #[prost(uint64, tag="4")]
+        pub updated: u64,
+        #[prost(bool, tag="5")]
+        pub public: bool,
+        #[prost(bool, tag="6")]
+        pub promoted: bool,
+        #[prost(enumeration="Type", tag="7")]
+        pub r#type: i32,
+        #[prost(enumeration="Review", tag="8")]
+        pub review: i32,
+        #[prost(string, repeated, tag="9")]
+        pub comments: ::std::vec::Vec<std::string::String>,
+        #[prost(string, repeated, tag="10")]
+        pub backlinks: ::std::vec::Vec<std::string::String>,
+    }
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Type {
+        Unset = 0,
+        Images = 1,
+        News = 2,
+    }
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Review {
+        Unspecified = 0,
+        Accepted = 1,
+        Rejected = 2,
+    }
+
+    /// ADR-27
+    /// Ensure the test vector for Article.proto pass
+    #[test]
+    fn test_protobuf_serialization() {
+        let article = Article {
+            title: "The world needs change 🌳".to_string(),
+            description: "".to_string(),
+            created: 1596806111080,
+            updated: 0,
+            public: true,
+            promoted: false,
+            r#type: Type::News as i32,
+            review: Review::Unspecified as i32,
+            comments: vec!["Nice one".to_string(), "Thank you".to_string()],
+            backlinks: vec![]
+        };
+
+        let adr_27 = "0a1b54686520776f726c64206e65656473206368616e676520f09f8cb318e8bebec8bc2e280138024a084e696365206f6e654a095468616e6b20796f75".to_string();
+        // A protobuf serialization of a Article
+        let mut article_buf = Vec::new();
+        prost::Message::encode(&article, &mut article_buf).unwrap();
+
+        //println!("{:?}", convert(article_buf.clone()));
+        assert_eq!(decode(article_buf), adr_27);
+    }
+}
+
 
