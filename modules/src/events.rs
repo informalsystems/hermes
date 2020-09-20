@@ -11,6 +11,7 @@ use tendermint::block;
 
 use tendermint_rpc::event_listener::{ResultEvent, TMEventData};
 
+/// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEvent {
     NewBlock(NewBlock),

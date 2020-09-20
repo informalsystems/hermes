@@ -1,5 +1,5 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::CommitmentRoot;
+use crate::ics23_commitment::commitment::CommitmentRoot;
 
 use serde_derive::{Deserialize, Serialize};
 use tendermint::Hash;

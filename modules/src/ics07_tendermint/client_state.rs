@@ -1,10 +1,10 @@
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics23_commitment::CommitmentRoot;
+use crate::try_from_raw::TryFromRaw;
 
 use serde_derive::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{convert::TryInto, time::Duration};
+
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -14,9 +14,8 @@ pub struct ClientState {
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
-    pub latest_height: crate::Height,
-    pub frozen_height: crate::Height,
-    //pub proof_specs: Specs
+    pub latest_height: Height,
+    pub frozen_height: Height,
 }
 
 impl ClientState {
@@ -26,8 +25,8 @@ impl ClientState {
         trusting_period: Duration,
         unbonding_period: Duration,
         max_clock_drift: Duration,
-        latest_height: crate::Height,
-        frozen_height: crate::Height,
+        latest_height: Height,
+        frozen_height: Height,
         // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
@@ -73,12 +72,6 @@ impl ClientState {
     }
 }
 
-impl From<ConsensusState> for ClientState {
-    fn from(_: ConsensusState) -> Self {
-        todo!()
-    }
-}
-
 impl crate::ics02_client::state::ClientState for ClientState {
     fn chain_id(&self) -> String {
         self.chain_id.clone()
@@ -88,7 +81,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
         ClientType::Tendermint
     }
 
-    fn get_latest_height(&self) -> crate::Height {
+    fn latest_height(&self) -> Height {
         self.latest_height
     }
 
@@ -96,13 +89,44 @@ impl crate::ics02_client::state::ClientState for ClientState {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         self.frozen_height != Height(0)
     }
+}
 
-    fn verify_client_consensus_state(
-        &self,
-        _root: &CommitmentRoot,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        unimplemented!()
+impl TryFromRaw for ClientState {
+    type Error = Error;
+    type RawType = ibc_proto::ibc::tendermint::ClientState;
+
+    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+        Ok(Self {
+            chain_id: raw.chain_id,
+            trusting_period: raw
+                .trusting_period
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative trusting period"))?,
+            unbonding_period: raw
+                .unbonding_period
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing unbonding period"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative unbonding period"))?,
+            max_clock_drift: raw
+                .max_clock_drift
+                .ok_or_else(|| Kind::InvalidRawClientState.context("missing max clock drift"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidRawClientState.context("negative max clock drift"))?,
+            latest_height: decode_height(
+                raw.latest_height
+                    .ok_or_else(|| Kind::InvalidRawClientState.context("missing latest height"))?,
+            ),
+            frozen_height: decode_height(
+                raw.frozen_height
+                    .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
+            ),
+        })
     }
+}
+
+fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
+    Height(height.epoch_height) // FIXME: This is wrong as it does not take the epoch into account
 }
 
 #[cfg(test)]
@@ -136,8 +160,8 @@ mod tests {
             trusting_period: Duration,
             unbonding_period: Duration,
             max_clock_drift: Duration,
-            latest_height: crate::Height,
-            frozen_height: crate::Height,
+            latest_height: Height,
+            frozen_height: Height,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.

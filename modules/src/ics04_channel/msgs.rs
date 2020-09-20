@@ -3,7 +3,7 @@ use super::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::proofs::Proofs;
 use crate::tx_msg::Msg;
@@ -130,7 +130,7 @@ impl MsgChannelOpenTry {
             ),
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_init, None, proofs_height)
+            proofs: Proofs::new(proof_init, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -190,7 +190,7 @@ impl MsgChannelOpenAck {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_version: validate_version(counterparty_version)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_try, None, proofs_height)
+            proofs: Proofs::new(proof_try, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -248,7 +248,7 @@ impl MsgChannelOpenConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, proofs_height)
+            proofs: Proofs::new(proof_ack, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -359,7 +359,7 @@ impl MsgChannelCloseConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_init, None, proofs_height)
+            proofs: Proofs::new(proof_init, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -412,7 +412,7 @@ impl MsgPacket {
             packet: packet
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -474,7 +474,7 @@ impl MsgTimeout {
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -534,7 +534,7 @@ impl MsgAcknowledgement {
                 .validate()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement,
-            proofs: Proofs::new(proof, None, proof_height)
+            proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -576,7 +576,7 @@ mod tests {
         MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
         MsgChannelOpenTry,
     };
-    use crate::ics23_commitment::CommitmentProof;
+    use crate::ics23_commitment::commitment::CommitmentProof;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
 
@@ -723,7 +723,7 @@ mod tests {
             counterparty_port_id: "destport".to_string(),
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_init: get_dummy_proof(),
+            proof_init: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -920,7 +920,7 @@ mod tests {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
-            proof_try: get_dummy_proof(),
+            proof_try: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -1043,7 +1043,7 @@ mod tests {
         let default_params = OpenConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_ack: get_dummy_proof(),
+            proof_ack: get_dummy_proof().into(),
             proof_height: 10,
         };
 
@@ -1253,7 +1253,7 @@ mod tests {
         let default_params = CloseConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            proof_init: get_dummy_proof(),
+            proof_init: get_dummy_proof().into(),
             proof_height: 10,
         };
 

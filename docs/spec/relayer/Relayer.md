@@ -74,11 +74,15 @@ succeed. The interface between stage 2 and stage 3 is a set of datagrams.
 We assume that the corresponding light client is correctly installed on each chain. 
 
 ```golang
-func handleEvent(ev, chainA, chainB) {
+func handleEvent(ev, chainA) {
     // NOTE: we don't verify if event data are valid at this point. We trust full node we are connected to
     // until some verification fails. Otherwise, we can have Stage 2 (datagram creation being done first).
-   
+    
     // Stage 1.
+    // Determine destination chain
+    chainB = GetDestinationInfo(ev, chainA)   
+
+    // Stage 2.
     // Update on `chainB` the IBC client for `chainA` to height `>= targetHeight`.
     targetHeight = ev.height + 1
     // See the code for `updateIBCClient` below.
@@ -87,22 +91,15 @@ func handleEvent(ev, chainA, chainB) {
        return error
     }
 
-    // Stage 2.
-    // Create the IBC datagrams including `ev` & verify them.
-    
-    sh = chainA.lc.get_header(installedHeight)
-    while (true) { 
-        datagrams = pendingDatagrams(installedHeight - 1, chainA, chainB)
-        if verifyProof(datagrams, sh.appHash) {
-            break;  
-        }
-        // Full node for `chainA` is faulty. Connect to different node of `chainA` and retry.
-        replaceFullNode(src)        
-     }
-    
     // Stage 3.
+    // Create the IBC datagrams including `ev` & verify them.
+    datagram = createDatagram(ev, chainA, chainB, installedHeight)
+    
+    // Stage 4.
     // Submit datagrams.
-    chainB.submit(datagrams)
+    if datagram != nil {
+        chainB.submit(datagram)
+    }   
 }
 
 
@@ -199,12 +196,12 @@ will eventually have access to a correct full node.
 
 ### Data availability
 
-Note that data written to a store at height h as part of executing block b (b.Height = h) is effectively committed by 
+Note that data written to a store at height *h* as part of executing block *b* (`b.Height = h`) is effectively committed by 
 the next block (at height h+1). The reason is the fact that the data store root hash as an effect of executing block at 
-height h is part of the block header at height h+1. Therefore data read at height h is available until time 
-`t = b.Header.Time + UNBONDING_PERIOD`, where `b.Header.Height = h+1`. After time t we cannot trust that data anymore.
-Note that data present in the store are re-validated by each new block: data added/modified at block h are still 
-valid even if not altered after as they are still "covered" by the root hash of the store. 
+height h is part of the block header at height h+1. Therefore, data read at height h is available until time 
+`t = b.Header.Time + UNBONDING_PERIOD`, where `b.Header.Height = h+1`. After time *t* we cannot trust that data anymore.
+Note that data present in the store are re-validated by each new block: data added/modified at block *h* are still 
+valid even if not altered after, as they are still "covered" by the root hash of the store. 
 
 Therefore UNBONDING_PERIOD gives absolute time bound during which relayer needs to transfer data read at source chain
 to the destination chain. As we will explain below, due to fork detection and accountability protocols, the effective 
@@ -213,17 +210,19 @@ data availability period will be shorter than UNBONDING_PERIOD.
 ### Data verification
 
 As connected chains in IBC do not blindly trust each other, data coming from the opposite chain must be verified at
-the destination before being acted upon. If we assume that data d is read from the data store of a chain at height h,
- 
-
-Data verification in IBC is implemented by relying on the concept of light client.
+the destination before being acted upon. Data verification in IBC is implemented by relying on the concept of light client.
 Light client is a process that by relying on an initial trusted header (subjective initialisation), verifies and maintains 
 set of trusted headers. Note that a light client does not maintain full blockchain and does not execute (verify) application
 transitions. It operates by relying on the Tendermint security model, and by applying header verification logic that operates
 only on signed headers (header + corresponding commit). 
 
-More details about light client assumptions and protocols can be found here. For the purpose of this document, we assume
-that a relayer has access to the light client node that provides trusted headers.  
+More details about light client assumptions and protocols can be found 
+[here](https://github.com/tendermint/spec/tree/master/rust-spec/lightclient). For the purpose of this document, we assume
+that a relayer has access to the light client node that provides trusted headers.
+Given a data d read at a given path at height h with a proof p, we assume existence of a function 
+`verifyMembership(header.AppHash, h, proof, path, d)` that returns `true` if data was committed by the corresponding
+chain at height *h*. The trusted header is provided by the corresponding light client. 
+  
 
   
      

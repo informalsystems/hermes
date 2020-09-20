@@ -5,43 +5,57 @@
  channel datagrams
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, RelayerDefinitions         
+EXTENDS Integers, FiniteSets, RelayerDefinitions         
 
 (***************************************************************************
  Channel datagram handlers
  ***************************************************************************)
- 
+
 \* Handle "ChanOpenInit" datagrams
 HandleChanOpenInit(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenInit" datagrams, with a valid channel ID
     LET chanOpenInitDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenInit"
                             /\ dgr.channelID = GetChannelID(chainID)} IN
     
     \* if there are valid "ChanOpenInit" datagrams and the connection is not "UNINIT", 
-    \* create a new channel end and update the chain
-    IF chanOpenInitDgrs /= {} /\ chain.connectionEnd.state /= "UNINIT" 
-                              /\ chain.connectionEnd.channelEnd.state = "UNINIT"
+    \* initialize the channel end and update the chain
+    IF /\ chanOpenInitDgrs /= AsSetDatagrams({}) 
+       /\ chain.connectionEnd.state /= "UNINIT" 
+       /\ channelEnd.state = "UNINIT"
     THEN LET chanOpenInitDgr == CHOOSE dgr \in chanOpenInitDgrs : TRUE IN
-         LET chanOpenInitChannelEnd == [
-             state |-> "INIT",
-             channelID |-> chanOpenInitDgr.channelID,
-             counterpartyChannelID |-> chanOpenInitDgr.counterpartyChannelID
-         ] IN 
-         LET chanOpenInitConnectionEnd == [
+         LET chanOpenInitChannelEnd == 
+             IF channelEnd.order = "ORDERED" 
+             THEN AsChannelEnd([channelEnd EXCEPT 
+                    !.state = "INIT",
+                    !.channelID = chanOpenInitDgr.channelID,
+                    !.counterpartyChannelID = chanOpenInitDgr.counterpartyChannelID,
+                    !.nextSendSeq = 1,
+                    !.nextRcvSeq = 1,
+                    !.nextAckSeq = 1
+                  ])
+             ELSE AsChannelEnd([channelEnd EXCEPT 
+                    !.state = "INIT",
+                    !.channelID = chanOpenInitDgr.channelID,
+                    !.counterpartyChannelID = chanOpenInitDgr.counterpartyChannelID
+                  ]) IN 
+         LET chanOpenInitConnectionEnd == AsConnectionEnd([
              chain.connectionEnd EXCEPT !.channelEnd = chanOpenInitChannelEnd
-         ] IN
-         LET chanOpenInitChain == [
+         ]) IN
+         LET chanOpenInitChain == AsChainStore([
             chain EXCEPT !.connectionEnd = chanOpenInitConnectionEnd            
-         ] IN
-        
-         \* TODO: when handling packets later on, set nextSequenceRecv and nextSequenceSend to 1
+         ]) IN
+         
          chanOpenInitChain
-    \* otherwise, do not update the chain     
+    \* otherwise, do not update the chain store
     ELSE chain
 
 \* Handle "ChanOpenTry" datagrams
 HandleChanOpenTry(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenTry" datagrams, with a valid channel ID
     LET chanOpenTryDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenTry"
@@ -50,35 +64,49 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
     
     \* if there are valid "ChanOpenTry" datagrams and the connection is "OPEN", 
     \* update the channel end
-    IF chanOpenTryDgrs /= {} /\ chain.connectionEnd.state = "OPEN" 
+    IF /\ chanOpenTryDgrs /= AsSetDatagrams({}) 
+       /\ chain.connectionEnd.state = "OPEN" 
     THEN LET chanOpenTryDgr == CHOOSE dgr \in chanOpenTryDgrs : TRUE IN
-         LET chanOpenTryChannelEnd == [
-             state |-> "TRYOPEN",
-             channelID |-> chanOpenTryDgr.channelID,
-             counterpartyChannelID |-> chanOpenTryDgr.counterpartyChannelID
-            ] IN 
+         LET chanOpenTryChannelEnd == 
+             IF channelEnd.order = "ORDERED" 
+             THEN AsChannelEnd([channelEnd EXCEPT
+                    !.state = "TRYOPEN",
+                    !.channelID = chanOpenTryDgr.channelID,
+                    !.counterpartyChannelID = chanOpenTryDgr.counterpartyChannelID,
+                    !.nextSendSeq = 1,
+                    !.nextRcvSeq = 1,
+                    !.nextAckSeq = 1
+                  ])
+             ELSE AsChannelEnd([channelEnd EXCEPT
+                    !.state = "TRYOPEN",
+                    !.channelID = chanOpenTryDgr.channelID,
+                    !.counterpartyChannelID = chanOpenTryDgr.counterpartyChannelID
+                  ]) IN 
        
-         IF \/ chain.connectionEnd.channelEnd.state = "UNINIT"
-            \/ /\ chain.connectionEnd.channelEnd.state = "INIT" 
-               /\ chain.connectionEnd.channelEnd.counterpartyChannelID 
+         IF \/ channelEnd.state = "UNINIT"
+            \/ /\ channelEnd.state = "INIT" 
+               /\ channelEnd.counterpartyChannelID 
                     = chanOpenTryChannelEnd.counterpartyChannelID
          \* if the channel end on the chain is in "UNINIT" or it is in "INIT",  
          \* but the fields are the same as in the datagram, update the channel end     
-         THEN LET chanOpenTryConnectionEnd == [
+         THEN LET chanOpenTryConnectionEnd == AsConnectionEnd([
                   chain.connectionEnd EXCEPT !.channelEnd = chanOpenTryChannelEnd
-              ] IN
-              LET chanOpenTryChain == [
+              ]) IN
+              LET chanOpenTryChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = chanOpenTryConnectionEnd
-              ] IN
-                
+              ]) IN
+                 
               chanOpenTryChain
-         \* otherwise, do not update the chain
+
+         \* otherwise, do not update the chain store
          ELSE chain
-    \* otherwise, do not update the chain     
+    \* otherwise, do not update the chain store    
     ELSE chain
 
 \* Handle "ChanOpenAck" datagrams
 HandleChanOpenAck(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenAck" datagrams, with a valid channel ID
     LET chanOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ChanOpenAck"
@@ -86,32 +114,37 @@ HandleChanOpenAck(chainID, chain, datagrams) ==
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanOpenAck" datagrams, update the channel end
-    IF chanOpenAckDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
+    IF /\ chanOpenAckDgrs /= AsSetDatagrams({}) 
+       /\ chain.connectionEnd.state = "OPEN"
     THEN \* if the channel end on the chain is in "INIT" or it is in "TRYOPEN",   
          \* update the channel end   
-         IF \/ chain.connectionEnd.channelEnd.state = "INIT"
-            \/ chain.connectionEnd.channelEnd.state = "TRYOPEN"
+         IF \/ channelEnd.state = "INIT"
+            \/ channelEnd.state = "TRYOPEN"
          THEN LET chanOpenAckDgr == CHOOSE dgr \in chanOpenAckDgrs : TRUE IN
-              LET chanOpenAckChannelEnd == [
-                  chain.connectionEnd.channelEnd EXCEPT !.state = "OPEN",
-                                                        !.channelID = chanOpenAckDgr.channelID
-              ] IN
-              LET chanOpenAckConnectionEnd == [ 
+              LET chanOpenAckChannelEnd == AsChannelEnd([
+                  channelEnd EXCEPT 
+                    !.state = "OPEN",
+                    !.channelID = chanOpenAckDgr.channelID
+              ]) IN
+              LET chanOpenAckConnectionEnd == AsConnectionEnd([ 
                   chain.connectionEnd EXCEPT !.channelEnd = chanOpenAckChannelEnd
-                ] IN
-              LET chanOpenAckChain == [
+              ]) IN
+              LET chanOpenAckChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = chanOpenAckConnectionEnd
-                ] IN
+              ]) IN
               
-              chanOpenAckChain                
-         \* otherwise, do not update the chain
+              chanOpenAckChain
+
+         \* otherwise, do not update the chain store
          ELSE chain
-    \* otherwise, do not update the chain     
+    \* otherwise, do not update the chain store     
     ELSE chain
     
 
 \* Handle "ChanOpenConfirm" datagrams
 HandleChanOpenConfirm(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanOpenConfirm" datagrams, with a valid channel ID 
     LET chanOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ChanOpenConfirm"
@@ -119,57 +152,64 @@ HandleChanOpenConfirm(chainID, chain, datagrams) ==
                                 /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanOpenConfirm" datagrams, update the channel end
-    IF chanOpenConfirmDgrs /= {} /\ chain.connectionEnd.state = "OPEN"
+    IF /\ chanOpenConfirmDgrs /= AsSetDatagrams({}) 
+       /\ chain.connectionEnd.state = "OPEN"
     THEN \* if the channel end on the chain is in "TRYOPEN", update the channel end 
-         IF chain.connectionEnd.channelEnd.state = "TRYOPEN"
+         IF channelEnd.state = "TRYOPEN"
          THEN LET chanOpenConfirmDgr == CHOOSE dgr \in chanOpenConfirmDgrs : TRUE IN
-              LET chanOpenConfirmChannelEnd == [
-                  chain.connectionEnd.channelEnd EXCEPT !.state = "OPEN",
-                                                        !.channelID = chanOpenConfirmDgr.channelID
-              ] IN
-              LET chanOpenConfirmConnectionEnd == [ 
+              LET chanOpenConfirmChannelEnd == AsChannelEnd([
+                  channelEnd EXCEPT 
+                    !.state = "OPEN",
+                    !.channelID = chanOpenConfirmDgr.channelID
+              ]) IN
+              LET chanOpenConfirmConnectionEnd == AsConnectionEnd([ 
                   chain.connectionEnd EXCEPT !.channelEnd = chanOpenConfirmChannelEnd
-              ] IN
-              LET chanOpenConfirmChain == [
+              ]) IN
+              LET chanOpenConfirmChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = chanOpenConfirmConnectionEnd
-              ] IN
-              
-              chanOpenConfirmChain                
-         \* otherwise, do not update the chain
+              ]) IN
+                 
+              chanOpenConfirmChain
+         \* otherwise, do not update the chain store
+         
          ELSE chain
-    \* otherwise, do not update the chain     
-    ELSE chain 
+    \* otherwise, do not update the chain store
+    ELSE chain
     
 \* Handle "ChanCloseInit" datagrams
 HandleChanCloseInit(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanCloseInit" datagrams, with a valid channel ID 
     LET chanCloseInitDgrs == {dgr \in datagrams : 
                               /\ dgr.type = "ChanCloseInit"
                               /\ dgr.channelID = GetChannelID(chainID)} IN
     
     \* if there are valid "ChanCloseInit" datagrams
-    IF /\ chanCloseInitDgrs /= {} 
+    IF /\ chanCloseInitDgrs /= AsSetDatagrams({})
     \* and the channel end is neither UNINIT nor CLOSED
-       /\ chain.connectionEnd.channelEnd.state \notin {"UNINIT", "CLOSED"}
+       /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
     \* and the connection end is OPEN   
        /\ chain.connectionEnd.state = "OPEN"
     THEN \* then close the channel end
-         LET chanCloseInitChannelEnd == [
-             chain.connectionEnd.channelEnd EXCEPT !.state = "CLOSED"
-         ] IN
-         LET chanCloseInitConnectionEnd == [ 
+         LET chanCloseInitChannelEnd == AsChannelEnd([
+             channelEnd EXCEPT !.state = "CLOSED"
+         ]) IN
+         LET chanCloseInitConnectionEnd == AsConnectionEnd([ 
              chain.connectionEnd EXCEPT !.channelEnd = chanCloseInitChannelEnd
-         ] IN
-         LET chanCloseInitChain == [
+         ]) IN
+         LET chanCloseInitChain == AsChainStore([
              chain EXCEPT !.connectionEnd = chanCloseInitConnectionEnd
-         ] IN
+         ]) IN
          
-         chanCloseInitChain              
-    \* otherwise, do not update the chain
+         chanCloseInitChain
+    \* otherwise, do not update the chain store
     ELSE chain
 
 \* Handle "ChanCloseConfirm" datagrams
 HandleChanCloseConfirm(chainID, chain, datagrams) ==
+    \* get chainID's channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
     \* get "ChanCloseConfirm" datagrams, with a valid channel ID 
     LET chanCloseConfirmDgrs == {dgr \in datagrams : 
                               /\ dgr.type = "ChanCloseConfirm"
@@ -177,27 +217,27 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
                               /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     \* if there are valid "ChanCloseConfirm" datagrams
-    IF /\ chanCloseConfirmDgrs /= {} 
+    IF /\ chanCloseConfirmDgrs /= AsSetDatagrams({})
     \* and the channel end is neither UNINIT nor CLOSED
-       /\ chain.connectionEnd.channelEnd.state \notin {"UNINIT", "CLOSED"}
+       /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
     \* and the connection end is OPEN   
        /\ chain.connectionEnd.state = "OPEN"
     THEN \* then close the channel end
-         LET chanCloseInitChannelEnd == [
-             chain.connectionEnd.channelEnd EXCEPT !.state = "CLOSED"
-         ] IN
-         LET chanCloseInitConnectionEnd == [ 
-             chain.connectionEnd EXCEPT !.channelEnd = chanCloseInitChannelEnd
-         ] IN
-         LET chanCloseInitChain == [
-             chain EXCEPT !.connectionEnd = chanCloseInitConnectionEnd
-         ] IN
+         LET chanCloseConfirmChannelEnd == AsChannelEnd([
+             channelEnd EXCEPT !.state = "CLOSED"
+         ]) IN
+         LET chanCloseConfirmConnectionEnd == AsConnectionEnd([ 
+             chain.connectionEnd EXCEPT !.channelEnd = chanCloseConfirmChannelEnd
+         ]) IN
+         LET chanCloseConfirmChain == AsChainStore([
+             chain EXCEPT !.connectionEnd = chanCloseConfirmConnectionEnd
+         ]) IN
          
-         chanCloseInitChain              
-    \* otherwise, do not update the chain
-    ELSE chain    
+         chanCloseConfirmChain
+    \* otherwise, do not update the chain store
+    ELSE chain
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jul 09 09:13:10 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Sep 10 15:43:25 CEST 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska

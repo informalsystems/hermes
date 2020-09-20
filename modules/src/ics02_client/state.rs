@@ -1,5 +1,5 @@
 use super::client_type::ClientType;
-use crate::ics23_commitment::CommitmentRoot;
+use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::Height;
 
 #[dyn_clonable::clonable]
@@ -26,16 +26,8 @@ pub trait ClientState: Clone + std::fmt::Debug {
     fn client_type(&self) -> ClientType;
 
     /// Latest height of consensus state
-    fn get_latest_height(&self) -> Height;
+    fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
-
-    /// Verifies a proof of the consensus state of the specified client stored on the target machine.
-    /// FIXME: Definition is incomplete.
-    ///        See https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#required-functions
-    fn verify_client_consensus_state(
-        &self,
-        root: &CommitmentRoot,
-    ) -> Result<(), Box<dyn std::error::Error>>;
 }

@@ -6,8 +6,8 @@ use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
-use crate::ics23_commitment::CommitmentRoot;
-use crate::Height;
+use crate::ics23_commitment::commitment::CommitmentRoot;
+use tendermint::block::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

@@ -30,14 +30,16 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, Sequences, ICS3Types
+EXTENDS Naturals, FiniteSets, Sequences, ICS3Utils, ICS3Types
 
 
 CONSTANTS MaxChainHeight,   \* Maximum height of the local chain.
           ConnectionIDs,    \* The set of valid connection IDs.
           ClientIDs,        \* The set of valid client IDs.
-          MaxBufLen         \* Maximum length of the input and output buffers.
-
+          MaxBufLen,        \* Maximum length of the input and output buffers.
+          MaxVersionNr,     \* Maximum version number
+          ChainID,          \* The chainID
+          VersionPickMode   \* the mode for picking versions
 
 ASSUME Cardinality(ConnectionIDs) >= 1
 ASSUME Cardinality(ClientIDs) >= 1
@@ -98,6 +100,9 @@ moduleVars ==
  *)
 MAX(a, b) ==
     IF a > b THEN a ELSE b
+    
+MAXSet(S) == 
+    CHOOSE x \in S: \A y \in S: y <= x         
 
 
 (* Validates a connection parameter.
@@ -125,7 +130,6 @@ ValidConnectionParameters(para) ==
 ValidLocalEnd(para) ==
     /\ para.localEnd.connectionID \in ConnectionIDs
     /\ para.localEnd.clientID \in ClientIDs
-
 
 (* Operator for reversing the connection ends.
 
@@ -179,6 +183,13 @@ VerifyClientProof(cp) ==
     /\ cp.latestHeight \in cp.consensusHeights (* Client verification step. *)
 
 
+(* Get all possible version sequences from a set of versions.
+ *)     
+VersionSetAsVersionSequences(S) ==
+    LET E == 1..Cardinality(S) IN
+    LET AllSeqs == [E -> S] IN
+    {seq \in AllSeqs : seq \in AllVersionSeqs}    
+
 (***************************************************************************
  Connection Handshake Module actions & operators.
  ***************************************************************************)
@@ -194,6 +205,10 @@ NewStore(newCon) ==
                   !.latestHeight = @ + 1]
 
 
+(**********************************
+ ICS3 spec related to Init messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Init msg.
 
     If any of these preconditions does not hold, the message
@@ -203,6 +218,19 @@ PreconditionsInitMsg(m) ==
     /\ ValidLocalEnd(m.parameters)  (* Basic validation of localEnd in parameters. *)
     /\ store.connection.state = "UNINIT"
 
+(* Reply message to an ICS3MsgInit message.
+ *)
+MsgInitReply(chainStore) ==
+    LET conn == chainStore.connection
+        myConnProof == GetConnProof(conn)
+        myClientProof == GetClientProof
+        replyMsg == [parameters |-> FlipConnectionParameters(conn.parameters),
+                     type |-> "ICS3MsgTry",
+                     proofHeight |-> chainStore.latestHeight,
+                     connProof |-> myConnProof,
+                     clientProof |-> myClientProof,
+                     version |-> conn.version] IN
+    replyMsg
 
 (* Handles a "ICS3MsgInit" message 'm'.
 
@@ -213,22 +241,18 @@ PreconditionsInitMsg(m) ==
  *)
 HandleInitMsg(m) ==
     LET newCon == [parameters |-> m.parameters,
-                   state      |-> "INIT"]
-        newStore == NewStore(newCon)
-        myConnProof == GetConnProof(newCon)
-        myClientProof == GetClientProof
-        replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     type |-> "ICS3MsgTry",
-                     proofHeight |-> newStore.latestHeight,
-                     connProof |-> myConnProof,
-                     clientProof |-> myClientProof] IN
+                   state      |-> "INIT", 
+                   version |-> store.connection.version]
+        newStore == NewStore(newCon) IN
     IF PreconditionsInitMsg(m)
-    THEN [out |-> Append(outBuf, replyMsg),
-          store |-> newStore]
-    ELSE [out |-> outBuf,
-          store |-> store]
+    THEN {newStore}
+    ELSE {store}
 
 
+(**********************************
+ ICS3 spec related to Try messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Try msg.
 
     If any of these preconditions does not hold, the message
@@ -242,28 +266,78 @@ PreconditionsTryMsg(m) ==
     /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
     /\ VerifyConnProof(m.connProof, "INIT", m.parameters)
     /\ VerifyClientProof(m.clientProof)
+    \* check if the locally stored versions overlap with the versions sent in 
+    \* the ICS3MsgTry message
+    /\ VersionSequencesOverlap(store.connection.version, m.version) 
 
+(* Pick a version depending on the value of the constant VersionPickMode 
+
+ - if VersionPickMode = "onTryNonDet" or VersionPickMode = "overwrite" 
+    -> pick a version from (m.version \intersect store.connection.version) non-deterministically,  
+       send the picked version to counterparty in ICS3MsgAck
+ - if VersionPickMode = "onTryNonDet"
+    -> pick a version from (m.version \intersect store.connection.version) deterministically 
+       (e.g., maximum), send the picked version to counterparty in ICS3MsgAck
+ - otherwise (version picking is done when handling ICS3MsgAck)
+    -> send the value of the intersection (m.version \intersect store.connection.version) 
+       to counterparty in ICS3MsgConfirm             
+*)
+PickVersionOnTry(m) ==
+    \* get a set of feasible versions -- 
+    \* the intersection between the local and the versions sent in the message
+    LET feasibleVersions == SequenceAsSet(m.version) 
+                            \intersect 
+                            SequenceAsSet(store.connection.version) IN
+ 
+    IF feasibleVersions /= {}                       
+    THEN IF \/ VersionPickMode = "overwrite"
+            \/ VersionPickMode = "onTryNonDet"
+         \* the version is picked non-deterministically
+         THEN {<<newVersion>> : newVersion \in feasibleVersions}
+         ELSE IF VersionPickMode = "onTryDet"
+              \* the version is picked deterministically,
+              \* using MAXSet as a deterministic choice function 
+              THEN {<<MAXSet(feasibleVersions)>>} 
+              \* the version will be picked when handling ICS3MsgAck,
+              \* send a sequence which consists of elements in the 
+              \* set feasibleVersions 
+              ELSE VersionSetAsVersionSequences(feasibleVersions)
+    ELSE {}
+
+(* Reply message to an ICS3MsgTry message.
+ *)
+MsgTryReply(chainStore) ==
+    LET conn == chainStore.connection
+        myConnProof == GetConnProof(conn)
+        myClientProof == GetClientProof 
+        replyMsg == [parameters |-> FlipConnectionParameters(conn.parameters), 
+                     type |-> "ICS3MsgAck",
+                     proofHeight |-> chainStore.latestHeight,
+                     connProof |-> myConnProof,
+                     clientProof |-> myClientProof,
+                     version |-> conn.version] IN
+    replyMsg
 
 (* Handles a "ICS3MsgTry" message.
  *)
 HandleTryMsg(m) ==
-    LET newCon == [parameters |-> m.parameters, 
-                   state |-> "TRYOPEN"]
-        newStore == NewStore(newCon)
-        myConnProof == GetConnProof(newCon)
-        myClientProof == GetClientProof
-        replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     type |-> "ICS3MsgAck",
-                     proofHeight |-> newStore.latestHeight,
-                     connProof |-> myConnProof,
-                     clientProof |-> myClientProof] IN
-    IF PreconditionsTryMsg(m)
-    THEN [out |-> Append(outBuf, replyMsg),
-          store |-> newStore]
-    ELSE [out |-> outBuf,
-          store |-> store]
+    \* create a set of new connections, whose versions 
+    \* were picked in OnTryPickVersion
+    LET newConnSet == [parameters : {m.parameters}, 
+                       state : {"TRYOPEN"}, 
+                       version : PickVersionOnTry(m)]
+        newStoreSet == {NewStore(newConn) : newConn \in newConnSet} IN
+        
+    IF /\ PreconditionsTryMsg(m)
+       /\ newStoreSet /= {}
+    THEN newStoreSet
+    ELSE {store}
 
 
+(**********************************
+ ICS3 spec related to Ack messages.
+ **********************************)
+ 
 (* State predicate, guarding the handler for the Ack msg. 
  *)
 PreconditionsAckMsg(m) ==
@@ -273,25 +347,80 @@ PreconditionsAckMsg(m) ==
     /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
     /\ VerifyConnProof(m.connProof, "TRYOPEN", m.parameters)
     /\ VerifyClientProof(m.clientProof)
+    /\ IF VersionPickMode /= "overwrite"
+       \* check if the locally stored versions overlap with the versions sent in 
+       \* the ICS3MsgAck message if VersionPickMode /= "overwrite"
+       THEN VersionSequencesOverlap(store.connection.version, m.version)
+       \* if VersionPickMode = "overwrite", do not check for version overlap
+       ELSE TRUE
+    
+(* Pick a version depending on the value of the constant VersionPickMode 
+ 
+ - if VersionPickMode = "overwrite"
+    -> take the picked version from the message
+ - if VersionPickMode = "onAckNonDet"
+    -> pick a version from (m.version \intersect store.connection.version) non-deterministically,  
+       send the picked version to counterparty in ICS3MsgConfirm
+ - if VersionPickMode = "onAckDet"
+    -> pick a version from (m.version \intersect store.connection.version) deterministically 
+       (e.g., maximum), send the picked version to counterparty in ICS3MsgConfirm
+ - otherwise (version picking was done when handling ICS3MsgTry)
+    -> use m.version if (m.version \intersect store.connection.version) is not empty 
+       (checked in PreconditionsAckMsg)
 
+*)
+PickVersionOnAck(m) ==
+    \* get a set of feasible versions -- 
+    \* the intersection between the local and the versions sent in the message 
+    LET feasibleVersions == SequenceAsSet(m.version) 
+                            \intersect 
+                            SequenceAsSet(store.connection.version) IN
+    
+    IF VersionPickMode = "overwrite"
+    \* take the picked version from the message 
+    THEN {m.version}
+    ELSE IF feasibleVersions /= {}                       
+         THEN IF VersionPickMode = "onAckNonDet"
+              \* the version is picked non-deterministically 
+              THEN {<<newVersion>> : newVersion \in feasibleVersions}
+              ELSE IF VersionPickMode = "onAckDet"
+                   \* the version is picked deterministically,
+                   \* using MAXSet as a deterministic choice function  
+                   THEN {<<MAXSet(feasibleVersions)>>}
+                   \* the version was picked when handling ICS3MsgTry, 
+                   \* use the picked version from the ICS3MsgAck message
+                   ELSE {m.version}
+         ELSE {}
+    
+(* Reply message to an ICS3MsgAck message.
+ *)
+MsgAckReply(chainStore) ==
+    LET conn == chainStore.connection
+        myConnProof == GetConnProof(conn)
+        replyMsg == [parameters |-> FlipConnectionParameters(conn.parameters),
+                     proofHeight |-> chainStore.latestHeight,
+                     type |-> "ICS3MsgConfirm",
+                     connProof |-> myConnProof,
+                     version |-> conn.version] IN
+    replyMsg                     
 
 (* Handles a "ICS3MsgAck" message.
  *)
 HandleAckMsg(m) ==
-    LET newCon == [parameters |-> m.parameters, 
-                   state |-> "OPEN"]
-        newStore == NewStore(newCon)
-        myConnProof == GetConnProof(newCon)
-        replyMsg == [parameters |-> FlipConnectionParameters(m.parameters),
-                     proofHeight |-> newStore.latestHeight,
-                     type |-> "ICS3MsgConfirm",
-                     connProof |-> myConnProof] IN
-    IF PreconditionsAckMsg(m)
-    THEN [out |-> Append(outBuf, replyMsg),
-          store |-> newStore]
-    ELSE [out |-> outBuf,
-          store |-> store]
+    LET newConnSet == [parameters : {m.parameters}, 
+                       state : {"OPEN"},
+                       version : PickVersionOnAck(m)]
+        newStoreSet == {NewStore(newConn) : newConn \in newConnSet} IN 
+    
+    IF /\ PreconditionsAckMsg(m)
+       /\ newStoreSet /= {}
+    THEN newStoreSet
+    ELSE {store}
 
+
+(**************************************
+ ICS3 spec related to Confirm messages.
+ **************************************)
 
 (* State predicate, guarding the handler for the Confirm msg. 
  *)
@@ -300,19 +429,63 @@ PreconditionsConfirmMsg(m) ==
     /\ ValidConnectionParameters(m.parameters)
     /\ m.proofHeight \in store.client.consensusHeights (* Consistency height check. *)
     /\ VerifyConnProof(m.connProof, "OPEN", m.parameters)
+    /\ IF VersionPickMode /= "overwrite"
+       \* check if the locally stored versions overlap with the versions sent in 
+       \* the ICS3MsgConfirm message if VersionPickMode /= "overwrite"
+       THEN IF \/ VersionPickMode = "onAckNonDet"
+               \/ VersionPickMode = "onAckDet"
+            \* if the version was picked on handling ICS3MsgAck, check for intersection
+            THEN VersionSequencesOverlap(store.connection.version, m.version)
+            \* if the version was picked on handling ICS3MsgTry, check for equality
+            ELSE store.connection.version = m.version
+       \* if VersionPickMode = "overwrite", do not check for version overlap
+       ELSE TRUE
 
+(* Pick a version depending on the value of the constant VersionPickMode 
+ 
+ - if VersionPickMode = "overwrite"
+    -> take the picked version from the message
+ - if VersionPickMode = "onAckNonDet"
+    -> pick a version from store.connection.version non-deterministically
+ - if VersionPickMode = "onAckDet"
+    -> pick a version from store.connection.version deterministically 
+       (e.g., maximum)
+ - otherwise 
+    -> use store.connection.version if 
+        * version picking was done when handling ICS3MsgAck and 
+          (m.version \intersect store.connection.version) is not empty  
+        * version picking was done when handling ICS3MsgTry and
+          m.version = store.connection.version 
+       (both conditions checked in PreconditionsAckMsg)
+
+*)
+PickVersionOnConfirm(m) ==
+    IF VersionPickMode = "overwrite"
+    \* take the picked version from the message
+    THEN {m.version}
+    ELSE IF VersionPickMode = "onAckNonDet"
+         \* the version is picked non-deterministically 
+         THEN {<<newVersion>> : newVersion \in SequenceAsSet(store.connection.version)}
+         ELSE IF VersionPickMode = "onAckDet"
+              \* the version is picked deterministically,
+              \* using MAXSet as a deterministic choice function  
+              THEN {<<MAXSet(SequenceAsSet(store.connection.version))>>} 
+              \* the version was picked when handling ICS3MsgTry, 
+              \* use the picked version from the ICS3MsgAck message
+              ELSE {store.connection.version}
 
 (* Handles a "ICS3MsgConfirm" message.
  *)
 HandleConfirmMsg(m) ==
-    LET newCon == [parameters |-> m.parameters,
-                   state |-> "OPEN"]
-        newStore == NewStore(newCon) IN 
-    IF PreconditionsConfirmMsg(m)
-    THEN [out |-> outBuf,    (* Never need to reply to a confirm msg. *)
-          store |-> newStore]
-    ELSE [out |-> outBuf,
-          store |-> store]
+    LET newConnSet == [parameters : {m.parameters}, 
+                       state : {"OPEN"},
+                       version : PickVersionOnConfirm(m)]
+        newStoreSet == {NewStore(newConn) : newConn \in newConnSet} IN 
+    
+    IF /\ PreconditionsConfirmMsg(m)
+       /\ newStoreSet /= {}
+    THEN newStoreSet
+    ELSE {store}
 
 
 (* Action for advancing the current height (latestHeight) of the chain.
@@ -353,39 +526,45 @@ CanUpdateClient(newHeight) ==
 (* Generic action for handling any type of inbound message.
 
     Expects as parameter a message.
-    Takes care of invoking priming the 'store' and any reply msg in 'outBuf'.
+    Takes care of priming the 'store' and adding any reply msg in 'outBuf'.
     This action assumes the message type is valid, therefore one of the
-    disjunctions will always enable.
+    disjunctions (in the CASE statements) will always enable.
  *)
-ProcessMsg(m) ==
-    LET res == CASE m.type = "ICS3MsgInit" -> HandleInitMsg(m)
-                 [] m.type = "ICS3MsgTry" -> HandleTryMsg(m)
-                 [] m.type = "ICS3MsgAck" -> HandleAckMsg(m)
-                 [] m.type = "ICS3MsgConfirm" -> HandleConfirmMsg(m) IN
-    /\ outBuf' = res.out
-    /\ store' = res.store
+ProcessMsg ==
+    /\ inBuf /= <<>>
+    /\ CanAdvance
+    /\ LET m == Head(inBuf)
+           resStores == CASE m.type = "ICS3MsgInit" -> HandleInitMsg(m)
+                          [] m.type = "ICS3MsgTry" -> HandleTryMsg(m)
+                          [] m.type = "ICS3MsgAck" -> HandleAckMsg(m)
+                          [] m.type = "ICS3MsgConfirm" -> HandleConfirmMsg(m) IN
+        /\ store' \in resStores
+        /\ outBuf' = CASE m.type = "ICS3MsgInit" (* Get reply to the Init msg. *)
+                            /\ store'.connection.state = "INIT" -> Append(outBuf, MsgInitReply(store'))
+                       [] m.type = "ICS3MsgTry"  (* Get reply to the Try msg. *)
+                            /\ store'.connection.state = "TRYOPEN" -> Append(outBuf, MsgTryReply(store'))
+                       [] m.type = "ICS3MsgAck"  (* Get reply to the Ack msg. *)
+                            /\ store'.connection.state = "OPEN" -> Append(outBuf, MsgAckReply(store'))
+                       [] TRUE -> outBuf (* Default case: no reply necessary. *)
+        /\ inBuf' = Tail(inBuf)                 
 
 
 (***************************************************************************
  Connection Handshake Module (ICS3) main spec.
  ***************************************************************************)
 
-
-Init(chainID, client) ==
-    /\ store = [chainID |-> chainID,
-                latestHeight |-> 1,
-                connection |-> NullConnection,
-                client |-> client]
-
+Init ==
+    store \in [chainID : {ChainID},
+               latestHeight : {1},
+               connection : NullConnections,
+               client : InitClients(ClientIDs)]
 
 Next ==
-    \/ /\ inBuf # <<>>            \* Enabled if we have an inbound msg.
-       /\ CanAdvance
-       /\ ProcessMsg(Head(inBuf)) \* Generic action for handling a msg.
-       /\ inBuf' = Tail(inBuf)    \* Strip the head of our inbound msg. buffer.
-    \/ /\ inBuf = <<>>
-       /\ ~ CanAdvance
-       /\ UNCHANGED<<moduleVars>>
+    \/ ProcessMsg
+    \/ UNCHANGED moduleVars
+       
+Fairness ==
+    WF_moduleVars(ProcessMsg)       
 
 
 TypeInvariant ==
@@ -396,7 +575,6 @@ TypeInvariant ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 26 14:41:26 CEST 2020 by adi
+\* Last modified Thu Aug 27 16:00:21 CEST 2020 by adi
+\* Last modified Wed Aug 26 17:05:35 CEST 2020 by ilinastoilkovska
 \* Created Fri Apr 24 19:08:19 CEST 2020 by adi
-
-
