@@ -22,6 +22,9 @@ pub enum Kind {
 
     #[error("invalid raw client state")]
     InvalidRawClientState,
+
+    #[error("invalid raw client consensus state")]
+    InvalidRawConsensusState,
 }
 
 impl Kind {
