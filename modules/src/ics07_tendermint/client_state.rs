@@ -255,8 +255,8 @@ mod tests {
             let cs_result = ClientState::new(
                 p.id,
                 p.trusting_period,
-                p.unbonding_period.into(),
-                p.max_clock_drift.into(),
+                p.unbonding_period,
+                p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
             );
