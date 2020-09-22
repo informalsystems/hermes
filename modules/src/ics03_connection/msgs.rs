@@ -32,7 +32,7 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::str::{from_utf8, FromStr};
 
 /// Message type for the `MsgConnectionOpenInit` message.

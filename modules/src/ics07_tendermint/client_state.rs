@@ -1,11 +1,15 @@
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::try_from_raw::TryFromRaw;
 
 use serde_derive::{Deserialize, Serialize};
-use std::{convert::TryInto, time::Duration};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Duration,
+};
 
+use ibc_proto::ibc::tendermint::ClientState as RawClientState;
 use tendermint::block::Height;
+use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -17,6 +21,8 @@ pub struct ClientState {
     pub latest_height: Height,
     pub frozen_height: Height,
 }
+
+impl DomainType<RawClientState> for ClientState {}
 
 impl ClientState {
     pub fn new(
@@ -91,11 +97,10 @@ impl crate::ics02_client::state::ClientState for ClientState {
     }
 }
 
-impl TryFromRaw for ClientState {
-    type RawType = ibc_proto::ibc::tendermint::ClientState;
+impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
 
-    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+    fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         Ok(Self {
             chain_id: raw.chain_id,
             trusting_period: raw
@@ -122,6 +127,27 @@ impl TryFromRaw for ClientState {
                     .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
             ),
         })
+    }
+}
+
+impl From<ClientState> for RawClientState {
+    fn from(value: ClientState) -> Self {
+        RawClientState {
+            chain_id: value.chain_id,
+            trust_level: None, // Todo: Why is trust_level commented out?
+            trusting_period: Some(value.trusting_period.into()),
+            unbonding_period: Some(value.unbonding_period.into()),
+            max_clock_drift: Some(value.max_clock_drift.into()),
+            frozen_height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: value.frozen_height.value(),
+            }), // Todo: upgrade to tendermint v0.17.0 Height
+            latest_height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: value.latest_height.value(),
+            }), // Todo: upgrade to tendermint v0.17.0 Height
+            proof_specs: vec![], // Todo: Why is that not stored?
+        }
     }
 }
 
@@ -167,9 +193,9 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: "thisisthechainid".to_string(),
-            trusting_period: Duration::from_secs(64000),
-            unbonding_period: Duration::from_secs(128000),
-            max_clock_drift: Duration::from_millis(3000),
+            trusting_period: Duration::new(64000, 0),
+            unbonding_period: Duration::new(128000, 0),
+            max_clock_drift: Duration::new(3, 0),
             latest_height: Height(10),
             frozen_height: Height(0),
         };
@@ -197,7 +223,7 @@ mod tests {
             Test {
                 name: "Invalid unbonding period".to_string(),
                 params: ClientStateParams {
-                    unbonding_period: Duration::from_secs(0),
+                    unbonding_period: Duration::default(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -205,7 +231,7 @@ mod tests {
             Test {
                 name: "Invalid (too small) trusting period".to_string(),
                 params: ClientStateParams {
-                    trusting_period: Duration::from_secs(0),
+                    trusting_period: Duration::default(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -213,8 +239,8 @@ mod tests {
             Test {
                 name: "Invalid (too large) trusting period w.r.t. unbonding period".to_string(),
                 params: ClientStateParams {
-                    trusting_period: Duration::from_secs(11),
-                    unbonding_period: Duration::from_secs(10),
+                    trusting_period: Duration::new(11, 0),
+                    unbonding_period: Duration::new(10, 0),
                     ..default_params
                 },
                 want_pass: false,

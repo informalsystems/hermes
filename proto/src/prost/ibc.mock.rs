@@ -8,3 +8,8 @@ pub struct ClientState {
     #[prost(message, optional, tag="1")]
     pub header: ::std::option::Option<Header>,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusState {
+    #[prost(message, optional, tag="1")]
+    pub header: ::std::option::Option<Header>,
+}

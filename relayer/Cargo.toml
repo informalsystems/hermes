@@ -10,6 +10,7 @@ authors = [
 ibc = { path = "../modules" }
 tendermint = "0.15.0"
 tendermint-rpc = { version = "0.15.0", features=["client"] }
+tendermint-proto = "0.1.0"
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
