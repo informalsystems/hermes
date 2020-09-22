@@ -46,8 +46,8 @@ impl Chain for CosmosSDKChain {
     type Header = TMHeader;
     type Commit = TMCommit;
     type ConsensusState = ConsensusState;
-    type Requester = RpcRequester;
     type ClientState = ClientState;
+    type Requester = RpcRequester;
     type Error = anomaly::Error<Kind>;
 
     fn query<T>(&self, data: Path, height: u64, prove: bool) -> Result<T, Self::Error>

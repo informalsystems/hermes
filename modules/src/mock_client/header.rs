@@ -33,8 +33,8 @@ impl Header for MockHeader {
 }
 
 impl TryFromRaw for MockHeader {
-    type Error = Error;
     type RawType = ibc_proto::ibc::mock::Header;
+    type Error = Error;
 
     fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
         let proto_height = raw.height.ok_or_else(|| error::Kind::InvalidRawHeader)?;

@@ -9,6 +9,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 
 #[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug)]
 pub enum ClientMsg {
     CreateClient(MsgCreateAnyClient),
     UpdateClient(MsgUpdateAnyClient),

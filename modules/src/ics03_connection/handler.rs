@@ -52,26 +52,8 @@ impl From<ConnectionEvent> for Event {
 // The outcome after processing (delivering) a specific ICS3 message.
 type Object = ConnectionEnd;
 
-/// General entry point for delivering (i.e., processing) any type of message related to the ICS3
-/// connection open handshake protocol.
-// pub fn process_ics3_msg(ctx: &dyn ConnectionReader, message: &ConnectionMsg) -> ProtocolResult {
-//     // Process each message with the corresponding process_*_msg function.
-//     // After processing a specific message, the output consists of a ConnectionEnd.
-//     let conn_object = match message {
-//         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
-//         ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, msg),
-//         ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, msg),
-//         ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
-//     }?;
-//
-//     // Post-processing: emit events.
-//     let mut events = produce_events(ctx, message);
-//
-//     Ok(ProtocolOutput::new()
-//         .set_object(conn_object)
-//         .add_events(&mut events))
-// }
-
+/// General entry point for processing any type of message related to the ICS3 connection open
+/// handshake protocol.
 pub fn dispatch<Ctx>(
     ctx: &mut Ctx,
     msg: ConnectionMsg,
