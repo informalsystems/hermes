@@ -49,22 +49,21 @@ func CreateDatagram(ev SendPacketEvent,
     // Stage 1 
     // Verify if packet is committed to chain A and it is still pending (commitment exists)
     
-    packetCommitment, packetCommitmentProof = 
+    packetCommitment, packetCommitmentProof, error = 
         GetPacketCommitment(chainA, ev.sourcePort, ev.sourceChannel, ev.sequence, proofHeight)     
-    if packetCommitmentProof == nil { return (nil, Error.RETRY) }
+    if error != nil { return (nil, error) }
         
     if packetCommitment == nil OR
        packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
-            // invalid event; replace provider
-            ReplaceProvider(chainA)
-            return (nil, Error.DROP) 
+            // invalid event; bad provider
+            return (nil, Error.BADPROVIDER) 
     }
             
     // Stage 2 
     // Execute checks IBC handler on chainB will execute
     
-    channel, proof = GetChannel(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT)
-    if proof == nil { return (nil, Error.RETRY) }
+    channel, proof, error = GetChannel(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT)
+    if error != nil { return (nil, error) }
     
     if channel != nil AND
        (channel.state == CLOSED OR
@@ -75,8 +74,8 @@ func CreateDatagram(ev SendPacketEvent,
     // TODO: Maybe we shouldn't even enter handle loop for packets if the corresponding channel is not open!
            
     connectionId = channel.connectionHops[0]
-    connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
-    if proof == nil { return (nil, Error.RETRY) }
+    connection, proof, error = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
+    if error != nil { return (nil, error) }
     
     if connection == nil OR connection.state != OPEN { return (nil, Error.RETRY) } 
     
@@ -85,16 +84,16 @@ func CreateDatagram(ev SendPacketEvent,
     
     // we now check if this packet is already received by the destination chain
     if channel.ordering === ORDERED {    
-       nextSequenceRecv, proof = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
-       if proof == nil { return (nil, Error.RETRY) }
+       nextSequenceRecv, proof, error = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
+       if error != nil { return (nil, error) }
         
        if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     
     } else {
         // Note that absence of receipt (packetReceipt == nil) is also proven also and we should be able to verify it. 
-        packetReceipt, proof = 
+        packetReceipt, proof, error = 
             GetPacketReceipt(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
-        if proof == nil { return (nil, Error.RETRY) }
+        if error != nil { return (nil, error) }
 
         if packetReceipt != nil { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     }
@@ -128,57 +127,53 @@ func CreateDatagram(ev WriteAcknowledgementEvent,
 
     // Stage 1 
     // Verify if acknowledment is committed to chain A and it is still pending
-    
-    // TODO: Figure out what should be the height at which this info is read!
-    packetAck, packetAckCommitmentProof = 
+    packetAck, packetAckCommitmentProof, error = 
         GetPacketAcknowledgement(chainA, ev.port, ev.channel, ev.sequence, proofHeight) 
-    if packetAckCommitmentProof == nil { return (nil, Error.RETRY) } 
+    if error != nil { return (nil, error) }
     
     if packetAck == nil OR packetAck != hash(ev.acknowledgement) { 
-        // invalid event; replace provider
-        ReplaceProvider(chainA)  // TODO: We shouldn't replace provider here; it should be communicated with the error type
-        return (nil, Error.DROP) 
+        // invalid event; bad provider
+        return (nil, Error.BADPROVIDER) 
     }
 
     // Stage 2 
     // Execute checks IBC handler on chainB will execute
     
     // Fetch channelEnd from the chainA to be able to compute port and chain ids on destination chain
-    channelA, proof = GetChannel(chainA, ev.port, ev.channel, ev.height)
-    if proof == nil { return (nil, Error.RETRY) }
+    channelA, proof, error = GetChannel(chainA, ev.port, ev.channel, ev.height)
+    if error != nil { return (nil, error) }
     
-    channelB, proof = 
+    channelB, proof, error = 
         GetChannel(chainB, channelA.counterpartyPortIdentifier, channelA.counterpartyChannelIdentifier, LATEST_HEIGHT)
-    if proof == nil { return (nil, Error.RETRY) }
+    if error != nil { return (nil, error) }
     
     if channelB == nil OR channel.state != OPEN  { (nil, Error.DROP) } 
     // Note that we checked implicitly above that counterparty identifiers match each other
                
     connectionId = channelB.connectionHops[0]
-    connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
-    if proof == nil { return (nil, Error.RETRY) }
+    connection, proof, error = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
+    if error != nil { return (nil, error) }
         
     if connection == nil OR connection.state != OPEN { return (nil, Error.DROP) }
         
     // verify the packet is sent by chainB and hasn't been cleared out yet
-    packetCommitment, packetCommitmentProof = 
+    packetCommitment, packetCommitmentProof, error = 
         GetPacketCommitment(chainB, channelA.counterpartyPortIdentifier, 
                             channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)     
-    if packetCommitmentProof == nil { return (nil, Error.RETRY) }
+    if error != nil { return (nil, error) }
             
     if packetCommitment == nil OR
        packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
-            // invalid event; replace provider
-            ReplaceProvider(chainB)
-            return (nil, Error.DROP) 
+            // invalid event; bad provider
+            return (nil, Error.BADPROVIDER) 
     }
     
     // abort transaction unless acknowledgement is processed in order
     if channelB.ordering === ORDERED {
-        nextSequenceAck, proof = 
+        nextSequenceAck, proof, error = 
             GetNextSequenceAck(chainB, channelA.counterpartyPortIdentifier, 
                                channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)  
-        if proof == nil { return (nil, Error.RETRY) }                                                   
+        if error != nil { return (nil, error) }                                                  
 
         if ev.sequence != nextSequenceAck { return (nil, Error.DROP) }       
     }

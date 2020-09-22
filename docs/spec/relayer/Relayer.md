@@ -94,20 +94,8 @@ succeed. The interface between stage 3 and stage 4 is an IBC datagram.
 
 We assume that the corresponding light client is correctly installed on each chain.
 
-The semantic of the returned error is to signal to the caller whether there was an error in the event processing that 
-could be transient (for example not able to establish connection to a correct full node), in which case
-the event can be reprocessed later (`Error.RETRY`), or the event should be dropped as it has already been 
-received by the destination chain due to activity of a concurrent relayer (`Error.DROP`).
-
 Data structures and helper function definitions are provided 
 [here](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Definitions.md). 
-
-```golang
-enum Error {
-  RETRY,
-  DROP,
-}
-```
 
 ```golang
 func handleEvent(ev, chainA) Error {
@@ -124,24 +112,24 @@ func handleEvent(ev, chainA) Error {
     targetHeight = ev.height + 1
     // See the code for `updateIBCClient` below.
     proofHeight, error := updateIBCClient(chainB, chainA, targetHeight)
-    if error != nil { return Error.RETRY }
+    if error != nil { return error }
 
     // Stage 3.
     // Create the IBC datagrams including `ev` & verify them.
     datagram, error = CreateDatagram(ev, chainA, chainB, proofHeight)
-    if error != nil { return Error.RETRY }
+    if error != nil { return error }
     
     // Stage 4.
     // Submit datagrams.
     error = Submit(chainB, datagram)
-    if error != nil { return Error.RETRY }      
+    if error != nil { return error }      
 }
 
 func getDestinationInfo(ev IBCEvent, chain Chain) (Chain, Error) {
     switch ev.type {
         case SendPacketEvent: 
-            chainId = getChainId(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
-            if chainId == nil { return (nil, Error.RETRY) }        
+            chainId, error = getChainId(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
+            if error != nil { return (nil, error) }      
                         
             chain = GetChain(chainId)
             if chain == nil { return (nil, Error.DROP) }
@@ -149,8 +137,8 @@ func getDestinationInfo(ev IBCEvent, chain Chain) (Chain, Error) {
             return (chain, nil)   
         
         case WriteAcknowledgementEvent:
-            chainId = getChainId(chain, ev.Port, ev.Channel, ev.Height)
-            if chainId == nil { return nil, Error.RETRY }        
+            chainId, error = getChainId(chain, ev.Port, ev.Channel, ev.Height)
+            if error != nil { return (nil, error) }      
             
             chain = GetChain(chainId)
             if chain == nil { nil, Error.DROP }
@@ -160,18 +148,18 @@ func getDestinationInfo(ev IBCEvent, chain Chain) (Chain, Error) {
 }
 
 // Return chaindId of the destination chain based on port and channel info for the given chain
-func getChainId(chain Chain, port Identifier, channel Identifier, height Height) String {
-    channel, proof = GetChannel(chain, port, channel, height)
-    if proof == nil { return nil }
+func getChainId(chain Chain, port Identifier, channel Identifier, height Height) (String, Error) {
+    channel, proof, error = GetChannel(chain, port, channel, height)
+    if error != nil { return (nil, error) }
                                 
     connectionId = channel.connectionHops[0]
-    connection, proof = GetConnection(chain, connectionId, height) 
-    if proof == nil { return nil }
+    connection, proof, error = GetConnection(chain, connectionId, height) 
+    if error != nil { return (nil, error) }
                                 
-    clientState, proof = GetClientState(chain, connection.clientIdentifier, height) 
-    if proof == nil { return nil }
+    clientState, proof, error = GetClientState(chain, connection.clientIdentifier, height) 
+    if error != nil { return (nil, error) }
     
-    return clientState.chainID 
+    return (clientState.chainID, error) 
 }
 
 // Perform an update on `dest` chain for the IBC client for `src` chain.
@@ -182,21 +170,21 @@ func getChainId(chain Chain, port Identifier, channel Identifier, height Height)
 //      - return error if some of verification steps fail
 func updateIBCClient(dest Chain, src Chain, targetHeight Height) -> (Height, Error) {
     
-    clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-    if proof == nil { return (nil, Error.RETRY) } 
+    clientState, proof, error = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+    if error != nil { return (nil, error) } 
     // NOTE: What if a full node we are connected to send us stale (but correct) information regarding targetHeight?
     
     // if installed height is smaller than the targetHeight, we need to update client with targetHeight
     while (clientState.latestHeight < targetHeight) {
         // Do an update to IBC client for `src` on `dest`.
         shs, error = src.lc.getMinimalSet(clientState.latestHeight, targetHeight)
-        if error != nil { return (nil, Error.RETRY) }    
+        if error != nil { return (nil, error) }    
     
         error = dest.submit(createUpdateClientDatagrams(shs))
-        if error != nil { return (nil, Error.RETRY) } 
+        if error != nil { return (nil, error) } 
         
-        clientState, proof = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
-        if proof == nil { return (nil, Error.RETRY) }    
+        clientState, proof, error = GetClientState(dest, dest.clientId, LATEST_HEIGHT)
+        if error != nil { return (nil, error) }    
     }
     
     // NOTE: semantic check of the installed header is done using fork detection component

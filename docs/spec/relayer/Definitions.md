@@ -142,24 +142,24 @@ We assume the existence of the following helper functions:
 GetChannel(chain Chain, 
            portId Identifier, 
            channelId Identifier,  
-           proofHeight Height) (ChannelEnd, CommitmentProof)
+           proofHeight Height) (ChannelEnd, CommitmentProof, Error)
  
 // Returns connection end with a commitment proof. 
 GetConnection(chain Chain, 
               connectionId Identifier, 
-              proofHeight Height) (ConnectionEnd, CommitmentProof)
+              proofHeight Height) (ConnectionEnd, CommitmentProof, Error)
 
 
 // Returns client state with a commitment proof. 
 GetClientState(chain Chain, 
                clientId Identifier, 
-               proofHeight Height) (ClientState, CommitmentProof)
+               proofHeight Height) (ClientState, CommitmentProof, Error)
 
 // Returns consensus state with a commitment proof. 
 GetConsensusState(chain Chain, 
                   clientId Identifier, 
                   targetHeight Height,
-                  proofHeight Height) (ConsensusState, CommitmentProof)
+                  proofHeight Height) (ConsensusState, CommitmentProof, Error)
 
 
 // Returns packet commitment with a commitment proof. 
@@ -167,20 +167,20 @@ GetPacketCommitment(chain Chain,
                     portId Identifier, 
                     channelId Identifier, 
                     sequence uint64, 
-                    proofHeight Height) (bytes, CommitmentProof)
+                    proofHeight Height) (bytes, CommitmentProof, Error)
 
 // Returns next recv sequence number with a commitment proof. 
 GetNextSequenceRecv(chain Chain, 
                     portId Identifier, 
                     channelId Identifier,  
-                    proofHeight Height) (uint64, CommitmentProof)
+                    proofHeight Height) (uint64, CommitmentProof, Error)
 
 
 // Returns next recv sequence number with a commitment proof. 
 GetNextSequenceAck(chain Chain, 
                    portId Identifier, 
                    channelId Identifier,  
-                   proofHeight Height) (uint64, CommitmentProof)
+                   proofHeight Height) (uint64, CommitmentProof, Error)
 
 
 // Returns packet acknowledgment with a commitment proof. 
@@ -188,7 +188,7 @@ GetPacketAcknowledgement(chain Chain,
                          portId Identifier, 
                          channelId Identifier, 
                          sequence uint64, 
-                         proofHeight Height) (bytes, CommitmentProof)
+                         proofHeight Height) (bytes, CommitmentProof, Error)
 
 
 // Returns packet receipt with a commitment proof. 
@@ -196,7 +196,7 @@ GetPacketReceipt(chain Chain,
                  portId Identifier, 
                  channelId Identifier, 
                  sequence uint64, 
-                 proofHeight Height) (String, CommitmentProof)
+                 proofHeight Height) (String, CommitmentProof, Error)
 
  
 // Returns estimate of the consensus height on the given chain. 
@@ -229,13 +229,45 @@ Submit(chain Chain, datagram IBCDatagram) Error
 GetChain(chainID String) Chain
 ```
 
-For functions that return proof, if proof != nil, then the returned value is being verified. 
+For functions that return proof, if `error == nil`, then the returned value is being verified. 
 The value is being verified using the header's app hash that is provided by the corresponding light client.
+
+We now show the pseudocode for one of those functions:
+
+```go
+func GetChannel(chain Chain, 
+           portId Identifier, 
+           channelId Identifier,  
+           proofHeight Height) (ChannelEnd, CommitmentProof, Error) {
+    
+    // Query provable store exposed by the full node of chain. 
+    // The path for the channel end is at channelEnds/ports/{portId}/channels/{channelId}".
+    // The channel and the membership proof returned is read at height proofHeight - 1. 
+    channel, proof, error = QueryChannel(chain.provider, portId, channelId, proofHeight) 
+    if error != nil { return (nil, nil, Error.BADPROVIDER) } 
+        
+    header, error = GetHeader(chain.lc, proofHeight) // get header for height proofHeight using light client
+    if error != nil { return (nil, nil, Error.BADLIGHTCLIENT) }  // return if light client can't provide header for the given height       
+
+    // verify membership of the channel at path channelEnds/ports/{portId}/channels/{channelId} using 
+    // the root hash header.AppHash
+    if !VerifyMembership(header.AppHash, proofHeight, proof, channelPath(portId, channelId), channel) {
+        // membership check fails; therefore provider is faulty. Try to elect new provider
+        return (nil, nil, Error.BadProvider)      
+    } 
+       
+    return (channel, proof, nil)        
+}
+```
+
+If *LATEST_HEIGHT* is passed as a parameter, the data should be read (and the corresponding proof created) 
+at the most recent height. 
+
 
 ### Error handling
 
 Helper functions listed above assume querying (parts of the) application state using Tendermint RPC. For example,
-`GetChannel` relies on `QueryChannel`. RPC calls can fail as 
+`GetChannel` relies on `QueryChannel`. RPC calls can fail if: 
 
 - no response is received within some timeout or
 - malformed response is received.
@@ -247,47 +279,14 @@ simpler to blame the provider (assume implicitly network is always correct and r
 always respond timely with a correct response, while in case of errors we consider the provider node faulty, and then 
 we replace it with a different node. 
 
-We now show the pseudocode for one of those functions that contains simplified error handling logic:
+We assume the following error types:
 
-```go
-func GetChannel(chain Chain, 
-           portId Identifier, 
-           channelId Identifier,  
-           proofHeight Height) (ChannelEnd, CommitmentProof) {
-
-    while(true) {
-        // Query provable store exposed by the full node of chain. 
-        // The path for the channel end is at channelEnds/ports/{portId}/channels/{channelId}".
-        // The channel and the membership proof returned is read at height proofHeight - 1. 
-        channel, proof, error = QueryChannel(chain.provider, portId, channelId, proofHeight) 
-        if error != nil {
-            // elect a new provider from the peer list
-            if !ReplaceProvider(chain) { return (nil, nil) }  // return if fail to elect new provider         
-        }
-    
-        header, error = GetHeader(chain.lc, proofHeight) // get header for height proofHeight using light client
-        if error != nil { return (nil, nil) }  // return if light client can't provide header for the given height       
-
-        // verify membership of the channel at path channelEnds/ports/{portId}/channels/{channelId} using 
-        // the root hash header.AppHash
-        if VerifyMembership(header.AppHash, proofHeight, proof, channelPath(portId, channelId), channel) {
-            return (channel, proof)
-        } 
-        
-        // membership check fails; therefore provider is faulty. Try to elect new provider
-        if !ReplaceProvider(chain) { return (nil, nil) }  // if fails to elect new provider return
-    }
-    panic // should never reach this line
-}
-
-// Simplified version of logic for electing new provider. In reality it will probably involve opening a connection to 
-// a newply elected provider and closing connection with an old provider.
-func ReplaceProvider(chain Chain) boolean {
-    if chain.peerList.IsEmpty() return false
-    chain.provider = Head(chain.peerList)
-    chain.peerList = Tail(chain.peerList)
-    return true
+```golang
+enum Error {
+  RETRY,  // transient processing error (for example due to optimistic send); function can be retried later
+  DROP,   // event has already been received by the destination chain so it should be dropped
+  BADPROVIDER,  // provider does not reply timely or with a correct data; it normally leads to replacing provider
+  BADLIGHTCLIENT // light client does not reply timely or with a correct data    
 }
 ```
-If *LATEST_HEIGHT* is passed as a parameter, the data should be read (and the corresponding proof created) 
-at the most recent height. 
+
