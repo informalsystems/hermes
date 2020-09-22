@@ -110,7 +110,6 @@ ChainAction ==
        /\ UNCHANGED chainBvars
        /\ UNCHANGED relayerVars
        /\ UNCHANGED <<closeChannelA, closeChannelB>>
-\*       /\ UNCHANGED incomingDatagramsChainB
     \/ /\ ChainB!Next  
        /\ UNCHANGED chainAvars
        /\ UNCHANGED relayerVars  
@@ -567,5 +566,5 @@ ICS18Delivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 17:17:41 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Sep 18 18:56:16 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

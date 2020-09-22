@@ -29,7 +29,8 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
        /\ \/ packet.timeoutHeight = 0 
           \/ chain.height < packet.timeoutHeight  
        \* if the "PacketRecv" datagram can be verified 
-       /\ packetDatagram.srcChannelID = GetChannelID(chainID)
+       /\ packetDatagram.srcChannelID = GetCounterpartyChannelID(chainID)
+       /\ packetDatagram.dstChannelID = GetChannelID(chainID)
        /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights           
     THEN \* construct log entry for packet log
          LET logEntry == AsPacketLogEntry(
@@ -43,13 +44,14 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
          \* if the channel is unordered and the packet has not been received  
          IF /\ channelEnd.order = "UNORDERED"
             /\ <<packet.dstChannelID, packet.sequence>> \notin chain.packetReceipt
-         THEN \* record that the packet has been received
-              LET newChainStore == [chain EXCEPT 
+         THEN LET newChainStore == [chain EXCEPT
+                    \* record that the packet has been received 
                     !.packetReceipts = chain.packetReceipts 
                                        \union 
                                        {AsPacketReceipt(
                                         [channelID |-> packet.dstChannelID, 
                                          sequence |-> packet.sequence])},
+                    \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
                                       
               [chainStore |-> newChainStore, packetLog |-> Append(log, logEntry)] 
@@ -57,10 +59,11 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
          ELSE \* if the channel is ordered and the packet sequence is nextRcvSeq 
               IF /\ channelEnd.order = "ORDERED"
                  /\ packet.sequence = channelEnd.nextRcvSeq
-              THEN \* increase the nextRcvSeq
-                   LET newChainStore == [chain EXCEPT 
+              THEN LET newChainStore == [chain EXCEPT 
+                        \* increase the nextRcvSeq
                         !.connectionEnd.channelEnd.nextRcvSeq = 
                              chain.connectionEnd.channelEnd.nextRcvSeq + 1,
+                        \* add packet to the set of packets for which an acknowledgement should be written
                         !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN             
                    
                    [chainStore |-> newChainStore, packetLog |-> Append(log, logEntry)]
@@ -92,8 +95,11 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
        /\ connectionEnd.state = "OPEN" 
        \* if the packet committment exists in the chain store
        /\ packetCommitment \in chain.packetCommittments
-       \* ack verification (TODO) 
-    THEN \* if the channel is ordered and the packet sequence is nextRcvSeq 
+       \* if the "PacketAck" datagram can be verified 
+       /\ packetDatagram.srcChannelID = GetChannelID(chainID)
+       /\ packetDatagram.dstChannelID = GetCounterpartyChannelID(chainID)
+       /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights 
+    THEN \* if the channel is ordered and the packet sequence is nextAckSeq 
          LET newChainStore == 
              IF /\ channelEnd.order = "ORDERED"
                 /\ packet.sequence = channelEnd.nextAckSeq
@@ -115,5 +121,5 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 18:52:23 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Sep 22 14:21:10 CEST 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska
