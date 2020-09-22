@@ -81,7 +81,7 @@ impl Runnable for QueryClientStateCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
 
         let res: Result<AnyClientState, Error> = chain
-            .query2(ClientState(opts.client_id), opts.height, opts.proof)
+            .abci_query(ClientState(opts.client_id), opts.height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
@@ -170,7 +170,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<AnyConsensusState, Error> = chain
-            .query2(
+            .abci_query(
                 ClientConsensusState(opts.client_id, opts.consensus_height),
                 opts.height,
                 opts.proof,

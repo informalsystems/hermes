@@ -76,7 +76,7 @@ impl Chain for CosmosSDKChain {
             .and_then(|r| T::try_from(r).map_err(|e| Kind::ResponseParsing.context(e).into()))
     }
 
-    fn query2(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
+    fn abci_query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
         if !data.is_provable() & prove {
             return Err(Kind::Store
