@@ -68,9 +68,9 @@ func CreateDatagram(ev SendPacketEvent,
     if channel != nil AND
        (channel.state == CLOSED OR
         ev.sourcePort != channel.counterpartyPortIdentifier OR
-        ev.sourceChannel != channel.counterpartyChannelIdentifier) { (nil, Error.DROP) } 
+        ev.sourceChannel != channel.counterpartyChannelIdentifier) { return (nil, Error.DROP) } 
     
-    if channel == nil OR channel.state != OPEN  { (nil, Error.RETRY) } 
+    if channel == nil OR channel.state != OPEN  { return (nil, Error.RETRY) } 
     // TODO: Maybe we shouldn't even enter handle loop for packets if the corresponding channel is not open!
            
     connectionId = channel.connectionHops[0]

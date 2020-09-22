@@ -232,6 +232,30 @@ GetChain(chainID String) Chain
 For functions that return proof, if `error == nil`, then the returned value is being verified. 
 The value is being verified using the header's app hash that is provided by the corresponding light client.
 
+Helper functions listed above assume querying (parts of the) application state using Tendermint RPC. For example,
+`GetChannel` relies on `QueryChannel`. RPC calls can fail if: 
+
+- no response is received within some timeout or
+- malformed response is received.
+
+In both cases, error handling logic should be defined by the caller. For example, in the former case, the caller might
+retry sending the same request to a same provider (full node), while in the latter case the request might be sent to 
+some other provider node. Although these kinds of errors could be due to network infrastructure issues, it is normally
+simpler to blame the provider (assume implicitly network is always correct and reliable). Therefore, correct provider
+always respond timely with a correct response, while in case of errors we consider the provider node faulty, and then 
+we replace it with a different node. 
+
+We assume the following error types:
+
+```golang
+enum Error {
+  RETRY,  // transient processing error (for example due to optimistic send); function can be retried later
+  DROP,   // event has already been received by the destination chain so it should be dropped
+  BADPROVIDER,  // provider does not reply timely or with a correct data; it normally leads to replacing provider
+  BADLIGHTCLIENT // light client does not reply timely or with a correct data    
+}
+```
+
 We now show the pseudocode for one of those functions:
 
 ```go
@@ -264,29 +288,5 @@ If *LATEST_HEIGHT* is passed as a parameter, the data should be read (and the co
 at the most recent height. 
 
 
-### Error handling
 
-Helper functions listed above assume querying (parts of the) application state using Tendermint RPC. For example,
-`GetChannel` relies on `QueryChannel`. RPC calls can fail if: 
-
-- no response is received within some timeout or
-- malformed response is received.
-
-In both cases, error handling logic should be defined by the caller. For example, in the former case, the caller might
-retry sending the same request to a same provider (full node), while in the latter case the request might be sent to 
-some other provider node. Although these kinds of errors could be due to network infrastructure issues, it is normally
-simpler to blame the provider (assume implicitly network is always correct and reliable). Therefore, correct provider
-always respond timely with a correct response, while in case of errors we consider the provider node faulty, and then 
-we replace it with a different node. 
-
-We assume the following error types:
-
-```golang
-enum Error {
-  RETRY,  // transient processing error (for example due to optimistic send); function can be retried later
-  DROP,   // event has already been received by the destination chain so it should be dropped
-  BADPROVIDER,  // provider does not reply timely or with a correct data; it normally leads to replacing provider
-  BADLIGHTCLIENT // light client does not reply timely or with a correct data    
-}
-```
 

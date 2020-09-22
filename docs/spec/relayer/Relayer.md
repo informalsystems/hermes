@@ -79,10 +79,10 @@ chain at height *h*. The trusted header is provided by the corresponding light c
 The main relayer event loop is a pipeline of four stages. Assuming some IBC event at height `h` on `chainA`, 
 the relayer:
 
-1. Determine destination chain (`chainB`)
+1. Determines destination chain (`chainB`)
 2. Updates (on `chainB`) the IBC client for `chainA` to a certain height `H` where `H >= h+1`.
-3. Create IBC datagram at height `H-1`.
-4. Submit the datagram from stage (2) to `chainB`.
+3. Creates IBC datagram at height `H-1`.
+4. Submits the datagram from stage (2) to `chainB`.
 
 Note that an IBC event at height `h` corresponds to the modifications to the data store made as part of executing
 block at height `h`. The corresponding proof (that data is indeed written to the data store) can be verified using
