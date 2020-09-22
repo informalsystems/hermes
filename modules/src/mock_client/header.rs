@@ -2,13 +2,41 @@ use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
-use crate::try_from_raw::TryFromRaw;
 
+use ibc_proto::ibc::mock::Header as RawMockHeader;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use tendermint::block::Height;
+use tendermint_proto::DomainType;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockHeader(pub Height);
+
+impl DomainType<RawMockHeader> for MockHeader {}
+
+impl TryFrom<RawMockHeader> for MockHeader {
+    type Error = Error;
+
+    fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
+        if raw.height.is_none() {
+            return Err(error::Kind::InvalidRawHeader
+                .context("no height in header")
+                .into());
+        }
+        Ok(MockHeader(Height(raw.height.unwrap().epoch_height)))
+    }
+}
+
+impl From<MockHeader> for RawMockHeader {
+    fn from(value: MockHeader) -> Self {
+        RawMockHeader {
+            height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: value.height().value(),
+            }),
+        } // FIXME: This is wrong as it does not take the epoch into account
+    }
+}
 
 impl MockHeader {
     pub fn height(&self) -> Height {
@@ -30,18 +58,4 @@ impl Header for MockHeader {
     fn height(&self) -> Height {
         todo!()
     }
-}
-
-impl TryFromRaw for MockHeader {
-    type Error = Error;
-    type RawType = ibc_proto::ibc::mock::Header;
-
-    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
-        let proto_height = raw.height.ok_or_else(|| error::Kind::InvalidRawHeader)?;
-        Ok(Self(decode_height(proto_height)))
-    }
-}
-
-fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
-    Height(height.epoch_height) // FIXME: This is wrong as it does not take the epoch into account
 }

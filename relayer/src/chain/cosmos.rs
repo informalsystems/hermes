@@ -76,6 +76,23 @@ impl Chain for CosmosSDKChain {
             .and_then(|r| T::try_from(r).map_err(|e| Kind::ResponseParsing.context(e).into()))
     }
 
+    fn query2(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+        if !data.is_provable() & prove {
+            return Err(Kind::Store
+                .context("requested proof for a path in the privateStore")
+                .into());
+        }
+        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+
+        // Verify response proof, if requested.
+        if prove {
+            dbg!("Todo: implement proof verification."); // Todo: Verify proof
+        }
+
+        Ok(response)
+    }
+
     fn config(&self) -> &ChainConfig {
         &self.config
     }

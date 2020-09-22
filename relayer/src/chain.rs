@@ -52,6 +52,9 @@ pub trait Chain {
     where
         T: TryFromRaw;
 
+    /// Perform a generic `query`, and return the corresponding response data.
+    fn query2(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
+
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
         &self.config().id

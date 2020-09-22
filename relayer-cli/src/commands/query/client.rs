@@ -3,6 +3,7 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
+use crate::error::{Error, Kind};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
@@ -10,6 +11,7 @@ use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
+use tendermint_proto::DomainType;
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -77,8 +79,13 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res =
-            chain.query::<AnyClientState>(ClientState(opts.client_id), opts.height, opts.proof);
+
+        let res: Result<AnyClientState, Error> = chain
+            .query2(ClientState(opts.client_id), opts.height, opts.proof)
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| {
+                AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+            });
         match res {
             Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
             Err(e) => status_info!("client state query error: ", "{:?}", e),
@@ -162,11 +169,17 @@ impl Runnable for QueryClientConsensusCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<AnyConsensusState>(
-            ClientConsensusState(opts.client_id, opts.consensus_height),
-            opts.height,
-            opts.proof,
-        );
+        let res: Result<AnyConsensusState, Error> = chain
+            .query2(
+                ClientConsensusState(opts.client_id, opts.consensus_height),
+                opts.height,
+                opts.proof,
+            )
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| {
+                AnyConsensusState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+            });
+
         match res {
             Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
             Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
