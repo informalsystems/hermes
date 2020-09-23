@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 crossbeam-channel = "0.4.2"
+anomaly = "0.2.0"
+thiserror = "1.0.15"

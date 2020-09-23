@@ -3,12 +3,31 @@ use crate::connection::ConnectionError;
 use crate::channel::{Channel, ChannelError};
 use crate::foreign_client::ForeignClientError;
 use crate::chain::{Chain, ChainError, SignedHeader, MembershipProof, ConsensusState};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum LinkError {
+    #[error("NoOp")]
     NoOp(),
+
+    #[error("Verificaiton failed")]
     VerificationError(),
+
+    #[error("Headers didn't match")]
     HeaderMismatch(),
+
+
+    #[error("Chain error")]
+    ChainError(#[from] ChainError),
+
+    #[error("Foreign client error")]
+    ForeignClientError(#[from] ForeignClientError),
+
+    #[error("ConnectionError:")]
+    ConnectionError(#[from] ConnectionError),
+
+    #[error("ChannelError:")]
+    ChannelError(#[from] ChannelError),
 }
 
 enum Order {
@@ -54,30 +73,6 @@ pub struct Link {
     pub dst_chain: Box<dyn Chain>,
 }
 
-impl From<ConnectionError> for LinkError {
-    fn from(_error: ConnectionError) -> Self {
-        return LinkError::NoOp()
-    }
-}
-
-impl From<ChannelError> for LinkError {
-    fn from(_error: ChannelError ) -> Self {
-        return LinkError::NoOp()
-    }
-}
-
-impl From<ForeignClientError> for LinkError {
-    fn from(_error: ForeignClientError) -> Self {
-        return LinkError::NoOp()
-    }
-}
-
-impl From<ChainError> for LinkError {
-    fn from(_error: ChainError ) -> Self {
-        return LinkError::NoOp()
-    }
-}
-
 impl Link {
     // We can probably pass in the connection and channel
     pub fn new(channel: Channel, _config: LinkConfig) -> Result<Link, LinkError> {
@@ -101,14 +96,17 @@ impl Link {
 
             verify_proof(&datagrams, &header);
 
-            self.update_client(target_height).unwrap();
+            self.update_client(target_height)?;
             self.dst_chain.submit(datagrams);
         }
 
         return Ok(())
     }
 
+    // XXX: This should probably raise a client Error
+    // Which suggest that it should be in the client
     fn update_client(&mut self, src_target_height: Height) -> Result<Height, LinkError> {
+        return Ok(src_target_height);
         let (src_consensus_state, dst_membership_proof) =
             self.dst_chain.consensus_state(self.src_chain.id(), src_target_height);
 

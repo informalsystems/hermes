@@ -1,9 +1,12 @@
 use crate::chain::Chain;
 use crate::foreign_client::ForeignClient;
 use crate::types::{ConnectionId, ChainId, ClientId};
+use thiserror::Error;
 
-#[derive(Debug)]
-pub struct ConnectionError {
+#[derive(Debug, Error)]
+pub enum ConnectionError {
+    #[error("Failed")]
+    Failed(),
 }
 
 pub struct Connection {

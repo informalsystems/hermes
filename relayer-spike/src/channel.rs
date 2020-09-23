@@ -1,9 +1,12 @@
 use crate::chain::Chain;
 use crate::connection::Connection;
 use crate::types::{ChainId, ChannelId, ClientId, PortId};
+use thiserror::Error;
 
-#[derive(Debug)]
-pub struct ChannelError {
+#[derive(Debug, Error)]
+pub enum ChannelError {
+    #[error("Failed")]
+    Failed(),
 }
 
 pub struct ChannelConfigSide {

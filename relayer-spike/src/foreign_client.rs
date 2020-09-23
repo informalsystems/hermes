@@ -1,8 +1,11 @@
 use crate::types::{ChainId, ClientId};
 use crate::chain::Chain;
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ForeignClientError {
+    #[error("Fail")]
+    Fail(),
 }
 
 pub struct ForeignClientConfig {

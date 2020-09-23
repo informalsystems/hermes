@@ -1,6 +1,7 @@
 use crate::types::*;
 use crossbeam_channel as channel;
 use std::time::Duration;
+use thiserror::Error;
 
 #[derive(std::cmp::PartialEq)]
 pub struct Header {
@@ -26,8 +27,10 @@ impl Header {
 pub type Datagrams = Vec<Datagram>;
 pub type Subscription = channel::Receiver<Datagrams>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Error)]
 pub enum ChainError {
+    #[error("Failed")]
+    Failed(),
 }
 
 pub struct ConsensusState {

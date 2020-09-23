@@ -3,10 +3,11 @@ use relayer_spike::foreign_client::{ForeignClient, ForeignClientConfig};
 use relayer_spike::connection::{Connection, ConnectionConfig};
 use relayer_spike::channel::{Channel, ChannelConfig};
 use relayer_spike::link::{Link, LinkConfig};
+use std::error::Error;
 
 use std::thread;
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let src_chain = ChainRuntime::new(); // TODO: Pass chain config
     let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
 
@@ -20,14 +21,14 @@ fn main() {
         dst_chain.run().unwrap();
     });
 
-    let foreign_client = ForeignClient::new(src_chain_handle, dst_chain_handle, ForeignClientConfig::default()).unwrap();
+    let foreign_client = ForeignClient::new(src_chain_handle, dst_chain_handle, ForeignClientConfig::default())?;
     let connection = Connection::new(foreign_client, ConnectionConfig::default()).unwrap();
     let channel = Channel::new(connection, ChannelConfig::default()).unwrap();
 
     // What if we create the clients and stuff here and then pass the link
     match Link::new(channel, LinkConfig::default()) { // TODO: Error Handling
         Ok(link) => {
-            link.run().unwrap();
+            link.run()?;
         },
         // Failures:
         // * Client Failure
@@ -35,4 +36,6 @@ fn main() {
         // * Channel Failure
         Err(_err) => panic!("couldn't create a link :("),
     }
+
+    Ok(())
 }
