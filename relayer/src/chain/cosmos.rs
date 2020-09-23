@@ -11,6 +11,7 @@ use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
+use crate::client::tendermint::LightClient as TendermintLightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
@@ -32,6 +33,7 @@ impl CosmosSDKChain {
 
 impl Chain for CosmosSDKChain {
     type LightBlock = tendermint_light_client::types::LightBlock;
+    type LightClient = TendermintLightClient;
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;

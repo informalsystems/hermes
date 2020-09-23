@@ -11,8 +11,10 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
+use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
+
 use std::error::Error;
 
 mod cosmos;
@@ -22,6 +24,9 @@ pub use cosmos::CosmosSDKChain;
 pub trait Chain {
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync + Serialize + DeserializeOwned;
+
+    /// Type of light client for this chain
+    type LightClient: LightClient<Self::LightBlock> + Send + Sync;
 
     /// Type of consensus state for this chain
     type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
