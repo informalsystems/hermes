@@ -1,12 +1,12 @@
+use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics07_tendermint;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
-use crate::ics07_tendermint;
-use crate::ics02_client::context::{ClientReader, ClientKeeper};
 
 #[cfg(test)]
 use {
-    crate::ics02_client::client_def::AnyConsensusState,
-    crate::mock_client::header::MockHeader,
+    crate::ics02_client::client_def::AnyConsensusState, crate::mock_client::header::MockHeader,
     crate::mock_client::state::MockConsensusState,
 };
 
@@ -36,9 +36,7 @@ impl From<MockHeader> for AnyConsensusState {
     }
 }
 
-pub trait LocalChainContext: ChainReader + ChainKeeper {
-    fn get_client_context(&self) -> impl ClientReader
-}
+pub trait ChainContext: ClientReader + ClientKeeper + ConnectionReader + ConnectionKeeper {}
 
 pub trait ChainReader {
     fn chain_type(&self) -> SelfChainType;

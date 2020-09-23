@@ -1,3 +1,3 @@
-mod msgs;
-mod handler;
 mod error;
+mod handler;
+mod msgs;

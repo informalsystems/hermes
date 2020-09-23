@@ -7,6 +7,9 @@ pub type Error = anomaly::Error<Kind>;
 pub enum Kind {
     #[error("error raised by message handler")]
     HandlerRaisedError,
+
+    #[error("error raised by the keeper functionality in message handler")]
+    KeeperRaisedError,
 }
 
 impl Kind {

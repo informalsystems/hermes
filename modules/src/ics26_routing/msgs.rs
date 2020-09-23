@@ -7,5 +7,4 @@ pub enum ICS26RoutedMsgs {
     ICS2Msg(ClientMsg),
     ICS3Msg(ConnectionMsg),
     // ICS4Msg(ChannelMsg),
-    // ICS4Msg(ChannelMsg),
 }

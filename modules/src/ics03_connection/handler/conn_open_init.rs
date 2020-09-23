@@ -1,6 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
-use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
@@ -40,12 +40,6 @@ pub(crate) fn process(
     output.emit(ConnOpenInit(result.clone()));
 
     Ok(output.with_result(result))
-}
-
-pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(&result.connection_id, &result.connection_end)?;
-    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
-    Ok(())
 }
 
 #[cfg(test)]

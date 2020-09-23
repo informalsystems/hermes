@@ -13,17 +13,17 @@ pub mod conn_open_try;
 pub mod verify;
 
 #[derive(Clone, Debug)]
-pub struct ConnectionResult {
-    connection_id: ConnectionId,
-    connection_end: ConnectionEnd,
-}
-
-#[derive(Clone, Debug)]
 pub enum ConnectionEvent {
     ConnOpenInit(ConnectionResult),
     ConnOpenTry(ConnectionResult),
     ConnOpenAck(ConnectionResult),
     ConnOpenConfirm(ConnectionResult),
+}
+
+#[derive(Clone, Debug)]
+pub struct ConnectionResult {
+    pub connection_id: ConnectionId,
+    pub connection_end: ConnectionEnd,
 }
 
 impl From<ConnectionEvent> for Event {
@@ -49,9 +49,6 @@ impl From<ConnectionEvent> for Event {
     }
 }
 
-// The outcome after processing (delivering) a specific ICS3 message.
-type Object = ConnectionEnd;
-
 /// General entry point for processing any type of message related to the ICS3 connection open
 /// handshake protocol.
 pub fn dispatch<Ctx>(
@@ -61,59 +58,10 @@ pub fn dispatch<Ctx>(
 where
     Ctx: ConnectionReader + ConnectionKeeper,
 {
-    // TODO: generalize this to reduce duplicate code across the match arms.
-    match msg {
-        ConnectionMsg::ConnectionOpenInit(msg) => {
-            let HandlerOutput {
-                result,
-                log,
-                events,
-            } = conn_open_init::process(ctx, msg)?;
-
-            conn_open_init::keep(ctx, result.clone())?;
-            Ok(HandlerOutput::builder()
-                .with_log(log)
-                .with_events(events)
-                .with_result(result))
-        }
-        ConnectionMsg::ConnectionOpenTry(msg) => {
-            let HandlerOutput {
-                result,
-                log,
-                events,
-            } = conn_open_try::process(ctx, *msg)?;
-
-            conn_open_try::keep(ctx, result.clone())?;
-            Ok(HandlerOutput::builder()
-                .with_log(log)
-                .with_events(events)
-                .with_result(result))
-        }
-        ConnectionMsg::ConnectionOpenAck(msg) => {
-            let HandlerOutput {
-                result,
-                log,
-                events,
-            } = conn_open_ack::process(ctx, msg)?;
-
-            conn_open_ack::keep(ctx, result.clone())?;
-            Ok(HandlerOutput::builder()
-                .with_log(log)
-                .with_events(events)
-                .with_result(result))
-        }
-        ConnectionMsg::ConnectionOpenConfirm(msg) => {
-            let HandlerOutput {
-                result,
-                log,
-                events,
-            } = conn_open_confirm::process(ctx, msg)?;
-
-            conn_open_confirm::keep(ctx, result.clone())?;
-            Ok(HandlerOutput::builder()
-                .with_log(log)
-                .with_events(events)
-                .with_result(result))
-        }
-    }
+    Ok(match msg {
+        ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg)?,
+        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg)?,
+        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, msg)?,
+        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg)?,
+    })
 }
