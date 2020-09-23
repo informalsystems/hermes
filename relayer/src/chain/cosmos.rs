@@ -2,42 +2,51 @@ use std::time::Duration;
 
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
+use tendermint_light_client::types::LightBlock;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
-use core::future::Future;
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
-use crate::client::tendermint::LightClient as TendermintLightClient;
+use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
 use super::Chain;
+use bytes::Bytes;
+use prost::Message;
+use std::future::Future;
 use std::str::FromStr;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
+    // light_client: LightClient,
 }
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
-        let rpc_client = HttpClient::new(config.rpc_addr.clone()).unwrap(); // FIXME(romac): unwrap
+        let rpc_client =
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
-        Ok(Self { config, rpc_client })
+        Ok(Self {
+            config,
+            rpc_client,
+            // light_client,
+        })
     }
 }
 
 impl Chain for CosmosSDKChain {
-    type LightBlock = tendermint_light_client::types::LightBlock;
-    type LightClient = TendermintLightClient;
+    type LightBlock = LightBlock;
+    type LightClient = LightClient;
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
@@ -63,6 +72,10 @@ impl Chain for CosmosSDKChain {
     fn rpc_client(&self) -> &HttpClient {
         &self.rpc_client
     }
+
+    // fn light_client(&self) -> &LightClient {
+    //     &self.light_client
+    // }
 
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period

@@ -54,6 +54,9 @@ pub trait Chain {
     /// Get a low-level RPC client for this chain
     fn rpc_client(&self) -> &Self::RpcClient;
 
+    // /// Get a light client for this chain
+    // fn light_client(&self) -> &Self::LightClient;
+
     /// The trusting period configured for this chain
     fn trusting_period(&self) -> Duration;
 
