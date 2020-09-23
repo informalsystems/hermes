@@ -2,11 +2,13 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::try_from_raw::TryFromRaw;
 use chrono::{TimeZone, Utc};
+use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use tendermint::hash::Algorithm;
 use tendermint::Hash;
+use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConsensusState {
@@ -16,13 +18,14 @@ pub struct ConsensusState {
     pub next_validators_hash: Hash,
 }
 
-impl TryFromRaw for ConsensusState {
-    type RawType = ibc_proto::ibc::tendermint::ConsensusState;
+impl DomainType<RawConsensusState> for ConsensusState {}
+
+impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
     // TODO: Fix height conversion below (which ignores epoch number, hence it's incorrect).
     // Related: https://github.com/informalsystems/ibc-rs/issues/191.
-    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
+    fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
         let proto_timestamp = raw
             .timestamp
             .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing timestamp"))?;
@@ -44,6 +47,20 @@ impl TryFromRaw for ConsensusState {
             next_validators_hash: Hash::new(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
         })
+    }
+}
+
+impl From<ConsensusState> for RawConsensusState {
+    fn from(value: ConsensusState) -> Self {
+        RawConsensusState {
+            timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
+            root: Some(ibc_proto::ibc::commitment::MerkleRoot { hash: value.root.0 }),
+            height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: value.height.value(),
+            }),
+            next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
+        }
     }
 }
 

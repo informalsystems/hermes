@@ -8,12 +8,16 @@ use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
-use crate::try_from_raw::TryFromRaw;
 
 use tendermint::block::Height;
 
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
+use std::convert::{TryFrom, TryInto};
+use tendermint_proto::DomainType;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
@@ -32,6 +36,8 @@ pub struct MockClientRecord {
 /// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub MockHeader);
+
+impl DomainType<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
     pub fn check_header_and_update_state(
@@ -61,16 +67,24 @@ impl From<MockClientState> for AnyClientState {
     }
 }
 
-impl TryFromRaw for MockClientState {
-    type RawType = ibc_proto::ibc::mock::ClientState;
+impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
-    fn try_from(raw: Self::RawType) -> Result<Self, Self::Error> {
-        let raw_header = raw
-            .header
-            .ok_or_else(|| Kind::InvalidRawClientState.context("missing header"))?;
+    fn try_from(raw: RawMockClientState) -> Result<Self, Self::Error> {
+        Ok(MockClientState(raw.header.unwrap().try_into()?))
+    }
+}
 
-        Ok(Self(MockHeader::try_from(raw_header)?))
+impl From<MockClientState> for RawMockClientState {
+    fn from(value: MockClientState) -> Self {
+        RawMockClientState {
+            header: Some(ibc_proto::ibc::mock::Header {
+                height: Some(ibc_proto::ibc::client::Height {
+                    epoch_number: 0,
+                    epoch_height: value.0.height().value(),
+                }),
+            }),
+        }
     }
 }
 
@@ -101,6 +115,33 @@ impl From<MockConsensusState> for MockClientState {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockConsensusState(pub MockHeader);
+
+impl DomainType<RawMockConsensusState> for MockConsensusState {}
+
+impl TryFrom<RawMockConsensusState> for MockConsensusState {
+    type Error = Error;
+
+    fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
+        let raw_header = raw
+            .header
+            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing header"))?;
+
+        Ok(Self(MockHeader::try_from(raw_header)?))
+    }
+}
+
+impl From<MockConsensusState> for RawMockConsensusState {
+    fn from(value: MockConsensusState) -> Self {
+        RawMockConsensusState {
+            header: Some(ibc_proto::ibc::mock::Header {
+                height: Some(ibc_proto::ibc::client::Height {
+                    epoch_number: 0,
+                    epoch_height: value.height().value(),
+                }),
+            }),
+        }
+    }
+}
 
 #[cfg(test)]
 impl From<MockConsensusState> for AnyConsensusState {

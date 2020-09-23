@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CommitmentRoot(Vec<u8>);
+pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
     pub fn from_bytes(bytes: &[u8]) -> Self {
         Self {
