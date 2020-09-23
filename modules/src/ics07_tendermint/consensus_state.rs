@@ -6,7 +6,10 @@ use chrono::{TimeZone, Utc};
 use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use tendermint::block::Height;
 use tendermint::hash::Algorithm;
+use tendermint::lite::Header;
+use tendermint::lite::SignedHeader;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
 
@@ -63,6 +66,8 @@ impl From<ConsensusState> for RawConsensusState {
         }
     }
 }
+use tendermint::block::signed_header::SignedHeader as TMCommit;
+use tendermint::block::Header as TMHeader;
 
 impl ConsensusState {
     pub fn new(
@@ -76,6 +81,16 @@ impl ConsensusState {
             height,
             timestamp,
             next_validators_hash,
+        }
+    }
+
+    pub fn new_from_header(header: SignedHeader<TMCommit, TMHeader>) -> Self {
+        let root = CommitmentRoot::from_bytes(&header.header().app_hash);
+        Self {
+            root, // TODO
+            height: Height::from(header.header().height()),
+            timestamp: header.header().bft_time(),
+            next_validators_hash: header.header().next_validators_hash(),
         }
     }
 }

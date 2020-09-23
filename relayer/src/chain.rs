@@ -18,6 +18,7 @@ use std::error::Error;
 
 mod cosmos;
 pub use cosmos::CosmosSDKChain;
+use prost_types::Any;
 
 /// Handy type alias for the type of validator set associated with a chain
 pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
@@ -58,6 +59,9 @@ pub trait Chain {
     /// The naming is foreshadowing for an upcoming `grpc_query` function in the future.
     fn abci_query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
+    /// send a transaction with `msgs` to chain.
+    fn send(&self, msgs: Vec<Any>) -> Result<(), Self::Error>;
+
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
         &self.config().id
@@ -74,6 +78,10 @@ pub trait Chain {
 
     /// The trusting period configured for this chain
     fn trusting_period(&self) -> Duration;
+
+    /// The unbonding period of this chain
+    /// TODO - this is a GRPC query, needs to be implemented
+    fn unbonding_period(&self) -> Duration;
 
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThresholdFraction;
@@ -97,6 +105,17 @@ pub async fn query_latest_height(chain: &impl Chain) -> Result<Height, error::Er
     }
 
     Ok(status.sync_info.latest_block_height.into())
+}
+
+/// Query the latest header
+pub async fn query_latest_header<C>(
+    chain: &C,
+) -> Result<lite::SignedHeader<C::Commit, C::Header>, error::Error>
+where
+    C: Chain,
+{
+    let h = query_latest_height(chain).await?;
+    Ok(query_header_at_height::<C>(chain, h).await?)
 }
 
 /// Query a header at the given height via the RPC requester

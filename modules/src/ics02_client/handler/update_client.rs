@@ -23,7 +23,11 @@ pub fn process(
 ) -> HandlerResult<UpdateClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let MsgUpdateAnyClient { client_id, header } = msg;
+    let MsgUpdateAnyClient {
+        client_id,
+        header,
+        signer: _,
+    } = msg;
 
     let client_type = ctx
         .client_type(&client_id)
@@ -68,18 +72,24 @@ mod tests {
     use super::*;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::context_mock::MockClientContext;
+    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::mock_client::header::MockHeader;
+    use std::str::{from_utf8, FromStr};
+    use tendermint::account::Id as AccountId;
     use tendermint::block::Height;
 
     #[test]
     fn test_update_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
+        let signer = AccountId::from_str(from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+
         let mut ctx = MockClientContext::default();
         ctx.with_client(&client_id, ClientType::Mock, Height(42));
 
         let msg = MsgUpdateAnyClient {
             client_id,
             header: MockHeader(Height(46)).into(),
+            signer,
         };
 
         let output = process(&ctx, msg.clone());
@@ -105,12 +115,15 @@ mod tests {
     #[test]
     fn test_update_nonexisting_client() {
         let client_id: ClientId = "mockclient1".parse().unwrap();
+        let signer = AccountId::from_str(from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+
         let mut ctx = MockClientContext::default();
         ctx.with_client_consensus_state(&client_id, Height(42));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
             header: MockHeader(Height(46)).into(),
+            signer,
         };
 
         let output = process(&ctx, msg.clone());
@@ -132,6 +145,7 @@ mod tests {
             "mockclient2".parse().unwrap(),
             "mockclient3".parse().unwrap(),
         ];
+        let signer = AccountId::from_str(from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
 
         let initial_height = Height(45);
         let update_height = Height(49);
@@ -146,6 +160,7 @@ mod tests {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
                 header: MockHeader(update_height).into(),
+                signer,
             };
 
             let output = process(&ctx, msg.clone());

@@ -20,6 +20,8 @@ use crate::error::{Error, Kind};
 use super::Chain;
 use bytes::Bytes;
 use prost::Message;
+
+use prost_types::Any;
 use std::str::FromStr;
 
 pub struct CosmosSDKChain {
@@ -93,6 +95,12 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
+    /// Send a transaction that includes the specified messages
+    fn send(&self, _msgs: Vec<Any>) -> Result<(), Error> {
+        // TODO sign and broadcast_tx
+        Ok(())
+    }
+
     fn config(&self) -> &ChainConfig {
         &self.config
     }
@@ -107,6 +115,11 @@ impl Chain for CosmosSDKChain {
 
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period
+    }
+
+    fn unbonding_period(&self) -> Duration {
+        // TODO - query chain
+        Duration::from_secs(24 * 7 * 3)
     }
 
     fn trust_threshold(&self) -> TrustThresholdFraction {
