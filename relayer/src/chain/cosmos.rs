@@ -57,7 +57,7 @@ impl Chain for CosmosSDKChain {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
         if !data.is_provable() & prove {
             return Err(Kind::Store
-                .context("requested proof for privateStore path")
+                .context("requested proof for a path in the privateStore")
                 .into());
         }
         let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
@@ -67,7 +67,10 @@ impl Chain for CosmosSDKChain {
             dbg!("Todo: implement proof verification."); // Todo: Verify proof
         }
 
-        // Deserialize response data.
+        // Deserialize response data. This involves two steps: (1) `decode` from the wire bytes into
+        // a Prost type (such as `ibc_proto::channel::Channel`) called intuitively a raw type;
+        // and (2) then translate with `try_from` from the Prost raw type into an actual domain type
+        // (e.g., `ibc::ics04_channel::channel::ChannelEnd`).
         T::RawType::decode(Bytes::from(response))
             .map_err(|e| Kind::ResponseParsing.context(e).into())
             .and_then(|r| T::try_from(r).map_err(|e| Kind::ResponseParsing.context(e).into()))

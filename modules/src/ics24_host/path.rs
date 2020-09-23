@@ -11,7 +11,7 @@ pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),
-    ConsensusState(ClientId, u64),
+    ClientConsensusState(ClientId, u64),
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
@@ -27,7 +27,6 @@ impl Path {
     /// Indication if the path is provable.
     pub fn is_provable(&self) -> bool {
         match &self {
-            Path::ClientState(_) => false,
             Path::ClientConnections(_) => false,
             Path::Ports(_) => false,
             _ => true,
@@ -47,7 +46,7 @@ impl Display for Path {
         match &self {
             Path::ClientType(id) => write!(f, "clients/{}/clientType", id),
             Path::ClientState(id) => write!(f, "clients/{}/clientState", id),
-            Path::ConsensusState(id, height) => {
+            Path::ClientConsensusState(id, height) => {
                 write!(f, "clients/{}/consensusState/{}", id, height)
             }
             Path::ClientConnections(id) => write!(f, "clients/{}/connections", id),

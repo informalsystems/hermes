@@ -42,7 +42,7 @@ impl ClientDef for MockClient {
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client_prefixed_path =
-            Path::ConsensusState(client_id.clone(), height.value()).to_string();
+            Path::ClientConsensusState(client_id.clone(), height.value()).to_string();
 
         let _path = apply_prefix(prefix, client_prefixed_path)?;
 

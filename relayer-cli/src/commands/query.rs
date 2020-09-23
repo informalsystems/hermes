@@ -27,7 +27,6 @@ pub enum QueryClientCmds {
     /// The `query client state` subcommand
     #[options(help = "query client full state")]
     State(client::QueryClientStateCmd),
-    /// The `query client consensus` subcommand
 
     /// The `query client consensus` subcommand
     #[options(help = "query client consensus")]
