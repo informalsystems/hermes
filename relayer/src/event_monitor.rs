@@ -1,6 +1,8 @@
 use ibc::events::IBCEvent;
 use tendermint::{net, Error as TMError};
-use tendermint_rpc::{event_listener, event_listener::EventSubscription};
+use tendermint_rpc::Subscription;
+use tendermint_rpc::{SubscriptionClient, WebSocketClient};
+use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
 
 use ::tendermint::chain::Id as ChainId;
@@ -11,13 +13,15 @@ use tracing::{debug, info};
 pub struct EventMonitor {
     chain_id: ChainId,
     /// Websocket to collect events from
-    event_listener: event_listener::EventListener,
+    websocket_client: WebSocketClient,
     /// Channel to handler where the monitor for this chain sends the events
     channel_to_handler: Sender<(ChainId, Vec<IBCEvent>)>,
     /// Node Address
     node_addr: net::Address,
     /// Queries
-    event_queries: Vec<EventSubscription>,
+    event_queries: Vec<String>,
+    /// Subscriptions
+    subscriptions: Vec<Subscription>,
 }
 
 impl EventMonitor {
@@ -27,21 +31,27 @@ impl EventMonitor {
         rpc_addr: net::Address,
         channel_to_handler: Sender<(ChainId, Vec<IBCEvent>)>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut event_listener = event_listener::EventListener::connect(rpc_addr.clone()).await?;
+        let mut websocket_client = WebSocketClient::new(rpc_addr.clone()).await?;
+        let mut subscriptions = vec![];
+
         // TODO move them to config file(?)
         let event_queries = vec![
-            EventSubscription::TransactionSubscription,
-            EventSubscription::BlockSubscription,
+            "tm.event='NewTx'".to_string(),
+            "tm.event='NewBlock'".to_string(),
         ];
-        for query in event_queries.clone() {
-            event_listener.subscribe(query.clone()).await?;
+
+        for query in &event_queries {
+            let subscription = websocket_client.subscribe(query.clone()).await?;
+            subscriptions.push(subscription);
         }
+
         Ok(EventMonitor {
             chain_id,
-            event_listener,
+            websocket_client,
             channel_to_handler,
             node_addr: rpc_addr.clone(),
             event_queries,
+            subscriptions,
         })
     }
 
@@ -55,13 +65,18 @@ impl EventMonitor {
                 Err(err) => {
                     debug!("Web socket error: {}", err);
                     // Try to reconnect
-                    match event_listener::EventListener::connect(self.node_addr.clone()).await {
-                        Ok(event_listener) => {
+                    match WebSocketClient::new(self.node_addr.clone()).await {
+                        Ok(websocket_client) => {
                             debug!("Reconnected");
-                            self.event_listener = event_listener;
+
+                            self.websocket_client = websocket_client;
+                            self.subscriptions.clear();
+
                             for query in &self.event_queries {
-                                match self.event_listener.subscribe((*query).clone()).await {
-                                    Ok(..) => continue,
+                                match self.websocket_client.subscribe(query.clone()).await {
+                                    Ok(subscription) => {
+                                        self.subscriptions.push(subscription);
+                                    }
                                     Err(err) => {
                                         debug!("Error on recreating subscriptions {}", err);
                                         panic!("Abort during reconnection");
@@ -81,14 +96,19 @@ impl EventMonitor {
 
     /// get a TM event and extract the IBC events
     pub async fn collect_events(&mut self) -> Result<(), TMError> {
-        if let Some(tm_event) = self.event_listener.get_event().await? {
-            if let Ok(ibc_events) = ibc::events::get_all_events(tm_event) {
-                // TODO - send_timeout()?
-                self.channel_to_handler
-                    .send((self.chain_id, ibc_events))
-                    .await?;
+        for subscription in &mut self.subscriptions {
+            if let Some(event) = subscription.next().await {
+                if let Ok(event) = event {
+                    if let Ok(ibc_events) = ibc::events::get_all_events(event) {
+                        // TODO - send_timeout()?
+                        self.channel_to_handler
+                            .send((self.chain_id, ibc_events))
+                            .await?;
+                    }
+                }
             }
         }
+
         Ok(())
     }
 }

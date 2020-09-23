@@ -2,8 +2,9 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
-use tendermint::block::Height;
 use tracing::{debug, info, warn};
+
+use ibc::Height;
 
 use tendermint_light_client::supervisor::Handle;
 use tendermint_light_client::types::{LightBlock, TrustThreshold};

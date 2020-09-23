@@ -30,7 +30,7 @@ pub trait Chain {
     type ClientState: ClientState + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
-    type RpcClient: Send + Sync;
+    type RpcClient: RpcClient + Send + Sync;
 
     /// Error types defined by this chain
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
@@ -47,7 +47,7 @@ pub trait Chain {
     fn config(&self) -> &ChainConfig;
 
     /// Get a low-level RPC client for this chain
-    fn rpc_client(&self) -> &RpcClient;
+    fn rpc_client(&self) -> &Self::RpcClient;
 
     /// The trusting period configured for this chain
     fn trusting_period(&self) -> Duration;

@@ -64,7 +64,7 @@ impl MsgCreateClient {
             unbonding_period: self.unbonding_period,
             max_clock_drift: self.max_clock_drift,
             latest_height: self.header.signed_header.header.height,
-            frozen_height: 0.into(),
+            frozen_height: 0_u64.into(),
         })
     }
 }

@@ -8,9 +8,9 @@ authors = [
 
 [dependencies]
 ibc = { path = "../modules" }
-tendermint = "0.16.0"
-tendermint-rpc = { version = "0.16.0", features = ["client"] }
-tendermint-light-client = "0.16.0"
+tendermint = { version = "0.16.0", path = "../../tendermint-rs/tendermint" }
+tendermint-rpc = { version = "0.16.0", features = ["http-client", "websocket-client"], path = "../../tendermint-rs/rpc" }
+tendermint-light-client = { version = "0.16.0", path = "../../tendermint-rs/light-client" }
 tendermint-proto = "0.1.0"
 
 anomaly = "0.2.0"

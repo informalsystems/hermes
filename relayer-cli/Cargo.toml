@@ -10,7 +10,7 @@ authors = [
 relayer = { path = "../relayer" }
 ibc = { path = "../modules" }
 
-tendermint = "0.16.0"
+tendermint = { version = "0.16.0", path = "../../tendermint-rs/tendermint" }
 tendermint-proto = "0.1.0"
 
 abscissa_tokio = "0.5.1"

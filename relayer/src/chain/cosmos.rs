@@ -3,7 +3,8 @@ use std::time::Duration;
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
 use tendermint_light_client::types::TrustThreshold;
-use tendermint_rpc::Client as RpcClient;
+use tendermint_rpc::Client;
+use tendermint_rpc::HttpClient;
 
 use core::future::Future;
 use ibc::ics07_tendermint::client_state::ClientState;
@@ -18,12 +19,12 @@ use std::str::FromStr;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
-    rpc_client: RpcClient,
+    rpc_client: HttpClient,
 }
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
-        let rpc_client = RpcClient::new(config.rpc_addr.clone());
+        let rpc_client = HttpClient::new(config.rpc_addr.clone()).unwrap(); // FIXME(romac): unwrap
 
         Ok(Self { config, rpc_client })
     }
@@ -31,7 +32,7 @@ impl CosmosSDKChain {
 
 impl Chain for CosmosSDKChain {
     type LightBlock = tendermint_light_client::types::LightBlock;
-    type RpcClient = tendermint_rpc::Client;
+    type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
     type Error = anomaly::Error<Kind>;
@@ -57,7 +58,7 @@ impl Chain for CosmosSDKChain {
         &self.config
     }
 
-    fn rpc_client(&self) -> &RpcClient {
+    fn rpc_client(&self) -> &HttpClient {
         &self.rpc_client
     }
 
