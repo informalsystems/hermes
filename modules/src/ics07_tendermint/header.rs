@@ -1,6 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
 
-// use tendermint::lite::types::SignedHeader;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 

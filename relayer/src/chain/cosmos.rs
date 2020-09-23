@@ -1,10 +1,8 @@
 use std::time::Duration;
 
 use tendermint::abci::Path as TendermintABCIPath;
-use tendermint::block::signed_header::SignedHeader as TMCommit;
-use tendermint::block::Header as TMHeader;
 use tendermint::block::Height;
-use tendermint::lite::TrustThresholdFraction;
+use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
 use core::future::Future;
@@ -12,7 +10,6 @@ use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
-use crate::client::rpc_requester::RpcRequester;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
@@ -22,29 +19,21 @@ use std::str::FromStr;
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: RpcClient,
-    requester: RpcRequester,
 }
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
-        // TODO: Derive Clone on RpcClient in tendermint-rs
-        let requester = RpcRequester::new(RpcClient::new(config.rpc_addr.clone()));
         let rpc_client = RpcClient::new(config.rpc_addr.clone());
 
-        Ok(Self {
-            config,
-            rpc_client,
-            requester,
-        })
+        Ok(Self { config, rpc_client })
     }
 }
 
 impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
-    type Commit = TMCommit;
+    type LightBlock = tendermint_light_client::types::LightBlock;
+    type RpcClient = tendermint_rpc::Client;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
-    type Requester = RpcRequester;
     type Error = anomaly::Error<Kind>;
 
     fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
@@ -72,16 +61,12 @@ impl Chain for CosmosSDKChain {
         &self.rpc_client
     }
 
-    fn requester(&self) -> &Self::Requester {
-        &self.requester
-    }
-
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period
     }
 
-    fn trust_threshold(&self) -> TrustThresholdFraction {
-        TrustThresholdFraction::default()
+    fn trust_threshold(&self) -> TrustThreshold {
+        TrustThreshold::default()
     }
 }
 

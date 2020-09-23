@@ -1,10 +1,10 @@
 use std::path::Path;
 
-use tendermint::lite::{Height, TrustedState};
-
 use crate::chain::Chain;
 use crate::client::trust_options::TrustOptions;
 use crate::error;
+
+use tendermint::block::Height;
 
 /// In-memory store
 pub mod mem;
@@ -31,20 +31,6 @@ pub trait Store<C>
 where
     C: Chain,
 {
-    /// Get the last height to which the light client has synced up to, if any
-    fn last_height(&self) -> Result<Option<Height>, error::Error>;
-
-    /// Add a trusted state to the store
-    fn add(&mut self, state: TrustedState<C::Commit, C::Header>) -> Result<(), error::Error>;
-
-    /// Fetch the trusted state at the given height from the store, if it exists
-    fn get(&self, height: StoreHeight) -> Result<TrustedState<C::Commit, C::Header>, error::Error>;
-
-    /// Check whether the trusted store contains a trusted state at the given height
-    fn has(&self, height: StoreHeight) -> bool {
-        self.get(height).is_ok()
-    }
-
     /// Get the trust options configured for the associated chain, if any
     fn get_trust_options(&self) -> Result<TrustOptions, error::Error>;
 

@@ -5,9 +5,9 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 
+use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
-use tendermint::lite::Height;
 
 use relayer::chain::CosmosSDKChain;
 use relayer::client::trust_options::TrustOptions;
