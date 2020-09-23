@@ -465,16 +465,14 @@ impl ClientDef for AnyClient {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics07_tendermint::client_state::ClientState;
-    use std::time::Duration;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use prost_types::Any;
     use std::convert::TryFrom;
-
+    use std::time::Duration;
 
     #[test]
     fn to_and_from_any() {

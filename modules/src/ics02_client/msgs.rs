@@ -6,12 +6,12 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
-use prost_types::Any;
 use tendermint::account::Id as AccountId;
 
+use crate::ics02_client::error;
+use ibc_proto::ibc::client::MsgCreateClient;
 use std::convert::TryFrom;
 use tendermint_proto::{DomainType, Error, Kind};
 
@@ -69,7 +69,7 @@ impl Msg for MsgCreateAnyClient {
 
     fn get_sign_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
-        let raw_msg: Any = self.clone().into();
+        let raw_msg: MsgCreateClient = self.clone().into();
         prost::Message::encode(&raw_msg, &mut buf).unwrap();
         buf
     }
@@ -79,28 +79,51 @@ impl Msg for MsgCreateAnyClient {
     }
 }
 
-impl DomainType<Any> for MsgCreateAnyClient {}
+impl DomainType<MsgCreateClient> for MsgCreateAnyClient {}
 
-impl TryFrom<Any> for MsgCreateAnyClient {
+impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            "/ibc.client.MsgCreateClient" => Ok(MsgCreateAnyClient::decode_vec(&raw.value)?),
+    fn try_from(raw: MsgCreateClient) -> Result<Self, Self::Error> {
+        let raw_client_state = match raw.client_state {
+            None => Err(Kind::DecodeMessage.context(error::Kind::InvalidRawClientState)),
+            Some(raw_state) => Ok(raw_state),
+        }?;
 
-            _ => Err(Kind::DecodeMessage
-                .context(error::Kind::UnknownClientMessageType(raw.type_url))
-                .into()),
-        }
+        let client_type = match raw_client_state.type_url.as_str() {
+            "/ibc.tendermint.ClientState" => Ok(ClientType::Tendermint),
+
+            _ => Err(
+                Kind::DecodeMessage.context(error::Kind::UnknownConsensusStateType(
+                    raw_client_state.clone().type_url,
+                )),
+            ),
+        }?;
+        let raw_consensus_state = match raw.consensus_state {
+            None => Err(Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState)),
+            Some(raw_consensus_state) => Ok(raw_consensus_state),
+        }?;
+
+        Ok(MsgCreateAnyClient {
+            client_id: raw.client_id.parse().unwrap(),
+            client_type,
+            client_state: AnyClientState::try_from(raw_client_state).unwrap(),
+            consensus_state: AnyConsensusState::try_from(raw_consensus_state).unwrap(),
+            signer: AccountId::new(<[u8; 20]>::try_from(&raw.signer[..20]).unwrap()),
+        })
     }
 }
 
-impl From<MsgCreateAnyClient> for Any {
-    fn from(value: MsgCreateAnyClient) -> Self {
-        let value = value.encode_vec().unwrap();
-        Any {
-            type_url: "/ibc.client.MsgCreateClient".to_string(),
-            value,
+impl From<MsgCreateAnyClient> for MsgCreateClient {
+    fn from(ics_msg: MsgCreateAnyClient) -> Self {
+        let signer = ics_msg.signer;
+        let signerb = signer.as_bytes();
+
+        MsgCreateClient {
+            client_id: ics_msg.client_id.to_string(),
+            client_state: Some(ics_msg.client_state.into()),
+            consensus_state: Some(ics_msg.consensus_state.into()),
+            signer: Vec::from(signerb),
         }
     }
 }
@@ -116,23 +139,23 @@ pub struct MsgUpdateAnyClient {
 #[cfg(test)]
 mod tests {
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics07_tendermint::client_state::ClientState;
-    use std::time::Duration;
-    use crate::ics07_tendermint::header::test_util::get_dummy_header;
-    use std::str::{from_utf8, FromStr};
-    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
-    use crate::ics02_client::msgs::MsgCreateAnyClient;
     use crate::ics02_client::client_type::ClientType;
-    use prost_types::Any;
-    use tendermint::account::Id as AccountId;
+    use crate::ics02_client::msgs::MsgCreateAnyClient;
+    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics24_host::identifier::ClientId;
+    use ibc_proto::ibc::client::MsgCreateClient;
     use std::convert::TryFrom;
-
+    use std::str::{from_utf8, FromStr};
+    use std::time::Duration;
+    use tendermint::account::Id as AccountId;
 
     #[test]
     fn to_and_from_any() {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = AccountId::from_str(from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+
         let tm_header = get_dummy_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.signed_header.header.chain_id.to_string(),
@@ -151,7 +174,7 @@ mod tests {
             signer,
         };
 
-        let raw = Any::from(msg.clone());
+        let raw = MsgCreateClient::from(msg.clone());
         let msg_back = MsgCreateAnyClient::try_from(raw).unwrap();
         assert_eq!(msg, msg_back);
     }

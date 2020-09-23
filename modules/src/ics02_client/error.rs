@@ -51,6 +51,9 @@ pub enum Kind {
 
     #[error("unknown client message type: {0}")]
     UnknownClientMessageType(String),
+
+    #[error("invalid signer")]
+    InvalidSigner,
 }
 
 impl Kind {
