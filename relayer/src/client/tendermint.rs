@@ -1,27 +1,54 @@
+use async_trait::async_trait;
 use std::sync::Arc;
+use tokio::task::spawn_blocking;
 
 use ibc::Height;
-
-use tendermint_light_client::supervisor::Handle;
+use tendermint_light_client::supervisor::{Handle, SupervisorHandle};
 use tendermint_light_client::types::LightBlock;
 
+use crate::error;
+
 pub struct LightClient {
-    handle: Arc<Box<dyn Handle + Send + Sync>>,
+    handle: SupervisorHandle,
 }
 
+impl LightClient {
+    pub fn new(handle: SupervisorHandle) -> Self {
+        Self { handle }
+    }
+}
+
+#[async_trait]
 impl super::LightClient<LightBlock> for LightClient {
-    fn verify_latest(
-        &mut self,
-        now: std::time::SystemTime,
-    ) -> Result<Option<LightBlock>, crate::error::Error> {
-        todo!()
+    async fn verify_to_latest(&mut self) -> Result<LightBlock, error::Error> {
+        let handle = self.handle.clone();
+
+        spawn_blocking(move || {
+            handle
+                .verify_to_highest()
+                .map_err(|e| error::Kind::LightClient.context(e).into())
+        })
+        .await
+        .expect("task failed to execute to completion")
     }
 
-    fn get_minimal_set(
+    async fn verify_to_target(&self, height: Height) -> Result<LightBlock, error::Error> {
+        let handle = self.handle.clone();
+
+        spawn_blocking(move || {
+            handle
+                .verify_to_target(height)
+                .map_err(|e| error::Kind::LightClient.context(e).into())
+        })
+        .await
+        .expect("task failed to execute to completion")
+    }
+
+    async fn get_minimal_set(
         &mut self,
         latest_client_state_height: Height,
         target_height: Height,
-    ) -> Result<Vec<LightBlock>, crate::error::Error> {
+    ) -> Result<Vec<Height>, error::Error> {
         todo!()
     }
 }

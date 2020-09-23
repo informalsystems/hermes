@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::time::{Duration, SystemTime};
 
 use anomaly::fail;
+use async_trait::async_trait;
 use tracing::{debug, info, warn};
 
 use ibc::Height;
@@ -19,22 +20,19 @@ pub use trust_options::TrustOptions;
 pub mod tendermint;
 
 /// Defines a client from the point of view of the relayer.
+#[async_trait]
 pub trait LightClient<LightBlock> {
     /// Fetch and verify the latest header from the chain
-    ///
-    /// If the fetched header is higher than the previous trusted state,
-    /// and it verifies then we succeed and return it wrapped in `Some(_)`.
-    ///
-    /// If it is higher but does not verify we fail with an error.
-    ///
-    /// If it is lower we succeed but return `None`.
-    ///
-    /// If there is no trusted state yet we fail with an error.
-    fn verify_latest(&mut self, now: SystemTime) -> Result<Option<LightBlock>, error::Error>;
+    async fn verify_to_latest(&mut self) -> Result<LightBlock, error::Error>;
 
-    fn get_minimal_set(
+    /// Fetch and verify the header from the chain at the given height
+    async fn verify_to_target(&self, height: Height) -> Result<LightBlock, error::Error>;
+
+    /// Compute the minimal ordered set of heights needed to update the light
+    /// client state from from `latest_client_state_height` to `target_height`.
+    async fn get_minimal_set(
         &mut self,
         latest_client_state_height: Height,
         target_height: Height,
-    ) -> Result<Vec<LightBlock>, error::Error>;
+    ) -> Result<Vec<Height>, error::Error>;
 }
