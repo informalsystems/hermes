@@ -94,8 +94,9 @@ impl EventMonitor {
         }
     }
 
-    /// get a TM event and extract the IBC events
+    /// Collect the IBC events from the subscriptions
     pub async fn collect_events(&mut self) -> Result<(), TMError> {
+        // FIXME: What to do with errors?
         for subscription in &mut self.subscriptions {
             if let Some(event) = subscription.next().await {
                 if let Ok(event) = event {
