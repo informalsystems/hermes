@@ -56,10 +56,18 @@ async fn init_monitor(
     chain_config: ChainConfig,
     tx: Sender<(ChainId, Vec<IBCEvent>)>,
 ) -> EventMonitor {
-    EventMonitor::create(chain_config.id, chain_config.rpc_addr.clone(), tx)
-        .await
-        .unwrap_or_else(|e| {
-            status_err!("couldn't initialize event monitor: {}", e);
-            process::exit(1);
-        })
+    let mut event_monitor =
+        EventMonitor::create(chain_config.id, chain_config.rpc_addr.clone(), tx)
+            .await
+            .unwrap_or_else(|e| {
+                status_err!("couldn't initialize event monitor: {}", e);
+                process::exit(1);
+            });
+
+    event_monitor.subscribe().await.unwrap_or_else(|e| {
+        status_err!("couldn't initialize subscriptions: {}", e);
+        process::exit(1);
+    });
+
+    event_monitor
 }
