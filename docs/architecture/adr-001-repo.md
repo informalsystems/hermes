@@ -124,17 +124,25 @@ name prefixed with "Raw", for example:
 use ibc_proto::channel::Channel as RawChannel;
 ```
 
-For any Raw data type that is defined in `ibc-proto` we implement the `TryFromRaw` trait, which serves as a translation
+For any Raw data type that is defined in `ibc-proto` we implement the `DomainType` trait, which serves as a translation
 & validation layer between the proto ("Raw") types and the domain types. For example, for a `Channel` we do as follows:
 
 ```Rust
-impl TryFromRaw for ChannelEnd {
-    type RawType = RawChannel;
+impl DomainType<RawChannel> for ChannelEnd {}
+
+impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Translate, validate each field from RawChannel into a Channel.
     }
+}
+
+impl From<ChannelEnd> for RawChannel {
+    fn from(value: ChannelEnd) -> Self {
+        // Translate Channel into a RawChannel
+    }
+}
 ```
 
 This issue [#130](https://github.com/informalsystems/ibc-rs/issues/130) is a good starting place for more context

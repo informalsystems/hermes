@@ -5,8 +5,9 @@ use relayer::config::{ChainConfig, Config};
 
 use crate::error::{Error, Kind};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
@@ -81,7 +82,7 @@ impl Runnable for QueryClientStateCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
 
         let res: Result<AnyClientState, Error> = chain
-            .abci_query(ClientState(opts.client_id), opts.height, opts.proof)
+            .query(ClientState(opts.client_id), opts.height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
@@ -170,7 +171,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<AnyConsensusState, Error> = chain
-            .abci_query(
+            .query(
                 ClientConsensusState(opts.client_id, opts.consensus_height),
                 opts.height,
                 opts.proof,
@@ -284,11 +285,10 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<Vec<ConnectionId>>(
-            ClientConnections(opts.client_id),
-            opts.height,
-            opts.proof,
-        );
+        let res: Result<ConnectionIDs, Error> = chain
+            .query(ClientConnections(opts.client_id), opts.height, opts.proof)
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
             Err(e) => status_info!("client connections query error", "{}", e),

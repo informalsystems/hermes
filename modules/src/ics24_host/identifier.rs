@@ -52,13 +52,13 @@ impl PartialEq<str> for ClientId {
 pub struct ConnectionId(String);
 
 impl ConnectionId {
-    /// Get this identifier as a borrowed `&str`
+    /// Get full path of the identifier: connections/{id}
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Get this identifier as a borrowed byte slice
-    pub fn as_bytes(&self) -> &[u8] {
+    pub fn path_as_bytes(&self) -> &[u8] {
         &self.0.as_bytes()
     }
 }
