@@ -16,7 +16,7 @@ use crate::config::ChainConfig;
 use crate::error;
 use std::error::Error;
 
-mod cosmos;
+pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 use prost_types::Any;
 
