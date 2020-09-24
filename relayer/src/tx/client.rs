@@ -26,7 +26,7 @@ pub fn create_client(opts: CreateClientStateOptions) -> Result<(), Error> {
 
     // Query the client state on destination chain.
     if dest_chain
-        .abci_query(ClientStatePath(opts.clone().dest_client_id), 0, false)
+        .query(ClientStatePath(opts.clone().dest_client_id), 0, false)
         .is_ok()
     {
         return Err(Into::<Error>::into(Kind::CreateClient(

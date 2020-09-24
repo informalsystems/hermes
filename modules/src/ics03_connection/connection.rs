@@ -2,12 +2,12 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::try_from_raw::TryFromRaw;
 use ibc_proto::ibc::connection::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -17,8 +17,9 @@ pub struct ConnectionEnd {
     versions: Vec<String>,
 }
 
-impl TryFromRaw for ConnectionEnd {
-    type RawType = RawConnectionEnd;
+impl DomainType<RawConnectionEnd> for ConnectionEnd {}
+
+impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         Ok(Self::new(
@@ -33,6 +34,17 @@ impl TryFromRaw for ConnectionEnd {
                 .try_into()?,
             value.versions,
         )?)
+    }
+}
+
+impl From<ConnectionEnd> for RawConnectionEnd {
+    fn from(value: ConnectionEnd) -> Self {
+        RawConnectionEnd {
+            client_id: value.client_id.to_string(),
+            versions: value.versions,
+            state: value.state as i32,
+            counterparty: Some(RawCounterparty::from(value.counterparty)),
+        }
     }
 }
 
@@ -131,6 +143,18 @@ impl TryFrom<RawCounterparty> for Counterparty {
                 .key_prefix
                 .into(),
         )?)
+    }
+}
+
+impl From<Counterparty> for RawCounterparty {
+    fn from(value: Counterparty) -> Self {
+        RawCounterparty {
+            client_id: value.client_id.as_str().to_string(),
+            connection_id: value.connection_id.as_str().to_string(),
+            prefix: Some(ibc_proto::ibc::commitment::MerklePrefix {
+                key_prefix: value.prefix.0,
+            }),
+        }
     }
 }
 
