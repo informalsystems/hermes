@@ -43,13 +43,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
             client_id: value.client_id.to_string(),
             versions: value.versions,
             state: value.state as i32,
-            counterparty: Some(ibc_proto::ibc::connection::Counterparty {
-                client_id: value.counterparty.client_id.as_str().to_string(),
-                connection_id: value.counterparty.connection_id.to_string(),
-                prefix: Some(ibc_proto::ibc::commitment::MerklePrefix {
-                    key_prefix: value.counterparty.prefix.0,
-                }),
-            }),
+            counterparty: Some(RawCounterparty::from(value.counterparty)),
         }
     }
 }
