@@ -1,9 +1,9 @@
-use crate::context::ChainContext;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
+use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::ICS26RoutedMsgs;
-use crate::ics26_routing::msgs::ICS26RoutedMsgs::{ICS2Msg, ICS3Msg};
+use crate::ics26_routing::msgs::ICS26RoutingMsg;
+use crate::ics26_routing::msgs::ICS26RoutingMsg::{ICS2Msg, ICS3Msg};
 use ibc_proto::cosmos::tx::v1beta1::Tx;
 
 // TODO: Implement this (the tx type is probably wrong also). Rough sketch:
@@ -12,15 +12,15 @@ use ibc_proto::cosmos::tx::v1beta1::Tx;
 // 3. if all message in the tx pass through correctly, then apply the side-effects to the context
 pub fn deliver_tx<Ctx>(_ctx: &mut Ctx, _tx: Tx) -> Result<(), Error>
 where
-    Ctx: ChainContext,
+    Ctx: ICS26Context,
 {
     unimplemented!()
 }
 
 /// Top-level dispatch function. Routes incoming ICS messages to their corresponding module.
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ICS26RoutedMsgs) -> Result<(), Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ICS26RoutingMsg) -> Result<(), Error>
 where
-    Ctx: ChainContext,
+    Ctx: ICS26Context,
 {
     match msg {
         ICS2Msg(msg) => {
@@ -42,3 +42,14 @@ where
 
     Ok(())
 }
+
+// #[cfg(test)]
+// mod tests {
+//
+//     #[test]
+//     fn routing_dispatch() {
+//         struct DispatchParams {
+//             // ctx:
+//         }
+//     }
+// }

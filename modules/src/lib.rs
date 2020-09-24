@@ -17,6 +17,7 @@
 //! - ICS 03: Connection
 //! - ICS 04: Channel
 //! - ICS 07: Tendermint Client
+//! - ICS 20: Fungible Token
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
