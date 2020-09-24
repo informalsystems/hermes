@@ -23,8 +23,6 @@ pub struct ChannelConfig {
 
 pub struct Channel {
     config: ChannelConfig,
-    pub src_chain: Box<dyn Chain>,
-    pub dst_chain: Box<dyn Chain>,
 }
 
 impl ChannelConfig {
@@ -47,12 +45,14 @@ impl ChannelConfig {
 }
 
 impl Channel {
-    pub fn new(connection: Connection, config: ChannelConfig) -> Result<Channel, ChannelError> {
+    pub fn new(
+        src_chain: &dyn Chain,
+        dst_chain: &dyn Chain,
+        connection: Connection, // Semantic dependency
+        config: ChannelConfig) -> Result<Channel, ChannelError> {
         // XXX: Perform the channel handshake
         return Ok(Channel{
             config,
-            src_chain: connection.src_chain,
-            dst_chain: connection.dst_chain,
         })
     }
 }

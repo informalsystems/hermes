@@ -10,13 +10,12 @@ pub enum ConnectionError {
 }
 
 pub struct Connection {
-    pub src_chain: Box<dyn Chain>,
-    pub dst_chain: Box<dyn Chain>,
+    config: ConnectionConfig,
 }
 
 struct ConnectionSideConfig {
     connection_id: ConnectionId,
-    chain_id: ChainId, 
+    chain_id: ChainId,
     client_id: ClientId,
 }
 
@@ -43,15 +42,18 @@ impl ConnectionConfig {
 }
 
 impl Connection {
-    pub fn new(foreign_client: ForeignClient, config: ConnectionConfig) -> Result<Connection, ConnectionError> {
+    pub fn new(
+        _src_chain: &dyn Chain,
+        _dst_chain: &dyn Chain,
+        _foreign_client: &ForeignClient,
+        config: ConnectionConfig) -> Result<Connection, ConnectionError> {
         // Check the status of the established connection
         // * query connection on source chain
         // * query the destination chain
-        // ** based on the status on the status from src and dest, we know what to do
+        //   * based on the status on the status from src and dest, we know what to do
         // * then we proceed with Handshake protocol
-        return Ok(Connection{
-            src_chain: foreign_client.src_chain,
-            dst_chain: foreign_client.dst_chain,
+        return Ok(Connection {
+            config,
         })
     }
 }

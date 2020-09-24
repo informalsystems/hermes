@@ -18,24 +18,40 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let dst_chain_handle = dst_chain.handle();
     thread::spawn(move || {
+        // What should we do on return here?
         dst_chain.run().unwrap();
     });
 
-    let foreign_client = ForeignClient::new(src_chain_handle, dst_chain_handle, ForeignClientConfig::default())?;
-    let connection = Connection::new(foreign_client, ConnectionConfig::default()).unwrap();
-    let channel = Channel::new(connection, ChannelConfig::default()).unwrap();
+    // Another idea is to encode the semantic depency more explicitely as
+    // foreign_client.new_connect(...).new_channel(...).new_link
+    // I think this is actualy what we want
+    // Think about how that would work with multiple links
 
-    // What if we create the clients and stuff here and then pass the link
-    match Link::new(channel, LinkConfig::default()) { // TODO: Error Handling
-        Ok(link) => {
-            link.run()?;
-        },
-        // Failures:
-        // * Client Failure
-        // * Connection Failure
-        // * Channel Failure
-        Err(_err) => panic!("couldn't create a link :("),
-    }
+    let foreign_client = ForeignClient::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        ForeignClientConfig::default())?;
+
+    let connection = Connection::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        &foreign_client, // Create a semantic dependecy
+        ConnectionConfig::default()).unwrap();
+
+    let channel = Channel::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        connection, // Semantic dependecy
+        ChannelConfig::default()).unwrap();
+
+    let link = Link::new(
+        src_chain_handle,
+        dst_chain_handle,
+        foreign_client, // Actual dependecy
+        channel,        // Semantic dependecy
+        LinkConfig::default())?;
+
+    link.run()?;
 
     Ok(())
 }

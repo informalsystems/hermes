@@ -22,22 +22,25 @@ impl ForeignClientConfig {
     }
 }
 
-
 pub struct ForeignClient {
-    pub src_chain: Box<dyn Chain>,
-    pub dst_chain: Box<dyn Chain>,
+    config: ForeignClientConfig,
 }
 
 impl ForeignClient {
     pub fn new(
-        src_chain: impl Chain + 'static,
-        dst_chain: impl Chain + 'static,
-        _config: ForeignClientConfig) -> Result<ForeignClient, ForeignClientError> {
+        src_chain: &dyn Chain,
+        dst_chain: &dyn Chain,
+        config: ForeignClientConfig) -> Result<ForeignClient, ForeignClientError> {
         // TODO: Client Handshake
         return Ok(ForeignClient {
-            src_chain: Box::new(src_chain),
-            dst_chain: Box::new(dst_chain),
+            config,
         })
     }
 
+    pub fn update(
+        src_chain: impl Chain,
+        dst_chain: impl Chain) -> Result<(), ForeignClientError> {
+        // TODO
+        return Ok(());
+    }
 }

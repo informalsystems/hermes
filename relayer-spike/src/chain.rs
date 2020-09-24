@@ -70,6 +70,13 @@ pub trait Chain: Send {
     fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader>;
 
     // TODO: Error handling
+    // Errors:
+    // * FullNode Error
+    // * LightClient Errror
+    // * ForeignClientError
+    // * ConnectionError
+    // * ChannelError
+    // * PacketError
     fn submit(&self, datagrams: Vec<Datagram>);
 
     // TODO: Error handling
@@ -92,9 +99,6 @@ impl ProdChain {
             sender,
         }
     }
-
-    // TODO: Figure this out
-    // XXX: Move this to ChainRuntime
 }
 
 impl Chain for ProdChain {
