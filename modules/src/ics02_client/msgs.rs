@@ -116,14 +116,11 @@ impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
 
 impl From<MsgCreateAnyClient> for MsgCreateClient {
     fn from(ics_msg: MsgCreateAnyClient) -> Self {
-        let signer = ics_msg.signer;
-        let signerb = signer.as_bytes();
-
         MsgCreateClient {
             client_id: ics_msg.client_id.to_string(),
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: Vec::from(signerb),
+            signer: Vec::from(ics_msg.signer.as_bytes()),
         }
     }
 }

@@ -85,9 +85,8 @@ impl ConsensusState {
     }
 
     pub fn new_from_header(header: SignedHeader<TMCommit, TMHeader>) -> Self {
-        let root = CommitmentRoot::from_bytes(&header.header().app_hash);
         Self {
-            root, // TODO
+            root: CommitmentRoot::from_bytes(&header.header().app_hash),
             height: Height::from(header.header().height()),
             timestamp: header.header().bft_time(),
             next_validators_hash: header.header().next_validators_hash(),
