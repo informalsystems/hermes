@@ -96,5 +96,5 @@ pub fn create_client(opts: CreateClientStateOptions) -> Result<(), Error> {
     };
 
     proto_msgs.push(any_msg);
-    dest_chain.send(proto_msgs)
+    dest_chain.send(&proto_msgs)
 }

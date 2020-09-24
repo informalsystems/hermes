@@ -13,7 +13,7 @@ use tendermint::lite::SignedHeader;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub height: crate::Height,
     pub timestamp: tendermint::time::Time,

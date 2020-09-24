@@ -1,4 +1,6 @@
+use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 
 use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
@@ -14,10 +16,8 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, Com
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
 use ::tendermint::block::Height;
-use prost_types::Any;
-
-use std::convert::TryFrom;
 use tendermint_proto::{DomainType, Error, Kind};
+
 #[cfg(test)]
 use {
     crate::mock_client::client_def::MockClient,
@@ -110,7 +110,7 @@ impl Header for AnyHeader {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
@@ -191,7 +191,7 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnyConsensusState {
     Tendermint(crate::ics07_tendermint::consensus_state::ConsensusState),
 

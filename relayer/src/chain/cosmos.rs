@@ -96,7 +96,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&self, _msgs: Vec<Any>) -> Result<(), Error> {
+    fn send(&self, _msgs: &[Any]) -> Result<(), Error> {
         // TODO sign and broadcast_tx
         Ok(())
     }

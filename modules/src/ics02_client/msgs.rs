@@ -3,16 +3,16 @@
 //! handles these messages in two layers: first with the general ICS 02 client handler, which
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
+use std::convert::{TryFrom, TryInto};
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
-use tendermint::account::Id as AccountId;
 
-use crate::ics02_client::error;
 use ibc_proto::ibc::client::MsgCreateClient;
-use std::convert::TryFrom;
+use tendermint::account::Id as AccountId;
 use tendermint_proto::{DomainType, Error, Kind};
 
 pub const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
@@ -24,7 +24,7 @@ pub enum ClientMsg {
 }
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgCreateAnyClient {
     pub client_id: ClientId,
     pub client_type: ClientType,
@@ -109,7 +109,7 @@ impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
             client_type,
             client_state: AnyClientState::try_from(raw_client_state).unwrap(),
             consensus_state: AnyConsensusState::try_from(raw_consensus_state).unwrap(),
-            signer: AccountId::new(<[u8; 20]>::try_from(&raw.signer[..20]).unwrap()),
+            signer: AccountId::new(raw.signer[..20].try_into().unwrap()),
         })
     }
 }

@@ -60,7 +60,7 @@ pub trait Chain {
     fn abci_query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&self, msgs: Vec<Any>) -> Result<(), Self::Error>;
+    fn send(&self, _msgs: &[Any]) -> Result<(), Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
