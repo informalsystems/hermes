@@ -28,4 +28,12 @@ serde_json = { version = "1" }
 bytes = "0.5.6"
 prost = "0.6.1"
 
+# Needed for tx sign when ready in tendermint upgrade
+#k256 = { version = "0.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
+#tendermint-rpc = "0.15"
+#rust-crypto = "0.2.36"
+#hex = "0.4"
+#ripemd160 = { version = "0.9", optional = true }
+#sha2 = { version = "0.9.1", default-features = false }
+
 [dev-dependencies]

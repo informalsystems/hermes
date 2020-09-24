@@ -66,10 +66,16 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThresholdFraction;
 
     /// Takes messages and builds, signs and marshals in a Tx to prepare for broadcast
-    fn build_sign_tx<T: Error, U: Msg<ValidationError = T>>(&self, msgs: Vec<Box<U>>) -> Result<Vec<u8>, error::Error>;
+    fn build_sign_tx<T: Error, U: Msg<ValidationError = T>>(
+        &self,
+        msgs: Vec<Box<U>>,
+    ) -> Result<Vec<u8>, error::Error>;
 
     /// Wraps a message in a stdtx, signs and sends it
-    fn send_msg<T: Error, U: Msg<ValidationError = T>>(&self, msgs: Vec<Box<U>>) -> Result<Vec<u8>, error::Error>;
+    fn send_msg<T: Error, U: Msg<ValidationError = T>>(
+        &self,
+        msgs: Vec<Box<U>>,
+    ) -> Result<Vec<u8>, error::Error>;
 }
 
 /// Query the latest height the chain is at via a RPC query

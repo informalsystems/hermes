@@ -11,6 +11,7 @@
 
 //! IBC Relayer implementation
 
+pub mod auth;
 pub mod chain;
 pub mod client;
 pub mod config;
@@ -18,5 +19,5 @@ pub mod error;
 pub mod event_handler;
 pub mod event_monitor;
 pub mod store;
+pub mod tx;
 pub mod util;
-pub mod auth;
