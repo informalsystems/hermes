@@ -1,11 +1,17 @@
-use crate::types::{ChainId, ClientId};
-use crate::chain::Chain;
+use crate::types::{Height, Hash, ChainId, ChannelId, ClientId, Datagram};
+use crate::chain::{Chain, SignedHeader, MembershipProof, ConsensusState};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
     #[error("Fail")]
     Fail(),
+
+    #[error("Verificaiton failed")]
+    VerificationError(),
+
+    #[error("Headers didn't match")]
+    HeaderMismatch(),
 }
 
 pub struct ForeignClientConfig {
@@ -38,9 +44,54 @@ impl ForeignClient {
     }
 
     pub fn update(
-        src_chain: impl Chain,
-        dst_chain: impl Chain) -> Result<(), ForeignClientError> {
-        // TODO
-        return Ok(());
+        &mut self,
+        src_chain: &dyn Chain,
+        dst_chain: &dyn Chain,
+        src_target_height: Height) -> Result<Height, ForeignClientError> {
+        return Ok(src_target_height);
+        let (src_consensus_state, dst_membership_proof) =
+            dst_chain.consensus_state(src_chain.id(), src_target_height);
+
+        let dst_sh = dst_chain.get_header(dst_membership_proof.height + 1);
+        // type verifyMembership = (root: CommitmentRoot, proof: CommitmentProof, path: CommitmentPath, value: Value) => boolean (ICS-023)
+        if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
+            // Error: Destination chain provided invalid consensus_state
+            return Err(ForeignClientError::VerificationError())
+        }
+
+        if src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
+            return Err(ForeignClientError::HeaderMismatch())
+        }
+
+        while src_consensus_state.height < src_target_height {
+            let src_signed_headers = src_chain.get_minimal_set(src_consensus_state.height, src_target_height);
+
+            // This might fail semantically due to competing relayers
+            // Even if this fails, we need to continue
+            dst_chain.submit(vec![create_client_update_datagram(src_signed_headers)]);
+
+            let (src_consensus_state, dst_membership_proof) = dst_chain.consensus_state(src_chain.id(), src_target_height);
+            let dst_sh = dst_chain.get_header(dst_membership_proof.height + 1);
+            if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
+                // Error: Destination chain provided invalid client_state
+                return Err(ForeignClientError::VerificationError())
+            }
+
+            if src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
+                // Error: consesus_state isn't verified by self light client
+                return  Err(ForeignClientError::HeaderMismatch())
+            }
+        }
+
+        return Ok(src_target_height)
     }
+}
+
+
+fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membership_proof: &MembershipProof, _hash: &Hash) -> bool {
+    return true
+}
+
+fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram  {
+    return Datagram::NoOp()
 }
