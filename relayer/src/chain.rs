@@ -10,7 +10,6 @@ use ::tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
-use ibc::try_from_raw::TryFromRaw;
 
 use crate::config::ChainConfig;
 use crate::error;
@@ -43,15 +42,8 @@ pub trait Chain {
     /// Error types defined by this chain
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
 
-    /// Perform a generic `query`, and return the corresponding deserialized response data.
-    // This is going to be a blocking request.
-    // From the "Asynchronous Programming in Rust" book:
-    //   Important extensions like `async fn` syntax in trait methods are still unimplemented
-    // https://rust-lang.github.io/async-book/01_getting_started/03_state_of_async_rust.html
-    // Todo: More generic chains might want to deal with domain types differently (no T).
-    fn query<T>(&self, data: Path, height: u64, prove: bool) -> Result<T, Self::Error>
-    where
-        T: TryFromRaw;
+    /// Perform a generic `query`, and return the corresponding response data.
+    fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {

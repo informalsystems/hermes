@@ -3,11 +3,13 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
+use crate::error::{Error, Kind};
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc::ics24_host::Path::Connections;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
+use tendermint_proto::DomainType;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
 
@@ -85,8 +87,10 @@ impl Runnable for QueryConnectionEndCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
-        let res =
-            chain.query::<ConnectionEnd>(Connections(opts.connection_id), opts.height, opts.proof);
+        let res: Result<ConnectionEnd, Error> = chain
+            .query(Connections(opts.connection_id), opts.height, opts.proof)
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),

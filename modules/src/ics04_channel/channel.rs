@@ -1,12 +1,13 @@
 use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::try_from_raw::TryFromRaw;
 
 use ibc_proto::ibc::channel::Channel as RawChannel;
 
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use std::str::FromStr;
+use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ChannelEnd {
@@ -17,8 +18,9 @@ pub struct ChannelEnd {
     version: String,
 }
 
-impl TryFromRaw for ChannelEnd {
-    type RawType = RawChannel;
+impl DomainType<RawChannel> for ChannelEnd {}
+
+impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
@@ -57,6 +59,25 @@ impl TryFromRaw for ChannelEnd {
         channel_end.set_state(chan_state);
 
         Ok(channel_end)
+    }
+}
+
+impl From<ChannelEnd> for RawChannel {
+    fn from(value: ChannelEnd) -> Self {
+        RawChannel {
+            state: value.state.clone() as i32,
+            ordering: value.ordering.clone() as i32,
+            counterparty: Some(ibc_proto::ibc::channel::Counterparty {
+                port_id: value.counterparty().port_id.to_string(),
+                channel_id: value.counterparty().channel_id.to_string(),
+            }),
+            connection_hops: value
+                .connection_hops
+                .iter()
+                .map(|v| v.as_str().to_string())
+                .collect(),
+            version: value.version,
+        }
     }
 }
 
@@ -226,10 +247,10 @@ mod tests {
     use std::str::FromStr;
 
     use crate::ics04_channel::channel::ChannelEnd;
-    use crate::try_from_raw::TryFromRaw;
 
     use ibc_proto::ibc::channel::Channel as RawChannel;
     use ibc_proto::ibc::channel::Counterparty as RawCounterparty;
+    use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {

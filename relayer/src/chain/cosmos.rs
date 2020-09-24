@@ -11,7 +11,6 @@ use core::future::Future;
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-use ibc::try_from_raw::TryFromRaw;
 
 use crate::client::rpc_requester::RpcRequester;
 use crate::config::ChainConfig;
@@ -19,8 +18,6 @@ use crate::error::{Error, Kind};
 use crate::auth::tx::TxBuilder;
 
 use super::Chain;
-use bytes::Bytes;
-use prost::Message;
 use std::str::FromStr;
 use ibc::tx_msg::Msg;
 
@@ -48,18 +45,15 @@ impl Chain for CosmosSDKChain {
     type Header = TMHeader;
     type Commit = TMCommit;
     type ConsensusState = ConsensusState;
-    type Requester = RpcRequester;
     type ClientState = ClientState;
+    type Requester = RpcRequester;
     type Error = anomaly::Error<Kind>;
 
-    fn query<T>(&self, data: Path, height: u64, prove: bool) -> Result<T, Self::Error>
-    where
-        T: TryFromRaw,
-    {
+    fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
         if !data.is_provable() & prove {
             return Err(Kind::Store
-                .context("requested proof for privateStore path")
+                .context("requested proof for a path in the privateStore")
                 .into());
         }
         let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
@@ -69,10 +63,7 @@ impl Chain for CosmosSDKChain {
             dbg!("Todo: implement proof verification."); // Todo: Verify proof
         }
 
-        // Deserialize response data.
-        T::RawType::decode(Bytes::from(response))
-            .map_err(|e| Kind::ResponseParsing.context(e).into())
-            .and_then(|r| T::try_from(r).map_err(|e| Kind::ResponseParsing.context(e).into()))
+        Ok(response)
     }
 
     fn config(&self) -> &ChainConfig {

@@ -10,6 +10,7 @@ authors = [
 relayer = { path = "../relayer" }
 ibc = { path = "../modules" }
 tendermint = "0.15.0"
+tendermint-proto = "0.1.0"
 
 k256 = { version = "0.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
 tendermint-rpc = "0.15"

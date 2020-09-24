@@ -87,7 +87,7 @@ mod tests {
     use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenConfirm};
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
-    use crate::try_from_raw::TryFromRaw;
+    use std::convert::TryFrom;
     use std::str::FromStr;
 
     #[test]
