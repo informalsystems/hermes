@@ -57,7 +57,7 @@ mod tests {
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenInit};
-    use crate::try_from_raw::TryFromRaw;
+    use std::convert::TryFrom;
 
     #[test]
     fn conn_open_init_msg_processing() {

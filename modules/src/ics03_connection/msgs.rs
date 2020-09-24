@@ -20,7 +20,6 @@ use crate::ics03_connection::connection::{validate_version, validate_versions, C
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
-use crate::try_from_raw::TryFromRaw;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
@@ -34,6 +33,7 @@ use tendermint::block::Height;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::{from_utf8, FromStr};
+use tendermint_proto::DomainType;
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -84,9 +84,11 @@ impl MsgConnectionOpenInit {
     }
 }
 
-impl TryFromRaw for MsgConnectionOpenInit {
-    type RawType = RawMsgConnectionOpenInit;
+impl DomainType<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
+
+impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
+
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
         Ok(Self {
             connection_id: msg
@@ -106,6 +108,17 @@ impl TryFromRaw for MsgConnectionOpenInit {
             )
             .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
+    }
+}
+
+impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
+    fn from(value: MsgConnectionOpenInit) -> Self {
+        RawMsgConnectionOpenInit {
+            client_id: value.client_id.as_str().to_string(),
+            connection_id: value.connection_id.as_str().to_string(),
+            counterparty: Some(value.counterparty.into()),
+            signer: value.signer.as_bytes().to_vec(),
+        }
     }
 }
 
@@ -217,8 +230,7 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
-impl TryFromRaw for MsgConnectionOpenTry {
-    type RawType = RawMsgConnectionOpenTry;
+impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
@@ -340,8 +352,7 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
-impl TryFromRaw for MsgConnectionOpenAck {
-    type RawType = RawMsgConnectionOpenAck;
+impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
@@ -433,8 +444,7 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
-impl TryFromRaw for MsgConnectionOpenConfirm {
-    type RawType = RawMsgConnectionOpenConfirm;
+impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
@@ -569,13 +579,13 @@ mod tests {
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
-    use crate::try_from_raw::TryFromRaw;
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
     use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
     use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
     use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
     use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use std::convert::TryFrom;
 
     #[test]
     fn parse_connection_open_init_msg() {

@@ -106,7 +106,7 @@ mod tests {
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenTry};
-    use crate::try_from_raw::TryFromRaw;
+    use std::convert::TryFrom;
 
     #[test]
     fn conn_open_try_msg_processing() {
