@@ -21,9 +21,7 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
     LET packet == packetDatagram.packet IN
     
     IF \* if the channel and connection ends are open for packet transmission
-       /\ channelEnd.state /= "UNINIT"
        /\ channelEnd.state = "OPEN"
-       /\ connectionEnd.state /= "UNINIT"
        /\ connectionEnd.state = "OPEN" 
        \* if the packet has not passed the timeout height
        /\ \/ packet.timeoutHeight = 0 

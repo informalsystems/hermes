@@ -210,7 +210,7 @@ SendPacket ==
     /\ \* if the channel is ordered, check if packetSeq is nextSentSeq, 
        \* add a packet committment in the chain store, and increase nextSentSeq
        \/ /\ channelEnd.order = "ORDERED"
-          /\ packet.sequence = channelEnd.nextSentSeq
+          /\ packet.sequence = channelEnd.nextSendSeq
           /\ packet.sequence <= MaxPacketSeq
           /\ chainStore' = [chainStore EXCEPT 
                 !.packetCommitments =  
