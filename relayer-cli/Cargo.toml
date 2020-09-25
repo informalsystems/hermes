@@ -9,10 +9,6 @@ authors = [
 [dependencies]
 relayer = { path = "../relayer" }
 ibc = { path = "../modules" }
-
-tendermint = { version = "0.16.0", path = "../../tendermint-rs/tendermint" }
-tendermint-rpc = { version = "0.16.0", path = "../../tendermint-rs/rpc" }
-tendermint-light-client = { version = "0.16.0", path = "../../tendermint-rs/light-client" }
 tendermint-proto = "0.1.0"
 
 abscissa_tokio = "0.5.1"
@@ -27,6 +23,22 @@ futures = "0.3.5"
 toml = "0.5.6"
 serde_derive = "1.0.116"
 sled = "0.34.4"
+
+[dependencies.tendermint]
+version = "0.16.0"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "romac/light-client-ibc"
+
+[dependencies.tendermint-rpc]
+version = "0.16.0"
+features = ["http-client", "websocket-client"]
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "romac/light-client-ibc"
+
+[dependencies.tendermint-light-client]
+version = "0.16.0"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "romac/light-client-ibc"
 
 [dependencies.abscissa_core]
 version = "0.5.2"
