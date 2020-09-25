@@ -11,11 +11,11 @@ use crate::ics02_client::error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
-use ibc_proto::ibc::client::MsgCreateClient;
+use ibc_proto::ibc::client::MsgCreateClient as RawMsgCreateClient;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::{DomainType, Error, Kind};
 
-pub const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
+const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
 
 #[allow(clippy::large_enum_variant)]
 pub enum ClientMsg {
@@ -69,7 +69,7 @@ impl Msg for MsgCreateAnyClient {
 
     fn get_sign_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
-        let raw_msg: MsgCreateClient = self.clone().into();
+        let raw_msg: RawMsgCreateClient = self.clone().into();
         prost::Message::encode(&raw_msg, &mut buf).unwrap();
         buf
     }
@@ -79,16 +79,15 @@ impl Msg for MsgCreateAnyClient {
     }
 }
 
-impl DomainType<MsgCreateClient> for MsgCreateAnyClient {}
+impl DomainType<RawMsgCreateClient> for MsgCreateAnyClient {}
 
-impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
+impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
-    fn try_from(raw: MsgCreateClient) -> Result<Self, Self::Error> {
-        let raw_client_state = match raw.client_state {
-            None => Err(Kind::DecodeMessage.context(error::Kind::InvalidRawClientState)),
-            Some(raw_state) => Ok(raw_state),
-        }?;
+    fn try_from(raw: RawMsgCreateClient) -> Result<Self, Self::Error> {
+        let raw_client_state = raw
+            .client_state
+            .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawClientState))?;
 
         let client_type = match raw_client_state.type_url.as_str() {
             "/ibc.tendermint.ClientState" => Ok(ClientType::Tendermint),
@@ -99,10 +98,10 @@ impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
                 )),
             ),
         }?;
-        let raw_consensus_state = match raw.consensus_state {
-            None => Err(Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState)),
-            Some(raw_consensus_state) => Ok(raw_consensus_state),
-        }?;
+
+        let raw_consensus_state = raw
+            .consensus_state
+            .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState))?;
 
         Ok(MsgCreateAnyClient {
             client_id: raw.client_id.parse().unwrap(),
@@ -114,9 +113,9 @@ impl TryFrom<MsgCreateClient> for MsgCreateAnyClient {
     }
 }
 
-impl From<MsgCreateAnyClient> for MsgCreateClient {
+impl From<MsgCreateAnyClient> for RawMsgCreateClient {
     fn from(ics_msg: MsgCreateAnyClient) -> Self {
-        MsgCreateClient {
+        RawMsgCreateClient {
             client_id: ics_msg.client_id.to_string(),
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),

@@ -1,17 +1,19 @@
-use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
-use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
+use prost_types::Any;
+use std::time::Duration;
+
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::msgs::MsgCreateAnyClient;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
-use prost_types::Any;
-use std::time::Duration;
+
 use tendermint::block::Height;
 
 use crate::chain::cosmos::block_on;
+use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
+use crate::config::ChainConfig;
+use crate::error::{Error, Kind};
 
 #[derive(Clone, Debug)]
 pub struct CreateClientStateOptions {
@@ -37,46 +39,39 @@ pub fn create_client(opts: CreateClientStateOptions) -> Result<(), Error> {
 
     // Get the latest header from the source chain and build the consensus state.
     let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let tm_consensus_state = match block_on(query_latest_header::<CosmosSDKChain>(&src_chain)) {
-        Err(err) => Err(Into::<Error>::into(
+    let tm_consensus_state = block_on(query_latest_header::<CosmosSDKChain>(&src_chain))
+        .map_err(|e| {
             Kind::CreateClient(
                 opts.dest_client_id.clone(),
                 "failed to get the latest header".into(),
             )
-            .context(err),
-        )),
-        Ok(header) => {
-            Ok(ibc::ics07_tendermint::consensus_state::ConsensusState::new_from_header(header))
-        }
-    }?;
+            .context(e)
+        })
+        .map(ibc::ics07_tendermint::consensus_state::ConsensusState::from)?;
+
     let any_consensus_state = AnyConsensusState::Tendermint(tm_consensus_state.clone());
 
     // Build the client state.
-    let any_client_state = match ibc::ics07_tendermint::client_state::ClientState::new(
+    let any_client_state = ibc::ics07_tendermint::client_state::ClientState::new(
         src_chain.id().to_string(),
         src_chain.trusting_period(),
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
         tm_consensus_state.height,
         Height(0),
-    ) {
-        Err(err) => Err(Into::<Error>::into(
-            Kind::CreateClient(
-                opts.dest_client_id.clone(),
-                "failed to build the client state".into(),
-            )
-            .context(err),
-        )),
-        Ok(tm_state) => Ok(AnyClientState::Tendermint(tm_state)),
-    }?;
+    )
+    .map_err(|e| {
+        Kind::CreateClient(
+            opts.dest_client_id.clone(),
+            "failed to build the client state".into(),
+        )
+        .context(e)
+    })
+    .map(AnyClientState::Tendermint)?;
 
-    // Get the signer
-    let signer = match dest_chain.config().account_prefix.parse() {
-        Err(err) => Err(Into::<Error>::into(
-            Kind::CreateClient(opts.dest_client_id.clone(), "bad signer".into()).context(err),
-        )),
-        Ok(signer) => Ok(signer),
-    }?;
+    let signer = dest_chain.config().account_prefix.parse().map_err(|e| {
+        Kind::CreateClient(opts.dest_client_id.clone(), "bad signer".into()).context(e)
+    })?;
 
     // Build the domain type message
     let new_msg = MsgCreateAnyClient::new(

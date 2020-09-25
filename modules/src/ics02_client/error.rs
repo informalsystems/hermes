@@ -48,12 +48,6 @@ pub enum Kind {
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),
-
-    #[error("unknown client message type: {0}")]
-    UnknownClientMessageType(String),
-
-    #[error("invalid signer")]
-    InvalidSigner,
 }
 
 impl Kind {

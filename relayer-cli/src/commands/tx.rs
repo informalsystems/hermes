@@ -1,5 +1,4 @@
 //! `tx` subcommand
-
 use crate::commands::tx::client::TxCreateClientCmd;
 use abscissa_core::{Command, Options, Runnable};
 

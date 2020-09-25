@@ -1,9 +1,9 @@
-use crate::prelude::*;
-
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 use relayer::tx::client::{create_client, CreateClientStateOptions};
+
+use crate::application::app_config;
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {

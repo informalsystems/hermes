@@ -5,9 +5,6 @@ pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
-    #[error("identifier error")]
-    IdentifierError,
-
     #[error("invalid trusting period")]
     InvalidTrustingPeriod,
 
@@ -28,9 +25,6 @@ pub enum Kind {
 
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
-
-    #[error("invalid signer")]
-    InvalidSigner,
 }
 
 impl Kind {
