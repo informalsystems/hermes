@@ -10,8 +10,6 @@ use crate::commands::utils::block_on;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::ChainConfig;
 
-use relayer::store::{sled::SledStore, Store};
-
 use crate::commands::listen::relayer_task;
 
 #[derive(Command, Debug, Options)]

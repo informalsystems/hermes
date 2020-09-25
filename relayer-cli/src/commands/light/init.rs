@@ -13,7 +13,6 @@ use tendermint_light_client::types::TrustThreshold;
 use relayer::chain::CosmosSDKChain;
 use relayer::client::trust_options::TrustOptions;
 use relayer::config::{ChainConfig, Config};
-use relayer::store::{sled::SledStore, Store};
 
 #[derive(Command, Debug, Options)]
 pub struct InitCmd {

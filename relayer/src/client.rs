@@ -12,7 +12,6 @@ use tendermint_light_client::types::{LightBlock, TrustThreshold};
 
 use crate::chain;
 use crate::error;
-use crate::store::{self, StoreHeight};
 
 pub mod trust_options;
 pub use trust_options::TrustOptions;
