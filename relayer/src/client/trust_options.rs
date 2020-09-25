@@ -12,7 +12,7 @@ use crate::error;
 /// The trust options for a `Client`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustOptions {
-    pub hash: Hash,
+    pub header_hash: Hash,
     pub height: Height,
     pub trusting_period: Duration,
     pub trust_threshold: TrustThreshold,
@@ -20,7 +20,7 @@ pub struct TrustOptions {
 
 impl TrustOptions {
     pub fn new(
-        hash: Hash,
+        header_hash: Hash,
         height: Height,
         trusting_period: Duration,
         trust_threshold: TrustThreshold,
@@ -33,7 +33,7 @@ impl TrustOptions {
         }
 
         Ok(Self {
-            hash,
+            header_hash,
             height,
             trusting_period,
             trust_threshold,
