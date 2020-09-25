@@ -1,7 +1,7 @@
 //! This module implements the the processing logic for ICS3 (connection open handshake) messages.
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::msgs::ConnectionMsg;
 use crate::ics24_host::identifier::ConnectionId;
@@ -56,7 +56,7 @@ pub fn dispatch<Ctx>(
     msg: ConnectionMsg,
 ) -> Result<HandlerOutput<ConnectionResult>, Error>
 where
-    Ctx: ConnectionReader + ConnectionKeeper,
+    Ctx: ConnectionReader,
 {
     Ok(match msg {
         ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg)?,

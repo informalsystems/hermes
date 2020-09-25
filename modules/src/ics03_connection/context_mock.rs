@@ -11,7 +11,7 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {
     chain_context: MockChainContext,
     client_context: MockClientContext,

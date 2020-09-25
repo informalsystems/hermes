@@ -3,7 +3,7 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics24_host::identifier::ClientId;
 
-use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::handler::create_client::CreateClientResult;
 use crate::ics02_client::handler::update_client::UpdateClientResult;
 use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
@@ -39,7 +39,7 @@ impl From<ClientEvent> for Event {
 
 pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
 where
-    Ctx: ClientReader + ClientKeeper,
+    Ctx: ClientReader,
 {
     match msg {
         ClientMsg::CreateClient(msg) => {

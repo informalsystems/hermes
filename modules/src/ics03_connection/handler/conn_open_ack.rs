@@ -95,12 +95,6 @@ mod tests {
 
     #[test]
     fn conn_open_ack_msg_processing() {
-        #[derive(Clone, Debug)]
-        struct ConnOpenAckProcessParams {
-            ctx: MockConnectionContext,
-            msg: ConnectionMsg,
-        }
-
         struct Test {
             name: String,
             ctx: MockConnectionContext,

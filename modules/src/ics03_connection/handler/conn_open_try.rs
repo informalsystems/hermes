@@ -104,12 +104,6 @@ mod tests {
 
     #[test]
     fn conn_open_try_msg_processing() {
-        #[derive(Clone, Debug)]
-        struct ConnOpenTryProcessParams {
-            ctx: MockConnectionContext,
-            msg: ConnectionMsg,
-        }
-
         struct Test {
             name: String,
             ctx: MockConnectionContext,
