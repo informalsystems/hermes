@@ -9,29 +9,29 @@ updates:
     directory: "/"
     # Check the cargo registry for updates every day (weekdays)
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "modules"
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "proto"
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "proto-compiler"
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "relayer"
     schedule:
-      interval: "daily"
+      interval: "weekly"
 
   - package-ecosystem: "cargo"
     directory: "relayer-cli"
     schedule:
-      interval: "daily"
+      interval: "weekly"
