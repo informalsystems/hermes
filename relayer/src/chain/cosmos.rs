@@ -24,7 +24,7 @@ use std::str::FromStr;
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
-    // light_client: LightClient,
+    light_client: Option<LightClient>,
 }
 
 impl CosmosSDKChain {
@@ -35,7 +35,7 @@ impl CosmosSDKChain {
         Ok(Self {
             config,
             rpc_client,
-            // light_client,
+            light_client: None,
         })
     }
 }
@@ -73,9 +73,13 @@ impl Chain for CosmosSDKChain {
         &self.rpc_client
     }
 
-    // fn light_client(&self) -> &LightClient {
-    //     &self.light_client
-    // }
+    fn set_light_client(&mut self, light_client: LightClient) {
+        self.light_client = Some(light_client);
+    }
+
+    fn light_client(&self) -> Option<&LightClient> {
+        self.light_client.as_ref()
+    }
 
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period

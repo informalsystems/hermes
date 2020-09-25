@@ -20,7 +20,7 @@ impl LightClient {
 
 #[async_trait]
 impl super::LightClient<LightBlock> for LightClient {
-    async fn verify_to_latest(&mut self) -> Result<LightBlock, error::Error> {
+    async fn verify_to_latest(&self) -> Result<LightBlock, error::Error> {
         let handle = self.handle.clone();
 
         spawn_blocking(move || {
@@ -45,7 +45,7 @@ impl super::LightClient<LightBlock> for LightClient {
     }
 
     async fn get_minimal_set(
-        &mut self,
+        &self,
         latest_client_state_height: Height,
         target_height: Height,
     ) -> Result<Vec<Height>, error::Error> {

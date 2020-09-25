@@ -44,4 +44,9 @@ impl LightConfig {
 
         Ok(())
     }
+
+    /// Get the configuration for a specific chain
+    pub fn for_chain(&self, chain_id: &chain::Id) -> Option<&TrustOptions> {
+        self.chains.get(chain_id)
+    }
 }
