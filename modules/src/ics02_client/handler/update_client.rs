@@ -69,19 +69,18 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
+    use tendermint::block::Height;
+
     use super::*;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::mock_client::header::MockHeader;
-    use std::str::{self, FromStr};
-    use tendermint::account::Id as AccountId;
-    use tendermint::block::Height;
 
     #[test]
     fn test_update_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
         ctx.with_client(&client_id, ClientType::Mock, Height(42));
@@ -115,7 +114,7 @@ mod tests {
     #[test]
     fn test_update_nonexisting_client() {
         let client_id: ClientId = "mockclient1".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
         ctx.with_client_consensus_state(&client_id, Height(42));
@@ -145,7 +144,7 @@ mod tests {
             "mockclient2".parse().unwrap(),
             "mockclient3".parse().unwrap(),
         ];
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let initial_height = Height(45);
         let update_height = Height(49);

@@ -469,14 +469,16 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
+    use std::str::{from_utf8, FromStr};
+    use tendermint::account::Id as AccountId;
+
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::commitment::MerklePrefix;
     use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
     use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
     use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
     use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
     use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::commitment::MerklePrefix;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -484,10 +486,14 @@ pub mod test_util {
             .to_vec()
     }
 
-    pub fn get_dummy_account_id() -> Vec<u8> {
+    pub fn get_dummy_account_id_bytes() -> Vec<u8> {
         "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C"
             .as_bytes()
             .to_vec()
+    }
+
+    pub fn get_dummy_account_id() -> AccountId {
+        AccountId::from_str(from_utf8(&get_dummy_account_id_bytes()).unwrap()).unwrap()
     }
 
     pub fn get_dummy_counterparty() -> RawCounterparty {
@@ -507,7 +513,7 @@ pub mod test_util {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            signer: get_dummy_account_id(),
+            signer: get_dummy_account_id_bytes(),
         }
     }
 
@@ -531,7 +537,7 @@ pub mod test_util {
                 epoch_number: 1,
                 epoch_height: consensus_height,
             }),
-            signer: get_dummy_account_id(),
+            signer: get_dummy_account_id_bytes(),
             proof_client: vec![],
         }
     }
@@ -550,7 +556,7 @@ pub mod test_util {
                 epoch_number: 1,
                 epoch_height: 10,
             }),
-            signer: get_dummy_account_id(),
+            signer: get_dummy_account_id_bytes(),
             client_state: None,
             proof_client: vec![],
         }
@@ -564,13 +570,22 @@ pub mod test_util {
                 epoch_number: 1,
                 epoch_height: 10,
             }),
-            signer: get_dummy_account_id(),
+            signer: get_dummy_account_id_bytes(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
+    use ibc_proto::ibc::client::Height;
+    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
     use super::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::test_util::{
         get_dummy_counterparty, get_dummy_msg_conn_open_ack, get_dummy_msg_conn_open_confirm,
@@ -579,13 +594,6 @@ mod tests {
     use crate::ics03_connection::msgs::{
         MsgConnectionOpenAck, MsgConnectionOpenConfirm, MsgConnectionOpenTry,
     };
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_connection_open_init_msg() {

@@ -61,6 +61,9 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: CreateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+    use tendermint::block::Height;
+
     use super::*;
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
@@ -68,17 +71,13 @@ mod tests {
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
-    use std::str::{self, FromStr};
-    use std::time::Duration;
-    use tendermint::account::Id as AccountId;
-    use tendermint::block::Height;
 
     #[test]
     fn test_create_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let ctx = MockClientContext::default();
 
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let msg = MsgCreateAnyClient {
             client_id,
@@ -119,7 +118,7 @@ mod tests {
     fn test_create_client_existing_client_type() {
         let height = Height(42);
         let client_id: ClientId = "mockclient".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
         ctx.with_client_type(&client_id, ClientType::Mock, height);
@@ -146,7 +145,7 @@ mod tests {
     #[test]
     fn test_create_client_existing_client_state() {
         let client_id: ClientId = "mockclient".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
         let height = Height(30);
@@ -172,7 +171,7 @@ mod tests {
     #[test]
     fn test_create_client_ok_multiple() {
         let existing_client_id: ClientId = "existingmockclient".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
         let height = Height(80);
         let mut ctx = MockClientContext::default();
         ctx.with_client_consensus_state(&existing_client_id, height);
@@ -235,7 +234,7 @@ mod tests {
     #[test]
     fn test_tm_create_client_ok() {
         let client_id: ClientId = "tendermint".parse().unwrap();
-        let signer = AccountId::from_str(str::from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let ctx = MockClientContext::default();
 

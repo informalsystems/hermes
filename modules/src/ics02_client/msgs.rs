@@ -134,6 +134,10 @@ pub struct MsgUpdateAnyClient {
 
 #[cfg(test)]
 mod tests {
+    use ibc_proto::ibc::client::MsgCreateClient;
+    use std::convert::TryFrom;
+    use std::time::Duration;
+
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::MsgCreateAnyClient;
@@ -141,16 +145,11 @@ mod tests {
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics24_host::identifier::ClientId;
-    use ibc_proto::ibc::client::MsgCreateClient;
-    use std::convert::TryFrom;
-    use std::str::{from_utf8, FromStr};
-    use std::time::Duration;
-    use tendermint::account::Id as AccountId;
 
     #[test]
     fn to_and_from_any() {
         let client_id: ClientId = "tendermint".parse().unwrap();
-        let signer = AccountId::from_str(from_utf8(&get_dummy_account_id()).unwrap()).unwrap();
+        let signer = get_dummy_account_id();
 
         let tm_header = get_dummy_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {

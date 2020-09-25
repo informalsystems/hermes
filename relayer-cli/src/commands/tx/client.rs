@@ -3,6 +3,7 @@ use relayer::config::Config;
 use relayer::tx::client::{create_client, CreateClientStateOptions};
 
 use crate::application::app_config;
+use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -72,7 +73,9 @@ impl Runnable for TxCreateClientCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        match create_client(opts) {
+        let res: Result<(), Error> = create_client(opts).map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
             Ok(receipt) => status_info!("client created, result: ", "{:?}", receipt),
             Err(e) => status_info!("client create failed, error: ", "{:?}", e),
         }
