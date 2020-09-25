@@ -16,13 +16,13 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
 #[derive(Clone, Debug)]
-pub struct CreateClientStateOptions {
+pub struct CreateClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
 }
 
-pub fn create_client(opts: CreateClientStateOptions) -> Result<(), Error> {
+pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     // Ger the destination
     let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 

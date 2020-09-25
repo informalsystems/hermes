@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
-use relayer::tx::client::{create_client, CreateClientStateOptions};
+use relayer::tx::client::{create_client, CreateClientOptions};
 
 use crate::application::app_config;
 use crate::error::{Error, Kind};
@@ -22,7 +22,7 @@ pub struct TxCreateClientCmd {
 }
 
 impl TxCreateClientCmd {
-    fn validate_options(&self, config: &Config) -> Result<CreateClientStateOptions, String> {
+    fn validate_options(&self, config: &Config) -> Result<CreateClientOptions, String> {
         let dest_chain_id = self
             .dest_chain_id
             .clone()
@@ -52,7 +52,7 @@ impl TxCreateClientCmd {
             .parse()
             .map_err(|_| "bad client identifier".to_string())?;
 
-        Ok(CreateClientStateOptions {
+        Ok(CreateClientOptions {
             dest_client_id,
             dest_chain_config: dest_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
