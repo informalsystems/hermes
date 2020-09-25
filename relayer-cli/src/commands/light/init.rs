@@ -1,18 +1,16 @@
-use std::future::Future;
+use std::{future::Future, ops::Deref};
 
 use crate::light::config::{LightConfig, LIGHT_CONFIG_PATH};
 use crate::prelude::*;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
 use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
 use tendermint_light_client::types::TrustThreshold;
 
-use relayer::chain::CosmosSDKChain;
 use relayer::client::trust_options::TrustOptions;
-use relayer::config::{ChainConfig, Config};
 
 #[derive(Command, Debug, Options)]
 pub struct InitCmd {
@@ -53,38 +51,29 @@ impl InitOptions {
     }
 }
 
-impl Runnable for InitCmd {
-    /// Initialize the light client for the given chain
-    fn run(&self) {
+impl InitCmd {
+    fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config();
 
-        let options = match InitOptions::from_init_cmd(self) {
-            Ok(opts) => opts,
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-        };
+        let options =
+            InitOptions::from_init_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
 
-        let chain_config = match config.chains.iter().find(|c| c.id == options.chain_id) {
-            Some(config) => config,
-            None => {
-                status_err!("could not find config for chain: {}", options.chain_id);
-                return;
-            }
-        };
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == options.chain_id)
+            .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
 
         let trust_options = TrustOptions::new(
             options.trusted_hash,
             options.trusted_height,
             chain_config.trusting_period,
             TrustThreshold::default(),
-        )
-        .unwrap(); // FIXME(unwrap)
+        )?;
 
-        let mut config = LightConfig::load_from_disk(LIGHT_CONFIG_PATH).unwrap(); // FIXME(unwrap)
+        let mut config = LightConfig::load(LIGHT_CONFIG_PATH)?;
         config.chains.insert(chain_config.id, trust_options);
-        config.save_to_disk(LIGHT_CONFIG_PATH).unwrap(); // FIXME(unwrap)
+        config.save(LIGHT_CONFIG_PATH)?;
 
         status_ok!(
             chain_config.id,
@@ -92,6 +81,16 @@ impl Runnable for InitCmd {
             options.trusted_hash,
             options.trusted_height
         );
+
+        Ok(())
+    }
+}
+
+impl Runnable for InitCmd {
+    /// Initialize the light client for the given chain
+    fn run(&self) {
+        self.cmd()
+            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
     }
 }
 

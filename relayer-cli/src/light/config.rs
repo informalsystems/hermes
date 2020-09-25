@@ -4,8 +4,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use relayer::client::TrustOptions;
 use serde_derive::{Deserialize, Serialize};
+
+use relayer::client::TrustOptions;
 use tendermint::chain;
 
 use crate::error;
@@ -23,7 +24,7 @@ pub struct LightConfig {
 impl LightConfig {
     /// Load the configuration from a TOML file at `path`, or return the empty
     /// config if the file does not exists.
-    pub fn load_from_disk(path: impl AsRef<Path>) -> Result<Self, error::Error> {
+    pub fn load(path: impl AsRef<Path>) -> Result<Self, error::Error> {
         let config = match fs::read_to_string(path) {
             Ok(contents) => {
                 toml::from_str(&contents).map_err(|e| error::Kind::Config.context(e))?
@@ -37,9 +38,10 @@ impl LightConfig {
     }
 
     /// Save the configuration to a TOML file at `path`
-    pub fn save_to_disk(&self, path: impl AsRef<Path>) -> Result<(), error::Error> {
+    pub fn save(&self, path: impl AsRef<Path>) -> Result<(), error::Error> {
         let contents = toml::to_string_pretty(self).map_err(|e| error::Kind::Config.context(e))?;
         fs::write(path, contents).map_err(|e| error::Kind::Config.context(e))?;
+
         Ok(())
     }
 }
