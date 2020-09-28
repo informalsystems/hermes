@@ -11,7 +11,7 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {
     chain_context: MockChainContext,
     client_context: MockClientContext,
@@ -70,6 +70,10 @@ impl ConnectionReader for MockConnectionContext {
         self.chain_context.max_size()
     }
 
+    fn chain_type(&self) -> SelfChainType {
+        SelfChainType::Mock
+    }
+
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])
     }
@@ -80,10 +84,6 @@ impl ConnectionReader for MockConnectionContext {
         height: Height,
     ) -> Option<AnyConsensusState> {
         self.client_context.consensus_state(client_id, height)
-    }
-
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
     }
 
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {

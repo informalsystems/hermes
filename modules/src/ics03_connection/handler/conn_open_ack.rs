@@ -1,6 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenAck;
@@ -79,11 +79,6 @@ pub(crate) fn process(
     Ok(output.with_result(result))
 }
 
-pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(&result.connection_id, &result.connection_end)?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
@@ -100,12 +95,6 @@ mod tests {
 
     #[test]
     fn conn_open_ack_msg_processing() {
-        #[derive(Clone, Debug)]
-        struct ConnOpenAckProcessParams {
-            ctx: MockConnectionContext,
-            msg: ConnectionMsg,
-        }
-
         struct Test {
             name: String,
             ctx: MockConnectionContext,

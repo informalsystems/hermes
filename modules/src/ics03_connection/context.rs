@@ -1,7 +1,8 @@
 use crate::context::SelfChainType;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::error::Error;
+use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use tendermint::block::Height;
@@ -47,6 +48,24 @@ pub trait ConnectionReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage functionalities)
 /// for processing any `ICS3Msg`.
 pub trait ConnectionKeeper {
+    fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
+        match result.connection_end.state() {
+            State::Init | State::TryOpen => {
+                self.store_connection(&result.connection_id, &result.connection_end)?;
+                // If this is the first time the handler processed this connection, associate the
+                // connection end to its client identifier.
+                self.store_connection_to_client(
+                    &result.connection_id,
+                    &result.connection_end.client_id(),
+                )?;
+            }
+            _ => {
+                self.store_connection(&result.connection_id, &result.connection_end)?;
+            }
+        }
+        Ok(())
+    }
+
     /// Stores the given connection_end at a path associated with the connection_id.
     fn store_connection(
         &mut self,

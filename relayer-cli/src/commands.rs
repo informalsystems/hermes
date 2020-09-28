@@ -54,7 +54,7 @@ pub enum CliCmd {
     Query(QueryCmd),
 
     /// The `tx` subcommand
-    #[options(help = "create IBC transaction on configured chains")]
+    #[options(help = "create IBC transactions on configured chains")]
     Tx(TxCmd),
 
     /// The `light` subcommand

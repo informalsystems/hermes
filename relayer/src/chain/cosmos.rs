@@ -1,3 +1,5 @@
+use prost_types::Any;
+use std::str::FromStr;
 use std::time::Duration;
 
 use tendermint::abci::Path as TendermintABCIPath;
@@ -17,8 +19,6 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
 use super::Chain;
-use ibc::tx_msg::Msg;
-use std::str::FromStr;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -65,6 +65,12 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
+    /// Send a transaction that includes the specified messages
+    fn send(&self, _msgs: &[Any]) -> Result<(), Error> {
+        // TODO sign and broadcast_tx
+        Ok(())
+    }
+
     fn config(&self) -> &ChainConfig {
         &self.config
     }
@@ -81,14 +87,18 @@ impl Chain for CosmosSDKChain {
         self.config.trusting_period
     }
 
+    fn unbonding_period(&self) -> Duration {
+        // TODO - query chain
+        Duration::from_secs(24 * 7 * 3)
+    }
+
     fn trust_threshold(&self) -> TrustThresholdFraction {
         TrustThresholdFraction::default()
     }
 
-    fn build_sign_tx<T: std::error::Error, U: Msg<ValidationError = T>>(
-        &self,
-        _msgs: Vec<Box<U>>,
-    ) -> Result<Vec<u8>, Error> {
+    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Error> {
+        unimplemented!()
+
         // TODO: Once the tendermint is upgraded and crypto can be imported then work on this build and signing code
         // This is a pregenerated private key from running:
         //      let signing_key = SigningKey::random(&mut OsRng);
@@ -196,16 +206,6 @@ impl Chain for CosmosSDKChain {
             Ok(resp) => println!("OK! {:?}", resp),
             Err(e) => println!("Err {:?}", e)
         };*/
-
-        unimplemented!()
-    }
-
-    fn send_msg<T: std::error::Error, U: Msg<ValidationError = T>>(
-        &self,
-        _msgs: Vec<Box<U>>,
-    ) -> Result<Vec<u8>, Error> {
-        //TODO: Broadcast the signed transaction
-        unimplemented!()
     }
 }
 

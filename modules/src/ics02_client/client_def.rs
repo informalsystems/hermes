@@ -1,4 +1,6 @@
+use prost_types::Any;
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 
 use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
@@ -14,10 +16,8 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, Com
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
 use ::tendermint::block::Height;
-
-use prost_types::Any;
-use std::convert::TryFrom;
 use tendermint_proto::{DomainType, Error, Kind};
+
 #[cfg(test)]
 use {
     crate::mock_client::client_def::MockClient,
@@ -110,7 +110,7 @@ impl Header for AnyHeader {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
@@ -191,7 +191,7 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnyConsensusState {
     Tendermint(crate::ics07_tendermint::consensus_state::ConsensusState),
 
@@ -462,5 +462,32 @@ impl ClientDef for AnyClient {
                 )
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::header::test_util::get_dummy_header;
+    use prost_types::Any;
+    use std::convert::TryFrom;
+    use std::time::Duration;
+
+    #[test]
+    fn to_and_from_any() {
+        let tm_header = get_dummy_header();
+        let tm_client_state = AnyClientState::Tendermint(ClientState {
+            chain_id: tm_header.signed_header.header.chain_id.to_string(),
+            trusting_period: Duration::from_secs(64000),
+            unbonding_period: Duration::from_secs(128000),
+            max_clock_drift: Duration::from_millis(3000),
+            latest_height: tm_header.signed_header.header.height,
+            frozen_height: 0.into(),
+        });
+
+        let raw: Any = tm_client_state.clone().into();
+        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
+        assert_eq!(tm_client_state, tm_client_state_back);
     }
 }

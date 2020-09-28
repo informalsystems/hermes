@@ -21,8 +21,8 @@ tokio = { version = "0.2.13", features = ["rt-util", "sync"] }
 tracing = "0.1.13"
 tracing-subscriber = "0.2.3"
 futures = "0.3.5"
-prost-types = "0.6.1"
 prost = "0.6.1"
+prost-types = { version = "0.6.1" }
 
 [dependencies.abscissa_core]
 version = "0.5.2"
