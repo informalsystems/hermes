@@ -1,7 +1,7 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientEvent;
 use crate::ics02_client::msgs::MsgCreateAnyClient;
@@ -9,10 +9,10 @@ use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
 pub struct CreateClientResult {
-    client_id: ClientId,
-    client_type: ClientType,
-    client_state: AnyClientState,
-    consensus_state: AnyConsensusState,
+    pub client_id: ClientId,
+    pub client_type: ClientType,
+    pub client_state: AnyClientState,
+    pub consensus_state: AnyConsensusState,
 }
 
 pub fn process(
@@ -49,14 +49,6 @@ pub fn process(
         client_state,
         consensus_state,
     }))
-}
-
-pub fn keep(keeper: &mut dyn ClientKeeper, result: CreateClientResult) -> Result<(), Error> {
-    keeper.store_client_type(result.client_id.clone(), result.client_type)?;
-    keeper.store_client_state(result.client_id.clone(), result.client_state)?;
-    keeper.store_consensus_state(result.client_id, result.consensus_state)?;
-
-    Ok(())
 }
 
 #[cfg(test)]

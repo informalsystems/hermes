@@ -18,6 +18,7 @@ use tendermint_proto::{DomainType, Error, Kind};
 const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
 
 #[allow(clippy::large_enum_variant)]
+#[derive(Clone, Debug)]
 pub enum ClientMsg {
     CreateClient(MsgCreateAnyClient),
     UpdateClient(MsgUpdateAnyClient),

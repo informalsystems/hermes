@@ -1,8 +1,6 @@
-#![allow(unreachable_code, unused_variables)]
-
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientEvent;
 
@@ -12,9 +10,9 @@ use crate::ics24_host::identifier::ClientId;
 
 #[derive(Debug)]
 pub struct UpdateClientResult {
-    client_id: ClientId,
-    client_state: AnyClientState,
-    consensus_state: AnyConsensusState,
+    pub client_id: ClientId,
+    pub client_state: AnyClientState,
+    pub consensus_state: AnyConsensusState,
 }
 
 pub fn process(
@@ -40,8 +38,7 @@ pub fn process(
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
     let latest_height = client_state.latest_height();
-    let consensus_state = ctx
-        .consensus_state(&client_id, latest_height)
+    ctx.consensus_state(&client_id, latest_height)
         .ok_or_else(|| Kind::ConsensusStateNotFound(client_id.clone(), latest_height))?;
 
     // Use client_state to validate the new header against the latest consensus_state.
@@ -58,13 +55,6 @@ pub fn process(
         client_state: new_client_state,
         consensus_state: new_consensus_state,
     }))
-}
-
-pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
-    keeper.store_client_state(result.client_id.clone(), result.client_state)?;
-    keeper.store_consensus_state(result.client_id, result.consensus_state)?;
-
-    Ok(())
 }
 
 #[cfg(test)]
