@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
+use crate::error::{Error, Kind};
 use abscissa_core::{Command, Options, Runnable};
-use relayer::chain::CosmosSDKChain;
-use relayer::config::{ChainConfig, Config};
-use relayer::tx::connection::ConnectionOpenInitOptions;
+use relayer::config::Config;
+use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
@@ -27,10 +27,7 @@ pub struct TxRawConnInitCmd {
 }
 
 impl TxRawConnInitCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, ConnectionOpenInitOptions), String> {
+    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
         let src_chain_id = self
             .src_chain_id
             .clone()
@@ -41,6 +38,17 @@ impl TxRawConnInitCmd {
             .iter()
             .find(|c| c.id == src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
+
+        let dest_chain_id = self
+            .dest_chain_id
+            .clone()
+            .ok_or_else(|| "missing destination chain identifier".to_string())?;
+
+        let dest_chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == dest_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let src_client_id = self
             .src_client_id
@@ -75,9 +83,11 @@ impl TxRawConnInitCmd {
             dest_client_id,
             src_connection_id,
             dest_connection_id,
+            src_chain_config: src_chain_config.clone(),
+            dest_chain_config: dest_chain_config.clone(),
         };
 
-        Ok((src_chain_config.clone(), opts))
+        Ok(opts)
     }
 }
 
@@ -85,19 +95,20 @@ impl Runnable for TxRawConnInitCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts) = match self.validate_options(&config) {
+        let opts = match self.validate_options(&config) {
             Err(err) => {
                 status_err!("invalid options: {}", err);
                 return;
             }
             Ok(result) => result,
         };
-
-        // Create chain
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-
         status_info!("Message", "{:?}", opts);
 
-        // TODO: Build, sign, and broadcast the transaction
+        let res: Result<(), Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
+            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn init failed, error: ", "{}", e),
+        }
     }
 }
