@@ -21,7 +21,9 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
     LET packet == packetDatagram.packet IN
     
     IF \* if the channel and connection ends are open for packet transmission
+       /\ channelEnd.state /= "UNINIT"
        /\ channelEnd.state = "OPEN"
+       /\ connectionEnd.state /= "UNINIT"
        /\ connectionEnd.state = "OPEN" 
        \* if the packet has not passed the timeout height
        /\ \/ packet.timeoutHeight = 0 
@@ -107,9 +109,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
                              chain.connectionEnd.channelEnd.nextAckSeq + 1,
                         !.packetCommitment = chain.packetCommitment \ {packetCommitment}] 
                
-             ELSE \* remove packet commitment  
-                  [chain EXCEPT 
-                        !.packetCommitment = chain.packetCommitment \ {packetCommitment}] IN
+             ELSE chain IN
               
               
          [chainStore |-> newChainStore, packetLog |-> log]     
@@ -119,5 +119,5 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Tue Sep 22 14:21:10 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Sep 25 17:26:04 CEST 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

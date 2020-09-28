@@ -207,8 +207,8 @@ SendPacket ==
     \* timeout height has not passed
     /\ \/ packet.timeoutHeight = 0 
        \/ latestClientHeight < packet.timeoutHeight
-    /\ \* if the channel is ordered, check if packetSeq is nextSentSeq, 
-       \* add a packet committment in the chain store, and increase nextSentSeq
+    /\ \* if the channel is ordered, check if packetSeq is nextSendSeq, 
+       \* add a packet committment in the chain store, and increase nextSendSeq
        \/ /\ channelEnd.order = "ORDERED"
           /\ packet.sequence = channelEnd.nextSendSeq
           /\ packet.sequence <= MaxPacketSeq
@@ -217,7 +217,7 @@ SendPacket ==
                     chainStore.packetCommitments \union {[channelID |-> packet.srcChannelID,
                                                           sequence |-> packet.sequence,
                                                           timeoutHeight |-> packet.timeoutHeight]},
-                !.connectionEnd.channelEnd.nextSentSeq = channelEnd.nextSentSeq + 1
+                !.connectionEnd.channelEnd.nextSendSeq = channelEnd.nextSendSeq + 1
               ]
        \* if the channel is unordered, 
        \* add a packet committment in the chain store
@@ -329,5 +329,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Sep 22 13:43:43 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Sep 25 17:21:20 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
