@@ -14,7 +14,7 @@ tendermint-proto = "0.1.0"
 
 abscissa_tokio = "0.5.1"
 anomaly = "0.2.0"
-gumdrop = "0.7"
+gumdrop = "0.8"
 serde = { version = "1", features = ["serde_derive"] }
 thiserror = "1"
 tokio = { version = "0.2.13", features = ["rt-util", "sync"] }
