@@ -38,6 +38,19 @@ impl MockChainContext {
         }
     }
 
+    pub fn add_header(&mut self, h: u64) {
+        let mut new_h = h;
+        if h == 0 {
+            new_h = h+1;
+        }
+        self.store_historical_info(
+            Height(new_h),
+            HistoricalInfo {
+                header: SelfHeader::Mock(MockHeader(Height(new_h))),
+            },
+        );
+    }
+
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
         // TODO
         Ok(())

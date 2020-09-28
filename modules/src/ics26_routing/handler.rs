@@ -70,6 +70,7 @@ mod tests {
     use crate::mock_client::state::{MockClientState, MockConsensusState};
     use std::str::FromStr;
     use tendermint::block::Height;
+    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
 
     #[test]
     fn routing_dispatch() {
@@ -88,6 +89,7 @@ mod tests {
             client_type: ClientType::Mock,
             client_state: AnyClientState::from(MockClientState(MockHeader(Height(42)))),
             consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(Height(42)))),
+            signer: get_dummy_account_id(),
         };
         let envelope = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(msg));
 

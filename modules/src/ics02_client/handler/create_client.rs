@@ -7,7 +7,7 @@ use crate::ics02_client::handler::ClientEvent;
 use crate::ics02_client::msgs::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateClientResult {
     pub client_id: ClientId,
     pub client_type: ClientType,

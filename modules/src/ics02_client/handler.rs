@@ -17,6 +17,7 @@ pub enum ClientEvent {
     ClientUpdated(ClientId),
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientResult {
     CreateResult(CreateClientResult),
     UpdateResult(UpdateClientResult),

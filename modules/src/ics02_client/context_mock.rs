@@ -1,3 +1,4 @@
+use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -7,6 +8,9 @@ use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use std::collections::HashMap;
 use tendermint::block::Height;
+use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
+use crate::ics02_client::handler::ClientResult;
+use crate::ics02_client::state::ConsensusState;
 
 /// A mock implementation of client context. This mocks (i.e., replaces) the functionality of
 /// a KV-store holding information related to the various IBC clients running on a chain.
@@ -15,13 +19,24 @@ use tendermint::block::Height;
 /// the ICS02 handlers (create, update client) and other dependent ICS handlers (e.g., ICS03).
 #[derive(Clone, Debug)]
 pub struct MockClientContext {
+    pub chain_context: MockChainContext,
     /// The set of all clients, indexed by their id.
     pub clients: HashMap<ClientId, MockClientRecord>,
+}
+
+impl MockClientContext {
+    pub fn new(chain_height: u64, max_history_size: usize) -> Self {
+        MockClientContext {
+            chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
+            clients: Default::default(),
+        }
+    }
 }
 
 impl Default for MockClientContext {
     fn default() -> Self {
         MockClientContext {
+            chain_context: Default::default(),
             clients: Default::default(),
         }
     }
@@ -99,6 +114,20 @@ impl ClientReader for MockClientContext {
 }
 
 impl ClientKeeper for MockClientContext {
+    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
+        match handler_res {
+            CreateResult(res) => {
+                self.with_client_type(&res.client_id, ClientType::Mock, res.consensus_state.height());
+            }
+            UpdateResult(res) => {
+                self.with_client_consensus_state(&res.client_id, res.consensus_state.height());
+                // Create a new block.
+                self.chain_context.add_header(0);
+            }
+        }
+        Ok(())
+    }
+
     fn store_client_type(
         &mut self,
         _client_id: ClientId,

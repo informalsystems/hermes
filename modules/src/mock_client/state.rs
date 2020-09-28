@@ -156,7 +156,7 @@ impl ConsensusState for MockConsensusState {
     }
 
     fn height(&self) -> Height {
-        todo!()
+        self.0.height()
     }
 
     fn root(&self) -> &CommitmentRoot {
