@@ -1,6 +1,7 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
+use ibc::ics24_host::identifier::ClientId;
 use thiserror::Error;
 
 /// An error that can be raised by the relayer.
@@ -40,6 +41,10 @@ pub enum Kind {
     /// Response does not contain data
     #[error("Empty response value")]
     EmptyResponseValue,
+
+    /// Create client failure
+    #[error("Failed to create client {0}: {1}")]
+    CreateClient(ClientId, String),
 }
 
 impl Kind {

@@ -114,9 +114,3 @@ pub mod tendermint {
         include!("prost/tendermint.version.rs");
     }
 }
-
-mod domaintype;
-pub use domaintype::DomainType;
-
-mod error;
-pub use error::{Error, Kind};

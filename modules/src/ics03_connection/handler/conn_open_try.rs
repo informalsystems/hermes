@@ -1,6 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
@@ -91,12 +91,6 @@ pub(crate) fn process(
     Ok(output.with_result(result))
 }
 
-pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(&result.connection_id, &result.connection_end)?;
-    keeper.store_connection_to_client(&result.connection_id, &result.connection_end.client_id())?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
@@ -106,16 +100,10 @@ mod tests {
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenTry};
-    use crate::try_from_raw::TryFromRaw;
+    use std::convert::TryFrom;
 
     #[test]
     fn conn_open_try_msg_processing() {
-        #[derive(Clone, Debug)]
-        struct ConnOpenTryProcessParams {
-            ctx: MockConnectionContext,
-            msg: ConnectionMsg,
-        }
-
         struct Test {
             name: String,
             ctx: MockConnectionContext,

@@ -10,6 +10,7 @@ mod light;
 mod listen;
 mod query;
 mod start;
+mod tx;
 mod utils;
 mod version;
 
@@ -18,6 +19,7 @@ use self::{
     version::VersionCmd,
 };
 
+use crate::commands::tx::TxCmd;
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 use std::path::PathBuf;
@@ -51,6 +53,10 @@ pub enum CliCmd {
     /// The `query` subcommand
     #[options(help = "query state from chain")]
     Query(QueryCmd),
+
+    /// The `tx` subcommand
+    #[options(help = "create IBC transactions on configured chains")]
+    Tx(TxCmd),
 
     /// The `light` subcommand
     #[options(help = "basic functionality for managing the lite clients")]
