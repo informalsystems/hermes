@@ -62,6 +62,7 @@ mod tests {
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
+    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::context_mock::MockICS26Context;
     use crate::ics26_routing::handler::dispatch;
@@ -88,6 +89,7 @@ mod tests {
             client_type: ClientType::Mock,
             client_state: AnyClientState::from(MockClientState(MockHeader(Height(42)))),
             consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(Height(42)))),
+            signer: get_dummy_account_id(),
         };
         let envelope = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(msg));
 
