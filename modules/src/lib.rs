@@ -15,9 +15,12 @@
 //!
 //! - ICS 02: Client
 //! - ICS 03: Connection
+//! - ICS 04: Channel
 //! - ICS 07: Tendermint Client
+//! - ICS 20: Fungible Token
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
+//! - ICS 26: Routing
 
 pub mod context;
 pub mod events;
@@ -29,6 +32,7 @@ pub mod ics07_tendermint;
 pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
+pub mod ics26_routing;
 pub mod keys;
 pub mod macros;
 pub mod proofs;

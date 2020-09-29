@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::time::Duration;
 
 use tendermint::abci::Path as TendermintABCIPath;
@@ -11,15 +12,15 @@ use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
+use super::Chain;
 use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
-use super::Chain;
 use bytes::Bytes;
 use prost::Message;
+use prost_types::Any;
 use std::future::Future;
-use std::str::FromStr;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -65,6 +66,12 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
+    /// Send a transaction that includes the specified messages
+    fn send(&self, _msgs: &[Any]) -> Result<(), Error> {
+        // TODO sign and broadcast_tx
+        Ok(())
+    }
+
     fn config(&self) -> &ChainConfig {
         &self.config
     }
@@ -87,6 +94,11 @@ impl Chain for CosmosSDKChain {
 
     fn trust_threshold(&self) -> TrustThreshold {
         TrustThreshold::default()
+    }
+
+    fn unbonding_period(&self) -> Duration {
+        // TODO - query chain
+        Duration::from_secs(24 * 7 * 3)
     }
 }
 

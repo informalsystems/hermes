@@ -1,6 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::verify_proofs;
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
@@ -71,11 +71,6 @@ pub(crate) fn process(
     Ok(output.with_result(result))
 }
 
-pub fn keep(keeper: &mut dyn ConnectionKeeper, result: ConnectionResult) -> Result<(), Error> {
-    keeper.store_connection(&result.connection_id, &result.connection_end)?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
@@ -92,12 +87,6 @@ mod tests {
 
     #[test]
     fn conn_open_confirm_msg_processing() {
-        #[derive(Clone, Debug)]
-        struct ConnOpenAckProcessParams {
-            ctx: MockConnectionContext,
-            msg: ConnectionMsg,
-        }
-
         struct Test {
             name: String,
             ctx: MockConnectionContext,
@@ -164,7 +153,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "dispatch() in ICS3: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -187,7 +176,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "dispatch() in ICS3: test failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

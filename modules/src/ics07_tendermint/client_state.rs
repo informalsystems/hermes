@@ -11,7 +11,7 @@ use ibc_proto::ibc::tendermint::ClientState as RawClientState;
 use tendermint::block::Height;
 use tendermint_proto::DomainType;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: String,
     // pub trust_level: TrustLevel,

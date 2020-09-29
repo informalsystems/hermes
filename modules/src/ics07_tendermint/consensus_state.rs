@@ -1,21 +1,59 @@
-use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::commitment::CommitmentRoot;
-
-use crate::ics07_tendermint::error::{Error, Kind};
 use chrono::{TimeZone, Utc};
-use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
+
+use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
+
+use tendermint::block::signed_header::SignedHeader;
 use tendermint::hash::Algorithm;
+use tendermint::time::Time;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentRoot;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub height: crate::Height,
-    pub timestamp: tendermint::time::Time,
+    pub timestamp: Time,
     pub root: CommitmentRoot,
     pub next_validators_hash: Hash,
+}
+
+impl ConsensusState {
+    pub fn new(
+        root: CommitmentRoot,
+        height: crate::Height,
+        timestamp: Time,
+        next_validators_hash: Hash,
+    ) -> Self {
+        Self {
+            root,
+            height,
+            timestamp,
+            next_validators_hash,
+        }
+    }
+}
+
+impl crate::ics02_client::state::ConsensusState for ConsensusState {
+    fn client_type(&self) -> ClientType {
+        ClientType::Tendermint
+    }
+
+    fn height(&self) -> crate::Height {
+        self.height
+    }
+
+    fn root(&self) -> &CommitmentRoot {
+        &self.root
+    }
+
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
+        unimplemented!()
+    }
 }
 
 impl DomainType<RawConsensusState> for ConsensusState {}
@@ -64,37 +102,14 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl ConsensusState {
-    pub fn new(
-        root: CommitmentRoot,
-        height: crate::Height,
-        timestamp: tendermint::time::Time,
-        next_validators_hash: Hash,
-    ) -> Self {
+impl From<SignedHeader> for ConsensusState {
+    fn from(header: SignedHeader) -> Self {
         Self {
-            root,
-            height,
-            timestamp,
-            next_validators_hash,
+            root: CommitmentRoot::from_bytes(&header.header.app_hash),
+            height: header.header.height,
+            timestamp: header.header.time,
+            next_validators_hash: header.header.next_validators_hash,
         }
-    }
-}
-
-impl crate::ics02_client::state::ConsensusState for ConsensusState {
-    fn client_type(&self) -> ClientType {
-        ClientType::Tendermint
-    }
-
-    fn height(&self) -> crate::Height {
-        self.height
-    }
-
-    fn root(&self) -> &CommitmentRoot {
-        &self.root
-    }
-
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
-        unimplemented!()
     }
 }
 
