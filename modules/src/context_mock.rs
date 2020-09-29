@@ -9,7 +9,7 @@ use tendermint::block::Height;
 pub struct MockChainContext {
     /// Maximum size of the history
     pub max_size: usize,
-    /// Heighest height of the headers in the history
+    /// Highest height of the headers in the history
     pub latest: Height,
     /// A list of `max_size` headers ordered by height
     pub history: Vec<MockHeader>,

@@ -126,9 +126,11 @@ impl ClientKeeper for MockICS26Context {
         client_id: ClientId,
         client_type: ClientType,
     ) -> Result<(), ICS2Error> {
-        let mut client_store = self.client_context().clone();
-        client_store.store_client_type(client_id, client_type)?;
-        self.client_context = client_store;
+        self.client_context
+            .store_client_type(client_id, client_type)?;
+        // let mut client_store = self.client_context().clone();
+        // client_store.store_client_type(client_id, client_type)?;
+        // self.client_context = client_store;
         Ok(())
     }
 

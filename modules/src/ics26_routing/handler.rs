@@ -83,11 +83,21 @@ mod tests {
     ) -> Result<HandlerOutput<()>, Error> {
         // Check if client for ibc0 on ibc1 has been updated to latest height:
         // - query latest height on source chain
+        // TODO maybe: src.get_latest_height()
         let src_latest_height = src.chain_context().latest;
         // - query client state on destination chain
         //  (TODO - simulate relayer by "querying" the client state and get the latest height from there
-        //   then check if that is smaller than the source latest height)
+        //  then check if that is smaller than the source latest height)
+        // TODO maybe: dest.query_client_state(client_id)
         let dest_client = dest.client_context.clients.get(&client_id).unwrap();
+
+        // let dest_height = dest.query_client_full_state(client_id).latest_height()?;
+        // if dest_height > src_latest_height {
+        //      weird
+        // }
+        // if dest_height < src_latest_height {
+        //      return new Envelope
+        // }
 
         // Does the client have a consensus state for the latest height?
         if dest_client
@@ -109,8 +119,8 @@ mod tests {
 
     #[test]
     fn test_update_two_chains() {
-        let client_on_ibc0_for_ibc1: ClientId = "ibconeclient".parse().unwrap();
-        let client_on_ibc1_for_ibc0: ClientId = "ibczeroclient".parse().unwrap();
+        let client_on_ibc0_for_ibc1 = ClientId::from_str("ibconeclient").unwrap();
+        let client_on_ibc1_for_ibc0 = ClientId::from_str("ibczeroclient").unwrap();
 
         let ibc0_start_height = 11;
         let ibc1_start_height = 20;
