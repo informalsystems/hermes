@@ -92,23 +92,32 @@ impl Runnable for StartCmd {
 }
 
 async fn relayer_task(config: &Config, chains: Vec<CosmosSDKChain>) -> Result<(), BoxError> {
-    loop {
-        for chain in &chains {
-            let light_client = chain.light_client().ok_or_else(|| {
-                format!(
-                    "light client for chain {} has not been initialized",
-                    chain.id()
-                )
-            })?;
+    for chain in &chains {
+        let light_client = chain.light_client().ok_or_else(|| {
+            format!(
+                "light client for chain {} has not been initialized",
+                chain.id()
+            )
+        })?;
 
-            let block = light_client.verify_to_latest().await?;
-
+        if let Some(latest_trusted) = light_client.latest_trusted().await? {
             info!(
                 chain.id = %chain.id(),
-                "synced to block at height {}",
-                block.height(),
+                "latest trusted state is at height {:?}",
+                latest_trusted.height(),
+            );
+        } else {
+            warn!(
+                chain.id = %chain.id(),
+                "no latest trusted state",
             );
         }
+    }
+
+    let mut interval = tokio::time::interval(Duration::from_secs(2));
+
+    loop {
+        interval.tick().await;
     }
 }
 

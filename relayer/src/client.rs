@@ -21,6 +21,9 @@ pub mod tendermint;
 /// Defines a client from the point of view of the relayer.
 #[async_trait]
 pub trait LightClient<LightBlock> {
+    /// Get the latest trusted state of the light client
+    async fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error>;
+
     /// Fetch and verify the latest header from the chain
     async fn verify_to_latest(&self) -> Result<LightBlock, error::Error>;
 

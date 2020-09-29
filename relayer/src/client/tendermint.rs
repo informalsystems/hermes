@@ -20,6 +20,18 @@ impl LightClient {
 
 #[async_trait]
 impl super::LightClient<LightBlock> for LightClient {
+    async fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error> {
+        let handle = self.handle.clone();
+
+        spawn_blocking(move || {
+            handle
+                .latest_trusted()
+                .map_err(|e| error::Kind::LightClient.context(e).into())
+        })
+        .await
+        .expect("task failed to execute to completion")
+    }
+
     async fn verify_to_latest(&self) -> Result<LightBlock, error::Error> {
         let handle = self.handle.clone();
 
