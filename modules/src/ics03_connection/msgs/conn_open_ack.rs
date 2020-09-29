@@ -1,8 +1,9 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use std::str::{from_utf8, FromStr};
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use tendermint_proto::DomainType;
+
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
@@ -83,6 +84,8 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
+impl DomainType<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
+
 impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
@@ -121,11 +124,48 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(
-                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
-            )
-            .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: AccountId::new(
+                msg.signer[..20]
+                    .try_into()
+                    .map_err(|e| Kind::InvalidSigner.context(e))?,
+            ),
         })
+    }
+}
+
+impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
+    fn from(ics_msg: MsgConnectionOpenAck) -> Self {
+        RawMsgConnectionOpenAck {
+            connection_id: ics_msg.connection_id.as_str().to_string(),
+            version: ics_msg.version,
+            client_state: ics_msg
+                .client_state
+                .map_or_else(|| None, |v| Some(v.into())),
+            proof_height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: ics_msg.proofs.height().value(),
+            }),
+            proof_try: ics_msg.proofs.object_proof().clone().into(),
+            proof_client: ics_msg
+                .proofs
+                .client_proof()
+                .clone()
+                .map_or_else(Vec::new, |v| v.into()),
+            proof_consensus: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(Vec::new, |v| v.proof().clone().into()),
+            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
+                || None,
+                |h| {
+                    Some(ibc_proto::ibc::client::Height {
+                        epoch_number: 0,
+                        epoch_height: u64::from(h.height()),
+                    })
+                },
+            ),
+            signer: Vec::from(ics_msg.signer.as_bytes()),
+        }
     }
 }
 
@@ -134,7 +174,7 @@ pub mod test_util {
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_bytes, get_dummy_proof};
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
@@ -142,17 +182,17 @@ pub mod test_util {
             version: "1.0.0".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 1,
+                epoch_number: 0,
                 epoch_height: 10,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 1,
+                epoch_number: 0,
                 epoch_height: 10,
             }),
-            signer: get_dummy_account_id_bytes(),
             client_state: None,
             proof_client: vec![],
+            signer: Vec::from(get_dummy_account_id().as_bytes()),
         }
     }
 }
@@ -232,11 +272,21 @@ mod tests {
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgConnOpenTry::new failed for test {}, \nmsg {:?} with error {:?}",
+                "MsgConnOpenAck::new failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
                 test.raw,
                 msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_msg_conn_open_ack();
+        let msg = MsgConnectionOpenAck::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgConnectionOpenAck::from(msg.clone());
+        let msg_back = MsgConnectionOpenAck::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }

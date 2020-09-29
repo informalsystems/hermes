@@ -78,8 +78,8 @@ mod tests {
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
 
     use crate::ics23_commitment::commitment::CommitmentPrefix;

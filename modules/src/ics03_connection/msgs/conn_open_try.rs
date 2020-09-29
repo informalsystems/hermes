@@ -1,8 +1,9 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use std::str::{from_utf8, FromStr};
 
 use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use tendermint_proto::DomainType;
+
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
@@ -97,6 +98,8 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
+impl DomainType<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
+
 impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
@@ -144,11 +147,50 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(
-                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
-            )
-            .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: AccountId::new(
+                msg.signer[..20]
+                    .try_into()
+                    .map_err(|e| Kind::InvalidSigner.context(e))?,
+            ),
         })
+    }
+}
+
+impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
+    fn from(ics_msg: MsgConnectionOpenTry) -> Self {
+        RawMsgConnectionOpenTry {
+            client_id: ics_msg.client_id.as_str().to_string(),
+            connection_id: ics_msg.connection_id.as_str().to_string(),
+            client_state: ics_msg
+                .client_state
+                .map_or_else(|| None, |v| Some(v.into())),
+            counterparty: Some(ics_msg.counterparty.into()),
+            counterparty_versions: ics_msg.counterparty_versions,
+            proof_height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: ics_msg.proofs.height().value(),
+            }),
+            proof_init: ics_msg.proofs.object_proof().clone().into(),
+            proof_client: ics_msg
+                .proofs
+                .client_proof()
+                .clone()
+                .map_or_else(Vec::new, |v| v.into()),
+            proof_consensus: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(Vec::new, |v| v.proof().clone().into()),
+            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
+                || None,
+                |h| {
+                    Some(ibc_proto::ibc::client::Height {
+                        epoch_number: 0,
+                        epoch_height: u64::from(h.height()),
+                    })
+                },
+            ),
+            signer: Vec::from(ics_msg.signer.as_bytes()),
+        }
     }
 }
 
@@ -158,7 +200,7 @@ pub mod test_util {
     use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id_bytes, get_dummy_counterparty, get_dummy_proof,
+        get_dummy_account_id, get_dummy_counterparty, get_dummy_proof,
     };
 
     pub fn get_dummy_msg_conn_open_try(
@@ -173,16 +215,16 @@ pub mod test_util {
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 1,
+                epoch_number: 0,
                 epoch_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 1,
+                epoch_number: 0,
                 epoch_height: consensus_height,
             }),
-            signer: get_dummy_account_id_bytes(),
             proof_client: vec![],
+            signer: Vec::from(get_dummy_account_id().as_bytes()),
         }
     }
 }
@@ -314,5 +356,15 @@ mod tests {
                 msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_msg_conn_open_try(10, 34);
+        let msg = MsgConnectionOpenTry::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgConnectionOpenTry::from(msg.clone());
+        let msg_back = MsgConnectionOpenTry::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }

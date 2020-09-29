@@ -1,8 +1,9 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use std::str::{from_utf8, FromStr};
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use tendermint_proto::DomainType;
+
 use tendermint::account::Id as AccountId;
 
 use crate::ics03_connection::error::{Error, Kind};
@@ -59,6 +60,8 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
+impl DomainType<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
+
 impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
@@ -74,11 +77,26 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(
-                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
-            )
-            .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: AccountId::new(
+                msg.signer[..20]
+                    .try_into()
+                    .map_err(|e| Kind::InvalidSigner.context(e))?,
+            ),
         })
+    }
+}
+
+impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
+    fn from(ics_msg: MsgConnectionOpenConfirm) -> Self {
+        RawMsgConnectionOpenConfirm {
+            connection_id: ics_msg.connection_id.as_str().to_string(),
+            proof_ack: ics_msg.proofs.object_proof().clone().into(),
+            proof_height: Some(ibc_proto::ibc::client::Height {
+                epoch_number: 0,
+                epoch_height: ics_msg.proofs.height().value(),
+            }),
+            signer: Vec::from(ics_msg.signer.as_bytes()),
+        }
     }
 }
 
@@ -87,17 +105,17 @@ pub mod test_util {
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_bytes, get_dummy_proof};
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 1,
+                epoch_number: 0,
                 epoch_height: 10,
             }),
-            signer: get_dummy_account_id_bytes(),
+            signer: Vec::from(get_dummy_account_id().as_bytes()),
         }
     }
 }
@@ -109,8 +127,8 @@ mod tests {
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_confirm;
 
     #[test]
     fn parse_connection_open_confirm_msg() {
@@ -163,5 +181,15 @@ mod tests {
                 msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_msg_conn_open_confirm();
+        let msg = MsgConnectionOpenConfirm::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgConnectionOpenConfirm::from(msg.clone());
+        let msg_back = MsgConnectionOpenConfirm::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }

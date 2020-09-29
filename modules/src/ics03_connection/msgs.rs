@@ -38,10 +38,8 @@ pub mod test_util {
     use std::str::{from_utf8, FromStr};
     use tendermint::account::Id as AccountId;
 
-    use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::commitment::MerklePrefix;
     use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -66,18 +64,6 @@ pub mod test_util {
             prefix: Some(MerklePrefix {
                 key_prefix: b"ibc".to_vec(),
             }),
-        }
-    }
-
-    pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
-        RawMsgConnectionOpenConfirm {
-            connection_id: "srcconnection".to_string(),
-            proof_ack: get_dummy_proof(),
-            proof_height: Some(Height {
-                epoch_number: 1,
-                epoch_height: 10,
-            }),
-            signer: get_dummy_account_id_bytes(),
         }
     }
 }

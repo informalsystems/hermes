@@ -1,10 +1,10 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use std::str::{from_utf8, FromStr};
 
 use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use tendermint::account::Id as AccountId;
 use tendermint_proto::DomainType;
+
+use tendermint::account::Id as AccountId;
 
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
@@ -41,44 +41,6 @@ impl MsgConnectionOpenInit {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
-
-impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
-    type Error = anomaly::Error<Kind>;
-
-    fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
-        Ok(Self {
-            connection_id: msg
-                .connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            client_id: msg
-                .client_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty: msg
-                .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?
-                .try_into()?,
-            signer: AccountId::from_str(
-                from_utf8(&msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?,
-            )
-            .map_err(|e| Kind::InvalidSigner.context(e))?,
-        })
-    }
-}
-
-impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
-    fn from(value: MsgConnectionOpenInit) -> Self {
-        RawMsgConnectionOpenInit {
-            client_id: value.client_id.as_str().to_string(),
-            connection_id: value.connection_id.as_str().to_string(),
-            counterparty: Some(value.counterparty.into()),
-            signer: value.signer.as_bytes().to_vec(),
-        }
-    }
-}
-
 impl Msg for MsgConnectionOpenInit {
     type ValidationError = Error;
 
@@ -106,13 +68,50 @@ impl Msg for MsgConnectionOpenInit {
     }
 }
 
+impl DomainType<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
+
+impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
+        Ok(Self {
+            connection_id: msg
+                .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            client_id: msg
+                .client_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty: msg
+                .counterparty
+                .ok_or_else(|| Kind::MissingCounterparty)?
+                .try_into()?,
+            signer: AccountId::new(
+                msg.signer[..20]
+                    .try_into()
+                    .map_err(|e| Kind::InvalidSigner.context(e))?,
+            ),
+        })
+    }
+}
+
+impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
+    fn from(ics_msg: MsgConnectionOpenInit) -> Self {
+        RawMsgConnectionOpenInit {
+            client_id: ics_msg.client_id.as_str().to_string(),
+            connection_id: ics_msg.connection_id.as_str().to_string(),
+            counterparty: Some(ics_msg.counterparty.into()),
+            signer: Vec::from(ics_msg.signer.as_bytes()),
+        }
+    }
+}
+
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id_bytes, get_dummy_counterparty,
-    };
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_counterparty};
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
@@ -121,7 +120,7 @@ pub mod test_util {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            signer: get_dummy_account_id_bytes(),
+            signer: Vec::from(get_dummy_account_id().as_bytes()),
         }
     }
 }
@@ -199,5 +198,15 @@ mod tests {
                 msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_msg_conn_open_init();
+        let msg = MsgConnectionOpenInit::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgConnectionOpenInit::from(msg.clone());
+        let msg_back = MsgConnectionOpenInit::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }
