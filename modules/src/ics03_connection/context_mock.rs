@@ -13,7 +13,6 @@ use tendermint::block::Height;
 
 #[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {
-    chain_context: MockChainContext,
     client_context: MockClientContext,
     connections: HashMap<ConnectionId, ConnectionEnd>,
     client_connections: HashMap<ClientId, ConnectionId>,
@@ -22,15 +21,22 @@ pub struct MockConnectionContext {
 impl MockConnectionContext {
     pub fn new(chain_height: u64, max_history_size: usize) -> Self {
         MockConnectionContext {
-            chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
-            client_context: Default::default(),
+            client_context: MockClientContext::new(chain_height, max_history_size),
             connections: Default::default(),
             client_connections: Default::default(),
         }
     }
 
+    pub fn chain_context(&self) -> &MockChainContext {
+        &self.client_context.chain_context
+    }
+
+    pub fn client_context(&self) -> &MockClientContext {
+        &self.client_context
+    }
+
     pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
-        let mut client_context = self.client_context.clone();
+        let mut client_context = self.client_context().clone();
         client_context.with_client_consensus_state(client_id, Height(latest_client_height));
         Self {
             client_context,
@@ -39,7 +45,7 @@ impl MockConnectionContext {
     }
 
     pub fn max_size(&self) -> usize {
-        self.chain_context.max_size()
+        self.chain_context().max_size()
     }
 
     pub fn add_connection(self, id: ConnectionId, end: ConnectionEnd) -> Self {
@@ -58,16 +64,16 @@ impl ConnectionReader for MockConnectionContext {
     }
 
     fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        self.client_context.client_state(client_id)
+        self.client_context().client_state(client_id)
     }
 
     fn chain_current_height(&self) -> Height {
-        self.chain_context.latest
+        self.chain_context().latest
     }
 
     /// Returns the number of consensus state historical entries for the local chain.
     fn chain_consensus_states_history_size(&self) -> usize {
-        self.chain_context.max_size()
+        self.chain_context().max_size()
     }
 
     fn chain_type(&self) -> SelfChainType {
@@ -83,11 +89,11 @@ impl ConnectionReader for MockConnectionContext {
         client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        self.client_context.consensus_state(client_id, height)
+        self.client_context().consensus_state(client_id, height)
     }
 
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let hi = self.chain_context.self_historical_info(height)?.header;
+        let hi = self.chain_context().self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]
             SelfHeader::Mock(h) => Some(h.into()),

@@ -254,7 +254,6 @@ impl ConsensusState for AnyConsensusState {
 
             #[cfg(test)]
             AnyConsensusState::Mock(cs) => cs.height(),
-
         }
     }
 

@@ -2,15 +2,13 @@ use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::Error;
+use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::state::ConsensusState;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use std::collections::HashMap;
 use tendermint::block::Height;
-use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
-use crate::ics02_client::handler::ClientResult;
-use crate::ics02_client::state::ConsensusState;
 
 /// A mock implementation of client context. This mocks (i.e., replaces) the functionality of
 /// a KV-store holding information related to the various IBC clients running on a chain.
@@ -30,6 +28,13 @@ impl MockClientContext {
             chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
             clients: Default::default(),
         }
+    }
+    pub fn chain_context(&self) -> &MockChainContext {
+        &self.chain_context
+    }
+
+    pub fn set_chain_context(&mut self, chain_context: MockChainContext) {
+        self.chain_context = chain_context
     }
 }
 
@@ -114,41 +119,58 @@ impl ClientReader for MockClientContext {
 }
 
 impl ClientKeeper for MockClientContext {
-    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
-        match handler_res {
-            CreateResult(res) => {
-                self.with_client_type(&res.client_id, ClientType::Mock, res.consensus_state.height());
-            }
-            UpdateResult(res) => {
-                self.with_client_consensus_state(&res.client_id, res.consensus_state.height());
-                // Create a new block.
-                self.chain_context.add_header(0);
-            }
-        }
-        Ok(())
-    }
-
     fn store_client_type(
         &mut self,
-        _client_id: ClientId,
-        _client_type: ClientType,
+        client_id: ClientId,
+        client_type: ClientType,
     ) -> Result<(), Error> {
-        todo!()
+        let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+            client_type,
+            consensus_states: Default::default(),
+            client_state: Default::default(),
+        });
+
+        client_record.client_type = client_type;
+        Ok(())
     }
 
     fn store_client_state(
         &mut self,
-        _client_id: ClientId,
-        _client_state: AnyClientState,
+        client_id: ClientId,
+        client_state: AnyClientState,
     ) -> Result<(), Error> {
-        todo!()
+        match client_state {
+            AnyClientState::Mock(client_state) => {
+                let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+                    client_type: ClientType::Mock,
+                    consensus_states: Default::default(),
+                    client_state,
+                });
+                client_record.client_state = client_state;
+                Ok(())
+            }
+            _ => Err(Kind::BadClientState.into()),
+        }
     }
 
     fn store_consensus_state(
         &mut self,
-        _client_id: ClientId,
-        _consensus_state: AnyConsensusState,
+        client_id: ClientId,
+        consensus_state: AnyConsensusState,
     ) -> Result<(), Error> {
-        todo!()
+        match consensus_state {
+            AnyConsensusState::Mock(consensus_state) => {
+                let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+                    client_type: ClientType::Mock,
+                    consensus_states: Default::default(),
+                    client_state: Default::default(),
+                });
+                client_record
+                    .consensus_states
+                    .insert(consensus_state.height(), consensus_state);
+                Ok(())
+            }
+            _ => Err(Kind::BadClientState.into()),
+        }
     }
 }
