@@ -27,33 +27,68 @@
 
 //impl TxBuilder {
 // pub fn build_tx<T: std::error::Error, U: Msg<ValidationError = T>>(msg: Vec<Box<U>>, memo: String) -> Result<TxBody, Error> {
+
+// Create TxBody
+// let body = TxBody {
+//     messages: proto_msgs,
+//     memo: "".to_string(),
+//     timeout_height: 0,
+//     extension_options: Vec::<prost_types::Any>::new(),
+//     non_critical_extension_options: Vec::<prost_types::Any>::new(),
+// };
 //
-//     let mut proto_msgs: Vec<prost_types::Any> = Vec::new();
-//     let mut buf = Vec::new();
+// // A protobuf serialization of a TxBody
+// let mut body_buf = Vec::new();
+// prost::Message::encode(&body, &mut body_buf).unwrap();
+
+// TODO: move this logic to tx builder
+// let sum = Some(PK_Sum::Secp256k1(pubkey_bytes));
 //
-//     // Have a loop if new_builder takes more messages
-//     // for now just encode one message
-//     prost::Message::encode(&msg, &mut buf).unwrap();
+// let pk = Some(PublicKey { sum });
 //
-//     // Create a proto any message
-//     let any_msg = prost_types::Any {
-//         type_url: "/ibc.connection.MsgConnectionOpenInit".to_string(),
-//         value: buf,
-//     };
+// let single = Single { mode: 1 };
+// let sum_single = Some(Sum::Single(single));
+// let mode = Some(ModeInfo { sum: sum_single });
 //
-//     // Add proto message
-//     proto_msgs.push(any_msg);
+// let signer_info = SignerInfo {
+//     public_key: pk,
+//     mode_info: mode,
+//     sequence: 0,
+// };
 //
-//     // Create TxBody
-//     let body = TxBody {
-//         messages: proto_msgs,
-//         memo,
-//         timeout_height: 0,
-//         extension_options: Vec::<prost_types::Any>::new(),
-//         non_critical_extension_options: Vec::<prost_types::Any>::new(),
-//     };
+// let auth_info = AuthInfo {
+//     signer_infos: vec![signer_info],
+//     fee: None,
+// };
 //
-//     Ok(body)
+// // A protobuf serialization of a AuthInfo
+// let mut auth_buf = Vec::new();
+// prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+//
+// let sign_doc = SignDoc {
+//     body_bytes: body_buf.clone(),
+//     auth_info_bytes: auth_buf.clone(),
+//     chain_id: chain_config.clone().id.to_string(),
+//     account_number: account_number,
+// };
+//
+// // A protobuf serialization of a AuthInfo
+// let mut signdoc_buf = Vec::new();
+// prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+//
+// let signature: Signature = signing_key.sign(&signdoc_buf);
+//
+// status_info!("Signed Tx", "{:?}", signed_doc);
+//
+// let tx_raw = TxRaw {
+//     body_bytes,
+//     auth_info_bytes: auth_bytes,
+//     signatures: vec![signature.as_ref().to_vec()],
+// };
+//
+// let mut txraw_buf = Vec::new();
+// prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
+// println!("{:?}", txraw_buf);
 // }
 
 // pub fn get_sign_doc(body: TxBody, auth: AuthInfo) -> Result<SignDoc, Error> {

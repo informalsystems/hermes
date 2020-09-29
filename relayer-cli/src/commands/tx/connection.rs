@@ -60,7 +60,7 @@ impl TxRawConnInitCmd {
         let src_connection_id = self
             .src_connection_id
             .as_ref()
-            .ok_or_else(|| "missing src connection identifier".to_string())?
+            .ok_or_else(|| "missing source connection identifier".to_string())?
             .parse()
             .map_err(|_| "bad source connection identifier".to_string())?;
 

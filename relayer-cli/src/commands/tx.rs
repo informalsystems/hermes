@@ -23,7 +23,7 @@ pub enum TxRawCommands {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `tx raw conninit` subcommand
+    /// The `tx raw conn-init` subcommand
     #[options(help = "tx raw conn-init")]
     ConnInit(connection::TxRawConnInitCmd),
 
