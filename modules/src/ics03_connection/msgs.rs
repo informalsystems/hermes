@@ -61,10 +61,10 @@ pub enum ConnectionMsg {
 ///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenInit {
-    connection_id: ConnectionId,
-    client_id: ClientId,
-    counterparty: Counterparty,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub client_id: ClientId,
+    pub counterparty: Counterparty,
+    pub signer: AccountId,
 }
 
 impl MsgConnectionOpenInit {
@@ -141,7 +141,10 @@ impl Msg for MsgConnectionOpenInit {
     }
 
     fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
+        let mut buf = Vec::new();
+        let raw_msg: RawMsgConnectionOpenInit = self.clone().into();
+        prost::Message::encode(&raw_msg, &mut buf).unwrap();
+        buf
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
