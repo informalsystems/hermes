@@ -9,7 +9,7 @@ use std::convert::TryFrom;
 use tendermint::block::Height;
 use tendermint_proto::DomainType;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockHeader(pub Height);
 
 impl DomainType<RawMockHeader> for MockHeader {}

@@ -1,23 +1,32 @@
 use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfChainType, SelfHeader};
+use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
+use std::cmp::min;
 use std::error::Error;
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct MockChainContext {
+    /// Maximum size of the history
     pub max_size: usize,
+    /// Highest height of the headers in the history
     pub latest: Height,
+    /// A list of `max_size` headers ordered by height
     pub history: Vec<MockHeader>,
 }
 
 impl MockChainContext {
-    pub fn new(max_size: usize, n: Height) -> Self {
+    /// Creates a new mock chain with max_size number of headers up to height h
+    pub fn new(max_size: usize, h: Height) -> Self {
+        // number of headers to store, if h is 0 nothing is stored
+        let n = min(max_size as u64, h.value());
         Self {
             max_size,
-            latest: n,
-            history: (0..n.value())
-                .map(|i| MockHeader(Height(i).increment()))
+            latest: h,
+            history: (0..n)
+                .rev()
+                .map(|i| MockHeader(Height(h.value() - i)))
                 .collect(),
         }
     }
@@ -38,29 +47,41 @@ impl MockChainContext {
         }
     }
 
+    pub fn add_header(&mut self, h: u64) {
+        let mut new_h = h;
+        if h == 0 {
+            new_h = u64::from(self.latest.increment());
+        }
+        self.store_historical_info(
+            Height(new_h),
+            HistoricalInfo {
+                header: SelfHeader::Mock(MockHeader(Height(new_h))),
+            },
+        );
+    }
+
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
-        // TODO
+        // check that the number of entries is not higher than max_size
+        if self.history.len() > self.max_size {
+            return Err("too many entries".to_string().into());
+        }
+
+        // get the highers header
+        let lh = self.history[self.history.len() - 1];
+        // check latest is properly updated with highest header height
+        if lh.height() != self.latest {
+            return Err("latest height is not updated".to_string().into());
+        }
+
+        // check that all headers are in sequential order
+        for i in 1..self.history.len() {
+            let ph = self.history[i - 1];
+            let h = self.history[i];
+            if ph.height().increment() != h.height() {
+                return Err("headers in history not sequential".to_string().into());
+            }
+        }
         Ok(())
-        //         // check that the number of entries is not higher than max_size
-        //         if self.history.len() > self.max_size {
-        //             return Err("too many entries".to_string().into());
-        //         }
-        //
-        //         // check latest is properly updated with highest header height
-        //         let SelfHeader::Mock(lh) = self.history[self.history.len() - 1].header;
-        //         if lh.height() != self.latest {
-        //             return Err("latest height is not updated".to_string().into());
-        //         }
-        //
-        //         // check that all headers are in sequential order
-        //         for i in 1..self.history.len() {
-        //             let SelfHeader::Mock(ph) = self.history[i - 1].header;
-        //             let SelfHeader::Mock(h) = self.history[i].header;
-        //             if ph.height().increment() != h.height() {
-        //                 return Err("headers in history not sequential".to_string().into());
-        //             }
-        //         }
-        //         Ok(())
     }
 }
 
@@ -78,8 +99,26 @@ impl ChainReader for MockChainContext {
             None
         } else {
             Some(HistoricalInfo {
-                header: SelfHeader::Mock(self.history[h - l]),
+                header: SelfHeader::Mock(self.history[self.max_size + l - h - 1]),
             })
+        }
+    }
+
+    fn header(&self, height: Height) -> Option<AnyHeader> {
+        let hi = self.self_historical_info(height)?.header;
+        match hi {
+            #[cfg(test)]
+            SelfHeader::Mock(h) => Some(h.into()),
+            _ => None,
+        }
+    }
+
+    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        let hi = self.self_historical_info(height)?.header;
+        match hi {
+            #[cfg(test)]
+            SelfHeader::Mock(h) => Some(h.into()),
+            _ => None,
         }
     }
 }
@@ -132,6 +171,11 @@ mod tests {
                 name: "Add with prune".to_string(),
                 ctx: MockChainContext::new(3, Height(2)),
                 args: [3, 4].to_vec(),
+            },
+            Test {
+                name: "Add with initial prune".to_string(),
+                ctx: MockChainContext::new(3, Height(10)),
+                args: [11].to_vec(),
             },
             Test {
                 name: "Attempt to add non sequential headers".to_string(),

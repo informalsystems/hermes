@@ -6,4 +6,4 @@ pub mod handler;
 pub mod msgs;
 
 #[cfg(test)]
-mod context_mock;
+pub mod context_mock;

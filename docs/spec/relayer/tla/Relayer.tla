@@ -5,7 +5,7 @@
  process running a relayer algorithm 
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
 
 CONSTANTS GenerateClientDatagrams, \* toggle generation of client datagrams
           GenerateConnectionDatagrams, \* toggle generation of connection datagrams
@@ -21,12 +21,14 @@ CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
 VARIABLES chainAstore, \* store of ChainA
           chainBstore, \* store of ChainB
           outgoingDatagrams, \* a function that assigns a set of pending datagrams 
-                             \* outgoing from the relayer to each chainID 
+                             \* outgoing from the relayer to each chainID
+          outgoingPacketDatagrams, \* a dedicated datagrams channel for packet datagrams 
           relayerHeights, \* a function that assigns a height to each chainID
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
-          closeChannelB  \* flag that triggers closing of the channel end at ChainB
+          closeChannelB,  \* flag that triggers closing of the channel end at ChainB
+          packetLog \* packet log
           
-vars == <<chainAstore, chainBstore, outgoingDatagrams, relayerHeights>>
+vars == <<chainAstore, chainBstore, outgoingDatagrams, outgoingPacketDatagrams, relayerHeights, packetLog>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system                     
 
 GetChainByID(chainID) ==
@@ -46,7 +48,7 @@ GetCloseChannelFlag(chainID) ==
 \* These are used to update the client for srcChainID on dstChainID.
 \* Some client updates might trigger an update of the height that 
 \* the relayer stores for srcChainID
-LightClientUpdates(srcChainID, dstChainID, relayer) ==
+ClientDatagrams(srcChainID, dstChainID, relayer) ==
     LET srcChain == GetChainByID(srcChainID) IN
     LET dstChain == GetChainByID(dstChainID) IN
     LET srcChainHeight == GetLatestHeight(srcChain) IN    
@@ -55,7 +57,6 @@ LightClientUpdates(srcChainID, dstChainID, relayer) ==
 
     LET emptySetDatagrams == AsSetDatagrams({}) IN
 
-    
     \* check if the relayer chain height for srcChainID should be updated
     LET srcRelayerChainHeight == 
         IF relayer[srcChainID] < srcChainHeight
@@ -233,19 +234,45 @@ ChannelDatagrams(srcChainID, dstChainID) ==
     dstDatagrams
 
 (***************************************************************************
- Compute datagrams (from srcChainID to dstChainID)
+ Packet datagrams
+ ***************************************************************************)
+\* Compute a packet datagram designated for dstChainID, based on the packetLogEntry
+PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
+    
+    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
+    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+    
+    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    
+    LET packetData(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> srcChannelID,
+                                 dstChannelID |-> dstChannelID]) IN
+    
+    IF packetLogEntry.type = "PacketSent"
+    THEN AsDatagram([type |-> "PacketRecv",
+          packet |-> packetData(packetLogEntry),  
+          proofHeight |-> srcHeight])
+    ELSE IF packetLogEntry.type = "WriteAck"
+         THEN AsDatagram([type |-> "PacketAck",
+                  packet |-> packetData(packetLogEntry),
+                  acknowledgement |-> packetLogEntry.acknowledgement,  
+                  proofHeight |-> srcHeight])
+         ELSE NullDatagram 
+
+(***************************************************************************
+ Compute client, connection, channel datagrams (from srcChainID to dstChainID)
  ***************************************************************************)
 \* Currently supporting:
 \*  -  ICS 002: Client updates
 \*  -  ICS 003: Connection handshake
 \*  -  ICS 004: Channel handshake
-\*  -  ICS 004: Packet transmission
 ComputeDatagrams(srcChainID, dstChainID) ==
     \* ICS 002 : Clients
     \* - Determine if light clients needs to be updated 
     LET clientDatagrams == 
         IF GenerateClientDatagrams 
-        THEN LightClientUpdates(srcChainID, dstChainID, relayerHeights) 
+        THEN ClientDatagrams(srcChainID, dstChainID, relayerHeights) 
         ELSE [datagrams |-> AsSetDatagrams({}), relayerUpdate |-> relayerHeights] IN
     
     \* ICS3 : Connections
@@ -261,8 +288,7 @@ ComputeDatagrams(srcChainID, dstChainID) ==
         IF GenerateChannelDatagrams 
         THEN ChannelDatagrams(srcChainID, dstChainID)
         ELSE AsSetDatagrams({}) IN
-    
-    
+
     [datagrams |-> clientDatagrams.datagrams \union 
                    connectionDatagrams \union 
                    channelDatagrams, 
@@ -279,6 +305,7 @@ UpdateRelayerClients(chainID) ==
                             ![chainID] = GetLatestHeight(GetChainByID(chainID))
                          ]
     /\ UNCHANGED <<chainAstore, chainBstore, outgoingDatagrams>>  
+    /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
 \* for two chains, srcChainID and dstChainID, where srcChainID /= dstChainID, 
 \* create the pending datagrams and update the corresponding sets of pending datagrams
@@ -293,12 +320,38 @@ Relay(srcChainID, dstChainID) ==
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
     /\ UNCHANGED <<chainAstore, chainBstore>>
+    /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
+\* given an entry from the packet log, create a packet datagram and 
+\* append it to the outgoing packet datagram queue for dstChainID      
+RelayPacketDatagram(packetLogEntry) ==
+    LET srcChainID == packetLogEntry.srcChainID IN
+    LET dstChainID == GetCounterpartyChainID(srcChainID) IN
+    
+    LET packetDatagram == PacketDatagram(srcChainID, dstChainID, packetLogEntry) IN 
+    
+    IF packetDatagram /= NullDatagram
+    THEN [outgoingPacketDatagrams EXCEPT 
+            ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
+                                   AsPacketDatagram(packetDatagram))]
+    ELSE outgoingPacketDatagrams      
+
+\* update the relayer client heights
 UpdateRelayer ==
     \E chainID \in ChainIDs : UpdateRelayerClients(chainID)
     
+\* create client, connection, channel datagrams    
 CreateDatagrams ==
-    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : Relay(srcChainID, dstChainID)    
+    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : Relay(srcChainID, dstChainID)
+
+\* scan packet log and create packet datagrams    
+ScanPacketLog ==
+    /\ packetLog /= AsPacketLog(<<>>)
+    /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
+    /\ packetLog' = Tail(packetLog)
+    /\ UNCHANGED <<chainAstore, chainBstore>>
+    /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
+    
 
 (***************************************************************************
  Specification
@@ -309,15 +362,18 @@ CreateDatagrams ==
 Init == 
     /\ relayerHeights = [chainID \in ChainIDs |-> AsInt(nullHeight)]
     /\ outgoingDatagrams = [chainID \in ChainIDs |-> AsSetDatagrams({})]
+    /\ outgoingPacketDatagrams = [chainID \in ChainIDs |-> AsSeqPacketDatagrams(<<>>)] 
     
 \* Next state action
 \*    The relayer either:
 \*        - updates its clients, or
-\*        - relays datagrams between two chains, or
+\*        - creates datagrams, 
+\*        - scans the packet log and creates packet datagrams, or
 \*        - does nothing
 Next ==
     \/ UpdateRelayer
     \/ CreateDatagrams
+    \/ ScanPacketLog
     \/ UNCHANGED vars    
        
 \* Fairness constraints
@@ -337,5 +393,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 09 16:22:49 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Sep 18 17:26:08 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -4,7 +4,7 @@ use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
-use crate::ics03_connection::msgs::MsgConnectionOpenInit;
+use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 
 /// Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 pub(crate) fn process(
@@ -49,8 +49,9 @@ mod tests {
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenInit};
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+    use crate::ics03_connection::msgs::ConnectionMsg;
     use std::convert::TryFrom;
 
     #[test]

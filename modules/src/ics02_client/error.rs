@@ -48,6 +48,9 @@ pub enum Kind {
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),
+
+    #[error("bad client state (expected mock client)")]
+    BadClientState,
 }
 
 impl Kind {

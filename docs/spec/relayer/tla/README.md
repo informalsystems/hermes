@@ -11,6 +11,7 @@ The specification has seven modules:
   - `ClientHandlers.tla`
   - `ConnectionHandlers.tla`
   - `ChannelHandlers.tla`
+  - `PacketHandlers.tla`
   - `RelayerDefinitions.tla`
 
 The module `ICS18Environment.tla` creates instances of `Relayer.tla` and 
@@ -21,8 +22,9 @@ The module `ICS18Environment.tla` creates instances of `Relayer.tla` and
 The module `Relayer.tla` contains the specification of the relayer algorithm. 
 The module `Chain.tla` captures the chain logic. 
 It extends the modules `ClientHandlers.tla`, 
-`ConnectionHandlers.tla`, and `ChannelHandlers.tla`, which contain definition of 
-operators that handle client, connection handshake, and channel handshake
+`ConnectionHandlers.tla`, `ChannelHandlers.tla`, and
+`PacketHandlers.tla`, which contain definition of 
+operators that handle client, connection handshake, channel handshake, and packet 
 datagrams, respectively.
 The module `RelayerDefinitions.tla` contains definition of operators that are used across all the 
 modules.
@@ -34,6 +36,7 @@ The module `ICS18Environment.tla` is parameterized by the constants:
  - `ConnectionDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates connection datagrams,
  - `ChannelDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates channel datagrams,
  - `MaxHeight`, a natural number denoting the maximal height of the chains,
+ - `MaxPacketSeq`, a natural number denoting the maximal packet sequence number,
  - `ChannelOrdering`, a string indicating whether the channels are ordered or unordered 
 
 ## Properties
