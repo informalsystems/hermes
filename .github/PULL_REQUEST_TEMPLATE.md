@@ -17,9 +17,8 @@ ______
 
 For contributor use:
 
-- [ ] Unit tests written
-- [ ] Added test to CI if applicable 
-- [ ] Updated CHANGELOG_PENDING.md
+- [ ] Updated [CHANGELOG_PENDING.md](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG_PENDING.md)
+- [ ] If applicable: Unit tests written, added test to CI
 - [ ] Linked to Github issue with discussion and accepted design OR link to spec that describes this work.
 - [ ] Updated relevant documentation (`docs/`) and code comments
 - [ ] Re-reviewed `Files changed` in the Github PR explorer
