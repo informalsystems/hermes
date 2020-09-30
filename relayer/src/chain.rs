@@ -71,6 +71,10 @@ pub trait Chain {
 
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThresholdFraction;
+
+    /// Sign message
+    /// TODO - waiting for tendermint-rs upgrade to v0.16
+    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Self::Error>;
 }
 
 /// Query the latest height the chain is at via a RPC query
