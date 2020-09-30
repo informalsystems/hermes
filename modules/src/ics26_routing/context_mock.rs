@@ -53,8 +53,7 @@ impl ConnectionReader for MockICS26Context {
     }
 
     fn chain_consensus_states_history_size(&self) -> usize {
-        self.connection_context
-            .chain_consensus_states_history_size()
+        self.chain_context().max_size()
     }
 
     fn chain_type(&self) -> SelfChainType {
@@ -70,8 +69,7 @@ impl ConnectionReader for MockICS26Context {
         client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        self.connection_context
-            .fetch_client_consensus_state(client_id, height)
+        self.client_context().consensus_state(client_id, height)
     }
 
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {

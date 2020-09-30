@@ -1,5 +1,5 @@
 use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfChainType, SelfHeader};
-use crate::ics02_client::client_def::AnyHeader;
+use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::mock_client::header::MockHeader;
 use serde_derive::{Deserialize, Serialize};
 use std::cmp::min;
@@ -106,6 +106,15 @@ impl ChainReader for MockChainContext {
     }
 
     fn header(&self, height: Height) -> Option<AnyHeader> {
+        let hi = self.self_historical_info(height)?.header;
+        match hi {
+            #[cfg(test)]
+            SelfHeader::Mock(h) => Some(h.into()),
+            _ => None,
+        }
+    }
+
+    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]

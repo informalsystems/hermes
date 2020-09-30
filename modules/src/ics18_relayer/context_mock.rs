@@ -55,6 +55,15 @@ impl MockICS18Context {
         self.chain_routing_context
             .set_chain_context(underlying_chain_ctx)
     }
+
+    fn recv(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
+        let mut rctx = self.routing_context().clone();
+        let res = dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
+        self.set_routing_context(rctx);
+        // Create new block
+        self.advance_chain_height();
+        Ok(res)
+    }
 }
 
 impl ICS18Context for MockICS18Context {
@@ -74,9 +83,6 @@ impl ICS18Context for MockICS18Context {
     }
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
-        let mut rctx = self.routing_context().clone();
-        let res = dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
-        self.set_routing_context(rctx);
-        Ok(res)
+        self.recv(msg)
     }
 }

@@ -114,9 +114,6 @@ mod tests {
                 .latest_height();
             assert_eq!(client_height_b, ctx_a.query_latest_height());
 
-            // Advance height on chain B.
-            ctx_b.advance_chain_height();
-
             // Update client on chain B to latest height of B.
             // - create the client update message with the latest header from B
             let b_latest_header = ctx_b.query_latest_header().unwrap();
@@ -141,9 +138,6 @@ mod tests {
                 .unwrap()
                 .latest_height();
             assert_eq!(client_height_a, ctx_b.query_latest_height());
-
-            // Advance height for chain A.
-            ctx_a.advance_chain_height();
         }
     }
 }
