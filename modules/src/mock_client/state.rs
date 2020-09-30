@@ -34,7 +34,7 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 /// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl DomainType<RawMockClientState> for MockClientState {}
@@ -156,7 +156,7 @@ impl ConsensusState for MockConsensusState {
     }
 
     fn height(&self) -> Height {
-        todo!()
+        self.0.height()
     }
 
     fn root(&self) -> &CommitmentRoot {

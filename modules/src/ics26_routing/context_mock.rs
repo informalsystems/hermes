@@ -1,4 +1,5 @@
 use crate::context::SelfChainType;
+use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -20,8 +21,20 @@ use tendermint::block::Height;
 /// of this mock type.
 #[derive(Clone, Debug, Default)]
 pub struct MockICS26Context {
-    client_context: MockClientContext,
-    connection_context: MockConnectionContext,
+    pub client_context: MockClientContext,
+    pub connection_context: MockConnectionContext,
+}
+
+impl MockICS26Context {
+    pub fn client_context(&self) -> &MockClientContext {
+        &self.client_context
+    }
+    pub fn chain_context(&self) -> &MockChainContext {
+        &self.client_context.chain_context
+    }
+    pub fn set_chain_context(&mut self, chain_context: MockChainContext) {
+        self.client_context.chain_context = chain_context;
+    }
 }
 
 impl ICS26Context for MockICS26Context {}
@@ -32,16 +45,15 @@ impl ConnectionReader for MockICS26Context {
     }
 
     fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        self.connection_context.fetch_client_state(client_id)
+        self.client_context().client_state(client_id)
     }
 
     fn chain_current_height(&self) -> Height {
-        self.connection_context.chain_current_height()
+        self.chain_context().latest
     }
 
     fn chain_consensus_states_history_size(&self) -> usize {
-        self.connection_context
-            .chain_consensus_states_history_size()
+        self.chain_context().max_size()
     }
 
     fn chain_type(&self) -> SelfChainType {
@@ -57,8 +69,7 @@ impl ConnectionReader for MockICS26Context {
         client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        self.connection_context
-            .fetch_client_consensus_state(client_id, height)
+        self.client_context().consensus_state(client_id, height)
     }
 
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
@@ -77,15 +88,15 @@ impl ConnectionReader for MockICS26Context {
 
 impl ClientReader for MockICS26Context {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-        self.client_context.client_type(client_id)
+        self.client_context().client_type(client_id)
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        self.client_context.client_state(client_id)
+        self.client_context().client_state(client_id)
     }
 
     fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
-        self.client_context.consensus_state(client_id, height)
+        self.client_context().consensus_state(client_id, height)
     }
 }
 
@@ -110,25 +121,31 @@ impl ConnectionKeeper for MockICS26Context {
 impl ClientKeeper for MockICS26Context {
     fn store_client_type(
         &mut self,
-        _client_id: ClientId,
-        _client_type: ClientType,
+        client_id: ClientId,
+        client_type: ClientType,
     ) -> Result<(), ICS2Error> {
+        self.client_context
+            .store_client_type(client_id, client_type)?;
         Ok(())
     }
 
     fn store_client_state(
         &mut self,
-        _client_id: ClientId,
-        _client_state: AnyClientState,
+        client_id: ClientId,
+        client_state: AnyClientState,
     ) -> Result<(), ICS2Error> {
+        self.client_context
+            .store_client_state(client_id, client_state)?;
         Ok(())
     }
 
     fn store_consensus_state(
         &mut self,
-        _client_id: ClientId,
-        _consensus_state: AnyConsensusState,
+        client_id: ClientId,
+        consensus_state: AnyConsensusState,
     ) -> Result<(), ICS2Error> {
+        self.client_context
+            .store_consensus_state(client_id, consensus_state)?;
         Ok(())
     }
 }

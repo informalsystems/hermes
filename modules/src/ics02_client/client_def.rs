@@ -249,7 +249,12 @@ impl ConsensusState for AnyConsensusState {
     }
 
     fn height(&self) -> Height {
-        todo!()
+        match self {
+            AnyConsensusState::Tendermint(cs) => cs.height(),
+
+            #[cfg(test)]
+            AnyConsensusState::Mock(cs) => cs.height(),
+        }
     }
 
     fn root(&self) -> &CommitmentRoot {
