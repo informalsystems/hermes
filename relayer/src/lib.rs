@@ -12,6 +12,7 @@
 
 //! IBC Relayer implementation
 
+pub mod auth;
 pub mod chain;
 pub mod client;
 pub mod config;

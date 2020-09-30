@@ -2,28 +2,7 @@
 
 This document specifies datagram creation logic for packets. It is used by the relayer.
 
-## Data Types
-
-```go
-type Packet {
-    sequence           uint64
-    timeoutHeight      Height
-    timeoutTimestamp   uint64
-    sourcePort         Identifier
-    sourceChannel      Identifier
-    destPort           Identifier
-    destChannel        Identifier
-    data               bytes	
-}
-```
-
-```go
-type PacketRecv {
-     packet          Packet
-     proof           CommitmentProof
-     proofHeight     Height
-}
-```
+## Packet related IBC events
 
 ```go
 type SendPacketEvent {
@@ -35,216 +14,88 @@ type SendPacketEvent {
     sourceChannel      Identifier
     destPort           Identifier
     destChannel        Identifier
-    data               bytes	
+    data               []byte	
 }
 ```
 
 ```go
-type ChannelEnd {
-    state                           ChannelState
-    ordering                        ChannelOrder
-    counterpartyPortIdentifier      Identifier
-    counterpartyChannelIdentifier   Identifier
-    connectionHops                  [Identifier]
-    version                         string
-}
-
-enum ChannelState {
-  INIT,
-  TRYOPEN,
-  OPEN,
-  CLOSED,
-}
-
-enum ChannelOrder {
-  ORDERED,
-  UNORDERED,
+type WriteAcknowledgementEvent {
+    height             Height
+    port               Identifier
+    channel            Identifier
+    sequence           uint64
+    timeoutHeight      Height
+    timeoutTimestamp   uint64    
+    data               []byte
+    acknowledgement    []byte
 }
 ```
 
-```go
-type ConnectionEnd {
-    state                               ConnectionState
-    counterpartyConnectionIdentifier    Identifier
-    counterpartyPrefix                  CommitmentPrefix
-    clientIdentifier                    Identifier
-    counterpartyClientIdentifier        Identifier
-    version                             []string
-}
+## Event handlers 
 
-enum ConnectionState {
-  INIT,
-  TRYOPEN,
-  OPEN,
-}
-```
+### SendPacketEvent handler 
 
-```go
-type ClientState {
-  chainID                       string
-  validatorSet                  List<Pair<Address, uint64>>
-  trustLevel                    Rational
-  trustingPeriod                uint64
-  unbondingPeriod               uint64
-  latestHeight                  Height
-  latestTimestamp               uint64
-  frozenHeight                  Maybe<uint64>
-  upgradeCommitmentPrefix       CommitmentPrefix
-  upgradeKey                    []byte
-  maxClockDrift                 uint64
-  proofSpecs                    []ProofSpec
-}
-```
-## Helper functions
+Successful handling of *SendPacketEvent* leads to *PacketRecv* datagram creation.
 
-We assume the existence of the following helper functions:
-
-```go
-// Returns channel end with a commitment proof. 
-GetChannel(chain Chain, 
-           portId Identifier, 
-           channelId Identifier,  
-           proofHeight Height) (ChannelEnd, CommitmentProof)
- 
-// Returns connection end with a commitment proof. 
-GetConnection(chain Chain, 
-              connectionId Identifier, 
-              proofHeight Height) (ConnectionEnd, CommitmentProof)
-
-
-// Returns client state with a commitment proof. 
-GetClientState(chain Chain, 
-               clientId Identifier, 
-               proofHeight Height) (ClientState, CommitmentProof)
-
-// Returns packet commitment with a commitment proof. 
-GetPacketCommitment(chain Chain, 
-                    portId Identifier, 
-                    channelId Identifier, 
-                    sequence uint64, 
-                    proofHeight Height) (bytes, CommitmentProof)
-
-// Returns next recv sequence number with a commitment proof. 
-GetNextSequenceRecv(chain Chain, 
-                    portId Identifier, 
-                    channelId Identifier,  
-                    proofHeight Height) (uint64, CommitmentProof)
-
-// Returns packet acknowledgment with a commitment proof. 
-GetPacketAcknowledgement(chain Chain, 
-                         portId Identifier, 
-                         channelId Identifier, 
-                         sequence uint64, 
-                         proofHeight Height) (bytes, CommitmentProof)
- 
-// Returns estimate of the consensus height on the given chain. 
-GetConsensusHeight(chain Chain) Height
-
-// Returns estimate of the current time on the given chain. 
-GetCurrentTimestamp(chainB) uint64
- 
-```
-
-For functions that return proof, if proof != nil, then the returned value is being verified. 
-The value is being verified using the header's app hash that is provided by the corresponding light client.
-We now show the pseudocode for one of those functions:
-
-```go
-GetChannel(chain Chain, 
-           portId Identifier, 
-           channelId Identifier,  
-           proofHeight Height) (ChannelEnd, CommitmentProof) {
-
-    // Query provable store exposed by the full node of chain. 
-    // The path for the channel end is at channelEnds/ports/{portId}/channels/{channelId}".
-    // The membership proof returned is read at height proofHeight. 
-    channel, proof = QueryChannel(chain, portId, channelId, proofHeight) 
-    if proof == nil return { (nil, nil) }
-    
-    header = GetHeader(chain.lc, proofHeight) // get header for height proofHeight using light client of the given chain
-    
-    // verify membership of the channel at path channelEnds/ports/{portId}/channels/{channelId} using 
-    // the root hash header.AppHash
-    if verifyMembership(header.AppHash, proofHeight, proof, channelPath(portId, channelId), channel) {
-        return channel, proof
-    } else { return (nil, nil) }
-}
-```
-If LATEST_HEIGHT is passed as a parameter, the data should be read (and the corresponding proof created) 
-at the most recent height. 
-
-
-## Computing destination chain
+// NOTE: Stateful relayer might keep packet that are not acked in the state so the following logic
+// can be a bit simpler.
 
 ```golang
-func GetDestinationInfo(ev IBCEvent, chainA Chain) Chain {
-    switch ev.type {
-        case SendPacketEvent: 
-            channel, proof = GetChannel(chain, ev.sourcePort, ev.sourceChannel, ev.Height)
-            if proof == nil return nil
-                
-            connectionId = channel.connectionHops[0]
-            connection, proof = GetConnection(chain, connectionId, ev.Height) 
-            if proof == nil return nil
-                
-            clientState = GetClientState(chain, connection.clientIdentifier, ev.Height) 
-            return getHostInfo(clientState.chainID) 
-        ...    
-    }
-}
-```
-
-## Datagram creation logic
-
-### PacketRecv datagram creation
-
-```golang
-func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, installedHeight Height) PacketRecv {        
+func CreateDatagram(ev SendPacketEvent, 
+                    chainA Chain,  // source chain
+                    chainB Chain,  // destination chain
+                    proofHeight Height) (PacketRecv, Error) {        
     
     // Stage 1 
     // Verify if packet is committed to chain A and it is still pending (commitment exists)
     
-    proofHeight = installedHeight - 1
-    packetCommitment, packetCommitmentProof = 
+    packetCommitment, packetCommitmentProof, error = 
         GetPacketCommitment(chainA, ev.sourcePort, ev.sourceChannel, ev.sequence, proofHeight)     
-    if packetCommitmentProof != nil { return nil }
+    if error != nil { return (nil, error) }
         
-    if packetCommitment == null OR
-       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { return nil }
+    if packetCommitment == nil OR
+       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
+            // invalid event; bad provider
+            return (nil, Error.BADPROVIDER) 
+    }
             
     // Stage 2 
     // Execute checks IBC handler on chainB will execute
     
-    channel, proof = GetChannel(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT)
-    if proof != nil { return nil }
+    channel, proof, error = GetChannel(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT)
+    if error != nil { return (nil, error) }
     
-    if channel == null OR
-       channel.state != OPEN OR
-       ev.sourcePort != channel.counterpartyPortIdentifier OR
-       ev.sourceChannel != channel.counterpartyChannelIdentifier { return nil }
+    if channel != nil AND
+       (channel.state == CLOSED OR
+        ev.sourcePort != channel.counterpartyPortIdentifier OR
+        ev.sourceChannel != channel.counterpartyChannelIdentifier) { return (nil, Error.DROP) } 
     
+    if channel == nil OR channel.state != OPEN  { return (nil, Error.RETRY) } 
+    // TODO: Maybe we shouldn't even enter handle loop for packets if the corresponding channel is not open!
+           
     connectionId = channel.connectionHops[0]
-    connection, proof = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
-    if proof != nil { return nil }
+    connection, proof, error = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
+    if error != nil { return (nil, error) }
     
-    if connection == null OR connection.state != OPEN { return nil } 
+    if connection == nil OR connection.state != OPEN { return (nil, Error.RETRY) } 
     
-    if ev.timeoutHeight != 0 AND GetConsensusHeight(chainB) >= ev.timeoutHeight { return nil }
-    if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return nil }
+    if ev.timeoutHeight != 0 AND GetConsensusHeight(chainB) >= ev.timeoutHeight { return (nil, Error.DROP) }
+    if ev.timeoutTimestamp != 0 AND GetCurrentTimestamp(chainB) >= ev.timeoutTimestamp { return (nil, Error.DROP) }
     
     // we now check if this packet is already received by the destination chain
-    if (channel.ordering === ORDERED) {    
-        nextSequenceRecv, proof = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
-        if proof != nil { return nil }
+    if channel.ordering === ORDERED {    
+       nextSequenceRecv, proof, error = GetNextSequenceRecv(chainB, ev.destPort, ev.destChannel, LATEST_HEIGHT) 
+       if error != nil { return (nil, error) }
         
-        if ev.sequence != nextSequenceRecv { return nil } // packet has already been delivered by another relayer
+       if ev.sequence != nextSequenceRecv { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     
     } else {
-        packetAcknowledgement, proof = 
-            GetPacketAcknowledgement(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
-        if proof != nil { return nil }
+        // Note that absence of receipt (packetReceipt == nil) is also proven also and we should be able to verify it. 
+        packetReceipt, proof, error = 
+            GetPacketReceipt(chainB, ev.destPort, ev.destChannel, ev.sequence, LATEST_HEIGHT)
+        if error != nil { return (nil, error) }
 
-        if packetAcknowledgement != nil { return nil }
+        if packetReceipt != nil { return (nil, Error.DROP) } // packet has already been delivered by another relayer
     }
     
     // Stage 3
@@ -260,8 +111,86 @@ func createPacketRecvDatagram(ev SendPacketEvent, chainA Chain, chainB Chain, in
                 data: ev.data
     }   
     
-    return PacketRecv { packet, packetCommitmentProof, proofHeight }
+    return (PacketRecv { packet, packetCommitmentProof, proofHeight }, nil)
 }    
 ```
 
+### WriteAcknowledgementEvent handler
 
+Successful handling of *WriteAcknowledgementEvent* leads to *PacketAcknowledgement* datagram creation.
+
+```golang
+func CreateDatagram(ev WriteAcknowledgementEvent, 
+                    chainA Chain,    // source chain
+                    chainB Chain,    // destination chain
+                    proofHeight Height) (PacketAcknowledgement, Error) {   
+
+    // Stage 1 
+    // Verify if acknowledment is committed to chain A and it is still pending
+    packetAck, packetAckCommitmentProof, error = 
+        GetPacketAcknowledgement(chainA, ev.port, ev.channel, ev.sequence, proofHeight) 
+    if error != nil { return (nil, error) }
+    
+    if packetAck == nil OR packetAck != hash(ev.acknowledgement) { 
+        // invalid event; bad provider
+        return (nil, Error.BADPROVIDER) 
+    }
+
+    // Stage 2 
+    // Execute checks IBC handler on chainB will execute
+    
+    // Fetch channelEnd from the chainA to be able to compute port and chain ids on destination chain
+    channelA, proof, error = GetChannel(chainA, ev.port, ev.channel, ev.height)
+    if error != nil { return (nil, error) }
+    
+    channelB, proof, error = 
+        GetChannel(chainB, channelA.counterpartyPortIdentifier, channelA.counterpartyChannelIdentifier, LATEST_HEIGHT)
+    if error != nil { return (nil, error) }
+    
+    if channelB == nil OR channel.state != OPEN  { (nil, Error.DROP) } 
+    // Note that we checked implicitly above that counterparty identifiers match each other
+               
+    connectionId = channelB.connectionHops[0]
+    connection, proof, error = GetConnection(chainB, connectionId, LATEST_HEIGHT) 
+    if error != nil { return (nil, error) }
+        
+    if connection == nil OR connection.state != OPEN { return (nil, Error.DROP) }
+        
+    // verify the packet is sent by chainB and hasn't been cleared out yet
+    packetCommitment, packetCommitmentProof, error = 
+        GetPacketCommitment(chainB, channelA.counterpartyPortIdentifier, 
+                            channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)     
+    if error != nil { return (nil, error) }
+            
+    if packetCommitment == nil OR
+       packetCommitment != hash(concat(ev.data, ev.timeoutHeight, ev.timeoutTimestamp)) { 
+            // invalid event; bad provider
+            return (nil, Error.BADPROVIDER) 
+    }
+    
+    // abort transaction unless acknowledgement is processed in order
+    if channelB.ordering === ORDERED {
+        nextSequenceAck, proof, error = 
+            GetNextSequenceAck(chainB, channelA.counterpartyPortIdentifier, 
+                               channelA.counterpartyChannelIdentifier, ev.sequence, LATEST_HEIGHT)  
+        if error != nil { return (nil, error) }                                                  
+
+        if ev.sequence != nextSequenceAck { return (nil, Error.DROP) }       
+    }
+    
+    // Stage 3
+    // Build datagram as all checks has passed  
+    packet = Packet {
+                sequence: ev.sequence,
+                timeoutHeight: ev.timeoutHeight,
+                timeoutTimestamp: ev.timeoutTimestamp,
+                sourcePort: channelA.counterpartyPortIdentifier,          
+                sourceChannel: channelA.counterpartyChannelIdentifier,
+                destPort: ev.port,           
+                destChannel: ev.channel,        
+                data: ev.data
+             }   
+
+    return (PacketAcknowledgement { packet, ev.acknowledgement, packetAckCommitmentProof, proofHeight }, nil)
+}    
+```

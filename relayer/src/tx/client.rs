@@ -23,7 +23,7 @@ pub struct CreateClientOptions {
 }
 
 pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
-    // Ger the destination
+    // Get the destination chain
     let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Query the client state on destination chain.

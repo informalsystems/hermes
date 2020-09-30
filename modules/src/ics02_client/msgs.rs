@@ -171,7 +171,9 @@ mod tests {
         };
 
         let raw = MsgCreateClient::from(msg.clone());
-        let msg_back = MsgCreateAnyClient::try_from(raw).unwrap();
+        let msg_back = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
+        let raw_back = MsgCreateClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
+        assert_eq!(raw, raw_back);
     }
 }

@@ -1,14 +1,14 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::context::ClientReader;
+use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::ClientEvent;
+use crate::ics02_client::handler::{ClientEvent, ClientResult};
 
 use crate::ics02_client::msgs::MsgUpdateAnyClient;
 use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UpdateClientResult {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
@@ -55,6 +55,10 @@ pub fn process(
         client_state: new_client_state,
         consensus_state: new_consensus_state,
     }))
+}
+
+pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
+    keeper.store_client_result(ClientResult::UpdateResult(result))
 }
 
 #[cfg(test)]

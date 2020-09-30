@@ -8,6 +8,7 @@ authors = [
 
 [dependencies]
 ibc = { path = "../modules" }
+ibc-proto = "0.2.2"
 tendermint-proto = "0.1.0"
 
 anomaly = "0.2.0"
@@ -16,7 +17,7 @@ humantime-serde = "1.0.0"
 serde = "1.0.97"
 serde_cbor = "0.11.1"
 serde_derive = "1.0"
-sled = { version = "0.31.0", features = ["no_metrics", "no_logs"] }
+sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.11"
 toml = "0.5"
 tracing = "0.1.13"
@@ -42,5 +43,13 @@ branch = "romac/light-client-ibc"
 version = "0.16.0"
 git = "https://github.com/informalsystems/tendermint-rs"
 branch = "romac/light-client-ibc"
+
+# Needed for tx sign when ready in tendermint upgrade
+#k256 = { version = "0.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
+#tendermint-rpc = "0.15"
+#rust-crypto = "0.2.36"
+#hex = "0.4"
+#ripemd160 = { version = "0.9", optional = true }
+#sha2 = { version = "0.9.1", default-features = false }
 
 [dev-dependencies]

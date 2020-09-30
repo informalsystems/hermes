@@ -35,6 +35,12 @@ impl From<Vec<u8>> for CommitmentProof {
     }
 }
 
+impl From<CommitmentProof> for Vec<u8> {
+    fn from(p: CommitmentProof) -> Vec<u8> {
+        p.0
+    }
+}
+
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
 

@@ -45,6 +45,10 @@ pub enum Kind {
     /// Create client failure
     #[error("Failed to create client {0}: {1}")]
     CreateClient(ClientId, String),
+
+    /// A message transaction failure
+    #[error("Message transaction failure: {0}")]
+    MessageTransaction(String),
 }
 
 impl Kind {
