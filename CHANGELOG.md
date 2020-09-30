@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.0.4
+*September 30, 2020*
+
+This release focuses on the refinement of the IBC message processor framework, protobuf migration,
+adding (de)serialization capability to ICS02 and ICS03 messages and structures.
+It adds initial implementation of the ICS26 routing module and ICS18 module to be used in testing.
+It also adds support for packet handling to the specifications for the relayer algorithm.
+
+### BREAKING CHANGES:
+
+### FEATURES:
+- [modules/ics03] ICS03 Ack and Confirm message processors ([#223])
+- [relayer-cli] Relayer CLIs for client messages ([#207])
+- [relayer-cli] Relayer CLIs for connection-open-init ([#206])
+- [modules] Routing module minimal implementation for MVP ([#159], [#232])
+- [spec/relayer] Relayer specification for packet handling ([#229], [#234], [#237])
+- [spec/relayer] Basic packet handling in TLA+([#124])
+
+### IMPROVEMENTS:
+- [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
+- [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#268])
+- [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
+- [ibc-proto]  Migrate handlers to newer protobuf definitions ([#226])
+- [modules] Cleanup Any* client wrappers related code ([#225])
+- [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
+- [modules] Extend client context mock ([#221])
+
+### BUG FIXES:
+- [relayer-cli] Fix for client query subcommands ([#231])
+- [modules] Cleanup Any* related code ([#233])
+
+[#223]: https://github.com/informalsystems/ibc-rs/issues/223
+[#207]: https://github.com/informalsystems/ibc-rs/issues/207
+[#206]: https://github.com/informalsystems/ibc-rs/issues/206
+[#159]: https://github.com/informalsystems/ibc-rs/issues/159
+[#232]: https://github.com/informalsystems/ibc-rs/issues/159
+[#229]: https://github.com/informalsystems/ibc-rs/issues/229
+[#234]: https://github.com/informalsystems/ibc-rs/issues/234
+[#237]: https://github.com/informalsystems/ibc-rs/issues/237
+[#124]: https://github.com/informalsystems/ibc-rs/issues/124
+[#249]: https://github.com/informalsystems/ibc-rs/issues/249
+[#268]: https://github.com/informalsystems/ibc-rs/issues/268
+[ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
+[#142]: https://github.com/informalsystems/ibc-rs/issues/142
+[#226]: https://github.com/informalsystems/ibc-rs/pull/226
+[#225]: https://github.com/informalsystems/ibc-rs/pull/225
+[#165]: https://github.com/informalsystems/ibc-rs/issues/165
+[#221]: https://github.com/informalsystems/ibc-rs/issues/221
+[#231]: https://github.com/informalsystems/ibc-rs/issues/231
+[#233]: https://github.com/informalsystems/ibc-rs/pull/233
+
 ## v0.0.3
 *September 1, 2020*
 
