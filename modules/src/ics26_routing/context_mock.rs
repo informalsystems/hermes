@@ -126,9 +126,6 @@ impl ClientKeeper for MockICS26Context {
     ) -> Result<(), ICS2Error> {
         self.client_context
             .store_client_type(client_id, client_type)?;
-        // let mut client_store = self.client_context().clone();
-        // client_store.store_client_type(client_id, client_type)?;
-        // self.client_context = client_store;
         Ok(())
     }
 
@@ -137,9 +134,8 @@ impl ClientKeeper for MockICS26Context {
         client_id: ClientId,
         client_state: AnyClientState,
     ) -> Result<(), ICS2Error> {
-        let mut client_store = self.client_context().clone();
-        client_store.store_client_state(client_id, client_state)?;
-        self.client_context = client_store;
+        self.client_context
+            .store_client_state(client_id, client_state)?;
         Ok(())
     }
 
@@ -148,9 +144,8 @@ impl ClientKeeper for MockICS26Context {
         client_id: ClientId,
         consensus_state: AnyConsensusState,
     ) -> Result<(), ICS2Error> {
-        let mut client_store = self.client_context().clone();
-        client_store.store_consensus_state(client_id, consensus_state)?;
-        self.client_context = client_store;
+        self.client_context
+            .store_consensus_state(client_id, consensus_state)?;
         Ok(())
     }
 }
