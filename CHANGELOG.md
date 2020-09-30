@@ -1,7 +1,7 @@
 # Changelog
 
 ## v0.0.4
-*October 1, 2020*
+*September 30, 2020*
 
 This release focuses on the refinement of the IBC message processor framework, protobuf migration,
 adding (de)serialization capability to ICS02 and ICS03 messages and structures.
@@ -32,11 +32,13 @@ Additional highlights:
 - [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
 - [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
+- [relayer] Update to tendermint v.0.16 and integrate with the new light client implementation ([#90], [#243])
 
 ### BUG FIXES:
 - [relayer-cli] Fix for client query subcommands ([#231])
 - [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#209], [#213])
 
+[#90]: https://github.com/informalsystems/ibc-rs/issues/90
 [#124]: https://github.com/informalsystems/ibc-rs/issues/124
 [#142]: https://github.com/informalsystems/ibc-rs/issues/142
 [#159]: https://github.com/informalsystems/ibc-rs/issues/159
@@ -55,12 +57,14 @@ Additional highlights:
 [#232]: https://github.com/informalsystems/ibc-rs/issues/232
 [#234]: https://github.com/informalsystems/ibc-rs/issues/234
 [#237]: https://github.com/informalsystems/ibc-rs/issues/237
+[#243]: https://github.com/informalsystems/ibc-rs/issues/243
 [#249]: https://github.com/informalsystems/ibc-rs/issues/249
 [#253]: https://github.com/informalsystems/ibc-rs/issues/253
 [#276]: https://github.com/informalsystems/ibc-rs/issues/276
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
 [disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
 [spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake
+[relayer]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
 
 ## v0.0.3
 *September 1, 2020*
