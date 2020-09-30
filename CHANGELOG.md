@@ -22,7 +22,7 @@ It also adds support for packet handling to the specifications for the relayer a
 - [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
 - [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#268])
 - [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
-- [ibc-proto]  Migrate handlers to newer protobuf definitions ([#226])
+- [ibc-proto]  Migrate handlers to newer protobuf definitions ([#227])
 - [modules] Cleanup Any* client wrappers related code ([#225])
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
 - [modules] Extend client context mock ([#221])
@@ -44,7 +44,7 @@ It also adds support for packet handling to the specifications for the relayer a
 [#268]: https://github.com/informalsystems/ibc-rs/issues/268
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
 [#142]: https://github.com/informalsystems/ibc-rs/issues/142
-[#226]: https://github.com/informalsystems/ibc-rs/pull/226
+[#227]: https://github.com/informalsystems/ibc-rs/issue/227
 [#225]: https://github.com/informalsystems/ibc-rs/pull/225
 [#165]: https://github.com/informalsystems/ibc-rs/issues/165
 [#221]: https://github.com/informalsystems/ibc-rs/issues/221
