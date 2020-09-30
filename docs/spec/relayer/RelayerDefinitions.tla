@@ -282,21 +282,28 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
          ] <: {ChannelEndType}
     
     
-(**************************** PacketCommitments ****************************
- A set of packet commitments.
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
+ Sets of packet commitments, packet receipts, packet acknowledgements.
  ***************************************************************************)
- PacketCommitments(maxHeight, maxPacketSeq) ==
+PacketCommitments(maxHeight, maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq, 
         timeoutHeight : 1..maxHeight
     ] <: {PacketCommitmentType} 
     
-PacketReceipts ==
-    {}
+PacketReceipts(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        sequence : 1..maxPacketSeq
+    ] <: {PacketReceiptType}
     
-PacketAcknowledgements ==
-    {}
+PacketAcknowledgements(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        sequence : 1..maxPacketSeq,
+        acknowledgement : BOOLEAN
+    ] <: {PacketAcknowledgementType}
 
 (***************************** ConnectionEnds *****************************
     A set of connection end records. 
@@ -361,9 +368,9 @@ ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==
         counterpartyClientHeights : SUBSET(1..maxHeight),
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq),
         packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
-        packetReceipts : SUBSET(PacketReceipts),
+        packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
         packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq)),
-        packetAcknowledgements : SUBSET(PacketAcknowledgements)
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
     ] <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
@@ -619,5 +626,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 17:09:11 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 30 13:32:32 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

@@ -133,48 +133,6 @@ UpdateChainStoreAndPacketLog(chainID, datagrams, packetDatagrams, log) ==
 
     [chainStore |-> updatedChainStore, 
      packetLog |-> packetUpdatedStoreAndLogEntry.packetLog]
-    
-(***************************************************************************
- Packet acknowledgement operators
- ***************************************************************************)    
-
-\* write acknowledgements to chain store
-WriteAcknowledgement(chain, packet) ==
-    \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
-    THEN \* write the acknowledgement to the chain store and remove 
-         \* the packet from the set of packets to acknowledge
-         LET packetAcknowledgement == 
-                AsPacketAcknowledgement(
-                    [channelID |-> packet.dstChannelID,
-                     sequence |-> packet.sequence,
-                     acknowledgement |-> TRUE]) IN
-         [chain EXCEPT !.packetAcknowledgements = 
-                            chain.packetAcknowledgements
-                            \union 
-                            {packetAcknowledgement},
-                       !.packetsToAcknowledge = 
-                            Tail(chain.packetsToAcknowledge)]                         
-    
-    \* remove the packet from the set of packets to acknowledge
-    ELSE [chain EXCEPT !.packetsToAcknowledge = 
-                            Tail(chain.packetsToAcknowledge)] 
-
-\* log acknowledgements to packet Log
-LogAcknowledgement(chain, log, packet) ==
-    \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
-    THEN \* append a "WriteAck" log entry to the log
-         LET packetLogEntry ==
-                AsPacketLogEntry(
-                    [type |-> "WriteAck",
-                     srcChainID |-> ChainID,
-                     sequence |-> packet.sequence,
-                     timeoutHeight |-> packet.timeoutHeight,
-                     acknowledgement |-> TRUE]) IN
-         Append(log, packetLogEntry)    
-    \* do not add anything to the log
-    ELSE log
 
 (***************************************************************************
  Chain actions
@@ -188,62 +146,32 @@ AdvanceChain ==
 
 \* Send a packet
 SendPacket ==   
-    \* Create a packet 
-    \* Abstract away from packet data, ports, and timestamp. 
-    \* Assume timeoutHeight is MaxHeight + 1  
-    LET packet == AsPacket([
+    \* enabled if appPacketSeq is not bigger than MaxPacketSeq 
+    /\ appPacketSeq <= MaxPacketSeq
+    \* Create a packet: Abstract away from packet data, ports, and timestamp. 
+    \* Assume timeoutHeight is MaxHeight + 1
+    /\ LET packet == AsPacket([
         sequence |-> appPacketSeq,
         timeoutHeight |-> MaxHeight + 1,
         srcChannelID |-> GetChannelID(ChainID),
-        dstChannelID |-> GetChannelID(GetCounterpartyChainID(ChainID))
-    ]) IN
-    LET connectionEnd == chainStore.connectionEnd IN
-    LET channelEnd == chainStore.connectionEnd.channelEnd IN
-    LET latestClientHeight == GetMaxCounterpartyClientHeight(chainStore) IN
-    \* channel end is neither null nor closed
-    /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
-    \* connection end is initialized
-    /\ connectionEnd.state /= "UNINIT"
-    \* timeout height has not passed
-    /\ \/ packet.timeoutHeight = 0 
-       \/ latestClientHeight < packet.timeoutHeight
-    /\ \* if the channel is ordered, check if packetSeq is nextSendSeq, 
-       \* add a packet committment in the chain store, and increase nextSendSeq
-       \/ /\ channelEnd.order = "ORDERED"
-          /\ packet.sequence = channelEnd.nextSendSeq
-          /\ packet.sequence <= MaxPacketSeq
-          /\ chainStore' = [chainStore EXCEPT 
-                !.packetCommitments =  
-                    chainStore.packetCommitments \union {[channelID |-> packet.srcChannelID,
-                                                          sequence |-> packet.sequence,
-                                                          timeoutHeight |-> packet.timeoutHeight]},
-                !.connectionEnd.channelEnd.nextSendSeq = channelEnd.nextSendSeq + 1
-              ]
-       \* if the channel is unordered, 
-       \* add a packet committment in the chain store
-       \/ /\ channelEnd.order = "UNORDERED"
-          /\ chainStore' = [chainStore EXCEPT 
-                !.packetCommitments =  
-                    chainStore.packetCommitments \union {[channelID |-> packet.srcChannelID,
-                                                          sequence |-> packet.sequence,
-                                                          timeoutHeight |-> packet.timeoutHeight]}
-              ]               
-                      
-    \* log sent packet
-    /\ packetLog' = Append(packetLog, AsPacketLogEntry(
-                                           [type |-> "PacketSend", 
-                                            srcChainID |-> ChainID,  
-                                            sequence |-> packet.sequence ,
-                                            timeoutHeight |-> packet.timeoutHeight]))
-    \* increase application packet sequence
-    /\ appPacketSeq' = appPacketSeq + 1
-    /\ UNCHANGED <<incomingDatagrams, incomingPacketDatagrams, history>>
+        dstChannelID |-> GetChannelID(GetCounterpartyChainID(ChainID))]) IN
+        \* update chain store with packet committment
+        /\ chainStore' = WritePacketCommitment(chainStore, packet)
+        \* log sent packet
+        /\ packetLog' = Append(packetLog, AsPacketLogEntry(
+                                               [type |-> "PacketSend", 
+                                                srcChainID |-> ChainID,  
+                                                sequence |-> packet.sequence ,
+                                                timeoutHeight |-> packet.timeoutHeight]))
+        \* increase application packet sequence
+        /\ appPacketSeq' = appPacketSeq + 1
+        /\ UNCHANGED <<incomingDatagrams, incomingPacketDatagrams, history>>
 
 \* write a packet acknowledgement on the packet log and chain store
 AcknowledgePacket ==
     /\ chainStore.packetsToAcknowledge /= AsSeqPacket(<<>>)
     /\ chainStore' = WriteAcknowledgement(chainStore, Head(chainStore.packetsToAcknowledge))
-    /\ packetLog' = LogAcknowledgement(chainStore, packetLog, Head(chainStore.packetsToAcknowledge))
+    /\ packetLog' = LogAcknowledgement(ChainID, chainStore, packetLog, Head(chainStore.packetsToAcknowledge))
     /\ UNCHANGED <<incomingDatagrams, incomingPacketDatagrams, history>>
     /\ UNCHANGED appPacketSeq
 
@@ -295,7 +223,8 @@ Init ==
 \* The chain either
 \*  - advances its height
 \*  - receives datagrams and updates its state
-\*  - sends a packet (TODO)
+\*  - sends a packet if the appPacketSeq is not bigger than MaxPacketSeq
+\*  - acknowledges a packet
 Next ==
     \/ AdvanceChain 
     \/ HandleIncomingDatagrams
@@ -329,5 +258,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 25 17:21:20 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 30 13:47:16 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

@@ -29,8 +29,8 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
        /\ \/ packet.timeoutHeight = 0 
           \/ chain.height < packet.timeoutHeight  
        \* if the "PacketRecv" datagram can be verified 
-       /\ packetDatagram.srcChannelID = GetCounterpartyChannelID(chainID)
-       /\ packetDatagram.dstChannelID = GetChannelID(chainID)
+       /\ packetDatagram.srcChannelID = channelEnd.channelID
+       /\ packetDatagram.dstChannelID = channelEnd.counterpartyChannelID
        /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights           
     THEN \* construct log entry for packet log
          LET logEntry == AsPacketLogEntry(
@@ -108,7 +108,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
                         !.connectionEnd.channelEnd.nextAckSeq = 
                              chain.connectionEnd.channelEnd.nextAckSeq + 1,
                         !.packetCommitment = chain.packetCommitment \ {packetCommitment}] 
-               
+             \* otherwise, do not update the chain store  
              ELSE chain IN
               
               
@@ -116,8 +116,88 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     \* otherwise, do not update the chain store and the log
     ELSE [chainStore |-> chain, packetLog |-> log] 
     
+    
+\* write packet committments to chain store
+WritePacketCommitment(chain, packet) ==
+    \* get connection end 
+    LET connectionEnd == chain.connectionEnd IN
+    \* get channel end
+    LET channelEnd == connectionEnd.channelEnd IN
+    \* get latest counterparty client height 
+    LET latestClientHeight == GetMaxCounterpartyClientHeight(chain) IN
+    
+    IF \* channel end is neither null nor closed
+       /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
+       \* connection end is initialized
+       /\ connectionEnd.state /= "UNINIT"
+       \* timeout height has not passed
+       /\ \/ packet.timeoutHeight = 0 
+          \/ latestClientHeight < packet.timeoutHeight
+    THEN IF \* if the channel is ordered, check if packetSeq is nextSendSeq, 
+            \* add a packet committment in the chain store, and increase nextSendSeq
+            /\ channelEnd.order = "ORDERED"
+            /\ packet.sequence = channelEnd.nextSendSeq
+         THEN [chain EXCEPT 
+                !.packetCommitments =  
+                    chain.packetCommitments \union {[channelID |-> packet.srcChannelID,
+                                                     sequence |-> packet.sequence,
+                                                     timeoutHeight |-> packet.timeoutHeight]},
+                !.connectionEnd.channelEnd.nextSendSeq = channelEnd.nextSendSeq + 1
+              ]
+         \* otherwise, do not update the chain store
+         ELSE chain
+    ELSE IF \* if the channel is unordered, 
+            \* add a packet committment in the chain store
+            /\ channelEnd.order = "UNORDERED"
+         THEN [chain EXCEPT 
+                !.packetCommitments =  
+                    chain.packetCommitments \union {[channelID |-> packet.srcChannelID,
+                                                     sequence |-> packet.sequence,
+                                                     timeoutHeight |-> packet.timeoutHeight]}
+              ]
+         \* otherwise, do not update the chain store
+         ELSE chain
+
+\* write acknowledgements to chain store
+WriteAcknowledgement(chain, packet) ==
+    \* if the acknowledgement for the packet has not been written
+    IF packet \notin chain.packetAcknowledgements
+    THEN \* write the acknowledgement to the chain store and remove 
+         \* the packet from the set of packets to acknowledge
+         LET packetAcknowledgement == 
+                AsPacketAcknowledgement(
+                    [channelID |-> packet.dstChannelID,
+                     sequence |-> packet.sequence,
+                     acknowledgement |-> TRUE]) IN
+         [chain EXCEPT !.packetAcknowledgements = 
+                            chain.packetAcknowledgements
+                            \union 
+                            {packetAcknowledgement},
+                       !.packetsToAcknowledge = 
+                            Tail(chain.packetsToAcknowledge)]                         
+    
+    \* remove the packet from the set of packets to acknowledge
+    ELSE [chain EXCEPT !.packetsToAcknowledge = 
+                            Tail(chain.packetsToAcknowledge)] 
+
+\* log acknowledgements to packet Log
+LogAcknowledgement(chainID, chain, log, packet) ==
+    \* if the acknowledgement for the packet has not been written
+    IF packet \notin chain.packetAcknowledgements
+    THEN \* append a "WriteAck" log entry to the log
+         LET packetLogEntry ==
+                AsPacketLogEntry(
+                    [type |-> "WriteAck",
+                     srcChainID |-> chainID,
+                     sequence |-> packet.sequence,
+                     timeoutHeight |-> packet.timeoutHeight,
+                     acknowledgement |-> TRUE]) IN
+         Append(log, packetLogEntry)    
+    \* do not add anything to the log
+    ELSE log
+    
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 25 17:26:04 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 30 13:48:09 CEST 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska
