@@ -35,6 +35,7 @@ Additional highlights:
 
 ### BUG FIXES:
 - [relayer-cli] Fix for client query subcommands ([#231])
+- [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#209], [#213])
 
 [#124]: https://github.com/informalsystems/ibc-rs/issues/124
 [#142]: https://github.com/informalsystems/ibc-rs/issues/142
@@ -43,6 +44,8 @@ Additional highlights:
 [#165]: https://github.com/informalsystems/ibc-rs/issues/165
 [#206]: https://github.com/informalsystems/ibc-rs/issues/206
 [#207]: https://github.com/informalsystems/ibc-rs/issues/207
+[#209]: https://github.com/informalsystems/ibc-rs/issues/209
+[#213]: https://github.com/informalsystems/ibc-rs/issues/213
 [#218]: https://github.com/informalsystems/ibc-rs/issues/218
 [#221]: https://github.com/informalsystems/ibc-rs/issues/221
 [#223]: https://github.com/informalsystems/ibc-rs/issues/223
@@ -56,6 +59,8 @@ Additional highlights:
 [#253]: https://github.com/informalsystems/ibc-rs/issues/253
 [#276]: https://github.com/informalsystems/ibc-rs/issues/276
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
+[disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
+[spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake
 
 ## v0.0.3
 *September 1, 2020*
