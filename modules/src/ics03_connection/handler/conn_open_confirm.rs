@@ -5,7 +5,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::verify_proofs;
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
 use crate::ics03_connection::handler::ConnectionResult;
-use crate::ics03_connection::msgs::MsgConnectionOpenConfirm;
+use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
 /// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 pub(crate) fn process(
@@ -78,8 +78,10 @@ mod tests {
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_confirm;
-    use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenConfirm};
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+    use crate::ics03_connection::msgs::ConnectionMsg;
+
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
     use std::convert::TryFrom;

@@ -2,7 +2,7 @@ use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
 use ibc::ics03_connection::connection::Counterparty;
-use ibc::ics03_connection::msgs::MsgConnectionOpenInit;
+use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
