@@ -5,7 +5,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
-use crate::ics03_connection::msgs::MsgConnectionOpenTry;
+use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 
 /// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 pub(crate) fn process(
@@ -98,8 +98,9 @@ mod tests {
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::test_util::get_dummy_msg_conn_open_try;
-    use crate::ics03_connection::msgs::{ConnectionMsg, MsgConnectionOpenTry};
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+    use crate::ics03_connection::msgs::ConnectionMsg;
     use std::convert::TryFrom;
 
     #[test]
