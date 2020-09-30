@@ -5,9 +5,9 @@ use std::path::Path;
 use std::time::Duration;
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::chain::Id as ChainId;
-use tendermint::net;
+use tendermint::{chain, net, node};
 
+use crate::client::TrustOptions;
 use crate::error;
 
 /// Defaults for various fields
@@ -69,7 +69,7 @@ impl Default for GlobalConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
-    pub id: ChainId,
+    pub id: chain::Id,
     #[serde(default = "default::rpc_addr")]
     pub rpc_addr: net::Address,
     pub account_prefix: String,

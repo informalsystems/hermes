@@ -1,52 +1,53 @@
-use prost_types::Any;
 use std::str::FromStr;
 use std::time::Duration;
 
 use tendermint::abci::Path as TendermintABCIPath;
-use tendermint::block::signed_header::SignedHeader as TMCommit;
-use tendermint::block::Header as TMHeader;
 use tendermint::block::Height;
-use tendermint::lite::TrustThresholdFraction;
-use tendermint_rpc::Client as RpcClient;
+use tendermint_light_client::types::LightBlock;
+use tendermint_light_client::types::TrustThreshold;
+use tendermint_rpc::Client;
+use tendermint_rpc::HttpClient;
 
-use core::future::Future;
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
-use crate::client::rpc_requester::RpcRequester;
+use super::Chain;
+use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
-use super::Chain;
+use bytes::Bytes;
+use prost::Message;
+use prost_types::Any;
+use std::future::Future;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
-    rpc_client: RpcClient,
-    requester: RpcRequester,
+    rpc_client: HttpClient,
+    light_client: Option<LightClient>,
 }
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
-        // TODO: Derive Clone on RpcClient in tendermint-rs
-        let requester = RpcRequester::new(RpcClient::new(config.rpc_addr.clone()));
-        let rpc_client = RpcClient::new(config.rpc_addr.clone());
+        let rpc_client =
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(Self {
             config,
             rpc_client,
-            requester,
+            light_client: None,
         })
     }
 }
 
 impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
-    type Commit = TMCommit;
+    type LightBlock = LightBlock;
+    type LightClient = LightClient;
+    type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
-    type Requester = RpcRequester;
-    type Error = anomaly::Error<Kind>;
+    type Error = Error;
 
     fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
@@ -75,25 +76,29 @@ impl Chain for CosmosSDKChain {
         &self.config
     }
 
-    fn rpc_client(&self) -> &RpcClient {
+    fn rpc_client(&self) -> &HttpClient {
         &self.rpc_client
     }
 
-    fn requester(&self) -> &Self::Requester {
-        &self.requester
+    fn set_light_client(&mut self, light_client: LightClient) {
+        self.light_client = Some(light_client);
+    }
+
+    fn light_client(&self) -> Option<&LightClient> {
+        self.light_client.as_ref()
     }
 
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period
     }
 
+    fn trust_threshold(&self) -> TrustThreshold {
+        TrustThreshold::default()
+    }
+
     fn unbonding_period(&self) -> Duration {
         // TODO - query chain
         Duration::from_secs(24 * 7 * 3)
-    }
-
-    fn trust_threshold(&self) -> TrustThresholdFraction {
-        TrustThresholdFraction::default()
     }
 
     fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Error> {

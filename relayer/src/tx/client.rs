@@ -47,7 +47,9 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
             )
             .context(e)
         })
-        .map(ibc::ics07_tendermint::consensus_state::ConsensusState::from)?;
+        .map(|light_block| {
+            ibc::ics07_tendermint::consensus_state::ConsensusState::from(light_block.signed_header)
+        })?;
 
     let any_consensus_state = AnyConsensusState::Tendermint(tm_consensus_state.clone());
 
