@@ -12,10 +12,13 @@ pub trait ICS18Context {
     /// Returns the latest height of the chain.
     fn query_latest_height(&self) -> Height;
 
-    /// MockClientState->latest_height() of this client
+    /// Returns this client state for the given `client_id` on this chain.
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
 
+    /// Returns the most advanced header of this chain.
     fn query_latest_header(&self) -> Option<AnyHeader>;
 
+    /// Interface that the relayer uses to submit a datagram to this chain.
+    /// TODO: Unclear what should be the return type of this.
     fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error>;
 }

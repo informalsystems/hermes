@@ -56,6 +56,7 @@ impl MockICS18Context {
             .set_chain_context(underlying_chain_ctx)
     }
 
+    /// Internal interface of the context, for consuming (on the modules side) a datagram.
     fn recv(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
         let mut rctx = self.routing_context().clone();
         let res = dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
@@ -71,15 +72,15 @@ impl ICS18Context for MockICS18Context {
         self.chain_routing_context.chain_current_height()
     }
 
+    fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+        self.chain_routing_context.fetch_client_state(client_id)
+    }
+
     fn query_latest_header(&self) -> Option<AnyHeader> {
         let latest_height = self.chain_routing_context.chain_current_height();
         self.chain_routing_context
             .chain_context()
             .header(latest_height)
-    }
-
-    fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        self.chain_routing_context.fetch_client_state(client_id)
     }
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {

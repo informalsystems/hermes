@@ -7,10 +7,12 @@ use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 
+/// Creates a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
+/// context, assuming that the latest header on the source context is `src_header`.
 pub fn create_client_update_datagram<Ctx>(
     dest: &Ctx,
     client_id: &ClientId,
-    header: AnyHeader,
+    src_header: AnyHeader,
 ) -> Result<ClientMsg, Error>
 where
     Ctx: ICS18Context,
@@ -23,19 +25,19 @@ where
 
     let dest_client_latest_height = dest_client_state.latest_height();
 
-    if header.height() == dest_client_latest_height {
+    if src_header.height() == dest_client_latest_height {
         return Err(Kind::ClientAlreadyUpToDate(
             client_id.clone(),
-            header.height(),
+            src_header.height(),
             dest_client_latest_height,
         )
         .into());
     };
 
-    if dest_client_latest_height > header.height() {
+    if dest_client_latest_height > src_header.height() {
         return Err(Kind::ClientAtHeigherHeight(
             client_id.clone(),
-            header.height(),
+            src_header.height(),
             dest_client_latest_height,
         )
         .into());
@@ -44,7 +46,7 @@ where
     // Client on destination chain can be updated.
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
-        header,
+        header: src_header,
         signer: get_dummy_account_id(),
     }))
 }
@@ -61,8 +63,9 @@ mod tests {
     use tendermint::block::Height;
 
     #[test]
-    /// This test was moved here from ICS 26.
-    /// Serves to test both ICS 26 `dispatch` & `create_client_update` function.
+    /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
+    /// Implements a "ping pong" of client update messages, so that two chains repeatedly
+    /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
         let chain_a_start_height = Height(11);
         let chain_b_start_height = Height(20);

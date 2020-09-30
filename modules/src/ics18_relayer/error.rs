@@ -16,7 +16,7 @@ pub enum Kind {
     #[error("the client on destination chain is at a higher height (client id: {0}, source height: {1}, dest height: {2})")]
     ClientAtHeigherHeight(ClientId, Height, Height),
 
-    #[error("transaction failed")]
+    #[error("transaction processing by modules failed")]
     TransactionFailed,
 }
 
