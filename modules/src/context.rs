@@ -2,6 +2,7 @@ use crate::ics07_tendermint;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 
+use crate::ics02_client::client_def::AnyHeader;
 #[cfg(test)]
 use {
     crate::ics02_client::client_def::AnyConsensusState, crate::mock_client::header::MockHeader,
@@ -37,6 +38,7 @@ impl From<MockHeader> for AnyConsensusState {
 pub trait ChainReader {
     fn chain_type(&self) -> SelfChainType;
     fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo>;
+    fn header(&self, height: Height) -> Option<AnyHeader>;
 }
 
 pub trait ChainKeeper {

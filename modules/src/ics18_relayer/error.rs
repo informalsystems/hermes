@@ -12,6 +12,12 @@ pub enum Kind {
 
     #[error("the client on destination chain is already up-to-date (client id: {0}, source height: {1}, dest height: {2})")]
     ClientAlreadyUpToDate(ClientId, Height, Height),
+
+    #[error("the client on destination chain is at a higher height (client id: {0}, source height: {1}, dest height: {2})")]
+    ClientAtHeigherHeight(ClientId, Height, Height),
+
+    #[error("transaction failed")]
+    TransactionFailed,
 }
 
 impl Kind {

@@ -1,10 +1,15 @@
-use crate::ics02_client::client_def::AnyClientState;
+use crate::context::ChainReader;
+use crate::handler::HandlerOutput;
+use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics18_relayer::context::ICS18Context;
+use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::ics26_routing::context_mock::MockICS26Context;
+use crate::ics26_routing::handler::dispatch;
+use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::Height;
 
 #[derive(Clone, Debug, Default)]
@@ -57,7 +62,21 @@ impl ICS18Context for MockICS18Context {
         self.chain_routing_context.chain_current_height()
     }
 
+    fn query_latest_header(&self) -> Option<AnyHeader> {
+        let latest_height = self.chain_routing_context.chain_current_height();
+        self.chain_routing_context
+            .chain_context()
+            .header(latest_height)
+    }
+
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.chain_routing_context.fetch_client_state(client_id)
+    }
+
+    fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
+        let mut rctx = self.routing_context().clone();
+        let res = dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
+        self.set_routing_context(rctx);
+        Ok(res)
     }
 }
