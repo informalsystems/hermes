@@ -1,12 +1,14 @@
 # Changelog
 
 ## v0.0.4
-*September 30, 2020*
+*October 1, 2020*
 
 This release focuses on the refinement of the IBC message processor framework, protobuf migration,
 adding (de)serialization capability to ICS02 and ICS03 messages and structures.
-It adds initial implementation of the ICS26 routing module and ICS18 module to be used in testing.
-It also adds support for packet handling to the specifications for the relayer algorithm.
+
+Additional highlights:
+- Added initial implementations for the ICS26 (routing module) and ICS18 (basic relayer algorithms module) for use in testing.
+- Also added support for packet handling in the relayer algorithm specifications.
 
 ### BREAKING CHANGES:
 
@@ -20,17 +22,20 @@ It also adds support for packet handling to the specifications for the relayer a
 
 ### IMPROVEMENTS:
 - [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
+- [modules] & [ibc-proto] Several improvements to message processors, among which ([#218]):
+    - ICS03 connection handshake protocol initial implementation and tests ([#160])
+    - Add capability to decode from protobuf Any* type into Tendermint and Mock client states 
+    - Cleanup Any* client wrappers related code
+    - Migrate handlers to newer protobuf definitions ([#226])
+    - Extend client context mock ([#221])
 - [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#268])
 - [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
-- [ibc-proto]  Migrate handlers to newer protobuf definitions ([#227])
-- [modules] Cleanup Any* client wrappers related code ([#225])
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
-- [modules] Extend client context mock ([#221])
 
 ### BUG FIXES:
 - [relayer-cli] Fix for client query subcommands ([#231])
-- [modules] Cleanup Any* related code ([#233])
 
+[#160]: https://github.com/informalsystems/ibc-rs/issues/160
 [#223]: https://github.com/informalsystems/ibc-rs/issues/223
 [#207]: https://github.com/informalsystems/ibc-rs/issues/207
 [#206]: https://github.com/informalsystems/ibc-rs/issues/206
@@ -44,12 +49,11 @@ It also adds support for packet handling to the specifications for the relayer a
 [#268]: https://github.com/informalsystems/ibc-rs/issues/268
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
 [#142]: https://github.com/informalsystems/ibc-rs/issues/142
-[#227]: https://github.com/informalsystems/ibc-rs/issue/227
-[#225]: https://github.com/informalsystems/ibc-rs/pull/225
+[#226]: https://github.com/informalsystems/ibc-rs/issues/226
 [#165]: https://github.com/informalsystems/ibc-rs/issues/165
 [#221]: https://github.com/informalsystems/ibc-rs/issues/221
 [#231]: https://github.com/informalsystems/ibc-rs/issues/231
-[#233]: https://github.com/informalsystems/ibc-rs/pull/233
+[#218]: https://github.com/informalsystems/ibc-rs/issues/218
 
 ## v0.0.3
 *September 1, 2020*
