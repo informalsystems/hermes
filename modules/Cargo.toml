@@ -15,8 +15,6 @@ description = """
 """
 
 [dependencies]
-tendermint = "0.15.0"
-tendermint-rpc = { version = "0.15.0", features = ["client"] }
 tendermint-proto = "0.1.0"
 
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -31,9 +29,19 @@ serde_json = "1"
 tracing = "0.1.13"
 prost = "0.6.1"
 prost-types = "0.6.1"
-
 bytes = "0.5.5"
 dyn-clonable = "0.9.0"
+
+[dependencies.tendermint]
+version = "0.16.0"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "romac/light-client-ibc"
+
+[dependencies.tendermint-rpc]
+version = "0.16.0"
+features = ["http-client", "websocket-client"]
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "romac/light-client-ibc"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }

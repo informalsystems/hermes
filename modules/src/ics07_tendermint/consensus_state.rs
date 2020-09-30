@@ -4,12 +4,9 @@ use std::convert::TryFrom;
 
 use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
 
-use tendermint::block::signed_header::SignedHeader as TMCommit;
-use tendermint::block::Header as TMHeader;
-use tendermint::block::Height;
+use tendermint::block::signed_header::SignedHeader;
 use tendermint::hash::Algorithm;
-use tendermint::lite::Header;
-use tendermint::lite::SignedHeader;
+use tendermint::time::Time;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
 
@@ -20,7 +17,7 @@ use crate::ics23_commitment::commitment::CommitmentRoot;
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub height: crate::Height,
-    pub timestamp: tendermint::time::Time,
+    pub timestamp: Time,
     pub root: CommitmentRoot,
     pub next_validators_hash: Hash,
 }
@@ -29,7 +26,7 @@ impl ConsensusState {
     pub fn new(
         root: CommitmentRoot,
         height: crate::Height,
-        timestamp: tendermint::time::Time,
+        timestamp: Time,
         next_validators_hash: Hash,
     ) -> Self {
         Self {
@@ -105,13 +102,13 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl From<SignedHeader<TMCommit, TMHeader>> for ConsensusState {
-    fn from(header: SignedHeader<TMCommit, TMHeader>) -> Self {
+impl From<SignedHeader> for ConsensusState {
+    fn from(header: SignedHeader) -> Self {
         Self {
-            root: CommitmentRoot::from_bytes(&header.header().app_hash),
-            height: Height::from(header.header().height()),
-            timestamp: header.header().bft_time(),
-            next_validators_hash: header.header().next_validators_hash(),
+            root: CommitmentRoot::from_bytes(&header.header.app_hash),
+            height: header.header.height,
+            timestamp: header.header.time,
+            next_validators_hash: header.header.next_validators_hash,
         }
     }
 }
