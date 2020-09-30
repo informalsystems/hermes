@@ -16,10 +16,9 @@ mod version;
 
 use self::{
     config::ConfigCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    version::VersionCmd,
+    tx::TxCmd, version::VersionCmd,
 };
 
-use crate::commands::tx::TxCmd;
 use crate::config::Config;
 use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
 use std::path::PathBuf;
