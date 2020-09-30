@@ -19,6 +19,7 @@ Additional highlights:
 - [modules] Routing module minimal implementation for MVP ([#159], [#232])
 - [spec/relayer] Relayer specification for packet handling ([#229], [#234], [#237])
 - [spec/relayer] Basic packet handling in TLA+([#124])
+- [modules] Basic relayer functionality: a test with ClientUpdate ping-pong between two mocked chains ([#276])
 
 ### IMPROVEMENTS:
 - [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
@@ -28,32 +29,33 @@ Additional highlights:
     - Cleanup Any* client wrappers related code
     - Migrate handlers to newer protobuf definitions ([#226])
     - Extend client context mock ([#221])
-- [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#268])
+- [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
 - [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
 
 ### BUG FIXES:
 - [relayer-cli] Fix for client query subcommands ([#231])
 
-[#160]: https://github.com/informalsystems/ibc-rs/issues/160
-[#223]: https://github.com/informalsystems/ibc-rs/issues/223
-[#207]: https://github.com/informalsystems/ibc-rs/issues/207
-[#206]: https://github.com/informalsystems/ibc-rs/issues/206
+[#124]: https://github.com/informalsystems/ibc-rs/issues/124
+[#142]: https://github.com/informalsystems/ibc-rs/issues/142
 [#159]: https://github.com/informalsystems/ibc-rs/issues/159
-[#232]: https://github.com/informalsystems/ibc-rs/issues/159
+[#160]: https://github.com/informalsystems/ibc-rs/issues/160
+[#165]: https://github.com/informalsystems/ibc-rs/issues/165
+[#206]: https://github.com/informalsystems/ibc-rs/issues/206
+[#207]: https://github.com/informalsystems/ibc-rs/issues/207
+[#218]: https://github.com/informalsystems/ibc-rs/issues/218
+[#221]: https://github.com/informalsystems/ibc-rs/issues/221
+[#223]: https://github.com/informalsystems/ibc-rs/issues/223
+[#226]: https://github.com/informalsystems/ibc-rs/issues/226
 [#229]: https://github.com/informalsystems/ibc-rs/issues/229
+[#231]: https://github.com/informalsystems/ibc-rs/issues/231
+[#232]: https://github.com/informalsystems/ibc-rs/issues/232
 [#234]: https://github.com/informalsystems/ibc-rs/issues/234
 [#237]: https://github.com/informalsystems/ibc-rs/issues/237
-[#124]: https://github.com/informalsystems/ibc-rs/issues/124
 [#249]: https://github.com/informalsystems/ibc-rs/issues/249
-[#268]: https://github.com/informalsystems/ibc-rs/issues/268
+[#253]: https://github.com/informalsystems/ibc-rs/issues/253
+[#276]: https://github.com/informalsystems/ibc-rs/issues/276
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
-[#142]: https://github.com/informalsystems/ibc-rs/issues/142
-[#226]: https://github.com/informalsystems/ibc-rs/issues/226
-[#165]: https://github.com/informalsystems/ibc-rs/issues/165
-[#221]: https://github.com/informalsystems/ibc-rs/issues/221
-[#231]: https://github.com/informalsystems/ibc-rs/issues/231
-[#218]: https://github.com/informalsystems/ibc-rs/issues/218
 
 ## v0.0.3
 *September 1, 2020*
