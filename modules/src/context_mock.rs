@@ -61,28 +61,27 @@ impl MockChainContext {
     }
 
     pub fn validate(&self) -> Result<(), Box<dyn Error>> {
-        // TODO
+        // check that the number of entries is not higher than max_size
+        if self.history.len() > self.max_size {
+            return Err("too many entries".to_string().into());
+        }
+
+        // get the highers header
+        let lh = self.history[self.history.len() - 1];
+        // check latest is properly updated with highest header height
+        if lh.height() != self.latest {
+            return Err("latest height is not updated".to_string().into());
+        }
+
+        // check that all headers are in sequential order
+        for i in 1..self.history.len() {
+            let ph = self.history[i - 1];
+            let h = self.history[i];
+            if ph.height().increment() != h.height() {
+                return Err("headers in history not sequential".to_string().into());
+            }
+        }
         Ok(())
-        //         // check that the number of entries is not higher than max_size
-        //         if self.history.len() > self.max_size {
-        //             return Err("too many entries".to_string().into());
-        //         }
-        //
-        //         // check latest is properly updated with highest header height
-        //         let SelfHeader::Mock(lh) = self.history[self.history.len() - 1].header;
-        //         if lh.height() != self.latest {
-        //             return Err("latest height is not updated".to_string().into());
-        //         }
-        //
-        //         // check that all headers are in sequential order
-        //         for i in 1..self.history.len() {
-        //             let SelfHeader::Mock(ph) = self.history[i - 1].header;
-        //             let SelfHeader::Mock(h) = self.history[i].header;
-        //             if ph.height().increment() != h.height() {
-        //                 return Err("headers in history not sequential".to_string().into());
-        //             }
-        //         }
-        //         Ok(())
     }
 }
 
