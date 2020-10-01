@@ -29,18 +29,15 @@ prost-types = { version = "0.6.1" }
 [dependencies.tendermint]
 version = "0.16.0"
 git = "https://github.com/informalsystems/tendermint-rs"
-branch = "romac/light-client-ibc"
 
 [dependencies.tendermint-rpc]
 version = "0.16.0"
 features = ["http-client", "websocket-client"]
 git = "https://github.com/informalsystems/tendermint-rs"
-branch = "romac/light-client-ibc"
 
 [dependencies.tendermint-light-client]
 version = "0.16.0"
 git = "https://github.com/informalsystems/tendermint-rs"
-branch = "romac/light-client-ibc"
 
 [dependencies.abscissa_core]
 version = "0.5.2"
