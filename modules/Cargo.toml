@@ -35,13 +35,11 @@ dyn-clonable = "0.9.0"
 [dependencies.tendermint]
 version = "0.16.0"
 git = "https://github.com/informalsystems/tendermint-rs"
-branch = "romac/light-client-ibc"
 
 [dependencies.tendermint-rpc]
 version = "0.16.0"
 features = ["http-client", "websocket-client"]
 git = "https://github.com/informalsystems/tendermint-rs"
-branch = "romac/light-client-ibc"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
