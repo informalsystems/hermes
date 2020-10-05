@@ -8,7 +8,7 @@ authors = [
 
 [dependencies]
 ibc = { path = "../modules" }
-ibc-proto = "0.2.2"
+ibc-proto = "0.3.0"
 tendermint-proto = "0.1.0"
 
 anomaly = "0.2.0"
