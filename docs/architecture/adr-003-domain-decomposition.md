@@ -3,12 +3,13 @@
 ## Changelog
 * 21.7.2020: Initial sketch
 * 27.7.2020: Dependencies outline
+* 5.10.2020: Update based on sketch
 
 ## Context
 
 The IBC handlers queries and relayer are defined loosely in the spec.
 The goal of this ADR is to provide clarity around the domain objects,
-their interfaces as well as dependencies between options in order to
+their interfaces as well as dependencies between them in order to
 guide the implementation. The success criteria for the decomposition is
 how well it can be tested. It's expected that any decomposition will
 lend itself to tight unit tests allowing more collaborators make change
@@ -95,11 +96,12 @@ dependencies between objects to be mocked out during testing.
 
 ### Chain
 The Chain object is a local representation of a foreign chain state.
-The API of a Chain provides reliable access to chain state Wether
-cashed, constructed or queried.
+The API of a Chain provides reliable access to chain state wether
+cashed, constructed or queried. We invision mock version of this chain
+will be used to test both handler and relayer logic.
 
 ```rust 
-struct ChainState {
+struct Chain {
     // That represents the data that is stored on chain
     // It's expected that the IBC handlers are producing such a state
     // It's expected the the Chain object and queries are effectively
@@ -130,16 +132,6 @@ trait Chain {
         // We can check if the packet is indeed worth submitting here
         ...
         // We can ensure that the remote client is up to date before submitting
-        self.update_remote_client();
-        ...
-    }
-
-    // Produce a subscription of verified events
-    fn subscribe(&mut self, ...) -> Subscription {
-        // Create a subscription to events in this chains runtime whith
-        // access to the chain such that it can verify packets as they
-        // come in
-        return Subscription::new(self.clone(), ...);
     }
 }
 ```
@@ -147,8 +139,8 @@ trait Chain {
 ### Connection
 
 ```rust
-trait Connection {
-    fn new(chain_a: Chain, chain_b: Chain) -> Result<Connection, Error> {
+struct Connection {
+    fn new(chain_a: ..., chain_b: ..., foreign_client: ..., config: ...) -> Result<Connection, Error> {
         // Establish a connection ChainA and ChainB via handshake
         // For a first version this can be completely synchronous
         ...
@@ -156,53 +148,115 @@ trait Connection {
 }
 ```
 
-### Channel {
-```
-trait Channel {
-    fn new(chain_a: Chain, chain_b: Chain) -> Result<Channel, Error> {
+### Channel 
+```rust
+struct Channel {
+    fn new(chain_a: Chain, chain_b: Chain, connection: ..., config: ...) -> Result<Channel, Error> {
         // Establish a channel between two modules
         ...
     }
 }
 ```
 
-### Relay Algorithm
-Let's assume we want to relay packets form `chain_a` to `chain_b`. No
-error handling specified here but we can imagine that each synchronous
-method call
+## Link
+The entity which connects two specific modules on seperate chains is
+called a link. Links are responsible for relaying packets from `chain_a`
+to `chain_b` and are therefore oriented.  A single relayer process 
+should be able to support multiple link instances and each link should
+run in it's own thread.  Links require established ForeignClient,
+Connection and Channel.
 
 ```rust
-let mut chain_a = Chain::new(...);
-let mut chain_b = Chain::new(...);
-let builder = Builder::new(chain_a.clone(), chain_b.clone());
-let mut subscription =  chain_a.subscribe(...);
+struct Link {
+    src_chain: Chain,
+    dst_chain: Chain,
+    foreign_client: ForeignClient,
+}
 
-let connection = Connection::new(chain_a, chain_b);
+impl Link {
+	fn new(..., foreign_client, ForeignClient, channel: Channel, config: Config) -> Link {
+		...
+	}
 
-// Each Path is directional and runs in it's own thread
-thread::new(move || {
-    while Some(event) = match subscription.next() {
-        // We have events, but when are they verified?
-        // The subscription will only route events that have been light
-        // client verified so we don't event need to worry about it.
+	/// Relay Link specific packets from src_chain to dst_chain
+    /// Expect this to run in a thread
+	fn run(mut self, config: Config) -> Error {
+		let subscription = self.src_chain.subscribe(config);
 
-        // XXX: Clarify the destinction between pending_datagrams and builder
-        // What if some packets on A have not been sent to B
-        let pending_packets = chain_a.pending_datagrams(chain_b, event.height);
-        // Do we need to setup a channel here?
+		for datagram in subscription.iter() {
+			...
+            
+            self.foreign_client.update(target_height);
 
-        // Our builder has it's own references to both queries and can
-        // perform all the queries it needs to construct a packet
-        let datagrams = builder.new(event); // This might include updates?
+			let header = self.src_chain.get_header(target_height);
+			verify_proof(&datagram, &header);
 
-        chain_b.submit(datagrams); // or this might include updates?
-    }
+            let transaction = Transaction::new(datagram);
+            self.dst_chain.submit(transaction);
+		}
+	}
+}
+```
+
+### Example Main
+Example of the initalizing on a single link between two chains. Each
+chain has it's own runtime and exposes a `handle` to communicate with
+that runtime from different threads. There are dependencies between
+ForeignClients, Connections, Channels and Links which are encoded in the
+type system. The construction of them reflects that their corresponding
+handshake protocol was completed successfully.
+
+```rust
+fn main() -> Result<(), Box<dyn Error>> {
+    let src_chain = ChainRuntime::new(); // TODO: Pass chain config
+    let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
+
+    /// chains expose handlers for commuicating with the chain related runtime
+    /// which move into their own threads
+    let src_chain_handle = src_chain.handle();
+    thread::spawn(move || {
+        src_chain.run().unwrap();
+    });
+
+    let dst_chain_handle = dst_chain.handle();
+    thread::spawn(move || {
+        // What should we do on return here?
+        dst_chain.run().unwrap();
+    });
+
+    let foreign_client = ForeignClient::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        ForeignClientConfig::default())?;
+
+    let connection = Connection::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        &foreign_client, // Create a semantic dependecy
+        ConnectionConfig::default()).unwrap();
+
+    let channel = Channel::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        connection, // Semantic dependecy
+        ChannelConfig::default()).unwrap();
+
+    let link = Link::new(
+        src_chain_handle,
+        dst_chain_handle,
+        foreign_client, // Actual dependecy
+        channel,        // Semantic dependecy
+        LinkConfig::default())?;
+
+    link.run()?;
+
+    Ok(())
 }
 ```
 
 ## Status
 
-Preliminary sketch
+Partially implemented in [#162](https://github.com/informalsystems/ibc-rs/pull/162).
 
 ## Consequences
 
