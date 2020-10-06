@@ -16,6 +16,8 @@ use crate::error;
 use std::error::Error;
 
 pub(crate) mod cosmos;
+pub(crate) mod local;   // Local chain, used for relayer integration testing against IBC modules.
+
 pub use cosmos::CosmosSDKChain;
 use prost_types::Any;
 

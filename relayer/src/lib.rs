@@ -20,4 +20,3 @@ pub mod event_monitor;
 pub mod store;
 pub mod tx;
 pub mod util;
-pub mod local_chain;
