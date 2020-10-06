@@ -47,8 +47,11 @@ impl StartCmd {
         // abscissa_tokio::run(&APPLICATION, ...).unwrap();
 
         debug!("launching 'start' command");
-        if ! config.local_chains.is_empty() {
-            debug!("found the following local chains: {:?}", config.local_chains);
+        if !config.local_chains.is_empty() {
+            debug!(
+                "found the following local chains: {:?}",
+                config.local_chains
+            );
         }
 
         // Spawn all tasks on the same thread that calls `block_on`, ie. the main thread.
@@ -259,17 +262,4 @@ async fn update_client(chain_id: chain::Id, mut supervisor: Supervisor) -> Resul
             Err(err) => error!(chain.id = %chain_id, "error when updating headers: {}", err),
         }
     }
-}
-
-async fn create_local_chain(
-    local_chain_config: LocalChainConfig,
-) -> LocalChain {
-    let chain = LocalChain::from_config(local_chain_config.clone()).unwrap();
-
-    // Create clients, if any are specified.
-    for client_id in &local_chain_config.client_ids {
-        chain.create_client(client_id);
-    }
-
-    chain
 }

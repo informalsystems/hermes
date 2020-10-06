@@ -5,6 +5,7 @@ use std::path::Path;
 use std::time::Duration;
 
 use serde_derive::{Deserialize, Serialize};
+use tendermint::chain::Id as ChainId;
 use tendermint::{chain, net, node};
 
 use crate::client::TrustOptions;
