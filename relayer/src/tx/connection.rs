@@ -9,6 +9,7 @@ use ibc::tx_msg::Msg;
 use prost_types::Any;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
+use hex;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
@@ -26,10 +27,6 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<(), Error> {
 
     let id_hex = "25EF56CA795135E409368E6DB8110F22A4BE05C2";
     let signer = AccountId::from_str(id_hex).unwrap();
-
-    // let signer = Id::from_str(dest_chain.config().account_prefix.as_str()).map_err(|e| {
-    //     Kind::MessageTransaction("Connection Open Init Error: Bad Signer".into()).context(e)
-    // })?;
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,
@@ -56,5 +53,5 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<(), Error> {
     proto_msgs.push(any_msg);
 
     // Send message
-    dest_chain.send(&proto_msgs)
+    dest_chain.send(&proto_msgs, "".to_string(), 0)
 }

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use tendermint::abci::Path as TendermintABCIPath;
+use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::block::Height;
 use tendermint_light_client::types::LightBlock;
 use tendermint_light_client::types::TrustThreshold;
@@ -21,6 +21,11 @@ use bytes::Bytes;
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
+use ibc_proto::tx::v1beta1::{TxBody, SignDoc, ModeInfo, SignerInfo, AuthInfo};
+use ibc_proto::base::crypto::v1beta1::PublicKey as RawPublicKey;
+use ibc_proto::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::base::crypto::v1beta1::public_key::Sum as PKSum;
+use k256::ecdsa::{VerifyKey, SigningKey};
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -67,8 +72,57 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&self, _msgs: &[Any]) -> Result<(), Error> {
-        // TODO sign and broadcast_tx
+    fn send(&self, msgs: &[Any], memo: String, timeout_height: u64) -> Result<(), Error> {
+
+        // Create TxBody
+        let body = TxBody {
+            messages: msgs.to_vec(),
+            memo,
+            timeout_height,
+            extension_options: Vec::<Any>::new(),
+            non_critical_extension_options: Vec::<Any>::new(),
+        };
+
+        // A protobuf serialization of a TxBody
+        let mut body_buf = Vec::new();
+        prost::Message::encode(&body, &mut body_buf).unwrap();
+
+        let signing_key_bytes = "cda4e48a1ae228656e483b2f3ae7bca6d04abcef64189ff56d481987259dd2a4";
+        let signing_key_bytes = "1d0ed726191cf76e170444963036dbbd579f996ad14ca50024fae7d28801d28ee55ecd06bae230ca1f4b9ac55e77563625395b87fa6bd181274b33d3cc354f2c";
+        let account_number = 1;
+
+        let signing_key = SigningKey::new(&hex::decode(signing_key_bytes).unwrap()).unwrap();
+        let verify_key = VerifyKey::from(&signing_key);
+        let pubkey_bytes = verify_key.to_bytes().to_vec();
+
+        let sum = Some(PKSum::Secp256k1(pubkey_bytes));
+        let pk = Some(RawPublicKey { sum });
+        let single = Single { mode: 1 };
+        let sum_single = Some(Sum::Single(single));
+        let mode = Some(ModeInfo { sum: sum_single });
+
+        let signer_info = SignerInfo {
+             public_key: pk,
+             mode_info: mode,
+             sequence: 0,
+        };
+
+        let auth_info = AuthInfo {
+             signer_infos: vec![signer_info],
+             fee: None,
+        };
+
+        // A protobuf serialization of a AuthInfo
+        let mut auth_buf = Vec::new();
+        prost::Message::encode(&auth_info, &mut auth_buf).unwrap();
+
+        let sign_doc = SignDoc {
+            body_bytes: body_buf.clone(),
+            auth_info_bytes: auth_buf.clone(),
+            chain_id: self.config.clone().id.to_string(),
+            account_number,
+        };
+
         Ok(())
     }
 
@@ -101,9 +155,9 @@ impl Chain for CosmosSDKChain {
         Duration::from_secs(24 * 7 * 3)
     }
 
-    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Error> {
-        unimplemented!()
+    //fn build_sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Error> {
 
+    8f1bfb45f35426761ff77672b9ee987b8439f54e7ad617445e8aec9b3977f45c8a76feccf70981573262f4e50d21969f75cdcafcdb54634a44cf0e4a94d70782
         // TODO: Once the tendermint is upgraded and crypto can be imported then work on this build and signing code
         // This is a pregenerated private key from running:
         //      let signing_key = SigningKey::random(&mut OsRng);
@@ -211,7 +265,7 @@ impl Chain for CosmosSDKChain {
             Ok(resp) => println!("OK! {:?}", resp),
             Err(e) => println!("Err {:?}", e)
         };*/
-    }
+   // }
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -247,6 +301,30 @@ async fn abci_query(
     }
 
     Ok(response.value)
+}
+
+/// Perform a generic `broadcast_tx`, and return the corresponding deserialized response data.
+async fn broadcast_tx(
+    chain: &CosmosSDKChain,
+    data: Vec<u8>,
+) -> Result<Vec<u8>, anomaly::Error<Kind>> {
+    // Use the Tendermint-rs RPC client to do the query.
+    let response = chain
+        .rpc_client()
+        .broadcast_tx_sync(Transaction::new(data))
+        .await
+        .map_err(|e| Kind::Rpc.context(e))?;
+
+    if !response.code.is_ok() {
+        // Fail with response log.
+        return Err(Kind::Rpc.context(response.log.to_string()).into());
+    }
+    if response.data.as_bytes().len() == 0 {
+        // Fail due to empty response value (nothing to decode).
+        return Err(Kind::EmptyResponseValue.into());
+    }
+
+    Ok(response.data.as_bytes().to_vec())
 }
 
 /// block on future

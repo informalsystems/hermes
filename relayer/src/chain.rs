@@ -45,7 +45,7 @@ pub trait Chain {
     fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&self, _msgs: &[Any]) -> Result<(), Self::Error>;
+    fn send(&self, _msgs: &[Any], memo: String, timeout_height: u64) -> Result<(), Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
@@ -73,10 +73,6 @@ pub trait Chain {
 
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThreshold;
-
-    /// Sign message
-    /// TODO - waiting for tendermint-rs upgrade to v0.16
-    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Self::Error>;
 }
 
 /// Query the latest height the chain is at via a RPC query
