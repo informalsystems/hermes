@@ -17,12 +17,20 @@ pub trait ClientKeeper {
         match handler_res {
             CreateResult(res) => {
                 self.store_client_type(res.client_id.clone(), res.client_type)?;
-                self.store_client_state(res.client_id.clone(), res.client_state)?;
-                self.store_consensus_state(res.client_id, res.consensus_state)?;
+                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                self.store_consensus_state(
+                    res.client_id,
+                    res.client_state.height(),
+                    res.consensus_state,
+                )?;
             }
             UpdateResult(res) => {
-                self.store_client_state(res.client_id.clone(), res.client_state)?;
-                self.store_consensus_state(res.client_id, res.consensus_state)?;
+                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                self.store_consensus_state(
+                    res.client_id,
+                    res.client_state.height(),
+                    res.consensus_state,
+                )?;
             }
         }
         Ok(())
@@ -43,6 +51,7 @@ pub trait ClientKeeper {
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,
+        height: Height,
         consensus_state: AnyConsensusState,
     ) -> Result<(), Error>;
 }

@@ -3,7 +3,6 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::state::ConsensusState;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
@@ -156,6 +155,7 @@ impl ClientKeeper for MockClientContext {
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,
+        height: Height,
         consensus_state: AnyConsensusState,
     ) -> Result<(), Error> {
         match consensus_state {
@@ -167,7 +167,7 @@ impl ClientKeeper for MockClientContext {
                 });
                 client_record
                     .consensus_states
-                    .insert(consensus_state.height(), consensus_state);
+                    .insert(height, consensus_state);
                 Ok(())
             }
             _ => Err(Kind::BadClientState.into()),

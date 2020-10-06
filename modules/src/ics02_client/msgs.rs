@@ -3,7 +3,7 @@
 //! handles these messages in two layers: first with the general ICS 02 client handler, which
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
@@ -12,6 +12,7 @@ use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::client::MsgCreateClient as RawMsgCreateClient;
+use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::{DomainType, Error, Kind};
 
@@ -109,7 +110,8 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             client_type,
             client_state: AnyClientState::try_from(raw_client_state).unwrap(),
             consensus_state: AnyConsensusState::try_from(raw_consensus_state).unwrap(),
-            signer: AccountId::new(raw.signer[..20].try_into().unwrap()),
+            signer: AccountId::from_str(raw.signer.as_str())
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
         })
     }
 }
@@ -120,7 +122,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
             client_id: ics_msg.client_id.to_string(),
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }
@@ -160,6 +162,8 @@ mod tests {
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
             frozen_height: 0_u64.into(),
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         });
 
         let msg = MsgCreateAnyClient {
