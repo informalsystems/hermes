@@ -75,20 +75,30 @@ impl EventMonitor {
                 Ok(..) => continue,
                 Err(err) => {
                     debug!("Web socket error: {}", err);
+
                     // Try to reconnect
-                    let websocket_client = WebSocketClient::new(self.node_addr.clone())
+                    let mut websocket_client = WebSocketClient::new(self.node_addr.clone())
                         .await
                         .unwrap_or_else(|e| {
-                            debug!("Error on reconnection {}", e);
-                            panic!("Abort on failed reconnection")
+                            debug!("Error on reconnection: {}", e);
+                            panic!("Abort on failed reconnection");
                         });
 
+                    // Swap the new client with the previous one which failed,
+                    // so that we can shut the latter down gracefully.
+                    std::mem::swap(&mut self.websocket_client, &mut websocket_client);
+
                     debug!("Reconnected");
-                    self.websocket_client = websocket_client;
+
+                    // Shut down previous client
+                    debug!("Gracefully shutting down previous client");
+                    websocket_client.close().await.unwrap_or_else(|e| {
+                        error!("Failed to close previous WebSocket client: {}", e);
+                    });
 
                     // Try to resubscribe
                     if let Err(err) = self.subscribe().await {
-                        debug!("Error on recreating subscriptions {}", err);
+                        debug!("Error on recreating subscriptions: {}", err);
                         panic!("Abort during reconnection");
                     };
                 }
