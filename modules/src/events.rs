@@ -3,13 +3,14 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
+
+use tendermint::block;
+use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
+
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
-
-use tendermint_rpc::event_listener::{ResultEvent, TMEventData};
 
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -119,16 +120,16 @@ fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, 
     Ok(result)
 }
 
-pub fn get_all_events(result: ResultEvent) -> Result<Vec<IBCEvent>, String> {
+pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
     let mut vals: Vec<IBCEvent> = vec![];
 
     match &result.data {
-        TMEventData::EventDataNewBlock(nb) => {
-            let block = (&nb.block).as_ref().ok_or("missing block")?;
+        RpcEventData::NewBlock { block, .. } => {
+            let block = block.as_ref().ok_or("missing block")?;
             vals.push(NewBlock::new(block.header.height).into());
         }
 
-        TMEventData::EventDataTx(_tx) => {
+        RpcEventData::Tx { .. } => {
             let events = &result.events.ok_or("missing events")?;
             let height = events.get("tx.height").ok_or("tx.height")?[0]
                 .parse::<u64>()

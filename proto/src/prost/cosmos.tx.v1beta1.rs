@@ -4,39 +4,46 @@ pub struct Tx {
     /// body is the processable content of the transaction
     #[prost(message, optional, tag="1")]
     pub body: ::std::option::Option<TxBody>,
-    /// auth_info is the authorization related content of the transaction, specifically
-    /// signers, signer modes and fee
+    /// auth_info is the authorization related content of the transaction,
+    /// specifically signers, signer modes and fee
     #[prost(message, optional, tag="2")]
     pub auth_info: ::std::option::Option<AuthInfo>,
-    /// signatures is a list of signatures that matches the length and order of AuthInfo's signer_infos to
-    /// allow connecting signature meta information like public key and signing mode by position.
+    /// signatures is a list of signatures that matches the length and order of
+    /// AuthInfo's signer_infos to allow connecting signature meta information like
+    /// public key and signing mode by position.
     #[prost(bytes, repeated, tag="3")]
     pub signatures: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
-/// TxRaw is a variant of Tx that pins the signer's exact binary representation of body and
-/// auth_info. This is used for signing, broadcasting and verification. The binary
-/// `serialize(tx: TxRaw)` is stored in Tendermint and the hash `sha256(serialize(tx: TxRaw))`
-/// becomes the "txhash", commonly used as the transaction ID.
+/// TxRaw is a variant of Tx that pins the signer's exact binary representation
+/// of body and auth_info. This is used for signing, broadcasting and
+/// verification. The binary `serialize(tx: TxRaw)` is stored in Tendermint and
+/// the hash `sha256(serialize(tx: TxRaw))` becomes the "txhash", commonly used
+/// as the transaction ID.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxRaw {
-    /// body_bytes is a protobuf serialization of a TxBody that matches the representation in SignDoc.
+    /// body_bytes is a protobuf serialization of a TxBody that matches the
+    /// representation in SignDoc.
     #[prost(bytes, tag="1")]
     pub body_bytes: std::vec::Vec<u8>,
-    /// auth_info_bytes is a protobuf serialization of an AuthInfo that matches the representation in SignDoc.
+    /// auth_info_bytes is a protobuf serialization of an AuthInfo that matches the
+    /// representation in SignDoc.
     #[prost(bytes, tag="2")]
     pub auth_info_bytes: std::vec::Vec<u8>,
-    /// signatures is a list of signatures that matches the length and order of AuthInfo's signer_infos to
-    /// allow connecting signature meta information like public key and signing mode by position.
+    /// signatures is a list of signatures that matches the length and order of
+    /// AuthInfo's signer_infos to allow connecting signature meta information like
+    /// public key and signing mode by position.
     #[prost(bytes, repeated, tag="3")]
     pub signatures: ::std::vec::Vec<std::vec::Vec<u8>>,
 }
 /// SignDoc is the type used for generating sign bytes for SIGN_MODE_DIRECT.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignDoc {
-    /// body_bytes is protobuf serialization of a TxBody that matches the representation in TxRaw.
+    /// body_bytes is protobuf serialization of a TxBody that matches the
+    /// representation in TxRaw.
     #[prost(bytes, tag="1")]
     pub body_bytes: std::vec::Vec<u8>,
-    /// auth_info_bytes is a protobuf serialization of an AuthInfo that matches the representation in TxRaw.
+    /// auth_info_bytes is a protobuf serialization of an AuthInfo that matches the
+    /// representation in TxRaw.
     #[prost(bytes, tag="2")]
     pub auth_info_bytes: std::vec::Vec<u8>,
     /// chain_id is the unique identifier of the chain this transaction targets.
@@ -51,12 +58,14 @@ pub struct SignDoc {
 /// TxBody is the body of a transaction that all signers sign over.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxBody {
-    /// messages is a list of messages to be executed. The required signers of those messages define
-    /// the number and order of elements in AuthInfo's signer_infos and Tx's signatures.
-    /// Each required signer address is added to the list only the first time it occurs.
+    /// messages is a list of messages to be executed. The required signers of
+    /// those messages define the number and order of elements in AuthInfo's
+    /// signer_infos and Tx's signatures. Each required signer address is added to
+    /// the list only the first time it occurs.
     ///
-    /// By convention, the first required signer (usually from the first message) is referred
-    /// to as the primary signer and pays the fee for the whole transaction.
+    /// By convention, the first required signer (usually from the first message)
+    /// is referred to as the primary signer and pays the fee for the whole
+    /// transaction.
     #[prost(message, repeated, tag="1")]
     pub messages: ::std::vec::Vec<::prost_types::Any>,
     /// memo is any arbitrary memo to be added to the transaction
@@ -77,12 +86,14 @@ pub struct TxBody {
     #[prost(message, repeated, tag="2047")]
     pub non_critical_extension_options: ::std::vec::Vec<::prost_types::Any>,
 }
-/// AuthInfo describes the fee and signer modes that are used to sign a transaction.
+/// AuthInfo describes the fee and signer modes that are used to sign a
+/// transaction.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AuthInfo {
     /// signer_infos defines the signing modes for the required signers. The number
-    /// and order of elements must match the required signers from TxBody's messages.
-    /// The first element is the primary signer and the one which pays the fee.
+    /// and order of elements must match the required signers from TxBody's
+    /// messages. The first element is the primary signer and the one which pays
+    /// the fee.
     #[prost(message, repeated, tag="1")]
     pub signer_infos: ::std::vec::Vec<SignerInfo>,
     /// Fee is the fee and gas limit for the transaction. The first signer is the
@@ -92,21 +103,22 @@ pub struct AuthInfo {
     #[prost(message, optional, tag="2")]
     pub fee: ::std::option::Option<Fee>,
 }
-/// SignerInfo describes the public key and signing mode of a single top-level signer.
+/// SignerInfo describes the public key and signing mode of a single top-level
+/// signer.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignerInfo {
     /// public_key is the public key of the signer. It is optional for accounts
     /// that already exist in state. If unset, the verifier can use the required \
     /// signer address for this position and lookup the public key.
     #[prost(message, optional, tag="1")]
-    pub public_key: ::std::option::Option<super::super::base::crypto::v1beta1::PublicKey>,
+    pub public_key: ::std::option::Option<::prost_types::Any>,
     /// mode_info describes the signing mode of the signer and is a nested
     /// structure to support nested multisig pubkey's
     #[prost(message, optional, tag="2")]
     pub mode_info: ::std::option::Option<ModeInfo>,
     /// sequence is the sequence of the account, which describes the
-    /// number of committed transactions signed by a given address. It is used to prevent
-    /// replay attacks.
+    /// number of committed transactions signed by a given address. It is used to
+    /// prevent replay attacks.
     #[prost(uint64, tag="3")]
     pub sequence: u64,
 }
@@ -120,7 +132,8 @@ pub struct ModeInfo {
 }
 pub mod mode_info {
     /// Single is the mode info for a single signer. It is structured as a message
-    /// to allow for additional fields such as locale for SIGN_MODE_TEXTUAL in the future
+    /// to allow for additional fields such as locale for SIGN_MODE_TEXTUAL in the
+    /// future
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Single {
         /// mode is the signing mode of the single signer

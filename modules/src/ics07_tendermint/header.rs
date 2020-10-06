@@ -1,6 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
 
-// use tendermint::lite::types::SignedHeader;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
@@ -21,7 +20,6 @@ pub struct Header {
 impl Header {
     pub(crate) fn consensus_state(&self) -> ConsensusState {
         ConsensusState {
-            height: self.signed_header.header.height,
             timestamp: self.signed_header.header.time,
             root: CommitmentRoot::from_bytes(&self.signed_header.header.app_hash),
             next_validators_hash: self.signed_header.header.next_validators_hash,

@@ -142,10 +142,11 @@ impl ClientKeeper for MockICS26Context {
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,
+        height: Height,
         consensus_state: AnyConsensusState,
     ) -> Result<(), ICS2Error> {
         self.client_context
-            .store_consensus_state(client_id, consensus_state)?;
+            .store_consensus_state(client_id, height, consensus_state)?;
         Ok(())
     }
 }
