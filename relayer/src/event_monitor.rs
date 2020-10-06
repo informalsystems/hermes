@@ -38,7 +38,7 @@ impl EventMonitor {
 
         // TODO: move them to config file(?)
         let event_queries = vec![
-            "tm.event='NewTx'".to_string(),
+            "tm.event='Tx'".to_string(),
             "tm.event='NewBlock'".to_string(),
         ];
 
