@@ -238,6 +238,8 @@ mod tests {
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
             frozen_height: 0_u64.into(),
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         });
 
         let msg = MsgCreateAnyClient {

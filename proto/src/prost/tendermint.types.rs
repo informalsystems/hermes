@@ -188,6 +188,13 @@ pub struct SignedHeader {
     pub commit: ::std::option::Option<Commit>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LightBlock {
+    #[prost(message, optional, tag="1")]
+    pub signed_header: ::std::option::Option<SignedHeader>,
+    #[prost(message, optional, tag="2")]
+    pub validator_set: ::std::option::Option<ValidatorSet>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockMeta {
     #[prost(message, optional, tag="1")]
     pub block_id: ::std::option::Option<BlockId>,
@@ -281,11 +288,6 @@ pub struct EvidenceParams {
     /// Default is 50
     #[prost(uint32, tag="3")]
     pub max_num: u32,
-    /// Proof trial period dictates the time given for nodes accused of amnesia evidence, incorrectly
-    /// voting twice in two different rounds to respond with their respective proofs.
-    /// Default is half the max age in blocks: 50,000
-    #[prost(int64, tag="4")]
-    pub proof_trial_period: i64,
 }
 /// ValidatorParams restrict the public key types validators can use.
 /// NOTE: uses ABCI pubkey naming, not Amino names.

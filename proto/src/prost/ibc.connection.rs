@@ -8,8 +8,8 @@ pub struct MsgConnectionOpenInit {
     pub connection_id: std::string::String,
     #[prost(message, optional, tag="3")]
     pub counterparty: ::std::option::Option<Counterparty>,
-    #[prost(bytes, tag="4")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="4")]
+    pub signer: std::string::String,
 }
 /// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
 /// connection on Chain B.
@@ -39,8 +39,8 @@ pub struct MsgConnectionOpenTry {
     pub proof_consensus: std::vec::Vec<u8>,
     #[prost(message, optional, tag="10")]
     pub consensus_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="11")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="11")]
+    pub signer: std::string::String,
 }
 /// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
 /// acknowledge the change of connection state to TRYOPEN on Chain B.
@@ -66,8 +66,8 @@ pub struct MsgConnectionOpenAck {
     pub proof_consensus: std::vec::Vec<u8>,
     #[prost(message, optional, tag="8")]
     pub consensus_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="9")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="9")]
+    pub signer: std::string::String,
 }
 /// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
 /// acknowledge the change of connection state to OPEN on Chain A.
@@ -80,8 +80,8 @@ pub struct MsgConnectionOpenConfirm {
     pub proof_ack: std::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="4")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="4")]
+    pub signer: std::string::String,
 }
 // ICS03 - Connection Data Structures as defined in
 // https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures

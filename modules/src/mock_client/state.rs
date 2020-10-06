@@ -40,6 +40,10 @@ pub struct MockClientState(pub MockHeader);
 impl DomainType<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
+    pub fn latest_height(&self) -> Height {
+        (self.0).0
+    }
+
     pub fn check_header_and_update_state(
         &self,
         header: AnyHeader,
@@ -136,7 +140,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(ibc_proto::ibc::client::Height {
                     epoch_number: 0,
-                    epoch_height: value.height().value(),
+                    epoch_height: value.0.height().into(),
                 }),
             }),
         }
@@ -153,10 +157,6 @@ impl From<MockConsensusState> for AnyConsensusState {
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
         todo!()
-    }
-
-    fn height(&self) -> Height {
-        self.0.height()
     }
 
     fn root(&self) -> &CommitmentRoot {
