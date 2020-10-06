@@ -5,8 +5,11 @@ use tendermint_rpc::{SubscriptionClient, WebSocketClient};
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
 
-use futures::stream::select_all;
-use tracing::{debug, info};
+use futures::{stream::select_all, Stream};
+use tracing::{debug, error, info};
+
+type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
+type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
 /// Connect to a TM node, receive push events over a websocket and filter them for the
 /// event handler.
@@ -20,8 +23,8 @@ pub struct EventMonitor {
     node_addr: net::Address,
     /// Queries
     event_queries: Vec<String>,
-    /// Subscriptions
-    subscriptions: Vec<Subscription>,
+    /// All subscriptions combined in a single stream
+    subscriptions: Box<SubscriptionStream>,
 }
 
 impl EventMonitor {
@@ -44,24 +47,21 @@ impl EventMonitor {
             websocket_client,
             channel_to_handler,
             node_addr: rpc_addr.clone(),
-            subscriptions: Vec::with_capacity(event_queries.len()),
             event_queries,
+            subscriptions: Box::new(futures::stream::empty()),
         })
     }
 
-    /// Terminate and clear the current subscriptions, and subscribe again to all queries.
+    /// Clear the current subscriptions, and subscribe again to all queries.
     pub async fn subscribe(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let count = self.subscriptions.len();
-        let subscriptions = std::mem::replace(&mut self.subscriptions, Vec::with_capacity(count));
-
-        for subscription in subscriptions {
-            subscription.terminate().await?;
-        }
+        let mut subscriptions = vec![];
 
         for query in &self.event_queries {
             let subscription = self.websocket_client.subscribe(query.clone()).await?;
-            self.subscriptions.push(subscription);
+            subscriptions.push(subscription);
         }
+
+        self.subscriptions = Box::new(select_all(subscriptions));
 
         Ok(())
     }
@@ -98,18 +98,22 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     pub async fn collect_events(&mut self) -> Result<(), TMError> {
-        if let Some(event) = select_all(&mut self.subscriptions).next().await {
-            match event {
-                Ok(event) => {
-                    if let Ok(ibc_events) = ibc::events::get_all_events(event) {
-                        // TODO - send_timeout()?
-                        self.channel_to_handler
-                            .send((self.chain_id, ibc_events))
-                            .await?;
+        tokio::select! {
+            Some(event) = self.subscriptions.next() => {
+                match event {
+                    Ok(event) => {
+                        if let Ok(ibc_events) = ibc::events::get_all_events(event) {
+                            // TODO - send_timeout()?
+                            self.channel_to_handler
+                                .send((self.chain_id, ibc_events))
+                                .await?;
+                        }
+                    }
+                    Err(err) => {
+                        error!("Error on collecting events from subscriptions: {}", err);
                     }
                 }
-                Err(_e) => (), // TODO,
-            }
+            },
         }
 
         Ok(())
