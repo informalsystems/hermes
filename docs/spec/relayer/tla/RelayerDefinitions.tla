@@ -5,7 +5,7 @@
  different modules
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets
+EXTENDS Integers, FiniteSets, Sequences
 
 (********************* TYPE ANNOTATIONS FOR APALACHE ***********************)
 \* operator for type annotations
@@ -53,6 +53,21 @@ PacketCommitmentType ==
         sequence |-> Int, 
         timeoutHeight |-> Int
     ]
+   
+\* packet receipt type
+PacketReceiptType ==
+    [
+        channelID |-> STRING, 
+        sequence |-> Int 
+    ]    
+
+\* packet acknowledgement type
+PacketAcknowledgementType ==
+    [
+        channelID |-> STRING, 
+        sequence |-> Int,
+        acknowledgement |-> BOOLEAN
+    ]
 
 \* packet type
 PacketType ==
@@ -80,7 +95,10 @@ ChainStoreType ==
         height |-> Int, 
         counterpartyClientHeights |-> {Int},
         connectionEnd |-> ConnectionEndType, 
-        packetCommitment |-> {PacketCommitmentType} 
+        packetCommitments |-> {PacketCommitmentType},
+        packetsToAcknowledge |-> Seq(PacketType),
+        packetReceipts |-> {PacketReceiptType},
+        packetAcknowledgements |-> {PacketAcknowledgementType} 
     ]
 
 \* history variable type
@@ -152,28 +170,52 @@ DatagramType ==
 
 AsID(ID) == ID <: STRING
 AsInt(n) == n <: Int
+AsSetInt(S) == S <: {Int}
 AsString(s) == s <: STRING
+
 AsChannelEnd(channelEnd) == channelEnd <: ChannelEndType
 AsSetChannelEnd(CE) == CE <: {ChannelEndType}
+
 AsConnectionEnd(connectionEnd) == connectionEnd <: ConnectionEndType  
+
 AsChainStore(chainStore) == chainStore <: ChainStoreType
+
 AsHistory(history) == history <: HistoryType
+
 AsDatagram(dgr) == dgr <: DatagramType
+
 AsClientDatagram(dgr) == dgr <: ClientDatagramType
 AsSetClientDatagrams(Dgrs) == Dgrs <: {ClientDatagramType}
+
 AsConnectionDatagram(dgr) == dgr <: ConnectionDatagramType
 AsSetConnectionDatagrams(Dgrs) == Dgrs <: {ConnectionDatagramType}
+
 AsChannelDatagram(dgr) == dgr <: ChannelDatagramType
 AsSetChannelDatagrams(Dgrs) == Dgrs <: {ChannelDatagramType}
+
 AsPacketDatagram(dgr) == dgr <: PacketDatagramType
 AsSetPacketDatagrams(Dgrs) == Dgrs <: {PacketDatagramType}
+AsSeqPacketDatagrams(Dgrs) == Dgrs <: Seq(PacketDatagramType)
+
 AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
-AsSetInt(S) == S <: {Int}
+AsSeqDatagrams(Dgrs) == Dgrs <: Seq(DatagramType)
+
 AsPacket(packet) == packet <: PacketType
 AsSetPacket(P) == P <: {PacketType}
-AsSetPacketCommitment(P) == P <: {PacketCommitmentType}
+AsSeqPacket(P) == P <: Seq(PacketType)
+
+AsPacketCommitment(pc) == pc <: PacketCommitmentType
+AsSetPacketCommitment(PC) == PC <: {PacketCommitmentType}
+
+AsPacketReceipt(pr) == pr <: PacketReceiptType
+AsSetPacketReceipt(PR) == PR <: {PacketReceiptType}
+
+AsPacketAcknowledgement(pa) == pa <: PacketAcknowledgementType
+AsSetPacketAcknowledgement(PA) == PA <: {PacketAcknowledgementType}
+
 AsPacketLogEntry(logEntry) == logEntry <: PacketLogEntryType
-AsPacketLog(packetLog) == packetLog <: {PacketLogEntryType}
+AsPacketLog(packetLog) == packetLog <: Seq(PacketLogEntryType)
+
 
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
@@ -240,15 +282,28 @@ ChannelEnds(channelOrdering, maxPacketSeq) ==
          ] <: {ChannelEndType}
     
     
-(**************************** PacketCommitments ****************************
- A set of packet commitments.
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
+ Sets of packet commitments, packet receipts, packet acknowledgements.
  ***************************************************************************)
- PacketCommitments(maxHeight, maxPacketSeq) ==
+PacketCommitments(maxHeight, maxPacketSeq) ==
     [
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq, 
         timeoutHeight : 1..maxHeight
     ] <: {PacketCommitmentType} 
+    
+PacketReceipts(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        sequence : 1..maxPacketSeq
+    ] <: {PacketReceiptType}
+    
+PacketAcknowledgements(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        sequence : 1..maxPacketSeq,
+        acknowledgement : BOOLEAN
+    ] <: {PacketAcknowledgementType}
 
 (***************************** ConnectionEnds *****************************
     A set of connection end records. 
@@ -282,6 +337,17 @@ ConnectionEnds(channelOrdering, maxPacketSeq) ==
         counterpartyClientID : ClientIDs \union {nullClientID}, 
         channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
     ] <: {ConnectionEndType} 
+    
+(********************************* Packets *********************************
+ A set of packets.
+ ***************************************************************************)
+Packets(maxHeight, maxPacketSeq) ==
+    [
+        sequence : 1..maxPacketSeq,
+        timeoutHeight : 1..maxHeight,
+        srcChannelID : ChannelIDs,
+        dstChannelID : ChannelIDs
+    ] <: {PacketType}    
 
 (******************************** ChainStores ******************************
     A set of chain records. 
@@ -301,19 +367,11 @@ ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==
         height : 1..maxHeight,
         counterpartyClientHeights : SUBSET(1..maxHeight),
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq),
-        packetCommitment : SUBSET(PacketCommitments(maxHeight, maxPacketSeq))
+        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
+        packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
+        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq)),
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
     ] <: {ChainStoreType}
-
-(********************************* Packets *********************************
- A set of packets.
- ***************************************************************************)
-Packets(maxHeight, maxPacketSeq) ==
-    [
-        sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight,
-        srcChannelID : ChannelIDs,
-        dstChannelID : ChannelIDs
-    ] <: {PacketType}
 
 (******************************** Datagrams ********************************
  A set of datagrams.
@@ -352,6 +410,12 @@ Datagrams(maxHeight, maxPacketSeq) ==
     \union 
     [type : {"PacketAck"}, packet : Packets(maxHeight, maxPacketSeq), acknowledgement : BOOLEAN, proofHeight : 1..maxHeight]
     <: {DatagramType}
+    
+NullDatagram == 
+    [type |-> "null"] <: DatagramType    
+
+NullPacketLogEntry ==
+    [type |-> "null"] <: PacketLogEntryType
 
 Histories ==
     [
@@ -420,7 +484,10 @@ InitChainStore(channelOrdering) ==
     [height |-> 1,
      counterpartyClientHeights |-> AsSetInt({}), 
      connectionEnd |-> InitConnectionEnd(channelOrdering),
-     packetCommitment |-> AsSetPacketCommitment({})] <: ChainStoreType
+     packetCommitments |-> AsSetPacketCommitment({}),
+     packetReceipts |-> AsSetPacketReceipt({}),
+     packetsToAcknowledge |-> AsSeqPacket(<<>>),
+     packetAcknowledgements |-> AsSetPacketAcknowledgement({})] <: ChainStoreType
         
 
 \* Initial value of history flags         
@@ -559,5 +626,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Sep 10 15:42:52 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Sep 30 13:32:32 CEST 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

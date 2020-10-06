@@ -27,8 +27,8 @@ pub mod public_key {
         AnyPubkey(::prost_types::Any),
     }
 }
-/// PubKeyMultisigThreshold specifies a public key type which nests multiple public
-/// keys and a threshold
+/// PubKeyMultisigThreshold specifies a public key type which nests multiple
+/// public keys and a threshold
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PubKeyMultisigThreshold {
     #[prost(uint32, tag="1")]
@@ -37,8 +37,8 @@ pub struct PubKeyMultisigThreshold {
     pub public_keys: ::std::vec::Vec<PublicKey>,
 }
 /// MultiSignature wraps the signatures from a PubKeyMultisigThreshold.
-/// See cosmos.tx.v1betata1.ModeInfo.Multi for how to specify which signers signed and
-/// with which modes.
+/// See cosmos.tx.v1betata1.ModeInfo.Multi for how to specify which signers
+/// signed and with which modes.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MultiSignature {
     #[prost(bytes, repeated, tag="1")]

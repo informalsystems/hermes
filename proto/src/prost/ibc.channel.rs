@@ -8,8 +8,8 @@ pub struct MsgChannelOpenInit {
     pub channel_id: std::string::String,
     #[prost(message, optional, tag="3")]
     pub channel: ::std::option::Option<Channel>,
-    #[prost(bytes, tag="4")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="4")]
+    pub signer: std::string::String,
 }
 /// MsgChannelOpenInit  defines a msg sent by a Relayer to try to open a channel
 /// on Chain B.
@@ -27,8 +27,8 @@ pub struct MsgChannelOpenTry {
     pub proof_init: std::vec::Vec<u8>,
     #[prost(message, optional, tag="6")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="7")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="7")]
+    pub signer: std::string::String,
 }
 /// MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
 /// the change of channel state to TRYOPEN on Chain B.
@@ -44,8 +44,8 @@ pub struct MsgChannelOpenAck {
     pub proof_try: std::vec::Vec<u8>,
     #[prost(message, optional, tag="5")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="6")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="6")]
+    pub signer: std::string::String,
 }
 /// MsgChannelOpenConfirm defines a msg sent by a Relayer to Chain B to
 /// acknowledge the change of channel state to OPEN on Chain A.
@@ -59,10 +59,10 @@ pub struct MsgChannelOpenConfirm {
     pub proof_ack: std::vec::Vec<u8>,
     #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="5")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="5")]
+    pub signer: std::string::String,
 }
-/// MsgChannelOpenConfirm defines a msg sent by a Relayer to Chain A
+/// MsgChannelCloseInit defines a msg sent by a Relayer to Chain A
 /// to close a channel with Chain B.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChannelCloseInit {
@@ -70,8 +70,8 @@ pub struct MsgChannelCloseInit {
     pub port_id: std::string::String,
     #[prost(string, tag="2")]
     pub channel_id: std::string::String,
-    #[prost(bytes, tag="3")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="3")]
+    pub signer: std::string::String,
 }
 /// MsgChannelCloseConfirm defines a msg sent by a Relayer to Chain B
 /// to acknowledge the change of channel state to CLOSED on Chain A.
@@ -85,8 +85,8 @@ pub struct MsgChannelCloseConfirm {
     pub proof_init: std::vec::Vec<u8>,
     #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="5")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="5")]
+    pub signer: std::string::String,
 }
 /// MsgRecvPacket receives incoming IBC packet
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -97,8 +97,8 @@ pub struct MsgRecvPacket {
     pub proof: std::vec::Vec<u8>,
     #[prost(message, optional, tag="3")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="4")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="4")]
+    pub signer: std::string::String,
 }
 /// MsgTimeout receives timed-out packet
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -111,8 +111,8 @@ pub struct MsgTimeout {
     pub proof_height: ::std::option::Option<super::client::Height>,
     #[prost(uint64, tag="4")]
     pub next_sequence_recv: u64,
-    #[prost(bytes, tag="5")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="5")]
+    pub signer: std::string::String,
 }
 /// MsgTimeoutOnClose timed-out packet upon counterparty channel closure.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -127,8 +127,8 @@ pub struct MsgTimeoutOnClose {
     pub proof_height: ::std::option::Option<super::client::Height>,
     #[prost(uint64, tag="5")]
     pub next_sequence_recv: u64,
-    #[prost(bytes, tag="6")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="6")]
+    pub signer: std::string::String,
 }
 /// MsgAcknowledgement receives incoming IBC acknowledgement
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -141,8 +141,8 @@ pub struct MsgAcknowledgement {
     pub proof: std::vec::Vec<u8>,
     #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="5")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="5")]
+    pub signer: std::string::String,
 }
 /// Channel defines pipeline for exactly-once packet delivery between specific
 /// modules on separate blockchains, which has at least one end capable of
@@ -158,8 +158,8 @@ pub struct Channel {
     /// counterparty channel end
     #[prost(message, optional, tag="3")]
     pub counterparty: ::std::option::Option<Counterparty>,
-    /// list of connection identifiers, in order, along which packets sent on this
-    /// channel will travel
+    /// list of connection identifiers, in order, along which packets sent on
+    /// this channel will travel
     #[prost(string, repeated, tag="4")]
     pub connection_hops: ::std::vec::Vec<std::string::String>,
     /// opaque channel version, which is agreed upon during the handshake
@@ -179,8 +179,8 @@ pub struct IdentifiedChannel {
     /// counterparty channel end
     #[prost(message, optional, tag="3")]
     pub counterparty: ::std::option::Option<Counterparty>,
-    /// list of connection identifiers, in order, along which packets sent on this
-    /// channel will travel
+    /// list of connection identifiers, in order, along which packets sent on
+    /// this channel will travel
     #[prost(string, repeated, tag="4")]
     pub connection_hops: ::std::vec::Vec<std::string::String>,
     /// opaque channel version, which is agreed upon during the handshake
@@ -206,9 +206,9 @@ pub struct Counterparty {
 /// Packet defines a type that carries data across different chains through IBC
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Packet {
-    /// number corresponds to the order of sends and receives, where a Packet with
-    /// an earlier sequence number must be sent and received before a Packet with a
-    /// later sequence number.
+    /// number corresponds to the order of sends and receives, where a Packet
+    /// with an earlier sequence number must be sent and received before a Packet
+    /// with a later sequence number.
     #[prost(uint64, tag="1")]
     pub sequence: u64,
     /// identifies the port on the sending chain.
@@ -249,6 +249,29 @@ pub struct PacketAckCommitment {
     /// packet commitment hash.
     #[prost(bytes, tag="4")]
     pub hash: std::vec::Vec<u8>,
+}
+/// Acknowledgement is the recommended acknowledgement format to be used by
+/// app-specific protocols.
+/// NOTE: The field numbers 21 and 22 were explicitly chosen to avoid accidental
+/// conflicts with other protobuf message formats used for acknowledgements.
+/// The first byte of any message with this format will be the non-ASCII values
+/// `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
+/// https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Acknowledgement {
+    /// response contains either a result or an error and must be non-empty
+    #[prost(oneof="acknowledgement::Response", tags="21, 22")]
+    pub response: ::std::option::Option<acknowledgement::Response>,
+}
+pub mod acknowledgement {
+    /// response contains either a result or an error and must be non-empty
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Response {
+        #[prost(bytes, tag="21")]
+        Result(std::vec::Vec<u8>),
+        #[prost(string, tag="22")]
+        Error(std::string::String),
+    }
 }
 /// State defines if a channel is in one of the following states:
 /// CLOSED, INIT, TRYOPEN, OPEN or UNINITIALIZED.
@@ -536,10 +559,10 @@ pub struct QueryPacketAcknowledgementResponse {
     #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::client::Height>,
 }
-/// QueryUnrelayedPacketsRequest is the request type for the
-/// Query/UnrelayedPackets RPC method
+/// QueryUnreceivedPacketsRequest is the request type for the
+/// Query/UnreceivedPackets RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnrelayedPacketsRequest {
+pub struct QueryUnreceivedPacketsRequest {
     /// port unique identifier
     #[prost(string, tag="1")]
     pub port_id: std::string::String,
@@ -549,16 +572,37 @@ pub struct QueryUnrelayedPacketsRequest {
     /// list of packet sequences
     #[prost(uint64, repeated, tag="3")]
     pub packet_commitment_sequences: ::std::vec::Vec<u64>,
-    /// flag indicating if the return value is packet commitments or
-    /// acknowledgements
-    #[prost(bool, tag="4")]
-    pub acknowledgements: bool,
 }
-/// QueryUnrelayedPacketsResponse is the request type for the
-/// Query/UnrelayedPacketCommitments RPC method
+/// QueryUnreceivedPacketsResponse is the response type for the
+/// Query/UnreceivedPacketCommitments RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUnrelayedPacketsResponse {
-    /// list of unrelayed packet sequences
+pub struct QueryUnreceivedPacketsResponse {
+    /// list of unreceived packet sequences
+    #[prost(uint64, repeated, tag="1")]
+    pub sequences: ::std::vec::Vec<u64>,
+    /// query block height
+    #[prost(message, optional, tag="2")]
+    pub height: ::std::option::Option<super::client::Height>,
+}
+/// QueryUnrelayedAcksRequest is the request type for the
+/// Query/UnrelayedAcks RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnrelayedAcksRequest {
+    /// port unique identifier
+    #[prost(string, tag="1")]
+    pub port_id: std::string::String,
+    /// channel unique identifier
+    #[prost(string, tag="2")]
+    pub channel_id: std::string::String,
+    /// list of commitment sequences
+    #[prost(uint64, repeated, tag="3")]
+    pub packet_commitment_sequences: ::std::vec::Vec<u64>,
+}
+/// QueryUnrelayedAcksResponse is the response type for the
+/// Query/UnrelayedAcks RPC method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryUnrelayedAcksResponse {
+    /// list of unrelayed acknowledgement sequences
     #[prost(uint64, repeated, tag="1")]
     pub sequences: ::std::vec::Vec<u64>,
     /// query block height

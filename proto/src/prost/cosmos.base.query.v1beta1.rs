@@ -22,13 +22,14 @@ pub struct PageRequest {
     #[prost(uint64, tag="3")]
     pub limit: u64,
     /// count_total is set to true  to indicate that the result set should include
-    /// a count of the total number of items available for pagination in UIs. count_total
-    /// is only respected when offset is used. It is ignored when key is set.
+    /// a count of the total number of items available for pagination in UIs.
+    /// count_total is only respected when offset is used. It is ignored when key
+    /// is set.
     #[prost(bool, tag="4")]
     pub count_total: bool,
 }
-/// PageResponse is to be embedded in gRPC response messages where the corresponding
-/// request message has used PageRequest.
+/// PageResponse is to be embedded in gRPC response messages where the
+/// corresponding request message has used PageRequest.
 ///
 ///  message SomeResponse {
 ///          repeated Bar results = 1;

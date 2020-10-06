@@ -34,12 +34,16 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 /// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl DomainType<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
+    pub fn latest_height(&self) -> Height {
+        (self.0).0
+    }
+
     pub fn check_header_and_update_state(
         &self,
         header: AnyHeader,
@@ -136,7 +140,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(ibc_proto::ibc::client::Height {
                     epoch_number: 0,
-                    epoch_height: value.height().value(),
+                    epoch_height: value.0.height().into(),
                 }),
             }),
         }
@@ -152,10 +156,6 @@ impl From<MockConsensusState> for AnyConsensusState {
 
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
-        todo!()
-    }
-
-    fn height(&self) -> Height {
         todo!()
     }
 

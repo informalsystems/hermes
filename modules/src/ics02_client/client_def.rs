@@ -118,6 +118,17 @@ pub enum AnyClientState {
     Mock(MockClientState),
 }
 
+impl AnyClientState {
+    pub fn height(&self) -> Height {
+        match self {
+            AnyClientState::Tendermint(tcs) => tcs.latest_height(),
+
+            #[cfg(test)]
+            AnyClientState::Mock(mcs) => mcs.latest_height(),
+        }
+    }
+}
+
 impl DomainType<Any> for AnyClientState {}
 
 impl TryFrom<Any> for AnyClientState {
@@ -245,10 +256,6 @@ impl From<AnyConsensusState> for Any {
 
 impl ConsensusState for AnyConsensusState {
     fn client_type(&self) -> ClientType {
-        todo!()
-    }
-
-    fn height(&self) -> Height {
         todo!()
     }
 
@@ -483,7 +490,9 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
-            frozen_height: 0.into(),
+            frozen_height: 0_u64.into(),
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         });
 
         let raw: Any = tm_client_state.clone().into();
