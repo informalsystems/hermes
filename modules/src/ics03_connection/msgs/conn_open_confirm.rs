@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use tendermint_proto::DomainType;
@@ -10,6 +10,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::Proofs;
 use crate::tx_msg::Msg;
+use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenConfirm` message.
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
@@ -77,11 +78,8 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::new(
-                msg.signer[..20]
-                    .try_into()
-                    .map_err(|e| Kind::InvalidSigner.context(e))?,
-            ),
+            signer: AccountId::from_str(msg.signer.as_str())
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
@@ -95,7 +93,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
                 epoch_number: 0,
                 epoch_height: ics_msg.proofs.height().value(),
             }),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }
@@ -105,7 +103,7 @@ pub mod test_util {
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_proof};
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
@@ -115,7 +113,7 @@ pub mod test_util {
                 epoch_number: 0,
                 epoch_height: 10,
             }),
-            signer: Vec::from(get_dummy_account_id().as_bytes()),
+            signer: get_dummy_account_id_raw(),
         }
     }
 }

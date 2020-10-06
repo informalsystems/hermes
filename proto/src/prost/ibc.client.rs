@@ -1,4 +1,4 @@
-/// IdentifiedClientState defines a client state with additional client
+/// IdentifiedClientState defines a client state with an additional client
 /// identifier field.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentifiedClientState {
@@ -9,6 +9,16 @@ pub struct IdentifiedClientState {
     #[prost(message, optional, tag="2")]
     pub client_state: ::std::option::Option<::prost_types::Any>,
 }
+/// ConsensusStateWithHeight defines a consensus state with an additional height field.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusStateWithHeight {
+    /// consensus state height
+    #[prost(message, optional, tag="1")]
+    pub height: ::std::option::Option<Height>,
+    /// consensus state
+    #[prost(message, optional, tag="2")]
+    pub consensus_state: ::std::option::Option<::prost_types::Any>,
+}
 /// ClientConsensusStates defines all the stored consensus states for a given
 /// client.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -16,9 +26,27 @@ pub struct ClientConsensusStates {
     /// client identifier
     #[prost(string, tag="1")]
     pub client_id: std::string::String,
-    /// consensus states associated with the client
+    /// consensus states and their heights associated with the client
     #[prost(message, repeated, tag="2")]
-    pub consensus_states: ::std::vec::Vec<::prost_types::Any>,
+    pub consensus_states: ::std::vec::Vec<ConsensusStateWithHeight>,
+}
+/// ClientUpdateProposal is a governance proposal. If it passes, the client is
+/// updated with the provided header. The update may fail if the header is not
+/// valid given certain conditions specified by the client implementation.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ClientUpdateProposal {
+    /// the title of the update proposal
+    #[prost(string, tag="1")]
+    pub title: std::string::String,
+    /// the description of the proposal
+    #[prost(string, tag="2")]
+    pub description: std::string::String,
+    /// the client identifier for the client to be updated if the proposal passes
+    #[prost(string, tag="3")]
+    pub client_id: std::string::String,
+    /// the header used to update the client if the proposal passes
+    #[prost(message, optional, tag="4")]
+    pub header: ::std::option::Option<::prost_types::Any>,
 }
 /// MsgCreateClient defines a message to create an IBC client
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -34,8 +62,8 @@ pub struct MsgCreateClient {
     #[prost(message, optional, tag="3")]
     pub consensus_state: ::std::option::Option<::prost_types::Any>,
     /// signer address
-    #[prost(bytes, tag="4")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="4")]
+    pub signer: std::string::String,
 }
 /// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
 /// the given header.
@@ -48,8 +76,8 @@ pub struct MsgUpdateClient {
     #[prost(message, optional, tag="2")]
     pub header: ::std::option::Option<::prost_types::Any>,
     /// signer address
-    #[prost(bytes, tag="3")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="3")]
+    pub signer: std::string::String,
 }
 /// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
 /// light client misbehaviour.
@@ -62,8 +90,8 @@ pub struct MsgSubmitMisbehaviour {
     #[prost(message, optional, tag="2")]
     pub misbehaviour: ::std::option::Option<::prost_types::Any>,
     /// signer address
-    #[prost(bytes, tag="3")]
-    pub signer: std::vec::Vec<u8>,
+    #[prost(string, tag="3")]
+    pub signer: std::string::String,
 }
 /// Height is a monotonically increasing data type
 /// that can be compared against another Height for the purposes of updating and
@@ -141,24 +169,27 @@ pub struct QueryClientStatesResponse {
     #[prost(message, optional, tag="2")]
     pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageResponse>,
 }
-/// QueryConsensusStateRequest is the request type for the Query/ConsensusState RPC method. Besides
-/// the consensus state, it includes a proof and the height from which the proof was retrieved.
+/// QueryConsensusStateRequest is the request type for the Query/ConsensusState
+/// RPC method. Besides the consensus state, it includes a proof and the height
+/// from which the proof was retrieved.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStateRequest {
     /// client identifier
     #[prost(string, tag="1")]
     pub client_id: std::string::String,
-    /// consensus state epoch number 
+    /// consensus state epoch number
     #[prost(uint64, tag="2")]
     pub epoch_number: u64,
     /// consensus state epoch height
     #[prost(uint64, tag="3")]
     pub epoch_height: u64,
-    /// latest_height overrrides the height field and queries the latest stored ConsensusState
+    /// latest_height overrrides the height field and queries the latest stored
+    /// ConsensusState
     #[prost(bool, tag="4")]
     pub latest_height: bool,
 }
-/// QueryConsensusStateResponse is the response type for the Query/ConsensusState RPC method
+/// QueryConsensusStateResponse is the response type for the Query/ConsensusState
+/// RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStateResponse {
     /// consensus state associated with the client identifier at the given height
@@ -174,7 +205,8 @@ pub struct QueryConsensusStateResponse {
     #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<Height>,
 }
-/// QueryConsensusStatesRequest is the request type for the Query/ConsensusStates RPC method.
+/// QueryConsensusStatesRequest is the request type for the Query/ConsensusStates
+/// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStatesRequest {
     /// client identifier
@@ -184,12 +216,13 @@ pub struct QueryConsensusStatesRequest {
     #[prost(message, optional, tag="2")]
     pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageRequest>,
 }
-/// QueryConsensusStatesResponse is the response type for the Query/ConsensusStates RPC method
+/// QueryConsensusStatesResponse is the response type for the
+/// Query/ConsensusStates RPC method
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConsensusStatesResponse {
     /// consensus states associated with the identifier
     #[prost(message, repeated, tag="1")]
-    pub consensus_states: ::std::vec::Vec<::prost_types::Any>,
+    pub consensus_states: ::std::vec::Vec<ConsensusStateWithHeight>,
     /// pagination response
     #[prost(message, optional, tag="2")]
     pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageResponse>,

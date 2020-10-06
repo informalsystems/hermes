@@ -20,6 +20,8 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub latest_height: Height,
     pub frozen_height: Height,
+    pub allow_update_after_expiry: bool,
+    pub allow_update_after_misbehaviour: bool
 }
 
 impl DomainType<RawClientState> for ClientState {}
@@ -33,6 +35,8 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        allow_update_after_expiry: bool,
+        allow_update_after_misbehaviour: bool
         // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
@@ -74,6 +78,8 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            allow_update_after_expiry,
+            allow_update_after_misbehaviour
         })
     }
 }
@@ -126,6 +132,8 @@ impl TryFrom<RawClientState> for ClientState {
                 raw.frozen_height
                     .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
             ),
+            allow_update_after_expiry: raw.allow_update_after_expiry,
+            allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour
         })
     }
 }
@@ -147,6 +155,8 @@ impl From<ClientState> for RawClientState {
                 epoch_height: value.latest_height.value(),
             }), // Todo: upgrade to tendermint v0.17.0 Height
             proof_specs: vec![], // Todo: Why is that not stored?
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false
         }
     }
 }
