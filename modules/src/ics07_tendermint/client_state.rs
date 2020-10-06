@@ -144,7 +144,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.clone().chain_id,
+            chain_id: value.chain_id.clone(),
             trust_level: None, // Todo: Why is trust_level commented out?
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
