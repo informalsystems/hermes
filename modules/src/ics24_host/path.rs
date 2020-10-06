@@ -11,7 +11,7 @@ pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),
-    ClientConsensusState(ClientId, u64),
+    ClientConsensusState(ClientId, u64, u64),
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
@@ -46,8 +46,8 @@ impl Display for Path {
         match &self {
             Path::ClientType(id) => write!(f, "clients/{}/clientType", id),
             Path::ClientState(id) => write!(f, "clients/{}/clientState", id),
-            Path::ClientConsensusState(id, height) => {
-                write!(f, "clients/{}/consensusState/{}", id, height)
+            Path::ClientConsensusState(id, epoch, height) => {
+                write!(f, "clients/{}/consensusState/{}-{}", id, epoch, height)
             }
             Path::ClientConnections(id) => write!(f, "clients/{}/connections", id),
             Path::Connections(id) => write!(f, "connections/{}", id),

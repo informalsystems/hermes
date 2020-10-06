@@ -103,6 +103,9 @@ pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
+    #[options(free, help = "epoch of the client's consensus state to query")]
+    consensus_epoch: Option<u64>,
+
     #[options(free, help = "height of the client's consensus state to query")]
     consensus_height: Option<u64>,
 
@@ -116,6 +119,7 @@ pub struct QueryClientConsensusCmd {
 #[derive(Debug)]
 struct QueryClientConsensusOptions {
     client_id: ClientId,
+    consensus_epoch: u64,
     consensus_height: u64,
     height: u64,
     proof: bool,
@@ -129,10 +133,11 @@ impl QueryClientConsensusCmd {
         let (chain_config, client_id) =
             validate_common_options(&self.chain_id, &self.client_id, config)?;
 
-        match self.consensus_height {
-            Some(consensus_height) => {
+        match (self.consensus_epoch, self.consensus_height) {
+            (Some(consensus_epoch), Some(consensus_height)) => {
                 let opts = QueryClientConsensusOptions {
                     client_id,
+                    consensus_epoch,
                     consensus_height,
                     height: match self.height {
                         Some(h) => h,
@@ -145,7 +150,9 @@ impl QueryClientConsensusCmd {
                 };
                 Ok((chain_config, opts))
             }
-            None => Err("missing client consensus height".to_string()),
+            (Some(consensus_epoch), None) => Err("missing client consensus height".to_string()),
+
+            (None, _) => Err("missing client consensus epoch".to_string()),
         }
     }
 }
@@ -172,7 +179,7 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<AnyConsensusState, Error> = chain
             .query(
-                ClientConsensusState(opts.client_id, opts.consensus_height),
+                ClientConsensusState(opts.client_id, opts.consensus_epoch, opts.consensus_height),
                 opts.height,
                 opts.proof,
             )
