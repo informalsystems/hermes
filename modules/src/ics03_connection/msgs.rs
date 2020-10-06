@@ -40,7 +40,6 @@ pub mod test_util {
 
     use ibc_proto::ibc::commitment::MerklePrefix;
     use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use serde_json::from_str;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -53,7 +52,7 @@ pub mod test_util {
     }
 
     pub fn get_dummy_account_id() -> AccountId {
-        AccountId::from_str(from_str(&get_dummy_account_id_raw()).unwrap()).unwrap()
+        AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
     }
 
     pub fn get_dummy_counterparty() -> RawCounterparty {

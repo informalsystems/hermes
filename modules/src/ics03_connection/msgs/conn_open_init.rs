@@ -112,7 +112,9 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_counterparty};
+    use crate::ics03_connection::msgs::test_util::{
+        get_dummy_account_id_raw, get_dummy_counterparty,
+    };
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.

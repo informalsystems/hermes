@@ -1,7 +1,7 @@
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics23_commitment::{commitment::CommitmentPrefix, merkle::apply_prefix};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::{ics02_client::client_def::ClientDef, ics24_host::identifier::ClientId};
-use crate::{ics02_client::state::ClientState, ics23_commitment::commitment::CommitmentProof};
 use crate::{ics03_connection::connection::ConnectionEnd, ics24_host::Path};
 
 use crate::mock_client::header::MockHeader;

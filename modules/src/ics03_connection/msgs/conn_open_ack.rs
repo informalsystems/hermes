@@ -172,7 +172,7 @@ pub mod test_util {
     use ibc_proto::ibc::client::Height;
     use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_proof, get_dummy_account_id_raw};
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {

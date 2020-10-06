@@ -12,9 +12,9 @@ use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::client::MsgCreateClient as RawMsgCreateClient;
+use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::{DomainType, Error, Kind};
-use std::str::FromStr;
 
 const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
 
@@ -163,7 +163,7 @@ mod tests {
             latest_height: tm_header.signed_header.header.height,
             frozen_height: 0_u64.into(),
             allow_update_after_expiry: false,
-            allow_update_after_misbehaviour: false
+            allow_update_after_misbehaviour: false,
         });
 
         let msg = MsgCreateAnyClient {

@@ -7,9 +7,6 @@ pub trait ConsensusState: Clone + std::fmt::Debug {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Height of consensus state
-    fn height(&self) -> Height;
-
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
