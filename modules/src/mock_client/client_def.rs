@@ -43,7 +43,7 @@ impl ClientDef for MockClient {
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client_prefixed_path =
             // TODO - will pick epoch from new type Height
-            Path::ClientConsensusState(client_id.clone(), 0, height.value()).to_string();
+            Path::ClientConsensusState{client_id: client_id.clone(), epoch: 0, height: height.value()}.to_string();
 
         let _path = apply_prefix(prefix, client_prefixed_path)?;
 

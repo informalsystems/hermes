@@ -179,7 +179,11 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<AnyConsensusState, Error> = chain
             .query(
-                ClientConsensusState(opts.client_id, opts.consensus_epoch, opts.consensus_height),
+                ClientConsensusState {
+                    client_id: opts.client_id,
+                    epoch: opts.consensus_epoch,
+                    height: opts.consensus_height,
+                },
                 opts.height,
                 opts.proof,
             )
