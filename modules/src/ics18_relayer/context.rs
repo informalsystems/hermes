@@ -1,4 +1,3 @@
-use crate::handler::HandlerOutput;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
@@ -19,6 +18,5 @@ pub trait ICS18Context {
     fn query_latest_header(&self) -> Option<AnyHeader>;
 
     /// Interface that the relayer uses to submit a datagram to this chain.
-    /// TODO: Unclear what should be the return type of this.
-    fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error>;
+    fn send(&mut self, msg: ICS26Envelope) -> Result<(), Error>;
 }

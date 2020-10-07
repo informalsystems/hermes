@@ -83,7 +83,8 @@ impl ICS18Context for MockICS18Context {
             .header(latest_height)
     }
 
-    fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
-        self.recv(msg)
+    fn send(&mut self, msg: ICS26Envelope) -> Result<(), Error> {
+        self.recv(msg)?;
+        Ok(())
     }
 }
