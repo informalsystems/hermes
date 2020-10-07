@@ -56,6 +56,8 @@ mod tests {
     use crate::chain::local::LocalChain;
     use crate::config::LocalChainConfig;
     use ibc::ics18_relayer::context::ICS18Context;
+    use ibc::ics18_relayer::utils::create_client_update_datagram;
+    use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
     use std::str::FromStr;
     use tendermint::chain::Id as ChainId;
@@ -101,22 +103,29 @@ mod tests {
     #[test]
     /// Tests the relayer `create_client_update_datagram` of ICS18 against two generated
     /// Tendermint chains (see `testgen` crate).
+    /// Note: This is a more realistic version of test `client_update_ping_pong` of ICS18.
     fn tm_chains_ping_pong() {
         let update_count = 4; // Number of ping-pong (client update) iterations.
+        let client_on_a_for_b = ClientId::from_str("client_on_a_for_b").unwrap();
+        let client_on_b_for_a = ClientId::from_str("client_on_b_for_a").unwrap();
+
         let cfg_a = LocalChainConfig {
             id: ChainId::from_str("chain-a").unwrap(),
-            client_ids: vec![String::from("client_on_a_for_b")],
+            client_ids: vec![client_on_a_for_b.to_string()],
         };
         let cfg_b = LocalChainConfig {
             id: ChainId::from_str("chain-b").unwrap(),
-            client_ids: vec![String::from("client_on_b_for_a")],
+            client_ids: vec![client_on_b_for_a.to_string()],
         };
 
-        let chain_a = LocalChain::from_config(cfg_a);
-        let chain_b = LocalChain::from_config(cfg_b);
+        let chain_a = LocalChain::from_config(cfg_a).unwrap();
+        let chain_b = LocalChain::from_config(cfg_b).unwrap();
 
         for _i in 0..update_count {
-            // update_client submit, then advance chain
+            let a_latest_header = chain_a.query_latest_header().unwrap();
+            let client_msg_b_res =
+                create_client_update_datagram(&chain_b, &client_on_b_for_a, a_latest_header);
+            assert!(client_msg_b_res.is_ok())
         }
     }
 }

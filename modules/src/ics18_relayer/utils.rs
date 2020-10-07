@@ -2,10 +2,12 @@ use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
 use crate::ics02_client::state::ClientState;
-use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
+
+use std::str::FromStr;
+use tendermint::account::Id as AccountId;
 
 /// Creates a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
@@ -44,10 +46,11 @@ where
     };
 
     // Client on destination chain can be updated.
+    // TODO: signer hardcode fix.
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
         header: src_header,
-        signer: get_dummy_account_id(),
+        signer: AccountId::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap(),
     }))
 }
 
