@@ -1,6 +1,7 @@
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::Error;
+use hex;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
@@ -9,7 +10,6 @@ use ibc::tx_msg::Msg;
 use prost_types::Any;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
-use hex;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
