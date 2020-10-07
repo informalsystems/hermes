@@ -12,13 +12,13 @@ fn main() {
 
     // Paths
     let proto_paths = [
-        "../proto/definitions/mock".to_string(),
+        //"../proto/definitions/mock".to_string(),
         format!("{}/proto/ibc", sdk_dir),
         format!("{}/proto/cosmos/tx", sdk_dir),
         format!("{}/proto/cosmos/base", sdk_dir),
     ];
     let proto_includes_paths = [
-        "../proto/definitions".to_string(),
+        //"../proto/definitions".to_string(),
         format!("{}/proto", sdk_dir),
         format!("{}/third_party/proto", sdk_dir),
     ];
@@ -44,5 +44,7 @@ fn main() {
     let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
     // Compile all proto files
-    prost_build::compile_protos(&protos, &includes).unwrap();
+    let mut pb = prost_build::Config::new();
+    pb.extern_path(".tendermint", "::tendermint_proto");
+    pb.compile_protos(&protos, &includes).unwrap();
 }
