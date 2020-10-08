@@ -77,7 +77,7 @@ impl ConnectionReader for MockConnectionContext {
     fn chain_consensus_states_history_size(&self) -> usize {
         self.chain_context().max_size()
     }
-    
+
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])
     }
