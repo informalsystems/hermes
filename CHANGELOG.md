@@ -1,5 +1,71 @@
 # Changelog
 
+## v0.0.4
+*September 30, 2020*
+
+This release focuses on the refinement of the IBC message processor framework, protobuf migration,
+adding (de)serialization capability to ICS02 and ICS03 messages and structures.
+
+Additional highlights:
+- Added initial implementations for the ICS26 (routing module) and ICS18 (basic relayer algorithms module) for use in testing.
+- Also added support for packet handling in the relayer algorithm specifications.
+
+### BREAKING CHANGES:
+
+### FEATURES:
+- [modules/ics03] ICS03 Ack and Confirm message processors ([#223])
+- [relayer-cli] Relayer CLIs for client messages ([#207])
+- [relayer-cli] Relayer CLIs for connection-open-init ([#206])
+- [modules] Routing module minimal implementation for MVP ([#159], [#232])
+- [spec/relayer] Relayer specification for packet handling ([#229], [#234], [#237])
+- [spec/relayer] Basic packet handling in TLA+([#124])
+- [modules] Basic relayer functionality: a test with ClientUpdate ping-pong between two mocked chains ([#276])
+
+### IMPROVEMENTS:
+- [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
+- [modules] & [ibc-proto] Several improvements to message processors, among which ([#218]):
+    - ICS03 connection handshake protocol initial implementation and tests ([#160])
+    - Add capability to decode from protobuf Any* type into Tendermint and Mock client states 
+    - Cleanup Any* client wrappers related code
+    - Migrate handlers to newer protobuf definitions ([#226])
+    - Extend client context mock ([#221])
+- [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
+- [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
+- [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
+- [relayer] Update to tendermint v.0.16 and integrate with the new light client implementation ([#90], [#243])
+
+### BUG FIXES:
+- [relayer-cli] Fix for client query subcommands ([#231])
+- [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#209], [#213])
+
+[#90]: https://github.com/informalsystems/ibc-rs/issues/90
+[#124]: https://github.com/informalsystems/ibc-rs/issues/124
+[#142]: https://github.com/informalsystems/ibc-rs/issues/142
+[#159]: https://github.com/informalsystems/ibc-rs/issues/159
+[#160]: https://github.com/informalsystems/ibc-rs/issues/160
+[#165]: https://github.com/informalsystems/ibc-rs/issues/165
+[#206]: https://github.com/informalsystems/ibc-rs/issues/206
+[#207]: https://github.com/informalsystems/ibc-rs/issues/207
+[#209]: https://github.com/informalsystems/ibc-rs/issues/209
+[#213]: https://github.com/informalsystems/ibc-rs/issues/213
+[#218]: https://github.com/informalsystems/ibc-rs/issues/218
+[#221]: https://github.com/informalsystems/ibc-rs/issues/221
+[#223]: https://github.com/informalsystems/ibc-rs/issues/223
+[#226]: https://github.com/informalsystems/ibc-rs/issues/226
+[#229]: https://github.com/informalsystems/ibc-rs/issues/229
+[#231]: https://github.com/informalsystems/ibc-rs/issues/231
+[#232]: https://github.com/informalsystems/ibc-rs/issues/232
+[#234]: https://github.com/informalsystems/ibc-rs/issues/234
+[#237]: https://github.com/informalsystems/ibc-rs/issues/237
+[#243]: https://github.com/informalsystems/ibc-rs/issues/243
+[#249]: https://github.com/informalsystems/ibc-rs/issues/249
+[#253]: https://github.com/informalsystems/ibc-rs/issues/253
+[#276]: https://github.com/informalsystems/ibc-rs/issues/276
+[ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
+[disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
+[spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake
+[relayer]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
+
 ## v0.0.3
 *September 1, 2020*
 

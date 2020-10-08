@@ -1,11 +1,11 @@
 {
   "commit": {
     "height": "9",
-    "round": "0",
+    "round": 0,
     "block_id": {
       "hash": "760E050B2404A4BC661635CA552FF45876BCD927C367ADF88961E389C01D32FF",
       "parts": {
-        "total": "1",
+        "total": 1,
         "hash": "485070D01F9543827B3F9BAF11BDCFFBFD2BDED0B63D7192FA55649B94A1D5DE"
       }
     },
@@ -31,7 +31,7 @@
     "last_block_id": {
       "hash": "42C70F10EF1835CED7248114514B4EF3D06F0D7FD24F6486E3315DEE310D305C",
       "parts": {
-        "total": "1",
+        "total": 1,
         "hash": "F51D1B8E6ED859CE23F6B0539E0101653ED4025B13DAA3E76FCC779D5FD96ABE"
       }
     },

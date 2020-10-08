@@ -10,6 +10,7 @@ use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
+use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -90,11 +91,8 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .try_into()?,
-            signer: AccountId::new(
-                msg.signer[..20]
-                    .try_into()
-                    .map_err(|e| Kind::InvalidSigner.context(e))?,
-            ),
+            signer: AccountId::from_str(msg.signer.as_str())
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
@@ -105,7 +103,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }
@@ -114,7 +112,9 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_counterparty};
+    use crate::ics03_connection::msgs::test_util::{
+        get_dummy_account_id_raw, get_dummy_counterparty,
+    };
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
@@ -123,7 +123,7 @@ pub mod test_util {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            signer: Vec::from(get_dummy_account_id().as_bytes()),
+            signer: get_dummy_account_id_raw(),
         }
     }
 }

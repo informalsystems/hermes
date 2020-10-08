@@ -11,7 +11,11 @@ pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),
-    ClientConsensusState(ClientId, u64),
+    ClientConsensusState {
+        client_id: ClientId,
+        epoch: u64,
+        height: u64,
+    },
     ClientConnections(ClientId),
     Connections(ConnectionId),
     Ports(PortId),
@@ -19,8 +23,16 @@ pub enum Path {
     SeqSends(PortId, ChannelId),
     SeqRecvs(PortId, ChannelId),
     SeqAcks(PortId, ChannelId),
-    Commitments(PortId, ChannelId, u64),
-    Acks(PortId, ChannelId, u64),
+    Commitments {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+    },
+    Acks {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+    },
 }
 
 impl Path {
@@ -44,14 +56,20 @@ impl Path {
 impl Display for Path {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match &self {
-            Path::ClientType(id) => write!(f, "clients/{}/clientType", id),
-            Path::ClientState(id) => write!(f, "clients/{}/clientState", id),
-            Path::ClientConsensusState(id, height) => {
-                write!(f, "clients/{}/consensusState/{}", id, height)
-            }
-            Path::ClientConnections(id) => write!(f, "clients/{}/connections", id),
-            Path::Connections(id) => write!(f, "connections/{}", id),
-            Path::Ports(id) => write!(f, "ports/{}", id),
+            Path::ClientType(client_id) => write!(f, "clients/{}/clientType", client_id),
+            Path::ClientState(client_id) => write!(f, "clients/{}/clientState", client_id),
+            Path::ClientConsensusState {
+                client_id,
+                epoch,
+                height,
+            } => write!(
+                f,
+                "clients/{}/consensusState/{}-{}",
+                client_id, epoch, height
+            ),
+            Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
+            Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
+            Path::Ports(port_id) => write!(f, "ports/{}", port_id),
             Path::ChannelEnds(port_id, channel_id) => {
                 write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)
             }
@@ -70,15 +88,23 @@ impl Display for Path {
                 "seqAcks/ports/{}/channels/{}/nextSequenceAck",
                 port_id, channel_id
             ),
-            Path::Commitments(port_id, channel_id, seq) => write!(
+            Path::Commitments {
+                port_id,
+                channel_id,
+                sequence,
+            } => write!(
                 f,
                 "commitments/ports/{}/channels/{}/packets/{}",
-                port_id, channel_id, seq
+                port_id, channel_id, sequence
             ),
-            Path::Acks(port_id, channel_id, seq) => write!(
+            Path::Acks {
+                port_id,
+                channel_id,
+                sequence,
+            } => write!(
                 f,
                 "acks/ports/{}/channels/{}/acknowledgements/{}",
-                port_id, channel_id, seq
+                port_id, channel_id, sequence
             ),
         }
     }

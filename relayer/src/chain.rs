@@ -3,41 +3,40 @@ use std::time::Duration;
 use anomaly::fail;
 use serde::{de::DeserializeOwned, Serialize};
 
-use ::tendermint::chain::Id as ChainId;
-use ::tendermint::lite::types as tmlite;
-use ::tendermint::lite::{self, Height, TrustThresholdFraction};
-use ::tendermint_rpc::Client as RpcClient;
+use tendermint::block::Height;
+use tendermint::chain::Id as ChainId;
+use tendermint_light_client::types::TrustThreshold;
+use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
+use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
+
 use std::error::Error;
 
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 use prost_types::Any;
 
-/// Handy type alias for the type of validator set associated with a chain
-pub type ValidatorSet<Chain> = <<Chain as self::Chain>::Commit as tmlite::Commit>::ValidatorSet;
-
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
-    /// Type of headers for this chain
-    type Header: tmlite::Header + Send + Sync + Serialize + DeserializeOwned;
+    /// Type of light blocks for this chain
+    type LightBlock: Send + Sync + Serialize + DeserializeOwned;
 
-    /// Type of commits for this chain
-    type Commit: tmlite::Commit + Send + Sync + Serialize + DeserializeOwned;
+    /// Type of light client for this chain
+    type LightClient: LightClient<Self::LightBlock> + Send + Sync;
 
     /// Type of consensus state for this chain
     type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState;
+    type ClientState: ClientState + Send + Sync + Serialize + DeserializeOwned;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
-    type Requester: tmlite::Requester<Self::Commit, Self::Header>;
+    type RpcClient: RpcClient + Send + Sync;
 
     /// Error types defined by this chain
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
@@ -57,10 +56,13 @@ pub trait Chain {
     fn config(&self) -> &ChainConfig;
 
     /// Get a low-level RPC client for this chain
-    fn rpc_client(&self) -> &RpcClient;
+    fn rpc_client(&self) -> &Self::RpcClient;
 
-    /// Get a higher-level RPC requester for this chain
-    fn requester(&self) -> &Self::Requester;
+    /// Get a light client for this chain
+    fn light_client(&self) -> Option<&Self::LightClient>;
+
+    /// Set a light client for this chain
+    fn set_light_client(&mut self, light_client: Self::LightClient);
 
     /// The trusting period configured for this chain
     fn trusting_period(&self) -> Duration;
@@ -70,7 +72,7 @@ pub trait Chain {
     fn unbonding_period(&self) -> Duration;
 
     /// The trust threshold configured for this chain
-    fn trust_threshold(&self) -> TrustThresholdFraction;
+    fn trust_threshold(&self) -> TrustThreshold;
 
     /// Sign message
     /// TODO - waiting for tendermint-rs upgrade to v0.16
@@ -94,35 +96,25 @@ pub async fn query_latest_height(chain: &impl Chain) -> Result<Height, error::Er
         );
     }
 
-    Ok(status.sync_info.latest_block_height.into())
+    Ok(status.sync_info.latest_block_height)
 }
 
 /// Query the latest header
-pub async fn query_latest_header<C>(
-    chain: &C,
-) -> Result<lite::SignedHeader<C::Commit, C::Header>, error::Error>
+pub async fn query_latest_header<C>(chain: &C) -> Result<C::LightBlock, error::Error>
 where
     C: Chain,
 {
     let h = query_latest_height(chain).await?;
-    Ok(query_header_at_height::<C>(chain, h).await?)
+    Ok(query_header_at_height(chain, h).await?)
 }
 
 /// Query a header at the given height via the RPC requester
 pub async fn query_header_at_height<C>(
     chain: &C,
     height: Height,
-) -> Result<lite::SignedHeader<C::Commit, C::Header>, error::Error>
+) -> Result<C::LightBlock, error::Error>
 where
     C: Chain,
 {
-    use tmlite::Requester;
-
-    let header = chain
-        .requester()
-        .signed_header(height)
-        .await
-        .map_err(|e| error::Kind::Rpc.context(e))?;
-
-    Ok(header)
+    todo!()
 }

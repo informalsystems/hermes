@@ -13,6 +13,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
+use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenTry` message.
 pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
@@ -147,11 +148,8 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::new(
-                msg.signer[..20]
-                    .try_into()
-                    .map_err(|e| Kind::InvalidSigner.context(e))?,
-            ),
+            signer: AccountId::from_str(msg.signer.as_str())
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
@@ -189,7 +187,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                     })
                 },
             ),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            signer: ics_msg.signer.to_string(),
         }
     }
 }
@@ -200,7 +198,7 @@ pub mod test_util {
     use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id, get_dummy_counterparty, get_dummy_proof,
+        get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
     };
 
     pub fn get_dummy_msg_conn_open_try(
@@ -224,7 +222,7 @@ pub mod test_util {
                 epoch_height: consensus_height,
             }),
             proof_client: vec![],
-            signer: Vec::from(get_dummy_account_id().as_bytes()),
+            signer: get_dummy_account_id_raw(),
         }
     }
 }

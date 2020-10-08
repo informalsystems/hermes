@@ -1,7 +1,7 @@
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics23_commitment::{commitment::CommitmentPrefix, merkle::apply_prefix};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::{ics02_client::client_def::ClientDef, ics24_host::identifier::ClientId};
-use crate::{ics02_client::state::ClientState, ics23_commitment::commitment::CommitmentProof};
 use crate::{ics03_connection::connection::ConnectionEnd, ics24_host::Path};
 
 use crate::mock_client::header::MockHeader;
@@ -42,7 +42,8 @@ impl ClientDef for MockClient {
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let client_prefixed_path =
-            Path::ClientConsensusState(client_id.clone(), height.value()).to_string();
+            // TODO - will pick epoch from new type Height
+            Path::ClientConsensusState{client_id: client_id.clone(), epoch: 0, height: height.value()}.to_string();
 
         let _path = apply_prefix(prefix, client_prefixed_path)?;
 

@@ -20,11 +20,14 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub latest_height: Height,
     pub frozen_height: Height,
+    pub allow_update_after_expiry: bool,
+    pub allow_update_after_misbehaviour: bool,
 }
 
 impl DomainType<RawClientState> for ClientState {}
 
 impl ClientState {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: String,
         // trust_level: TrustLevel,
@@ -33,7 +36,8 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
-        // proof_specs: Specs
+        allow_update_after_expiry: bool,
+        allow_update_after_misbehaviour: bool, // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
@@ -74,7 +78,12 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            allow_update_after_expiry,
+            allow_update_after_misbehaviour,
         })
+    }
+    pub fn latest_height(&self) -> Height {
+        self.latest_height
     }
 }
 
@@ -126,6 +135,8 @@ impl TryFrom<RawClientState> for ClientState {
                 raw.frozen_height
                     .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
             ),
+            allow_update_after_expiry: raw.allow_update_after_expiry,
+            allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
         })
     }
 }
@@ -133,7 +144,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.chain_id,
+            chain_id: value.chain_id.clone(),
             trust_level: None, // Todo: Why is trust_level commented out?
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
@@ -144,9 +155,11 @@ impl From<ClientState> for RawClientState {
             }), // Todo: upgrade to tendermint v0.17.0 Height
             latest_height: Some(ibc_proto::ibc::client::Height {
                 epoch_number: 0,
-                epoch_height: value.latest_height.value(),
+                epoch_height: value.latest_height().value(),
             }), // Todo: upgrade to tendermint v0.17.0 Height
             proof_specs: vec![], // Todo: Why is that not stored?
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         }
     }
 }
@@ -188,6 +201,8 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            allow_update_after_expiry: bool,
+            allow_update_after_misbehaviour: bool,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.
@@ -198,6 +213,8 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height(10),
             frozen_height: Height(0),
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         };
 
         struct Test {
@@ -259,6 +276,8 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.allow_update_after_expiry,
+                p.allow_update_after_misbehaviour,
             );
 
             assert_eq!(
