@@ -110,11 +110,15 @@ impl EventMonitor {
             Some(event) = self.subscriptions.next() => {
                 match event {
                     Ok(event) => {
-                        if let Ok(ibc_events) = ibc::events::get_all_events(event) {
-                            // TODO - send_timeout()?
-                            self.channel_to_handler
-                                .send((self.chain_id, ibc_events))
-                                .await?;
+                        match ibc::events::get_all_events(event.clone()) {
+                            Ok(ibc_events) => {
+                                self.channel_to_handler
+                                    .send((self.chain_id, ibc_events))
+                                    .await?
+                            },
+                            Err(err) => {
+                               error!("Error {} when extracting IBC events from {:?}: ", err, event);
+                            }
                         }
                     }
                     Err(err) => {
