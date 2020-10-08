@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -7,7 +9,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
-/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenConfirm,
@@ -76,22 +77,23 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::mock_context::MockContext;
 
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_confirm_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
@@ -105,7 +107,7 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockConnectionContext::new(10, 3);
+        let default_context = MockContext::new(10, Height(3));
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
@@ -129,8 +131,8 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: default_context
                     .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenConfirm(dummy_msg.clone()),
                 want_pass: false,
             },
@@ -138,8 +140,8 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect versions)"
                     .to_string(),
                 ctx: default_context
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), correct_conn_end),
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenConfirm(dummy_msg.clone()),
                 want_pass: true,
             },

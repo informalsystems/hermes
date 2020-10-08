@@ -1,3 +1,5 @@
+//! Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -6,7 +8,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 
-/// Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenInit,
@@ -47,24 +48,25 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::mock_context::MockContext;
     use std::convert::TryFrom;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_init_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
 
         let dummy_msg = MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let default_context = MockConnectionContext::new(34, 3);
+        let default_context = MockContext::new(34, Height(3));
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
@@ -76,23 +78,23 @@ mod tests {
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Good parameters".to_string(),
-                ctx: default_context
-                    .clone()
-                    .with_client_state(dummy_msg.client_id(), 10),
-                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
-                want_pass: true,
-            },
-            Test {
                 name: "Processing fails because no client exists in the context".to_string(),
                 ctx: default_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
                 want_pass: false,
             },
             Test {
+                name: "Good parameters".to_string(),
+                ctx: default_context
+                    .clone()
+                    .with_client(dummy_msg.client_id(), Height(10)),
+                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+                want_pass: true,
+            },
+            Test {
                 name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
-                    .add_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
+                    .with_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
                 want_pass: false,
             },

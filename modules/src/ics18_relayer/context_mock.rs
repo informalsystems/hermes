@@ -69,7 +69,7 @@ impl MockICS18Context {
 
 impl ICS18Context for MockICS18Context {
     fn query_latest_height(&self) -> Height {
-        self.chain_routing_context.chain_current_height()
+        self.chain_routing_context.host_current_height()
     }
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
@@ -77,7 +77,7 @@ impl ICS18Context for MockICS18Context {
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
-        let latest_height = self.chain_routing_context.chain_current_height();
+        let latest_height = self.chain_routing_context.host_current_height();
         self.chain_routing_context
             .chain_context()
             .header(latest_height)

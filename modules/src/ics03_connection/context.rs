@@ -1,4 +1,3 @@
-use crate::context::SelfChainType;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::error::Error;
@@ -16,12 +15,10 @@ pub trait ConnectionReader {
     fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
 
     /// Returns the current height of the local chain.
-    fn chain_current_height(&self) -> Height;
+    fn host_current_height(&self) -> Height;
 
     /// Returns the number of consensus state historical entries for the local chain.
     fn chain_consensus_states_history_size(&self) -> usize;
-
-    fn chain_type(&self) -> SelfChainType;
 
     /// Returns the prefix that the local chain uses in the KV store.
     fn commitment_prefix(&self) -> CommitmentPrefix;
@@ -33,7 +30,8 @@ pub trait ConnectionReader {
         height: Height,
     ) -> Option<AnyConsensusState>;
 
-    /// Returns the ConsensusState of the local chain at a specific height.
+    /// Returns the ConsensusState of the host (local) chain at a specific height.
+    /// todo: rename this into fetch_host_consensus_state
     fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState>;
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
@@ -45,7 +43,7 @@ pub trait ConnectionReader {
     fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String;
 }
 
-/// A context supplying all the necessary write-only dependencies (i.e., storage functionalities)
+/// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ICS3Msg`.
 pub trait ConnectionKeeper {
     fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {

@@ -1,3 +1,5 @@
+//! ICS3 verification functions, common across all four handlers of ICS3.
+
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -165,14 +167,14 @@ pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
 ) -> Result<(), Error> {
-    if claimed_height > ctx.chain_current_height() {
+    if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
-        Err(Kind::InvalidConsensusHeight(claimed_height).into())
+        Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into())
     } else if claimed_height.value()
-        < (ctx.chain_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
+        < (ctx.host_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
     {
         // Fail if the consensus height is too old (outside of trusting period).
-        Err(Kind::StaleConsensusHeight(claimed_height).into())
+        Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into())
     } else {
         // Height check is within normal bounds, check passes.
         Ok(())

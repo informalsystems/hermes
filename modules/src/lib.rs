@@ -51,3 +51,6 @@ pub type Height = tendermint::block::Height;
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod mock_context; // Context mock: for testing all handlers.

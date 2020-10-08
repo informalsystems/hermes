@@ -1,4 +1,5 @@
-//! This module implements the the processing logic for ICS3 (connection open handshake) messages.
+//! This module implements the processing logic for ICS3 (connection open handshake) messages.
+
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
@@ -10,7 +11,7 @@ pub mod conn_open_ack;
 pub mod conn_open_confirm;
 pub mod conn_open_init;
 pub mod conn_open_try;
-pub mod verify;
+mod verify;
 
 #[derive(Clone, Debug)]
 pub enum ConnectionEvent {

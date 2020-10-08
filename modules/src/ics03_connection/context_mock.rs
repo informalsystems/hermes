@@ -1,4 +1,6 @@
-use crate::context::{ChainReader, SelfChainType, SelfHeader};
+// TODO: delete this module; superseded by MockContext.
+
+use crate::context::{ChainReader, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::context::ClientReader;
@@ -67,7 +69,7 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context().client_state(client_id)
     }
 
-    fn chain_current_height(&self) -> Height {
+    fn host_current_height(&self) -> Height {
         self.chain_context().latest
     }
 
@@ -76,9 +78,9 @@ impl ConnectionReader for MockConnectionContext {
         self.chain_context().max_size()
     }
 
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
-    }
+    // fn chain_type(&self) -> SelfChainType {
+    //     SelfChainType::Mock
+    // }
 
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])

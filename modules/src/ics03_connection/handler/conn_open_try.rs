@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -7,7 +9,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 
-/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,
@@ -96,25 +97,26 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::mock_context::MockContext;
     use std::convert::TryFrom;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_try_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
 
         let dummy_msg =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let default_context = MockConnectionContext::new(34, 3);
+        let default_context = MockContext::new(10, Height(35));
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
@@ -129,7 +131,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: default_context
                     .clone()
-                    .with_client_state(dummy_msg.client_id(), 10),
+                    .with_client(dummy_msg.client_id(), Height(10)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: true,
             },
@@ -142,7 +144,7 @@ mod tests {
             Test {
                 name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
-                    .add_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
+                    .with_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: false,
             },

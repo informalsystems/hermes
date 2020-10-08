@@ -1,4 +1,3 @@
-use crate::context::SelfChainType;
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
@@ -48,16 +47,12 @@ impl ConnectionReader for MockICS26Context {
         self.client_context().client_state(client_id)
     }
 
-    fn chain_current_height(&self) -> Height {
+    fn host_current_height(&self) -> Height {
         self.chain_context().latest
     }
 
     fn chain_consensus_states_history_size(&self) -> usize {
         self.chain_context().max_size()
-    }
-
-    fn chain_type(&self) -> SelfChainType {
-        self.connection_context.chain_type()
     }
 
     fn commitment_prefix(&self) -> CommitmentPrefix {

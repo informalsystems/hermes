@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -7,7 +9,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenAck;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
-/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenAck,
@@ -84,21 +85,22 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
+    use crate::mock_context::MockContext;
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_ack_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
@@ -111,7 +113,7 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockConnectionContext::new(10, 3);
+        let default_context = MockContext::new(5, Height(3));
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
@@ -148,6 +150,9 @@ mod tests {
         )
         .unwrap();
 
+        // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
+        let correct_context = MockContext::new(5, Height(10));
+
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
@@ -159,8 +164,8 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: default_context
                     .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
                 want_pass: false,
             },
@@ -169,25 +174,24 @@ mod tests {
                     .to_string(),
                 ctx: default_context
                     .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_vers),
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_vers),
                 msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: default_context
-                    .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_prefix),
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Successful processing of Ack message".to_string(),
-                ctx: default_context
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), correct_conn_end),
+                ctx: correct_context
+                    .with_client(&client_id, Height(10))
+                    .with_connection(dummy_msg.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
                 want_pass: true,
             },
