@@ -86,10 +86,6 @@ impl MockChainContext {
 }
 
 impl ChainReader for MockChainContext {
-    // fn chain_type(&self) -> SelfChainType {
-    //     SelfChainType::Mock
-    // }
-
     fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo> {
         let l = height.value() as usize;
         let h = self.latest.value() as usize;
