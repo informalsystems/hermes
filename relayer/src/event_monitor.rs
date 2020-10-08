@@ -1,7 +1,8 @@
 use ibc::events::IBCEvent;
 use tendermint::{chain, net, Error as TMError};
-use tendermint_rpc::Subscription;
-use tendermint_rpc::{SubscriptionClient, WebSocketClient};
+use tendermint_rpc::{
+    query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
+};
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
 
@@ -22,7 +23,7 @@ pub struct EventMonitor {
     /// Node Address
     node_addr: net::Address,
     /// Queries
-    event_queries: Vec<String>,
+    event_queries: Vec<Query>,
     /// All subscriptions combined in a single stream
     subscriptions: Box<SubscriptionStream>,
 }
@@ -37,10 +38,7 @@ impl EventMonitor {
         let websocket_client = WebSocketClient::new(rpc_addr.clone()).await?;
 
         // TODO: move them to config file(?)
-        let event_queries = vec![
-            "tm.event='Tx'".to_string(),
-            "tm.event='NewBlock'".to_string(),
-        ];
+        let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
 
         Ok(EventMonitor {
             chain_id,
