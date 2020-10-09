@@ -113,7 +113,7 @@ impl EventMonitor {
                         if let Ok(ibc_events) = ibc::events::get_all_events(event) {
                             // TODO - send_timeout()?
                             self.channel_to_handler
-                                .send((self.chain_id, ibc_events))
+                                .send((self.chain_id.clone(), ibc_events))
                                 .await?;
                         }
                     }
