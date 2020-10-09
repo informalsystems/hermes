@@ -1,5 +1,4 @@
 use prost_types::Any;
-use std::convert::TryInto;
 use std::time::Duration;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -30,7 +29,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     // Query the client state on destination chain.
     let response = dest_chain.query(
         ClientStatePath(opts.clone().dest_client_id),
-        0_u64.try_into().unwrap(),
+        Height::from(0_u32),
         false,
     );
 
@@ -67,7 +66,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
         height,
-        0_u64.try_into().unwrap(),
+        Height::from(0_u32),
         false,
         false,
     )

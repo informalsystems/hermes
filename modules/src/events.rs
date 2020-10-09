@@ -4,13 +4,13 @@ use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
 
-use tendermint::block;
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use tendermint::block::Height;
 
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -52,7 +52,7 @@ impl IBCEvent {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RawObject {
-    pub height: block::Height,
+    pub height: Height,
     pub action: String,
     pub idx: usize,
     pub events: HashMap<String, Vec<String>>,
@@ -60,7 +60,7 @@ pub struct RawObject {
 
 impl RawObject {
     pub fn new(
-        height: block::Height,
+        height: Height,
         action: String,
         idx: usize,
         events: HashMap<String, Vec<String>>,
@@ -131,13 +131,17 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
 
         RpcEventData::Tx { .. } => {
             let events = &result.events.ok_or("missing events")?;
-            let height = events.get("tx.height").ok_or("tx.height")?[0]
+            let height_raw = events.get("tx.height").ok_or("tx.height")?[0]
                 .parse::<u64>()
                 .map_err(|e| e.to_string())?;
+            let height: Height = height_raw
+                .try_into()
+                .map_err(|_| "height parsing overflow")?;
+
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
                 let ev = build_event(RawObject::new(
-                    height.try_into().unwrap(), // TODO: Handle overflow
+                    height,
                     action.0,
                     action.1 as usize,
                     events.clone(),
