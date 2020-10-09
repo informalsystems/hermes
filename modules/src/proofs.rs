@@ -1,6 +1,8 @@
 use crate::ics23_commitment::commitment::CommitmentProof;
-use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
+
+use serde_derive::{Deserialize, Serialize};
+use std::convert::TryInto;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
@@ -30,7 +32,7 @@ impl Proofs {
             object_proof,
             client_proof,
             consensus_proof,
-            height: Height(height),
+            height: height.try_into().unwrap(),
         })
     }
 
@@ -73,7 +75,7 @@ impl ConsensusProof {
 
         Ok(Self {
             proof: consensus_proof,
-            height: Height(consensus_height),
+            height: consensus_height.try_into().unwrap(), // FIXME: unwrap
         })
     }
 

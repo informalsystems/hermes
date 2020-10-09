@@ -17,16 +17,17 @@ use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections};
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
-use std::str::FromStr;
-use tendermint::chain::Id;
 use tendermint::net::Address;
 use tendermint_proto::DomainType;
+
+use std::convert::TryInto;
+use std::str::FromStr;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
     let mut config = Config::default();
     config.chains = vec![ChainConfig {
-        id: Id::from("ibc-test"),
+        id: "ibc-test".try_into().unwrap(),
         rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
         account_prefix: "cosmos".to_string(),
         key_name: "testkey".to_string(),
@@ -84,7 +85,7 @@ fn query_channel_id() {
                     PortId::from_str("firstport").unwrap(),
                     ChannelId::from_str("firstchannel").unwrap(),
                 ),
-                0,
+                0_u64.try_into().unwrap(),
                 false,
             )
             .unwrap(),
@@ -108,7 +109,7 @@ fn query_client_id() {
         &chain
             .query(
                 ClientConnections(ClientId::from_str("clientidone").unwrap()),
-                0,
+                0_u64.try_into().unwrap(),
                 false,
             )
             .unwrap(),

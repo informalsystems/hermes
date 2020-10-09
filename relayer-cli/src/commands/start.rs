@@ -135,7 +135,7 @@ async fn create_client_task(
     let supervisor = create_client(chain, trust_options, reset).await?;
     let handle = supervisor.handle();
 
-    let task = client_task(*chain.id(), supervisor);
+    let task = client_task(chain.id().clone(), supervisor);
 
     let light_client = client::tendermint::LightClient::new(handle);
     chain.set_light_client(light_client);
@@ -176,7 +176,7 @@ async fn create_client(
     reset: bool,
 ) -> Result<Supervisor, BoxError> {
     let chain_config = chain.config();
-    let id = chain_config.id;
+    let id = chain_config.id.clone();
 
     let db_path = format!("store_{}.db", chain.id());
     let store = store::sled::SledStore::new(sled::open(db_path)?);

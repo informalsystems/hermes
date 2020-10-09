@@ -7,6 +7,7 @@ use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use tendermint::block::Height;
 
 /// A mock implementation of client context. This mocks (i.e., replaces) the functionality of
@@ -24,7 +25,10 @@ pub struct MockClientContext {
 impl MockClientContext {
     pub fn new(chain_height: u64, max_history_size: usize) -> Self {
         MockClientContext {
-            chain_context: MockChainContext::new(max_history_size, Height(chain_height)),
+            chain_context: MockChainContext::new(
+                max_history_size,
+                chain_height.try_into().unwrap(),
+            ),
             clients: Default::default(),
         }
     }
