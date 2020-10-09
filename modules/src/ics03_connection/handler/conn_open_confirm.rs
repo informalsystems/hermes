@@ -99,21 +99,21 @@ mod tests {
         }
 
         let client_id = ClientId::from_str("mock_clientid").unwrap();
-        let dummy_msg =
+        let msg_confirm =
             MsgConnectionOpenConfirm::try_from(get_dummy_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            dummy_msg.connection_id().clone(),
+            msg_confirm.connection_id().clone(),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockContext::new(10, Height(3));
+        let context = MockContext::new(10, Height(3));
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
             client_id.clone(),
             counterparty,
-            default_context.get_compatible_versions(),
+            context.get_compatible_versions(),
         )
         .unwrap();
 
@@ -123,25 +123,28 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
-                ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenConfirm(dummy_msg.clone()),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
-                ctx: default_context
+                ctx: context
                     .clone()
                     .with_client(&client_id, Height(10))
-                    .with_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
-                msg: ConnectionMsg::ConnectionOpenConfirm(dummy_msg.clone()),
+                    .with_connection(
+                        msg_confirm.connection_id().clone(),
+                        incorrect_conn_end_state,
+                    ),
+                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing successful".to_string(),
-                ctx: default_context
+                ctx: context
                     .with_client(&client_id, Height(10))
-                    .with_connection(dummy_msg.connection_id().clone(), correct_conn_end),
-                msg: ConnectionMsg::ConnectionOpenConfirm(dummy_msg.clone()),
+                    .with_connection(msg_confirm.connection_id().clone(), correct_conn_end),
+                msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: true,
             },
         ]
@@ -165,7 +168,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, dummy_msg.connection_id().clone());
+                    assert_eq!(res.connection_id, msg_confirm.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {

@@ -19,7 +19,7 @@ pub(crate) fn process(
         return Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into());
     }
 
-    // An IBC client running on the local chain should exist.
+    // An IBC client running on the local (host) chain should exist.
     if ctx.fetch_client_state(msg.client_id()).is_none() {
         return Err(Kind::MissingClient(msg.client_id().clone()).into());
     }
@@ -65,37 +65,38 @@ mod tests {
             want_pass: bool,
         }
 
-        let dummy_msg = MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let default_context = MockContext::new(34, Height(3));
+        let msg_conn_init =
+            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+        let context = MockContext::new(34, Height(3));
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
-            dummy_msg.client_id().clone(),
-            dummy_msg.counterparty().clone(),
-            default_context.get_compatible_versions(),
+            msg_conn_init.client_id().clone(),
+            msg_conn_init.counterparty().clone(),
+            context.get_compatible_versions(),
         )
         .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Processing fails because no client exists in the context".to_string(),
-                ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+                name: "Processing fails because the connection exists in the store already"
+                    .to_string(),
+                ctx: context
+                    .clone()
+                    .with_connection(msg_conn_init.connection_id().clone(), init_conn_end.clone()),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because the connection exists in the store already"
-                    .to_string(),
-                ctx: default_context
-                    .clone()
-                    .with_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+                name: "Processing fails because no client exists in the context".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: default_context.with_client(dummy_msg.client_id(), Height(10)),
-                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+                ctx: context.with_client(msg_conn_init.client_id(), Height(10)),
+                msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: true,
             },
         ]
@@ -119,7 +120,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have init state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, dummy_msg.connection_id().clone());
+                    assert_eq!(res.connection_id, msg_conn_init.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Init);
 
                     for e in proto_output.events.iter() {

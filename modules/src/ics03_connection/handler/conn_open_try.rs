@@ -114,37 +114,55 @@ mod tests {
             want_pass: bool,
         }
 
-        let dummy_msg =
+        let msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let default_context = MockContext::new(10, Height(35));
+        let context = MockContext::new(10, Height(35));
+
+        let msg_height_advanced =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();
+        let msg_height_old =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 10)).unwrap();
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
-            dummy_msg.client_id().clone(),
-            dummy_msg.counterparty(),
-            default_context.get_compatible_versions(),
+            msg_conn_try.client_id().clone(),
+            msg_conn_try.counterparty(),
+            context.get_compatible_versions(),
         )
         .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Processing fails because no client exists".to_string(),
-                ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                name: "Processing fails because the height is too advanced".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_height_advanced)),
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because connection exists in the store already".to_string(),
-                ctx: default_context
+                name: "Processing fails because the height is too old".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_height_old)),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because no client exists".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because the connection exists in the store already"
+                    .to_string(),
+                ctx: context
                     .clone()
-                    .with_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                    .with_connection(msg_conn_try.connection_id().clone(), try_conn_end.clone()),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: default_context.with_client(dummy_msg.client_id(), Height(10)),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                ctx: context.with_client(msg_conn_try.client_id(), Height(10)),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: true,
             },
         ]
@@ -168,7 +186,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have TryOpen state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, dummy_msg.connection_id().clone());
+                    assert_eq!(res.connection_id, msg_conn_try.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
