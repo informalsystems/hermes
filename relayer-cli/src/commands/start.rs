@@ -182,7 +182,8 @@ async fn create_client(
     let store = store::sled::SledStore::new(sled::open(db_path)?);
 
     // FIXME: Remove or make configurable
-    let peer_id: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
+    let primary_id: PeerId = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap();
+    let witness_id: PeerId = "EFEEDC0C0ADEADBEEFC0FFEEFACADBADFADAD0BE".parse().unwrap();
 
     let options = light_client::Options {
         trust_threshold: trust_options.trust_threshold,
@@ -191,7 +192,7 @@ async fn create_client(
     };
 
     let primary = build_instance(
-        peer_id,
+        primary_id,
         &chain,
         store.clone(),
         options,
@@ -199,11 +200,11 @@ async fn create_client(
         reset,
     )?;
 
-    let witness = build_instance(peer_id, &chain, store, options, trust_options, reset)?;
+    let witness = build_instance(witness_id, &chain, store, options, trust_options, reset)?;
 
     let supervisor = SupervisorBuilder::new()
-        .primary(peer_id, chain_config.rpc_addr.clone(), primary)
-        .witness(peer_id, chain_config.rpc_addr.clone(), witness)
+        .primary(primary_id, chain_config.rpc_addr.clone(), primary)
+        .witness(witness_id, chain_config.rpc_addr.clone(), witness)
         .build_prod();
 
     Ok(supervisor)
