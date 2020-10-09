@@ -137,8 +137,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails due to connections mismatch (incorrect versions)"
-                    .to_string(),
+                name: "Processing successful".to_string(),
                 ctx: default_context
                     .with_client(&client_id, Height(10))
                     .with_connection(dummy_msg.connection_id().clone(), correct_conn_end),
@@ -157,7 +156,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "dispatch() in ICS3: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_confirm: test passed but was supposed to fail for: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -180,7 +179,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "dispatch() in ICS3: test failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_confirm: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

@@ -207,7 +207,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -227,7 +227,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_ack: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

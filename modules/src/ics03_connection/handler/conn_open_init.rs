@@ -84,27 +84,25 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Good parameters".to_string(),
+                name: "Processing fails because the connection exists in the store already"
+                    .to_string(),
                 ctx: default_context
                     .clone()
-                    .with_client(dummy_msg.client_id(), Height(10)),
-                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
-                want_pass: true,
-            },
-            Test {
-                name: "Processing fails because connection exists in the store already".to_string(),
-                ctx: default_context
                     .with_connection(dummy_msg.connection_id().clone(), init_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
                 want_pass: false,
+            },
+            Test {
+                name: "Good parameters".to_string(),
+                ctx: default_context.with_client(dummy_msg.client_id(), Height(10)),
+                msg: ConnectionMsg::ConnectionOpenInit(dummy_msg.clone()),
+                want_pass: true,
             },
         ]
         .into_iter()
         .collect();
 
         for mut test in tests {
-            // TODO - this is an example for testing with dispatch
-            // TODO - the client tests use the process only. Need to select one approach and use the same across.
             let res = dispatch(&mut test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
@@ -112,7 +110,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -132,7 +130,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_init: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

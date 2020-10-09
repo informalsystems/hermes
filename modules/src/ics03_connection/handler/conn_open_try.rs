@@ -128,14 +128,6 @@ mod tests {
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Good parameters".to_string(),
-                ctx: default_context
-                    .clone()
-                    .with_client(dummy_msg.client_id(), Height(10)),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
-                want_pass: true,
-            },
-            Test {
                 name: "Processing fails because no client exists".to_string(),
                 ctx: default_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
@@ -144,9 +136,16 @@ mod tests {
             Test {
                 name: "Processing fails because connection exists in the store already".to_string(),
                 ctx: default_context
+                    .clone()
                     .with_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
                 want_pass: false,
+            },
+            Test {
+                name: "Good parameters".to_string(),
+                ctx: default_context.with_client(dummy_msg.client_id(), Height(10)),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                want_pass: true,
             },
         ]
         .into_iter()
@@ -160,7 +159,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_try: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -180,7 +179,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_try: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),
