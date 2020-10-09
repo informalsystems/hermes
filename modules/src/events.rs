@@ -137,9 +137,9 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
                 let ev = build_event(RawObject::new(
-                    height.into(),
+                    height.try_into().unwrap(), // TODO: Handle overflow
                     action.0,
-                    action.1.try_into().unwrap(),
+                    action.1 as usize,
                     events.clone(),
                 ))
                 .map_err(|e| e.to_string())?;

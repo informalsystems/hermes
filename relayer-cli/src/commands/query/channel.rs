@@ -13,6 +13,8 @@ use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
+use std::convert::TryInto;
+
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
     #[options(free, help = "identifier of the chain to query")]
@@ -46,6 +48,7 @@ impl QueryChannelEndCmd {
     ) -> Result<(ChainConfig, QueryChannelOptions), String> {
         let chain_id = self
             .chain_id
+            .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
@@ -102,7 +105,7 @@ impl Runnable for QueryChannelEndCmd {
         let res: Result<ChannelEnd, Error> = chain
             .query(
                 ChannelEnds(opts.port_id, opts.channel_id),
-                opts.height,
+                opts.height.try_into().unwrap(),
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())

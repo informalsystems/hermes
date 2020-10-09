@@ -42,7 +42,7 @@ pub trait Chain {
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
 
     /// Perform a generic `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error>;
+    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
     fn send(&self, _msgs: &[Any]) -> Result<(), Self::Error>;

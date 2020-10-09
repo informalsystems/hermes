@@ -478,7 +478,7 @@ mod tests {
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use prost_types::Any;
-    use std::convert::TryFrom;
+    use std::convert::{TryFrom, TryInto};
     use std::time::Duration;
 
     #[test]
@@ -490,7 +490,7 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
-            frozen_height: 0_u64.into(),
+            frozen_height: 0_u64.try_into().unwrap(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         });
