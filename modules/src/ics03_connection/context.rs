@@ -31,8 +31,7 @@ pub trait ConnectionReader {
     ) -> Option<AnyConsensusState>;
 
     /// Returns the ConsensusState of the host (local) chain at a specific height.
-    /// todo: rename this into fetch_host_consensus_state
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState>;
+    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState>;
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
     /// handshake protocol supports.

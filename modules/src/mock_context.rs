@@ -132,7 +132,7 @@ impl ConnectionReader for MockContext {
         self.consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.fetch_host_header(height)?;
         Some(hi.into())
     }

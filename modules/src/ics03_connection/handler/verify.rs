@@ -141,7 +141,7 @@ pub fn verify_consensus_proof(
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
-        .fetch_self_consensus_state(proof.height())
+        .fetch_host_consensus_state(proof.height())
         .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
 
     let client = AnyClient::from_client_type(client_state.client_type());

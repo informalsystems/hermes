@@ -67,8 +67,8 @@ impl ConnectionReader for MockICS26Context {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        self.connection_context.fetch_self_consensus_state(height)
+    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        self.connection_context.fetch_host_consensus_state(height)
     }
 
     fn get_compatible_versions(&self) -> Vec<String> {

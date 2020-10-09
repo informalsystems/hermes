@@ -1,4 +1,5 @@
-// TODO: delete this module; superseded by MockContext.
+// TODO: This module is superseded by MockContext.
+// Will be nuked soon with https://github.com/informalsystems/ibc-rs/issues/297.
 
 use crate::context::{ChainReader, SelfHeader};
 use crate::context_mock::MockChainContext;
@@ -90,7 +91,7 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.chain_context().self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]
