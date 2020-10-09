@@ -1,9 +1,12 @@
 use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfChainType, SelfHeader};
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::mock_client::header::MockHeader;
-use serde_derive::{Deserialize, Serialize};
+
 use std::cmp::min;
+use std::convert::TryInto;
 use std::error::Error;
+
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -21,12 +24,14 @@ impl MockChainContext {
     pub fn new(max_size: usize, h: Height) -> Self {
         // number of headers to store, if h is 0 nothing is stored
         let n = min(max_size as u64, h.value());
+
         Self {
             max_size,
             latest: h,
             history: (0..n)
                 .rev()
-                .map(|i| MockHeader(Height(h.value() - i)))
+                // SAFETY: Call to `unwrap` is safe because we are decreasing the height
+                .map(|i| MockHeader((h.value() - i).try_into().unwrap()))
                 .collect(),
         }
     }
@@ -39,9 +44,9 @@ impl MockChainContext {
     pub fn populate(&mut self, hs: Vec<u64>) {
         for h in hs {
             self.store_historical_info(
-                Height(h),
+                h.try_into().unwrap(),
                 HistoricalInfo {
-                    header: SelfHeader::Mock(MockHeader(Height(h))),
+                    header: SelfHeader::Mock(MockHeader(h.try_into().unwrap())),
                 },
             );
         }
@@ -53,9 +58,9 @@ impl MockChainContext {
             new_h = u64::from(self.latest.increment());
         }
         self.store_historical_info(
-            Height(new_h),
+            new_h.try_into().unwrap(),
             HistoricalInfo {
-                header: SelfHeader::Mock(MockHeader(Height(new_h))),
+                header: SelfHeader::Mock(MockHeader(new_h.try_into().unwrap())),
             },
         );
     }
@@ -145,7 +150,7 @@ impl ChainKeeper for MockChainContext {
 #[cfg(test)]
 mod tests {
     use crate::context_mock::MockChainContext;
-    use tendermint::block::Height;
+    use std::convert::TryInto;
 
     #[test]
     fn test_store_historical_info() {
@@ -164,22 +169,22 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Add no prune".to_string(),
-                ctx: MockChainContext::new(3, Height(0)),
+                ctx: MockChainContext::new(3, 0_u64.try_into().unwrap()),
                 args: [1].to_vec(),
             },
             Test {
                 name: "Add with prune".to_string(),
-                ctx: MockChainContext::new(3, Height(2)),
+                ctx: MockChainContext::new(3, 2_u64.try_into().unwrap()),
                 args: [3, 4].to_vec(),
             },
             Test {
                 name: "Add with initial prune".to_string(),
-                ctx: MockChainContext::new(3, Height(10)),
+                ctx: MockChainContext::new(3, 10_u64.try_into().unwrap()),
                 args: [11].to_vec(),
             },
             Test {
                 name: "Attempt to add non sequential headers".to_string(),
-                ctx: MockChainContext::new(3, Height(2)),
+                ctx: MockChainContext::new(3, 2_u64.try_into().unwrap()),
                 args: [3, 5, 7].to_vec(),
             },
         ];

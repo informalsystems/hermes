@@ -53,8 +53,8 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
     use std::time::Duration;
-    use tendermint::block::Height;
 
     use super::*;
     use crate::ics02_client::context_mock::MockClientContext;
@@ -74,8 +74,8 @@ mod tests {
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Mock,
-            client_state: MockClientState(MockHeader(Height(42))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
+            client_state: MockClientState(MockHeader(42_u64.try_into().unwrap())).into(),
+            consensus_state: MockConsensusState(MockHeader(42_u64.try_into().unwrap())).into(),
             signer,
         };
 
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_type() {
-        let height = Height(42);
+        let height = 42_u64.try_into().unwrap();
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
@@ -140,14 +140,14 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        let height = Height(30);
+        let height = 30_u64.try_into().unwrap();
         ctx.with_client_consensus_state(&client_id, height);
 
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Tendermint,
-            client_state: MockClientState(MockHeader(Height(42))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
+            client_state: MockClientState(MockHeader(42_u64.try_into().unwrap())).into(),
+            consensus_state: MockConsensusState(MockHeader(42_u64.try_into().unwrap())).into(),
             signer,
         };
 
@@ -164,7 +164,7 @@ mod tests {
     fn test_create_client_ok_multiple() {
         let existing_client_id: ClientId = "existingmockclient".parse().unwrap();
         let signer = get_dummy_account_id();
-        let height = Height(80);
+        let height = 80_u64.try_into().unwrap();
         let mut ctx = MockClientContext::default();
         ctx.with_client_consensus_state(&existing_client_id, height);
 
@@ -172,22 +172,22 @@ mod tests {
             MsgCreateAnyClient {
                 client_id: "newmockclient1".parse().unwrap(),
                 client_type: ClientType::Mock,
-                client_state: MockClientState(MockHeader(Height(42))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
+                client_state: MockClientState(MockHeader(42_u64.try_into().unwrap())).into(),
+                consensus_state: MockConsensusState(MockHeader(42_u64.try_into().unwrap())).into(),
                 signer,
             },
             MsgCreateAnyClient {
                 client_id: "newmockclient2".parse().unwrap(),
                 client_type: ClientType::Mock,
-                client_state: MockClientState(MockHeader(Height(42))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height(42))).into(),
+                client_state: MockClientState(MockHeader(42_u64.try_into().unwrap())).into(),
+                consensus_state: MockConsensusState(MockHeader(42_u64.try_into().unwrap())).into(),
                 signer,
             },
             MsgCreateAnyClient {
                 client_id: "newmockclient3".parse().unwrap(),
                 client_type: ClientType::Tendermint,
-                client_state: MockClientState(MockHeader(Height(50))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height(50))).into(),
+                client_state: MockClientState(MockHeader(50_u64.try_into().unwrap())).into(),
+                consensus_state: MockConsensusState(MockHeader(50_u64.try_into().unwrap())).into(),
                 signer,
             },
         ]
@@ -237,7 +237,7 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
-            frozen_height: 0_u64.into(),
+            frozen_height: 0_u64.try_into().unwrap(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         });
