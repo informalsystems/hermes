@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -110,7 +110,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::ics03_connection::msgs::test_util::{
         get_dummy_account_id_raw, get_dummy_counterparty,
@@ -132,8 +132,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use super::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;

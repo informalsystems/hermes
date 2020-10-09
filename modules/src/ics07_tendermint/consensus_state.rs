@@ -2,7 +2,7 @@ use chrono::{TimeZone, Utc};
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
-use ibc_proto::ibc::tendermint::ConsensusState as RawConsensusState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::hash::Algorithm;
@@ -76,7 +76,7 @@ impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         RawConsensusState {
             timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
-            root: Some(ibc_proto::ibc::commitment::MerkleRoot { hash: value.root.0 }),
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot { hash: value.root.0 }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
         }
     }

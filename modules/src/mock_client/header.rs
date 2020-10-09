@@ -23,16 +23,16 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .context("no height in header")
                 .into());
         }
-        Ok(MockHeader(Height(raw.height.unwrap().epoch_height)))
+        Ok(MockHeader(Height(raw.height.unwrap().version_height)))
     }
 }
 
 impl From<MockHeader> for RawMockHeader {
     fn from(value: MockHeader) -> Self {
         RawMockHeader {
-            height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.height().value(),
+            height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: value.height().value(),
             }),
         } // FIXME: This is wrong as it does not take the epoch into account
     }

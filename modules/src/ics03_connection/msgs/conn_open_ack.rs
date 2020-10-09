@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
-use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -94,11 +94,11 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -139,9 +139,9 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: ics_msg.proofs.height().value(),
             }),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
@@ -156,9 +156,9 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
             consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
                 || None,
                 |h| {
-                    Some(ibc_proto::ibc::client::Height {
-                        epoch_number: 0,
-                        epoch_height: u64::from(h.height()),
+                    Some(ibc_proto::ibc::core::client::v1::Height {
+                        version_number: 0,
+                        version_height: u64::from(h.height()),
                     })
                 },
             ),
@@ -169,8 +169,8 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
@@ -180,13 +180,13 @@ pub mod test_util {
             version: "1.0.0".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             client_state: None,
             proof_client: vec![],
@@ -199,8 +199,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -242,8 +242,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg.clone()
                 },
@@ -253,8 +253,8 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     consensus_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg
                 },

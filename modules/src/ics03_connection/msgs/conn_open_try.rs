@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -108,11 +108,11 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -164,9 +164,9 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
             counterparty_versions: ics_msg.counterparty_versions,
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: ics_msg.proofs.height().value(),
             }),
             proof_init: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
@@ -181,9 +181,9 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
             consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
                 || None,
                 |h| {
-                    Some(ibc_proto::ibc::client::Height {
-                        epoch_number: 0,
-                        epoch_height: u64::from(h.height()),
+                    Some(ibc_proto::ibc::core::client::v1::Height {
+                        version_number: 0,
+                        version_height: u64::from(h.height()),
                     })
                 },
             ),
@@ -194,8 +194,8 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::test_util::{
         get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
@@ -213,13 +213,13 @@ pub mod test_util {
             counterparty_versions: vec!["1.0.0".to_string()],
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: proof_height,
+                version_number: 0,
+                version_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: consensus_height,
+                version_number: 0,
+                version_height: consensus_height,
             }),
             proof_client: vec![],
             signer: get_dummy_account_id_raw(),
@@ -231,9 +231,9 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -317,7 +317,7 @@ mod tests {
                 Test {
                     name: "Bad proof height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { epoch_number: 1, epoch_height: 0 }),
+                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -325,7 +325,7 @@ mod tests {
                 Test {
                     name: "Bad consensus height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { epoch_number: 1, epoch_height: 0 }),
+                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,

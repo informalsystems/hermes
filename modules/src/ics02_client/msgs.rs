@@ -11,7 +11,7 @@ use crate::ics02_client::error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
-use ibc_proto::ibc::client::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::{DomainType, Error, Kind};
@@ -137,7 +137,7 @@ pub struct MsgUpdateAnyClient {
 
 #[cfg(test)]
 mod tests {
-    use ibc_proto::ibc::client::MsgCreateClient;
+    use ibc_proto::ibc::core::client::v1::MsgCreateClient;
     use std::convert::TryFrom;
     use std::time::Duration;
 
