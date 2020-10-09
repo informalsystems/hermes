@@ -38,7 +38,7 @@ struct InitOptions {
 
 impl InitOptions {
     fn from_init_cmd(cmd: &InitCmd) -> Result<InitOptions, &'static str> {
-        match (cmd.chain_id, cmd.hash, cmd.height) {
+        match (cmd.chain_id.clone(), cmd.hash, cmd.height) {
             (Some(chain_id), Some(hash), Some(height)) => Ok(Self {
                 chain_id,
                 trusted_hash: hash,
@@ -72,11 +72,11 @@ impl InitCmd {
         )?;
 
         let mut config = LightConfig::load(LIGHT_CONFIG_PATH)?;
-        config.chains.insert(chain_config.id, trust_options);
+        config.chains.insert(chain_config.id.clone(), trust_options);
         config.save(LIGHT_CONFIG_PATH)?;
 
         status_ok!(
-            chain_config.id,
+            chain_config.id.clone(),
             "Set trusted options: hash={} height={}",
             options.trusted_hash,
             options.trusted_height

@@ -5,7 +5,7 @@ use crate::ics02_client::header::Header;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 use tendermint_proto::DomainType;
 
@@ -23,7 +23,14 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .context("no height in header")
                 .into());
         }
-        Ok(MockHeader(Height(raw.height.unwrap().epoch_height)))
+
+        Ok(MockHeader(
+            raw.height
+                .unwrap()
+                .epoch_height
+                .try_into()
+                .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+        ))
     }
 }
 

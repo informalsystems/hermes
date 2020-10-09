@@ -66,7 +66,7 @@ impl TryFrom<RawConsensusState> for ConsensusState {
             timestamp: Utc
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
-            next_validators_hash: Hash::new(Algorithm::Sha256, &raw.next_validators_hash)
+            next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
         })
     }
@@ -85,7 +85,7 @@ impl From<ConsensusState> for RawConsensusState {
 impl From<SignedHeader> for ConsensusState {
     fn from(header: SignedHeader) -> Self {
         Self {
-            root: CommitmentRoot::from_bytes(&header.header.app_hash),
+            root: CommitmentRoot::from_bytes(header.header.app_hash.as_ref()),
             timestamp: header.header.time,
             next_validators_hash: header.header.next_validators_hash,
         }

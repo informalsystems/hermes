@@ -59,18 +59,19 @@ mod tests {
     use crate::ics18_relayer::utils::create_client_update_datagram;
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::msgs::ICS26Envelope;
+
+    use std::convert::TryInto;
     use std::str::FromStr;
-    use tendermint::block::Height;
 
     #[test]
     /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height(11);
-        let chain_b_start_height = Height(20);
-        let client_on_b_for_a_height = Height(10); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height(20); // Should be smaller than `chain_b_start_height`
+        let chain_a_start_height = 11_u64.try_into().unwrap();
+        let chain_b_start_height = 20_u64.try_into().unwrap();
+        let client_on_b_for_a_height = 10_u64.try_into().unwrap(); // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = 20_u64.try_into().unwrap(); // Should be smaller than `chain_b_start_height`
         let max_history_size = 3;
         let num_iterations = 4;
 

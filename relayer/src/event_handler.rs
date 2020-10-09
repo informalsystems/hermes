@@ -26,7 +26,7 @@ impl EventHandler {
         loop {
             if let Some(events) = self.channel_from_monitors.recv().await {
                 for event in events.1 {
-                    self.handle(events.0, event);
+                    self.handle(events.0.clone(), event);
                 }
             }
         }
