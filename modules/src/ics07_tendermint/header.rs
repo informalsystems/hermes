@@ -1,12 +1,12 @@
 use serde_derive::{Deserialize, Serialize};
 
 use tendermint::block::signed_header::SignedHeader;
+use tendermint::block::Height;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use tendermint::block::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -21,7 +21,7 @@ impl Header {
     pub(crate) fn consensus_state(&self) -> ConsensusState {
         ConsensusState {
             timestamp: self.signed_header.header.time,
-            root: CommitmentRoot::from_bytes(&self.signed_header.header.app_hash),
+            root: CommitmentRoot::from_bytes(self.signed_header.header.app_hash.as_ref()),
             next_validators_hash: self.signed_header.header.next_validators_hash,
         }
     }
@@ -43,10 +43,12 @@ impl crate::ics02_client::header::Header for Header {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics07_tendermint::header::Header;
+    use std::convert::TryInto;
     use subtle_encoding::hex;
+
+    use crate::ics07_tendermint::header::Header;
+
     use tendermint::block::signed_header::SignedHeader;
-    use tendermint::block::Height;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::{vote, PublicKey};
@@ -80,7 +82,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: Height(9),
+            trusted_height: 9_u64.try_into().unwrap(),
             trusted_validator_set: vs,
         }
     }

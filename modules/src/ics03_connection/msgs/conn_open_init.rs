@@ -104,6 +104,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
             signer: ics_msg.signer.to_string(),
+            version: todo!(),
         }
     }
 }
@@ -124,6 +125,7 @@ pub mod test_util {
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
             signer: get_dummy_account_id_raw(),
+            version: todo!(),
         }
     }
 }

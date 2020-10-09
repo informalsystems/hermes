@@ -67,7 +67,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height(0),
+            None => 0_u64.try_into().unwrap(),
             Some(p) => p.height(),
         }
     }
@@ -123,7 +123,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 
         Ok(Self {
             connection_id: msg
-                .connection_id
+                .desired_connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_id: msg
@@ -158,12 +158,13 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            connection_id: ics_msg.connection_id.as_str().to_string(),
+            desired_connection_id: ics_msg.connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
             counterparty_versions: ics_msg.counterparty_versions,
+            counterparty_chosen_connection_id: todo!(), // FIXME: Protoupdate
             proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
                 version_number: 0,
                 version_height: ics_msg.proofs.height().value(),
@@ -207,10 +208,11 @@ pub mod test_util {
     ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
             client_id: "srcclient".to_string(),
-            connection_id: "srcconnection".to_string(),
+            desired_connection_id: "srcconnection".to_string(),
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
             counterparty_versions: vec!["1.0.0".to_string()],
+            counterparty_chosen_connection_id: todo!(), // FIXME: Protoupdate
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
                 version_number: 0,
@@ -258,9 +260,9 @@ mod tests {
                     want_pass: true,
                 },
                 Test {
-                    name: "Bad connection id, non-alpha".to_string(),
+                    name: "Bad desired connection id, non-alpha".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        connection_id: "con007".to_string(),
+                        desired_connection_id: "con007".to_string(),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,

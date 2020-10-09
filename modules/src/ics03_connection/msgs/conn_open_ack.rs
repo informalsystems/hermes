@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
@@ -55,7 +55,7 @@ impl MsgConnectionOpenAck {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height(0),
+            None => 0_u64.try_into().unwrap(),
             Some(p) => p.height(),
         }
     }
@@ -135,6 +135,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
+            counterparty_connection_id: todo!(), // FIXME: Protoupdate
             version: ics_msg.version,
             client_state: ics_msg
                 .client_state
@@ -177,6 +178,7 @@ pub mod test_util {
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
             connection_id: "srcconnection".to_string(),
+            counterparty_connection_id: "tgtconnection".to_string(),
             version: "1.0.0".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {

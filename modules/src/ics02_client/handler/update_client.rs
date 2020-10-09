@@ -63,6 +63,7 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
     use tendermint::block::Height;
 
     use super::*;
@@ -77,11 +78,11 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height(42));
+        ctx.with_client(&client_id, ClientType::Mock, 42_u64.try_into().unwrap());
 
         let msg = MsgUpdateAnyClient {
             client_id,
-            header: MockHeader(Height(46)).into(),
+            header: MockHeader(46_u64.try_into().unwrap()).into(),
             signer,
         };
 
@@ -111,11 +112,11 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client_consensus_state(&client_id, Height(42));
+        ctx.with_client_consensus_state(&client_id, 42_u64.try_into().unwrap());
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
-            header: MockHeader(Height(46)).into(),
+            header: MockHeader(46_u64.try_into().unwrap()).into(),
             signer,
         };
 
@@ -140,8 +141,8 @@ mod tests {
         ];
         let signer = get_dummy_account_id();
 
-        let initial_height = Height(45);
-        let update_height = Height(49);
+        let initial_height: Height = 45_u64.try_into().unwrap();
+        let update_height: Height = 49_u64.try_into().unwrap();
 
         let mut ctx = MockClientContext::default();
 
