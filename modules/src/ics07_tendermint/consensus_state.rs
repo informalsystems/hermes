@@ -16,22 +16,15 @@ use crate::ics23_commitment::commitment::CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    pub height: crate::Height,
     pub timestamp: Time,
     pub root: CommitmentRoot,
     pub next_validators_hash: Hash,
 }
 
 impl ConsensusState {
-    pub fn new(
-        root: CommitmentRoot,
-        height: crate::Height,
-        timestamp: Time,
-        next_validators_hash: Hash,
-    ) -> Self {
+    pub fn new(root: CommitmentRoot, timestamp: Time, next_validators_hash: Hash) -> Self {
         Self {
             root,
-            height,
             timestamp,
             next_validators_hash,
         }
@@ -41,10 +34,6 @@ impl ConsensusState {
 impl crate::ics02_client::state::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
-    }
-
-    fn height(&self) -> crate::Height {
-        self.height
     }
 
     fn root(&self) -> &CommitmentRoot {
@@ -74,15 +63,10 @@ impl TryFrom<RawConsensusState> for ConsensusState {
                 .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing commitment root"))?
                 .hash
                 .into(),
-            height: raw
-                .height
-                .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing height"))?
-                .epoch_height
-                .into(),
             timestamp: Utc
                 .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
                 .into(),
-            next_validators_hash: Hash::new(Algorithm::Sha256, &raw.next_validators_hash)
+            next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
         })
     }
@@ -93,10 +77,6 @@ impl From<ConsensusState> for RawConsensusState {
         RawConsensusState {
             timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
             root: Some(ibc_proto::ibc::commitment::MerkleRoot { hash: value.root.0 }),
-            height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.height.value(),
-            }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
         }
     }
@@ -105,8 +85,7 @@ impl From<ConsensusState> for RawConsensusState {
 impl From<SignedHeader> for ConsensusState {
     fn from(header: SignedHeader) -> Self {
         Self {
-            root: CommitmentRoot::from_bytes(&header.header.app_hash),
-            height: header.header.height,
+            root: CommitmentRoot::from_bytes(header.header.app_hash.as_ref()),
             timestamp: header.header.time,
             next_validators_hash: header.header.next_validators_hash,
         }

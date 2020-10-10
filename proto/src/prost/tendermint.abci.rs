@@ -505,8 +505,8 @@ pub struct VoteInfo {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
-    #[prost(string, tag="1")]
-    pub r#type: std::string::String,
+    #[prost(enumeration="EvidenceType", tag="1")]
+    pub r#type: i32,
     /// The offending validator
     #[prost(message, optional, tag="2")]
     pub validator: ::std::option::Option<Validator>,
@@ -548,4 +548,11 @@ pub struct Snapshot {
 pub enum CheckTxType {
     New = 0,
     Recheck = 1,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum EvidenceType {
+    Unknown = 0,
+    DuplicateVote = 1,
+    LightClientAttack = 2,
 }

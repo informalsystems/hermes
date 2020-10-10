@@ -14,6 +14,8 @@ use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
+use std::convert::TryInto;
+
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -82,7 +84,11 @@ impl Runnable for QueryClientStateCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
 
         let res: Result<AnyClientState, Error> = chain
-            .query(ClientState(opts.client_id), opts.height, opts.proof)
+            .query(
+                ClientState(opts.client_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
@@ -103,6 +109,9 @@ pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
+    #[options(free, help = "epoch of the client's consensus state to query")]
+    consensus_epoch: Option<u64>,
+
     #[options(free, help = "height of the client's consensus state to query")]
     consensus_height: Option<u64>,
 
@@ -116,6 +125,7 @@ pub struct QueryClientConsensusCmd {
 #[derive(Debug)]
 struct QueryClientConsensusOptions {
     client_id: ClientId,
+    consensus_epoch: u64,
     consensus_height: u64,
     height: u64,
     proof: bool,
@@ -129,10 +139,11 @@ impl QueryClientConsensusCmd {
         let (chain_config, client_id) =
             validate_common_options(&self.chain_id, &self.client_id, config)?;
 
-        match self.consensus_height {
-            Some(consensus_height) => {
+        match (self.consensus_epoch, self.consensus_height) {
+            (Some(consensus_epoch), Some(consensus_height)) => {
                 let opts = QueryClientConsensusOptions {
                     client_id,
+                    consensus_epoch,
                     consensus_height,
                     height: match self.height {
                         Some(h) => h,
@@ -145,7 +156,9 @@ impl QueryClientConsensusCmd {
                 };
                 Ok((chain_config, opts))
             }
-            None => Err("missing client consensus height".to_string()),
+            (Some(consensus_epoch), None) => Err("missing client consensus height".to_string()),
+
+            (None, _) => Err("missing client consensus epoch".to_string()),
         }
     }
 }
@@ -172,8 +185,12 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<AnyConsensusState, Error> = chain
             .query(
-                ClientConsensusState(opts.client_id, opts.consensus_height),
-                opts.height,
+                ClientConsensusState {
+                    client_id: opts.client_id,
+                    epoch: opts.consensus_epoch,
+                    height: opts.consensus_height,
+                },
+                opts.height.try_into().unwrap(),
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
@@ -193,7 +210,9 @@ fn validate_common_options(
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id.ok_or_else(|| "missing chain parameter".to_string())?;
+    let chain_id = chain_id
+        .clone()
+        .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .chains
         .iter()
@@ -239,6 +258,7 @@ impl QueryClientConnectionsCmd {
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
         let chain_id = self
             .chain_id
+            .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
@@ -286,7 +306,11 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<ConnectionIDs, Error> = chain
-            .query(ClientConnections(opts.client_id), opts.height, opts.proof)
+            .query(
+                ClientConnections(opts.client_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
         match res {
@@ -343,7 +367,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientStateCmd {
                     client_id: None,
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },
@@ -429,7 +453,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientConnectionsCmd {
                     client_id: None,
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },

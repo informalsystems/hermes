@@ -25,6 +25,14 @@ pub struct ClientState {
     /// Proof specifications used in verifying counterparty state
     #[prost(message, repeated, tag="8")]
     pub proof_specs: ::std::vec::Vec<super::super::ics23::ProofSpec>,
+    /// This flag, when set to true, will allow governance to recover a client
+    /// which has expired
+    #[prost(bool, tag="9")]
+    pub allow_update_after_expiry: bool,
+    /// This flag, when set to true, will allow governance to unfreeze a client
+    /// whose chain has experienced a misbehaviour event
+    #[prost(bool, tag="10")]
+    pub allow_update_after_misbehaviour: bool,
 }
 /// ConsensusState defines the consensus state from Tendermint.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -36,10 +44,7 @@ pub struct ConsensusState {
     /// commitment root (i.e app hash)
     #[prost(message, optional, tag="2")]
     pub root: ::std::option::Option<super::commitment::MerkleRoot>,
-    /// height at which the consensus state was stored.
-    #[prost(message, optional, tag="3")]
-    pub height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="4")]
+    #[prost(bytes, tag="3")]
     pub next_validators_hash: std::vec::Vec<u8>,
 }
 /// Misbehaviour is a wrapper over two conflicting Headers

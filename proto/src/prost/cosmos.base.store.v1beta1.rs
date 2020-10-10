@@ -25,3 +25,38 @@ pub struct CommitId {
     #[prost(bytes, tag="2")]
     pub hash: std::vec::Vec<u8>,
 }
+/// SnapshotItem is an item contained in a rootmulti.Store snapshot.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SnapshotItem {
+    /// item is the specific type of snapshot item.
+    #[prost(oneof="snapshot_item::Item", tags="1, 2")]
+    pub item: ::std::option::Option<snapshot_item::Item>,
+}
+pub mod snapshot_item {
+    /// item is the specific type of snapshot item.
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Item {
+        #[prost(message, tag="1")]
+        Store(super::SnapshotStoreItem),
+        #[prost(message, tag="2")]
+        Iavl(super::SnapshotIavlItem),
+    }
+}
+/// SnapshotStoreItem contains metadata about a snapshotted store.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SnapshotStoreItem {
+    #[prost(string, tag="1")]
+    pub name: std::string::String,
+}
+/// SnapshotIAVLItem is an exported IAVL node.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SnapshotIavlItem {
+    #[prost(bytes, tag="1")]
+    pub key: std::vec::Vec<u8>,
+    #[prost(bytes, tag="2")]
+    pub value: std::vec::Vec<u8>,
+    #[prost(int64, tag="3")]
+    pub version: i64,
+    #[prost(int32, tag="4")]
+    pub height: i32,
+}

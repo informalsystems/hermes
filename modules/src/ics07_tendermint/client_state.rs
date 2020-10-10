@@ -2,10 +2,8 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 
 use serde_derive::{Deserialize, Serialize};
-use std::{
-    convert::{TryFrom, TryInto},
-    time::Duration,
-};
+use std::convert::{TryFrom, TryInto};
+use std::time::Duration;
 
 use ibc_proto::ibc::tendermint::ClientState as RawClientState;
 use tendermint::block::Height;
@@ -20,11 +18,14 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub latest_height: Height,
     pub frozen_height: Height,
+    pub allow_update_after_expiry: bool,
+    pub allow_update_after_misbehaviour: bool,
 }
 
 impl DomainType<RawClientState> for ClientState {}
 
 impl ClientState {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: String,
         // trust_level: TrustLevel,
@@ -33,7 +34,8 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
-        // proof_specs: Specs
+        allow_update_after_expiry: bool,
+        allow_update_after_misbehaviour: bool, // proof_specs: Specs
     ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
@@ -53,14 +55,14 @@ impl ClientState {
         }
 
         // Basic validation for the frozen_height parameter.
-        if frozen_height != Height(0) {
+        if frozen_height != 0_u64.try_into().unwrap() {
             return Err(Kind::ValidationError
                 .context("ClientState cannot be frozen at creation time")
                 .into());
         }
 
         // Basic validation for the frozen_height parameter.
-        if latest_height <= Height(0) {
+        if latest_height <= 0_u64.try_into().unwrap() {
             return Err(Kind::ValidationError
                 .context("ClientState latest height cannot be smaller than zero")
                 .into());
@@ -74,7 +76,12 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            allow_update_after_expiry,
+            allow_update_after_misbehaviour,
         })
+    }
+    pub fn latest_height(&self) -> Height {
+        self.latest_height
     }
 }
 
@@ -93,7 +100,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
 
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
-        self.frozen_height != Height(0)
+        self.frozen_height != 0_u64.try_into().unwrap()
     }
 }
 
@@ -126,6 +133,8 @@ impl TryFrom<RawClientState> for ClientState {
                 raw.frozen_height
                     .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
             ),
+            allow_update_after_expiry: raw.allow_update_after_expiry,
+            allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
         })
     }
 }
@@ -133,7 +142,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.chain_id,
+            chain_id: value.chain_id.clone(),
             trust_level: None, // Todo: Why is trust_level commented out?
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
@@ -144,22 +153,27 @@ impl From<ClientState> for RawClientState {
             }), // Todo: upgrade to tendermint v0.17.0 Height
             latest_height: Some(ibc_proto::ibc::client::Height {
                 epoch_number: 0,
-                epoch_height: value.latest_height.value(),
+                epoch_height: value.latest_height().value(),
             }), // Todo: upgrade to tendermint v0.17.0 Height
             proof_specs: vec![], // Todo: Why is that not stored?
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         }
     }
 }
 
 fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
-    Height(height.epoch_height) // FIXME: This is wrong as it does not take the epoch into account
+    height.epoch_height.try_into().unwrap() // FIXME: This is wrong as it does not take the epoch into account
 }
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryInto;
+    use std::time::Duration;
+
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::test::test_serialization_roundtrip;
-    use std::time::Duration;
+
     use tendermint::block::Height;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
@@ -188,6 +202,8 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            allow_update_after_expiry: bool,
+            allow_update_after_misbehaviour: bool,
         }
 
         // Define a "default" set of parameters to reuse throughout these tests.
@@ -196,8 +212,10 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: Height(10),
-            frozen_height: Height(0),
+            latest_height: 10_u64.try_into().unwrap(),
+            frozen_height: 0_u64.try_into().unwrap(),
+            allow_update_after_expiry: false,
+            allow_update_after_misbehaviour: false,
         };
 
         struct Test {
@@ -215,7 +233,7 @@ mod tests {
             Test {
                 name: "Invalid frozen height parameter (should be 0)".to_string(),
                 params: ClientStateParams {
-                    frozen_height: Height(1),
+                    frozen_height: 1_u64.try_into().unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -259,6 +277,8 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.allow_update_after_expiry,
+                p.allow_update_after_misbehaviour,
             );
 
             assert_eq!(

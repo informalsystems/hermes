@@ -54,13 +54,15 @@ impl Chain for CosmosSDKChain {
     type ClientState = ClientState;
     type Error = Error;
 
-    fn query(&self, data: Path, height: u64, prove: bool) -> Result<Vec<u8>, Self::Error> {
+    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
         if !data.is_provable() & prove {
             return Err(Kind::Store
                 .context("requested proof for a path in the privateStore")
                 .into());
         }
+
         let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // Verify response proof, if requested.
@@ -164,21 +166,19 @@ async fn abci_query(
     chain: &CosmosSDKChain,
     path: TendermintABCIPath,
     data: String,
-    height: u64,
+    height: Height,
     prove: bool,
 ) -> Result<Vec<u8>, anomaly::Error<Kind>> {
+    let height = if height.value() == 0 {
+        None
+    } else {
+        Some(height)
+    };
+
     // Use the Tendermint-rs RPC client to do the query.
     let response = chain
         .rpc_client()
-        .abci_query(
-            Some(path),
-            data.into_bytes(),
-            match height {
-                0 => None,
-                _ => Some(Height::from(height)),
-            },
-            prove,
-        )
+        .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
         .map_err(|e| Kind::Rpc.context(e))?;
 
