@@ -55,14 +55,14 @@ impl ClientState {
         }
 
         // Basic validation for the frozen_height parameter.
-        if frozen_height != 0_u64.try_into().unwrap() {
+        if frozen_height != Height::from(0_u32) {
             return Err(Kind::ValidationError
                 .context("ClientState cannot be frozen at creation time")
                 .into());
         }
 
-        // Basic validation for the frozen_height parameter.
-        if latest_height <= 0_u64.try_into().unwrap() {
+        // Validation for the latest_height parameter.
+        if latest_height <= Height::from(0_u32) {
             return Err(Kind::ValidationError
                 .context("ClientState latest height cannot be smaller than zero")
                 .into());
@@ -100,7 +100,7 @@ impl crate::ics02_client::state::ClientState for ClientState {
 
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
-        self.frozen_height != 0_u64.try_into().unwrap()
+        self.frozen_height.value() != 0
     }
 }
 
@@ -168,7 +168,6 @@ fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
 
 #[cfg(test)]
 mod tests {
-    use std::convert::TryInto;
     use std::time::Duration;
 
     use crate::ics07_tendermint::client_state::ClientState;
@@ -212,8 +211,8 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: 10_u64.try_into().unwrap(),
-            frozen_height: 0_u64.try_into().unwrap(),
+            latest_height: Height::from(10_u32),
+            frozen_height: Height::from(0_u32),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         };
@@ -233,7 +232,7 @@ mod tests {
             Test {
                 name: "Invalid frozen height parameter (should be 0)".to_string(),
                 params: ClientStateParams {
-                    frozen_height: 1_u64.try_into().unwrap(),
+                    frozen_height: Height::from(1_u32),
                     ..default_params.clone()
                 },
                 want_pass: false,

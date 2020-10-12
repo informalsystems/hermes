@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
@@ -52,10 +52,10 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
+    /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0_u64.try_into().unwrap(),
+            None => Height::from(0_u32),
             Some(p) => p.height(),
         }
     }
