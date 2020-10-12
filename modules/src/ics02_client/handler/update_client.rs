@@ -18,7 +18,7 @@ pub struct UpdateClientResult {
 pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpdateAnyClient,
-) -> HandlerResult<UpdateClientResult, Error> {
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {
@@ -50,11 +50,13 @@ pub fn process(
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
-    Ok(output.with_result(UpdateClientResult {
-        client_id,
-        client_state: new_client_state,
-        consensus_state: new_consensus_state,
-    }))
+    Ok(
+        output.with_result(ClientResult::UpdateResult(UpdateClientResult {
+            client_id,
+            client_state: new_client_state,
+            consensus_state: new_consensus_state,
+        })),
+    )
 }
 
 pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
