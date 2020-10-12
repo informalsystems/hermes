@@ -1,5 +1,6 @@
-use crate::types::{Height, Hash, ChainId, ChannelId, ClientId, Datagram};
-use crate::chain::{Chain, SignedHeader, MembershipProof, ConsensusState};
+use crate::types::{Height, Hash, ChainId, ClientId, SignedHeader, MembershipProof, ConsensusState};
+use crate::msgs::Datagram;
+use crate::chain::Chain;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -43,11 +44,13 @@ impl ForeignClient {
         })
     }
 
+    // This is a completely different synchronous update strategy then bundeling a an update packet
     pub fn update(
         &mut self,
         src_chain: &dyn Chain,
         dst_chain: &dyn Chain,
         src_target_height: Height) -> Result<Height, ForeignClientError> {
+        /*
         return Ok(src_target_height);
         let (src_consensus_state, dst_membership_proof) =
             dst_chain.consensus_state(src_chain.id(), src_target_height);
@@ -66,8 +69,10 @@ impl ForeignClient {
         while src_consensus_state.height < src_target_height {
             let src_signed_headers = src_chain.get_minimal_set(src_consensus_state.height, src_target_height);
 
+            // if we actually want to do this we need to create a transaction
             // This might fail semantically due to competing relayers
             // Even if this fails, we need to continue
+            // XXX FIXME
             dst_chain.submit(vec![create_client_update_datagram(src_signed_headers)]);
 
             let (src_consensus_state, dst_membership_proof) = dst_chain.consensus_state(src_chain.id(), src_target_height);
@@ -82,6 +87,7 @@ impl ForeignClient {
                 return  Err(ForeignClientError::HeaderMismatch())
             }
         }
+        */
 
         return Ok(src_target_height)
     }
@@ -92,6 +98,8 @@ fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membersh
     return true
 }
 
+// XXX: It's probably the link that can produe this
 fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram  {
     return Datagram::NoOp()
 }
+

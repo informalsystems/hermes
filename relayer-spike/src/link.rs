@@ -1,8 +1,9 @@
-use crate::types::{Height, Hash, ChainId, ChannelId, ClientId, PortId, Datagram};
+use crate::types::{ChainId, ChannelId, ClientId, PortId};
+use crate::msgs::{Datagram, Packet, Transaction, ClientUpdate};
 use crate::connection::ConnectionError;
 use crate::channel::{Channel, ChannelError};
 use crate::foreign_client::{ForeignClient, ForeignClientError};
-use crate::chain::{Chain, ChainError, SignedHeader, MembershipProof, ConsensusState};
+use crate::chain::{Chain, ChainError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -28,6 +29,9 @@ enum Order {
     Unordered(),
 }
 
+// XXX: There is redundency in the configuration here that can be eliminated by simply passing in
+// the dependent objects (ForeignClient, Channel, etc)
+// Noting that Links are products of channels
 struct ConfigSide {
     chain_id: ChainId,
     client_id: ClientId,
@@ -84,30 +88,37 @@ impl Link {
         })
     }
 
-    // Failures
-    // * LightClient Failure
-    // * FullNode Failures
-    // * Verification Failure
-    pub fn run(mut self) -> Result<(), LinkError> {
+    // XXX: We need to export this as a handle function such that it can be unit tested
+    // Maybe it should be called CreateTransaction as it maps from events to transactions
+    pub fn run(self) -> Result<(), LinkError> {
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
-        for datagrams in subscription.iter() {
-            // XXX: We do not get full datagrams here, we get events and they need to be converted
-            // to datagrams by performing a series of queries on the chains
+        let signature = ();
 
-            let target_height = 1; // grab from the datagram
-            let header = self.src_chain.get_header(target_height);
+        for (target_height, events) in subscription.iter() {
+            // XXX: Error handling
+            // Can we just map this way?
+            let packets: Vec<Packet> = events.into_iter().map(|event| {
+                self.src_chain.create_packet(event)
+            }).collect();
 
-            verify_proof(&datagrams, &header);
+            let mut datagrams: Vec<Datagram> = packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
 
-            self.foreign_client.update(&*self.src_chain, &*self.dst_chain, target_height)?;
-            self.dst_chain.submit(datagrams);
+            // TODO: Need to fetch the consensus state on the foreign chain
+            let signed_headers = self.src_chain.get_minimal_set(0, target_height);
+            let client_update = ClientUpdate::new(signed_headers);
+
+            datagrams.push(Datagram::ClientUpdate(client_update));
+
+            // We are missing fields here like gas and account
+            let transaction = Transaction::new(datagrams);
+
+            let signed_transaction = transaction.sign(signature);
+
+            let encoded_transaction = signed_transaction.encode();
+
+            self.dst_chain.submit(encoded_transaction);
         }
 
         return Ok(())
     }
-
-}
-
-// XXX: Give this better naming
-fn verify_proof(_datagrams: &Vec<Datagram>, _header: &SignedHeader) {
 }

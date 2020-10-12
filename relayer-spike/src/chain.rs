@@ -1,31 +1,12 @@
 use crate::types::*;
+use crate::msgs::{Packet, IBCEvent, EncodedTransaction, Datagram};
 use crossbeam_channel as channel;
 use std::time::Duration;
 use thiserror::Error;
 
-#[derive(std::cmp::PartialEq)]
-pub struct Header {
-    pub height: Height,
-    pub hash: Hash,
-    pub app_hash: Hash,
-}
-
-pub struct MembershipProof {
-    pub height: Height,
-}
-
-impl Header {
-    fn default() -> Header {
-        return Header {
-            height: 1,
-            hash: (),
-            app_hash: (),
-        }
-    }
-}
 
 pub type Datagrams = Vec<Datagram>;
-pub type Subscription = channel::Receiver<Datagrams>;
+pub type Subscription = channel::Receiver<(Height, Vec<IBCEvent>)>;
 
 #[derive(Debug, Clone, Error)]
 pub enum ChainError {
@@ -33,35 +14,12 @@ pub enum ChainError {
     Failed(),
 }
 
-pub struct ConsensusState {
-    pub height: Height, // Is this superflous?
-    pub signed_header: SignedHeader,
-}
-
-impl ConsensusState {
-    fn default() -> ConsensusState {
-        return ConsensusState {
-            height: 1,
-            signed_header: SignedHeader::default(),
-        }
-    }
-}
-pub struct SignedHeader {
-    pub header: Header,
-    pub commit: (),
-}
-
-impl SignedHeader {
-    fn default() -> SignedHeader {
-        return SignedHeader {
-            header:  Header::default(),
-            commit: (),
-        }
-    }
-}
-
 pub trait Chain: Send {
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError>;
+
+    // Inclusion proofs
+    // It might be good to include an inclusion proof method which abstracts over the light client
+    // to prove that a peice of data is stored on the chain
 
     // TODO: Error Handling
     fn get_header(&self, height: Height) -> SignedHeader;
@@ -77,12 +35,16 @@ pub trait Chain: Send {
     // * ConnectionError
     // * ChannelError
     // * PacketError
-    fn submit(&self, datagrams: Vec<Datagram>);
+    fn submit(&self, transaction: EncodedTransaction);
 
     // TODO: Error handling
     fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof);
 
     fn id(&self) -> ChainId;
+
+    fn create_packet(&self, event: IBCEvent) -> Packet {
+        return Packet {}
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -120,7 +82,7 @@ impl Chain for ProdChain {
         return vec![SignedHeader::default()]
     }
 
-    fn submit(&self, datagrams: Vec<Datagram>) {
+    fn submit(&self, transaction: EncodedTransaction) {
     }
 
     fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
@@ -158,17 +120,19 @@ impl ChainRuntime {
         return ProdChain::new(sender);
     }
 
+    // XXX: Events come in batches
     pub fn run(self) -> Result<(), ChainError> {
         // TODO: Replace with a websocket
         let event_monitor = channel::tick(Duration::from_millis(1000));
 
-        let mut subscriptions: Vec<channel::Sender<Datagrams>> = vec![];
+        let mut subscriptions: Vec<channel::Sender<(Height, Vec<IBCEvent>)>> = vec![];
         loop {
             channel::select! {
                 recv(event_monitor) -> tick => {
                     println!("tick tick!");
                     for subscription in subscriptions.iter() {
-                        subscription.send(vec![Datagram::NoOp()]).unwrap();
+                        let target_height = 1;
+                        subscription.send((target_height, vec![IBCEvent::NoOp()])).unwrap();
                     }
                 },
                 recv(self.receiver) -> maybe_event => {
@@ -176,7 +140,7 @@ impl ChainRuntime {
                     match event {
                         HandleInput::Subscribe(sender) => {
                             println!("Subscribing!");
-                            let (sub_sender, sub_receiver) = channel::unbounded::<Vec<Datagram>>();
+                            let (sub_sender, sub_receiver) = channel::unbounded::<(Height, Vec<IBCEvent>)>();
                             subscriptions.push(sub_sender);
                             sender.send(sub_receiver).unwrap();
                         },
