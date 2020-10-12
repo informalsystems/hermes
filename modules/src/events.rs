@@ -148,7 +148,7 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
                     action.1 as usize,
                     events.clone(),
                 )) {
-                    Ok(ev) => vals.push(ev),
+                    Ok(event) => vals.push(event),
                     Err(e) => warn!("error while building event {}", e.to_string()),
                 }
             }
