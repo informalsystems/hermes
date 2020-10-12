@@ -15,12 +15,12 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // No connection should exist.
-    if ctx.fetch_connection_end(msg.connection_id()).is_some() {
+    if ctx.connection_end(msg.connection_id()).is_some() {
         return Err(Kind::ConnectionExistsAlready(msg.connection_id().clone()).into());
     }
 
     // An IBC client running on the local (host) chain should exist.
-    if ctx.fetch_client_state(msg.client_id()).is_none() {
+    if ctx.client_state(msg.client_id()).is_none() {
         return Err(Kind::MissingClient(msg.client_id().clone()).into());
     }
 

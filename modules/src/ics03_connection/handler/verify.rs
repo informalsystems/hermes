@@ -64,7 +64,7 @@ pub fn verify_connection_proof(
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
@@ -96,11 +96,11 @@ pub fn verify_client_proof(
     proof: &CommitmentProof,
 ) -> Result<(), Error> {
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     let consensus_state = ctx
-        .fetch_client_consensus_state(connection_end.client_id(), proof_height)
+        .client_consensus_state(connection_end.client_id(), proof_height)
         .ok_or_else(|| {
             Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
         })?;
@@ -130,7 +130,7 @@ pub fn verify_consensus_proof(
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
@@ -141,7 +141,7 @@ pub fn verify_consensus_proof(
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
-        .fetch_host_consensus_state(proof.height())
+        .host_consensus_state(proof.height())
         .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
 
     let client = AnyClient::from_client_type(client_state.client_type());

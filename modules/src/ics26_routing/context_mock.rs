@@ -39,11 +39,11 @@ impl MockICS26Context {
 impl ICS26Context for MockICS26Context {}
 
 impl ConnectionReader for MockICS26Context {
-    fn fetch_connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd> {
-        self.connection_context.fetch_connection_end(conn_id)
+    fn connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd> {
+        self.connection_context.connection_end(conn_id)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.client_context().client_state(client_id)
     }
 
@@ -59,7 +59,7 @@ impl ConnectionReader for MockICS26Context {
         self.connection_context.commitment_prefix()
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -67,8 +67,8 @@ impl ConnectionReader for MockICS26Context {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        self.connection_context.fetch_host_consensus_state(height)
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        self.connection_context.host_consensus_state(height)
     }
 
     fn get_compatible_versions(&self) -> Vec<String> {

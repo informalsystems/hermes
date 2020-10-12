@@ -26,14 +26,14 @@ pub struct MockContext {
     /// A list of `max_history_size` headers, ascending order by their height (latest is last).
     history: Vec<MockHeader>,
 
-    // All the connections in the store.
-    connections: HashMap<ConnectionId, ConnectionEnd>,
-
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
     // Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
+
+    // All the connections in the store.
+    connections: HashMap<ConnectionId, ConnectionEnd>,
 }
 
 impl MockContext {
@@ -50,20 +50,6 @@ impl MockContext {
             connections: Default::default(),
             clients: Default::default(),
             client_connections: Default::default(),
-        }
-    }
-
-    /// Internal interface for associating a connection to this context.
-    pub fn with_connection(
-        self,
-        connection_id: ConnectionId,
-        connection_end: ConnectionEnd,
-    ) -> Self {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
-        Self {
-            connections,
-            ..self
         }
     }
 
@@ -87,9 +73,23 @@ impl MockContext {
         Self { clients, ..self }
     }
 
+    /// Internal interface for associating a connection to this context.
+    pub fn with_connection(
+        self,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> Self {
+        let mut connections = self.connections.clone();
+        connections.insert(connection_id, connection_end);
+        Self {
+            connections,
+            ..self
+        }
+    }
+
     /// Internal interface. Accessor for a header of the local (host) chain of this context.
     /// May return `None` if the header for the requested height does not exist.
-    fn fetch_host_header(&self, height: Height) -> Option<MockHeader> {
+    fn host_header(&self, height: Height) -> Option<MockHeader> {
         let l = height.value() as usize;
         let h = self.latest_height.value() as usize;
 
@@ -102,11 +102,11 @@ impl MockContext {
 }
 
 impl ConnectionReader for MockContext {
-    fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
+    fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
         self.connections.get(cid)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward method call to the ICS2 Client-specific method.
         self.client_state(client_id)
     }
@@ -124,7 +124,7 @@ impl ConnectionReader for MockContext {
         CommitmentPrefix::from(vec![])
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -133,8 +133,8 @@ impl ConnectionReader for MockContext {
         self.consensus_state(client_id, height)
     }
 
-    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let hi = self.fetch_host_header(height)?;
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        let hi = self.host_header(height)?;
         Some(hi.into())
     }
 

@@ -65,11 +65,11 @@ impl MockConnectionContext {
 }
 
 impl ConnectionReader for MockConnectionContext {
-    fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
+    fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
         self.connections.get(cid)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.client_context().client_state(client_id)
     }
 
@@ -86,7 +86,7 @@ impl ConnectionReader for MockConnectionContext {
         CommitmentPrefix::from(vec![])
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -94,7 +94,7 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.chain_context().self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]

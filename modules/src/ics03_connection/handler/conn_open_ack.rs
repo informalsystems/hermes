@@ -19,7 +19,7 @@ pub(crate) fn process(
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end & validate it.
-    let mut new_conn_end = match ctx.fetch_connection_end(msg.connection_id()) {
+    let mut new_conn_end = match ctx.connection_end(msg.connection_id()) {
         // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
         Some(old_conn_end) => {
             if !((old_conn_end.state_matches(&State::Init)

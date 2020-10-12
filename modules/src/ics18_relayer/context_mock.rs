@@ -73,7 +73,7 @@ impl ICS18Context for MockICS18Context {
     }
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        self.chain_routing_context.fetch_client_state(client_id)
+        self.chain_routing_context.client_state(client_id)
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
