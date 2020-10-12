@@ -12,6 +12,8 @@ use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use tracing::warn;
+
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEvent {
@@ -136,14 +138,15 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
                 .map_err(|e| e.to_string())?;
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                let ev = build_event(RawObject::new(
+                match build_event(RawObject::new(
                     height.into(),
                     action.0,
                     action.1.try_into().unwrap(),
                     events.clone(),
-                ))
-                .map_err(|e| e.to_string())?;
-                vals.push(ev);
+                )) {
+                    Ok(ev) => vals.push(ev),
+                    Err(e) => warn!("error while building event {}", e.to_string()),
+                }
             }
         }
         _ => {}
