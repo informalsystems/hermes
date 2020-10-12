@@ -1,3 +1,7 @@
+//! ICS2 (client) context. The two traits `ClientReader` and `ClientKeeper` define the interface
+//! that any host chain must implement to be able to process any `ClientMsg`. See
+//! "ADR 003: IBC protocol implementation" for more details.
+
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
@@ -6,12 +10,14 @@ use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
 use crate::ics24_host::identifier::ClientId;
 use tendermint::block::Height;
 
+/// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
     fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState>;
 }
 
+/// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {

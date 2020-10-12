@@ -1,4 +1,7 @@
-use crate::context::{ChainReader, SelfChainType, SelfHeader};
+// TODO: This module is superseded by MockContext.
+// Will be nuked soon with https://github.com/informalsystems/ibc-rs/issues/297.
+
+use crate::context::{ChainReader, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::context::ClientReader;
@@ -62,15 +65,15 @@ impl MockConnectionContext {
 }
 
 impl ConnectionReader for MockConnectionContext {
-    fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
+    fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
         self.connections.get(cid)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.client_context().client_state(client_id)
     }
 
-    fn chain_current_height(&self) -> Height {
+    fn host_current_height(&self) -> Height {
         self.chain_context().latest
     }
 
@@ -79,15 +82,11 @@ impl ConnectionReader for MockConnectionContext {
         self.chain_context().max_size()
     }
 
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
-    }
-
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -95,7 +94,7 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.chain_context().self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]

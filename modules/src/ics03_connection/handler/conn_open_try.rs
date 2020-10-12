@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -7,7 +9,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 
-/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,
@@ -18,7 +19,7 @@ pub(crate) fn process(
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end (if any) and validate it against the message.
-    let mut new_connection_end = match ctx.fetch_connection_end(msg.connection_id()) {
+    let mut new_connection_end = match ctx.connection_end(msg.connection_id()) {
         Some(old_conn_end) => {
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
@@ -96,55 +97,73 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::mock_context::MockContext;
     use std::convert::TryFrom;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_try_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
 
-        let dummy_msg =
+        let msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let default_context = MockConnectionContext::new(34, 3);
+        let context = MockContext::new(10, Height::from(35_u32));
+
+        let msg_height_advanced =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();
+        let msg_height_old =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 10)).unwrap();
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
-            dummy_msg.client_id().clone(),
-            dummy_msg.counterparty(),
-            default_context.get_compatible_versions(),
+            msg_conn_try.client_id().clone(),
+            msg_conn_try.counterparty(),
+            context.get_compatible_versions(),
         )
         .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Good parameters".to_string(),
-                ctx: default_context
-                    .clone()
-                    .with_client_state(dummy_msg.client_id(), 10),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
-                want_pass: true,
+                name: "Processing fails because the height is too advanced".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_height_advanced)),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because the height is too old".to_string(),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_height_old)),
+                want_pass: false,
             },
             Test {
                 name: "Processing fails because no client exists".to_string(),
-                ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                ctx: context.clone(),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because connection exists in the store already".to_string(),
-                ctx: default_context
-                    .add_connection(dummy_msg.connection_id().clone(), try_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(dummy_msg.clone())),
+                name: "Processing fails because the connection exists in the store already"
+                    .to_string(),
+                ctx: context
+                    .clone()
+                    .with_connection(msg_conn_try.connection_id().clone(), try_conn_end.clone()),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
+            },
+            Test {
+                name: "Good parameters".to_string(),
+                ctx: context.with_client(msg_conn_try.client_id(), Height::from(10_u32)),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
+                want_pass: true,
             },
         ]
         .into_iter()
@@ -158,7 +177,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_try: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -167,7 +186,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have TryOpen state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, dummy_msg.connection_id().clone());
+                    assert_eq!(res.connection_id, msg_conn_try.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
@@ -178,7 +197,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_try: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

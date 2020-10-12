@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -7,7 +9,6 @@ use crate::ics03_connection::handler::ConnectionEvent::ConnOpenAck;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
-/// Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenAck,
@@ -18,7 +19,7 @@ pub(crate) fn process(
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
     // Unwrap the old connection end & validate it.
-    let mut new_conn_end = match ctx.fetch_connection_end(msg.connection_id()) {
+    let mut new_conn_end = match ctx.connection_end(msg.connection_id()) {
         // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
         Some(old_conn_end) => {
             if !((old_conn_end.state_matches(&State::Init)
@@ -84,41 +85,44 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::context_mock::MockConnectionContext;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
+    use crate::mock_context::MockContext;
     use std::convert::TryFrom;
     use std::str::FromStr;
+    use tendermint::block::Height;
 
     #[test]
     fn conn_open_ack_msg_processing() {
         struct Test {
             name: String,
-            ctx: MockConnectionContext,
+            ctx: MockContext,
             msg: ConnectionMsg,
             want_pass: bool,
         }
 
         let client_id = ClientId::from_str("mock_clientid").unwrap();
-        let dummy_msg = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
+        let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            dummy_msg.connection_id().clone(),
+            msg_ack.connection_id().clone(),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockConnectionContext::new(10, 3);
+
+        // This context has very small height, tests should not pass.
+        let incorrect_context = MockContext::new(5, Height::from(3_u32));
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Open,
             client_id.clone(),
             counterparty,
-            default_context.get_compatible_versions(),
+            incorrect_context.get_compatible_versions(),
         )
         .unwrap();
 
@@ -131,12 +135,12 @@ mod tests {
         // counterparty) that will be part of the context to exercise unsuccessful path.
         let mut incorrect_conn_end_prefix = incorrect_conn_end_state.clone();
         incorrect_conn_end_prefix.set_state(State::Init);
-        incorrect_conn_end_prefix.set_version(dummy_msg.version().clone());
+        incorrect_conn_end_prefix.set_version(msg_ack.version().clone());
 
         // Build a connection end that will exercise the successful path.
         let correct_counterparty = Counterparty::new(
             client_id.clone(),
-            dummy_msg.connection_id().clone(),
+            msg_ack.connection_id().clone(),
             CommitmentPrefix::from(b"ibc".to_vec()),
         )
         .unwrap();
@@ -144,51 +148,53 @@ mod tests {
             State::Init,
             client_id.clone(),
             correct_counterparty,
-            vec![dummy_msg.version().clone()],
+            vec![msg_ack.version().clone()],
         )
         .unwrap();
+
+        // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
+        let correct_context = MockContext::new(5, Height::from(10_u32));
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
-                ctx: default_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                ctx: incorrect_context.clone(),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
-                ctx: default_context
+                ctx: incorrect_context
                     .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_state),
-                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                    .with_client(&client_id, Height::from(10_u32))
+                    .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect versions)"
                     .to_string(),
-                ctx: default_context
+                ctx: incorrect_context
                     .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_vers),
-                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                    .with_client(&client_id, Height::from(10_u32))
+                    .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
-                ctx: default_context
-                    .clone()
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), incorrect_conn_end_prefix),
-                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                ctx: incorrect_context
+                    .with_client(&client_id, Height::from(10_u32))
+                    .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Successful processing of Ack message".to_string(),
-                ctx: default_context
-                    .with_client_state(&client_id, 10)
-                    .add_connection(dummy_msg.connection_id().clone(), correct_conn_end),
-                msg: ConnectionMsg::ConnectionOpenAck(dummy_msg.clone()),
+                ctx: correct_context
+                    .with_client(&client_id, Height::from(10_u32))
+                    .with_connection(msg_ack.connection_id().clone(), correct_conn_end),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: true,
             },
         ]
@@ -203,7 +209,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "process_ics3_msg() test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -212,7 +218,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, dummy_msg.connection_id().clone());
+                    assert_eq!(res.connection_id, msg_ack.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
@@ -223,7 +229,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "process_ics3_msg() failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_ack: failed for test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),
