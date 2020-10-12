@@ -6,6 +6,7 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
 use tendermint::block::Height;
 
+use crate::ics02_client;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -108,7 +109,7 @@ impl ConnectionReader for MockContext {
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward method call to the ICS2 Client-specific method.
-        self.client_state(client_id)
+        ics02_client::context::ClientReader::client_state(self, client_id)
     }
 
     fn host_current_height(&self) -> Height {
