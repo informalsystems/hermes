@@ -14,6 +14,8 @@ use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
+use std::convert::TryInto;
+
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -82,7 +84,11 @@ impl Runnable for QueryClientStateCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
 
         let res: Result<AnyClientState, Error> = chain
-            .query(ClientState(opts.client_id), opts.height, opts.proof)
+            .query(
+                ClientState(opts.client_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
@@ -184,7 +190,7 @@ impl Runnable for QueryClientConsensusCmd {
                     epoch: opts.consensus_epoch,
                     height: opts.consensus_height,
                 },
-                opts.height,
+                opts.height.try_into().unwrap(),
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
@@ -204,7 +210,9 @@ fn validate_common_options(
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id.ok_or_else(|| "missing chain parameter".to_string())?;
+    let chain_id = chain_id
+        .clone()
+        .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .chains
         .iter()
@@ -250,6 +258,7 @@ impl QueryClientConnectionsCmd {
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
         let chain_id = self
             .chain_id
+            .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
@@ -297,7 +306,11 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let res: Result<ConnectionIDs, Error> = chain
-            .query(ClientConnections(opts.client_id), opts.height, opts.proof)
+            .query(
+                ClientConnections(opts.client_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
         match res {
@@ -354,7 +367,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientStateCmd {
                     client_id: None,
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },
@@ -440,7 +453,7 @@ mod tests {
                 name: "No client id specified".to_string(),
                 params: QueryClientConnectionsCmd {
                     client_id: None,
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },

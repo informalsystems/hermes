@@ -113,7 +113,7 @@ impl EventMonitor {
                         match ibc::events::get_all_events(event.clone()) {
                             Ok(ibc_events) => {
                                 self.channel_to_handler
-                                    .send((self.chain_id, ibc_events))
+                                    .send((self.chain_id.clone(), ibc_events))
                                     .await?
                             },
                             Err(err) => {

@@ -1,6 +1,8 @@
 use crate::ics23_commitment::commitment::CommitmentProof;
-use serde_derive::{Deserialize, Serialize};
 use tendermint::block::Height;
+
+use serde_derive::{Deserialize, Serialize};
+use std::convert::TryInto;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
@@ -16,9 +18,9 @@ impl Proofs {
         object_proof: CommitmentProof,
         client_proof: Option<CommitmentProof>,
         consensus_proof: Option<ConsensusProof>,
-        height: u64,
+        proof_height: u64,
     ) -> Result<Self, String> {
-        if height == 0 {
+        if proof_height == 0 {
             return Err("Proofs height cannot be zero".to_string());
         }
 
@@ -26,11 +28,15 @@ impl Proofs {
             return Err("Proof cannot be empty".to_string());
         }
 
+        let height: Height = proof_height
+            .try_into()
+            .map_err(|_| "error parsing proof height")?;
+
         Ok(Self {
             object_proof,
             client_proof,
             consensus_proof,
-            height: Height(height),
+            height,
         })
     }
 
@@ -71,9 +77,13 @@ impl ConsensusProof {
             return Err("Proof cannot be empty".to_string());
         }
 
+        let height: Height = consensus_height
+            .try_into()
+            .map_err(|_| "cannot parse consensus height")?;
+
         Ok(Self {
             proof: consensus_proof,
-            height: Height(consensus_height),
+            height,
         })
     }
 

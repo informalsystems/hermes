@@ -27,10 +27,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Query the client state on destination chain.
-    if dest_chain
-        .query(ClientStatePath(opts.clone().dest_client_id), 0, false)
-        .is_ok()
-    {
+    let response = dest_chain.query(
+        ClientStatePath(opts.clone().dest_client_id),
+        Height::from(0_u32),
+        false,
+    );
+
+    if response.is_ok() {
         return Err(Into::<Error>::into(Kind::CreateClient(
             opts.dest_client_id,
             "client already exists".into(),
@@ -63,7 +66,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
         height,
-        Height(0),
+        Height::from(0_u32),
         false,
         false,
     )

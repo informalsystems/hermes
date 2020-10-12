@@ -77,11 +77,11 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height(42));
+        ctx.with_client(&client_id, ClientType::Mock, Height::from(42_u32));
 
         let msg = MsgUpdateAnyClient {
             client_id,
-            header: MockHeader(Height(46)).into(),
+            header: MockHeader(Height::from(46_u32)).into(),
             signer,
         };
 
@@ -111,11 +111,11 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client_consensus_state(&client_id, Height(42));
+        ctx.with_client_consensus_state(&client_id, Height::from(42_u32));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
-            header: MockHeader(Height(46)).into(),
+            header: MockHeader(Height::from(46_u32)).into(),
             signer,
         };
 
@@ -140,8 +140,8 @@ mod tests {
         ];
         let signer = get_dummy_account_id();
 
-        let initial_height = Height(45);
-        let update_height = Height(49);
+        let initial_height = Height::from(45_u32);
+        let update_height = Height::from(49_u32);
 
         let mut ctx = MockClientContext::default();
 

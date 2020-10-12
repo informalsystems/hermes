@@ -9,6 +9,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
+use std::convert::TryInto;
 use tendermint::block::Height;
 
 #[derive(Clone, Debug, Default)]
@@ -37,7 +38,9 @@ impl MockConnectionContext {
 
     pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
         let mut client_context = self.client_context().clone();
-        client_context.with_client_consensus_state(client_id, Height(latest_client_height));
+        client_context
+            .with_client_consensus_state(client_id, latest_client_height.try_into().unwrap());
+
         Self {
             client_context,
             ..self
