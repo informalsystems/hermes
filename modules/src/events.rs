@@ -142,12 +142,14 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
 
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                match build_event(RawObject::new(
+                let event = build_event(RawObject::new(
                     height,
                     action.0,
                     action.1 as usize,
                     events.clone(),
-                )) {
+                ));
+
+                match event {
                     Ok(event) => vals.push(event),
                     Err(e) => warn!("error while building event {}", e.to_string()),
                 }
