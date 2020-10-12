@@ -5,7 +5,6 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics02_client::error::Error as ICS2Error;
-use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::context_mock::MockConnectionContext;
@@ -13,6 +12,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
+use crate::Height;
 
 /// Mock implementation of ICS26 context. Wraps around both a client (ICS2) and connections (ICS3)
 /// contexts.

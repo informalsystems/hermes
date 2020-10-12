@@ -63,7 +63,7 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::height::Height;
+    use crate::Height;
 
     use super::*;
     use crate::ics02_client::client_type::ClientType;

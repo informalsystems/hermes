@@ -1,9 +1,9 @@
 use crate::handler::HandlerOutput;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
-use crate::ics02_client::height::Height;
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::ics26_routing::msgs::ICS26Envelope;
+use crate::Height;
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.

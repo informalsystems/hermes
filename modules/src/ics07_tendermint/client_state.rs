@@ -1,13 +1,13 @@
-use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::error::{Error, Kind};
-
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
-use crate::ics02_client::height::Height;
 use ibc_proto::ibc::tendermint::ClientState as RawClientState;
 use tendermint_proto::DomainType;
+
+use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::{Error, Kind};
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -165,9 +165,9 @@ fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
 mod tests {
     use std::time::Duration;
 
-    use crate::ics02_client::height::Height;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::test::test_serialization_roundtrip;
+    use crate::Height;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     #[test]

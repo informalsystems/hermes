@@ -1,15 +1,12 @@
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::ics23_commitment::{commitment::CommitmentPrefix, merkle::apply_prefix};
-use crate::ics24_host::identifier::ConnectionId;
-use crate::{ics02_client::client_def::ClientDef, ics24_host::identifier::ClientId};
-use crate::{ics03_connection::connection::ConnectionEnd, ics24_host::Path};
-
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::merkle::apply_prefix;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::Path;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientState, MockConsensusState};
-
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use crate::ics02_client::height::Height;
-use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockClient;

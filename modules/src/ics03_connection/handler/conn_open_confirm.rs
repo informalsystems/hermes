@@ -73,6 +73,9 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
@@ -81,12 +84,9 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
-
-    use crate::ics02_client::height::Height;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
-    use std::convert::TryFrom;
-    use std::str::FromStr;
+    use crate::Height;
 
     #[test]
     fn conn_open_confirm_msg_processing() {

@@ -1,5 +1,4 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
@@ -7,6 +6,7 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::ClientId;
 use crate::ics24_host::identifier::ConnectionId;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TendermintClient;

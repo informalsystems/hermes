@@ -1,5 +1,4 @@
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics02_client::height::Height;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -8,6 +7,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
+use crate::Height;
 
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,

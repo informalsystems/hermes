@@ -1,5 +1,5 @@
-use crate::ics02_client::height::Height;
 use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::Height;
 use ibc_proto::ibc::client::Height as RawHeight;
 use serde_derive::{Deserialize, Serialize};
 

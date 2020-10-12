@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::ics02_client::client_def::AnyConsensusState;
 use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::height::Height;
+use crate::Height;
 
 #[cfg(test)]
 use {crate::mock_client::header::MockHeader, crate::mock_client::state::MockConsensusState};

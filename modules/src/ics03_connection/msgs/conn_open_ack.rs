@@ -1,5 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
+use std::str::FromStr;
 
 use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
@@ -7,13 +8,13 @@ use tendermint_proto::DomainType;
 use tendermint::account::Id as AccountId;
 
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics02_client::height::{zero_height, Height};
+use crate::ics02_client::height::zero_height;
 use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
-use std::str::FromStr;
+use crate::Height;
 
 /// Message type for the `MsgConnectionOpenAck` message.
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";

@@ -81,8 +81,10 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+
     use crate::handler::EventType;
-    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
@@ -92,8 +94,7 @@ mod tests {
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
-    use std::convert::TryFrom;
-    use std::str::FromStr;
+    use crate::Height;
 
     #[test]
     fn conn_open_ack_msg_processing() {

@@ -3,8 +3,7 @@ use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
-
-use crate::ics02_client::height::Height;
+use crate::Height;
 
 pub type Error = anomaly::Error<Kind>;
 

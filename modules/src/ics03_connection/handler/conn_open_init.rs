@@ -44,8 +44,9 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use crate::handler::EventType;
-    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
@@ -53,7 +54,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
-    use std::convert::TryFrom;
+    use crate::Height;
 
     #[test]
     fn conn_open_init_msg_processing() {

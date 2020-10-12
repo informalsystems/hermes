@@ -4,9 +4,10 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::height::{chain_version, Height};
+use crate::ics02_client::height::chain_version;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -48,13 +49,13 @@ impl crate::ics02_client::header::Header for Header {
 pub mod test_util {
     use subtle_encoding::hex;
 
-    use crate::ics07_tendermint::header::Header;
-
-    use crate::ics02_client::height::Height;
     use tendermint::block::signed_header::SignedHeader;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::{vote, PublicKey};
+
+    use crate::ics07_tendermint::header::Header;
+    use crate::Height;
 
     // TODO: This should be replaced with a ::default() or ::produce().
     // The implementation of this function comprises duplicate code (code borrowed from

@@ -3,10 +3,10 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::Height;
 use std::collections::HashMap;
 
 /// A mock implementation of client context. This mocks (i.e., replaces) the functionality of

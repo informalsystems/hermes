@@ -1,15 +1,16 @@
+use std::collections::HashMap;
+
 use crate::context::{ChainReader, SelfChainType, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::context_mock::MockClientContext;
-use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use std::collections::HashMap;
+use crate::Height;
 
 #[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {

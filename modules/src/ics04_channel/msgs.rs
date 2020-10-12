@@ -572,7 +572,6 @@ impl Msg for MsgAcknowledgement {
 #[cfg(test)]
 mod tests {
     use super::MsgChannelOpenInit;
-    use crate::ics02_client::height::Height;
     use crate::ics03_connection::msgs::test_util::get_dummy_proof;
     use crate::ics04_channel::channel::Order;
     use crate::ics04_channel::msgs::{
@@ -580,6 +579,7 @@ mod tests {
         MsgChannelOpenTry,
     };
     use crate::ics23_commitment::commitment::CommitmentProof;
+    use crate::Height;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
 

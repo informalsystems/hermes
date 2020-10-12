@@ -1,13 +1,14 @@
+use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
+
+use ibc_proto::ibc::mock::Header as RawMockHeader;
+use tendermint_proto::DomainType;
+
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
-use crate::ics02_client::height::Height;
-
-use ibc_proto::ibc::mock::Header as RawMockHeader;
-use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
-use tendermint_proto::DomainType;
+use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockHeader(pub Height);

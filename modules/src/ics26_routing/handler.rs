@@ -59,6 +59,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
@@ -69,9 +71,7 @@ mod tests {
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
-
-    use crate::ics02_client::height::Height;
-    use std::str::FromStr;
+    use crate::Height;
 
     #[test]
     fn routing_dispatch() {
