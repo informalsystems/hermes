@@ -43,12 +43,12 @@ impl crate::ics02_client::header::Header for Header {
 
 #[cfg(test)]
 pub mod test_util {
-    use std::convert::TryInto;
     use subtle_encoding::hex;
 
     use crate::ics07_tendermint::header::Header;
 
     use tendermint::block::signed_header::SignedHeader;
+    use tendermint::block::Height;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::{vote, PublicKey};
@@ -82,7 +82,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: 9_u64.try_into().unwrap(),
+            trusted_height: Height::from(9_u32),
             trusted_validator_set: vs,
         }
     }

@@ -67,7 +67,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0_u64.try_into().unwrap(),
+            None => Height::from(0_u32),
             Some(p) => p.height(),
         }
     }
