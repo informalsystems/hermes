@@ -12,6 +12,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use std::cmp::min;
+use std::convert::TryInto;
 
 /// Mock for a context. Used in testing handlers of all modules.
 #[derive(Clone, Debug)]
@@ -44,7 +45,7 @@ impl MockContext {
             latest_height,
             history: (0..n)
                 .rev()
-                .map(|i| MockHeader(Height(latest_height.value() - i)))
+                .map(|i| MockHeader((latest_height.value() - i).try_into().unwrap()))
                 .collect(),
             connections: Default::default(),
             clients: Default::default(),

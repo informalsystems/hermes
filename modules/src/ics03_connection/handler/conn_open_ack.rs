@@ -115,7 +115,7 @@ mod tests {
         .unwrap();
 
         // This context has very small height, tests should not pass.
-        let incorrect_context = MockContext::new(5, Height(3));
+        let incorrect_context = MockContext::new(5, Height::from(3_u32));
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
@@ -153,7 +153,7 @@ mod tests {
         .unwrap();
 
         // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
-        let correct_context = MockContext::new(5, Height(10));
+        let correct_context = MockContext::new(5, Height::from(10_u32));
 
         let tests: Vec<Test> = vec![
             Test {
@@ -166,7 +166,7 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: incorrect_context
                     .clone()
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -176,7 +176,7 @@ mod tests {
                     .to_string(),
                 ctx: incorrect_context
                     .clone()
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -184,7 +184,7 @@ mod tests {
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: incorrect_context
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -192,7 +192,7 @@ mod tests {
             Test {
                 name: "Successful processing of Ack message".to_string(),
                 ctx: correct_context
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(msg_ack.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: true,

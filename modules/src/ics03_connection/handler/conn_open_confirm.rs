@@ -107,7 +107,7 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let context = MockContext::new(10, Height(3));
+        let context = MockContext::new(10, Height::from(3_u32));
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
@@ -131,7 +131,7 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(
                         msg_confirm.connection_id().clone(),
                         incorrect_conn_end_state,
@@ -142,7 +142,7 @@ mod tests {
             Test {
                 name: "Processing successful".to_string(),
                 ctx: context
-                    .with_client(&client_id, Height(10))
+                    .with_client(&client_id, Height::from(10_u32))
                     .with_connection(msg_confirm.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: true,

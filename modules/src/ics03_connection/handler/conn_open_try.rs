@@ -116,7 +116,7 @@ mod tests {
 
         let msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let context = MockContext::new(10, Height(35));
+        let context = MockContext::new(10, Height::from(35_u32));
 
         let msg_height_advanced =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();
@@ -161,7 +161,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_try.client_id(), Height(10)),
+                ctx: context.with_client(msg_conn_try.client_id(), Height::from(10_u32)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: true,
             },

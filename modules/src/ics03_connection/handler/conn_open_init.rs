@@ -67,7 +67,7 @@ mod tests {
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let context = MockContext::new(34, Height(3));
+        let context = MockContext::new(34, Height::from(3_u32));
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
@@ -95,7 +95,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_init.client_id(), Height(10)),
+                ctx: context.with_client(msg_conn_init.client_id(), Height::from(10_u32)),
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: true,
             },
