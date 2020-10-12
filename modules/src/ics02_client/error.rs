@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 
-use tendermint::block::Height;
+use crate::ics02_client::height::Height;
 
 pub type Error = anomaly::Error<Kind>;
 
@@ -42,6 +42,9 @@ pub enum Kind {
 
     #[error("invalid raw header")]
     InvalidRawHeader,
+
+    #[error("invalid height result")]
+    InvalidHeightResult,
 
     #[error("Protobuf decoding failure")]
     ProtoDecodingFailure,

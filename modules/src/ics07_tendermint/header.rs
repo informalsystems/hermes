@@ -1,10 +1,10 @@
 use serde_derive::{Deserialize, Serialize};
 
 use tendermint::block::signed_header::SignedHeader;
-use tendermint::block::Height;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::height::{chain_version, Height};
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
@@ -33,7 +33,10 @@ impl crate::ics02_client::header::Header for Header {
     }
 
     fn height(&self) -> Height {
-        self.signed_header.header.height
+        Height {
+            version_number: chain_version(self.signed_header.header.chain_id.to_string()),
+            version_height: u64::from(self.signed_header.header.height),
+        }
     }
 
     // fn consensus_state(&self) -> &dyn crate::ics02_client::state::ConsensusState {
@@ -47,8 +50,8 @@ pub mod test_util {
 
     use crate::ics07_tendermint::header::Header;
 
+    use crate::ics02_client::height::Height;
     use tendermint::block::signed_header::SignedHeader;
-    use tendermint::block::Height;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::{vote, PublicKey};
@@ -82,7 +85,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: Height::from(9_u32),
+            trusted_height: Height::new(0, 9),
             trusted_validator_set: vs,
         }
     }

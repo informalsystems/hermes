@@ -3,6 +3,7 @@ use crate::handler::HandlerOutput;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context_mock::MockClientContext;
+use crate::ics02_client::height::{chain_version, Height};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
@@ -10,7 +11,6 @@ use crate::ics24_host::identifier::ClientId;
 use crate::ics26_routing::context_mock::MockICS26Context;
 use crate::ics26_routing::handler::dispatch;
 use crate::ics26_routing::msgs::ICS26Envelope;
-use crate::Height;
 
 #[derive(Clone, Debug, Default)]
 pub struct MockICS18Context {
@@ -22,14 +22,29 @@ impl MockICS18Context {
     /// Create a new ICS18 mock context. This function initializes the context to comprise a chain
     /// with current height corresponding to `chain_height`,  contain
     pub fn new(
-        chain_height: Height,
+        chain_id: String,
+        chain_height: u64,
         max_hist_size: usize,
         client_id: &ClientId,
-        client_height: Height,
+        client_height: u64,
     ) -> MockICS18Context {
         // Create the mock client context.
-        let mut client_ctx = MockClientContext::new(u64::from(chain_height), max_hist_size);
-        client_ctx.with_client(client_id, ClientType::Mock, client_height);
+        let mut client_ctx = MockClientContext::new(
+            chain_id.clone(),
+            Height {
+                version_number: chain_version(chain_id.clone()),
+                version_height: chain_height,
+            },
+            max_hist_size,
+        );
+        client_ctx.with_client(
+            client_id,
+            ClientType::Mock,
+            Height {
+                version_number: chain_version(chain_id),
+                version_height: client_height,
+            },
+        );
 
         Self {
             // Wrap the client context in a ICS26 context, which we wrap in the ICS18 context.

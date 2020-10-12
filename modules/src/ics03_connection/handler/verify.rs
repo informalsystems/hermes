@@ -1,4 +1,5 @@
 use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::height::Height;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -7,7 +8,6 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
-use tendermint::block::Height;
 
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
@@ -165,12 +165,12 @@ pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
 ) -> Result<(), Error> {
-    if claimed_height > ctx.chain_current_height() {
+    if claimed_height.gt(ctx.chain_current_height()) {
         // Fail if the consensus height is too advanced.
-        Err(Kind::InvalidConsensusHeight(claimed_height).into())
-    } else if claimed_height.value()
-        < (ctx.chain_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
-    {
+        return Err(Kind::InvalidConsensusHeight(claimed_height).into());
+    }
+    let min_height = claimed_height.add(ctx.chain_consensus_states_history_size() as u64);
+    if min_height.lt(ctx.chain_current_height()) {
         // Fail if the consensus height is too old (outside of trusting period).
         Err(Kind::StaleConsensusHeight(claimed_height).into())
     } else {

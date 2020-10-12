@@ -67,17 +67,18 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            proofs: Proofs::new(
+                msg.proof_ack.into(),
+                None,
+                None,
+                msg.proof_height.ok_or_else(|| Kind::MissingProofHeight)?,
+            )
+            .map_err(|e| Kind::InvalidProof.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
                 .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
@@ -89,10 +90,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             signer: ics_msg.signer.to_string(),
         }
     }

@@ -1,11 +1,11 @@
 use crate::context::SelfChainType;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use tendermint::block::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ICS3Msg`.
 pub trait ConnectionReader {

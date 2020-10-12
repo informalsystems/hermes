@@ -82,6 +82,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
+    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
@@ -96,6 +97,7 @@ mod tests {
 
     #[test]
     fn conn_open_ack_msg_processing() {
+        let chain_id = "testchain-0".to_string();
         struct Test {
             name: String,
             ctx: MockConnectionContext,
@@ -111,7 +113,7 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockConnectionContext::new(10, 3);
+        let default_context = MockConnectionContext::new(chain_id, Height::new(0, 10), 3);
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(

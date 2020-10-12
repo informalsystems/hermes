@@ -1,7 +1,7 @@
 // TODO: Update error types for Connection!!
 
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::Height;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 
@@ -23,6 +23,9 @@ pub enum Kind {
 
     #[error("consensus height claimed by the client on the other party is too advanced: {0}")]
     InvalidConsensusHeight(Height),
+
+    #[error("invalid raw height")]
+    InvalidRawHeight,
 
     #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0}")]
     StaleConsensusHeight(Height),

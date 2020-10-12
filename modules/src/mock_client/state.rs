@@ -9,7 +9,7 @@ use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
 
-use tendermint::block::Height;
+use crate::ics02_client::height::Height;
 
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -51,7 +51,7 @@ impl MockClientState {
         match header {
             #[cfg(test)]
             AnyHeader::Mock(mock_header) => {
-                if self.latest_height() >= header.height() {
+                if self.latest_height().gte(header.height()) {
                     return Err("header height is lower than client latest".into());
                 }
 
@@ -83,10 +83,7 @@ impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::client::Height {
-                    epoch_number: 0,
-                    epoch_height: value.0.height().value(),
-                }),
+                height: Some(value.0.height().into()),
             }),
         }
     }
@@ -138,10 +135,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::client::Height {
-                    epoch_number: 0,
-                    epoch_height: value.0.height().into(),
-                }),
+                height: Some(value.0.height().into()),
             }),
         }
     }

@@ -143,12 +143,12 @@ mod tests {
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
+    use crate::ics02_client::height::Height;
     use crate::ics02_client::msgs::MsgCreateAnyClient;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics24_host::identifier::ClientId;
-    use tendermint::block::Height;
 
     #[test]
     fn to_and_from_any() {
@@ -161,8 +161,8 @@ mod tests {
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
-            latest_height: tm_header.signed_header.header.height,
-            frozen_height: Height::from(0_u32),
+            latest_height: Height::new(0, u64::from(tm_header.signed_header.header.height)),
+            frozen_height: Height::default(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         });

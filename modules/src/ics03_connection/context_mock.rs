@@ -3,14 +3,13 @@ use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::context_mock::MockClientContext;
+use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use std::collections::HashMap;
-use std::convert::TryInto;
-use tendermint::block::Height;
 
 #[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {
@@ -20,9 +19,9 @@ pub struct MockConnectionContext {
 }
 
 impl MockConnectionContext {
-    pub fn new(chain_height: u64, max_history_size: usize) -> Self {
+    pub fn new(chain_id: String, chain_height: Height, max_history_size: usize) -> Self {
         MockConnectionContext {
-            client_context: MockClientContext::new(chain_height, max_history_size),
+            client_context: MockClientContext::new(chain_id, chain_height, max_history_size),
             connections: Default::default(),
             client_connections: Default::default(),
         }
@@ -38,9 +37,13 @@ impl MockConnectionContext {
 
     pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
         let mut client_context = self.client_context().clone();
-        client_context
-            .with_client_consensus_state(client_id, latest_client_height.try_into().unwrap());
-
+        client_context.with_client_consensus_state(
+            client_id,
+            Height {
+                version_number: 0,
+                version_height: latest_client_height,
+            },
+        );
         Self {
             client_context,
             ..self

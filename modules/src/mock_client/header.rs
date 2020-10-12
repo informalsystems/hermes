@@ -2,11 +2,11 @@ use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
+use crate::ics02_client::height::Height;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use tendermint::block::Height;
+use std::convert::TryFrom;
 use tendermint_proto::DomainType;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -24,24 +24,16 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .into());
         }
 
-        Ok(MockHeader(
-            raw.height
-                .unwrap()
-                .epoch_height
-                .try_into()
-                .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
-        ))
+        Ok(MockHeader(Height {
+            version_number: 0,
+            version_height: raw.height.unwrap().epoch_height,
+        }))
     }
 }
 
 impl From<MockHeader> for RawMockHeader {
     fn from(value: MockHeader) -> Self {
-        RawMockHeader {
-            height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.height().value(),
-            }),
-        } // FIXME: This is wrong as it does not take the epoch into account
+        value.into()
     }
 }
 

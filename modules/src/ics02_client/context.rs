@@ -3,8 +3,8 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use tendermint::block::Height;
 
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType>;

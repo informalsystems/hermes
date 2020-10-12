@@ -94,6 +94,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use crate::handler::EventType;
+    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::context_mock::MockConnectionContext;
@@ -105,6 +106,8 @@ mod tests {
 
     #[test]
     fn conn_open_try_msg_processing() {
+        let chain_id = "testchain-0".to_string();
+
         struct Test {
             name: String,
             ctx: MockConnectionContext,
@@ -114,7 +117,7 @@ mod tests {
 
         let dummy_msg =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let default_context = MockConnectionContext::new(34, 3);
+        let default_context = MockConnectionContext::new(chain_id, Height::new(0, 34), 3);
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,

@@ -70,8 +70,8 @@ mod tests {
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
 
+    use crate::ics02_client::height::Height;
     use std::str::FromStr;
-    use tendermint::block::Height;
 
     #[test]
     fn routing_dispatch() {
@@ -88,9 +88,9 @@ mod tests {
         let msg = MsgCreateAnyClient {
             client_id: ClientId::from_str("client_id").unwrap(),
             client_type: ClientType::Mock,
-            client_state: AnyClientState::from(MockClientState(MockHeader(Height::from(42_u32)))),
-            consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(Height::from(
-                42_u32,
+            client_state: AnyClientState::from(MockClientState(MockHeader(Height::new(0, 42)))),
+            consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(Height::new(
+                0, 42,
             )))),
             signer: get_dummy_account_id(),
         };

@@ -5,9 +5,9 @@ use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
 
 use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::height::{zero_height, Height};
 use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
@@ -55,7 +55,7 @@ impl MsgConnectionOpenAck {
     /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height::from(0_u32),
+            None => zero_height(),
             Some(p) => p.height(),
         }
     }
@@ -91,14 +91,10 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .ok_or_else(|| Kind::MissingConsensusHeight)?;
+
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -122,7 +118,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 msg.proof_try.into(),
                 client_proof,
                 Option::from(consensus_proof_obj),
-                proof_height,
+                msg.proof_height.ok_or_else(|| Kind::MissingProofHeight)?,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
@@ -139,10 +135,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -153,15 +146,10 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(Vec::new, |v| v.proof().clone().into()),
-            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
-                || None,
-                |h| {
-                    Some(ibc_proto::ibc::client::Height {
-                        epoch_number: 0,
-                        epoch_height: u64::from(h.height()),
-                    })
-                },
-            ),
+            consensus_height: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(|| None, |h| Some(h.height().into())),
             signer: ics_msg.signer.to_string(),
         }
     }

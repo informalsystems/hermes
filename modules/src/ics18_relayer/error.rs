@@ -1,5 +1,5 @@
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::ClientId;
-use crate::Height;
 use anomaly::{BoxError, Context};
 use thiserror::Error;
 

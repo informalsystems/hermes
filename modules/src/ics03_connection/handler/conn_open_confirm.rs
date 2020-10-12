@@ -82,6 +82,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
 
+    use crate::ics02_client::height::Height;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
     use std::convert::TryFrom;
@@ -89,6 +90,8 @@ mod tests {
 
     #[test]
     fn conn_open_confirm_msg_processing() {
+        let chain_id = "testchain-0".to_string();
+
         struct Test {
             name: String,
             ctx: MockConnectionContext,
@@ -105,7 +108,7 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let default_context = MockConnectionContext::new(10, 3);
+        let default_context = MockConnectionContext::new(chain_id, Height::new(0, 10), 3);
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
