@@ -26,6 +26,7 @@ pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
     client_state: Option<AnyClientState>,
+    counterparty_chosen_connection_id: ConnectionId,
     counterparty: Counterparty,
     counterparty_versions: Vec<String>,
     proofs: Proofs,
@@ -67,7 +68,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0_u64.try_into().unwrap(),
+            None => Height::from(0_u32),
             Some(p) => p.height(),
         }
     }
@@ -135,6 +136,10 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
+            counterparty_chosen_connection_id: msg
+                .counterparty_chosen_connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty: msg
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -164,7 +169,10 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
             counterparty_versions: ics_msg.counterparty_versions,
-            counterparty_chosen_connection_id: todo!(), // FIXME: Protoupdate
+            counterparty_chosen_connection_id: ics_msg
+                .counterparty_chosen_connection_id
+                .as_str()
+                .to_string(),
             proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
                 version_number: 0,
                 version_height: ics_msg.proofs.height().value(),
@@ -212,7 +220,7 @@ pub mod test_util {
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
             counterparty_versions: vec!["1.0.0".to_string()],
-            counterparty_chosen_connection_id: todo!(), // FIXME: Protoupdate
+            counterparty_chosen_connection_id: "srcconnection".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
                 version_number: 0,

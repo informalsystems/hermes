@@ -22,6 +22,7 @@ use tendermint_proto::DomainType;
 
 use std::convert::TryInto;
 use std::str::FromStr;
+use tendermint::block::Height;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
@@ -85,7 +86,7 @@ fn query_channel_id() {
                     PortId::from_str("firstport").unwrap(),
                     ChannelId::from_str("firstchannel").unwrap(),
                 ),
-                0_u64.try_into().unwrap(),
+                Height::from(0_u32),
                 false,
             )
             .unwrap(),
@@ -109,7 +110,7 @@ fn query_client_id() {
         &chain
             .query(
                 ClientConnections(ClientId::from_str("clientidone").unwrap()),
-                0_u64.try_into().unwrap(),
+                Height::from(0_u32),
                 false,
             )
             .unwrap(),

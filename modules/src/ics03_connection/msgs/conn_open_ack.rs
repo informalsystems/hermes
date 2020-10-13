@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
@@ -24,6 +24,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
+    counterparty_connection_id: ConnectionId,
     client_state: Option<AnyClientState>,
     proofs: Proofs,
     version: String,
@@ -34,6 +35,11 @@ impl MsgConnectionOpenAck {
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn counterparty_connection_id(&self) -> &ConnectionId {
+        &self.counterparty_connection_id
     }
 
     /// Getter for accessing the client state.
@@ -52,10 +58,10 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
+    /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => 0_u64.try_into().unwrap(),
+            None => Height::from(0_u32),
             Some(p) => p.height(),
         }
     }
@@ -112,6 +118,10 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_connection_id: msg
+                .counterparty_connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
@@ -135,8 +145,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            counterparty_connection_id: todo!(), // FIXME: Protoupdate
-            version: ics_msg.version,
+            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
@@ -163,6 +172,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                     })
                 },
             ),
+            version: ics_msg.version,
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -179,7 +189,6 @@ pub mod test_util {
         RawMsgConnectionOpenAck {
             connection_id: "srcconnection".to_string(),
             counterparty_connection_id: "tgtconnection".to_string(),
-            version: "1.0.0".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
                 version_number: 0,
@@ -192,6 +201,7 @@ pub mod test_util {
             }),
             client_state: None,
             proof_client: vec![],
+            version: "1.0.0".to_string(),
             signer: get_dummy_account_id_raw(),
         }
     }

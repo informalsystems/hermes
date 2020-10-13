@@ -1,4 +1,4 @@
-use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfChainType, SelfHeader};
+use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfHeader};
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::mock_client::header::MockHeader;
 
@@ -91,10 +91,6 @@ impl MockChainContext {
 }
 
 impl ChainReader for MockChainContext {
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
-    }
-
     fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo> {
         let l = height.value() as usize;
         let h = self.latest.value() as usize;
@@ -150,7 +146,7 @@ impl ChainKeeper for MockChainContext {
 #[cfg(test)]
 mod tests {
     use crate::context_mock::MockChainContext;
-    use std::convert::TryInto;
+    use tendermint::block::Height;
 
     #[test]
     fn test_store_historical_info() {
@@ -169,22 +165,22 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Add no prune".to_string(),
-                ctx: MockChainContext::new(3, 0_u64.try_into().unwrap()),
+                ctx: MockChainContext::new(3, Height::from(0_u32)),
                 args: [1].to_vec(),
             },
             Test {
                 name: "Add with prune".to_string(),
-                ctx: MockChainContext::new(3, 2_u64.try_into().unwrap()),
+                ctx: MockChainContext::new(3, Height::from(2_u32)),
                 args: [3, 4].to_vec(),
             },
             Test {
                 name: "Add with initial prune".to_string(),
-                ctx: MockChainContext::new(3, 10_u64.try_into().unwrap()),
+                ctx: MockChainContext::new(3, Height::from(10_u32)),
                 args: [11].to_vec(),
             },
             Test {
                 name: "Attempt to add non sequential headers".to_string(),
-                ctx: MockChainContext::new(3, 2_u64.try_into().unwrap()),
+                ctx: MockChainContext::new(3, Height::from(2_u32)),
                 args: [3, 5, 7].to_vec(),
             },
         ];

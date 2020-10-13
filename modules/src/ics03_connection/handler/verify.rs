@@ -1,3 +1,5 @@
+//! ICS3 verification functions, common across all four handlers of ICS3.
+
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
@@ -62,7 +64,7 @@ pub fn verify_connection_proof(
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
@@ -94,11 +96,11 @@ pub fn verify_client_proof(
     proof: &CommitmentProof,
 ) -> Result<(), Error> {
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     let consensus_state = ctx
-        .fetch_client_consensus_state(connection_end.client_id(), proof_height)
+        .client_consensus_state(connection_end.client_id(), proof_height)
         .ok_or_else(|| {
             Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
         })?;
@@ -128,7 +130,7 @@ pub fn verify_consensus_proof(
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
-        .fetch_client_state(connection_end.client_id())
+        .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
@@ -139,7 +141,7 @@ pub fn verify_consensus_proof(
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
-        .fetch_self_consensus_state(proof.height())
+        .host_consensus_state(proof.height())
         .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
 
     let client = AnyClient::from_client_type(client_state.client_type());
@@ -165,14 +167,14 @@ pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
 ) -> Result<(), Error> {
-    if claimed_height > ctx.chain_current_height() {
+    if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
-        Err(Kind::InvalidConsensusHeight(claimed_height).into())
+        Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into())
     } else if claimed_height.value()
-        < (ctx.chain_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
+        < (ctx.host_current_height().value() - ctx.chain_consensus_states_history_size() as u64)
     {
         // Fail if the consensus height is too old (outside of trusting period).
-        Err(Kind::StaleConsensusHeight(claimed_height).into())
+        Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into())
     } else {
         // Height check is within normal bounds, check passes.
         Ok(())

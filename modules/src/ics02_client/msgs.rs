@@ -137,9 +137,12 @@ pub struct MsgUpdateAnyClient {
 
 #[cfg(test)]
 mod tests {
-    use ibc_proto::ibc::core::client::v1::MsgCreateClient;
-    use std::convert::{TryFrom, TryInto};
+    use std::convert::TryFrom;
     use std::time::Duration;
+
+    use tendermint::block::Height;
+
+    use ibc_proto::ibc::core::client::v1::MsgCreateClient;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
@@ -161,9 +164,10 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: tm_header.signed_header.header.height,
-            frozen_height: 0_u64.try_into().unwrap(),
+            frozen_height: Height::from(0_u32),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
+            //upgrade_path: None
         });
 
         let msg = MsgCreateAnyClient {
