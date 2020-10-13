@@ -59,7 +59,6 @@ mod tests {
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::error::Kind;
-    use crate::ics02_client::handler::create_client::process;
     use crate::ics02_client::handler::{dispatch, ClientEvent, ClientResult};
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
@@ -69,8 +68,8 @@ mod tests {
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
     use crate::mock_context::MockContext;
+    use crate::Height;
     use std::time::Duration;
-    use tendermint::block::Height;
 
     #[test]
     fn test_create_client_ok() {
@@ -121,10 +120,7 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_type() {
-        let height = Height {
-            version_number: 0,
-            version_height: 42,
-        };
+        let height = Height::new(0, 42);
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
@@ -183,7 +179,7 @@ mod tests {
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         if let Err(err) = output {
             assert_eq!(err.kind(), &Kind::ClientAlreadyExists(msg.client_id));
@@ -251,7 +247,7 @@ mod tests {
         .collect();
 
         for msg in create_client_msgs {
-            let output = process(&ctx, msg.clone());
+            let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
@@ -313,7 +309,7 @@ mod tests {
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {

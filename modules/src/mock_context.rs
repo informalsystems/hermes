@@ -41,7 +41,7 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(5, Height::from(1_u32))
+        Self::new(5, Height::new(0, 1))
     }
 }
 

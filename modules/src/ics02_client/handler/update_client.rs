@@ -65,21 +65,22 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
-    use crate::Height;
-
-    use super::*;
-    use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::context_mock::MockClientContext;
+    use crate::handler::HandlerOutput;
+    use crate::ics02_client::error::Kind;
+    use crate::ics02_client::handler::{dispatch, ClientEvent};
+    use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics24_host::identifier::ClientId;
     use crate::mock_client::header::MockHeader;
     use crate::mock_context::MockContext;
+    use crate::Height;
 
     #[test]
     fn test_update_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
+        let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id,
@@ -87,7 +88,7 @@ mod tests {
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -112,8 +113,7 @@ mod tests {
         let client_id: ClientId = "mockclient1".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockClientContext::default();
-        ctx.with_client_consensus_state(&client_id, Height::new(0, 42));
+        let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
@@ -121,7 +121,7 @@ mod tests {
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(_) => {
@@ -144,10 +144,10 @@ mod tests {
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
 
-        let mut ctx = MockClientContext::default();
+        let mut ctx = MockContext::default();
 
         for cid in &client_ids {
-            ctx.with_client_consensus_state(cid, initial_height);
+            ctx = ctx.with_client(cid, initial_height);
         }
 
         for cid in &client_ids {
@@ -157,7 +157,7 @@ mod tests {
                 signer,
             };
 
-            let output = process(&ctx, msg.clone());
+            let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {
