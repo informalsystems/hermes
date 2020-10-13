@@ -4,7 +4,7 @@ use std::{cmp::Ordering, convert::TryFrom};
 use tendermint_proto::DomainType;
 
 use crate::ics02_client::error::{Error, Kind};
-use ibc_proto::ibc::client::Height as RawHeight;
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
@@ -95,8 +95,8 @@ impl TryFrom<RawHeight> for Height {
 
     fn try_from(msg: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
-            version_number: msg.epoch_number,
-            version_height: msg.epoch_height,
+            version_number: msg.version_number,
+            version_height: msg.version_height,
         })
     }
 }
@@ -104,8 +104,8 @@ impl TryFrom<RawHeight> for Height {
 impl From<Height> for RawHeight {
     fn from(ics_height: Height) -> Self {
         RawHeight {
-            epoch_number: ics_height.version_number,
-            epoch_height: ics_height.version_height,
+            version_number: ics_height.version_number,
+            version_height: ics_height.version_height,
         }
     }
 }

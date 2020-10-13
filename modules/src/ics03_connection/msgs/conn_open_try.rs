@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -26,6 +26,7 @@ pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
     client_state: Option<AnyClientState>,
+    counterparty_chosen_connection_id: ConnectionId,
     counterparty: Counterparty,
     counterparty_versions: Vec<String>,
     proofs: Proofs,
@@ -108,6 +109,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?;
+
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -118,7 +120,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 
         Ok(Self {
             connection_id: msg
-                .connection_id
+                .desired_connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_id: msg
@@ -130,6 +132,10 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
+            counterparty_chosen_connection_id: msg
+                .counterparty_chosen_connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty: msg
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -153,13 +159,17 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            connection_id: ics_msg.connection_id.as_str().to_string(),
+            desired_connection_id: ics_msg.connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
             counterparty_versions: ics_msg.counterparty_versions,
             proof_height: Some(ics_msg.proofs.height().into()),
+            counterparty_chosen_connection_id: ics_msg
+                .counterparty_chosen_connection_id
+                .as_str()
+                .to_string(),
             proof_init: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -181,8 +191,8 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::test_util::{
         get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
@@ -194,19 +204,20 @@ pub mod test_util {
     ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
             client_id: "srcclient".to_string(),
-            connection_id: "srcconnection".to_string(),
+            desired_connection_id: "srcconnection".to_string(),
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
             counterparty_versions: vec!["1.0.0".to_string()],
+            counterparty_chosen_connection_id: "srcconnection".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: proof_height,
+                version_number: 0,
+                version_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: consensus_height,
+                version_number: 0,
+                version_height: consensus_height,
             }),
             proof_client: vec![],
             signer: get_dummy_account_id_raw(),
@@ -218,9 +229,9 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -245,9 +256,9 @@ mod tests {
                     want_pass: true,
                 },
                 Test {
-                    name: "Bad connection id, non-alpha".to_string(),
+                    name: "Bad desired connection id, non-alpha".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        connection_id: "con007".to_string(),
+                        desired_connection_id: "con007".to_string(),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -304,7 +315,7 @@ mod tests {
                 Test {
                     name: "Bad proof height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { epoch_number: 1, epoch_height: 0 }),
+                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -312,7 +323,7 @@ mod tests {
                 Test {
                     name: "Bad consensus height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { epoch_number: 1, epoch_height: 0 }),
+                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,

@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -24,6 +24,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
+    counterparty_connection_id: ConnectionId,
     client_state: Option<AnyClientState>,
     proofs: Proofs,
     version: String,
@@ -34,6 +35,11 @@ impl MsgConnectionOpenAck {
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn counterparty_connection_id(&self) -> &ConnectionId {
+        &self.counterparty_connection_id
     }
 
     /// Getter for accessing the client state.
@@ -94,7 +100,6 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?;
-
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -106,6 +111,10 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         Ok(Self {
             connection_id: msg
                 .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_connection_id: msg
+                .counterparty_connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
@@ -131,7 +140,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            version: ics_msg.version,
+            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
@@ -150,6 +159,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
+            version: ics_msg.version,
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -157,27 +167,28 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
             connection_id: "srcconnection".to_string(),
-            version: "1.0.0".to_string(),
+            counterparty_connection_id: "tgtconnection".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             client_state: None,
             proof_client: vec![],
+            version: "1.0.0".to_string(),
             signer: get_dummy_account_id_raw(),
         }
     }
@@ -187,8 +198,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -230,8 +241,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg.clone()
                 },
@@ -241,8 +252,8 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     consensus_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg
                 },

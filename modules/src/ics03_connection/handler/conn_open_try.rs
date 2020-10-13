@@ -21,6 +21,7 @@ pub(crate) fn process(
     // Unwrap the old connection end (if any) and validate it against the message.
     let mut new_connection_end = match ctx.connection_end(msg.connection_id()) {
         Some(old_conn_end) => {
+            // TODO - change validation to take into account the new `counterparty_chosen_connection_id`
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
                 && old_conn_end.counterparty_matches(&msg.counterparty())

@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 use tendermint_proto::DomainType;
@@ -25,10 +25,12 @@ impl TryFrom<RawMockHeader> for MockHeader {
                 .into());
         }
 
-        Ok(MockHeader(Height {
-            version_number: 0,
-            version_height: raw.height.unwrap().epoch_height,
-        }))
+        Ok(MockHeader(
+            raw.height
+                .ok_or_else(|| error::Kind::InvalidRawHeader)?
+                .try_into()
+                .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+        ))
     }
 }
 

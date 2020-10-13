@@ -497,6 +497,7 @@ mod tests {
             frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
+            upgrade_path: "".to_string(),
         });
 
         let raw: Any = tm_client_state.clone().into();

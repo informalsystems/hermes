@@ -2,7 +2,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc_proto::ibc::connection::{
+use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
 use serde_derive::{Deserialize, Serialize};
@@ -151,7 +151,7 @@ impl From<Counterparty> for RawCounterparty {
         RawCounterparty {
             client_id: value.client_id.as_str().to_string(),
             connection_id: value.connection_id.as_str().to_string(),
-            prefix: Some(ibc_proto::ibc::commitment::MerklePrefix {
+            prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
                 key_prefix: value.prefix.0,
             }),
         }

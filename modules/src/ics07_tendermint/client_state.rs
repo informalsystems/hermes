@@ -2,12 +2,13 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
-use ibc_proto::ibc::tendermint::ClientState as RawClientState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 use tendermint_proto::DomainType;
+
+use crate::Height;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -16,8 +17,10 @@ pub struct ClientState {
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
-    pub latest_height: Height,
     pub frozen_height: Height,
+    pub latest_height: Height,
+    // pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    pub upgrade_path: String,
     pub allow_update_after_expiry: bool,
     pub allow_update_after_misbehaviour: bool,
 }
@@ -34,6 +37,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        upgrade_path: String,
         allow_update_after_expiry: bool,
         allow_update_after_misbehaviour: bool, // proof_specs: Specs
     ) -> Result<ClientState, Error> {
@@ -75,6 +79,7 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            upgrade_path,
             allow_update_after_expiry,
             allow_update_after_misbehaviour,
         })
@@ -134,6 +139,7 @@ impl TryFrom<RawClientState> for ClientState {
                 .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?
                 .try_into()
                 .map_err(|_| Kind::InvalidRawHeight)?,
+            upgrade_path: raw.upgrade_path,
             allow_update_after_expiry: raw.allow_update_after_expiry,
             allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
         })
@@ -150,15 +156,13 @@ impl From<ClientState> for RawClientState {
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
+            consensus_params: None,
             proof_specs: vec![], // Todo: Why is that not stored?
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
+            upgrade_path: value.upgrade_path,
         }
     }
-}
-
-fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
-    height.try_into().unwrap()
 }
 
 #[cfg(test)]
@@ -195,6 +199,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            upgrade_path: String,
             allow_update_after_expiry: bool,
             allow_update_after_misbehaviour: bool,
         }
@@ -207,6 +212,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
             frozen_height: Height::default(),
+            upgrade_path: "".to_string(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         };
@@ -270,6 +276,7 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.upgrade_path,
                 p.allow_update_after_expiry,
                 p.allow_update_after_misbehaviour,
             );
