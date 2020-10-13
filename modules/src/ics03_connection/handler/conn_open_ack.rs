@@ -27,7 +27,7 @@ pub(crate) fn process(
             let state_is_consistent = old_conn_end.state_matches(&State::Init)
                 && old_conn_end.versions().contains(msg.version())
                 || old_conn_end.state_matches(&State::TryOpen)
-                && old_conn_end.versions().get(0).eq(&Some(msg.version()));
+                    && old_conn_end.versions().get(0).eq(&Some(msg.version()));
 
             // Check that if the msg's counterparty connection id is not empty then it matches
             // the old connection's counterparty.
