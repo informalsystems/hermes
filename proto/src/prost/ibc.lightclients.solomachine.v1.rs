@@ -67,6 +67,8 @@ pub struct SignatureAndData {
     pub data_type: i32,
     #[prost(bytes, tag="3")]
     pub data: std::vec::Vec<u8>,
+    #[prost(uint64, tag="4")]
+    pub timestamp: u64,
 }
 /// TimestampedSignatureData contains the signature data and the timestamp of the
 /// signature.

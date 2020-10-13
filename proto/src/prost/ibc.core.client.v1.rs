@@ -88,11 +88,14 @@ pub struct MsgUpgradeClient {
     /// upgraded client state
     #[prost(message, optional, tag="2")]
     pub client_state: ::std::option::Option<::prost_types::Any>,
+    /// height at which old chain halts and upgrades (i.e last block executed)
+    #[prost(message, optional, tag="3")]
+    pub upgrade_height: ::std::option::Option<Height>,
     /// proof that old chain committed to new client
-    #[prost(bytes, tag="3")]
+    #[prost(bytes, tag="4")]
     pub proof_upgrade: std::vec::Vec<u8>,
     /// signer address
-    #[prost(string, tag="4")]
+    #[prost(string, tag="5")]
     pub signer: std::string::String,
 }
 /// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for

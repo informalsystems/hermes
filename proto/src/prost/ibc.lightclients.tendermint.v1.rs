@@ -22,19 +22,22 @@ pub struct ClientState {
     /// Latest height the client was updated to
     #[prost(message, optional, tag="7")]
     pub latest_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
+    /// Consensus params of the chain
+    #[prost(message, optional, tag="8")]
+    pub consensus_params: ::std::option::Option<::tendermint_proto::abci::ConsensusParams>,
     /// Proof specifications used in verifying counterparty state
-    #[prost(message, repeated, tag="8")]
+    #[prost(message, repeated, tag="9")]
     pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
     /// Path at which next upgraded client will be committed
-    #[prost(message, optional, tag="9")]
-    pub upgrade_path: ::std::option::Option<super::super::super::core::commitment::v1::MerklePath>,
+    #[prost(string, tag="10")]
+    pub upgrade_path: std::string::String,
     /// This flag, when set to true, will allow governance to recover a client
     /// which has expired
-    #[prost(bool, tag="10")]
+    #[prost(bool, tag="11")]
     pub allow_update_after_expiry: bool,
     /// This flag, when set to true, will allow governance to unfreeze a client
     /// whose chain has experienced a misbehaviour event
-    #[prost(bool, tag="11")]
+    #[prost(bool, tag="12")]
     pub allow_update_after_misbehaviour: bool,
 }
 /// ConsensusState defines the consensus state from Tendermint.
