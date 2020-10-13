@@ -59,8 +59,6 @@ mod tests {
 
     #[test]
     fn conn_open_init_msg_processing() {
-        let chain_id = "testchain-0".to_string();
-
         struct Test {
             name: String,
             ctx: MockContext,
