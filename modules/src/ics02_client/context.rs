@@ -8,7 +8,7 @@ use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
 use crate::ics24_host::identifier::ClientId;
-use tendermint::block::Height;
+use crate::Height;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {

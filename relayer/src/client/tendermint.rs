@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::task::spawn_blocking;
 
-use ibc::Height;
+use tendermint::block::Height;
 use tendermint_light_client::supervisor::{Handle, SupervisorHandle};
 use tendermint_light_client::types::LightBlock;
 

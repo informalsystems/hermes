@@ -10,5 +10,5 @@ pub struct ClientState {
     pub chain_id: std::string::String,
     /// self latest block height
     #[prost(message, optional, tag="3")]
-    pub height: ::std::option::Option<super::client::Height>,
+    pub height: ::std::option::Option<super::super::super::core::client::v1::Height>,
 }

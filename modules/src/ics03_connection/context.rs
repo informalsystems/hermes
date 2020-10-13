@@ -8,7 +8,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use tendermint::block::Height;
+use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ConnectionReader {

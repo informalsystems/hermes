@@ -11,7 +11,7 @@ use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
-use tendermint::block::Height;
+use crate::Height;
 
 /// Mock implementation of ICS26 context. Wraps around both a client (ICS2) and connections (ICS3)
 /// contexts.

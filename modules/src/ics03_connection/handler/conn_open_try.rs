@@ -21,6 +21,7 @@ pub(crate) fn process(
     // Unwrap the old connection end (if any) and validate it against the message.
     let mut new_connection_end = match ctx.connection_end(msg.connection_id()) {
         Some(old_conn_end) => {
+            // TODO - change validation to take into account the new `counterparty_chosen_connection_id`
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_conn_end.state_matches(&State::Init)
                 && old_conn_end.counterparty_matches(&msg.counterparty())
@@ -94,6 +95,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
@@ -102,8 +105,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::mock_context::MockContext;
-    use std::convert::TryFrom;
-    use tendermint::block::Height;
+    use crate::Height;
 
     #[test]
     fn conn_open_try_msg_processing() {
@@ -116,7 +118,7 @@ mod tests {
 
         let msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let context = MockContext::new(10, Height::from(35_u32));
+        let context = MockContext::new(10, Height::new(0, 35));
 
         let msg_height_advanced =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();
@@ -161,7 +163,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_try.client_id(), Height::from(10_u32)),
+                ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, 10)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: true,
             },

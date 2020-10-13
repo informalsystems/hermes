@@ -65,7 +65,7 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 
 #[cfg(test)]
 mod tests {
-    use tendermint::block::Height;
+    use crate::Height;
 
     use super::*;
     use crate::ics02_client::client_type::ClientType;
@@ -79,11 +79,11 @@ mod tests {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockContext::default().with_client(&client_id, Height::from(42_u32));
+        let mut ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id,
-            header: MockHeader(Height::from(46_u32)).into(),
+            header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -113,11 +113,11 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client_consensus_state(&client_id, Height::from(42_u32));
+        ctx.with_client_consensus_state(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
-            header: MockHeader(Height::from(46_u32)).into(),
+            header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
@@ -141,9 +141,8 @@ mod tests {
             "mockclient3".parse().unwrap(),
         ];
         let signer = get_dummy_account_id();
-
-        let initial_height = Height::from(45_u32);
-        let update_height = Height::from(49_u32);
+        let initial_height = Height::new(0, 45);
+        let update_height = Height::new(0, 49);
 
         let mut ctx = MockClientContext::default();
 

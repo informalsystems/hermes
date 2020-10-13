@@ -45,6 +45,8 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, State};
     use crate::ics03_connection::context::ConnectionReader;
@@ -53,8 +55,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::mock_context::MockContext;
-    use std::convert::TryFrom;
-    use tendermint::block::Height;
+    use crate::Height;
 
     #[test]
     fn conn_open_init_msg_processing() {
@@ -67,7 +68,7 @@ mod tests {
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let context = MockContext::new(34, Height::from(3_u32));
+        let context = MockContext::new(34, Height::new(0, 3));
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
@@ -95,7 +96,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_init.client_id(), Height::from(10_u32)),
+                ctx: context.with_client(msg_conn_init.client_id(), Height::new(0, 10)),
                 msg: ConnectionMsg::ConnectionOpenInit(msg_conn_init.clone()),
                 want_pass: true,
             },

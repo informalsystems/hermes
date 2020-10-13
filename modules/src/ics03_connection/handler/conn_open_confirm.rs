@@ -74,6 +74,9 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
@@ -81,13 +84,10 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
-    use crate::mock_context::MockContext;
-
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
-    use std::convert::TryFrom;
-    use std::str::FromStr;
-    use tendermint::block::Height;
+    use crate::mock_context::MockContext;
+    use crate::Height;
 
     #[test]
     fn conn_open_confirm_msg_processing() {
@@ -107,7 +107,8 @@ mod tests {
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
-        let context = MockContext::new(10, Height::from(3_u32));
+
+        let context = MockContext::new(10, Height::new(0, 3));
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
@@ -131,7 +132,7 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(
                         msg_confirm.connection_id().clone(),
                         incorrect_conn_end_state,
@@ -142,7 +143,7 @@ mod tests {
             Test {
                 name: "Processing successful".to_string(),
                 ctx: context
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_confirm.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: true,

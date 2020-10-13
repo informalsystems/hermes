@@ -1,9 +1,8 @@
-use crate::ics07_tendermint;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::block::Height;
 
 use crate::ics02_client::client_def::AnyConsensusState;
 use crate::ics02_client::client_def::AnyHeader;
+use crate::Height;
 
 #[cfg(test)]
 use {crate::mock_client::header::MockHeader, crate::mock_client::state::MockConsensusState};
@@ -17,7 +16,7 @@ pub enum SelfChainType {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SelfHeader {
-    Tendermint(ics07_tendermint::header::Header),
+    Tendermint(crate::ics07_tendermint::header::Header),
     #[cfg(test)]
     Mock(MockHeader),
 }

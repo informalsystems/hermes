@@ -1,5 +1,5 @@
 use crate::ics02_client::client_type::ClientType;
-use tendermint::block::Height;
+use crate::Height;
 
 /// Abstract of consensus state update information
 #[dyn_clonable::clonable]

@@ -2,11 +2,13 @@ use ibc::events::IBCEvent;
 use tendermint::{chain, net, Error as TMError};
 use tendermint_rpc::{
     query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
+    WebSocketClientDriver,
 };
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
 
 use futures::{stream::select_all, Stream};
+use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
@@ -16,8 +18,10 @@ type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + 
 /// event handler.
 pub struct EventMonitor {
     chain_id: chain::Id,
-    /// Websocket to collect events from
+    /// WebSocket to collect events from
     websocket_client: WebSocketClient,
+    /// Async task handle for the WebSocket client's driver
+    websocket_driver_handle: JoinHandle<tendermint_rpc::Result<()>>,
     /// Channel to handler where the monitor for this chain sends the events
     channel_to_handler: Sender<(chain::Id, Vec<IBCEvent>)>,
     /// Node Address
@@ -35,7 +39,8 @@ impl EventMonitor {
         rpc_addr: net::Address,
         channel_to_handler: Sender<(chain::Id, Vec<IBCEvent>)>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let websocket_client = WebSocketClient::new(rpc_addr.clone()).await?;
+        let (websocket_client, websocket_driver) = WebSocketClient::new(rpc_addr.clone()).await?;
+        let websocket_driver_handle = tokio::spawn(async move { websocket_driver.run().await });
 
         // TODO: move them to config file(?)
         let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
@@ -43,6 +48,7 @@ impl EventMonitor {
         Ok(EventMonitor {
             chain_id,
             websocket_client,
+            websocket_driver_handle,
             channel_to_handler,
             node_addr: rpc_addr.clone(),
             event_queries,
@@ -75,16 +81,23 @@ impl EventMonitor {
                     debug!("Web socket error: {}", err);
 
                     // Try to reconnect
-                    let mut websocket_client = WebSocketClient::new(self.node_addr.clone())
-                        .await
-                        .unwrap_or_else(|e| {
-                            debug!("Error on reconnection: {}", e);
-                            panic!("Abort on failed reconnection");
-                        });
+                    let (mut websocket_client, websocket_driver) =
+                        WebSocketClient::new(self.node_addr.clone())
+                            .await
+                            .unwrap_or_else(|e| {
+                                debug!("Error on reconnection: {}", e);
+                                panic!("Abort on failed reconnection");
+                            });
+                    let mut websocket_driver_handle =
+                        tokio::spawn(async move { websocket_driver.run().await });
 
                     // Swap the new client with the previous one which failed,
                     // so that we can shut the latter down gracefully.
                     std::mem::swap(&mut self.websocket_client, &mut websocket_client);
+                    std::mem::swap(
+                        &mut self.websocket_driver_handle,
+                        &mut websocket_driver_handle,
+                    );
 
                     debug!("Reconnected");
 
@@ -93,6 +106,17 @@ impl EventMonitor {
                     websocket_client.close().await.unwrap_or_else(|e| {
                         error!("Failed to close previous WebSocket client: {}", e);
                     });
+                    websocket_driver_handle
+                        .await
+                        .unwrap_or_else(|e| {
+                            Err(tendermint_rpc::Error::client_internal_error(format!(
+                                "failed to terminate previous WebSocket client driver: {}",
+                                e
+                            )))
+                        })
+                        .unwrap_or_else(|e| {
+                            error!("Previous WebSocket client driver failed with error: {}", e);
+                        });
 
                     // Try to resubscribe
                     if let Err(err) = self.subscribe().await {
