@@ -3,7 +3,7 @@ use std::error::Error;
 
 use serde_derive::{Deserialize, Serialize};
 
-use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfChainType, SelfHeader};
+use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfHeader};
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics02_client::height::{chain_version, Height};
 use crate::mock_client::header::MockHeader;
@@ -97,10 +97,6 @@ impl MockChainContext {
 }
 
 impl ChainReader for MockChainContext {
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
-    }
-
     fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo> {
         let l = height.version_height as usize;
         let h = self.latest.version_height as usize;

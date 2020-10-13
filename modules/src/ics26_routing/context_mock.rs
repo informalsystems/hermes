@@ -1,4 +1,3 @@
-use crate::context::SelfChainType;
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
@@ -40,15 +39,15 @@ impl MockICS26Context {
 impl ICS26Context for MockICS26Context {}
 
 impl ConnectionReader for MockICS26Context {
-    fn fetch_connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd> {
-        self.connection_context.fetch_connection_end(conn_id)
+    fn connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd> {
+        self.connection_context.connection_end(conn_id)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.client_context().client_state(client_id)
     }
 
-    fn chain_current_height(&self) -> Height {
+    fn host_current_height(&self) -> Height {
         self.chain_context().latest
     }
 
@@ -56,15 +55,11 @@ impl ConnectionReader for MockICS26Context {
         self.chain_context().max_size()
     }
 
-    fn chain_type(&self) -> SelfChainType {
-        self.connection_context.chain_type()
-    }
-
     fn commitment_prefix(&self) -> CommitmentPrefix {
         self.connection_context.commitment_prefix()
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -72,8 +67,8 @@ impl ConnectionReader for MockICS26Context {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        self.connection_context.fetch_self_consensus_state(height)
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+        self.connection_context.host_consensus_state(height)
     }
 
     fn get_compatible_versions(&self) -> Vec<String> {

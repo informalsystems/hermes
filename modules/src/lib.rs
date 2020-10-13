@@ -46,8 +46,11 @@ pub mod context_mock;
 #[cfg(test)]
 pub mod mock_client;
 
-/// short use name for IBC Height domain type
+/// Re-export of ICS 002 Height domain type
 pub type Height = crate::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod mock_context; // Context mock: for testing all handlers.
