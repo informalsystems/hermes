@@ -61,7 +61,7 @@ impl ClientState {
                 .into());
         }
         // Basic validation for the latest_height parameter.
-        if latest_height.lte(crate::ics02_client::height::zero_height()) {
+        if latest_height <= Height::zero() {
             return Err(Kind::ValidationError
                 .context("ClientState latest height cannot be smaller or equal than zero")
                 .into());

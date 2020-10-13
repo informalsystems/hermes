@@ -8,7 +8,7 @@ use tendermint_proto::DomainType;
 use tendermint::account::Id as AccountId;
 
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics02_client::height::{zero_height, Height};
+use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::{validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -67,7 +67,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => zero_height(),
+            None => Height::zero(),
             Some(p) => p.height(),
         }
     }

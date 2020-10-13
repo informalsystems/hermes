@@ -172,9 +172,10 @@ pub fn check_client_consensus_height(
         return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }
 
-    if claimed_height
-        < (ctx.host_current_height() - ctx.chain_consensus_states_history_size() as u64)
-    {
+    let trusted_height =
+        ctx.host_current_height().version_height - ctx.chain_consensus_states_history_size() as u64;
+
+    if claimed_height.version_height < trusted_height {
         // Fail if the consensus height is too old (outside of trusting period).
         return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }

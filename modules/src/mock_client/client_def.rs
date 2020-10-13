@@ -21,7 +21,7 @@ impl ClientDef for MockClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
-        if client_state.latest_height().gt(header.height()) {
+        if client_state.latest_height() > header.height() {
             return Err("header height is lower than client latest".into());
         }
 

@@ -50,7 +50,7 @@ impl MockClientState {
         match header {
             #[cfg(test)]
             AnyHeader::Mock(mock_header) => {
-                if self.latest_height().gte(header.height()) {
+                if self.latest_height() >= header.height() {
                     return Err("header height is lower than client latest".into());
                 }
 

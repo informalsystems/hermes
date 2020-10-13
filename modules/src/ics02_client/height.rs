@@ -1,61 +1,34 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::{cmp::Ordering, convert::TryFrom};
 
 use tendermint_proto::DomainType;
 
 use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::client::Height as RawHeight;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     pub version_number: u64,
     pub version_height: u64,
 }
 
-pub fn zero_height() -> Height {
-    Default::default()
-}
-
 impl Height {
     pub fn new(version_number: u64, version_height: u64) -> Self {
-        Height {
+        Self {
             version_number,
             version_height,
         }
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.version_height == 0
-    }
-
-    fn compare(&self, other: Height) -> i8 {
-        if self.version_number < other.version_number {
-            -1
-        } else if self.version_number > other.version_number {
-            1
-        } else if self.version_height < other.version_height {
-            -1
-        } else if self.version_height > other.version_height {
-            1
-        } else {
-            0
+    pub fn zero() -> Height {
+        Self {
+            version_number: 0,
+            version_height: 0,
         }
     }
 
-    pub fn gt(&self, other: Height) -> bool {
-        self.compare(other) > 0
-    }
-
-    pub fn gte(&self, other: Height) -> bool {
-        self.compare(other) >= 0
-    }
-
-    pub fn lt(&self, other: Height) -> bool {
-        self.compare(other) < 0
-    }
-
-    pub fn lte(&self, other: Height) -> bool {
-        self.compare(other) <= 0
+    pub fn is_zero(&self) -> bool {
+        self.version_height == 0
     }
 
     pub fn add(&self, delta: u64) -> Height {
@@ -75,6 +48,7 @@ impl Height {
                 .context("height cannot end up zero or negative")
                 .into());
         }
+
         Ok(Height {
             version_number: self.version_number,
             version_height: self.version_height - delta,
@@ -83,6 +57,34 @@ impl Height {
 
     pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
+    }
+}
+
+impl Default for Height {
+    fn default() -> Self {
+        Self::zero()
+    }
+}
+
+impl PartialOrd for Height {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Height {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.version_number < other.version_number {
+            Ordering::Less
+        } else if self.version_number > other.version_number {
+            Ordering::Greater
+        } else if self.version_height < other.version_height {
+            Ordering::Less
+        } else if self.version_height > other.version_height {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
     }
 }
 

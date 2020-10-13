@@ -53,7 +53,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::height::{zero_height, Height};
+    use crate::ics02_client::height::Height;
     use std::time::Duration;
 
     use super::*;
@@ -283,7 +283,7 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(0, u64::from(tm_header.signed_header.header.height)),
-            frozen_height: zero_height(),
+            frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         });

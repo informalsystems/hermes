@@ -34,7 +34,7 @@ where
         .into());
     };
 
-    if dest_client_latest_height.gt(src_header.height()) {
+    if dest_client_latest_height > src_header.height() {
         return Err(Kind::ClientAtHeigherHeight(
             client_id.clone(),
             src_header.height(),

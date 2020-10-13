@@ -475,7 +475,7 @@ impl ClientDef for AnyClient {
 #[cfg(test)]
 mod tests {
     use crate::ics02_client::client_def::AnyClientState;
-    use crate::ics02_client::height::{chain_version, zero_height, Height};
+    use crate::ics02_client::height::{chain_version, Height};
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use prost_types::Any;
@@ -494,7 +494,7 @@ mod tests {
                 version_number: chain_version(tm_header.signed_header.header.chain_id.to_string()),
                 version_height: u64::from(tm_header.signed_header.header.height),
             },
-            frozen_height: zero_height(),
+            frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         });
