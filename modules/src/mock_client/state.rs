@@ -1,4 +1,12 @@
 #![allow(unreachable_code, unused_variables)]
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
+
+use tendermint_proto::DomainType;
+
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
@@ -8,16 +16,7 @@ use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock_client::header::MockHeader;
-
-use tendermint::block::Height;
-
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-use std::convert::{TryFrom, TryInto};
-use tendermint_proto::DomainType;
+use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
@@ -83,10 +82,7 @@ impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    version_number: 0,
-                    version_height: value.0.height().value(),
-                }),
+                height: Some(value.0.height().into()),
             }),
         }
     }
@@ -138,10 +134,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::core::client::v1::Height {
-                    version_number: 0,
-                    version_height: value.0.height().into(),
-                }),
+                height: Some(value.0.height().into()),
             }),
         }
     }

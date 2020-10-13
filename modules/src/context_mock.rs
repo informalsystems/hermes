@@ -1,16 +1,17 @@
-use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfHeader};
-use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
-use crate::mock_client::header::MockHeader;
-
 use std::cmp::min;
-use std::convert::TryInto;
 use std::error::Error;
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::block::Height;
+
+use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfHeader};
+use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
+use crate::ics02_client::height::{chain_version, Height};
+use crate::mock_client::header::MockHeader;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub struct MockChainContext {
+    /// Chain identifier in the form <chain>-<version>
+    pub chain_id: String,
     /// Maximum size of the history
     pub max_size: usize,
     /// Highest height of the headers in the history
@@ -21,17 +22,16 @@ pub struct MockChainContext {
 
 impl MockChainContext {
     /// Creates a new mock chain with max_size number of headers up to height h
-    pub fn new(max_size: usize, h: Height) -> Self {
+    pub fn new(chain_id: String, max_size: usize, h: Height) -> Self {
         // number of headers to store, if h is 0 nothing is stored
-        let n = min(max_size as u64, h.value());
-
+        let n = min(max_size as u64, h.version_height);
         Self {
+            chain_id,
             max_size,
             latest: h,
             history: (0..n)
                 .rev()
-                // SAFETY: Call to `unwrap` is safe because we are decreasing the height
-                .map(|i| MockHeader((h.value() - i).try_into().unwrap()))
+                .map(|i| MockHeader(Height::new(h.version_number, h.version_height - i)))
                 .collect(),
         }
     }
@@ -44,23 +44,29 @@ impl MockChainContext {
     pub fn populate(&mut self, hs: Vec<u64>) {
         for h in hs {
             self.store_historical_info(
-                h.try_into().unwrap(),
+                Height {
+                    version_number: 0,
+                    version_height: h,
+                },
                 HistoricalInfo {
-                    header: SelfHeader::Mock(MockHeader(h.try_into().unwrap())),
+                    header: SelfHeader::Mock(MockHeader(Height {
+                        version_number: 0,
+                        version_height: h,
+                    })),
                 },
             );
         }
     }
 
     pub fn add_header(&mut self, h: u64) {
-        let mut new_h = h;
+        let mut new_h = Height::new(chain_version(self.chain_id.clone()), h);
         if h == 0 {
-            new_h = u64::from(self.latest.increment());
+            new_h.version_height = self.latest.version_height + 1;
         }
         self.store_historical_info(
-            new_h.try_into().unwrap(),
+            new_h,
             HistoricalInfo {
-                header: SelfHeader::Mock(MockHeader(new_h.try_into().unwrap())),
+                header: SelfHeader::Mock(MockHeader(new_h)),
             },
         );
     }
@@ -92,8 +98,8 @@ impl MockChainContext {
 
 impl ChainReader for MockChainContext {
     fn self_historical_info(&self, height: Height) -> Option<HistoricalInfo> {
-        let l = height.value() as usize;
-        let h = self.latest.value() as usize;
+        let l = height.version_height as usize;
+        let h = self.latest.version_height as usize;
 
         if l <= h - self.max_size {
             // header with height not in the history
@@ -146,10 +152,11 @@ impl ChainKeeper for MockChainContext {
 #[cfg(test)]
 mod tests {
     use crate::context_mock::MockChainContext;
-    use tendermint::block::Height;
+    use crate::ics02_client::height::{chain_version, Height};
 
     #[test]
     fn test_store_historical_info() {
+        let chain_id = "testchain-0".to_string();
         pub struct Test {
             name: String,
             ctx: MockChainContext,
@@ -162,25 +169,26 @@ mod tests {
             }
         }
 
+        let chain_version = chain_version(chain_id.clone());
         let tests: Vec<Test> = vec![
             Test {
                 name: "Add no prune".to_string(),
-                ctx: MockChainContext::new(3, Height::from(0_u32)),
+                ctx: MockChainContext::new(chain_id.clone(), 3, Height::new(chain_version, 0)),
                 args: [1].to_vec(),
             },
             Test {
                 name: "Add with prune".to_string(),
-                ctx: MockChainContext::new(3, Height::from(2_u32)),
+                ctx: MockChainContext::new(chain_id.clone(), 3, Height::new(chain_version, 2)),
                 args: [3, 4].to_vec(),
             },
             Test {
                 name: "Add with initial prune".to_string(),
-                ctx: MockChainContext::new(3, Height::from(10_u32)),
+                ctx: MockChainContext::new(chain_id.clone(), 3, Height::new(chain_version, 10)),
                 args: [11].to_vec(),
             },
             Test {
                 name: "Attempt to add non sequential headers".to_string(),
-                ctx: MockChainContext::new(3, Height::from(2_u32)),
+                ctx: MockChainContext::new(chain_id, 3, Height::new(chain_version, 2)),
                 args: [3, 5, 7].to_vec(),
             },
         ];

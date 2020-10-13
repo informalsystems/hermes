@@ -6,9 +6,8 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::Height;
 use std::collections::HashMap;
-use std::convert::TryInto;
-use tendermint::block::Height;
 
 /// A mock implementation of client context. This mocks (i.e., replaces) the functionality of
 /// a KV-store holding information related to the various IBC clients running on a chain.
@@ -23,12 +22,9 @@ pub struct MockClientContext {
 }
 
 impl MockClientContext {
-    pub fn new(chain_height: u64, max_history_size: usize) -> Self {
+    pub fn new(chain_id: String, chain_height: Height, max_history_size: usize) -> Self {
         MockClientContext {
-            chain_context: MockChainContext::new(
-                max_history_size,
-                chain_height.try_into().unwrap(),
-            ),
+            chain_context: MockChainContext::new(chain_id, max_history_size, chain_height),
             clients: Default::default(),
         }
     }

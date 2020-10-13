@@ -1,19 +1,18 @@
+use crate::ics02_client;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::context::ClientReader;
+use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use std::collections::HashMap;
-use tendermint::block::Height;
-
-use crate::ics02_client;
-use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::context::ClientReader;
-use crate::ics03_connection::connection::ConnectionEnd;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::Height;
+
 use std::cmp::min;
-use std::convert::TryInto;
+use std::collections::HashMap;
 
 /// Mock for a context. Used in testing handlers of all modules.
 #[derive(Clone, Debug)]
@@ -40,13 +39,14 @@ pub struct MockContext {
 impl MockContext {
     pub fn new(max_history_size: usize, latest_height: Height) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
-        let n = min(max_history_size as u64, latest_height.value());
+        let n = min(max_history_size as u64, latest_height.version_height);
+
         MockContext {
             max_history_size,
             latest_height,
             history: (0..n)
                 .rev()
-                .map(|i| MockHeader((latest_height.value() - i).try_into().unwrap()))
+                .map(|i| MockHeader(latest_height.sub(i).unwrap()))
                 .collect(),
             connections: Default::default(),
             clients: Default::default(),
@@ -91,8 +91,8 @@ impl MockContext {
     /// Internal interface. Accessor for a header of the local (host) chain of this context.
     /// May return `None` if the header for the requested height does not exist.
     fn host_header(&self, height: Height) -> Option<MockHeader> {
-        let l = height.value() as usize;
-        let h = self.latest_height.value() as usize;
+        let l = height.version_height as usize;
+        let h = self.latest_height.version_height as usize;
 
         if l <= h - self.max_history_size {
             None // Header for requested height does not exist in the history.

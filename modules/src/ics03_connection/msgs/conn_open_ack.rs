@@ -1,11 +1,11 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::validate_version;
@@ -13,7 +13,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
-use std::str::FromStr;
+use crate::Height;
 
 /// Message type for the `MsgConnectionOpenAck` message.
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
@@ -61,7 +61,7 @@ impl MsgConnectionOpenAck {
     /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height::from(0_u32),
+            None => Height::zero(),
             Some(p) => p.height(),
         }
     }
@@ -97,15 +97,18 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let client_proof = match msg.client_state {
@@ -149,10 +152,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
-            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                version_number: 0,
-                version_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -163,15 +163,10 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(Vec::new, |v| v.proof().clone().into()),
-            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
-                || None,
-                |h| {
-                    Some(ibc_proto::ibc::core::client::v1::Height {
-                        version_number: 0,
-                        version_height: u64::from(h.height()),
-                    })
-                },
-            ),
+            consensus_height: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(|| None, |h| Some(h.height().into())),
             version: ics_msg.version,
             signer: ics_msg.signer.to_string(),
         }

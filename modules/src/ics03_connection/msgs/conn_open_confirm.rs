@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use tendermint_proto::DomainType;
@@ -8,8 +8,7 @@ use tendermint::account::Id as AccountId;
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
-use crate::proofs::Proofs;
-use crate::tx_msg::Msg;
+use crate::{proofs::Proofs, tx_msg::Msg};
 use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenConfirm` message.
@@ -70,7 +69,8 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -89,10 +89,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                version_number: 0,
-                version_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             signer: ics_msg.signer.to_string(),
         }
     }

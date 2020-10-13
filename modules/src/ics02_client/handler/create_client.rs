@@ -53,6 +53,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
+    use crate::Height;
     use std::time::Duration;
 
     use super::*;
@@ -62,7 +63,6 @@ mod tests {
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
-    use tendermint::block::Height;
 
     #[test]
     fn test_create_client_ok() {
@@ -71,11 +71,16 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
+        let height = Height {
+            version_number: 0,
+            version_height: 42,
+        };
+
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Mock,
-            client_state: MockClientState(MockHeader(Height::from(42_u32))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height::from(42_u32))).into(),
+            client_state: MockClientState(MockHeader(height)).into(),
+            consensus_state: MockConsensusState(MockHeader(height)).into(),
             signer,
         };
 
@@ -108,7 +113,10 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_type() {
-        let height = Height::from(42_u32);
+        let height = Height {
+            version_number: 0,
+            version_height: 42,
+        };
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
@@ -140,14 +148,25 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        let height = Height::from(30_u32);
+        let height = Height {
+            version_number: 0,
+            version_height: 30,
+        };
         ctx.with_client_consensus_state(&client_id, height);
 
         let msg = MsgCreateAnyClient {
             client_id,
             client_type: ClientType::Tendermint,
-            client_state: MockClientState(MockHeader(Height::from(42_u32))).into(),
-            consensus_state: MockConsensusState(MockHeader(Height::from(42_u32))).into(),
+            client_state: MockClientState(MockHeader(Height {
+                version_height: 42,
+                ..height
+            }))
+            .into(),
+            consensus_state: MockConsensusState(MockHeader(Height {
+                version_height: 42,
+                ..height
+            }))
+            .into(),
             signer,
         };
 
@@ -164,7 +183,10 @@ mod tests {
     fn test_create_client_ok_multiple() {
         let existing_client_id: ClientId = "existingmockclient".parse().unwrap();
         let signer = get_dummy_account_id();
-        let height = Height::from(80_u32);
+        let height = Height {
+            version_number: 0,
+            version_height: 80,
+        };
         let mut ctx = MockClientContext::default();
         ctx.with_client_consensus_state(&existing_client_id, height);
 
@@ -172,22 +194,46 @@ mod tests {
             MsgCreateAnyClient {
                 client_id: "newmockclient1".parse().unwrap(),
                 client_type: ClientType::Mock,
-                client_state: MockClientState(MockHeader(Height::from(42_u32))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height::from(42_u32))).into(),
+                client_state: MockClientState(MockHeader(Height {
+                    version_height: 42,
+                    ..height
+                }))
+                .into(),
+                consensus_state: MockConsensusState(MockHeader(Height {
+                    version_height: 42,
+                    ..height
+                }))
+                .into(),
                 signer,
             },
             MsgCreateAnyClient {
                 client_id: "newmockclient2".parse().unwrap(),
                 client_type: ClientType::Mock,
-                client_state: MockClientState(MockHeader(Height::from(42_u32))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height::from(42_u32))).into(),
+                client_state: MockClientState(MockHeader(Height {
+                    version_height: 42,
+                    ..height
+                }))
+                .into(),
+                consensus_state: MockConsensusState(MockHeader(Height {
+                    version_height: 42,
+                    ..height
+                }))
+                .into(),
                 signer,
             },
             MsgCreateAnyClient {
                 client_id: "newmockclient3".parse().unwrap(),
                 client_type: ClientType::Tendermint,
-                client_state: MockClientState(MockHeader(Height::from(50_u32))).into(),
-                consensus_state: MockConsensusState(MockHeader(Height::from(50_u32))).into(),
+                client_state: MockClientState(MockHeader(Height {
+                    version_height: 50,
+                    ..height
+                }))
+                .into(),
+                consensus_state: MockConsensusState(MockHeader(Height {
+                    version_height: 50,
+                    ..height
+                }))
+                .into(),
                 signer,
             },
         ]
@@ -236,8 +282,8 @@ mod tests {
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
-            latest_height: tm_header.signed_header.header.height,
-            frozen_height: Height::from(0_u32),
+            latest_height: Height::new(0, u64::from(tm_header.signed_header.header.height)),
+            frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
             upgrade_path: "".to_string(),

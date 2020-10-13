@@ -61,17 +61,18 @@ mod tests {
     use crate::ics26_routing::msgs::ICS26Envelope;
 
     use std::str::FromStr;
-    use tendermint::block::Height;
 
     #[test]
     /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height::from(11_u32);
-        let chain_b_start_height = Height::from(20_u32);
-        let client_on_b_for_a_height = Height::from(10_u32); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height::from(20_u32); // Should be smaller than `chain_b_start_height`
+        let chain_id = "testchain-0".to_string();
+
+        let chain_a_start_height = 11;
+        let chain_b_start_height = 20;
+        let client_on_b_for_a_height = 10; // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = 20; // Should be smaller than `chain_b_start_height`
         let max_history_size = 3;
         let num_iterations = 4;
 
@@ -80,12 +81,14 @@ mod tests {
 
         // Create two mock contexts, one for each chain.
         let mut ctx_a = MockICS18Context::new(
+            chain_id.clone(),
             chain_a_start_height,
             max_history_size,
             &client_on_a_for_b,
             client_on_a_for_b_height,
         );
         let mut ctx_b = MockICS18Context::new(
+            chain_id,
             chain_b_start_height,
             max_history_size,
             &client_on_b_for_a,

@@ -90,6 +90,9 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
@@ -100,9 +103,7 @@ mod tests {
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock_context::MockContext;
-    use std::convert::TryFrom;
-    use std::str::FromStr;
-    use tendermint::block::Height;
+    use crate::Height;
 
     #[test]
     fn conn_open_ack_msg_processing() {
@@ -123,7 +124,7 @@ mod tests {
         .unwrap();
 
         // This context has very small height, tests should not pass.
-        let incorrect_context = MockContext::new(5, Height::from(3_u32));
+        let incorrect_context = MockContext::new(5, Height::new(0, 3));
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
@@ -161,7 +162,7 @@ mod tests {
         .unwrap();
 
         // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
-        let correct_context = MockContext::new(5, Height::from(10_u32));
+        let correct_context = MockContext::new(5, Height::new(0, 10));
 
         let tests: Vec<Test> = vec![
             Test {
@@ -174,7 +175,7 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: incorrect_context
                     .clone()
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -184,7 +185,7 @@ mod tests {
                     .to_string(),
                 ctx: incorrect_context
                     .clone()
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -192,7 +193,7 @@ mod tests {
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: incorrect_context
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
@@ -200,7 +201,7 @@ mod tests {
             Test {
                 name: "Successful processing of Ack message".to_string(),
                 ctx: correct_context
-                    .with_client(&client_id, Height::from(10_u32))
+                    .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: true,

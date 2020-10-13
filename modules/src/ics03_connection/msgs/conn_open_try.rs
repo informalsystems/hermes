@@ -1,11 +1,11 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::{validate_versions, Counterparty};
@@ -13,7 +13,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
-use std::str::FromStr;
+use crate::Height;
 
 /// Message type for the `MsgConnectionOpenTry` message.
 pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
@@ -68,7 +68,7 @@ impl MsgConnectionOpenTry {
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height::from(0_u32),
+            None => Height::zero(),
             Some(p) => p.height(),
         }
     }
@@ -106,15 +106,20 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
+        // TODO: implement TryFrom for ConsensusProof & move casting of raw heights in there.
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let client_proof = match msg.client_state {
@@ -169,14 +174,11 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
             counterparty_versions: ics_msg.counterparty_versions,
+            proof_height: Some(ics_msg.proofs.height().into()),
             counterparty_chosen_connection_id: ics_msg
                 .counterparty_chosen_connection_id
                 .as_str()
                 .to_string(),
-            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
-                version_number: 0,
-                version_height: ics_msg.proofs.height().value(),
-            }),
             proof_init: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -187,15 +189,10 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .proofs
                 .consensus_proof()
                 .map_or_else(Vec::new, |v| v.proof().clone().into()),
-            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
-                || None,
-                |h| {
-                    Some(ibc_proto::ibc::core::client::v1::Height {
-                        version_number: 0,
-                        version_height: u64::from(h.height()),
-                    })
-                },
-            ),
+            consensus_height: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(|| None, |h| Some(h.height().into())),
             signer: ics_msg.signer.to_string(),
         }
     }

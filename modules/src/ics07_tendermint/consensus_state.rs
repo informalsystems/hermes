@@ -50,8 +50,6 @@ impl DomainType<RawConsensusState> for ConsensusState {}
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
 
-    // TODO: Fix height conversion below (which ignores epoch number, hence it's incorrect).
-    // Related: https://github.com/informalsystems/ibc-rs/issues/191.
     fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
         let proto_timestamp = raw
             .timestamp
