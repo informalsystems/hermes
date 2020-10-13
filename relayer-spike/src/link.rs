@@ -95,16 +95,16 @@ impl Link {
         let signature = ();
 
         for (target_height, events) in subscription.iter() {
-            // XXX: Error handling
-            // Can we just map this way?
-            let packets: Vec<Packet> = events.into_iter().map(|event| {
+            let maybe_packets: Result<Vec<Packet>, ChainError> = events.into_iter().map(|event| {
                 self.src_chain.create_packet(event)
             }).collect();
+
+            let packets = maybe_packets?;
 
             let mut datagrams: Vec<Datagram> = packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
 
             // TODO: Need to fetch the consensus state on the foreign chain
-            let signed_headers = self.src_chain.get_minimal_set(0, target_height);
+            let signed_headers = self.src_chain.get_minimal_set(0, target_height)?;
             let client_update = ClientUpdate::new(signed_headers);
 
             datagrams.push(Datagram::ClientUpdate(client_update));

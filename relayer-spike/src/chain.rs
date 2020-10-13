@@ -25,7 +25,7 @@ pub trait Chain: Send {
     fn get_header(&self, height: Height) -> SignedHeader;
 
     // TODO: Error handling
-    fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader>;
+    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError>;
 
     // TODO: Error handling
     // Errors:
@@ -42,8 +42,8 @@ pub trait Chain: Send {
 
     fn id(&self) -> ChainId;
 
-    fn create_packet(&self, event: IBCEvent) -> Packet {
-        return Packet {}
+    fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError> {
+        return Ok(Packet {})
     }
 }
 
@@ -78,8 +78,8 @@ impl Chain for ProdChain {
         return SignedHeader::default()
     }
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Vec<SignedHeader> {
-        return vec![SignedHeader::default()]
+    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError> {
+        return Ok(vec![SignedHeader::default()])
     }
 
     fn submit(&self, transaction: EncodedTransaction) {
@@ -120,7 +120,6 @@ impl ChainRuntime {
         return ProdChain::new(sender);
     }
 
-    // XXX: Events come in batches
     pub fn run(self) -> Result<(), ChainError> {
         // TODO: Replace with a websocket
         let event_monitor = channel::tick(Duration::from_millis(1000));
