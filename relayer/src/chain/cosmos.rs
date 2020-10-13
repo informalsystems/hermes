@@ -18,10 +18,10 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
 use bytes::Bytes;
-use ibc_proto::base::crypto::v1beta1::public_key::Sum as PKSum;
-use ibc_proto::base::crypto::v1beta1::PublicKey as RawPublicKey;
-use ibc_proto::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody};
+use ibc_proto::cosmos::base::crypto::v1beta1::public_key::Sum as PKSum;
+use ibc_proto::cosmos::base::crypto::v1beta1::PublicKey as RawPublicKey;
+use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody};
 use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
@@ -96,13 +96,23 @@ impl Chain for CosmosSDKChain {
         let pubkey_bytes = verify_key.to_bytes().to_vec();
 
         let sum = Some(PKSum::Secp256k1(pubkey_bytes));
-        let pk = Some(RawPublicKey { sum });
+        let pk = RawPublicKey { sum };
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
         let mode = Some(ModeInfo { sum: sum_single });
 
+        // A protobuf serialization of a Public Key
+        let mut pk_buf = Vec::new();
+        prost::Message::encode(&pk, &mut pk_buf).unwrap();
+
+        // Create a MsgSend proto Any message
+        let pk_any = Any {
+            type_url: "/cosmos.base.crypto.v1beta1.PublicKey.".to_string(),
+            value: pk_buf,
+        };
+
         let signer_info = SignerInfo {
-            public_key: pk,
+            public_key: Some(pk_any),
             mode_info: mode,
             sequence: 0,
         };
