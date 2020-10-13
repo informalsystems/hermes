@@ -53,7 +53,7 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::height::Height;
+    use crate::Height;
     use std::time::Duration;
 
     use super::*;

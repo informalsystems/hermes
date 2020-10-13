@@ -19,7 +19,7 @@ impl Proofs {
         object_proof: CommitmentProof,
         client_proof: Option<CommitmentProof>,
         consensus_proof: Option<ConsensusProof>,
-        proof_height: ibc_proto::ibc::client::Height,
+        proof_height: RawHeight,
     ) -> Result<Self, String> {
         let height: Height = proof_height
             .try_into()

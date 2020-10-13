@@ -8,12 +8,12 @@ use tendermint_proto::DomainType;
 use tendermint::account::Id as AccountId;
 
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics02_client::height::Height;
 use crate::ics03_connection::connection::{validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
+use crate::Height;
 
 /// Message type for the `MsgConnectionOpenTry` message.
 pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
