@@ -72,14 +72,14 @@ mod tests {
     use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::mock_client::header::MockHeader;
+    use crate::mock_context::MockContext;
 
     #[test]
     fn test_update_client_ok() {
         let client_id: ClientId = "mockclient".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height::from(42_u32));
+        let mut ctx = MockContext::default().with_client(&client_id, Height::from(42_u32));
 
         let msg = MsgUpdateAnyClient {
             client_id,

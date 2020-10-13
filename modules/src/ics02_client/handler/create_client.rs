@@ -58,7 +58,6 @@ mod tests {
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::context_mock::MockClientContext;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::create_client::process;
     use crate::ics02_client::handler::{dispatch, ClientEvent, ClientResult};
@@ -255,7 +254,8 @@ mod tests {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let ctx = MockClientContext::default();
+        // An empty context. We'll test the creation of multiple clients against this context.
+        let ctx = MockContext::default();
 
         let tm_header = get_dummy_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
