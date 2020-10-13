@@ -11,11 +11,19 @@ EXTENDS Integers, FiniteSets, Sequences
 \* operator for type annotations
 a <: b == a
 
+\* client type
+ClientType ==
+    [
+        clientID |-> STRING,
+        heights |-> {Int}
+    ]
+    
 \* chain store type 
 ChainStoreType == 
     [
         height |-> Int, 
-        counterpartyClientHeights |-> {Int} 
+        client1 |-> ClientType,
+        client2 |-> ClientType 
     ]
 
 \* client datagram type
@@ -31,18 +39,17 @@ DatagramType ==
     [
         type |-> STRING,
         height |-> Int,
-        proofHeight |-> Int,
-        consensusHeight |-> Int,
-        clientID |-> STRING,
-        counterpartyClientID |-> STRING
+        clientID |-> STRING
     ]
 
 AsID(ID) == ID <: STRING
 AsInt(n) == n <: Int
+AsSetID(S) == S <: {STRING}
 AsSetInt(S) == S <: {Int}
 AsString(s) == s <: STRING
 
 AsChainStore(chainStore) == chainStore <: ChainStoreType
+AsClient(client) == client <: ClientType
 
 AsDatagram(dgr) == dgr <: DatagramType
 
@@ -54,7 +61,7 @@ AsSeqDatagrams(Dgrs) == Dgrs <: Seq(DatagramType)
 
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
-ClientIDs == {"clA", "clB"}
+ClientIDs == {"clA1", "clA2", "clB1", "clB2"}
 
 nullHeight == 0
 nullClientID == "none"
@@ -62,6 +69,23 @@ nullClientID == "none"
 Max(S) == CHOOSE x \in S: \A y \in S: y <= x 
 
 BoundedSeq(S, bound) == UNION {[1..n -> S] : n \in 1..bound}
+
+SetHeights(h1, h2) == {h \in 1..10 : h1 <= h /\ h <= h2}
+
+(********************************* Clients *********************************
+    A set of client records
+ ***************************************************************************)
+Clients(maxHeight) ==
+    [
+        clientID : ClientIDs,
+        heights : SUBSET(1..maxHeight)
+    ] <: {ClientType}
+    
+NullClient ==
+    [   
+        clientID |-> AsID(nullClientID),
+        heights |-> AsSetInt({})
+    ] <: ClientType    
 
 (******************************** ChainStores ******************************
     A set of chain store records, with fields relevant for ICS02. 
@@ -77,7 +101,8 @@ BoundedSeq(S, bound) == UNION {[1..n -> S] : n \in 1..bound}
 ChainStores(maxHeight) ==    
     [
         height : 1..maxHeight,
-        counterpartyClientHeights : SUBSET(1..maxHeight)
+        client1 : Clients(maxHeight),
+        client2 : Clients(maxHeight)
     ] <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
@@ -91,13 +116,13 @@ Datagrams(maxHeight) ==
 
 
 (***************************** ClientDatagrams *****************************
- A set of client datagrams.
+ A set of client datagrams for a specific set ClIDs of client IDs.
  ***************************************************************************)
-ClientDatagrams(maxHeight, clID, h) ==
-    [type : {"CreateClient"}, clientID : {clID}, height : h..maxHeight]
+ClientDatagrams(ClIDs, Heights) ==
+    [type : {"CreateClient"}, clientID : ClIDs, height : Heights]
     \union
-    [type : {"ClientUpdate"}, clientID : {clID}, height : h..maxHeight]   
-    <: {ClientDatagramType}
+    [type : {"ClientUpdate"}, clientID : ClIDs, height : Heights]   
+    <: {DatagramType}
     
 NullDatagram == 
     [type |-> "null"] <: DatagramType    
@@ -107,11 +132,12 @@ NullDatagram ==
  ***************************************************************************)
 \* Initial value of the chain store for ICS02: 
 \*      - height is initialized to 1
-\*      - the counterparty light client is uninitialized
+\*      - the counterparty clients are uninitialized
 ICS02InitChainStore == 
     [
-        height |-> 1,
-        counterpartyClientHeights |-> AsSetInt({})
+        height |-> AsInt(1),
+        client1 |-> AsClient(NullClient),
+        client2 |-> AsClient(NullClient)
     ] <: ChainStoreType
         
 (***************************************************************************
@@ -123,37 +149,24 @@ GetCounterpartyChainID(chainID) ==
     IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
  
 \* get the client ID of the client for chainID 
-GetClientID(chainID) ==
-    IF chainID = "chainA" THEN AsID("clA") ELSE AsID("clB")
+GetClientID1(chainID) ==
+    IF chainID = "chainA" THEN AsID("clA1") ELSE AsID("clB1")
         
 \* get the client ID of the client for chainID's counterparty chain           
-GetCounterpartyClientID(chainID) ==
-    IF chainID = "chainA" THEN AsID("clB") ELSE AsID("clA")
+GetCounterpartyClientID1(chainID) ==
+    IF chainID = "chainA" THEN AsID("clB1") ELSE AsID("clA1")
+    
+GetCounterpartyClientID2(chainID) ==
+    IF chainID = "chainA" THEN AsID("clB2") ELSE AsID("clA2")
+    
+GetCounterpartyClientIDs(chainID) ==
+    IF chainID = "chainA" THEN AsSetID({"clB1", "clB2"}) ELSE AsSetID({"clA1", "clA2"})    
     
 \* get the latest height of chainID
 GetLatestHeight(chain) ==
     AsInt(chain.height)   
-      
-\* get the maximal height of the client for chainID's counterparty chain    
-GetMaxCounterpartyClientHeight(chain) ==
-    IF chain.counterpartyClientHeights /= AsSetInt({})
-    THEN AsInt(Max(chain.counterpartyClientHeights))
-    ELSE AsInt(nullHeight)
 
-\* get the set of heights of the client for chainID's counterparty chain    
-GetCounterpartyClientHeights(chain) ==
-    AsSetInt(chain.counterpartyClientHeights)        
-
-\* returns true if the counterparty client is initialized on chainID
-IsCounterpartyClientOnChain(chain) ==
-    AsInt(chain.counterpartyClientHeights) /= AsInt({})
-
-\* returns true if the height h is in counterparty client heights on chainID 
-IsCounterpartyClientHeightOnChain(chain, h) ==
-    h \in chain.counterpartyClientHeights
-     
-
-=============================================================================
+=========================================================================
 \* Modification History
-\* Last modified Wed Oct 07 12:15:39 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Oct 13 13:20:43 CEST 2020 by ilinastoilkovska
 \* Created Tue Oct 06 16:26:25 CEST 2020 by ilinastoilkovska
