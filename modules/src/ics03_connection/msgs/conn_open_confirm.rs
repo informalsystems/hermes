@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use tendermint_proto::DomainType;
@@ -8,8 +8,7 @@ use tendermint::account::Id as AccountId;
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
-use crate::proofs::Proofs;
-use crate::tx_msg::Msg;
+use crate::{proofs::Proofs, tx_msg::Msg};
 use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenConfirm` message.
@@ -67,18 +66,18 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(
-                msg.proof_ack.into(),
-                None,
-                None,
-                msg.proof_height.ok_or_else(|| Kind::MissingProofHeight)?,
-            )
-            .map_err(|e| Kind::InvalidProof.context(e))?,
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
                 .map_err(|e| Kind::InvalidSigner.context(e))?,
         })

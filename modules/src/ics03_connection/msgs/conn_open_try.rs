@@ -106,11 +106,20 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
+        // TODO: implement TryFrom for ConsensusProof & move casting of raw heights in there.
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?;
+            .ok_or_else(|| Kind::MissingConsensusHeight)?
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let client_proof = match msg.client_state {
@@ -146,7 +155,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 msg.proof_init.into(),
                 client_proof,
                 Some(consensus_proof_obj),
-                msg.proof_height.ok_or_else(|| Kind::MissingProofHeight)?,
+                proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
