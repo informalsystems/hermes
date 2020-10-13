@@ -22,17 +22,25 @@ pub(crate) fn process(
     let mut new_conn_end = match ctx.connection_end(msg.connection_id()) {
         // A connection end must exist and must be Init or TryOpen; otherwise we return an error.
         Some(old_conn_end) => {
-            if !((old_conn_end.state_matches(&State::Init)
-                && old_conn_end.versions().contains(msg.version()))
-                || (old_conn_end.state_matches(&State::TryOpen)
-                    && old_conn_end.versions().get(0).eq(&Some(msg.version()))))
-            {
+            // Check if the connection state is either Init or TryOpen and message version
+            // is compatible.
+            let state_is_consistent = old_conn_end.state_matches(&State::Init)
+                && old_conn_end.versions().contains(msg.version())
+                || old_conn_end.state_matches(&State::TryOpen)
+                    && old_conn_end.versions().get(0).eq(&Some(msg.version()));
+
+            // Check that if the msg's counterparty connection id is not empty then it matches
+            // the old connection's counterparty.
+            let counterparty_matches = msg.counterparty_connection_id().as_str().is_empty()
+                || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
+
+            if state_is_consistent && counterparty_matches {
+                Ok(old_conn_end.clone())
+            } else {
                 // Old connection end is in incorrect state, propagate the error.
                 Err(Into::<Error>::into(Kind::ConnectionMismatch(
                     msg.connection_id().clone(),
                 )))
-            } else {
-                Ok(old_conn_end.clone())
             }
         }
         None => {
@@ -109,7 +117,7 @@ mod tests {
         let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.connection_id().clone(),
+            msg_ack.counterparty_connection_id().clone(),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
@@ -140,7 +148,7 @@ mod tests {
         // Build a connection end that will exercise the successful path.
         let correct_counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.connection_id().clone(),
+            msg_ack.counterparty_connection_id().clone(),
             CommitmentPrefix::from(b"ibc".to_vec()),
         )
         .unwrap();

@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
-use ibc_proto::ibc::tendermint::ClientState as RawClientState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 use tendermint::block::Height;
 use tendermint_proto::DomainType;
 
@@ -16,8 +16,10 @@ pub struct ClientState {
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
-    pub latest_height: Height,
     pub frozen_height: Height,
+    pub latest_height: Height,
+    // pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    pub upgrade_path: String,
     pub allow_update_after_expiry: bool,
     pub allow_update_after_misbehaviour: bool,
 }
@@ -34,6 +36,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
+        upgrade_path: String,
         allow_update_after_expiry: bool,
         allow_update_after_misbehaviour: bool, // proof_specs: Specs
     ) -> Result<ClientState, Error> {
@@ -76,6 +79,7 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
+            upgrade_path,
             allow_update_after_expiry,
             allow_update_after_misbehaviour,
         })
@@ -133,6 +137,7 @@ impl TryFrom<RawClientState> for ClientState {
                 raw.frozen_height
                     .ok_or_else(|| Kind::InvalidRawClientState.context("missing frozen height"))?,
             ),
+            upgrade_path: raw.upgrade_path,
             allow_update_after_expiry: raw.allow_update_after_expiry,
             allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
         })
@@ -147,23 +152,25 @@ impl From<ClientState> for RawClientState {
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
-            frozen_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.frozen_height.value(),
+            frozen_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: value.frozen_height.value(),
             }), // Todo: upgrade to tendermint v0.17.0 Height
-            latest_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.latest_height().value(),
+            latest_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: value.latest_height().value(),
             }), // Todo: upgrade to tendermint v0.17.0 Height
+            consensus_params: None,
             proof_specs: vec![], // Todo: Why is that not stored?
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
+            upgrade_path: value.upgrade_path,
         }
     }
 }
 
-fn decode_height(height: ibc_proto::ibc::client::Height) -> Height {
-    height.epoch_height.try_into().unwrap() // FIXME: This is wrong as it does not take the epoch into account
+fn decode_height(height: ibc_proto::ibc::core::client::v1::Height) -> Height {
+    height.version_height.try_into().unwrap() // FIXME: This is wrong as it does not take the epoch into account
 }
 
 #[cfg(test)]
@@ -201,6 +208,7 @@ mod tests {
             max_clock_drift: Duration,
             latest_height: Height,
             frozen_height: Height,
+            upgrade_path: String,
             allow_update_after_expiry: bool,
             allow_update_after_misbehaviour: bool,
         }
@@ -213,6 +221,7 @@ mod tests {
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::from(10_u32),
             frozen_height: Height::from(0_u32),
+            upgrade_path: "".to_string(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         };
@@ -276,6 +285,7 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
+                p.upgrade_path,
                 p.allow_update_after_expiry,
                 p.allow_update_after_misbehaviour,
             );

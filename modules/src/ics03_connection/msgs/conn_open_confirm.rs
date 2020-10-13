@@ -1,7 +1,7 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
-use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
@@ -70,7 +70,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .version_height; // FIXME: This is wrong as it does not take the epoch number into account
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -89,9 +89,9 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
+            proof_height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: ics_msg.proofs.height().value(),
             }),
             signer: ics_msg.signer.to_string(),
         }
@@ -100,8 +100,8 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
     use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
@@ -110,8 +110,8 @@ pub mod test_util {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             signer: get_dummy_account_id_raw(),
         }
@@ -122,8 +122,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
     use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
@@ -156,8 +156,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenConfirm {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg
                 },

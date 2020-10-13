@@ -27,7 +27,7 @@ impl TryFrom<RawMockHeader> for MockHeader {
         Ok(MockHeader(
             raw.height
                 .unwrap()
-                .epoch_height
+                .version_height
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
         ))
@@ -37,9 +37,9 @@ impl TryFrom<RawMockHeader> for MockHeader {
 impl From<MockHeader> for RawMockHeader {
     fn from(value: MockHeader) -> Self {
         RawMockHeader {
-            height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: value.height().value(),
+            height: Some(ibc_proto::ibc::core::client::v1::Height {
+                version_number: 0,
+                version_height: value.height().value(),
             }),
         } // FIXME: This is wrong as it does not take the epoch into account
     }

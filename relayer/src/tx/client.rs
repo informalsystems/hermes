@@ -67,6 +67,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         Duration::from_millis(3000),
         height,
         Height::from(0_u32),
+        "".to_string(),
         false,
         false,
     )

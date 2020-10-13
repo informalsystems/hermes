@@ -83,9 +83,9 @@ impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::client::Height {
-                    epoch_number: 0,
-                    epoch_height: value.0.height().value(),
+                height: Some(ibc_proto::ibc::core::client::v1::Height {
+                    version_number: 0,
+                    version_height: value.0.height().value(),
                 }),
             }),
         }
@@ -138,9 +138,9 @@ impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(ibc_proto::ibc::client::Height {
-                    epoch_number: 0,
-                    epoch_height: value.0.height().into(),
+                height: Some(ibc_proto::ibc::core::client::v1::Height {
+                    version_number: 0,
+                    version_height: value.0.height().into(),
                 }),
             }),
         }
