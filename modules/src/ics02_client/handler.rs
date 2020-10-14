@@ -6,8 +6,6 @@ use crate::ics02_client::msgs::ClientMsg;
 use crate::ics24_host::identifier::ClientId;
 
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::handler::create_client as ics2_create_client;
-use crate::ics02_client::handler::update_client as ics2_update_client;
 
 pub mod create_client;
 pub mod update_client;
@@ -20,8 +18,8 @@ pub enum ClientEvent {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientResult {
-    Create(ics2_create_client::Result),
-    Update(ics2_update_client::Result),
+    Create(create_client::Result),
+    Update(update_client::Result),
 }
 
 impl From<ClientEvent> for Event {
@@ -45,7 +43,7 @@ where
     Ctx: ClientReader,
 {
     Ok(match msg {
-        ClientMsg::CreateClient(msg) => ics2_create_client::process(ctx, msg)?,
-        ClientMsg::UpdateClient(msg) => ics2_update_client::process(ctx, msg)?,
+        ClientMsg::CreateClient(msg) => create_client::process(ctx, msg)?,
+        ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg)?,
     })
 }
