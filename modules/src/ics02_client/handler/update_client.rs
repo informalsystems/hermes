@@ -52,7 +52,7 @@ pub fn process(
         .check_header_and_update_state(client_state, header)
         .map_err(|_| Kind::HeaderVerificationFailure)?;
 
-    output.emit(ClientEvent::Updated(client_id.clone()));
+    output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
     Ok(output.with_result(ClientResult::Update(Result {
         client_id,
@@ -99,7 +99,10 @@ mod tests {
                 events,
                 log,
             }) => {
-                assert_eq!(events, vec![ClientEvent::Updated(msg.client_id).into()]);
+                assert_eq!(
+                    events,
+                    vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                );
                 assert!(log.is_empty());
                 // Check the result
                 match result {
@@ -176,7 +179,10 @@ mod tests {
                     events,
                     log,
                 }) => {
-                    assert_eq!(events, vec![ClientEvent::Updated(msg.client_id).into()]);
+                    assert_eq!(
+                        events,
+                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                    );
                     assert!(log.is_empty());
                 }
                 Err(err) => {

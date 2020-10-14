@@ -45,7 +45,7 @@ pub fn process(
 
     output.log("success: no client type found");
 
-    output.emit(ClientEvent::Created(client_id.clone()));
+    output.emit(ClientEvent::ClientCreated(client_id.clone()));
 
     Ok(output.with_result(ClientResult::Create(Result {
         client_id,
@@ -99,7 +99,10 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_result) => {
                     assert_eq!(create_result.client_type, ClientType::Mock);
-                    assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
+                    assert_eq!(
+                        events,
+                        vec![ClientEvent::ClientCreated(msg.client_id).into()]
+                    );
                     assert_eq!(
                         log,
                         vec![
@@ -257,7 +260,10 @@ mod tests {
                 }) => match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, msg.client_type);
-                        assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
+                        assert_eq!(
+                            events,
+                            vec![ClientEvent::ClientCreated(msg.client_id).into()]
+                        );
                         assert_eq!(
                             log,
                             vec![
@@ -316,7 +322,10 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_res) => {
                     assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
+                    assert_eq!(
+                        events,
+                        vec![ClientEvent::ClientCreated(msg.client_id).into()]
+                    );
                     assert_eq!(
                         log,
                         vec![

@@ -14,8 +14,8 @@ pub mod update_client;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ClientEvent {
-    Created(ClientId),
-    Updated(ClientId),
+    ClientCreated(ClientId),
+    ClientUpdated(ClientId),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,11 +27,11 @@ pub enum ClientResult {
 impl From<ClientEvent> for Event {
     fn from(ce: ClientEvent) -> Event {
         match ce {
-            ClientEvent::Created(client_id) => Event::new(
+            ClientEvent::ClientCreated(client_id) => Event::new(
                 EventType::Custom("ClientCreated".to_string()),
                 vec![("client_id".to_string(), client_id.to_string())],
             ),
-            ClientEvent::Updated(client_id) => Event::new(
+            ClientEvent::ClientUpdated(client_id) => Event::new(
                 EventType::Custom("ClientUpdated".to_string()),
                 vec![("client_id".to_string(), client_id.to_string())],
             ),
