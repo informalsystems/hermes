@@ -26,11 +26,13 @@ use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
+use crate::crypto::keybase::{KeyStore, StoreBackend};
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     light_client: Option<LightClient>,
+    pub keybase: KeyStore,
 }
 
 impl CosmosSDKChain {
@@ -38,8 +40,11 @@ impl CosmosSDKChain {
         let rpc_client =
             HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
+        let key_store = KeyStore::init(StoreBackend::Memory);
+
         Ok(Self {
             config,
+            keybase: key_store,
             rpc_client,
             light_client: None,
         })

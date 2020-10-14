@@ -11,6 +11,8 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
+use crate::crypto::keybase::KeyStore;
+
 use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;

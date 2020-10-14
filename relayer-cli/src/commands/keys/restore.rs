@@ -4,7 +4,7 @@ use relayer::config::Config;
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use relayer::crypto::keybase::{restore_key, KeysRestoreOptions};
+use relayer::keys::restore::{restore_key, KeysRestoreOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyRestoreCmd {
@@ -29,7 +29,7 @@ impl KeyRestoreCmd {
             .chains
             .iter()
             .find(|c| c.id == chain_id.parse().unwrap())
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| "Invalid chain identifier. Cannot retrieve the chain configuration".to_string())?;
 
         let key_name = self
             .name
@@ -37,7 +37,7 @@ impl KeyRestoreCmd {
             .ok_or_else(|| "missing key name".to_string())?;
 
         let mnemonic_words = self
-            .name
+            .mnemonic
             .clone()
             .ok_or_else(|| "missing mnemonic".to_string())?;
 
@@ -61,11 +61,11 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res: Result<(), Error> = restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res: Result<Vec<u8>, Error> = restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("keys store, result: ", "{:?}", r),
-            Err(e) => status_info!("keys store failed, error: ", "{}", e),
+            Ok(r) => status_info!("key restore result: ", "{:?}", hex::encode(r)),
+            Err(e) => status_info!("key restore failed: ", "{}", e),
         }
     }
 }
