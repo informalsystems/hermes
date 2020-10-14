@@ -74,10 +74,8 @@ impl MockContext {
     /// Similar to `with_client`, this function associates a client record to this context, but
     /// additionally permits to parametrize two details of the client. If `client_type` is None,
     /// then the client will have type Mock, otherwise the specified type. If
-    /// `consensus_state_height` is None, then the client will be initialized without any consensus
-    /// state, otherwise the client will comprise a consensus state for `consensus_state_height`.
-    /// Note: If `consensus_state_height` is None, the resulting MockContext will be invalid, so
-    /// this option is useful to construct mock contexts for tests that are expected to fail.
+    /// `consensus_state_height` is None, then the client will be initialized with a consensus
+    /// state matching the same height as the client state (`client_state_height`).
     pub fn with_client_parametrized(
         self,
         client_id: &ClientId,
@@ -86,16 +84,14 @@ impl MockContext {
         consensus_state_height: Option<Height>,
     ) -> Self {
         let mut clients = self.clients.clone();
+        let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
         let client_record = MockClientRecord {
             client_type: client_type.unwrap_or(ClientType::Mock),
             client_state: MockClientState(MockHeader(client_state_height)),
-            consensus_states: match consensus_state_height {
-                Some(cs_height) => vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
-                    .into_iter()
-                    .collect(),
-                None => Default::default(),
-            },
+            consensus_states: vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
+                .into_iter()
+                .collect(),
         };
         clients.insert(client_id.clone(), client_record);
 

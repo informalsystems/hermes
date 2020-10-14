@@ -1,6 +1,8 @@
+//! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 
@@ -8,8 +10,10 @@ use crate::ics02_client::msgs::MsgUpdateAnyClient;
 use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
+/// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
+/// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpdateClientOutput {
+pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
@@ -48,17 +52,13 @@ pub fn process(
         .check_header_and_update_state(client_state, header)
         .map_err(|_| Kind::HeaderVerificationFailure)?;
 
-    output.emit(ClientEvent::ClientUpdated(client_id.clone()));
+    output.emit(ClientEvent::Updated(client_id.clone()));
 
-    Ok(output.with_result(ClientResult::Update(UpdateClientOutput {
+    Ok(output.with_result(ClientResult::Update(Result {
         client_id,
         client_state: new_client_state,
         consensus_state: new_consensus_state,
     })))
-}
-
-pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientOutput) -> Result<(), Error> {
-    keeper.store_client_result(ClientResult::Update(result))
 }
 
 #[cfg(test)]
@@ -99,10 +99,7 @@ mod tests {
                 events,
                 log,
             }) => {
-                assert_eq!(
-                    events,
-                    vec![ClientEvent::ClientUpdated(msg.client_id).into()]
-                );
+                assert_eq!(events, vec![ClientEvent::Updated(msg.client_id).into()]);
                 assert!(log.is_empty());
                 // Check the result
                 match result {
@@ -179,10 +176,7 @@ mod tests {
                     events,
                     log,
                 }) => {
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
-                    );
+                    assert_eq!(events, vec![ClientEvent::Updated(msg.client_id).into()]);
                     assert!(log.is_empty());
                 }
                 Err(err) => {

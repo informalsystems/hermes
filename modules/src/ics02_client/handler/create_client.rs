@@ -1,3 +1,5 @@
+//! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
@@ -7,8 +9,10 @@ use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics02_client::msgs::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
+/// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
+/// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CreateClientOutput {
+pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
@@ -41,9 +45,9 @@ pub fn process(
 
     output.log("success: no client type found");
 
-    output.emit(ClientEvent::ClientCreated(client_id.clone()));
+    output.emit(ClientEvent::Created(client_id.clone()));
 
-    Ok(output.with_result(ClientResult::Create(CreateClientOutput {
+    Ok(output.with_result(ClientResult::Create(Result {
         client_id,
         client_type,
         client_state,
@@ -95,10 +99,7 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_result) => {
                     assert_eq!(create_result.client_type, ClientType::Mock);
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientCreated(msg.client_id).into()]
-                    );
+                    assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
                     assert_eq!(
                         log,
                         vec![
@@ -256,10 +257,7 @@ mod tests {
                 }) => match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, msg.client_type);
-                        assert_eq!(
-                            events,
-                            vec![ClientEvent::ClientCreated(msg.client_id).into()]
-                        );
+                        assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
                         assert_eq!(
                             log,
                             vec![
@@ -318,10 +316,7 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_res) => {
                     assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientCreated(msg.client_id).into()]
-                    );
+                    assert_eq!(events, vec![ClientEvent::Created(msg.client_id).into()]);
                     assert_eq!(
                         log,
                         vec![
