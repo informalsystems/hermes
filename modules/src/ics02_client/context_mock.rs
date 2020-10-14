@@ -71,10 +71,6 @@ impl MockClientContext {
     /// to this client a mock client state and a mock consensus state for the input height. The type
     /// of this client is implicitly assumed to be Mock.
     pub fn with_client_consensus_state(&mut self, client_id: &ClientId, h: Height) {
-        // let mut client_record = MockClientRecord {
-        //     client_state: MockClientState(MockHeader(h)),
-        //     consensus_states: HashMap::with_capacity(1),
-        // };
         let mut client_record = self.clients.get(client_id).unwrap().clone();
         client_record
             .consensus_states

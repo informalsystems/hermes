@@ -125,20 +125,20 @@ pub enum AnyClientState {
 }
 
 impl AnyClientState {
-    pub fn height(&self) -> Height {
+    pub fn latest_height(&self) -> Height {
         match self {
-            AnyClientState::Tendermint(tcs) => tcs.latest_height(),
+            Self::Tendermint(tm_state) => tm_state.latest_height(),
 
             #[cfg(test)]
-            AnyClientState::Mock(mcs) => mcs.latest_height(),
+            Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
     pub fn client_type(&self) -> ClientType {
         match self {
-            AnyClientState::Tendermint(_cs) => ClientType::Tendermint,
+            Self::Tendermint(state) => state.client_type(),
 
             #[cfg(test)]
-            AnyClientState::Mock(_cs) => ClientType::Mock,
+            Self::Mock(state) => state.client_type(),
         }
     }
 }
@@ -189,21 +189,11 @@ impl ClientState for AnyClientState {
     }
 
     fn client_type(&self) -> ClientType {
-        match self {
-            Self::Tendermint(state) => state.client_type(),
-
-            #[cfg(test)]
-            Self::Mock(state) => state.client_type(),
-        }
+        self.client_type()
     }
 
     fn latest_height(&self) -> Height {
-        match self {
-            Self::Tendermint(tm_state) => tm_state.latest_height(),
-
-            #[cfg(test)]
-            Self::Mock(mock_state) => mock_state.latest_height(),
-        }
+        self.latest_height()
     }
 
     fn is_frozen(&self) -> bool {
@@ -276,7 +266,7 @@ impl From<AnyConsensusState> for Any {
 
 impl ConsensusState for AnyConsensusState {
     fn client_type(&self) -> ClientType {
-        todo!()
+        self.client_type()
     }
 
     fn root(&self) -> &CommitmentRoot {

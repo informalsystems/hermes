@@ -5,7 +5,6 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 
 use crate::ics02_client::msgs::MsgUpdateAnyClient;
-use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

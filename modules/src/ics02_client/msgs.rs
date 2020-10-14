@@ -42,8 +42,8 @@ impl MsgCreateAnyClient {
     ) -> Result<Self, error::Error> {
         if client_state.client_type() != consensus_state.client_type() {
             return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
-                cls: client_state.client_type(),
-                cons: consensus_state.client_type(),
+                state_type: client_state.client_type(),
+                consensus_type: consensus_state.client_type(),
             }
             .into());
         }

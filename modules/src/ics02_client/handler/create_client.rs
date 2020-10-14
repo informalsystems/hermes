@@ -82,8 +82,6 @@ mod tests {
                 events,
                 log,
             }) => {
-                // FIXME AZ
-                //assert_eq!(result., ClientType::Mock);
                 assert_eq!(
                     events,
                     vec![ClientEvent::ClientCreated(msg.client_id()).into()]
@@ -210,8 +208,6 @@ mod tests {
                     events,
                     log,
                 }) => {
-                    // FIXME AZ
-                    // assert_eq!(result.client_type, msg.client_type);
                     assert_eq!(
                         events,
                         vec![ClientEvent::ClientCreated(msg.client_id()).into()]
