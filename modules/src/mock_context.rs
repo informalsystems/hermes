@@ -1,7 +1,7 @@
 use crate::ics02_client;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::context::ClientReader;
+use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
@@ -11,6 +11,9 @@ use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
 
+use crate::ics02_client::error::Error as ICS2Error;
+use crate::ics02_client::error::Kind as ICS2ErrorKind;
+use crate::ics26_routing::context::ICS26Context;
 use std::cmp::min;
 use std::collections::HashMap;
 
@@ -101,6 +104,8 @@ impl MockContext {
         }
     }
 }
+
+impl ICS26Context for MockContext {}
 
 impl ConnectionReader for MockContext {
     fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
@@ -195,6 +200,64 @@ impl ClientReader for MockContext {
                 None => None,
             },
             None => None,
+        }
+    }
+}
+
+impl ClientKeeper for MockContext {
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), ICS2Error> {
+        let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+            client_type,
+            consensus_states: Default::default(),
+            client_state: Default::default(),
+        });
+
+        client_record.client_type = client_type;
+        Ok(())
+    }
+
+    fn store_client_state(
+        &mut self,
+        client_id: ClientId,
+        client_state: AnyClientState,
+    ) -> Result<(), ICS2Error> {
+        match client_state {
+            AnyClientState::Mock(client_state) => {
+                let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+                    client_type: ClientType::Mock,
+                    consensus_states: Default::default(),
+                    client_state,
+                });
+                client_record.client_state = client_state;
+                Ok(())
+            }
+            _ => Err(ICS2ErrorKind::BadClientState.into()),
+        }
+    }
+
+    fn store_consensus_state(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        consensus_state: AnyConsensusState,
+    ) -> Result<(), ICS2Error> {
+        match consensus_state {
+            AnyConsensusState::Mock(consensus_state) => {
+                let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+                    client_type: ClientType::Mock,
+                    consensus_states: Default::default(),
+                    client_state: Default::default(),
+                });
+                client_record
+                    .consensus_states
+                    .insert(height, consensus_state);
+                Ok(())
+            }
+            _ => Err(ICS2ErrorKind::BadClientState.into()),
         }
     }
 }

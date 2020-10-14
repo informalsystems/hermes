@@ -31,9 +31,10 @@ pub(crate) fn process(
                 Ok(old_conn_end.clone())
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Into::<Error>::into(Kind::ConnectionMismatch(
-                    msg.connection_id().clone(),
-                )))
+                Err(Into::<Error>::into(
+                    Kind::ConnectionMismatch(msg.connection_id().clone())
+                        .context(old_conn_end.client_id().to_string()),
+                ))
             }
         }
         // No ConnectionEnd exists for this ConnectionId. Create & return a new one.
