@@ -92,7 +92,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawClientState))?;
 
         let client_type = match raw_client_state.type_url.as_str() {
-            "/ibc.tendermint.ClientState" => Ok(ClientType::Tendermint),
+            "/ibc.lightclients.tendermint.v1.ClientState" => Ok(ClientType::Tendermint),
 
             _ => Err(
                 Kind::DecodeMessage.context(error::Kind::UnknownConsensusStateType(
