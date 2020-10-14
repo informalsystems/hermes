@@ -69,11 +69,12 @@ mod tests {
     use crate::mock_client::state::{MockClientState, MockConsensusState};
     use crate::mock_context::MockContext;
     use crate::Height;
+    use std::str::FromStr;
     use std::time::Duration;
 
     #[test]
     fn test_create_client_ok() {
-        let client_id: ClientId = "mockclient".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient").unwrap();
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 42);
@@ -121,7 +122,7 @@ mod tests {
     #[test]
     fn test_create_client_existing_client_type() {
         let height = Height::new(0, 42);
-        let client_id: ClientId = "mockclient".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient").unwrap();
         let signer = get_dummy_account_id();
 
         // Initialize the context with a client having type Mock.
@@ -151,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_create_client_existing_client_state() {
-        let client_id: ClientId = "mockclient".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient").unwrap();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 30);
 
@@ -190,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_create_client_ok_multiple() {
-        let existing_client_id: ClientId = "existingmockclient".parse().unwrap();
+        let existing_client_id = ClientId::from_str("existingmockclient").unwrap();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
 
@@ -282,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_tm_create_client_ok() {
-        let client_id: ClientId = "tendermint".parse().unwrap();
+        let client_id = ClientId::from_str("tendermint").unwrap();
         let signer = get_dummy_account_id();
 
         // An empty context. We'll test the creation of multiple clients against this context.

@@ -66,24 +66,29 @@ pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result
 #[cfg(test)]
 mod tests {
     use crate::handler::HandlerOutput;
+    use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::error::Kind;
+    use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
     use crate::ics02_client::handler::{dispatch, ClientEvent};
+    use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock_client::header::MockHeader;
+    use crate::mock_client::state::MockClientState;
     use crate::mock_context::MockContext;
     use crate::Height;
+    use std::str::FromStr;
 
     #[test]
     fn test_update_client_ok() {
-        let client_id: ClientId = "mockclient".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient").unwrap();
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
-            client_id,
+            client_id: client_id.clone(),
             header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
@@ -92,7 +97,7 @@ mod tests {
 
         match output {
             Ok(HandlerOutput {
-                result: _,
+                result,
                 events,
                 log,
             }) => {
@@ -101,6 +106,17 @@ mod tests {
                     vec![ClientEvent::ClientUpdated(msg.client_id).into()]
                 );
                 assert!(log.is_empty());
+                // Check the result
+                match result {
+                    UpdateResult(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(
+                            upd_res.client_state,
+                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height())))
+                        )
+                    }
+                    CreateResult(_) => panic!("update handler result has type CreateResult"),
+                }
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
@@ -110,13 +126,13 @@ mod tests {
 
     #[test]
     fn test_update_nonexisting_client() {
-        let client_id: ClientId = "mockclient1".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient1").unwrap();
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
-            client_id: "nonexistingclient".parse().unwrap(),
+            client_id: ClientId::from_str("nonexistingclient").unwrap(),
             header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
@@ -135,10 +151,10 @@ mod tests {
 
     #[test]
     fn test_update_client_ok_multiple() {
-        let client_ids: Vec<ClientId> = vec![
-            "mockclient1".parse().unwrap(),
-            "mockclient2".parse().unwrap(),
-            "mockclient3".parse().unwrap(),
+        let client_ids = vec![
+            ClientId::from_str("mockclient1").unwrap(),
+            ClientId::from_str("mockclient2").unwrap(),
+            ClientId::from_str("mockclient3").unwrap(),
         ];
         let signer = get_dummy_account_id();
         let initial_height = Height::new(0, 45);
