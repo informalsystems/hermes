@@ -8,7 +8,7 @@ use crate::ics02_client::msgs::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CreateClientResult {
+pub struct CreateClientOutput {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
@@ -43,14 +43,12 @@ pub fn process(
 
     output.emit(ClientEvent::ClientCreated(client_id.clone()));
 
-    Ok(
-        output.with_result(ClientResult::CreateResult(CreateClientResult {
-            client_id,
-            client_type,
-            client_state,
-            consensus_state,
-        })),
-    )
+    Ok(output.with_result(ClientResult::Create(CreateClientOutput {
+        client_id,
+        client_type,
+        client_state,
+        consensus_state,
+    })))
 }
 
 #[cfg(test)]
@@ -95,7 +93,7 @@ mod tests {
                 events,
                 log,
             }) => match result {
-                ClientResult::CreateResult(create_result) => {
+                ClientResult::Create(create_result) => {
                     assert_eq!(create_result.client_type, ClientType::Mock);
                     assert_eq!(
                         events,
@@ -256,7 +254,7 @@ mod tests {
                     events,
                     log,
                 }) => match result {
-                    ClientResult::CreateResult(create_res) => {
+                    ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, msg.client_type);
                         assert_eq!(
                             events,
@@ -318,7 +316,7 @@ mod tests {
                 events,
                 log,
             }) => match result {
-                ClientResult::CreateResult(create_res) => {
+                ClientResult::Create(create_res) => {
                     assert_eq!(create_res.client_type, ClientType::Tendermint);
                     assert_eq!(
                         events,

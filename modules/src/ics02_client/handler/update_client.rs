@@ -9,7 +9,7 @@ use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpdateClientResult {
+pub struct UpdateClientOutput {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
@@ -50,17 +50,15 @@ pub fn process(
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
-    Ok(
-        output.with_result(ClientResult::UpdateResult(UpdateClientResult {
-            client_id,
-            client_state: new_client_state,
-            consensus_state: new_consensus_state,
-        })),
-    )
+    Ok(output.with_result(ClientResult::Update(UpdateClientOutput {
+        client_id,
+        client_state: new_client_state,
+        consensus_state: new_consensus_state,
+    })))
 }
 
-pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
-    keeper.store_client_result(ClientResult::UpdateResult(result))
+pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientOutput) -> Result<(), Error> {
+    keeper.store_client_result(ClientResult::Update(result))
 }
 
 #[cfg(test)]
@@ -68,7 +66,7 @@ mod tests {
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::error::Kind;
-    use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
+    use crate::ics02_client::handler::ClientResult::{Create, Update};
     use crate::ics02_client::handler::{dispatch, ClientEvent};
     use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
@@ -108,14 +106,14 @@ mod tests {
                 assert!(log.is_empty());
                 // Check the result
                 match result {
-                    UpdateResult(upd_res) => {
+                    Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState(MockHeader(msg.header.height())))
                         )
                     }
-                    CreateResult(_) => panic!("update handler result has type CreateResult"),
+                    Create(_) => panic!("update handler result has type CreateResult"),
                 }
             }
             Err(err) => {
