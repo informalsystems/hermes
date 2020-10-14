@@ -11,6 +11,7 @@ use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
 
+use crate::ics02_client::state::ClientState;
 use std::cmp::min;
 use std::collections::HashMap;
 
@@ -62,7 +63,6 @@ impl MockContext {
         let mut clients = self.clients.clone();
 
         let mut client_record = MockClientRecord {
-            client_type: ClientType::Mock,
             client_state: MockClientState(MockHeader(height)),
             consensus_states: HashMap::with_capacity(1),
         };
@@ -176,7 +176,7 @@ impl ConnectionKeeper for MockContext {
 impl ClientReader for MockContext {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
         match self.clients.get(client_id) {
-            Some(client_record) => client_record.client_type.into(),
+            Some(client_record) => client_record.client_state.client_type().into(),
             None => None,
         }
     }

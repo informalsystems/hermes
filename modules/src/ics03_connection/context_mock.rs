@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use crate::context::{ChainReader, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -39,10 +40,16 @@ impl MockConnectionContext {
         &self.client_context
     }
 
-    pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
+    pub fn with_client(
+        self,
+        client_id: &ClientId,
+        client_type: ClientType,
+        latest_client_height: u64,
+    ) -> Self {
         let mut client_context = self.client_context().clone();
-        client_context.with_client_consensus_state(
+        client_context.with_client(
             client_id,
+            client_type,
             Height {
                 version_number: 0,
                 version_height: latest_client_height,

@@ -133,6 +133,14 @@ impl AnyClientState {
             AnyClientState::Mock(mcs) => mcs.latest_height(),
         }
     }
+    pub fn client_type(&self) -> ClientType {
+        match self {
+            AnyClientState::Tendermint(_cs) => ClientType::Tendermint,
+
+            #[cfg(test)]
+            AnyClientState::Mock(_cs) => ClientType::Mock,
+        }
+    }
 }
 
 impl DomainType<Any> for AnyClientState {}
@@ -214,6 +222,17 @@ pub enum AnyConsensusState {
 
     #[cfg(test)]
     Mock(MockConsensusState),
+}
+
+impl AnyConsensusState {
+    pub fn client_type(&self) -> ClientType {
+        match self {
+            AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
+
+            #[cfg(test)]
+            AnyConsensusState::Mock(_cs) => ClientType::Mock,
+        }
+    }
 }
 
 impl DomainType<Any> for AnyConsensusState {}

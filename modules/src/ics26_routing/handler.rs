@@ -62,7 +62,6 @@ mod tests {
     use std::str::FromStr;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics24_host::identifier::ClientId;
@@ -85,15 +84,14 @@ mod tests {
             want_pass: bool,
         }
 
-        let msg = MsgCreateAnyClient {
-            client_id: ClientId::from_str("client_id").unwrap(),
-            client_type: ClientType::Mock,
-            client_state: AnyClientState::from(MockClientState(MockHeader(Height::new(0, 42)))),
-            consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(Height::new(
-                0, 42,
-            )))),
-            signer: get_dummy_account_id(),
-        };
+        let msg = MsgCreateAnyClient::new(
+            ClientId::from_str("client_id").unwrap(),
+            AnyClientState::from(MockClientState(MockHeader(Height::new(0, 42)))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(Height::new(0, 42)))),
+            get_dummy_account_id(),
+        )
+        .unwrap();
+
         let envelope = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(msg));
 
         let params = DispatchParams {

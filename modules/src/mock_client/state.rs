@@ -22,8 +22,6 @@ use crate::Height;
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
 #[derive(Clone, Debug)]
 pub struct MockClientRecord {
-    /// The type of this client.
-    pub client_type: ClientType,
     /// Mapping of heights to consensus states for this client.
     pub consensus_states: HashMap<Height, MockConsensusState>,
     /// The client state (representing only the latest height at the moment).

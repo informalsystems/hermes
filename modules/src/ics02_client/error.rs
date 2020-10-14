@@ -39,6 +39,9 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
+    #[error("mismatch  raw client consensus state")]
+    RawClientAndConsensusStateTypesMismatch { cls: ClientType, cons: ClientType },
+
     #[error("invalid raw header")]
     InvalidRawHeader,
 
