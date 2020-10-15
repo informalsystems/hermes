@@ -4,7 +4,7 @@
 ## Instead of blindly running this code, read it line by line and understand the dependecies and tasks.
 ## Prerequisites: Log into Docker Hub
 set -eou pipefail
-GAIA_BRANCH="stargate-3" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+GAIA_BRANCH="stargate-4" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 echo "*** Requirements"
 which git && which go && which make && which sed && which jq && which docker
@@ -36,8 +36,8 @@ docker build -t informaldev/chain_b -f chain_b.Dockerfile .
 # Get details from the config files
 echo SECRET_A=$(jq -r .secret gaia/build/chain_a/node0/gaiad/key_seed.json)
 echo SECRET_B=$(jq -r .secret gaia/build/chain_b/node0/gaiad/key_seed.json)
-echo NODEID_A=$(jq -r .app_state.genutil.gentxs[0].value.memo  gaia/build/chain_a/node0/gaiad/config/genesis.json)
-echo NODEID_B=$(jq -r .app_state.genutil.gentxs[0].value.memo  gaia/build/chain_b/node0/gaiad/config/genesis.json)
+echo NODEID_A=$(jq -r .app_state.genutil.gen_txs[0].body.memo  gaia/build/chain_a/node0/gaiad/config/genesis.json)
+echo NODEID_B=$(jq -r .app_state.genutil.gen_txs[0].body.memo  gaia/build/chain_b/node0/gaiad/config/genesis.json)
 
 read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
 docker push informaldev/chain_a
