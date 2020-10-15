@@ -27,7 +27,7 @@ pub trait ClientKeeper {
 
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
-            CreateResult(res) => {
+            Create(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     res.client_id,

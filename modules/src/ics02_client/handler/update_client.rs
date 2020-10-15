@@ -126,8 +126,7 @@ mod tests {
         let client_id = ClientId::from_str("mockclient1").unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height::new(0, 42));
+        let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
@@ -161,7 +160,7 @@ mod tests {
         let mut ctx = MockContext::default();
 
         for cid in &client_ids {
-            ctx.with_client(cid, ClientType::Mock, initial_height);
+            ctx = ctx.with_client(cid, initial_height);
         }
 
         for cid in &client_ids {
