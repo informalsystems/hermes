@@ -87,11 +87,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     // Build the domain type message
     let new_msg = MsgCreateAnyClient::new(
         opts.dest_client_id,
-        ClientType::Tendermint,
         any_client_state,
         any_consensus_state,
         signer,
-    );
+    )
+    .map_err(|e| {
+        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
+    })?;
 
     // Create a proto any message
     let mut proto_msgs: Vec<Any> = Vec::new();

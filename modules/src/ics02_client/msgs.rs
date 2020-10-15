@@ -6,7 +6,6 @@
 use std::convert::TryFrom;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
@@ -28,28 +27,41 @@ pub enum ClientMsg {
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgCreateAnyClient {
-    pub client_id: ClientId,
-    pub client_type: ClientType,
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
-    pub signer: AccountId,
+    client_id: ClientId,
+    client_state: AnyClientState,
+    consensus_state: AnyConsensusState,
+    signer: AccountId,
 }
 
 impl MsgCreateAnyClient {
     pub fn new(
         client_id: ClientId,
-        client_type: ClientType,
         client_state: AnyClientState,
         consensus_state: AnyConsensusState,
         signer: AccountId,
-    ) -> Self {
-        MsgCreateAnyClient {
+    ) -> Result<Self, error::Error> {
+        if client_state.client_type() != consensus_state.client_type() {
+            return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
+                state_type: client_state.client_type(),
+                consensus_type: consensus_state.client_type(),
+            }
+            .into());
+        }
+        Ok(MsgCreateAnyClient {
             client_id,
-            client_type,
             client_state,
             consensus_state,
             signer,
-        }
+        })
+    }
+    pub fn client_id(&self) -> ClientId {
+        self.client_id.clone()
+    }
+    pub fn client_state(&self) -> AnyClientState {
+        self.client_state.clone()
+    }
+    pub fn consensus_state(&self) -> AnyConsensusState {
+        self.consensus_state.clone()
     }
 }
 
@@ -91,28 +103,20 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .client_state
             .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawClientState))?;
 
-        let client_type = match raw_client_state.type_url.as_str() {
-            "/ibc.tendermint.ClientState" => Ok(ClientType::Tendermint),
-
-            _ => Err(
-                Kind::DecodeMessage.context(error::Kind::UnknownConsensusStateType(
-                    raw_client_state.clone().type_url,
-                )),
-            ),
-        }?;
-
         let raw_consensus_state = raw
             .consensus_state
             .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState))?;
 
-        Ok(MsgCreateAnyClient {
-            client_id: raw.client_id.parse().unwrap(),
-            client_type,
-            client_state: AnyClientState::try_from(raw_client_state).unwrap(),
-            consensus_state: AnyConsensusState::try_from(raw_consensus_state).unwrap(),
-            signer: AccountId::from_str(raw.signer.as_str())
+        Ok(MsgCreateAnyClient::new(
+            ClientId::from_str(raw.client_id.as_str())
                 .map_err(|e| Kind::DecodeMessage.context(e))?,
-        })
+            AnyClientState::try_from(raw_client_state)
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
+            AnyConsensusState::try_from(raw_consensus_state)
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
+            AccountId::from_str(raw.signer.as_str()).map_err(|e| Kind::DecodeMessage.context(e))?,
+        )
+        .map_err(|e| Kind::DecodeMessage.context(e))?)
     }
 }
 
@@ -143,7 +147,6 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgCreateClient;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::MsgCreateAnyClient;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics07_tendermint::client_state::ClientState;
@@ -169,13 +172,13 @@ mod tests {
             upgrade_path: "".to_string(),
         });
 
-        let msg = MsgCreateAnyClient {
+        let msg = MsgCreateAnyClient::new(
             client_id,
-            client_type: ClientType::Tendermint,
-            client_state: tm_client_state,
-            consensus_state: AnyConsensusState::Tendermint(tm_header.consensus_state()),
+            tm_client_state,
+            AnyConsensusState::Tendermint(tm_header.consensus_state()),
             signer,
-        };
+        )
+        .unwrap();
 
         let raw = MsgCreateClient::from(msg.clone());
         let msg_back = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
