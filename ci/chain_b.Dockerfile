@@ -10,5 +10,5 @@ CMD ["start"]
 VOLUME [ "/root" ]
 
 COPY gaia/build/gaiad /usr/bin/gaiad
-COPY gaia/build/chain_b/node0/gaiad /root/.gaiad
+COPY gaia/build/chain_b/node0/gaiad /root/.gaia
 COPY gaia/build/chain_b/node0/gaiad/key_seed.json /root/key_seed.json
