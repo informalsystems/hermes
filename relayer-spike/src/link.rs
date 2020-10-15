@@ -70,8 +70,8 @@ impl LinkConfig {
 }
 
 pub struct Link {
-    pub src_chain: Box<dyn Chain>, // XXX: Can these be private?
-    pub dst_chain: Box<dyn Chain>,
+    src_chain: Box<dyn Chain>,
+    dst_chain: Box<dyn Chain>,
     foreign_client: ForeignClient,
 }
 
@@ -91,9 +91,6 @@ impl Link {
             dst_chain: Box::new(dst_chain),
         })
     }
-
-    // How can we refactor this to enable testing
-    // What we need is for the 
 
     pub fn run(self) -> Result<(), LinkError> {
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
