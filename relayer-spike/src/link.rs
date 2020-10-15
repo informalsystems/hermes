@@ -94,29 +94,44 @@ impl Link {
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
         let signature = ();
 
+        // XXX: What about Packet Acks for ordered channels
         for (target_height, events) in subscription.iter() {
-            let maybe_packets: Result<Vec<Packet>, ChainError> = events.into_iter().map(|event| {
+            let packets: Result<Vec<Packet>, ChainError> = events.into_iter().map(|event| {
                 self.src_chain.create_packet(event)
             }).collect();
 
-            let packets = maybe_packets?;
+            let committed_packets = packets?;
 
-            let mut datagrams: Vec<Datagram> = packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
+            let mut datagrams: Vec<Datagram> = committed_packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
 
-            // TODO: Need to fetch the consensus state on the foreign chain
-            let signed_headers = self.src_chain.get_minimal_set(0, target_height)?;
-            let client_update = ClientUpdate::new(signed_headers);
+            let max_retries = 10; // XXX: move to config
+            'submit_retries: for i in 1..max_retries {
+                let height = self.dst_chain.get_height(&self.foreign_client)?;
+                let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 
-            datagrams.push(Datagram::ClientUpdate(client_update));
+                let client_update = ClientUpdate::new(signed_headers);
 
-            // We are missing fields here like gas and account
-            let transaction = Transaction::new(datagrams);
+                datagrams.push(Datagram::ClientUpdate(client_update));
 
-            let signed_transaction = transaction.sign(signature);
+                // We are missing fields here like gas and account
+                let transaction = Transaction::new(datagrams.clone());
 
-            let encoded_transaction = signed_transaction.encode();
+                let signed_transaction = transaction.sign(signature);
 
-            self.dst_chain.submit(encoded_transaction);
+                let encoded_transaction = signed_transaction.encode();
+                // How do I know this succeeded?
+                match self.dst_chain.submit(encoded_transaction) {
+                    Ok(()) => {
+                        println!("Submission successful");
+                        break 'submit_retries;
+                    },
+                    Err(err) => {
+                        // XXX: We need to determine when the failure is terminal (no more
+                        // retries)
+                        println!("Submission failed attempt {} with {:?}", i, err);
+                    },
+                }
+            }
         }
 
         return Ok(())

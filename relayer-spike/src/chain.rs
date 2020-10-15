@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::msgs::{Packet, IBCEvent, EncodedTransaction, Datagram};
+use crate::foreign_client::ForeignClient;
 use crossbeam_channel as channel;
 use std::time::Duration;
 use thiserror::Error;
@@ -21,24 +22,23 @@ pub trait Chain: Send {
     // It might be good to include an inclusion proof method which abstracts over the light client
     // to prove that a peice of data is stored on the chain
 
-    // TODO: Error Handling
+    // TODO: Error Handling, get rid of this?
     fn get_header(&self, height: Height) -> SignedHeader;
 
-    // TODO: Error handling
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError>;
 
-    // TODO: Error handling
-    // Errors:
-    // * FullNode Error
-    // * LightClient Errror
-    // * ForeignClientError
-    // * ConnectionError
-    // * ChannelError
-    // * PacketError
-    fn submit(&self, transaction: EncodedTransaction);
+    fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError> {
+        return Ok(())
+    }
 
-    // TODO: Error handling
-    fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof);
+    // This will:
+    // - fetch the consensus_state of src on dst
+    // - verify that 
+    // - verify if with the light client
+    // - return the height
+    fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError> {
+        return Ok(0);
+    }
 
     fn id(&self) -> ChainId;
 
@@ -80,16 +80,6 @@ impl Chain for ProdChain {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError> {
         return Ok(vec![SignedHeader::default()])
-    }
-
-    fn submit(&self, transaction: EncodedTransaction) {
-    }
-
-    fn consensus_state(&self, chain_id: ChainId, target_height: Height) -> (ConsensusState, MembershipProof) {
-        // In practice this will query the client_state, get the height and perform a second query
-        // for the consensus_state. it's possible that the client.state.height < target_height in which case this function will return the highest possible height
-
-        return (ConsensusState::default(), MembershipProof{height: target_height})
     }
 }
 

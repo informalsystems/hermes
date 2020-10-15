@@ -22,6 +22,8 @@ impl ConsensusState {
         }
     }
 }
+
+#[derive(Clone)]
 pub struct SignedHeader {
     pub header: Header,
     pub commit: (),
@@ -36,7 +38,7 @@ impl SignedHeader {
     }
 }
 
-#[derive(std::cmp::PartialEq)]
+#[derive(std::cmp::PartialEq, Clone)]
 pub struct Header {
     pub height: Height,
     pub hash: Hash,

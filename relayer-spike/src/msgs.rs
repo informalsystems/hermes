@@ -1,12 +1,14 @@
 use crate::types::{Signature, SignedHeader};
 
 // What is the actual type here?
+#[derive(Clone)]
 pub enum Datagram {
     NoOp(),
     Packet(Packet),
     ClientUpdate(ClientUpdate),
 }
 
+#[derive(Clone)]
 pub struct Packet {
     // type
     // packetData
@@ -48,6 +50,7 @@ pub enum IBCEvent {
     NoOp(),
 }
 
+#[derive(Clone)]
 pub struct ClientUpdate {
     signed_headers: Vec<SignedHeader>,
 }
