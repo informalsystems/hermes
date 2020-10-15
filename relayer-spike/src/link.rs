@@ -106,7 +106,7 @@ impl Link {
 
             let committed_packets = packets?;
 
-            let mut datagrams: Vec<Datagram> = committed_packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
+            let datagrams: Vec<Datagram> = committed_packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
 
             let max_retries = 10; // XXX: move to config
             let mut tries = 0..max_retries;
@@ -116,11 +116,12 @@ impl Link {
                     let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 
                     let client_update = ClientUpdate::new(signed_headers);
+                    let mut attempt_datagrams = datagrams.clone();
 
-                    datagrams.push(Datagram::ClientUpdate(client_update));
+                    attempt_datagrams.push(Datagram::ClientUpdate(client_update));
 
                     // We are missing fields here like gas and account
-                    let transaction = Transaction::new(datagrams.clone());
+                    let transaction = Transaction::new(attempt_datagrams);
 
                     let signed_transaction = transaction.sign(signature);
 
