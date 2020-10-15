@@ -39,7 +39,7 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
-    #[error("mismatch  raw client consensus state")]
+    #[error("mismatch raw client consensus state")]
     RawClientAndConsensusStateTypesMismatch {
         state_type: ClientType,
         consensus_type: ClientType,

@@ -55,6 +55,7 @@ impl MockClientContext {
         match client_type {
             ClientType::Mock => {
                 let mut client_record = MockClientRecord {
+                    client_type: ClientType::Mock,
                     client_state: MockClientState(MockHeader(h)),
                     consensus_states: HashMap::with_capacity(1),
                 };
@@ -107,6 +108,21 @@ impl ClientReader for MockClientContext {
 }
 
 impl ClientKeeper for MockClientContext {
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), Error> {
+        let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+            client_type,
+            consensus_states: Default::default(),
+            client_state: Default::default(),
+        });
+
+        client_record.client_type = client_type;
+        Ok(())
+    }
+
     fn store_client_state(
         &mut self,
         client_id: ClientId,
@@ -115,6 +131,7 @@ impl ClientKeeper for MockClientContext {
         match client_state {
             AnyClientState::Mock(client_state) => {
                 let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+                    client_type: ClientType::Mock,
                     consensus_states: Default::default(),
                     client_state,
                 });
@@ -135,6 +152,7 @@ impl ClientKeeper for MockClientContext {
             AnyConsensusState::Mock(consensus_state) => {
                 let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
                     consensus_states: Default::default(),
+                    client_type: ClientType::Mock,
                     client_state: Default::default(),
                 });
                 client_record

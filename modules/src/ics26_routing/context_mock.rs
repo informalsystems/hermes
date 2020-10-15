@@ -114,6 +114,16 @@ impl ConnectionKeeper for MockICS26Context {
 }
 
 impl ClientKeeper for MockICS26Context {
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), ICS2Error> {
+        self.client_context
+            .store_client_type(client_id, client_type)?;
+        Ok(())
+    }
+
     fn store_client_state(
         &mut self,
         client_id: ClientId,

@@ -1,5 +1,6 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientEvent;
@@ -9,6 +10,7 @@ use crate::ics24_host::identifier::ClientId;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateClientResult {
     pub client_id: ClientId,
+    pub client_type: ClientType,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
 }
@@ -25,16 +27,11 @@ pub fn process(
 
     output.log("success: no client state found");
 
-    if ctx.client_type(&msg.client_id()).is_some() {
-        return Err(Kind::ClientAlreadyExists(msg.client_id()).into());
-    }
-
-    output.log("success: no client type found");
-
     output.emit(ClientEvent::ClientCreated(msg.client_id()));
 
     Ok(output.with_result(CreateClientResult {
         client_id: msg.client_id(),
+        client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
     }))
@@ -86,13 +83,7 @@ mod tests {
                     events,
                     vec![ClientEvent::ClientCreated(msg.client_id()).into()]
                 );
-                assert_eq!(
-                    log,
-                    vec![
-                        "success: no client state found".to_string(),
-                        "success: no client type found".to_string()
-                    ]
-                );
+                assert_eq!(log, vec!["success: no client state found".to_string()]);
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
@@ -212,13 +203,7 @@ mod tests {
                         events,
                         vec![ClientEvent::ClientCreated(msg.client_id()).into()]
                     );
-                    assert_eq!(
-                        log,
-                        vec![
-                            "success: no client state found".to_string(),
-                            "success: no client type found".to_string()
-                        ]
-                    );
+                    assert_eq!(log, vec!["success: no client state found".to_string()]);
                 }
                 Err(err) => {
                     panic!("unexpected error: {}", err);
@@ -267,13 +252,7 @@ mod tests {
                     events,
                     vec![ClientEvent::ClientCreated(msg.client_id()).into()]
                 );
-                assert_eq!(
-                    log,
-                    vec![
-                        "success: no client state found".to_string(),
-                        "success: no client type found".to_string()
-                    ]
-                );
+                assert_eq!(log, vec!["success: no client state found".to_string()]);
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);

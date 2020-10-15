@@ -63,6 +63,7 @@ impl MockContext {
         let mut clients = self.clients.clone();
 
         let mut client_record = MockClientRecord {
+            client_type: ClientType::Mock,
             client_state: MockClientState(MockHeader(height)),
             consensus_states: HashMap::with_capacity(1),
         };
