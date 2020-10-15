@@ -108,9 +108,12 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState))?;
 
         Ok(MsgCreateAnyClient::new(
-            raw.client_id.parse().unwrap(),
-            AnyClientState::try_from(raw_client_state).unwrap(),
-            AnyConsensusState::try_from(raw_consensus_state).unwrap(),
+            ClientId::from_str(raw.client_id.as_str())
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
+            AnyClientState::try_from(raw_client_state)
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
+            AnyConsensusState::try_from(raw_consensus_state)
+                .map_err(|e| Kind::DecodeMessage.context(e))?,
             AccountId::from_str(raw.signer.as_str()).map_err(|e| Kind::DecodeMessage.context(e))?,
         )
         .map_err(|e| Kind::DecodeMessage.context(e))?)
