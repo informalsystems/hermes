@@ -13,20 +13,24 @@ use bitcoin::secp256k1::{All, Message, Secp256k1, Signature};
 use std::convert::TryFrom;
 use crate::error;
 
+pub type Address = Vec<u8>;
+
 pub enum KeyStore {
-    MemoryKeyStore { store: BTreeMap<String, KeyEntry> }
+    MemoryKeyStore { store: BTreeMap<Address, KeyEntry> }
 }
 
 pub enum StoreBackend {
     Memory
 }
 
+trait KeyRing {
+    fn init(backend: StoreBackend) -> KeyStore;
+    fn new_from_mnemonic(&mut self, name: String, mnemonic_words: &str) -> Result<bool, Error>;
+}
+
 /// Key entry stores the Private Key and Public Key as well the address
 #[derive(Clone, Debug)]
 pub struct KeyEntry {
-    /// Address
-    pub address: Vec<u8>,
-
     /// Public key
     pub public_key: ExtendedPubKey,
 
@@ -40,14 +44,14 @@ impl KeyStore {
     pub fn init(backend: StoreBackend) -> KeyStore {
         match backend {
             StoreBackend::Memory => {
-                let store: BTreeMap<String, KeyEntry> = BTreeMap::new();
+                let store: BTreeMap<Address, KeyEntry> = BTreeMap::new();
                 KeyStore::MemoryKeyStore { store }
             }
         }
     }
 
     /// Add a key entry in the store using a mnemonic.
-    pub fn add_from_mnemonic(&mut self, name: String, mnemonic_words: &str) -> Result<bool, Error> {
+    pub fn add_from_mnemonic(&mut self, name: String, mnemonic_words: &str) -> Result<Address, Error> {
 
         // Generate seed from mnemonic
         let mnemonic = Mnemonic::from_str(mnemonic_words).map_err(|e| error::Kind::KeyBase.context(e))?;
@@ -65,35 +69,34 @@ impl KeyStore {
         let address = get_address(public_key);
 
         let key = KeyEntry {
-            address,
             public_key,
             private_key
         };
 
-        self.insert(name, key);
+        self.insert(address.clone(), key);
 
-        Ok(true)
+        Ok(address)
     }
 
     /// Return a key entry from a key name
-    pub fn get(&self, name: String) -> Option<&KeyEntry> {
+    pub fn get(&self, address: Vec<u8>) -> Option<&KeyEntry> {
         match &self {
             KeyStore::MemoryKeyStore { store: s } => {
-                if !s.contains_key(&name) {
+                if !s.contains_key(&address) {
                     None
                 }
                 else {
-                    s.get(&name)
+                    s.get(&address)
                 }
             }
         }
     }
 
     /// Insert an entry in the key store
-    pub fn insert(&mut self, name: String, key: KeyEntry) -> Option<KeyEntry> {
+    pub fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
         match self {
             KeyStore::MemoryKeyStore { store: s} => {
-                let ke = s.insert(name, key);
+                let ke = s.insert(addr, key);
                 ke
             }
         }
