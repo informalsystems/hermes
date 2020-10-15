@@ -9,8 +9,8 @@ use retry::{retry, Error as RetryError, delay::Fixed};
 
 #[derive(Debug, Error)]
 pub enum LinkError {
-    #[error("NoOp")]
-    NoOp(),
+    #[error("Failed")]
+    Failed(),
 
     #[error("Chain error")]
     ChainError(#[from] ChainError),
@@ -92,8 +92,9 @@ impl Link {
         })
     }
 
-    // XXX: We need to export this as a handle function such that it can be unit tested
-    // Maybe it should be called CreateTransaction as it maps from events to transactions
+    // How can we refactor this to enable testing
+    // What we need is for the 
+
     pub fn run(self) -> Result<(), LinkError> {
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
         let signature = ();
@@ -140,7 +141,7 @@ impl Link {
                 },
                 Err(problem) => {
                     println!("Submission failed attempt with {:?}", problem);
-                    return Err(LinkError::NoOp());
+                    return Err(LinkError::Failed());
                 }
             }
         }
