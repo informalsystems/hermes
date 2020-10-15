@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use futures::future::join_all;
-use std::{ops::Deref, process};
+use std::ops::Deref;
 use tokio::sync::mpsc::{channel, Sender};
 
 use abscissa_core::{
@@ -49,7 +49,7 @@ pub async fn listener_task(config: &Config, relay: bool) -> Result<(), BoxError>
     let mut all_futures = Vec::new();
     for chain_config in &config.chains {
         info!(chain.id = % chain_config.id, "spawning event monitor for");
-        let mut event_monitor = init_monitor(chain_config.clone(), tx.clone()).await;
+        let mut event_monitor = init_monitor(chain_config.clone(), tx.clone()).await?;
         let m_handle = tokio::spawn(async move { event_monitor.run().await });
         all_futures.push(m_handle);
     }
@@ -67,19 +67,16 @@ pub async fn listener_task(config: &Config, relay: bool) -> Result<(), BoxError>
 async fn init_monitor(
     chain_config: ChainConfig,
     tx: Sender<(ChainId, Vec<IBCEvent>)>,
-) -> EventMonitor {
+) -> Result<EventMonitor, BoxError> {
     let mut event_monitor =
         EventMonitor::create(chain_config.id, chain_config.rpc_addr.clone(), tx)
             .await
-            .unwrap_or_else(|e| {
-                status_err!("couldn't initialize event monitor: {}", e);
-                process::exit(1);
-            });
-
-    event_monitor.subscribe().await.unwrap_or_else(|e| {
-        status_err!("couldn't initialize subscriptions: {}", e);
-        process::exit(1);
-    });
+            .map_err(|e| format!("couldn't initialize event monitor: {}", e))?;
 
     event_monitor
+        .subscribe()
+        .await
+        .map_err(|e| format!("couldn't initialize subscriptions: {}", e))?;
+
+    Ok(event_monitor)
 }
