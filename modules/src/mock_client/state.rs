@@ -24,10 +24,10 @@ use crate::Height;
 pub struct MockClientRecord {
     /// The type of this client.
     pub client_type: ClientType,
-    /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, MockConsensusState>,
     /// The client state (representing only the latest height at the moment).
     pub client_state: MockClientState,
+    /// Mapping of heights to consensus states for this client.
+    pub consensus_states: HashMap<Height, MockConsensusState>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see

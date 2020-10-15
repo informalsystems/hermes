@@ -1,7 +1,6 @@
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
-use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
@@ -53,7 +52,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::state::ClientState;
     use crate::ics18_relayer::context::ICS18Context;
     use crate::ics18_relayer::context_mock::MockICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;

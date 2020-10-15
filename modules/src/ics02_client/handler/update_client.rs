@@ -5,7 +5,6 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 
 use crate::ics02_client::msgs::MsgUpdateAnyClient;
-use crate::ics02_client::state::ClientState;
 use crate::ics24_host::identifier::ClientId;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -111,7 +110,7 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let mut ctx = MockClientContext::default();
-        ctx.with_client_consensus_state(&client_id, Height::new(0, 42));
+        ctx.with_client(&client_id, ClientType::Mock, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
             client_id: "nonexistingclient".parse().unwrap(),
@@ -145,7 +144,7 @@ mod tests {
         let mut ctx = MockClientContext::default();
 
         for cid in &client_ids {
-            ctx.with_client_consensus_state(cid, initial_height);
+            ctx.with_client(cid, ClientType::Mock, initial_height);
         }
 
         for cid in &client_ids {
