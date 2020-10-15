@@ -27,14 +27,23 @@ pub struct MockContext {
     /// A list of `max_history_size` headers, ascending order by their height (latest is last).
     history: Vec<MockHeader>,
 
+    // All the connections in the store.
+    connections: HashMap<ConnectionId, ConnectionEnd>,
+
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
     // Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
+}
 
-    // All the connections in the store.
-    connections: HashMap<ConnectionId, ConnectionEnd>,
+/// Returns a MockContext with bare minimum initialization: no clients, no connections are
+/// present, and the chain has Height(1). This should be used sparingly, mostly for testing the
+/// creation of new domain objects.
+impl Default for MockContext {
+    fn default() -> Self {
+        Self::new(5, Height::new(0, 1))
+    }
 }
 
 impl MockContext {
@@ -60,16 +69,31 @@ impl MockContext {
     /// to this client a mock client state and a mock consensus state for height `height`. The type
     /// of this client is implicitly assumed to be Mock.
     pub fn with_client(self, client_id: &ClientId, height: Height) -> Self {
-        let mut clients = self.clients.clone();
+        self.with_client_parametrized(client_id, height, Some(ClientType::Mock), Some(height))
+    }
 
-        let mut client_record = MockClientRecord {
-            client_type: ClientType::Mock,
-            client_state: MockClientState(MockHeader(height)),
-            consensus_states: HashMap::with_capacity(1),
+    /// Similar to `with_client`, this function associates a client record to this context, but
+    /// additionally permits to parametrize two details of the client. If `client_type` is None,
+    /// then the client will have type Mock, otherwise the specified type. If
+    /// `consensus_state_height` is None, then the client will be initialized with a consensus
+    /// state matching the same height as the client state (`client_state_height`).
+    pub fn with_client_parametrized(
+        self,
+        client_id: &ClientId,
+        client_state_height: Height,
+        client_type: Option<ClientType>,
+        consensus_state_height: Option<Height>,
+    ) -> Self {
+        let mut clients = self.clients.clone();
+        let cs_height = consensus_state_height.unwrap_or(client_state_height);
+
+        let client_record = MockClientRecord {
+            client_type: client_type.unwrap_or(ClientType::Mock),
+            client_state: MockClientState(MockHeader(client_state_height)),
+            consensus_states: vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
+                .into_iter()
+                .collect(),
         };
-        client_record
-            .consensus_states
-            .insert(height, MockConsensusState(MockHeader(height)));
         clients.insert(client_id.clone(), client_record);
 
         Self { clients, ..self }

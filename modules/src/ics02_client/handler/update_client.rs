@@ -1,14 +1,18 @@
+//! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
-use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 
 use crate::ics02_client::msgs::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
+/// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
+/// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct UpdateClientResult {
+pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
@@ -17,7 +21,7 @@ pub struct UpdateClientResult {
 pub fn process(
     ctx: &dyn ClientReader,
     msg: MsgUpdateAnyClient,
-) -> HandlerResult<UpdateClientResult, Error> {
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {
@@ -49,46 +53,48 @@ pub fn process(
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
-    Ok(output.with_result(UpdateClientResult {
+    Ok(output.with_result(ClientResult::Update(Result {
         client_id,
         client_state: new_client_state,
         consensus_state: new_consensus_state,
-    }))
-}
-
-pub fn keep(keeper: &mut dyn ClientKeeper, result: UpdateClientResult) -> Result<(), Error> {
-    keeper.store_client_result(ClientResult::UpdateResult(result))
+    })))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::Height;
-
-    use super::*;
-    use crate::ics02_client::client_type::ClientType;
-    use crate::ics02_client::context_mock::MockClientContext;
+    use crate::handler::HandlerOutput;
+    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::error::Kind;
+    use crate::ics02_client::handler::ClientResult::{Create, Update};
+    use crate::ics02_client::handler::{dispatch, ClientEvent};
+    use crate::ics02_client::header::Header;
+    use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics24_host::identifier::ClientId;
     use crate::mock_client::header::MockHeader;
+    use crate::mock_client::state::MockClientState;
+    use crate::mock_context::MockContext;
+    use crate::Height;
+    use std::str::FromStr;
 
     #[test]
     fn test_update_client_ok() {
-        let client_id: ClientId = "mockclient".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient").unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height::new(0, 42));
+        let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
-            client_id,
+            client_id: client_id.clone(),
             header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
-                result: _,
+                result,
                 events,
                 log,
             }) => {
@@ -97,6 +103,17 @@ mod tests {
                     vec![ClientEvent::ClientUpdated(msg.client_id).into()]
                 );
                 assert!(log.is_empty());
+                // Check the result
+                match result {
+                    Update(upd_res) => {
+                        assert_eq!(upd_res.client_id, client_id);
+                        assert_eq!(
+                            upd_res.client_state,
+                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height())))
+                        )
+                    }
+                    Create(_) => panic!("update handler result has type CreateResult"),
+                }
             }
             Err(err) => {
                 panic!("unexpected error: {}", err);
@@ -106,19 +123,18 @@ mod tests {
 
     #[test]
     fn test_update_nonexisting_client() {
-        let client_id: ClientId = "mockclient1".parse().unwrap();
+        let client_id = ClientId::from_str("mockclient1").unwrap();
         let signer = get_dummy_account_id();
 
-        let mut ctx = MockClientContext::default();
-        ctx.with_client(&client_id, ClientType::Mock, Height::new(0, 42));
+        let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));
 
         let msg = MsgUpdateAnyClient {
-            client_id: "nonexistingclient".parse().unwrap(),
+            client_id: ClientId::from_str("nonexistingclient").unwrap(),
             header: MockHeader(Height::new(0, 46)).into(),
             signer,
         };
 
-        let output = process(&ctx, msg.clone());
+        let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
         match output {
             Ok(_) => {
@@ -132,19 +148,19 @@ mod tests {
 
     #[test]
     fn test_update_client_ok_multiple() {
-        let client_ids: Vec<ClientId> = vec![
-            "mockclient1".parse().unwrap(),
-            "mockclient2".parse().unwrap(),
-            "mockclient3".parse().unwrap(),
+        let client_ids = vec![
+            ClientId::from_str("mockclient1").unwrap(),
+            ClientId::from_str("mockclient2").unwrap(),
+            ClientId::from_str("mockclient3").unwrap(),
         ];
         let signer = get_dummy_account_id();
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
 
-        let mut ctx = MockClientContext::default();
+        let mut ctx = MockContext::default();
 
         for cid in &client_ids {
-            ctx.with_client(cid, ClientType::Mock, initial_height);
+            ctx = ctx.with_client(cid, initial_height);
         }
 
         for cid in &client_ids {
@@ -154,7 +170,7 @@ mod tests {
                 signer,
             };
 
-            let output = process(&ctx, msg.clone());
+            let output = dispatch(&ctx, ClientMsg::UpdateClient(msg.clone()));
 
             match output {
                 Ok(HandlerOutput {

@@ -6,7 +6,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult;
-use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
+use crate::ics02_client::handler::ClientResult::{Create, Update};
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -27,7 +27,7 @@ pub trait ClientKeeper {
 
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
-            CreateResult(res) => {
+            Create(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     res.client_id,
@@ -35,7 +35,7 @@ pub trait ClientKeeper {
                     res.consensus_state,
                 )?;
             }
-            UpdateResult(res) => {
+            Update(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     res.client_id,

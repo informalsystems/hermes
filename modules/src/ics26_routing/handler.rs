@@ -30,7 +30,7 @@ where
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-            // Apply the result to the context.
+            // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
@@ -44,6 +44,7 @@ where
             let handler_output =
                 ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
+            // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 

@@ -1,3 +1,6 @@
+// TODO: This module is superseded by MockContext and will be nuked soon!
+// https://github.com/informalsystems/ibc-rs/issues/297.
+
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
