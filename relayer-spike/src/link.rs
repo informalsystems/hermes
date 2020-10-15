@@ -5,6 +5,7 @@ use crate::channel::{Channel, ChannelError};
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::chain::{Chain, ChainError};
 use thiserror::Error;
+use retry::{retry, Error as RetryError, delay::Fixed};
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -22,6 +23,9 @@ pub enum LinkError {
 
     #[error("ChannelError:")]
     ChannelError(#[from] ChannelError),
+
+    #[error("RetryExhausted:")]
+    RetryError(#[from] RetryError<ChainError>),
 }
 
 enum Order {
@@ -105,31 +109,37 @@ impl Link {
             let mut datagrams: Vec<Datagram> = committed_packets.into_iter().map(|packet| Datagram::Packet(packet)).collect();
 
             let max_retries = 10; // XXX: move to config
-            'submit_retries: for i in 1..max_retries {
-                let height = self.dst_chain.get_height(&self.foreign_client)?;
-                let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
+            let mut tries = 0..max_retries;
+            let result = retry(Fixed::from_millis(100), || -> Result<(), ChainError> {
+                if let Some(attempt) = tries.next() {
+                    let height = self.dst_chain.get_height(&self.foreign_client)?;
+                    let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 
-                let client_update = ClientUpdate::new(signed_headers);
+                    let client_update = ClientUpdate::new(signed_headers);
 
-                datagrams.push(Datagram::ClientUpdate(client_update));
+                    datagrams.push(Datagram::ClientUpdate(client_update));
 
-                // We are missing fields here like gas and account
-                let transaction = Transaction::new(datagrams.clone());
+                    // We are missing fields here like gas and account
+                    let transaction = Transaction::new(datagrams.clone());
 
-                let signed_transaction = transaction.sign(signature);
+                    let signed_transaction = transaction.sign(signature);
 
-                let encoded_transaction = signed_transaction.encode();
-                // How do I know this succeeded?
-                match self.dst_chain.submit(encoded_transaction) {
-                    Ok(()) => {
-                        println!("Submission successful");
-                        break 'submit_retries;
-                    },
-                    Err(err) => {
-                        // XXX: We need to determine when the failure is terminal (no more
-                        // retries)
-                        println!("Submission failed attempt {} with {:?}", i, err);
-                    },
+                    let encoded_transaction = signed_transaction.encode();
+                    self.dst_chain.submit(encoded_transaction)?
+                } else {
+                    Err::<(), ChainError>(ChainError::Failed());
+                }
+
+                return Ok(())
+            });
+
+            match result {
+                Ok(_) => {
+                    println!("Submission successful");
+                },
+                Err(problem) => {
+                    println!("Submission failed attempt with {:?}", problem);
+                    return Err(LinkError::NoOp());
                 }
             }
         }
