@@ -1,0 +1,11 @@
+[chains.chain_A]
+header_hash = '1A6388C6B80D1BC8B5C285D5B88B05FF9840DE429E9FF232D1C96564A24053F2'
+height = '19044'
+
+[chains.chain_A.trusting_period]
+secs = 1209600
+nanos = 0
+
+[chains.chain_A.trust_threshold]
+numerator = '1'
+denominator = '3'

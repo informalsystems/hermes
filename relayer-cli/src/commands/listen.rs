@@ -1,45 +1,46 @@
 use crate::prelude::*;
 
+use futures::future::join_all;
+use std::{ops::Deref, process};
+use tokio::sync::mpsc::{channel, Sender};
+
 use abscissa_core::{
     application::fatal_error,
     error::BoxError,
     tracing::{debug, info},
+    Command, Options, Runnable,
 };
-use abscissa_core::{Command, Options, Runnable};
 
-use crate::commands::utils::block_on;
 use relayer::config::ChainConfig;
 use relayer::event_handler::*;
 use relayer::event_monitor::*;
 
-use std::{ops::Deref, process};
-use tokio::sync::mpsc::{channel, Sender};
-
-use crate::config::Config;
-use ::tendermint::chain::Id as ChainId;
-use futures::future::join_all;
 use ibc::events::IBCEvent;
+use tendermint::chain::Id as ChainId;
+
+use crate::application::APPLICATION;
+use crate::config::Config;
 
 #[derive(Command, Debug, Options)]
-pub struct ListenCmd {
-    // #[options(help = "reset state from trust options", short = "r")]
-// reset: bool,
-}
+pub struct ListenCmd {}
 
 impl ListenCmd {
-    fn cmd(&self) -> Result<(), BoxError> {
+    async fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config().clone();
-        debug!("launching 'listen' command");
-        let local = tokio::task::LocalSet::new();
 
-        block_on(local.run_until(listener_task(&config, false)))
+        debug!("launching 'listen' command");
+        listener_task(&config, false).await
     }
 }
 
 impl Runnable for ListenCmd {
     fn run(&self) {
-        self.cmd()
-            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
+        abscissa_tokio::run(&APPLICATION, async move {
+            self.cmd()
+                .await
+                .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e));
+        })
+        .unwrap();
     }
 }
 

@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{thread::JoinHandle, time::Duration};
 
 use anomaly::fail;
 use serde::{de::DeserializeOwned, Serialize};
