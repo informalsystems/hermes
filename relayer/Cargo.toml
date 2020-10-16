@@ -28,17 +28,14 @@ prost-types = { version = "0.6.1" }
 futures = "0.3.5"
 
 [dependencies.tendermint]
-version = "0.16.0"
-git = "https://github.com/informalsystems/tendermint-rs"
+version = "0.17.0-rc1"
 
 [dependencies.tendermint-rpc]
-version = "0.16.0"
+version = "0.17.0-rc1"
 features = ["http-client", "websocket-client"]
-git = "https://github.com/informalsystems/tendermint-rs"
 
 [dependencies.tendermint-light-client]
-version = "0.16.0"
-git = "https://github.com/informalsystems/tendermint-rs"
+version = "0.17.0-rc1"
 
 # Needed for tx sign when ready in tendermint upgrade
 #k256 = { version = "0.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
