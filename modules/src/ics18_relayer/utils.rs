@@ -76,7 +76,7 @@ mod tests {
         let client_on_a_for_b = ClientId::from_str("ibconeclient").unwrap();
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
-        let chain_id = ChainId::from_str("chain-0").unwrap();
+        let chain_id = ChainId::from_str("chain-1").unwrap();
 
         // Create two mock contexts, one for each chain.
         let mut ctx_a = MockContext::new(chain_id.clone(), max_history_size, chain_a_start_height)

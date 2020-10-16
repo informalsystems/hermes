@@ -5,21 +5,27 @@ use super::error::ValidationError;
 use super::validate::*;
 use crate::ics24_host::error::ValidationKind;
 
+/// This type is subject to future changes.
+/// TODO: ChainId validation is not standardized yet.
+/// `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
+/// https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
+/// Also, contrast with tendermint-rs `ChainId` type.
 #[derive(Clone, Debug)]
 pub struct ChainId(String);
 
 impl ChainId {
-    /// This method will most likely be replaced by validate_chain_id()-style function.
-    /// TODO: ChainId validation is not standardized yet. This might be buggy!
-    /// `assert!(ChainId::is_epoch_format("chain-0".to_string()));` fails!
-    /// https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
     /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
-    /// The chainID must be in the form: `{chainID}-{version}
-    pub fn is_epoch_format(_chain_id: String) -> bool {
-        true
-        // use regex::Regex;
-        // let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
-        // re.is_match(chain_id.as_str())
+    /// The chainID must be in the form: `{chainID}-{version}`
+    /// ```
+    /// use ibc::ics24_host::identifier::ChainId;
+    /// assert_eq!(ChainId::is_epoch_format("chainA-0".to_string()), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA".to_string()), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA-1".to_string()), true);
+    /// ```
+    pub fn is_epoch_format(chain_id: String) -> bool {
+        use regex::Regex;
+        let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
+        re.is_match(chain_id.as_str())
     }
 
     pub fn chain_version(chain_id: String) -> u64 {
