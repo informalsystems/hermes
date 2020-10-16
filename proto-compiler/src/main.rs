@@ -4,16 +4,11 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 
 use git2::Repository;
-use tempdir::TempDir;
 use walkdir::WalkDir;
 
 fn main() {
-    let target_dir = "../proto/src/prost";
-
-    let out_dir = var("OUT_DIR")
-        .map(PathBuf::from)
-        .or_else(|_| TempDir::new("ibc_proto_out").map(|d| d.into_path()))
-        .unwrap();
+    let target_dir = PathBuf::from("../proto/src/prost");
+    let out_dir = PathBuf::from(var("OUT_DIR").unwrap_or_else(|_| "target/proto-rust".to_string()));
 
     let sdk_dir = clone_cosmos_sdk();
     compile_protos(&sdk_dir, &out_dir);
@@ -21,20 +16,20 @@ fn main() {
 }
 
 fn clone_cosmos_sdk() -> PathBuf {
-    let sdk_dir = var("SDK_DIR").unwrap_or_else(|_| "target/cosmos-sdk".to_string());
+    let sdk_dir = PathBuf::from(var("SDK_DIR").unwrap_or_else(|_| "target/cosmos-sdk".to_string()));
 
-    if Path::new(&sdk_dir).exists() {
-        println!("[info ] Found Cosmos SDK source at '{}'", sdk_dir);
+    if sdk_dir.exists() {
+        println!("[info ] Found Cosmos SDK source at '{}'", sdk_dir.display());
     } else {
         println!("[info ] Cloning cosmos/cosmos-sdk repository...");
 
         let url = "https://github.com/cosmos/cosmos-sdk";
         Repository::clone(url, &sdk_dir).unwrap();
 
-        println!("[info ] => Cloned at '{}'", sdk_dir);
+        println!("[info ] => Cloned at '{}'", sdk_dir.display());
     }
 
-    PathBuf::from(sdk_dir)
+    sdk_dir
 }
 
 fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
@@ -42,6 +37,10 @@ fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
         "[info ] Compiling .proto files to Rust into '{}'...",
         out_dir.as_ref().display()
     );
+
+    if !out_dir.as_ref().exists() {
+        create_dir_all(&out_dir).unwrap();
+    }
 
     let root = env!("CARGO_MANIFEST_DIR");
     let sdk_dir = sdk_dir.as_ref().display();
