@@ -1,13 +1,15 @@
+use serde_derive::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
+
+use ibc_proto::ibc::core::connection::v1::{
+    ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
+};
+use tendermint_proto::DomainType;
+
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc_proto::ibc::core::connection::v1::{
-    ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
-};
-use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
-use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectionEnd {
@@ -23,7 +25,7 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
         Ok(Self::new(
-            State::from_i32(value.state),
+            value.state.try_into()?,
             value
                 .client_id
                 .parse()
@@ -211,30 +213,36 @@ pub fn validate_version(version: String) -> Result<String, String> {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum State {
-    Uninitialized = 0,
-    Init,
-    TryOpen,
-    Open,
+    Init = 1,
+    TryOpen = 2,
+    Open = 3,
 }
 
 impl State {
     /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
         }
     }
+}
 
-    /// Parses the State from a i32.
-    pub fn from_i32(nr: i32) -> Self {
-        match nr {
-            1 => Self::Init,
-            2 => Self::TryOpen,
-            3 => Self::Open,
-            _ => Self::Uninitialized,
+impl TryFrom<i32> for State {
+    type Error = anomaly::Error<Kind>;
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            1 => Ok(Self::Init),
+            2 => Ok(Self::TryOpen),
+            3 => Ok(Self::Open),
+            _ => Err(Kind::InvalidState(value).into()),
         }
+    }
+}
+
+impl From<State> for i32 {
+    fn from(value: State) -> Self {
+        value.into()
     }
 }
