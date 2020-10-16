@@ -8,4 +8,5 @@ publish = false
 [dependencies]
 git2 = "0.13"
 prost-build = "0.6"
+tempdir = "0.3.7"
 walkdir = "2.3"

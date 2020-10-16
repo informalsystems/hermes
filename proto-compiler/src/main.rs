@@ -4,6 +4,7 @@ use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 
 use git2::Repository;
+use tempdir::TempDir;
 use walkdir::WalkDir;
 
 fn main() {
@@ -11,7 +12,8 @@ fn main() {
     let target_dir = root.join("../proto/src/prost");
     let out_dir = var("OUT_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| root.join("target/proto-rust"));
+        .or_else(|_| TempDir::new("ibc_proto_out").map(|d| d.into_path()))
+        .unwrap();
 
     let sdk_dir = clone_cosmos_sdk();
     compile_protos(&sdk_dir, &out_dir);
@@ -19,20 +21,20 @@ fn main() {
 }
 
 fn clone_cosmos_sdk() -> PathBuf {
-    let sdk_dir = PathBuf::from(var("SDK_DIR").unwrap_or_else(|_| "target/cosmos-sdk".to_string()));
+    let sdk_dir = var("SDK_DIR").unwrap_or_else(|_| "target/cosmos-sdk".to_string());
 
-    if sdk_dir.exists() {
-        println!("[info ] Found Cosmos SDK source at '{}'", sdk_dir.display());
+    if Path::new(&sdk_dir).exists() {
+        println!("[info ] Found Cosmos SDK source at '{}'", sdk_dir);
     } else {
         println!("[info ] Cloning cosmos/cosmos-sdk repository...");
 
         let url = "https://github.com/cosmos/cosmos-sdk";
         Repository::clone(url, &sdk_dir).unwrap();
 
-        println!("[info ] => Cloned at '{}'", sdk_dir.display());
+        println!("[info ] => Cloned at '{}'", sdk_dir);
     }
 
-    sdk_dir
+    PathBuf::from(sdk_dir)
 }
 
 fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
@@ -40,10 +42,6 @@ fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
         "[info ] Compiling .proto files to Rust into '{}'...",
         out_dir.as_ref().display()
     );
-
-    if !out_dir.as_ref().exists() {
-        create_dir_all(&out_dir).unwrap();
-    }
 
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let sdk_dir = sdk_dir.as_ref().to_owned();
@@ -93,7 +91,7 @@ fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
 
 fn copy_generated_files(from_dir: impl AsRef<Path>, to_dir: impl AsRef<Path>) {
     println!(
-        "[info ] Copying generated files into '{}'...",
+        "[info ] Copying generated Rust sources into '{}'...",
         to_dir.as_ref().display()
     );
 
