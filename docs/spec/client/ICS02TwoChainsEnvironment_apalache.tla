@@ -2,7 +2,7 @@
 
 EXTENDS ICS02TwoChainsEnvironment
 
-OVERRIDE_MaxHeight == 3
+OVERRIDE_MaxHeight == 4
 
 =============================================================================
 \* Modification History

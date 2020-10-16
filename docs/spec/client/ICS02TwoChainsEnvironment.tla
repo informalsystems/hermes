@@ -58,12 +58,12 @@ CreateDatagrams ==
     /\ datagramsChainA' \in 
         SUBSET ClientDatagrams(
             GetCounterpartyClientIDs("chainA"), 
-            SetHeights(GetLatestHeight(GetChainByID("chainB")), MaxHeight)
+            SetHeights(1, GetLatestHeight(GetChainByID("chainB")))
         )
     /\ datagramsChainB' \in
         SUBSET ClientDatagrams(
             GetCounterpartyClientIDs("chainB"), 
-            SetHeights(GetLatestHeight(GetChainByID("chainB")), MaxHeight)
+            SetHeights(1, GetLatestHeight(GetChainByID("chainB")))
         )     
         
     /\ UNCHANGED <<chainAstore, chainBstore>>
@@ -113,8 +113,8 @@ Inv ==
     /\ ChainA!UpdatedClientsAreCreated
     /\ ChainB!CreatedClientsHaveDifferentIDs
     /\ ChainB!UpdatedClientsAreCreated    
-    
+        
 =============================================================================
 \* Modification History
-\* Last modified Tue Oct 13 16:33:11 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Oct 16 11:10:43 CEST 2020 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska
