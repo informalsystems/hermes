@@ -5,7 +5,8 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::context::{ChainKeeper, ChainReader, HistoricalInfo, SelfHeader};
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
-use crate::ics02_client::height::{chain_version, Height};
+use crate::ics02_client::height::Height;
+use crate::ics24_host::identifier::ChainId;
 use crate::mock_client::header::MockHeader;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -59,7 +60,7 @@ impl MockChainContext {
     }
 
     pub fn add_header(&mut self, h: u64) {
-        let mut new_h = Height::new(chain_version(self.chain_id.clone()), h);
+        let mut new_h = Height::new(ChainId::chain_version(self.chain_id.clone()), h);
         if h == 0 {
             new_h.version_height = self.latest.version_height + 1;
         }
@@ -152,7 +153,8 @@ impl ChainKeeper for MockChainContext {
 #[cfg(test)]
 mod tests {
     use crate::context_mock::MockChainContext;
-    use crate::ics02_client::height::{chain_version, Height};
+    use crate::ics02_client::height::Height;
+    use crate::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_store_historical_info() {
@@ -169,7 +171,7 @@ mod tests {
             }
         }
 
-        let chain_version = chain_version(chain_id.clone());
+        let chain_version = ChainId::chain_version(chain_id.clone());
         let tests: Vec<Test> = vec![
             Test {
                 name: "Add no prune".to_string(),

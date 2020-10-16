@@ -3,6 +3,50 @@ use std::str::FromStr;
 
 use super::error::ValidationError;
 use super::validate::*;
+use crate::ics24_host::error::ValidationKind;
+
+#[derive(Clone, Debug)]
+pub struct ChainId(String);
+
+impl ChainId {
+    /// This method will most likely be replaced by validate_chain_id()-style function.
+    /// TODO: ChainId validation is not standardized yet. This might be buggy!
+    /// `assert!(ChainId::is_epoch_format("chain-0".to_string()));` fails!
+    /// https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
+    /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
+    /// The chainID must be in the form: `{chainID}-{version}
+    pub fn is_epoch_format(_chain_id: String) -> bool {
+        true
+        // use regex::Regex;
+        // let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
+        // re.is_match(chain_id.as_str())
+    }
+
+    pub fn chain_version(chain_id: String) -> u64 {
+        if !Self::is_epoch_format(chain_id.clone()) {
+            return 0;
+        }
+        let split: Vec<_> = chain_id.split('-').collect();
+        split[1].parse().unwrap_or(0)
+    }
+}
+
+impl FromStr for ChainId {
+    type Err = ValidationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match Self::is_epoch_format(s.to_string()) {
+            true => Ok(Self(s.to_string())),
+            false => Err(ValidationKind::chain_id_invalid_format(s.into()).into()),
+        }
+    }
+}
+
+impl std::fmt::Display for ChainId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ClientId(String);

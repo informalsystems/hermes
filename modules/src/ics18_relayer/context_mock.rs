@@ -2,11 +2,11 @@ use crate::context::ChainReader;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context_mock::MockClientContext;
-use crate::ics02_client::height::{chain_version, Height};
+use crate::ics02_client::height::Height;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
-use crate::ics24_host::identifier::ClientId;
+use crate::ics24_host::identifier::{ChainId, ClientId};
 use crate::ics26_routing::context_mock::MockICS26Context;
 use crate::ics26_routing::handler::dispatch;
 use crate::ics26_routing::msgs::ICS26Envelope;
@@ -31,7 +31,7 @@ impl MockICS18Context {
         let mut client_ctx = MockClientContext::new(
             chain_id.clone(),
             Height {
-                version_number: chain_version(chain_id.clone()),
+                version_number: ChainId::chain_version(chain_id.clone()),
                 version_height: chain_height,
             },
             max_hist_size,
@@ -40,7 +40,7 @@ impl MockICS18Context {
             client_id,
             ClientType::Mock,
             Height {
-                version_number: chain_version(chain_id),
+                version_number: ChainId::chain_version(chain_id),
                 version_height: client_height,
             },
         );

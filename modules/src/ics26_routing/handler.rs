@@ -70,7 +70,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics03_connection::msgs::ConnectionMsg;
-    use crate::ics24_host::identifier::ClientId;
+    use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock_client::header::MockHeader;
@@ -112,7 +112,11 @@ mod tests {
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 29)).unwrap();
 
         // We reuse this same context across all tests.
-        let mut ctx = MockContext::new(5, Height::new(0, 30));
+        let mut ctx = MockContext::new(
+            ChainId::from_str("chainA-1").unwrap(),
+            5,
+            Height::new(0, 30),
+        );
 
         let tests: Vec<Test> = vec![
             // Test the ICS2 client functionality.

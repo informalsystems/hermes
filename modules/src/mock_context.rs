@@ -8,22 +8,26 @@ use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
 
-use std::cmp::min;
-use std::collections::HashMap;
 use crate::ics02_client::state::ClientState;
-use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics26_routing::handler::dispatch;
+use crate::ics26_routing::msgs::ICS26Envelope;
+use std::cmp::min;
+use std::collections::HashMap;
+use std::str::FromStr;
 
 /// Mock for a context. Used in testing handlers of all modules.
 #[derive(Clone, Debug)]
 pub struct MockContext {
+    /// Chain identifier in the form <chain>-<version>.
+    pub chain_id: ChainId,
+
     /// Maximum size of the history.
     max_history_size: usize,
 
@@ -48,17 +52,19 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(5, Height::new(0, 1))
+        Self::new(ChainId::from_str("chainA-1").unwrap(), 5, Height::new(0, 1))
     }
 }
 
-/// Comprises multiple internal interfaces used in testing.
+/// Comprises an internal interfaces for use in testing. The methods in this interface should not
+/// be accessible to any ICS handler.
 impl MockContext {
-    pub fn new(max_history_size: usize, latest_height: Height) -> Self {
+    pub fn new(chain_id: ChainId, max_history_size: usize, latest_height: Height) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
 
         MockContext {
+            chain_id,
             max_history_size,
             latest_height,
             history: (0..n)
@@ -120,6 +126,10 @@ impl MockContext {
         }
     }
 
+    // This may be twisted:
+    // host_consensus_state (ret AnyConsensusState)  -> MockHeader
+    // query_latest_header (AnyHeader) -> MockHeader
+
     /// Internal interface. Accessor for a header of the local (host) chain of this context.
     /// May return `None` if the header for the requested height does not exist.
     fn host_header(&self, height: Height) -> Option<MockHeader> {
@@ -135,17 +145,20 @@ impl MockContext {
 
     /// Triggers the advancing of the host chain, by extending the history of blocks (headers).
     pub fn advance_host_chain_height(&mut self) {
-        // let mut new_h = Height::new(chain_version(self.chain_id.clone()), h);
-        // if h == 0 {
-        //     new_h.version_height = self.latest.version_height + 1;
-        // }
-        // self.store_historical_info(
-        //     new_h,
-        //     HistoricalInfo {
-        //         header: SelfHeader::Mock(MockHeader(new_h)),
-        //     },
-        // );
-        unimplemented!()
+        let new_height = Height::new(
+            ChainId::chain_version(self.chain_id.clone().to_string()),
+            self.latest_height.increment().version_height,
+        );
+        let header = MockHeader(new_height);
+
+        // let mut history = self.history.clone();
+        if self.history.len() >= self.max_history_size {
+            self.history.rotate_left(1);
+            self.history[self.max_history_size - 1] = header;
+        } else {
+            self.history.push(header);
+        }
+        self.latest_height = new_height;
     }
 
     /// Internal interface. A datagram passes from the relayer to the IBC module (on host chain).
@@ -325,9 +338,8 @@ impl ICS18Context for MockContext {
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
-        // let latest_height = self.host_current_height();
-        // self.host_header(latest_height).into()
-        unimplemented!()
+        let hi = self.host_header(self.host_current_height())?;
+        Some(hi.into())
     }
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {

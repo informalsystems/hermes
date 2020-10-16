@@ -105,8 +105,10 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::ics24_host::identifier::ChainId;
     use crate::mock_context::MockContext;
     use crate::Height;
+    use std::str::FromStr;
 
     #[test]
     fn conn_open_try_msg_processing() {
@@ -119,7 +121,11 @@ mod tests {
 
         let msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let context = MockContext::new(10, Height::new(0, 35));
+        let context = MockContext::new(
+            ChainId::from_str("chainA-1").unwrap(),
+            10,
+            Height::new(0, 35),
+        );
 
         let msg_height_advanced =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();

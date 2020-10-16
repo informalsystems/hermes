@@ -108,7 +108,7 @@ mod tests {
         )
         .unwrap();
 
-        let context = MockContext::new(10, Height::new(0, 3));
+        let context = MockContext::default();
 
         let incorrect_conn_end_state = ConnectionEnd::new(
             State::Init,
