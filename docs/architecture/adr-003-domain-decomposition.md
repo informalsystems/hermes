@@ -24,7 +24,6 @@ do we need to mock out to exercise the core logic.
 * Channel Setup
     * With different chain states
 * Datagram Construction
-    * Local light client state
     * With different chain states
     * With different light client states
 * Datagram to Transaction
@@ -32,14 +31,13 @@ do we need to mock out to exercise the core logic.
     * Signing
 * Datagram Submission
     * With different chain states
+    * Missing Client Updates
+    * With Missing Proofs
 
 * Handlers (datagrams, chain state) -> events
     * batch of datagrams and chain states
         * Specifically, the key value store
     * Produce events
-
-* Operational concerns
-    * CLI, embedded
 
 ## Dependencies
 
@@ -49,7 +47,8 @@ of what operations and depedencies need to be mocked out to test each
 stage in isolation, and will inform the design of the various traits needed
 to mock those out.
 
-Not all stages are listed here because the operations and dependencies outlined below cover all the possible dependencies at each stage.
+Not all stages are listed here because the operations and dependencies
+outlined below cover all the possible dependencies at each stage.
 
 ### Initializing a connection from the relayer
 
@@ -91,11 +90,14 @@ On a transaction in a block of height H:
   get the current height H and emit appropriate events.
 
 ## Objects
-The main domain object will be implemented as a trait. This will allow
-dependencies between objects to be mocked out during testing.
+The main domain objects (ForeignClient, Connection, Channnel) will be
+created as concrete types which contain their configuration.
+Dependencies between types indiciate runtime dependencies of the chain
+state. ie. Objects parameterized by ForeignClient have the pre-condition
+that the Client handshake was completed at some point in the runtime.
 
 ### Chain
-The Chain object is a local representation of a foreign chain state.
+The Chain trait is a local representation of a foreign chain state.
 The API of a Chain provides reliable access to chain state wether
 cashed, constructed or queried. We invision mock version of this chain
 will be used to test both handler and relayer logic.
@@ -111,29 +113,30 @@ struct Chain {
 
 ```
 
-The actual chain trait will be implemented by a simple synchronous
-version at first and offer a mocked alternative for testing.
+The methodset of the Chain trait will reflect specific needs and not
+intermediate representations. Query and light client verification
+concerns will be internal to the chain implementation and not exposed
+via API. Users of Chain trait implementations can assume verified data
+or receive an Error and act appropriately.
 
 ```rust
 trait Chain {
-    // Query and potentially cache consensus_state etc
-    fn query_*(&mut self, height: Height, ...) -> Result<..., Error> {
-        ...
-    }
+	// Generate a packet as the 
+	fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError>
 
-    // Or maybe we should just provide setters and getters and allow
+	// Fetch the height of a foreign client on a chain
+	// - query the consensus_state of src on dst
+	// - query the highest consensus_state
+	// - verify if with the light client
+	// - return the height
+	fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError>
 
-    // Chains have have embeded local light clients to verify headers
-    fn verify(&mut self, header: Header, ...) -> Result<..., Error> {
-    }
+	// Submit a transaction to a chains underlying full node
+	fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError>
 
-    // 
-    fn submit(&mut self, datagrams: vec<Dataram>) -> Result<..., ...> {
-        // We can check if the packet is indeed worth submitting here
-        ...
-        // We can ensure that the remote client is up to date before submitting
-    }
+	...
 }
+
 ```
 
 ### Connection
@@ -170,29 +173,37 @@ Connection and Channel.
 struct Link {
     src_chain: Chain,
     dst_chain: Chain,
-    foreign_client: ForeignClient,
+    channel: Channel,
 }
 
 impl Link {
-	fn new(..., foreign_client, ForeignClient, channel: Channel, config: Config) -> Link {
+	fn new(..., channel: Channel, config: Config) -> Link {
 		...
 	}
 
 	/// Relay Link specific packets from src_chain to dst_chain
     /// Expect this to run in a thread
-	fn run(mut self, config: Config) -> Error {
-		let subscription = self.src_chain.subscribe(config);
+	fn run(self) -> Error {
+		let subscription = self.src_chain.subscribe(&self.channel);
 
-		for datagram in subscription.iter() {
+		for (target_height, events) in subscription.iter() {
 			...
             
-            self.foreign_client.update(target_height);
+			let datagrams = events.map(|event| {
+				Datagram::Packet(self.dsrc_chain.build_packet(target_height, event))
+			})
 
-			let header = self.src_chain.get_header(target_height);
-			verify_proof(&datagram, &header);
+			for attempt in self.config_submission_attempts {
+                let current_height = self.dst_chain.get_height(&self.connection.channel.foreign_client)?;
+                let signed_headers = self.src_chain.get_minimal_set(current_height, target_height)?;
 
-            let transaction = Transaction::new(datagram);
-            self.dst_chain.submit(transaction);
+                let mut attempt_datagrams = datagrams.clone();
+                attempt_datagrams.push(Datagram::ClientUpdat(ClientUpdate::new(signed_headers)));
+				
+                let transaction = Transaction::new(datagram);
+                self.dst_chain.submit(transaction.sign().encode())?;
+			}
+
 		}
 	}
 }
@@ -208,8 +219,8 @@ handshake protocol was completed successfully.
 
 ```rust
 fn main() -> Result<(), Box<dyn Error>> {
-    let src_chain = ChainRuntime::new(); // TODO: Pass chain config
-    let dst_chain = ChainRuntime::new(); // TODO: Pass chain config
+    let src_chain = ChainRuntime::new();
+    let dst_chain = ChainRuntime::new();
 
     /// chains expose handlers for commuicating with the chain related runtime
     /// which move into their own threads
@@ -232,20 +243,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let connection = Connection::new(
         &src_chain_handle,
         &dst_chain_handle,
-        &foreign_client, // Create a semantic dependecy
+        foreign_client,
         ConnectionConfig::default()).unwrap();
 
     let channel = Channel::new(
         &src_chain_handle,
         &dst_chain_handle,
-        connection, // Semantic dependecy
+        connection,
         ChannelConfig::default()).unwrap();
 
     let link = Link::new(
         src_chain_handle,
         dst_chain_handle,
-        foreign_client, // Actual dependecy
-        channel,        // Semantic dependecy
+        channel, 
         LinkConfig::default())?;
 
     link.run()?;
