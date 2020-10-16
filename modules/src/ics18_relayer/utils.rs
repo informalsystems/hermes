@@ -54,7 +54,7 @@ where
 mod tests {
     use crate::ics18_relayer::context::ICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;
-    use crate::ics24_host::identifier::{ChainId, ClientId};
+    use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::msgs::ICS26Envelope;
 
     use crate::mock_context::MockContext;
@@ -70,18 +70,15 @@ mod tests {
         let chain_b_start_height = Height::new(0, 20);
         let client_on_b_for_a_height = Height::new(0, 10); // Should be smaller than `chain_a_start_height`
         let client_on_a_for_b_height = Height::new(0, 20); // Should be smaller than `chain_b_start_height`
-        let max_history_size = 3;
         let num_iterations = 4;
 
         let client_on_a_for_b = ClientId::from_str("ibconeclient").unwrap();
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
-        let chain_id = ChainId::from_str("chain-1").unwrap();
-
         // Create two mock contexts, one for each chain.
-        let mut ctx_a = MockContext::new(chain_id.clone(), max_history_size, chain_a_start_height)
+        let mut ctx_a = MockContext::new(chain_a_start_height)
             .with_client(&client_on_a_for_b, client_on_a_for_b_height);
-        let mut ctx_b = MockContext::new(chain_id, max_history_size, chain_b_start_height)
+        let mut ctx_b = MockContext::new(chain_b_start_height)
             .with_client(&client_on_b_for_a, client_on_b_for_a_height);
 
         for _i in 0..num_iterations {

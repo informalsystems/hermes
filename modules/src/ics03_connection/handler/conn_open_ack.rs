@@ -101,7 +101,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
-    use crate::ics24_host::identifier::{ChainId, ClientId};
+    use crate::ics24_host::identifier::ClientId;
     use crate::mock_context::MockContext;
     use crate::Height;
 
@@ -124,8 +124,7 @@ mod tests {
         .unwrap();
 
         // This context has very small height, tests should not pass.
-        let incorrect_context =
-            MockContext::new(ChainId::from_str("chainA-1").unwrap(), 5, Height::new(0, 3));
+        let incorrect_context = MockContext::default();
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
@@ -162,12 +161,12 @@ mod tests {
         )
         .unwrap();
 
-        // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
-        let correct_context = MockContext::new(
-            ChainId::from_str("chainA-1").unwrap(),
-            5,
-            Height::new(0, 10),
-        );
+        // Parametrize the (correct) host chain to have a height at least as recent as the
+        // the height of the proofs in the Ack msg.
+        let correct_context = MockContext::new(Height::new(
+            0,
+            msg_ack.proofs().height().increment().version_height,
+        ));
 
         let tests: Vec<Test> = vec![
             Test {

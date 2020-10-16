@@ -105,10 +105,8 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
-    use crate::ics24_host::identifier::ChainId;
     use crate::mock_context::MockContext;
     use crate::Height;
-    use std::str::FromStr;
 
     #[test]
     fn conn_open_try_msg_processing() {
@@ -119,18 +117,29 @@ mod tests {
             want_pass: bool,
         }
 
-        let msg_conn_try =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
-        let context = MockContext::new(
-            ChainId::from_str("chainA-1").unwrap(),
-            10,
-            Height::new(0, 35),
-        );
+        let host_chain_height = Height::new(0, 35);
+        let context = MockContext::new(host_chain_height);
+        let trusting_period = context.host_chain_history_size() as u64;
 
-        let msg_height_advanced =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 40)).unwrap();
+        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+            10,
+            host_chain_height.version_height,
+        ))
+        .unwrap();
+
+        // The proof targets a height that does not exist (i.e., too advanced) on destination chain.
+        let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+            10,
+            host_chain_height.increment().version_height,
+        ))
+        .unwrap();
+        let stale_height = host_chain_height
+            .sub(trusting_period + 1)
+            .unwrap()
+            .version_height;
+        // The proof targets a stale height (outside of trusting period) on destination chain.
         let msg_height_old =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 10)).unwrap();
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, stale_height)).unwrap();
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,

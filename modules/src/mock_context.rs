@@ -1,3 +1,5 @@
+//! Implementation of a global context mock. Used in testing handlers of all IBC modules.
+
 use crate::ics02_client;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
@@ -22,7 +24,6 @@ use std::cmp::min;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-/// Mock for a context. Used in testing handlers of all modules.
 #[derive(Clone, Debug)]
 pub struct MockContext {
     /// Chain identifier in the form <chain>-<version>.
@@ -52,14 +53,18 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(ChainId::from_str("chainA-1").unwrap(), 5, Height::new(0, 1))
+        Self::new(Height::new(0, 1))
     }
 }
 
-/// Comprises an internal interfaces for use in testing. The methods in this interface should not
-/// be accessible to any ICS handler.
+/// Implementation of internal interface for use in testing. The methods in this interface should
+/// _not_ be accessible to any ICS handler.
 impl MockContext {
-    pub fn new(chain_id: ChainId, max_history_size: usize, latest_height: Height) -> Self {
+    pub fn new(latest_height: Height) -> Self {
+        // A couple of predefined fields. Seems necessary to parametrize these so far.
+        let chain_id = ChainId::from_str("chainA-1").unwrap();
+        let max_history_size = 5;
+
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
 
@@ -187,7 +192,7 @@ impl ConnectionReader for MockContext {
     }
 
     /// Returns the number of consensus state historical entries for the local chain.
-    fn chain_consensus_states_history_size(&self) -> usize {
+    fn host_chain_history_size(&self) -> usize {
         self.max_history_size
     }
 

@@ -173,7 +173,7 @@ pub fn check_client_consensus_height(
     }
 
     let trusted_height =
-        ctx.host_current_height().version_height - ctx.chain_consensus_states_history_size() as u64;
+        ctx.host_current_height().version_height - ctx.host_chain_history_size() as u64;
 
     if claimed_height.version_height < trusted_height {
         // Fail if the consensus height is too old (outside of trusting period).
