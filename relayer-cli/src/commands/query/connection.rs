@@ -60,14 +60,8 @@ impl QueryConnectionEndCmd {
 
         let opts = QueryConnectionOptions {
             connection_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
+            proof: self.proof.unwrap_or(true),
         };
         Ok((chain_config.clone(), opts))
     }
