@@ -239,16 +239,12 @@ pub struct QueryClientConnectionsCmd {
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
-
-    #[options(help = "whether proof is required", short = "p")]
-    proof: Option<bool>,
 }
 
 #[derive(Debug)]
 struct QueryClientConnectionsOptions {
     client_id: ClientId,
     height: u64,
-    proof: bool,
 }
 
 impl QueryClientConnectionsCmd {
@@ -279,10 +275,6 @@ impl QueryClientConnectionsCmd {
                 Some(h) => h,
                 None => 0 as u64,
             },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
         };
         Ok((chain_config.clone(), opts))
     }
@@ -309,7 +301,7 @@ impl Runnable for QueryClientConnectionsCmd {
             .query(
                 ClientConnections(opts.client_id),
                 opts.height.try_into().unwrap(),
-                opts.proof,
+                false,
             )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
@@ -418,7 +410,6 @@ mod tests {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
-            proof: Some(false),
         };
 
         struct Test {
