@@ -23,7 +23,6 @@
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
 
-pub mod context;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
