@@ -215,8 +215,8 @@ mod tests {
         .into_iter()
         .collect();
 
-        for mut test in tests {
-            let res = dispatch(&mut test.ctx, test.msg.clone());
+        for test in tests {
+            let res = dispatch(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
