@@ -52,6 +52,7 @@ impl From<ConnectionEvent> for Event {
 
 /// General entry point for processing any type of message related to the ICS3 connection open
 /// handshake protocol.
+/// TODO: the context need not be mutable: only requires the read-only dependencies of `ConnectionReader`.
 pub fn dispatch<Ctx>(
     ctx: &mut Ctx,
     msg: ConnectionMsg,

@@ -30,7 +30,7 @@ where
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-            // Apply the result to the context.
+            // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
@@ -44,6 +44,7 @@ where
             let handler_output =
                 ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
+            // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
@@ -62,7 +63,6 @@ mod tests {
     use std::str::FromStr;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient, MsgUpdateAnyClient};
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -96,15 +96,14 @@ mod tests {
         let start_client_height = Height::new(0, 42);
         let update_client_height = Height::new(0, 50);
 
-        let create_client_msg = MsgCreateAnyClient {
-            client_id: default_client_id.clone(),
-            client_type: ClientType::Mock,
-            client_state: AnyClientState::from(MockClientState(MockHeader(start_client_height))),
-            consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(
-                start_client_height,
-            ))),
-            signer: default_signer,
-        };
+        let create_client_msg = MsgCreateAnyClient::new(
+            ClientId::from_str("client_id").unwrap(),
+            AnyClientState::from(MockClientState(MockHeader(start_client_height))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height))),
+            get_dummy_account_id(),
+        )
+        .unwrap();
+
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
         let incorrect_msg_conn_try =

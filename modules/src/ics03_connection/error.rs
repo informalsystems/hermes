@@ -9,7 +9,7 @@ use crate::Height;
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
     #[error("connection state unknown")]
-    UnknownState,
+    InvalidState(i32),
 
     #[error("connection exists (was initialized) already: {0}")]
     ConnectionExistsAlready(ConnectionId),

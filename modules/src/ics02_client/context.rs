@@ -6,7 +6,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult;
-use crate::ics02_client::handler::ClientResult::{CreateResult, UpdateResult};
+use crate::ics02_client::handler::ClientResult::{Create, Update};
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -19,34 +19,33 @@ pub trait ClientReader {
 
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), Error>;
+
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
-            CreateResult(res) => {
-                self.store_client_type(res.client_id.clone(), res.client_type)?;
+            Create(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     res.client_id,
-                    res.client_state.height(),
+                    res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
             }
-            UpdateResult(res) => {
+            Update(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     res.client_id,
-                    res.client_state.height(),
+                    res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
             }
         }
         Ok(())
     }
-
-    fn store_client_type(
-        &mut self,
-        client_id: ClientId,
-        client_type: ClientType,
-    ) -> Result<(), Error>;
 
     fn store_client_state(
         &mut self,
