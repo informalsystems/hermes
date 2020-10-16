@@ -7,8 +7,11 @@ use git2::Repository;
 use walkdir::WalkDir;
 
 fn main() {
-    let target_dir = PathBuf::from("../proto/src/prost");
-    let out_dir = PathBuf::from(var("OUT_DIR").unwrap_or_else(|_| "target/proto-rust".to_string()));
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let target_dir = root.join("../proto/src/prost");
+    let out_dir = var("OUT_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| root.join("target/proto-rust"));
 
     let sdk_dir = clone_cosmos_sdk();
     compile_protos(&sdk_dir, &out_dir);
@@ -42,21 +45,21 @@ fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
         create_dir_all(&out_dir).unwrap();
     }
 
-    let root = env!("CARGO_MANIFEST_DIR");
-    let sdk_dir = sdk_dir.as_ref().display();
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let sdk_dir = sdk_dir.as_ref().to_owned();
 
     // Paths
     let proto_paths = [
-        format!("{}/../proto/definitions/mock", root),
-        format!("{}/proto/ibc", sdk_dir),
-        format!("{}/proto/cosmos/tx", sdk_dir),
-        format!("{}/proto/cosmos/base", sdk_dir),
+        root.join("../proto/definitions/mock"),
+        sdk_dir.join("proto/ibc"),
+        sdk_dir.join("proto/cosmos/tx"),
+        sdk_dir.join("proto/cosmos/base"),
     ];
 
     let proto_includes_paths = [
-        format!("{}/../proto", root),
-        format!("{}/proto", sdk_dir),
-        format!("{}/third_party/proto", sdk_dir),
+        root.join("../proto"),
+        sdk_dir.join("proto"),
+        sdk_dir.join("third_party/proto"),
     ];
 
     // List available proto files
