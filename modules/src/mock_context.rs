@@ -1,12 +1,12 @@
 use crate::ics02_client;
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::Error as ICS2Error;
-use crate::ics02_client::error::Kind as ICS2ErrorKind;
+use crate::ics02_client::error::{Error as ICS2Error, Kind as ICS2ErrorKind};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
+use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
@@ -17,6 +17,9 @@ use crate::Height;
 use std::cmp::min;
 use std::collections::HashMap;
 use crate::ics02_client::state::ClientState;
+use crate::ics26_routing::msgs::ICS26Envelope;
+use crate::ics18_relayer::context::ICS18Context;
+use crate::ics26_routing::handler::dispatch;
 
 /// Mock for a context. Used in testing handlers of all modules.
 #[derive(Clone, Debug)]
@@ -49,6 +52,7 @@ impl Default for MockContext {
     }
 }
 
+/// Comprises multiple internal interfaces used in testing.
 impl MockContext {
     pub fn new(max_history_size: usize, latest_height: Height) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
@@ -127,6 +131,29 @@ impl MockContext {
         } else {
             Some(self.history[self.max_history_size + l - h - 1])
         }
+    }
+
+    /// Triggers the advancing of the host chain, by extending the history of blocks (headers).
+    pub fn advance_host_chain_height(&mut self) {
+        // let mut new_h = Height::new(chain_version(self.chain_id.clone()), h);
+        // if h == 0 {
+        //     new_h.version_height = self.latest.version_height + 1;
+        // }
+        // self.store_historical_info(
+        //     new_h,
+        //     HistoricalInfo {
+        //         header: SelfHeader::Mock(MockHeader(new_h)),
+        //     },
+        // );
+        unimplemented!()
+    }
+
+    /// Internal interface. A datagram passes from the relayer to the IBC module (on host chain).
+    fn recv(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
+        dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+        // Create a new block.
+        self.advance_host_chain_height();
+        Ok(())
     }
 }
 
@@ -284,5 +311,26 @@ impl ClientKeeper for MockContext {
             }
             _ => Err(ICS2ErrorKind::BadClientState.into()),
         }
+    }
+}
+
+impl ICS18Context for MockContext {
+    fn query_latest_height(&self) -> Height {
+        self.host_current_height()
+    }
+
+    fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+        // Forward call to ICS2.
+        ics02_client::context::ClientReader::client_state(self, client_id)
+    }
+
+    fn query_latest_header(&self) -> Option<AnyHeader> {
+        // let latest_height = self.host_current_height();
+        // self.host_header(latest_height).into()
+        unimplemented!()
+    }
+
+    fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
+        self.recv(msg)
     }
 }

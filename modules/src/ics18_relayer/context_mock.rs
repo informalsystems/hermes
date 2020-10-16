@@ -1,5 +1,4 @@
 use crate::context::ChainReader;
-use crate::handler::HandlerOutput;
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context_mock::MockClientContext;
@@ -72,13 +71,13 @@ impl MockICS18Context {
     }
 
     /// Internal interface of the context, for consuming (on the modules side) a datagram.
-    fn recv(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
+    fn recv(&mut self, msg: ICS26Envelope) -> Result<(), Error> {
         let mut rctx = self.routing_context().clone();
-        let res = dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
+        dispatch(&mut rctx, msg).map_err(|e| Kind::TransactionFailed.context(e))?;
         self.set_routing_context(rctx);
         // Create new block
         self.advance_chain_height();
-        Ok(res)
+        Ok(())
     }
 }
 
@@ -98,7 +97,7 @@ impl ICS18Context for MockICS18Context {
             .header(latest_height)
     }
 
-    fn send(&mut self, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error> {
+    fn send(&mut self, msg: ICS26Envelope) -> Result<(), Error> {
         self.recv(msg)
     }
 }
