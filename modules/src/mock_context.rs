@@ -26,7 +26,7 @@ use std::str::FromStr;
 #[derive(Clone, Debug)]
 pub struct MockContext {
     /// Chain identifier in the form <chain>-<version>.
-    pub chain_id: ChainId,
+    chain_id: ChainId,
 
     /// Maximum size of the history.
     max_history_size: usize,
@@ -37,14 +37,14 @@ pub struct MockContext {
     /// A list of `max_history_size` headers, ascending order by their height (latest is last).
     history: Vec<MockHeader>,
 
-    // All the connections in the store.
-    connections: HashMap<ConnectionId, ConnectionEnd>,
-
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
     // Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
+
+    // All the connections in the store.
+    connections: HashMap<ConnectionId, ConnectionEnd>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections are
