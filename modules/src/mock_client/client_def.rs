@@ -1,15 +1,12 @@
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::ics23_commitment::{commitment::CommitmentPrefix, merkle::apply_prefix};
-use crate::ics24_host::identifier::ConnectionId;
-use crate::{ics02_client::client_def::ClientDef, ics24_host::identifier::ClientId};
-use crate::{ics03_connection::connection::ConnectionEnd, ics24_host::Path};
-
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::merkle::apply_prefix;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::Path;
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientState, MockConsensusState};
-
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use crate::ics23_commitment::commitment::CommitmentRoot;
-use tendermint::block::Height;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MockClient;
@@ -24,7 +21,7 @@ impl ClientDef for MockClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
-        if client_state.latest_height() >= header.height() {
+        if client_state.latest_height() > header.height() {
             return Err("header height is lower than client latest".into());
         }
 
@@ -41,9 +38,12 @@ impl ClientDef for MockClient {
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let client_prefixed_path =
-            // TODO - will pick epoch from new type Height
-            Path::ClientConsensusState{client_id: client_id.clone(), epoch: 0, height: height.value()}.to_string();
+        let client_prefixed_path = Path::ClientConsensusState {
+            client_id: client_id.clone(),
+            epoch: height.version_number,
+            height: height.version_height,
+        }
+        .to_string();
 
         let _path = apply_prefix(prefix, client_prefixed_path)?;
 

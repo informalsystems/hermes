@@ -79,6 +79,25 @@ pub struct MsgUpdateClient {
     #[prost(string, tag="3")]
     pub signer: std::string::String,
 }
+/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client state
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpgradeClient {
+    /// client unique identifier
+    #[prost(string, tag="1")]
+    pub client_id: std::string::String,
+    /// upgraded client state
+    #[prost(message, optional, tag="2")]
+    pub client_state: ::std::option::Option<::prost_types::Any>,
+    /// height at which old chain halts and upgrades (i.e last block executed)
+    #[prost(message, optional, tag="3")]
+    pub upgrade_height: ::std::option::Option<Height>,
+    /// proof that old chain committed to new client
+    #[prost(bytes, tag="4")]
+    pub proof_upgrade: std::vec::Vec<u8>,
+    /// signer address
+    #[prost(string, tag="5")]
+    pub signer: std::string::String,
+}
 /// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
 /// light client misbehaviour.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -97,19 +116,19 @@ pub struct MsgSubmitMisbehaviour {
 /// that can be compared against another Height for the purposes of updating and
 /// freezing clients
 ///
-/// Normally the EpochHeight is incremented at each height while keeping epoch
+/// Normally the VersionHeight is incremented at each height while keeping version
 /// number the same However some consensus algorithms may choose to reset the
 /// height in certain conditions e.g. hard forks, state-machine breaking changes
-/// In these cases, the epoch number is incremented so that height continues to
-/// be monitonically increasing even as the EpochHeight gets reset
+/// In these cases, the version number is incremented so that height continues to
+/// be monitonically increasing even as the VersionHeight gets reset
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Height {
-    /// the epoch that the client is currently on
+    /// the version that the client is currently on
     #[prost(uint64, tag="1")]
-    pub epoch_number: u64,
-    /// the height within the given epoch
+    pub version_number: u64,
+    /// the height within the given version
     #[prost(uint64, tag="2")]
-    pub epoch_height: u64,
+    pub version_height: u64,
 }
 /// GenesisState defines the ibc client submodule's genesis state.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -156,7 +175,7 @@ pub struct QueryClientStateResponse {
 pub struct QueryClientStatesRequest {
     /// pagination request
     #[prost(message, optional, tag="1")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
 }
 /// QueryClientStatesResponse is the response type for the Query/ClientStates RPC
 /// method.
@@ -167,7 +186,7 @@ pub struct QueryClientStatesResponse {
     pub client_states: ::std::vec::Vec<IdentifiedClientState>,
     /// pagination response
     #[prost(message, optional, tag="2")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
 }
 /// QueryConsensusStateRequest is the request type for the Query/ConsensusState
 /// RPC method. Besides the consensus state, it includes a proof and the height
@@ -177,12 +196,12 @@ pub struct QueryConsensusStateRequest {
     /// client identifier
     #[prost(string, tag="1")]
     pub client_id: std::string::String,
-    /// consensus state epoch number
+    /// consensus state version number
     #[prost(uint64, tag="2")]
-    pub epoch_number: u64,
-    /// consensus state epoch height
+    pub version_number: u64,
+    /// consensus state version height
     #[prost(uint64, tag="3")]
-    pub epoch_height: u64,
+    pub version_height: u64,
     /// latest_height overrrides the height field and queries the latest stored
     /// ConsensusState
     #[prost(bool, tag="4")]
@@ -214,7 +233,7 @@ pub struct QueryConsensusStatesRequest {
     pub client_id: std::string::String,
     /// pagination request
     #[prost(message, optional, tag="2")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
 }
 /// QueryConsensusStatesResponse is the response type for the
 /// Query/ConsensusStates RPC method
@@ -225,5 +244,5 @@ pub struct QueryConsensusStatesResponse {
     pub consensus_states: ::std::vec::Vec<ConsensusStateWithHeight>,
     /// pagination response
     #[prost(message, optional, tag="2")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
 }

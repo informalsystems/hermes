@@ -27,7 +27,7 @@ pub struct MerklePath {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MerkleProof {
     #[prost(message, optional, tag="1")]
-    pub proof: ::std::option::Option<super::super::tendermint::crypto::ProofOps>,
+    pub proof: ::std::option::Option<::tendermint_proto::crypto::ProofOps>,
 }
 /// KeyPath defines a slice of keys
 #[derive(Clone, PartialEq, ::prost::Message)]

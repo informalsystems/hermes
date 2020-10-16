@@ -1,6 +1,6 @@
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 
-use ibc_proto::ibc::commitment::MerklePath;
+use ibc_proto::ibc::core::commitment::v1::MerklePath;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,

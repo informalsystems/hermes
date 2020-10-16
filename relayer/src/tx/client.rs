@@ -1,5 +1,4 @@
 use prost_types::Any;
-use std::convert::TryInto;
 use std::time::Duration;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -9,12 +8,11 @@ use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
 
-use tendermint::block::Height;
-
 use crate::chain::cosmos::block_on;
 use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use ibc::ics02_client::height::{chain_version, Height};
 
 #[derive(Clone, Debug)]
 pub struct CreateClientOptions {
@@ -30,7 +28,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Query the client state on destination chain.
     let response = dest_chain.query(
         ClientStatePath(opts.clone().dest_client_id),
-        0_u64.try_into().unwrap(),
+        tendermint::block::Height::from(0_u32),
         false,
     );
 
@@ -52,7 +50,8 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
             .context(e)
         })?;
 
-    let height = tm_latest_header.signed_header.header.height;
+    let height = u64::from(tm_latest_header.signed_header.header.height);
+    let version = tm_latest_header.signed_header.header.chain_id.to_string();
 
     let tm_consensus_state = ibc::ics07_tendermint::consensus_state::ConsensusState::from(
         tm_latest_header.signed_header,
@@ -66,8 +65,9 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         src_chain.trusting_period(),
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
-        height,
-        0_u64.try_into().unwrap(),
+        Height::new(chain_version(version.clone()), height),
+        Height::new(chain_version(version), 0),
+        "".to_string(),
         false,
         false,
     )
@@ -87,11 +87,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Build the domain type message
     let new_msg = MsgCreateAnyClient::new(
         opts.dest_client_id,
-        ClientType::Tendermint,
         any_client_state,
         any_consensus_state,
         signer,
-    );
+    )
+    .map_err(|e| {
+        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
+    })?;
 
     let msg_type = "/ibc.client.MsgCreateClient".to_ascii_lowercase();
 

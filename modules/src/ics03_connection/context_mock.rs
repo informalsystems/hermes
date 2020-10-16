@@ -1,6 +1,12 @@
-use crate::context::{ChainReader, SelfChainType, SelfHeader};
+// TODO: This module is superseded by MockContext.
+// Will be nuked soon with https://github.com/informalsystems/ibc-rs/issues/297.
+
+use std::collections::HashMap;
+
+use crate::context::{ChainReader, SelfHeader};
 use crate::context_mock::MockChainContext;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::context_mock::MockClientContext;
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -8,9 +14,7 @@ use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use std::collections::HashMap;
-use std::convert::TryInto;
-use tendermint::block::Height;
+use crate::Height;
 
 #[derive(Clone, Debug, Default)]
 pub struct MockConnectionContext {
@@ -20,9 +24,9 @@ pub struct MockConnectionContext {
 }
 
 impl MockConnectionContext {
-    pub fn new(chain_height: u64, max_history_size: usize) -> Self {
+    pub fn new(chain_id: String, chain_height: Height, max_history_size: usize) -> Self {
         MockConnectionContext {
-            client_context: MockClientContext::new(chain_height, max_history_size),
+            client_context: MockClientContext::new(chain_id, chain_height, max_history_size),
             connections: Default::default(),
             client_connections: Default::default(),
         }
@@ -36,11 +40,21 @@ impl MockConnectionContext {
         &self.client_context
     }
 
-    pub fn with_client_state(self, client_id: &ClientId, latest_client_height: u64) -> Self {
+    pub fn with_client(
+        self,
+        client_id: &ClientId,
+        client_type: ClientType,
+        latest_client_height: u64,
+    ) -> Self {
         let mut client_context = self.client_context().clone();
-        client_context
-            .with_client_consensus_state(client_id, latest_client_height.try_into().unwrap());
-
+        client_context.with_client(
+            client_id,
+            client_type,
+            Height {
+                version_number: 0,
+                version_height: latest_client_height,
+            },
+        );
         Self {
             client_context,
             ..self
@@ -62,15 +76,15 @@ impl MockConnectionContext {
 }
 
 impl ConnectionReader for MockConnectionContext {
-    fn fetch_connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
+    fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
         self.connections.get(cid)
     }
 
-    fn fetch_client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         self.client_context().client_state(client_id)
     }
 
-    fn chain_current_height(&self) -> Height {
+    fn host_current_height(&self) -> Height {
         self.chain_context().latest
     }
 
@@ -79,15 +93,11 @@ impl ConnectionReader for MockConnectionContext {
         self.chain_context().max_size()
     }
 
-    fn chain_type(&self) -> SelfChainType {
-        SelfChainType::Mock
-    }
-
     fn commitment_prefix(&self) -> CommitmentPrefix {
         CommitmentPrefix::from(vec![])
     }
 
-    fn fetch_client_consensus_state(
+    fn client_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
@@ -95,7 +105,7 @@ impl ConnectionReader for MockConnectionContext {
         self.client_context().consensus_state(client_id, height)
     }
 
-    fn fetch_self_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
+    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
         let hi = self.chain_context().self_historical_info(height)?.header;
         match hi {
             #[cfg(test)]

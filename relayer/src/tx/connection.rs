@@ -38,6 +38,8 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
         client_id: opts.src_client_id,
         connection_id: opts.src_connection_id,
         counterparty: counterparty.unwrap(),
+        // TODO - add to opts
+        version: "1.0.0".to_string(),
         signer,
     };
 

@@ -30,7 +30,7 @@ where
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-            // Apply the result to the context.
+            // Apply the result to the context (host chain store).
             ctx.store_client_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
@@ -44,6 +44,7 @@ where
             let handler_output =
                 ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
+            // Apply any results to the host chain store.
             ctx.store_connection_result(handler_output.result)
                 .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
@@ -59,8 +60,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
     use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics24_host::identifier::ClientId;
@@ -69,9 +71,7 @@ mod tests {
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
-
-    use std::convert::TryInto;
-    use std::str::FromStr;
+    use crate::Height;
 
     #[test]
     fn routing_dispatch() {
@@ -85,17 +85,14 @@ mod tests {
             want_pass: bool,
         }
 
-        let msg = MsgCreateAnyClient {
-            client_id: ClientId::from_str("client_id").unwrap(),
-            client_type: ClientType::Mock,
-            client_state: AnyClientState::from(MockClientState(MockHeader(
-                42_u64.try_into().unwrap(),
-            ))),
-            consensus_state: AnyConsensusState::from(MockConsensusState(MockHeader(
-                42_u64.try_into().unwrap(),
-            ))),
-            signer: get_dummy_account_id(),
-        };
+        let msg = MsgCreateAnyClient::new(
+            ClientId::from_str("client_id").unwrap(),
+            AnyClientState::from(MockClientState(MockHeader(Height::new(0, 42)))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(Height::new(0, 42)))),
+            get_dummy_account_id(),
+        )
+        .unwrap();
+
         let envelope = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(msg));
 
         let params = DispatchParams {
