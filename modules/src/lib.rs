@@ -41,9 +41,6 @@ pub mod proofs;
 pub mod tx_msg;
 
 #[cfg(test)]
-pub mod context_mock;
-
-#[cfg(test)]
 pub mod mock_client;
 
 /// Re-export of ICS 002 Height domain type
