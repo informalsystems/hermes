@@ -7,6 +7,14 @@ use thiserror::Error;
 
 
 pub type Datagrams = Vec<Datagram>;
+
+// Simplified:
+// Subscriptions should have provide processing semantics such
+// that event processing can fail and potentially be retried. For instance if a IBCEvent
+// contains a Packet to be sent to a full node, it's possible that the receiving full node
+// will fail but that packet still needs to be sent. In this case the subscription iterable
+// semantics should ensure that that same packet is retried on a new full node when
+// requested.
 pub type Subscription = channel::Receiver<(Height, Vec<IBCEvent>)>;
 
 #[derive(Debug, Clone, Error)]
@@ -31,11 +39,13 @@ pub trait Chain: Send {
         return Ok(())
     }
 
-    // This will:
-    // - fetch the consensus_state of src on dst
-    // - verify that 
+    // Mocked: 
+    // - query the consensus_state of src on dst
+    // - query the highest consensus_state
     // - verify if with the light client
     // - return the height
+    // + TODO: Can eventually be populated be pre-populated by a event_monitor subscription to the
+    // to the full node
     fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError> {
         return Ok(0);
     }
@@ -111,9 +121,11 @@ impl ChainRuntime {
     }
 
     pub fn run(self) -> Result<(), ChainError> {
-        // TODO: Replace with a websocket
-        let event_monitor = channel::tick(Duration::from_millis(1000));
-
+        // Mocked: EventMonitor
+        // What we need here is a reliable stream of events produced by a connected full node.
+        // Events received from this stream will be buffered (perhaps durably) and then routed to
+        // the various subscriptions. 
+        // let event_monitor = channel::tick(Duration::from_millis(1000));
         let mut subscriptions: Vec<channel::Sender<(Height, Vec<IBCEvent>)>> = vec![];
         loop {
             channel::select! {

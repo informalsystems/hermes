@@ -93,6 +93,10 @@ impl Link {
     }
 
     pub fn run(self) -> Result<(), LinkError> {
+        // XXX: subscriptions are per channel
+        // Subscriptions have to buffer events as packets can be sent before channels are
+        // established
+        // Can subscriptions operate as queues?
         let subscription = self.src_chain.subscribe(self.dst_chain.id())?;
         let signature = ();
 
@@ -111,6 +115,7 @@ impl Link {
             let result = retry(Fixed::from_millis(100), || -> Result<(), ChainError> {
                 if let Some(attempt) = tries.next() {
                     let height = self.dst_chain.get_height(&self.foreign_client)?;
+                    // XXX: Check that height > target_height, no client update needed
                     let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 
                     let client_update = ClientUpdate::new(signed_headers);
@@ -124,6 +129,11 @@ impl Link {
                     let signed_transaction = transaction.sign(signature);
 
                     let encoded_transaction = signed_transaction.encode();
+                    // Submission failure cases
+                    // - The full node can fail
+                    //  + TODO: The link will fail, and signale recreation with a different full node
+                    // - The transaction can be rejected because the client is not up to date
+                    //  + Retry this loop
                     self.dst_chain.submit(encoded_transaction)?
                 } else {
                     Err::<(), ChainError>(ChainError::Failed());
