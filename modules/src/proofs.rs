@@ -1,6 +1,6 @@
 use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::Height;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::block::Height;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
@@ -16,9 +16,9 @@ impl Proofs {
         object_proof: CommitmentProof,
         client_proof: Option<CommitmentProof>,
         consensus_proof: Option<ConsensusProof>,
-        height: u64,
+        height: Height,
     ) -> Result<Self, String> {
-        if height == 0 {
+        if height.is_zero() {
             return Err("Proofs height cannot be zero".to_string());
         }
 
@@ -30,7 +30,7 @@ impl Proofs {
             object_proof,
             client_proof,
             consensus_proof,
-            height: Height(height),
+            height,
         })
     }
 
@@ -63,8 +63,8 @@ pub struct ConsensusProof {
 }
 
 impl ConsensusProof {
-    pub fn new(consensus_proof: CommitmentProof, consensus_height: u64) -> Result<Self, String> {
-        if consensus_height == 0 {
+    pub fn new(consensus_proof: CommitmentProof, consensus_height: Height) -> Result<Self, String> {
+        if consensus_height.is_zero() {
             return Err("Consensus height cannot be zero".to_string());
         }
         if consensus_proof.is_empty() {
@@ -73,7 +73,7 @@ impl ConsensusProof {
 
         Ok(Self {
             proof: consensus_proof,
-            height: Height(consensus_height),
+            height: consensus_height,
         })
     }
 

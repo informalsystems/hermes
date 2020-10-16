@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use anomaly::fail;
-use ibc::Height;
 use serde_derive::{Deserialize, Serialize};
 
+use tendermint::block::Height;
 use tendermint::Hash;
 use tendermint_light_client::types::TrustThreshold;
 

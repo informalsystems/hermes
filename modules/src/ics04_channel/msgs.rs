@@ -1,12 +1,12 @@
 #![allow(clippy::too_many_arguments)]
 use super::channel::{ChannelEnd, Counterparty, Order};
+
 use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::proofs::Proofs;
-use crate::tx_msg::Msg;
+use crate::{proofs::Proofs, tx_msg::Msg, Height};
 use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
@@ -103,7 +103,7 @@ impl MsgChannelOpenTry {
         counterparty_channel_id: String,
         counterparty_version: String,
         proof_init: CommitmentProof,
-        proofs_height: u64,
+        proofs_height: Height,
         signer: AccountId,
     ) -> Result<MsgChannelOpenTry, Error> {
         let connection_hops: Result<Vec<_>, _> = connection_hops
@@ -178,7 +178,7 @@ impl MsgChannelOpenAck {
         channel_id: String,
         counterparty_version: String,
         proof_try: CommitmentProof,
-        proofs_height: u64,
+        proofs_height: Height,
         signer: AccountId,
     ) -> Result<MsgChannelOpenAck, Error> {
         Ok(Self {
@@ -238,7 +238,7 @@ impl MsgChannelOpenConfirm {
         port_id: String,
         channel_id: String,
         proof_ack: CommitmentProof,
-        proofs_height: u64,
+        proofs_height: Height,
         signer: AccountId,
     ) -> Result<MsgChannelOpenConfirm, Error> {
         Ok(Self {
@@ -349,7 +349,7 @@ impl MsgChannelCloseConfirm {
         port_id: String,
         channel_id: String,
         proof_init: CommitmentProof,
-        proofs_height: u64,
+        proofs_height: Height,
         signer: AccountId,
     ) -> Result<MsgChannelCloseConfirm, Error> {
         Ok(Self {
@@ -405,7 +405,7 @@ impl MsgPacket {
     pub fn new(
         packet: Packet,
         proof: CommitmentProof,
-        proof_height: u64,
+        proof_height: Height,
         signer: AccountId,
     ) -> Result<MsgPacket, Error> {
         Ok(Self {
@@ -466,7 +466,7 @@ impl MsgTimeout {
         packet: Packet,
         next_sequence_recv: Option<u64>,
         proof: CommitmentProof,
-        proof_height: u64,
+        proof_height: Height,
         signer: AccountId,
     ) -> Result<MsgTimeout, Error> {
         Ok(Self {
@@ -522,7 +522,7 @@ impl MsgAcknowledgement {
         packet: Packet,
         acknowledgement: Vec<u8>,
         proof: CommitmentProof,
-        proof_height: u64,
+        proof_height: Height,
         signer: AccountId,
     ) -> Result<MsgAcknowledgement, Error> {
         if acknowledgement.len() > 100 {
@@ -577,6 +577,7 @@ mod tests {
         MsgChannelOpenTry,
     };
     use crate::ics23_commitment::commitment::CommitmentProof;
+    use crate::Height;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;
 
@@ -711,7 +712,7 @@ mod tests {
             counterparty_channel_id: String,
             counterparty_version: String,
             proof_init: CommitmentProof,
-            proof_height: u64,
+            proof_height: Height,
         }
 
         let default_params = OpenTryParams {
@@ -724,7 +725,10 @@ mod tests {
             counterparty_channel_id: "testdestchannel".to_string(),
             counterparty_version: "1.0".to_string(),
             proof_init: get_dummy_proof().into(),
-            proof_height: 10,
+            proof_height: Height {
+                version_number: 0,
+                version_height: 10,
+            },
         };
 
         struct Test {
@@ -798,7 +802,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenTryParams {
-                    proof_height: 0,
+                    proof_height: Height {
+                        version_number: 0,
+                        version_height: 0,
+                    },
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -913,7 +920,7 @@ mod tests {
             channel_id: String,
             counterparty_version: String,
             proof_try: CommitmentProof,
-            proof_height: u64,
+            proof_height: Height,
         }
 
         let default_params = OpenAckParams {
@@ -921,7 +928,10 @@ mod tests {
             channel_id: "testchannel".to_string(),
             counterparty_version: "1.0".to_string(),
             proof_try: get_dummy_proof().into(),
-            proof_height: 10,
+            proof_height: Height {
+                version_number: 0,
+                version_height: 10,
+            },
         };
 
         struct Test {
@@ -995,7 +1005,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenAckParams {
-                    proof_height: 0,
+                    proof_height: Height {
+                        version_number: 0,
+                        version_height: 0,
+                    },
                     ..default_params
                 },
                 want_pass: false,
@@ -1037,14 +1050,17 @@ mod tests {
             port_id: String,
             channel_id: String,
             proof_ack: CommitmentProof,
-            proof_height: u64,
+            proof_height: Height,
         }
 
         let default_params = OpenConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             proof_ack: get_dummy_proof().into(),
-            proof_height: 10,
+            proof_height: Height {
+                version_number: 0,
+                version_height: 10,
+            },
         };
 
         struct Test {
@@ -1110,7 +1126,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenConfirmParams {
-                    proof_height: 0,
+                    proof_height: Height {
+                        version_number: 0,
+                        version_height: 0,
+                    },
                     ..default_params
                 },
                 want_pass: false,
@@ -1247,14 +1266,17 @@ mod tests {
             port_id: String,
             channel_id: String,
             proof_init: CommitmentProof,
-            proof_height: u64,
+            proof_height: Height,
         }
 
         let default_params = CloseConfirmParams {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             proof_init: get_dummy_proof().into(),
-            proof_height: 10,
+            proof_height: Height {
+                version_number: 0,
+                version_height: 10,
+            },
         };
 
         struct Test {
@@ -1324,7 +1346,10 @@ mod tests {
             Test {
                 name: "Bad proof height, height = 0".to_string(),
                 params: CloseConfirmParams {
-                    proof_height: 0,
+                    proof_height: Height {
+                        version_number: 0,
+                        version_height: 0,
+                    },
                     ..default_params
                 },
                 want_pass: false,

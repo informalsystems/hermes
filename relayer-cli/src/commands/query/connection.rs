@@ -4,6 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
 use crate::error::{Error, Kind};
+use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc::ics24_host::Path::Connections;
@@ -11,7 +12,7 @@ use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
-use ibc::ics03_connection::connection::ConnectionEnd;
+use std::convert::TryInto;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -42,6 +43,7 @@ impl QueryConnectionEndCmd {
     ) -> Result<(ChainConfig, QueryConnectionOptions), String> {
         let chain_id = self
             .chain_id
+            .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
@@ -58,14 +60,8 @@ impl QueryConnectionEndCmd {
 
         let opts = QueryConnectionOptions {
             connection_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
+            proof: self.proof.unwrap_or(true),
         };
         Ok((chain_config.clone(), opts))
     }
@@ -88,7 +84,11 @@ impl Runnable for QueryConnectionEndCmd {
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
         let res: Result<ConnectionEnd, Error> = chain
-            .query(Connections(opts.connection_id), opts.height, opts.proof)
+            .query(
+                Connections(opts.connection_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
 
@@ -145,7 +145,7 @@ mod tests {
                 name: "No connection id specified".to_string(),
                 params: QueryConnectionEndCmd {
                     connection_id: None,
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },
@@ -153,7 +153,7 @@ mod tests {
                 name: "Bad connection, non-alpha".to_string(),
                 params: QueryConnectionEndCmd {
                     connection_id: Some("conn01".to_string()),
-                    ..default_params
+                    ..default_params.clone()
                 },
                 want_pass: false,
             },

@@ -1,7 +1,6 @@
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
-use crate::ics02_client::state::ClientState;
 use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
@@ -53,24 +52,25 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::state::ClientState;
     use crate::ics18_relayer::context::ICS18Context;
     use crate::ics18_relayer::context_mock::MockICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::msgs::ICS26Envelope;
+
     use std::str::FromStr;
-    use tendermint::block::Height;
 
     #[test]
     /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height(11);
-        let chain_b_start_height = Height(20);
-        let client_on_b_for_a_height = Height(10); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height(20); // Should be smaller than `chain_b_start_height`
+        let chain_id = "testchain-0".to_string();
+
+        let chain_a_start_height = 11;
+        let chain_b_start_height = 20;
+        let client_on_b_for_a_height = 10; // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = 20; // Should be smaller than `chain_b_start_height`
         let max_history_size = 3;
         let num_iterations = 4;
 
@@ -79,12 +79,14 @@ mod tests {
 
         // Create two mock contexts, one for each chain.
         let mut ctx_a = MockICS18Context::new(
+            chain_id.clone(),
             chain_a_start_height,
             max_history_size,
             &client_on_a_for_b,
             client_on_a_for_b_height,
         );
         let mut ctx_b = MockICS18Context::new(
+            chain_id,
             chain_b_start_height,
             max_history_size,
             &client_on_b_for_a,

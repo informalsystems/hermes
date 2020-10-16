@@ -3,11 +3,11 @@
 pub struct GenesisState {
     /// ICS002 - Clients genesis state
     #[prost(message, optional, tag="1")]
-    pub client_genesis: ::std::option::Option<super::client::GenesisState>,
+    pub client_genesis: ::std::option::Option<super::super::client::v1::GenesisState>,
     /// ICS003 - Connections genesis state
     #[prost(message, optional, tag="2")]
-    pub connection_genesis: ::std::option::Option<super::connection::GenesisState>,
+    pub connection_genesis: ::std::option::Option<super::super::connection::v1::GenesisState>,
     /// ICS004 - Channel genesis state
     #[prost(message, optional, tag="3")]
-    pub channel_genesis: ::std::option::Option<super::channel::GenesisState>,
+    pub channel_genesis: ::std::option::Option<super::super::channel::v1::GenesisState>,
 }

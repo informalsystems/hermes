@@ -18,13 +18,27 @@ pub struct ClientState {
     pub max_clock_drift: ::std::option::Option<::prost_types::Duration>,
     /// Block height when the client was frozen due to a misbehaviour
     #[prost(message, optional, tag="6")]
-    pub frozen_height: ::std::option::Option<super::client::Height>,
+    pub frozen_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
     /// Latest height the client was updated to
     #[prost(message, optional, tag="7")]
-    pub latest_height: ::std::option::Option<super::client::Height>,
+    pub latest_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
+    /// Consensus params of the chain
+    #[prost(message, optional, tag="8")]
+    pub consensus_params: ::std::option::Option<::tendermint_proto::abci::ConsensusParams>,
     /// Proof specifications used in verifying counterparty state
-    #[prost(message, repeated, tag="8")]
-    pub proof_specs: ::std::vec::Vec<super::super::ics23::ProofSpec>,
+    #[prost(message, repeated, tag="9")]
+    pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
+    /// Path at which next upgraded client will be committed
+    #[prost(string, tag="10")]
+    pub upgrade_path: std::string::String,
+    /// This flag, when set to true, will allow governance to recover a client
+    /// which has expired
+    #[prost(bool, tag="11")]
+    pub allow_update_after_expiry: bool,
+    /// This flag, when set to true, will allow governance to unfreeze a client
+    /// whose chain has experienced a misbehaviour event
+    #[prost(bool, tag="12")]
+    pub allow_update_after_misbehaviour: bool,
 }
 /// ConsensusState defines the consensus state from Tendermint.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -35,11 +49,8 @@ pub struct ConsensusState {
     pub timestamp: ::std::option::Option<::prost_types::Timestamp>,
     /// commitment root (i.e app hash)
     #[prost(message, optional, tag="2")]
-    pub root: ::std::option::Option<super::commitment::MerkleRoot>,
-    /// height at which the consensus state was stored.
-    #[prost(message, optional, tag="3")]
-    pub height: ::std::option::Option<super::client::Height>,
-    #[prost(bytes, tag="4")]
+    pub root: ::std::option::Option<super::super::super::core::commitment::v1::MerkleRoot>,
+    #[prost(bytes, tag="3")]
     pub next_validators_hash: std::vec::Vec<u8>,
 }
 /// Misbehaviour is a wrapper over two conflicting Headers
@@ -70,13 +81,13 @@ pub struct Misbehaviour {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     #[prost(message, optional, tag="1")]
-    pub signed_header: ::std::option::Option<super::super::tendermint::types::SignedHeader>,
+    pub signed_header: ::std::option::Option<::tendermint_proto::types::SignedHeader>,
     #[prost(message, optional, tag="2")]
-    pub validator_set: ::std::option::Option<super::super::tendermint::types::ValidatorSet>,
+    pub validator_set: ::std::option::Option<::tendermint_proto::types::ValidatorSet>,
     #[prost(message, optional, tag="3")]
-    pub trusted_height: ::std::option::Option<super::client::Height>,
+    pub trusted_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
     #[prost(message, optional, tag="4")]
-    pub trusted_validators: ::std::option::Option<super::super::tendermint::types::ValidatorSet>,
+    pub trusted_validators: ::std::option::Option<::tendermint_proto::types::ValidatorSet>,
 }
 /// Fraction defines the protobuf message type for tmmath.Fraction
 #[derive(Clone, PartialEq, ::prost::Message)]

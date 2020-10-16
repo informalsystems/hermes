@@ -1,11 +1,11 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
-use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
-use tendermint::block::Height;
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::validate_version;
@@ -13,6 +13,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
+use crate::Height;
 
 /// Message type for the `MsgConnectionOpenAck` message.
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
@@ -23,6 +24,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
+    counterparty_connection_id: ConnectionId,
     client_state: Option<AnyClientState>,
     proofs: Proofs,
     version: String,
@@ -33,6 +35,11 @@ impl MsgConnectionOpenAck {
     /// Getter for accessing the connection identifier of this message.
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    /// Getter for accessing the connection identifier of this message.
+    pub fn counterparty_connection_id(&self) -> &ConnectionId {
+        &self.counterparty_connection_id
     }
 
     /// Getter for accessing the client state.
@@ -51,10 +58,10 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `0` if this field is not set.
+    /// value `Height(0)` if this field is not set.
     pub fn consensus_height(&self) -> Height {
         match self.proofs.consensus_proof() {
-            None => Height(0),
+            None => Height::zero(),
             Some(p) => p.height(),
         }
     }
@@ -90,15 +97,18 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
-        let proof_height = msg
-            .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
-            .epoch_height; // FIXME: This is wrong as it does not take the epoch number into account
+            .try_into() // Cast from the raw height type into the domain type.
+            .map_err(|e| Kind::InvalidProof.context(e))?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
+            .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        let proof_height = msg
+            .proof_height
+            .ok_or_else(|| Kind::MissingProofHeight)?
+            .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let client_proof = match msg.client_state {
@@ -109,6 +119,10 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
         Ok(Self {
             connection_id: msg
                 .connection_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_connection_id: msg
+                .counterparty_connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             client_state: msg
@@ -124,11 +138,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::new(
-                msg.signer[..20]
-                    .try_into()
-                    .map_err(|e| Kind::InvalidSigner.context(e))?,
-            ),
+            signer: AccountId::from_str(msg.signer.as_str())
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
@@ -137,14 +148,11 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            version: ics_msg.version,
+            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
-            proof_height: Some(ibc_proto::ibc::client::Height {
-                epoch_number: 0,
-                epoch_height: ics_msg.proofs.height().value(),
-            }),
+            proof_height: Some(ics_msg.proofs.height().into()),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -155,44 +163,41 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(Vec::new, |v| v.proof().clone().into()),
-            consensus_height: ics_msg.proofs.consensus_proof().map_or_else(
-                || None,
-                |h| {
-                    Some(ibc_proto::ibc::client::Height {
-                        epoch_number: 0,
-                        epoch_height: u64::from(h.height()),
-                    })
-                },
-            ),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            consensus_height: ics_msg
+                .proofs
+                .consensus_proof()
+                .map_or_else(|| None, |h| Some(h.height().into())),
+            version: ics_msg.version,
+            signer: ics_msg.signer.to_string(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_proof};
+    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
             connection_id: "srcconnection".to_string(),
-            version: "1.0.0".to_string(),
+            counterparty_connection_id: "tgtconnection".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                epoch_number: 0,
-                epoch_height: 10,
+                version_number: 0,
+                version_height: 10,
             }),
             client_state: None,
             proof_client: vec![],
-            signer: Vec::from(get_dummy_account_id().as_bytes()),
+            version: "1.0.0".to_string(),
+            signer: get_dummy_account_id_raw(),
         }
     }
 }
@@ -201,8 +206,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::client::Height;
-    use ibc_proto::ibc::connection::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -244,8 +249,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     proof_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg.clone()
                 },
@@ -255,8 +260,8 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     consensus_height: Some(Height {
-                        epoch_number: 1,
-                        epoch_height: 0,
+                        version_number: 1,
+                        version_height: 0,
                     }),
                     ..default_ack_msg
                 },

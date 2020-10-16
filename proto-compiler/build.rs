@@ -44,5 +44,7 @@ fn main() {
     let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
     // Compile all proto files
-    prost_build::compile_protos(&protos, &includes).unwrap();
+    let mut pb = prost_build::Config::new();
+    pb.extern_path(".tendermint", "::tendermint_proto");
+    pb.compile_protos(&protos, &includes).unwrap();
 }

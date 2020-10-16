@@ -17,7 +17,8 @@ pub struct TxResponse {
     /// Result bytes, if any.
     #[prost(string, tag="5")]
     pub data: std::string::String,
-    /// The output of the application's logger (raw string). May be non-deterministic.
+    /// The output of the application's logger (raw string). May be
+    /// non-deterministic.
     #[prost(string, tag="6")]
     pub raw_log: std::string::String,
     /// The output of the application's logger (typed). May be non-deterministic.
@@ -35,8 +36,9 @@ pub struct TxResponse {
     /// The request transaction bytes.
     #[prost(message, optional, tag="11")]
     pub tx: ::std::option::Option<::prost_types::Any>,
-    /// Time of the previous block. For heights > 1, it's the weighted median of the
-    /// timestamps of the valid votes in the block.LastCommit. For height == 1, it's genesis time.
+    /// Time of the previous block. For heights > 1, it's the weighted median of
+    /// the timestamps of the valid votes in the block.LastCommit. For height == 1,
+    /// it's genesis time.
     #[prost(string, tag="12")]
     pub timestamp: std::string::String,
 }
@@ -83,17 +85,17 @@ pub struct GasInfo {
 /// Result is the union of ResponseFormat and ResponseCheckTx.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Result {
-    /// Data is any data returned from message or handler execution. It MUST be length
-    /// prefixed in order to separate data from multiple message executions.
+    /// Data is any data returned from message or handler execution. It MUST be
+    /// length prefixed in order to separate data from multiple message executions.
     #[prost(bytes, tag="1")]
     pub data: std::vec::Vec<u8>,
     /// Log contains the log information from message or handler execution.
     #[prost(string, tag="2")]
     pub log: std::string::String,
-    /// Events contains a slice of Event objects that were emitted during message or
-    /// handler execution.
+    /// Events contains a slice of Event objects that were emitted during message
+    /// or handler execution.
     #[prost(message, repeated, tag="3")]
-    pub events: ::std::vec::Vec<super::super::super::super::tendermint::abci::Event>,
+    pub events: ::std::vec::Vec<::tendermint_proto::abci::Event>,
 }
 /// SimulationResponse defines the response generated when a transaction is
 /// successfully simulated.
@@ -104,7 +106,8 @@ pub struct SimulationResponse {
     #[prost(message, optional, tag="2")]
     pub result: ::std::option::Option<Result>,
 }
-/// MsgData defines the data returned in a Result object during message execution.
+/// MsgData defines the data returned in a Result object during message
+/// execution.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgData {
     #[prost(string, tag="1")]
@@ -112,10 +115,32 @@ pub struct MsgData {
     #[prost(bytes, tag="2")]
     pub data: std::vec::Vec<u8>,
 }
-/// TxMsgData defines a list of MsgData. A transaction will have a MsgData object for
-/// each message.
+/// TxMsgData defines a list of MsgData. A transaction will have a MsgData object
+/// for each message.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxMsgData {
     #[prost(message, repeated, tag="1")]
     pub data: ::std::vec::Vec<MsgData>,
+}
+/// SearchTxsResult defines a structure for querying txs pageable
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SearchTxsResult {
+    /// Count of all txs
+    #[prost(uint64, tag="1")]
+    pub total_count: u64,
+    /// Count of txs in current page
+    #[prost(uint64, tag="2")]
+    pub count: u64,
+    /// Index of current page, start from 1
+    #[prost(uint64, tag="3")]
+    pub page_number: u64,
+    /// Count of total pages
+    #[prost(uint64, tag="4")]
+    pub page_total: u64,
+    /// Max count txs per page
+    #[prost(uint64, tag="5")]
+    pub limit: u64,
+    /// List of txs in current page
+    #[prost(message, repeated, tag="6")]
+    pub txs: ::std::vec::Vec<TxResponse>,
 }

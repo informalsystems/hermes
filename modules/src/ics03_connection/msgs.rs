@@ -35,11 +35,11 @@ pub enum ConnectionMsg {
 
 #[cfg(test)]
 pub mod test_util {
-    use std::str::{from_utf8, FromStr};
+    use std::str::FromStr;
     use tendermint::account::Id as AccountId;
 
-    use ibc_proto::ibc::commitment::MerklePrefix;
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
 
     pub fn get_dummy_proof() -> Vec<u8> {
         "Y29uc2Vuc3VzU3RhdGUvaWJjb25lY2xpZW50LzIy"
@@ -47,14 +47,12 @@ pub mod test_util {
             .to_vec()
     }
 
-    pub fn get_dummy_account_id_bytes() -> Vec<u8> {
-        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C"
-            .as_bytes()
-            .to_vec()
+    pub fn get_dummy_account_id_raw() -> String {
+        "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C".to_string()
     }
 
     pub fn get_dummy_account_id() -> AccountId {
-        AccountId::from_str(from_utf8(&get_dummy_account_id_bytes()).unwrap()).unwrap()
+        AccountId::from_str(&get_dummy_account_id_raw()).unwrap()
     }
 
     pub fn get_dummy_counterparty() -> RawCounterparty {

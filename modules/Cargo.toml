@@ -18,7 +18,7 @@ description = """
 tendermint-proto = "0.1.0"
 
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.3.0", path = "../proto" }
+ibc-proto = { version = "0.4.0", path = "../proto" }
 
 anomaly = "0.2.0"
 chrono = "0.4"
@@ -31,15 +31,14 @@ prost = "0.6.1"
 prost-types = "0.6.1"
 bytes = "0.5.5"
 dyn-clonable = "0.9.0"
+regex = "1"
 
 [dependencies.tendermint]
-version = "0.16.0"
-git = "https://github.com/informalsystems/tendermint-rs"
+version = "0.17.0-rc1"
 
 [dependencies.tendermint-rpc]
-version = "0.16.0"
+version = "0.17.0-rc1"
 features = ["http-client", "websocket-client"]
-git = "https://github.com/informalsystems/tendermint-rs"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }

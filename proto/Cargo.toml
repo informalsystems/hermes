@@ -1,6 +1,6 @@
 [package]
 name = "ibc-proto"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -23,3 +23,4 @@ prost-types = { version = "0.6" }
 anomaly = "0.2"
 bytes = "0.5"
 thiserror = "1.0"
+tendermint-proto = "0.1.0"

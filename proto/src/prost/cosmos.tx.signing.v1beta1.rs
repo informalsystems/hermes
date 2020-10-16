@@ -5,14 +5,15 @@ pub struct SignatureDescriptors {
     #[prost(message, repeated, tag="1")]
     pub signatures: ::std::vec::Vec<SignatureDescriptor>,
 }
-/// SignatureDescriptor is a convenience type which represents the full data for a
-/// signature including the public key of the signer, signing modes and the signature
-/// itself. It is primarily used for coordinating signatures between clients.
+/// SignatureDescriptor is a convenience type which represents the full data for
+/// a signature including the public key of the signer, signing modes and the
+/// signature itself. It is primarily used for coordinating signatures between
+/// clients.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignatureDescriptor {
     /// public_key is the public key of the signer
     #[prost(message, optional, tag="1")]
-    pub public_key: ::std::option::Option<super::super::super::base::crypto::v1beta1::PublicKey>,
+    pub public_key: ::std::option::Option<::prost_types::Any>,
     #[prost(message, optional, tag="2")]
     pub data: ::std::option::Option<signature_descriptor::Data>,
     /// sequence is the sequence of the account, which describes the
@@ -45,7 +46,7 @@ pub mod signature_descriptor {
         pub struct Multi {
             /// bitarray specifies which keys within the multisig are signing
             #[prost(message, optional, tag="1")]
-            pub bitarray: ::std::option::Option<super::super::super::super::super::base::crypto::v1beta1::CompactBitArray>,
+            pub bitarray: ::std::option::Option<super::super::super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
             /// signatures is the signatures of the multi-signature
             #[prost(message, repeated, tag="2")]
             pub signatures: ::std::vec::Vec<super::Data>,
@@ -66,13 +67,15 @@ pub mod signature_descriptor {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum SignMode {
-    /// SIGN_MODE_UNSPECIFIED specifies an unknown signing mode and will be rejected
+    /// SIGN_MODE_UNSPECIFIED specifies an unknown signing mode and will be
+    /// rejected
     Unspecified = 0,
-    /// SIGN_MODE_DIRECT specifies a signing mode which uses SignDoc and is verified
-    /// with raw bytes from Tx
+    /// SIGN_MODE_DIRECT specifies a signing mode which uses SignDoc and is
+    /// verified with raw bytes from Tx
     Direct = 1,
-    /// SIGN_MODE_TEXTUAL is a future signing mode that will verify some human-readable
-    /// textual representation on top of the binary representation from SIGN_MODE_DIRECT
+    /// SIGN_MODE_TEXTUAL is a future signing mode that will verify some
+    /// human-readable textual representation on top of the binary representation
+    /// from SIGN_MODE_DIRECT
     Textual = 2,
     /// SIGN_MODE_LEGACY_AMINO_JSON is a backwards compatibility mode which uses
     /// Amino JSON and will be removed in the future

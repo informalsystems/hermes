@@ -1,15 +1,16 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
 
-use crate::ics03_connection::connection::Counterparty;
+use crate::ics03_connection::connection::{validate_version, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
+use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -21,6 +22,7 @@ pub struct MsgConnectionOpenInit {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
     pub counterparty: Counterparty,
+    pub version: String,
     pub signer: AccountId,
 }
 
@@ -90,11 +92,9 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .try_into()?,
-            signer: AccountId::new(
-                msg.signer[..20]
-                    .try_into()
-                    .map_err(|e| Kind::InvalidSigner.context(e))?,
-            ),
+            version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
+            signer: AccountId::from_str(msg.signer.as_str())
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
@@ -105,16 +105,19 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            signer: Vec::from(ics_msg.signer.as_bytes()),
+            signer: ics_msg.signer.to_string(),
+            version: ics_msg.version,
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id, get_dummy_counterparty};
+    use crate::ics03_connection::msgs::test_util::{
+        get_dummy_account_id_raw, get_dummy_counterparty,
+    };
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
@@ -123,7 +126,8 @@ pub mod test_util {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            signer: Vec::from(get_dummy_account_id().as_bytes()),
+            version: "1.0.0".to_string(),
+            signer: get_dummy_account_id_raw(),
         }
     }
 }
@@ -132,8 +136,8 @@ pub mod test_util {
 mod tests {
     use std::convert::TryFrom;
 
-    use ibc_proto::ibc::connection::Counterparty as RawCounterparty;
-    use ibc_proto::ibc::connection::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use super::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
