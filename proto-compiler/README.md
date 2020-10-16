@@ -16,7 +16,7 @@ The path to the Cosmos SDK checkout can be specified with the `SDK_DIR` environm
 $ SDK_DIR=$HOME/Code/cosmos-sdk cargo run
 ```
 
-The directory to which the Rust sources should be generated in before being copied to the appropriate location can be specified with the `OUT_DIR` environment variable: (default: `target/proto-rust/`)
+The directory to which the Rust sources should be generated in before being copied to the appropriate location can be specified with the `OUT_DIR` environment variable: (default: temporary directory via the `tempdir` crate)
 
 ```bash
 $ OUT_DIR=/tmp/rust cargo run
