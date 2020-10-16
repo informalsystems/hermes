@@ -7,7 +7,7 @@ use tendermint_light_client::types::LightBlock;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
-
+use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -21,18 +21,21 @@ use bytes::Bytes;
 use ibc_proto::cosmos::base::crypto::v1beta1::public_key::Sum as PKSum;
 use ibc_proto::cosmos::base::crypto::v1beta1::PublicKey as RawPublicKey;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
-use crate::crypto::keybase::{KeyStore, StoreBackend};
+use crate::keyring::store::{KeyRing, KeyRingOperations, StoreBackend};
+use futures::{TryFutureExt, FutureExt};
+use crate::error;
+use ibc::tx_msg::Msg;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     light_client: Option<LightClient>,
-    pub keybase: KeyStore,
+    pub keybase: KeyRing,
 }
 
 impl CosmosSDKChain {
@@ -40,7 +43,7 @@ impl CosmosSDKChain {
         let rpc_client =
             HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
-        let key_store = KeyStore::init(StoreBackend::Memory);
+        let key_store = KeyRing::init(StoreBackend::Memory);
 
         Ok(Self {
             config,
@@ -79,10 +82,22 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&self, msgs: &[Any], memo: String, timeout_height: u64) -> Result<(), Error> {
+    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
+
+        // Create a proto any message
+        let mut proto_msgs: Vec<Any> = Vec::new();
+
+        let any_msg = Any {
+            type_url: msg_type,
+            value: msg_bytes,
+        };
+
+        // Add proto message
+        proto_msgs.push(any_msg);
+
         // Create TxBody
         let body = TxBody {
-            messages: msgs.to_vec(),
+            messages: proto_msgs.to_vec(),
             memo,
             timeout_height,
             extension_options: Vec::<Any>::new(),
@@ -93,14 +108,12 @@ impl Chain for CosmosSDKChain {
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
 
-        let signing_key_bytes = "cda4e48a1ae228656e483b2f3ae7bca6d04abcef64189ff56d481987259dd2a4";
-        let account_number = 8;
-
-        let signing_key = SigningKey::new(&hex::decode(signing_key_bytes).unwrap()).unwrap();
-        let verify_key = VerifyKey::from(&signing_key);
-        let pubkey_bytes = verify_key.to_bytes().to_vec();
-
-        let sum = Some(PKSum::Secp256k1(pubkey_bytes));
+        // TODO: Find way to get the addr, e.g. default if not specified
+        let signer = self.keybase.add_from_mnemonic("sting bitter crater indoor glide any motor toe follow garlic manual exclude fiber update crime mirror such wash entry urban student act word mad")
+            .map_err(|e| Kind::KeyBase.context(e))?;
+        let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
+        let pub_key_bytes = key.public_key.public_key.to_bytes();
+        let sum = Some(PKSum::Secp256k1(pub_key_bytes));
         let pk = RawPublicKey { sum };
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -135,15 +148,30 @@ impl Chain for CosmosSDKChain {
             body_bytes: body_buf.clone(),
             auth_info_bytes: auth_buf.clone(),
             chain_id: self.config.clone().id.to_string(),
-            account_number,
+            account_number: 0
         };
 
-        //TODO: sign doc and broadcast
+        // A protobuf serialization of a SignDoc
+        let mut signdoc_buf = Vec::new();
+        prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
+
+        // Sign doc and broadcast
+        let signed = self.keybase.sign(signer, signdoc_buf);
+
+        let tx_raw = TxRaw {
+            body_bytes: body_buf,
+            auth_info_bytes: auth_buf,
+            signatures: vec![signed],
+        };
+
+        let mut txraw_buf = Vec::new();
+        prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
+        println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
         //let signed = sign(sign_doc);
-        //broadcast_tx(self, )
+        let response = block_on(broadcast_tx(self, txraw_buf.clone())).map_err(|e| Kind::Rpc.context(e))?;
 
-        Ok(())
+        Ok(response)
     }
 
     fn config(&self) -> &ChainConfig {
@@ -229,6 +257,7 @@ async fn broadcast_tx(
         // Fail due to empty response value (nothing to decode).
         return Err(Kind::EmptyResponseValue.into());
     }
+    dbg!(response.clone());
 
     Ok(response.data.as_bytes().to_vec())
 }

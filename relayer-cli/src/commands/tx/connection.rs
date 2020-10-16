@@ -104,7 +104,7 @@ impl Runnable for TxRawConnInitCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let res: Result<(), Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<u8>, Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),

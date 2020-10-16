@@ -11,7 +11,7 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
-use crate::crypto::keybase::KeyStore;
+use crate::keyring::store::KeyRing;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
@@ -22,6 +22,7 @@ use std::error::Error;
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 use prost_types::Any;
+use ibc::tx_msg::Msg;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
@@ -47,7 +48,7 @@ pub trait Chain {
     fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&self, _msgs: &[Any], memo: String, timeout_height: u64) -> Result<(), Self::Error>;
+    fn send(&mut self, msg_type: String, msg: Vec<u8>, memo: String, timeout_height: u64) -> Result<Vec<u8>, Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {

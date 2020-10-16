@@ -1,6 +1,6 @@
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
-use crate::error::Error;
+use crate::error::{Error, Kind};
 use hex;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -21,9 +21,9 @@ pub struct ConnectionOpenInitOptions {
     pub dest_chain_config: ChainConfig,
 }
 
-pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<(), Error> {
+pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
-    let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     let id_hex = "25EF56CA795135E409368E6DB8110F22A4BE05C2";
     let signer = AccountId::from_str(id_hex).unwrap();
@@ -41,17 +41,11 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<(), Error> {
         signer,
     };
 
-    // Create a proto any message
-    let mut proto_msgs: Vec<Any> = Vec::new();
-
-    let any_msg = Any {
-        type_url: "/ibc.connection.MsgConnectionOpenInit".to_string(), // "type.googleapis.com/ibc.connection.MsgConnectionOpenInit".to_string(),
-        value: msg.get_sign_bytes(),
-    };
-
-    // Add proto message
-    proto_msgs.push(any_msg);
+   let msg_type = "/ibc.connection.MsgConnectionOpenInit".to_string();
 
     // Send message
-    dest_chain.send(&proto_msgs, "".to_string(), 0)
+    let response = dest_chain.send(msg_type, msg.get_sign_bytes(), "".to_string(), 0)
+        .map_err(|e| Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e))?;
+
+    Ok(response)
 }

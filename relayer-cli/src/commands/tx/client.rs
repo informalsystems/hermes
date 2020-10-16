@@ -73,7 +73,7 @@ impl Runnable for TxCreateClientCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let res: Result<(), Error> = create_client(opts).map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<u8>, Error> = create_client(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_info!("client created, result: ", "{:?}", receipt),

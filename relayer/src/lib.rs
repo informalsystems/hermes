@@ -16,7 +16,7 @@ pub mod auth;
 pub mod chain;
 pub mod client;
 pub mod config;
-pub mod crypto;
+pub mod keyring;
 pub mod error;
 pub mod event_handler;
 pub mod event_monitor;

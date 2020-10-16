@@ -23,9 +23,9 @@ pub struct CreateClientOptions {
     pub src_chain_config: ChainConfig,
 }
 
-pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
+pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
-    let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Query the client state on destination chain.
     let response = dest_chain.query(
@@ -93,14 +93,10 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         signer,
     );
 
-    // Create a proto any message
-    let mut proto_msgs: Vec<Any> = Vec::new();
-    let any_msg = Any {
-        // TODO - add get_url_type() to prepend proper string to get_type()
-        type_url: "/ibc.client.MsgCreateClient".to_ascii_lowercase(),
-        value: new_msg.get_sign_bytes(),
-    };
+    let msg_type = "/ibc.client.MsgCreateClient".to_ascii_lowercase();
 
-    proto_msgs.push(any_msg);
-    dest_chain.send(&proto_msgs, "".to_string(), 0)
+    let response = dest_chain.send(msg_type, new_msg.get_sign_bytes(), "".to_string(), 0)
+        .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
+
+    Ok(response)
 }

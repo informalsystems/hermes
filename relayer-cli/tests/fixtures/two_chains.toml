@@ -17,7 +17,7 @@ strategy = "naive"
   trusting_period = "336h"
 
 [[chains]]
-  id = "ibc0"
+  id = "ibc1"
   rpc_addr = "localhost:26557"
   account_prefix = "cosmos"
   key_name = "testkey"
