@@ -14,6 +14,22 @@ use crate::ics24_host::error::ValidationKind;
 pub struct ChainId(String);
 
 impl ChainId {
+    /// Creates a new ChainId() given a chain name and an epoch number. May fail by returning an
+    /// error if the epoch is 0.
+    /// The returned chainID will have the format: `{chain name}-{epoch number}`.
+    /// ```
+    /// use ibc::ics24_host::identifier::ChainId;
+    /// assert!(ChainId::new("chainA", 0).is_err());
+    /// assert!(ChainId::new("chainA", 1).is_ok());
+    /// let epoch_number = 10;
+    /// let c_res = ChainId::new("chainA", epoch_number);
+    /// assert!(c_res.is_ok());
+    /// c_res.map(|id| {assert_eq!(ChainId::chain_version(id.to_string()), epoch_number)});
+    /// ```
+    pub fn new(chain_name: &str, chain_epoch_number: u64) -> Result<Self, ValidationError> {
+        ChainId::from_str(format!("{}-{}", chain_name, chain_epoch_number.to_string()).as_str())
+    }
+
     /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
     /// The chainID must be in the form: `{chainID}-{version}`
     /// ```
@@ -28,6 +44,7 @@ impl ChainId {
         re.is_match(chain_id.as_str())
     }
 
+    // todo: this should probably be named epoch_number.
     pub fn chain_version(chain_id: String) -> u64 {
         if !Self::is_epoch_format(chain_id.clone()) {
             return 0;

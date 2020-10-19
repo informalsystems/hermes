@@ -34,7 +34,7 @@ where
     };
 
     if dest_client_latest_height > src_header.height() {
-        return Err(Kind::ClientAtHeigherHeight(
+        return Err(Kind::ClientAtHigherHeight(
             client_id.clone(),
             src_header.height(),
             dest_client_latest_height,
@@ -66,10 +66,10 @@ mod tests {
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height::new(0, 11);
-        let chain_b_start_height = Height::new(0, 20);
-        let client_on_b_for_a_height = Height::new(0, 10); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height::new(0, 20); // Should be smaller than `chain_b_start_height`
+        let chain_a_start_height = Height::new(1, 11);
+        let chain_b_start_height = Height::new(1, 20);
+        let client_on_b_for_a_height = Height::new(1, 10); // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = Height::new(1, 20); // Should be smaller than `chain_b_start_height`
         let num_iterations = 4;
 
         let client_on_a_for_b = ClientId::from_str("ibconeclient").unwrap();
@@ -98,6 +98,13 @@ mod tests {
 
             // - send the message to B
             let dispatch_res_b = ctx_b.send(ICS26Envelope::ICS2Msg(client_msg_b));
+            let validation_res = ctx_b.validate();
+            assert!(
+                validation_res.is_ok(),
+                "context validation failed with error {:?} for context {:?}",
+                validation_res,
+                ctx_b
+            );
 
             // Check if the update succeeded.
             assert!(dispatch_res_b.is_ok());
@@ -123,6 +130,13 @@ mod tests {
 
             // - send the message to A
             let dispatch_res_a = ctx_a.send(ICS26Envelope::ICS2Msg(client_msg_a));
+            let validation_res = ctx_a.validate();
+            assert!(
+                validation_res.is_ok(),
+                "context validation failed with error {:?} for context {:?}",
+                validation_res,
+                ctx_a
+            );
 
             // Check if the update succeeded.
             assert!(dispatch_res_a.is_ok());

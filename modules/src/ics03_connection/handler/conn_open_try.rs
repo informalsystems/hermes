@@ -117,7 +117,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let host_chain_height = Height::new(0, 35);
+        let host_chain_height = Height::new(1, 35);
         let context = MockContext::new(host_chain_height);
         let trusting_period = context.host_chain_history_size() as u64;
 

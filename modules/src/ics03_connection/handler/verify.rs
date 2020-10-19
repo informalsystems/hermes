@@ -161,8 +161,8 @@ pub fn verify_consensus_proof(
         })?)
 }
 
-/// Checks that `claimed_height` is within normal bounds, i.e., fresh enough to fall within the
-/// trusting period, but not newer than the current (actual) height of the local chain.
+/// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
+/// not pruned it yet, but not newer than the current (actual) height of the local chain.
 pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
@@ -172,10 +172,10 @@ pub fn check_client_consensus_height(
         return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }
 
-    let trusted_height =
+    let oldest_available_height =
         ctx.host_current_height().version_height - ctx.host_chain_history_size() as u64;
 
-    if claimed_height.version_height < trusted_height {
+    if claimed_height.version_height < oldest_available_height {
         // Fail if the consensus height is too old (outside of trusting period).
         return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }

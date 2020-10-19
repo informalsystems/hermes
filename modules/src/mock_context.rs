@@ -22,7 +22,7 @@ use crate::Height;
 
 use std::cmp::min;
 use std::collections::HashMap;
-use std::str::FromStr;
+use std::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct MockContext {
@@ -49,11 +49,11 @@ pub struct MockContext {
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections are
-/// present, and the chain has Height(1). This should be used sparingly, mostly for testing the
+/// present, and the chain has Height(5). This should be used sparingly, mostly for testing the
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(Height::new(0, 1))
+        Self::new(Height::new(1, 5))
     }
 }
 
@@ -61,8 +61,14 @@ impl Default for MockContext {
 /// _not_ be accessible to any ICS handler.
 impl MockContext {
     pub fn new(latest_height: Height) -> Self {
+        // The epoch number (version nr) must be > 0.
+        assert_ne!(
+            latest_height.version_number, 0,
+            "Chain heights cannot accept epoch number 0"
+        );
+
         // A couple of predefined fields. Seems necessary to parametrize these so far.
-        let chain_id = ChainId::from_str("chainA-1").unwrap();
+        let chain_id = ChainId::new("chainA", latest_height.version_number).unwrap();
         let max_history_size = 5;
 
         // Compute the number of headers to store. If h is 0, nothing is stored.
@@ -82,7 +88,7 @@ impl MockContext {
         }
     }
 
-    /// Internal interface for associating a client record to this context.
+    /// Associates a client record to this context.
     /// Given a client id and a height, registers a new client in the context and also associates
     /// to this client a mock client state and a mock consensus state for height `height`. The type
     /// of this client is implicitly assumed to be Mock.
@@ -117,7 +123,7 @@ impl MockContext {
         Self { clients, ..self }
     }
 
-    /// Internal interface for associating a connection to this context.
+    /// Associates a connection to this context.
     pub fn with_connection(
         self,
         connection_id: ConnectionId,
@@ -131,20 +137,17 @@ impl MockContext {
         }
     }
 
-    // This may be twisted:
-    // host_consensus_state (ret AnyConsensusState)  -> MockHeader
-    // query_latest_header (AnyHeader) -> MockHeader
-
-    /// Internal interface. Accessor for a header of the local (host) chain of this context.
+    /// Accessor for a header of the local (host) chain of this context.
     /// May return `None` if the header for the requested height does not exist.
-    fn host_header(&self, height: Height) -> Option<MockHeader> {
-        let l = height.version_height as usize;
-        let h = self.latest_height.version_height as usize;
+    fn host_header(&self, target_height: Height) -> Option<MockHeader> {
+        let target = target_height.version_height as usize;
+        let latest = self.latest_height.version_height as usize;
 
-        if l <= h - self.max_history_size {
-            None // Header for requested height does not exist in the history.
+        // Check that the header is not too advanced, nor has it been pruned.
+        if (target > latest) || (target <= latest - self.history.len()) {
+            None // Header for requested height does not exist in history.
         } else {
-            Some(self.history[self.max_history_size + l - h - 1])
+            Some(self.history[self.max_history_size + target - latest - 1])
         }
     }
 
@@ -166,11 +169,37 @@ impl MockContext {
         self.latest_height = new_height;
     }
 
-    /// Internal interface. A datagram passes from the relayer to the IBC module (on host chain).
+    /// A datagram passes from the relayer to the IBC module (on host chain).
+    /// Used in testing the ICS18 algorithms, hence this returns a ICS18Error.
     fn recv(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
         // Create a new block.
         self.advance_host_chain_height();
+        Ok(())
+    }
+
+    /// Validates this context. Should be called after the context is mutated by a test.
+    pub fn validate(&self) -> Result<(), Box<dyn Error>> {
+        // Check that the number of entries is not higher than window size.
+        if self.history.len() > self.max_history_size {
+            return Err("too many entries".to_string().into());
+        }
+
+        // Get the highest header.
+        let lh = self.history[self.history.len() - 1];
+        // Check latest is properly updated with highest header height.
+        if lh.height() != self.latest_height {
+            return Err("latest height is not updated".to_string().into());
+        }
+
+        // Check that headers in the history are in sequential order.
+        for i in 1..self.history.len() {
+            let ph = self.history[i - 1];
+            let h = self.history[i];
+            if ph.height().increment() != h.height() {
+                return Err("headers in history not sequential".to_string().into());
+            }
+        }
         Ok(())
     }
 }
