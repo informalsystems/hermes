@@ -1,4 +1,4 @@
-//! TODO
+//! Task for starting the relayer
 
 use std::time::Duration;
 
@@ -12,7 +12,9 @@ use relayer::{
 
 use crate::prelude::*;
 
-/// TODO
+/// Start the relayer with the given config.
+///
+/// **Note:** The relayer loop is currently a no-op.
 pub async fn start(config: &Config, chains: Vec<CosmosSDKChain>) -> Result<(), BoxError> {
     for chain in &chains {
         let light_client = chain.light_client().ok_or_else(|| {

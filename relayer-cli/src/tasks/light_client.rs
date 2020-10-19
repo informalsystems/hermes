@@ -1,4 +1,4 @@
-//! TODO
+//! Task for initializing and spawning a light client for a given chain
 
 use std::time::Duration;
 
@@ -23,7 +23,15 @@ use relayer::{
 
 use crate::prelude::*;
 
-/// TODO
+/// Initialize a light client for a given chain.
+///
+/// This function returns an async task which can be spawned
+/// to start the light client and have it sync up to the latest
+/// block of the chain.
+///
+/// If the `reset` parameter is set to `true`, then the
+/// light client will be initialized with the given trust options,
+/// otherwise it will resume from the latest trusted block in the store.
 pub async fn create(
     chain: &mut CosmosSDKChain,
     trust_options: TrustOptions,
