@@ -36,9 +36,11 @@ Additional highlights:
     - Cleanup Any* client wrappers related code
     - Migrate handlers to newer protobuf definitions ([#226])
     - Extend client context mock ([#221])
-    - Context mock simplifications ([#295], [#296])
+    - Context mock simplifications and cleanup ([#269], [#295], [#296], [#297])
 - [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
-- [ibc-proto] Move ibc-proto source code into ibc-rs ([#142]) and fixed code deduplication ([#282], [#284])  
+- [ibc-proto]
+    - Move ibc-proto source code into ibc-rs ([#142]) and fixed code deduplication ([#282], [#284])
+    - Consolidate proto-compiler logic [#241]
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
 - [relayer] Update to tendermint v.0.16 and integrate with the new light client implementation ([#90], [#243])
 
@@ -71,10 +73,12 @@ Additional highlights:
 [#232]: https://github.com/informalsystems/ibc-rs/issues/232
 [#234]: https://github.com/informalsystems/ibc-rs/issues/234
 [#237]: https://github.com/informalsystems/ibc-rs/issues/237
+[#241]: https://github.com/informalsystems/ibc-rs/issues/241
 [#243]: https://github.com/informalsystems/ibc-rs/issues/243
 [#245]: https://github.com/informalsystems/ibc-rs/issues/245
 [#249]: https://github.com/informalsystems/ibc-rs/issues/249
 [#253]: https://github.com/informalsystems/ibc-rs/issues/253
+[#269]: https://github.com/informalsystems/ibc-rs/issues/269
 [#272]: https://github.com/informalsystems/ibc-rs/issues/272
 [#273]: https://github.com/informalsystems/ibc-rs/issues/273
 [#276]: https://github.com/informalsystems/ibc-rs/issues/276
@@ -85,6 +89,7 @@ Additional highlights:
 [#293]: https://github.com/informalsystems/ibc-rs/issues/293
 [#295]: https://github.com/informalsystems/ibc-rs/issues/295
 [#296]: https://github.com/informalsystems/ibc-rs/issues/296
+[#297]: https://github.com/informalsystems/ibc-rs/issues/297
 [#300]: https://github.com/informalsystems/ibc-rs/issues/300
 [#302]: https://github.com/informalsystems/ibc-rs/issues/302
 [#308]: https://github.com/informalsystems/ibc-rs/issues/308
