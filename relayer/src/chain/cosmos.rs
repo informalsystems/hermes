@@ -18,8 +18,6 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
 use bytes::Bytes;
-use ibc_proto::cosmos::base::crypto::v1beta1::public_key::Sum as PKSum;
-use ibc_proto::cosmos::base::crypto::v1beta1::PublicKey as RawPublicKey;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use k256::ecdsa::{SigningKey, VerifyKey};
@@ -113,22 +111,19 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::KeyBase.context(e))?;
         let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
         let pub_key_bytes = key.public_key.public_key.to_bytes();
-        let sum = Some(PKSum::Secp256k1(pub_key_bytes));
-        let pk = RawPublicKey { sum };
-        let single = Single { mode: 1 };
-        let sum_single = Some(Sum::Single(single));
-        let mode = Some(ModeInfo { sum: sum_single });
 
-        // A protobuf serialization of a Public Key
         let mut pk_buf = Vec::new();
-        prost::Message::encode(&pk, &mut pk_buf).unwrap();
+        prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
 
         // Create a MsgSend proto Any message
         let pk_any = Any {
-            type_url: "/cosmos.base.crypto.v1beta1.PublicKey.".to_string(),
+            type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
             value: pk_buf,
         };
 
+        let single = Single { mode: 1 };
+        let sum_single = Some(Sum::Single(single));
+        let mode = Some(ModeInfo { sum: sum_single });
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
@@ -251,14 +246,15 @@ async fn broadcast_tx(
 
     if !response.code.is_ok() {
         // Fail with response log.
+        println!("Tx Error Response: {:?}", response.clone());
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
     if response.data.as_bytes().len() == 0 {
         // Fail due to empty response value (nothing to decode).
         return Err(Kind::EmptyResponseValue.into());
     }
-    dbg!(response.clone());
 
+    println!("Tx Response: {:?}", response.clone());
     Ok(response.data.as_bytes().to_vec())
 }
 

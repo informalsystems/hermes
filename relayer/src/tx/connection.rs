@@ -43,7 +43,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
         signer,
     };
 
-   let msg_type = "/ibc.connection.MsgConnectionOpenInit".to_string();
+   let msg_type = "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string();
 
     // Send message
     let response = dest_chain.send(msg_type, msg.get_sign_bytes(), "".to_string(), 0)
