@@ -2,17 +2,17 @@
 
 EXTENDS Integers, FiniteSets, Sequences, ICS02Definitions
 
-CONSTANTS MaxHeight \* maximal height of all the chains in the system
+CONSTANTS MaxHeight, \* maximal height of all the chains in the system
+          NrClients, \* number of clients that will be created on the chain
+          ClientIDs \* a set of counterparty client IDs for the chain
 
 ASSUME MaxHeight < 10
 
 VARIABLES chainAstore, \* store of ChainA
           datagramsChainA, \* set of datagrams incoming to ChainA
-          clientCreatedHistoryChainA, \* history variable
-          clientUpdatedHistoryChainA \* history variable
+          history \* history variable
 
-chainAvars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdatedHistoryChainA>>
-vars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdatedHistoryChainA>>
+vars == <<chainAstore, datagramsChainA, history>>
           
 (***************************************************************************
  Instances of ICS02Chain
@@ -23,9 +23,7 @@ vars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdate
 ChainA == INSTANCE ICS02Chain
           WITH ChainID <- "chainA",
                chainStore <- chainAstore,
-               incomingDatagrams <- datagramsChainA,
-               clientCreatedHistory <- clientCreatedHistoryChainA,
-               clientUpdatedHistory <- clientUpdatedHistoryChainA          
+               incomingDatagrams <- datagramsChainA               
        
 (***************************************************************************
  ICS02Environment actions
@@ -36,11 +34,11 @@ CreateDatagrams ==
     \* pick a sequence from the set of client datagrams non-deterministically
     /\ datagramsChainA' \in 
         SUBSET ClientDatagrams(
-            GetCounterpartyClientIDs("chainA"), 
+            ClientIDs,  
             1..MaxHeight
         )  
         
-    /\ UNCHANGED <<chainAstore, clientCreatedHistoryChainA, clientUpdatedHistoryChainA>>
+    /\ UNCHANGED <<chainAstore, history>>
 
     
 (***************************************************************************
@@ -61,6 +59,7 @@ EnvironmentAction ==
 \* Initial state predicate
 Init ==
     /\ ChainA!Init
+    /\ history = [clientID \in ClientIDs |-> [created |-> FALSE, updated |-> FALSE]]   
     
 \* Next state action
 Next ==
@@ -81,5 +80,5 @@ Inv ==
     
 =============================================================================
 \* Modification History
-\* Last modified Tue Oct 13 14:02:20 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Oct 20 10:12:52 CEST 2020 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska

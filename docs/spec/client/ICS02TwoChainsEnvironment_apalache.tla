@@ -3,6 +3,10 @@
 EXTENDS ICS02TwoChainsEnvironment
 
 OVERRIDE_MaxHeight == 4
+OVERRIDE_NrClientsChainA == 2
+OVERRIDE_NrClientsChainB == 2
+OVERRIDE_ClientIDsChainA == {"B1", "B2"}
+OVERRIDE_ClientIDsChainB == {"A1", "A2"}
 
 =============================================================================
 \* Modification History

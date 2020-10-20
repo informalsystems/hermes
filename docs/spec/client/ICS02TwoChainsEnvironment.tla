@@ -2,7 +2,11 @@
 
 EXTENDS Integers, FiniteSets, Sequences, ICS02Definitions
 
-CONSTANTS MaxHeight \* maximal height of all the chains in the system
+CONSTANTS MaxHeight, \* maximal height of all the chains in the system
+          NrClientsChainA, \* number of clients that will be created on ChainA
+          NrClientsChainB, \* number of clients that will be created on ChainA
+          ClientIDsChainA, \* a set of counterparty client IDs for ChainA
+          ClientIDsChainB \* a set of counterparty client IDs for ChainB
 
 ASSUME MaxHeight < 10
 
@@ -10,15 +14,13 @@ VARIABLES chainAstore, \* store of ChainA
           chainBstore, \* store of ChainB
           datagramsChainA, \* set of datagrams incoming to ChainA
           datagramsChainB, \* set of datagrams incoming to ChainB
-          clientCreatedHistoryChainA, \* history variable for ChainA
-          clientUpdatedHistoryChainA, \* history variable for ChainA
-          clientCreatedHistoryChainB, \* history variable for ChainB
-          clientUpdatedHistoryChainB \* history variable for ChainB
+          history \* history variable
 
-chainAvars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdatedHistoryChainA>>
-chainBvars == <<chainBstore, datagramsChainB, clientCreatedHistoryChainB, clientUpdatedHistoryChainB>>
-vars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdatedHistoryChainA,
-          chainBstore, datagramsChainB, clientCreatedHistoryChainB, clientUpdatedHistoryChainB>>
+chainAvars == <<chainAstore, datagramsChainA>>
+chainBvars == <<chainBstore, datagramsChainB>>
+vars == <<chainAstore, datagramsChainA, 
+          chainBstore, datagramsChainB, 
+          history>>
           
 (***************************************************************************
  Instances of ICS02Chain
@@ -28,24 +30,30 @@ vars == <<chainAstore, datagramsChainA, clientCreatedHistoryChainA, clientUpdate
 \* ChainA -- Instance of Chain.tla
 ChainA == INSTANCE ICS02Chain
           WITH ChainID <- "chainA",
+               NrClients <- NrClientsChainA,
+               ClientIDs <- ClientIDsChainA,
                chainStore <- chainAstore,
-               incomingDatagrams <- datagramsChainA,
-               clientCreatedHistory <- clientCreatedHistoryChainA,
-               clientUpdatedHistory <- clientUpdatedHistoryChainA        
+               incomingDatagrams <- datagramsChainA
 
 \* ChainB -- Instance of Chain.tla 
 ChainB == INSTANCE ICS02Chain
           WITH ChainID <- "chainB",
+               NrClients <- NrClientsChainB,
+               ClientIDs <- ClientIDsChainB,
                chainStore <- chainBstore,
-               incomingDatagrams <- datagramsChainB,
-               clientCreatedHistory <- clientCreatedHistoryChainB,
-               clientUpdatedHistory <- clientUpdatedHistoryChainB        
+               incomingDatagrams <- datagramsChainB
                
 GetChainByID(chainID) ==
     IF chainID = "chainA"
     THEN chainAstore
     ELSE chainBstore 
-    <: ChainStoreType        
+    <: ChainStoreType   
+    
+GetNrClientsByID(chainID) ==
+    IF chainID = "chainA"
+    THEN NrClientsChainA
+    ELSE NrClientsChainB
+             
        
 (***************************************************************************
  ICS02Environment actions
@@ -55,20 +63,21 @@ GetChainByID(chainID) ==
 CreateDatagrams ==
     \* pick a sequence from the set of client datagrams non-deterministically
     \* for each chain     
+    /\ datagramsChainA = AsSetDatagrams({})
+    /\ datagramsChainB = AsSetDatagrams({})  
     /\ datagramsChainA' \in 
         SUBSET ClientDatagrams(
-            GetCounterpartyClientIDs("chainA"), 
+            ClientIDsChainA, 
             SetHeights(1, GetLatestHeight(GetChainByID("chainB")))
         )
     /\ datagramsChainB' \in
         SUBSET ClientDatagrams(
-            GetCounterpartyClientIDs("chainB"), 
-            SetHeights(1, GetLatestHeight(GetChainByID("chainB")))
+            ClientIDsChainB, 
+            SetHeights(1, GetLatestHeight(GetChainByID("chainA")))
         )     
         
     /\ UNCHANGED <<chainAstore, chainBstore>>
-    /\ UNCHANGED <<clientCreatedHistoryChainA, clientUpdatedHistoryChainA>>
-    /\ UNCHANGED <<clientCreatedHistoryChainB, clientUpdatedHistoryChainB>>        
+    /\ UNCHANGED history        
 
     
 (***************************************************************************
@@ -93,7 +102,9 @@ EnvironmentAction ==
 \* Initial state predicate
 Init ==
     /\ ChainA!Init
-    /\ ChainB!Init    
+    /\ ChainB!Init 
+    /\ history = [clientID \in (ClientIDsChainA \union ClientIDsChainB) |-> 
+                    [created |-> FALSE, updated |-> FALSE]]   
     
 \* Next state action
 Next ==
@@ -108,13 +119,23 @@ Spec == Init /\ [][Next]_vars
 Invariants
  ***************************************************************************)
 
+ClientHeightsAreBelowCounterpartyHeight ==
+    \A chainID \in ChainIDs :
+        \A clientNr \in 1..GetNrClientsByID(chainID) :
+            (GetChainByID(chainID).clientStates[clientNr].heights /= {} 
+                => (Max(GetChainByID(chainID).clientStates[clientNr].heights) 
+                     <= GetLatestHeight(GetChainByID(GetCounterpartyChainID(chainID)))))
+
 Inv ==
     /\ ChainA!CreatedClientsHaveDifferentIDs
     /\ ChainA!UpdatedClientsAreCreated
     /\ ChainB!CreatedClientsHaveDifferentIDs
-    /\ ChainB!UpdatedClientsAreCreated    
+    /\ ChainB!UpdatedClientsAreCreated  
+    /\ ClientHeightsAreBelowCounterpartyHeight
+    
+      
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Oct 16 11:10:43 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Oct 19 18:34:24 CEST 2020 by ilinastoilkovska
 \* Created Fri Oct 02 12:57:19 CEST 2020 by ilinastoilkovska

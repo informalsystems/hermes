@@ -11,20 +11,19 @@ EXTENDS Integers, FiniteSets, Sequences
 \* operator for type annotations
 a <: b == a
 
-\* client type
-ClientType ==
+\* client state type
+ClientStateType ==
     [
         clientID |-> STRING,
         heights |-> {Int}
     ]
     
 \* chain store type 
-ChainStoreType == 
+ChainStoreType ==  
     [
-        height |-> Int, 
-        client1 |-> ClientType,
-        client2 |-> ClientType 
-    ]
+        height |-> Int,
+        clientStates |-> [Int -> ClientStateType]
+    ] 
 
 \* client datagram type
 ClientDatagramType ==
@@ -49,7 +48,7 @@ AsSetInt(S) == S <: {Int}
 AsString(s) == s <: STRING
 
 AsChainStore(chainStore) == chainStore <: ChainStoreType
-AsClient(client) == client <: ClientType
+AsClientState(clientState) == clientState <: ClientStateType
 
 AsDatagram(dgr) == dgr <: DatagramType
 
@@ -61,7 +60,6 @@ AsSeqDatagrams(Dgrs) == Dgrs <: Seq(DatagramType)
 
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"} 
-ClientIDs == {"clA1", "clA2", "clB1", "clB2"}
 
 nullHeight == 0
 nullClientID == "none"
@@ -72,20 +70,20 @@ BoundedSeq(S, bound) == UNION {[1..n -> S] : n \in 1..bound}
 
 SetHeights(h1, h2) == {h \in 1..10 : h1 <= h /\ h <= h2}
 
-(********************************* Clients *********************************
-    A set of client records
+(****************************** ClientStates *******************************
+    A client state is a set of heights 
  ***************************************************************************)
-Clients(maxHeight) ==
+ClientStates(ClientIDs, maxHeight) ==
     [
         clientID : ClientIDs,
         heights : SUBSET(1..maxHeight)
-    ] <: {ClientType}
+    ] <: ClientStateType
     
-NullClient ==
-    [   
-        clientID |-> AsID(nullClientID),
+NullClientState ==
+    [
+        clientID |-> nullClientID,
         heights |-> AsSetInt({})
-    ] <: ClientType    
+    ] <: ClientStateType    
 
 (******************************** ChainStores ******************************
     A set of chain store records, with fields relevant for ICS02. 
@@ -98,17 +96,16 @@ NullClient ==
       Stores the heights of the client for the counterparty chain.
       
  ***************************************************************************)
-ChainStores(maxHeight) ==    
+ChainStores(NrClients, ClientIDs, maxHeight) ==    
     [
         height : 1..maxHeight,
-        client1 : Clients(maxHeight),
-        client2 : Clients(maxHeight)
+        clientStates : [1..NrClients -> ClientStates(ClientIDs, maxHeight)]
     ] <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
  A set of datagrams.
  ***************************************************************************)
-Datagrams(maxHeight) ==
+Datagrams(ClientIDs, maxHeight) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : 1..maxHeight]
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : 1..maxHeight]   
@@ -118,10 +115,10 @@ Datagrams(maxHeight) ==
 (***************************** ClientDatagrams *****************************
  A set of client datagrams for a specific set ClIDs of client IDs.
  ***************************************************************************)
-ClientDatagrams(ClIDs, Heights) ==
-    [type : {"CreateClient"}, clientID : ClIDs, height : Heights]
+ClientDatagrams(ClientIDs, Heights) ==
+    [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
-    [type : {"ClientUpdate"}, clientID : ClIDs, height : Heights]   
+    [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
     <: {DatagramType}
     
 NullDatagram == 
@@ -133,11 +130,10 @@ NullDatagram ==
 \* Initial value of the chain store for ICS02: 
 \*      - height is initialized to 1
 \*      - the counterparty clients are uninitialized
-ICS02InitChainStore == 
+ICS02InitChainStore(NrClients, ClientIDs) == 
     [
         height |-> AsInt(1),
-        client1 |-> AsClient(NullClient),
-        client2 |-> AsClient(NullClient)
+        clientStates |-> [clientNr \in 1..NrClients |-> NullClientState]
     ] <: ChainStoreType
         
 (***************************************************************************
@@ -147,26 +143,12 @@ ICS02InitChainStore ==
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
     IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
- 
-\* get the client ID of the client for chainID 
-GetClientID1(chainID) ==
-    IF chainID = "chainA" THEN AsID("clA1") ELSE AsID("clB1")
-        
-\* get the client ID of the client for chainID's counterparty chain           
-GetCounterpartyClientID1(chainID) ==
-    IF chainID = "chainA" THEN AsID("clB1") ELSE AsID("clA1")
-    
-GetCounterpartyClientID2(chainID) ==
-    IF chainID = "chainA" THEN AsID("clB2") ELSE AsID("clA2")
-    
-GetCounterpartyClientIDs(chainID) ==
-    IF chainID = "chainA" THEN AsSetID({"clB1", "clB2"}) ELSE AsSetID({"clA1", "clA2"})    
-    
+     
 \* get the latest height of chainID
 GetLatestHeight(chain) ==
     AsInt(chain.height)   
 
 =========================================================================
 \* Modification History
-\* Last modified Tue Oct 13 13:20:43 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Oct 19 18:35:08 CEST 2020 by ilinastoilkovska
 \* Created Tue Oct 06 16:26:25 CEST 2020 by ilinastoilkovska
