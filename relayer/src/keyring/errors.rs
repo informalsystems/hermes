@@ -13,6 +13,9 @@ pub enum Kind {
 
     #[error("cannot generate private key")]
     PrivateKey,
+
+    #[error("cannot generate bech32 account")]
+    Bech32Account,
 }
 
 impl Kind {

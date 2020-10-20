@@ -25,13 +25,13 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    let id_hex = "25EF56CA795135E409368E6DB8110F22A4BE05C2";
+    let id_hex = "5804e70e971cc0ac65144a28adf94fdd1e60a48f";
     let signer = AccountId::from_str(id_hex).unwrap();
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,
         opts.dest_connection_id,
-        CommitmentPrefix::from(vec![]),
+        CommitmentPrefix::from(b"ibc".to_vec()),
     );
 
     let msg = MsgConnectionOpenInit {
@@ -39,7 +39,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
         connection_id: opts.src_connection_id,
         counterparty: counterparty.unwrap(),
         // TODO - add to opts
-        version: "1.0.0".to_string(),
+        version: "".to_string(),
         signer,
     };
 

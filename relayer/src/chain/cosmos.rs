@@ -19,7 +19,7 @@ use crate::error::{Error, Kind};
 
 use bytes::Bytes;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw, Fee};
 use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
@@ -28,6 +28,7 @@ use crate::keyring::store::{KeyRing, KeyRingOperations, StoreBackend};
 use futures::{TryFutureExt, FutureExt};
 use crate::error;
 use ibc::tx_msg::Msg;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -107,9 +108,12 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&body, &mut body_buf).unwrap();
 
         // TODO: Find way to get the addr, e.g. default if not specified
-        let signer = self.keybase.add_from_mnemonic("sting bitter crater indoor glide any motor toe follow garlic manual exclude fiber update crime mirror such wash entry urban student act word mad")
+        let key = self.keybase.add_from_mnemonic("section clerk spoil best fall lion sniff fee mushroom still require hard squeeze economy enhance protect flat recycle day squirrel solid primary dry pledge")
             .map_err(|e| Kind::KeyBase.context(e))?;
-        let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
+
+        println!("Loaded key: {:?} - {:?}", hex::encode(key.clone().address), key.account);
+
+       // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
         let pub_key_bytes = key.public_key.public_key.to_bytes();
 
         let mut pk_buf = Vec::new();
@@ -127,12 +131,25 @@ impl Chain for CosmosSDKChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: 0,
+            sequence: 9,
         };
+
+        // Gas Fee
+        let coin = Coin {
+            denom: "stake".to_string(),
+            amount: "1000".to_string(),
+        };
+
+        let fee = Some(Fee {
+            amount: vec![coin],
+            gas_limit: 100000,
+            payer: "".to_string(),
+            granter: "".to_string()
+        });
 
         let auth_info = AuthInfo {
             signer_infos: vec![signer_info],
-            fee: None,
+            fee,
         };
 
         // A protobuf serialization of a AuthInfo
@@ -151,7 +168,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(signer, signdoc_buf);
+        let signed = self.keybase.sign(key.address, signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -161,7 +178,7 @@ impl Chain for CosmosSDKChain {
 
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-        println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
+        //println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
         //let signed = sign(sign_doc);
         let response = block_on(broadcast_tx(self, txraw_buf.clone())).map_err(|e| Kind::Rpc.context(e))?;
@@ -249,12 +266,7 @@ async fn broadcast_tx(
         println!("Tx Error Response: {:?}", response.clone());
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
-    if response.data.as_bytes().len() == 0 {
-        // Fail due to empty response value (nothing to decode).
-        return Err(Kind::EmptyResponseValue.into());
-    }
 
-    println!("Tx Response: {:?}", response.clone());
     Ok(response.data.as_bytes().to_vec())
 }
 

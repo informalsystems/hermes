@@ -15,6 +15,7 @@ use hdpath::StandardHDPath;
 use bitcoin::secp256k1::{All, Message, Secp256k1};
 use std::convert::TryFrom;
 use crate::keyring::errors::{Error, Kind};
+use bech32::ToBase32;
 
 pub type Address = Vec<u8>;
 
@@ -28,7 +29,7 @@ pub enum StoreBackend {
 
 pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend) -> KeyRing;
-    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<Address, Error>;
+    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error>;
     fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
     fn sign(&self, signer: Vec<u8>, msg: Vec<u8>) -> Vec<u8>;
@@ -42,6 +43,13 @@ pub struct KeyEntry {
 
     /// Private key
     pub private_key: ExtendedPrivKey,
+
+    /// Address
+    pub address: Vec<u8>,
+
+    /// Account Bech32 format - TODO allow hrp
+    pub account: String
+
 }
 
 impl KeyRingOperations for KeyRing {
@@ -57,7 +65,7 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Add a key entry in the store using a mnemonic.
-    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<Address, Error> {
+    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
 
         // Generate seed from mnemonic
         let mnemonic = Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
@@ -74,14 +82,19 @@ impl KeyRingOperations for KeyRing {
         // Get address from the Public Key
         let address = get_address(public_key);
 
+        // Get Bech32 account
+        let account = bech32::encode("cosmos", address.to_base32()).map_err(|e| Kind::Bech32Account.context(e))?;
+
         let key = KeyEntry {
             public_key,
-            private_key
+            private_key,
+            address,
+            account
         };
 
-        self.insert(address.clone(), key);
+        self.insert(key.clone().address, key.clone());
 
-        Ok(address)
+        Ok(key)
     }
 
     /// Return a key entry from a key name

@@ -12,6 +12,8 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
 use std::str::FromStr;
 
+use bech32::ToBase32;
+
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 ///
@@ -79,6 +81,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
+
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -94,18 +97,21 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+                .map_err(|e| Kind::InvalidSigner.context(e))?
         })
     }
 }
 
 impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
     fn from(ics_msg: MsgConnectionOpenInit) -> Self {
+
+        // The msg needs to send the bech32 account as the signer
+        let addr = bech32::encode("cosmos", ics_msg.signer.to_base32());
         RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            signer: ics_msg.signer.to_string(),
+            signer: addr.unwrap(),
             version: ics_msg.version,
         }
     }
