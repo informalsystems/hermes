@@ -176,7 +176,7 @@ pub fn check_client_consensus_height(
         ctx.host_current_height().version_height - ctx.host_chain_history_size() as u64;
 
     if claimed_height.version_height < oldest_available_height {
-        // Fail if the consensus height is too old (outside of trusting period).
+        // Fail if the consensus height is too old (has been pruned).
         return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }
 

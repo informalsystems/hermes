@@ -119,7 +119,7 @@ mod tests {
 
         let host_chain_height = Height::new(1, 35);
         let context = MockContext::new(host_chain_height);
-        let trusting_period = context.host_chain_history_size() as u64;
+        let pruning_window = context.host_chain_history_size() as u64;
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             10,
@@ -133,13 +133,13 @@ mod tests {
             host_chain_height.increment().version_height,
         ))
         .unwrap();
-        let stale_height = host_chain_height
-            .sub(trusting_period + 1)
+        let pruned_height = host_chain_height
+            .sub(pruning_window + 1)
             .unwrap()
             .version_height;
-        // The proof targets a stale height (outside of trusting period) on destination chain.
+        // The consensus proof targets a missing height (pruned) on destination chain.
         let msg_height_old =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, stale_height)).unwrap();
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, pruned_height)).unwrap();
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
