@@ -123,7 +123,6 @@ mod tests {
         )
         .unwrap();
 
-        // This context has very small height, tests should not pass.
         let incorrect_context = MockContext::default();
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
@@ -204,7 +203,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails: ConsensusStateVerificationFailure due to missing host consensus state".to_string(),
+                name: "Processing fails due to MissingLocalConsensusState".to_string(),
                 ctx: incorrect_context
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), correct_conn_end.clone()),

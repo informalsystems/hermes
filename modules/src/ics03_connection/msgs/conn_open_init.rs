@@ -42,7 +42,7 @@ impl MsgConnectionOpenInit {
         &self.counterparty
     }
 
-    /// Setter for `client_id`. Amenable to chaining, since it consumes the input messages.
+    /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
     pub fn with_client_id(self, client_id: ClientId) -> Self {
         MsgConnectionOpenInit { client_id, ..self }
     }

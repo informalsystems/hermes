@@ -22,7 +22,9 @@ impl ClientDef for MockClient {
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         if client_state.latest_height() >= header.height() {
-            return Err("header height is lower than client latest".into());
+            return Err(
+                "received header height is lower than (or equal to) client latest height".into(),
+            );
         }
 
         Ok((MockClientState(header), MockConsensusState(header)))

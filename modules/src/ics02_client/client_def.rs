@@ -501,12 +501,10 @@ mod tests {
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
-            latest_height: Height {
-                version_number: ChainId::chain_version(
-                    tm_header.signed_header.header.chain_id.to_string(),
-                ),
-                version_height: u64::from(tm_header.signed_header.header.height),
-            },
+            latest_height: Height::new(
+                ChainId::chain_version(tm_header.signed_header.header.chain_id.to_string()),
+                u64::from(tm_header.signed_header.header.height),
+            ),
             frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
