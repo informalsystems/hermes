@@ -10,7 +10,7 @@ pub struct Proofs {
     object_proof: CommitmentProof,
     client_proof: Option<CommitmentProof>,
     consensus_proof: Option<ConsensusProof>,
-    /// Height for both the above proofs
+    /// Height for the proofs above. When creating these proofs, the chain was at `height`.
     height: Height,
 }
 

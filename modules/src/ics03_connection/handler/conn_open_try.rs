@@ -120,16 +120,17 @@ mod tests {
         let host_chain_height = Height::new(1, 35);
         let context = MockContext::new(5, host_chain_height);
         let pruning_window = context.host_chain_history_size() as u64;
+        let client_consensus_state_height = 10;
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
-            10,
+            client_consensus_state_height,
             host_chain_height.version_height,
         ))
         .unwrap();
 
         // The proof targets a height that does not exist (i.e., too advanced) on destination chain.
         let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
-            10,
+            client_consensus_state_height,
             host_chain_height.increment().version_height,
         ))
         .unwrap();
@@ -138,8 +139,18 @@ mod tests {
             .unwrap()
             .version_height;
         // The consensus proof targets a missing height (pruned) on destination chain.
-        let msg_height_old =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, pruned_height)).unwrap();
+        let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+            client_consensus_state_height,
+            pruned_height,
+        ))
+        .unwrap();
+
+        // The proofs in this message are created at a height which the client on destination chain does not have.
+        let msg_proof_height_missing = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+            client_consensus_state_height - 1,
+            host_chain_height.version_height,
+        ))
+        .unwrap();
 
         let try_conn_end = &ConnectionEnd::new(
             State::TryOpen,
@@ -169,6 +180,12 @@ mod tests {
                 want_pass: false,
             },
             Test {
+                name: "Processing fails because the client misses the consensus state targeted by the proof".to_string(),
+                ctx: context.clone().with_client(msg_proof_height_missing.client_id(), Height::new(0, client_consensus_state_height)),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_proof_height_missing)),
+                want_pass: false,
+            },
+            Test {
                 name: "Processing fails because the connection exists in the store already"
                     .to_string(),
                 ctx: context
@@ -179,7 +196,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, 10)),
+                ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: true,
             },
