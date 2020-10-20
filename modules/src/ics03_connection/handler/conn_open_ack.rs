@@ -171,13 +171,13 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
-                ctx: incorrect_context.clone(),
+                ctx: correct_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
@@ -187,7 +187,7 @@ mod tests {
             Test {
                 name: "Processing fails due to connections mismatch (incorrect versions)"
                     .to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
@@ -196,9 +196,18 @@ mod tests {
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
+                    .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails: ConsensusStateVerificationFailure due to missing host consensus state".to_string(),
+                ctx: incorrect_context
+                    .with_client(&client_id, Height::new(0, 10))
+                    .with_connection(msg_ack.connection_id().clone(), correct_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },

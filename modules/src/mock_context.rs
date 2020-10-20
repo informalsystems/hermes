@@ -64,6 +64,11 @@ impl MockContext {
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
 
+        assert_ne!(
+            max_history_size, 0,
+            "The chain must have a non-zero max_history_size"
+        );
+
         MockContext {
             max_history_size,
             latest_height,
@@ -136,7 +141,7 @@ impl MockContext {
         if (target > latest) || (target <= latest - self.history.len()) {
             None // Header for requested height does not exist in history.
         } else {
-            Some(self.history[self.max_history_size + target - latest - 1])
+            Some(self.history[self.history.len() + target - latest - 1])
         }
     }
 
@@ -172,11 +177,14 @@ impl MockContext {
             return Err("too many entries".to_string().into());
         }
 
-        // Get the highest header.
-        let lh = self.history[self.history.len() - 1];
-        // Check latest is properly updated with highest header height.
-        if lh.height() != self.latest_height {
-            return Err("latest height is not updated".to_string().into());
+        // Check the content of the history.
+        if !self.history.is_empty() {
+            // Get the highest header.
+            let lh = self.history[self.history.len() - 1];
+            // Check latest is properly updated with highest header height.
+            if lh.height() != self.latest_height {
+                return Err("latest height is not updated".to_string().into());
+            }
         }
 
         // Check that headers in the history are in sequential order.
@@ -365,5 +373,78 @@ impl ICS18Context for MockContext {
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         self.recv(msg)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::mock_context::MockContext;
+    use crate::Height;
+
+    #[test]
+    fn test_mock_context_history_manipulation() {
+        pub struct Test {
+            name: String,
+            ctx: MockContext,
+        }
+        let cv = 1; // The version to use for all chains.
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Empty history, small pruning window".to_string(),
+                ctx: MockContext::new(1, Height::new(cv, 0)),
+            },
+            Test {
+                name: "Large pruning window".to_string(),
+                ctx: MockContext::new(30, Height::new(cv, 2)),
+            },
+            Test {
+                name: "Small pruning window".to_string(),
+                ctx: MockContext::new(3, Height::new(cv, 30)),
+            },
+            Test {
+                name: "Small pruning window, small starting height".to_string(),
+                ctx: MockContext::new(3, Height::new(cv, 2)),
+            },
+            Test {
+                name: "Large pruning window, large starting height".to_string(),
+                ctx: MockContext::new(50, Height::new(cv, 2000)),
+            },
+        ];
+
+        for mut test in tests {
+            // All tests should yield a valid context after initialization.
+            assert!(
+                test.ctx.validate().is_ok(),
+                "Failed while validating context {:?}",
+                test.ctx
+            );
+
+            let current_height = test.ctx.latest_height;
+
+            // After advancing the chain's height, the context should still be valid.
+            test.ctx.advance_host_chain_height();
+            assert!(
+                test.ctx.validate().is_ok(),
+                "Failed while validating context {:?}",
+                test.ctx
+            );
+
+            let next_height = current_height.increment();
+            assert_eq!(
+                test.ctx.latest_height, next_height,
+                "Failed while increasing height for context {:?}",
+                test.ctx
+            );
+            if current_height > Height::new(cv, 0) {
+                assert_eq!(
+                    test.ctx.host_header(current_height).unwrap().height(),
+                    current_height,
+                    "Failed while fetching height {:?} of context {:?}",
+                    current_height,
+                    test.ctx
+                );
+            }
+        }
     }
 }
