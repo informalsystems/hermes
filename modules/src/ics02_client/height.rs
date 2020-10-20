@@ -119,19 +119,3 @@ impl std::fmt::Display for Height {
         )
     }
 }
-
-/// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
-/// The chainID must be in the form: `{chainID}-{version}
-fn is_epoch_format(chain_id: String) -> bool {
-    use regex::Regex;
-    let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
-    re.is_match(chain_id.as_str())
-}
-
-pub fn chain_version(chain_id: String) -> u64 {
-    if !is_epoch_format(chain_id.clone()) {
-        return 0;
-    }
-    let split: Vec<_> = chain_id.split('-').collect();
-    split[1].parse().unwrap_or(0)
-}

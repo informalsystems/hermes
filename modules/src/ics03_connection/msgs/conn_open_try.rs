@@ -207,6 +207,10 @@ pub mod test_util {
         get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
     };
 
+    /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
+    /// `proof_height` represents the height, on the source chain, at which this chain produced the
+    /// proof. Parameter `consensus_height` represents the height of destination chain which a
+    /// client on the source chain stores.
     pub fn get_dummy_msg_conn_open_try(
         proof_height: u64,
         consensus_height: u64,
