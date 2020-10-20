@@ -76,9 +76,9 @@ mod tests {
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
         // Create two mock contexts, one for each chain.
-        let mut ctx_a = MockContext::new(chain_a_start_height)
+        let mut ctx_a = MockContext::new(5, chain_a_start_height)
             .with_client(&client_on_a_for_b, client_on_a_for_b_height);
-        let mut ctx_b = MockContext::new(chain_b_start_height)
+        let mut ctx_b = MockContext::new(5, chain_b_start_height)
             .with_client(&client_on_b_for_a, client_on_b_for_a_height);
 
         for _i in 0..num_iterations {

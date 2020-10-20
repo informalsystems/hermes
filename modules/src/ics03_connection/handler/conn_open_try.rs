@@ -118,7 +118,7 @@ mod tests {
         }
 
         let host_chain_height = Height::new(1, 35);
-        let context = MockContext::new(host_chain_height);
+        let context = MockContext::new(5, host_chain_height);
         let pruning_window = context.host_chain_history_size() as u64;
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(

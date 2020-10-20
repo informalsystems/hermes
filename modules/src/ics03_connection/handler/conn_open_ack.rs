@@ -163,10 +163,10 @@ mod tests {
 
         // Parametrize the (correct) host chain to have a height at least as recent as the
         // the height of the proofs in the Ack msg.
-        let correct_context = MockContext::new(Height::new(
-            1,
-            msg_ack.proofs().height().increment().version_height,
-        ));
+        let correct_context = MockContext::new(
+            5,
+            Height::new(1, msg_ack.proofs().height().increment().version_height),
+        );
 
         let tests: Vec<Test> = vec![
             Test {

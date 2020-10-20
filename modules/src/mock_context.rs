@@ -50,17 +50,17 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(Height::new(1, 5))
+        Self::new(5, Height::new(1, 5))
     }
 }
 
 /// Implementation of internal interface for use in testing. The methods in this interface should
 /// _not_ be accessible to any ICS handler.
 impl MockContext {
-    pub fn new(latest_height: Height) -> Self {
-        // A couple of predefined fields. Seems necessary to parametrize these so far.
-        let max_history_size = 5;
-
+    /// Creates a mock context. Parameter `max_history_size` determines how many headers will
+    /// the chain maintain in its history, which also determines the pruning window. Parameter
+    /// `latest_height` determines the current height of the chain.
+    pub fn new(max_history_size: usize, latest_height: Height) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
 
