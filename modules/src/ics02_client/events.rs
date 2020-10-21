@@ -9,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::block;
 
+/// NewBlock event signals the committing & execution of a new block.
 // TODO - find a better place for NewBlock
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NewBlock {
@@ -27,6 +28,7 @@ impl From<NewBlock> for IBCEvent {
     }
 }
 
+/// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CreateClient {
     pub height: block::Height,
@@ -51,6 +53,7 @@ impl From<CreateClient> for IBCEvent {
     }
 }
 
+/// UpdateClient event signals a recent update of an on-chain client (IBC Client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UpdateClient {
     pub height: block::Height,
@@ -75,6 +78,8 @@ impl From<UpdateClient> for IBCEvent {
     }
 }
 
+/// ClientMisbehavior event signals the update of an on-chain client (IBC Client) with evidence of
+/// misbehavior.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ClientMisbehavior {
     pub height: block::Height,

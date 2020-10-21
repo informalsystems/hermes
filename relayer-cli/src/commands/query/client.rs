@@ -3,12 +3,18 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
 
+use crate::error::{Error, Kind};
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc::ics24_host::Path::ClientConnections;
+use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint::chain::Id as ChainId;
+use tendermint_proto::DomainType;
+
+use std::convert::TryInto;
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -19,7 +25,7 @@ pub struct QueryClientStateCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
     #[options(help = "whether proof is required", short = "p")]
@@ -43,19 +49,19 @@ impl QueryClientStateCmd {
 
         let opts = QueryClientStateOptions {
             client_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
+            proof: self.proof.unwrap_or(true),
         };
         Ok((chain_config, opts))
     }
 }
 
+/// Command for handling a query for a client's state.
+/// To run with proof:
+/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
+///
+/// Run without proof:
+/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
@@ -69,27 +75,22 @@ impl Runnable for QueryClientStateCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
-        //
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        /* Todo: Implement client full state query
-        let res = block_on(query_client_full_state(
-            &chain,
-            opts.height,
-            opts.client_id.clone(),
-            opts.proof,
-        ));
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+
+        let res: Result<AnyClientState, Error> = chain
+            .query(
+                ClientState(opts.client_id),
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| {
+                AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+            });
         match res {
-            Ok(cs) => status_info!("client state query result: ", "{:?}", cs.client_state),
+            Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
             Err(e) => status_info!("client state query error: ", "{:?}", e),
         }
-        */
     }
 }
 
@@ -102,10 +103,13 @@ pub struct QueryClientConsensusCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(free, help = "height of the consensus state to query")]
+    #[options(free, help = "epoch of the client's consensus state to query")]
+    consensus_epoch: Option<u64>,
+
+    #[options(free, help = "height of the client's consensus state to query")]
     consensus_height: Option<u64>,
 
-    #[options(help = "height of the consensus state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
     #[options(help = "whether proof is required", short = "p")]
@@ -115,7 +119,8 @@ pub struct QueryClientConsensusCmd {
 #[derive(Debug)]
 struct QueryClientConsensusOptions {
     client_id: ClientId,
-    consensus_height: u64,
+    version_number: u64,
+    version_height: u64,
     height: u64,
     proof: bool,
 }
@@ -128,27 +133,30 @@ impl QueryClientConsensusCmd {
         let (chain_config, client_id) =
             validate_common_options(&self.chain_id, &self.client_id, config)?;
 
-        match self.consensus_height {
-            Some(consensus_height) => {
+        match (self.consensus_epoch, self.consensus_height) {
+            (Some(version_number), Some(version_height)) => {
                 let opts = QueryClientConsensusOptions {
                     client_id,
-                    consensus_height,
-                    height: match self.height {
-                        Some(h) => h,
-                        None => 0 as u64,
-                    },
-                    proof: match self.proof {
-                        Some(proof) => proof,
-                        None => true,
-                    },
+                    version_number,
+                    version_height,
+                    height: self.height.unwrap_or(0_u64),
+                    proof: self.proof.unwrap_or(true),
                 };
                 Ok((chain_config, opts))
             }
-            None => Err("missing client consensus height".to_string()),
+            (Some(consensus_epoch), None) => Err("missing client consensus height".to_string()),
+
+            (None, _) => Err("missing client consensus epoch".to_string()),
         }
     }
 }
 
+/// Implementation of the query for a client's consensus state at a certain height.
+/// Run with proof:
+/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
+///
+/// Run without proof:
+/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
@@ -162,33 +170,26 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        // run with proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
-        //
-        // run without proof:
-        // cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
-        //
-        // Note: currently both fail in amino_unmarshal_binary_length_prefixed().
-        // To test this start a Gaia node and configure a client using the go relayer.
-        let _chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        /* Todo: Implement client consensus state query
-        let res = block_on(query_client_consensus_state(
-            &chain,
-            opts.height,
-            opts.client_id,
-            opts.consensus_height,
-            opts.proof,
-        ));
+        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let res: Result<AnyConsensusState, Error> = chain
+            .query(
+                ClientConsensusState {
+                    client_id: opts.client_id,
+                    epoch: opts.version_number,
+                    height: opts.version_height,
+                },
+                opts.height.try_into().unwrap(),
+                opts.proof,
+            )
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| {
+                AnyConsensusState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+            });
+
         match res {
-            Ok(cs) => status_info!(
-                "client consensus state query result: ",
-                "{:?}",
-                cs.consensus_state
-            ),
+            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
             Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
         }
-
-         */
     }
 }
 
@@ -197,7 +198,9 @@ fn validate_common_options(
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id.ok_or_else(|| "missing chain parameter".to_string())?;
+    let chain_id = chain_id
+        .clone()
+        .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .chains
         .iter()
@@ -222,18 +225,14 @@ pub struct QueryClientConnectionsCmd {
     #[options(free, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(help = "height of the state to query", short = "h")]
+    #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
-
-    #[options(help = "whether proof is required", short = "p")]
-    proof: Option<bool>,
 }
 
 #[derive(Debug)]
 struct QueryClientConnectionsOptions {
     client_id: ClientId,
     height: u64,
-    proof: bool,
 }
 
 impl QueryClientConnectionsCmd {
@@ -243,6 +242,7 @@ impl QueryClientConnectionsCmd {
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
         let chain_id = self
             .chain_id
+            .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .chains
@@ -259,14 +259,7 @@ impl QueryClientConnectionsCmd {
 
         let opts = QueryClientConnectionsOptions {
             client_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
         };
         Ok((chain_config.clone(), opts))
     }
@@ -289,11 +282,14 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let res = chain.query::<Vec<ConnectionId>>(
-            ClientConnections(opts.client_id),
-            opts.height,
-            opts.proof,
-        );
+        let res: Result<ConnectionIDs, Error> = chain
+            .query(
+                ClientConnections(opts.client_id),
+                opts.height.try_into().unwrap(),
+                false,
+            )
+            .map_err(|e| Kind::Query.context(e).into())
+            .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
             Err(e) => status_info!("client connections query error", "{}", e),
@@ -356,7 +352,7 @@ mod tests {
                 name: "Bad client id, non-alpha".to_string(),
                 params: QueryClientStateCmd {
                     client_id: Some("p34".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },
@@ -399,7 +395,6 @@ mod tests {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
-            proof: Some(false),
         };
 
         struct Test {
@@ -442,7 +437,7 @@ mod tests {
                 name: "Bad client id, non-alpha".to_string(),
                 params: QueryClientConnectionsCmd {
                     client_id: Some("p34".to_string()),
-                    ..default_params.clone()
+                    ..default_params
                 },
                 want_pass: false,
             },

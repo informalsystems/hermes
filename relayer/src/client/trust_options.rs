@@ -3,26 +3,27 @@ use std::time::Duration;
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
 
-use tendermint::lite::{Height, TrustThresholdFraction};
+use tendermint::block::Height;
 use tendermint::Hash;
+use tendermint_light_client::types::TrustThreshold;
 
 use crate::error;
 
 /// The trust options for a `Client`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrustOptions {
-    pub hash: Hash,
+    pub header_hash: Hash,
     pub height: Height,
     pub trusting_period: Duration,
-    pub trust_threshold: TrustThresholdFraction,
+    pub trust_threshold: TrustThreshold,
 }
 
 impl TrustOptions {
     pub fn new(
-        hash: Hash,
+        header_hash: Hash,
         height: Height,
         trusting_period: Duration,
-        trust_threshold: TrustThresholdFraction,
+        trust_threshold: TrustThreshold,
     ) -> Result<Self, error::Error> {
         if trusting_period <= Duration::new(0, 0) {
             fail!(
@@ -32,7 +33,7 @@ impl TrustOptions {
         }
 
         Ok(Self {
-            hash,
+            header_hash,
             height,
             trusting_period,
             trust_threshold,

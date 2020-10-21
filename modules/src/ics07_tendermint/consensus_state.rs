@@ -1,49 +1,92 @@
-use crate::ics02_client::client_type::ClientType;
-use crate::ics23_commitment::CommitmentRoot;
-
+use chrono::{TimeZone, Utc};
 use serde_derive::{Deserialize, Serialize};
+use std::convert::TryFrom;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+
+use tendermint::block::signed_header::SignedHeader;
+use tendermint::hash::Algorithm;
+use tendermint::time::Time;
+use tendermint::Hash;
+use tendermint_proto::DomainType;
+
+use crate::ics02_client::client_type::ClientType;
+use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentRoot;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
-    root: CommitmentRoot,
-    height: crate::Height,
-    timestamp: tendermint::time::Time,
-    validator_set: tendermint::validator::Set,
+    pub timestamp: Time,
+    pub root: CommitmentRoot,
+    pub next_validators_hash: Hash,
 }
 
 impl ConsensusState {
-    pub fn new(
-        root: CommitmentRoot,
-        height: crate::Height,
-        timestamp: tendermint::time::Time,
-        validator_set: tendermint::validator::Set,
-    ) -> Self {
+    pub fn new(root: CommitmentRoot, timestamp: Time, next_validators_hash: Hash) -> Self {
         Self {
             root,
-            height,
             timestamp,
-            validator_set,
+            next_validators_hash,
         }
     }
 }
 
 impl crate::ics02_client::state::ConsensusState for ConsensusState {
-    type ValidationError = crate::ics07_tendermint::error::Error;
-
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
-    }
-
-    fn height(&self) -> crate::Height {
-        self.height
     }
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
+    }
+}
+
+impl DomainType<RawConsensusState> for ConsensusState {}
+
+impl TryFrom<RawConsensusState> for ConsensusState {
+    type Error = Error;
+
+    fn try_from(raw: RawConsensusState) -> Result<Self, Self::Error> {
+        let proto_timestamp = raw
+            .timestamp
+            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing timestamp"))?;
+
+        Ok(Self {
+            root: raw
+                .root
+                .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing commitment root"))?
+                .hash
+                .into(),
+            timestamp: Utc
+                .timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32)
+                .into(),
+            next_validators_hash: Hash::from_bytes(Algorithm::Sha256, &raw.next_validators_hash)
+                .map_err(|e| Kind::InvalidRawConsensusState.context(e.to_string()))?,
+        })
+    }
+}
+
+impl From<ConsensusState> for RawConsensusState {
+    fn from(value: ConsensusState) -> Self {
+        RawConsensusState {
+            timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot { hash: value.root.0 }),
+            next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
+        }
+    }
+}
+
+impl From<SignedHeader> for ConsensusState {
+    fn from(header: SignedHeader) -> Self {
+        Self {
+            root: CommitmentRoot::from_bytes(header.header.app_hash.as_ref()),
+            timestamp: header.header.time,
+            next_validators_hash: header.header.next_validators_hash,
+        }
     }
 }
 

@@ -21,17 +21,40 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals, FiniteSets, Sequences
+EXTENDS Naturals, FiniteSets, Sequences, ICS3Utils
 
 
-CONSTANT MaxHeight,     \* Maximum height of any chain in the system.
-         MaxBufLen,     \* Length (size) of message buffers.
-         Concurrency    \* Flag for enabling concurrent relayers.
+CONSTANT MaxHeight,      \* Maximum height of any chain in the system.
+         MaxBufLen,      \* Length (size) of message buffers.
+         Concurrency,    \* Flag for enabling concurrent relayers.
+         MaxVersionNr,   \* Maximum version number.
+         VersionPickMode \* The mode for picking versions.
 
 
 ASSUME MaxHeight > 4
 ASSUME MaxBufLen >= 1
+ASSUME VersionPickMode \in {"overwrite", "onTryDet", "onTryNonDet", "onAckDet", "onAckNonDet"}
 
+(*
+VersionPickMode: 
+    * "overwrite" -- the version is picked deterministically when handling 
+                 ICS3MsgTry from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgAck, which overwrites its
+                 own version with the one from the message
+    * "onTryDet" -- the version is picked deterministically when handling 
+                 ICS3MsgTry from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgAck, which accepts it
+    * "onTryNonDet" -- same as "onTryDet", except the version is picked 
+                 non-deterministically
+    * "onAckDet" -- the version is picked deterministically when handling  
+                 ICS3MsgAck from the intersection of versions sent in the 
+                 message and locally supported versions. The picked version 
+                 is sent to the counterparty chain in ICS3MsgConfirm, which accepts it
+    * "onAckNonDet" -- same as "onAckDet", except the version is picked 
+                 non-deterministically              
+*)
 
 VARIABLES
     inBufChainA,    \* A buffer (sequence) for messages inbound to chain A.
@@ -48,6 +71,15 @@ VARIABLES
     modeling a single connection in this specification.
  
  ***************************************************************************)
+
+AllChainIDs ==
+    { "chainA", "chainB" }
+    
+AllVersionSeqs ==
+    {<<>>} \union
+    {<<a>> : a \in 1..MaxVersionNr} \union
+    {<<a, b>> \in (1..MaxVersionNr) \X (1..MaxVersionNr) : a /= b}   
+    
 ChainAConnectionEnds == 
     [
         connectionID : { "connAtoB" },
@@ -60,16 +92,13 @@ ChainBConnectionEnds ==
     ]
 
 AllConnectionEnds ==
-    ChainAConnectionEnds \union ChainBConnectionEnds
-
+    ChainAConnectionEnds \union ChainBConnectionEnds    
+    
 AllClientIDs == 
     { x.clientID : x \in AllConnectionEnds }
 
 AllConnectionIDs ==
-    { x.connectionID : x \in AllConnectionEnds }
-
-AllChainIDs ==
-    { "chainA", "chainB" }
+    { x.connectionID : x \in AllConnectionEnds }    
 
 ChainAClientIDs ==
     { x.clientID : x \in ChainAConnectionEnds }
@@ -82,7 +111,6 @@ ChainAConnectionIDs ==
 
 ChainBConnectionIDs ==
     { x.connectionID : x \in ChainBConnectionEnds }
-
 
 (* Bundle with variables that chain A has access to. *)
 chainAVars == <<inBufChainA,    (* Input message buffer. *)
@@ -111,7 +139,8 @@ chmA == INSTANCE ICS3Module
              outBuf         <- outBufChainA,
              store          <- storeChainA,
              ConnectionIDs  <- ChainAConnectionIDs,
-             ClientIDs      <- ChainAClientIDs
+             ClientIDs      <- ChainAClientIDs,
+             ChainID        <- "chainA"
 
 
 chmB == INSTANCE ICS3Module
@@ -120,7 +149,8 @@ chmB == INSTANCE ICS3Module
              outBuf         <- outBufChainB,
              store          <- storeChainB,
              ConnectionIDs  <- ChainBConnectionIDs,
-             ClientIDs      <- ChainBClientIDs
+             ClientIDs      <- ChainBClientIDs,
+             ChainID        <- "chainB"
 
 
 (***************************************************************************
@@ -134,17 +164,17 @@ chmB == INSTANCE ICS3Module
     msg to either of the two chains (or both).
 
  *)
-InitEnv ==
+InitEnv ==            
     /\ \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to chain A. *)
                         msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
           /\ inBufChainB = <<>>
        \/ /\ inBufChainB \in {<<msg>> : (* ICS3MsgInit to chain B. *)
-                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
           /\ inBufChainA = <<>>
-       \/ Concurrency /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
-                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)}
-                      /\ inBufChainB \in {<<msg>> :
-                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)}
+       \/ /\ inBufChainA \in {<<msg>> : (* ICS3MsgInit to both chains. *)
+                        msg \in InitMsgs(ChainAConnectionEnds, ChainBConnectionEnds)} 
+          /\ inBufChainB \in {<<msg>> :
+                        msg \in InitMsgs(ChainBConnectionEnds, ChainAConnectionEnds)} 
     /\ outBufChainA = <<>>  (* Output buffers should be empty initially. *)
     /\ outBufChainB = <<>>
 
@@ -175,11 +205,11 @@ RelayMessage(from, to) ==
 
  *)
 DefaultNextEnv ==
-    \/ \/ /\ MaxHeight - storeChainA.latestHeight > 4
-          /\ chmA!AdvanceChainHeight
+    \/ /\ MaxHeight - storeChainA.latestHeight > 4
+       /\ chmA!AdvanceChainHeight
        /\ UNCHANGED<<storeChainB, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
-    \/ \/ /\ MaxHeight - storeChainB.latestHeight > 4
-          /\ chmB!AdvanceChainHeight
+    \/ /\ MaxHeight - storeChainB.latestHeight > 4
+       /\ chmB!AdvanceChainHeight
        /\ UNCHANGED<<storeChainA, outBufChainA, outBufChainB, inBufChainA, inBufChainB>>
 
 
@@ -252,6 +282,7 @@ NextEnv ==
     \/ Concurrency /\ ConcurrentUpdateClient
     \/ DefaultNextEnv
     \/ RelayNextEnv
+    \/ UNCHANGED allVars
 
 
 (* Enables when the connection is open on both chains.
@@ -285,12 +316,13 @@ ICS3ImpossibleToAdvance ==
  *****************************************************************************)
 
 
-(* Initializes both chains, attributing to each a chainID and a client. *)
+(* Initializes both chains, attributing to each a chainID and a client.
+    The ChainVersionsOverlap predicate is a necessary assumption for termination. 
+ *)
 Init ==
-    /\ \E clientA \in InitClients(ChainAClientIDs) :
-            chmA!Init("chainA", clientA)
-    /\ \E clientB \in InitClients(ChainBClientIDs) :
-            chmB!Init("chainB", clientB)
+    /\ chmA!Init 
+    /\ chmB!Init
+    /\ ChainVersionsOverlap(storeChainA, storeChainB)
     /\ InitEnv
 
 
@@ -308,8 +340,8 @@ Next ==
 
 
 FairProgress ==
-    /\ WF_chainAVars(chmA!Next)
-    /\ WF_chainBVars(chmB!Next)
+    /\ chmA!Fairness
+    /\ chmB!Fairness
     /\ WF_<<chainAVars, chainBVars>>(RelayNextEnv)
 
 
@@ -327,7 +359,7 @@ TypeInvariant ==
 (* Liveness property.
 
     We expect to eventually always reach an OPEN connection on both chains.
-    
+
     Naturally, this property may not hold if the two chains do not have
     sufficient number of heights they can advance to. In other words, the
     `MaxHeight` constant should be at least `4` for this property to hold.
@@ -335,8 +367,10 @@ TypeInvariant ==
     The `Concurrency` constant may also affect liveness.
 *)
 Termination ==
-       <> [](/\ storeChainA.connection.state = "OPEN"
-             /\ storeChainB.connection.state = "OPEN")
+       <> [](/\ \/ storeChainA.connection.state = "OPEN"
+                \/ storeChainA.latestHeight = MaxHeight
+             /\ \/ storeChainB.connection.state = "OPEN"
+                \/ storeChainB.latestHeight = MaxHeight)
 
 (* Safety property.
 
@@ -353,10 +387,20 @@ ConsistencyProperty ==
 Consistency ==
     [] ConsistencyProperty
 
+(* Complementary to the safety property above.
+
+    If the connections in the two chains are both OPEN, then the
+        connection version must be identical.
+ *)
+VersionInvariant ==
+    /\ storeChainA.connection.state = "OPEN"
+    /\ storeChainB.connection.state = "OPEN"   
+    => /\ Len(storeChainA.connection.version) = 1
+       /\ Len(storeChainB.connection.version) = 1
+       /\ storeChainA.connection.version = storeChainB.connection.version
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jun 25 16:11:03 CEST 2020 by adi
+\* Last modified Fri Aug 28 09:11:35 CEST 2020 by adi
+\* Last modified Tue Aug 25 17:48:37 CEST 2020 by ilinastoilkovska
 \* Created Fri Apr 24 18:51:07 CEST 2020 by adi
-
-

@@ -16,6 +16,14 @@ pub enum Kind {
     /// Input/output error
     #[error("I/O error")]
     Io,
+
+    /// Error during network query
+    #[error("query error")]
+    Query,
+
+    /// Error during transaction submission
+    #[error("tx error")]
+    Tx,
 }
 
 impl Kind {

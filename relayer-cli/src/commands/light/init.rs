@@ -1,22 +1,20 @@
-use std::future::Future;
+use std::{future::Future, ops::Deref};
 
-// use crate::application::APPLICATION;
+use crate::light::config::{LightConfig, LIGHT_CONFIG_PATH};
 use crate::prelude::*;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
+use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
-use tendermint::lite::Height;
+use tendermint_light_client::types::TrustThreshold;
 
-use relayer::chain::CosmosSDKChain;
 use relayer::client::trust_options::TrustOptions;
-use relayer::config::{ChainConfig, Config};
-use relayer::store::{sled::SledStore, Store};
 
 #[derive(Command, Debug, Options)]
 pub struct InitCmd {
-    #[options(free, help = "identifier of the chain to initialize light client for")]
+    #[options(free, help = "identifier of the chain")]
     chain_id: Option<ChainId>,
 
     #[options(help = "trusted header hash", short = "x")]
@@ -28,7 +26,7 @@ pub struct InitCmd {
 
 #[derive(Clone, Debug)]
 struct InitOptions {
-    /// identifier of chain to initialize light client for
+    /// identifier of the chain
     chain_id: ChainId,
 
     /// trusted header hash
@@ -38,73 +36,61 @@ struct InitOptions {
     trusted_height: Height,
 }
 
-impl InitCmd {
-    fn get_chain_config_and_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, InitOptions), String> {
-        match (&self.chain_id, &self.hash, self.height) {
-            (Some(chain_id), Some(trusted_hash), Some(trusted_height)) => {
-                let chain_config = config.chains.iter().find(|c| c.id == *chain_id);
-
-                match chain_config {
-                    Some(chain_config) => {
-                        let opts = InitOptions {
-                            chain_id: *chain_id,
-                            trusted_hash: *trusted_hash,
-                            trusted_height,
-                        };
-
-                        Ok((chain_config.clone(), opts))
-                    }
-                    None => Err(format!("cannot find chain {} in config", chain_id)),
-                }
-            }
-
-            (None, _, _) => Err("missing chain identifier".to_string()),
-            (_, None, _) => Err("missing trusted hash".to_string()),
-            (_, _, None) => Err("missing trusted height".to_string()),
+impl InitOptions {
+    fn from_init_cmd(cmd: &InitCmd) -> Result<InitOptions, &'static str> {
+        match (cmd.chain_id.clone(), cmd.hash, cmd.height) {
+            (Some(chain_id), Some(hash), Some(height)) => Ok(Self {
+                chain_id,
+                trusted_hash: hash,
+                trusted_height: height,
+            }),
+            (None, _, _) => Err("missing chain identifier"),
+            (_, None, _) => Err("missing trusted hash"),
+            (_, _, None) => Err("missing trusted height"),
         }
+    }
+}
+
+impl InitCmd {
+    fn cmd(&self) -> Result<(), BoxError> {
+        let config = app_config();
+
+        let options =
+            InitOptions::from_init_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
+
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == options.chain_id)
+            .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
+
+        let trust_options = TrustOptions::new(
+            options.trusted_hash,
+            options.trusted_height,
+            chain_config.trusting_period,
+            TrustThreshold::default(),
+        )?;
+
+        let mut config = LightConfig::load(LIGHT_CONFIG_PATH)?;
+        config.chains.insert(chain_config.id.clone(), trust_options);
+        config.save(LIGHT_CONFIG_PATH)?;
+
+        status_ok!(
+            chain_config.id.clone(),
+            "Set trusted options: hash={} height={}",
+            options.trusted_hash,
+            options.trusted_height
+        );
+
+        Ok(())
     }
 }
 
 impl Runnable for InitCmd {
     /// Initialize the light client for the given chain
     fn run(&self) {
-        // FIXME: This just hangs and never runs the given future
-        // abscissa_tokio::run(&APPLICATION, ...).unwrap();
-
-        let config = app_config();
-
-        let (chain_config, opts) = match self.get_chain_config_and_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-            Ok(result) => result,
-        };
-
-        block_on(async {
-            let trust_options = TrustOptions::new(
-                opts.trusted_hash,
-                opts.trusted_height,
-                chain_config.trusting_period,
-                Default::default(),
-            )
-            .unwrap();
-
-            let mut store: SledStore<CosmosSDKChain> =
-                relayer::store::persistent(format!("store_{}.db", chain_config.id)).unwrap(); // FIXME: unwrap
-
-            store.set_trust_options(trust_options).unwrap(); // FIXME: unwrap
-
-            status_ok!(
-                chain_config.id,
-                "Set trusted options: hash={} height={}",
-                opts.trusted_hash,
-                opts.trusted_height
-            );
-        });
+        self.cmd()
+            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
     }
 }
 
