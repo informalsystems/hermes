@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased Changes
+
+### FEATURES
+
+- Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274]).
+
+[#274]: https://github.com/informalsystems/ibc-rs/issues/274
+
 ## v0.0.4
 *October 19, 2020*
 
