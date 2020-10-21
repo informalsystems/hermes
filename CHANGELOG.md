@@ -1,53 +1,69 @@
 # Changelog
 
 ## v0.0.4
-*September 30, 2020*
+*October 19, 2020*
 
-This release focuses on the refinement of the IBC message processor framework, protobuf migration,
-adding (de)serialization capability to ICS02 and ICS03 messages and structures.
+This release focuses on alignment with the Cosmos ecosystem: adaptations to Tendermint-rs 0.16 and subsequently to 0.17 (`0.17.0-rc1`), and numerous protobuf updates following latest stargate releases.
 
 Additional highlights:
+- Adding DomainTypes and (de)serialization capability to ICS02 and ICS03 messages and structures.
+- Improvements of the IBC message processor framework (handlers, contexts and mocks).
 - Added initial implementations for the ICS26 (routing module) and ICS18 (basic relayer algorithms module) for use in testing.
 - Also added support for packet handling in the relayer algorithm specifications.
 
 ### BREAKING CHANGES:
+- [relayer] & [modules] Alignment with ecosystem updates:
+    - Compatibility with the latest protobuf (Gaia stargate-3 and stargate-4) ([#191], [#272], [#273], [#278]) 
+    - Adaptations to tendermint 0.17 ([#286], [#293], [#300], [#302], [#308])
+- [relayer] UX improvement: Remove proof option from client connections command ([#205])
 
 ### FEATURES:
 - [modules/ics03] ICS03 Ack and Confirm message processors ([#223])
-- [relayer-cli] Relayer CLIs for client messages ([#207])
-- [relayer-cli] Relayer CLIs for connection-open-init ([#206])
+- [relayer-cli]
+    - Relayer CLIs for client messages ([#207])
+    - Relayer CLIs for connection-open-init ([#206])
+    - Queries for consensus state and client state ([#149], [#150])
 - [modules] Routing module minimal implementation for MVP ([#159], [#232])
 - [spec/relayer] Relayer specification for packet handling ([#229], [#234], [#237])
 - [spec/relayer] Basic packet handling in TLA+([#124])
 - [modules] Basic relayer functionality: a test with ClientUpdate ping-pong between two mocked chains ([#276])
 
 ### IMPROVEMENTS:
-- [modules] Implemented the `DomainType` trait for IBC proto structures ([#249]).
+- [modules] Implemented the `DomainType` trait for IBC proto structures ([#245], [#249]).
 - [modules] & [ibc-proto] Several improvements to message processors, among which ([#218]):
     - ICS03 connection handshake protocol initial implementation and tests ([#160])
     - Add capability to decode from protobuf Any* type into Tendermint and Mock client states 
     - Cleanup Any* client wrappers related code
     - Migrate handlers to newer protobuf definitions ([#226])
     - Extend client context mock ([#221])
+    - Context mock simplifications and cleanup ([#269], [#295], [#296], [#297])
 - [modules/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
-- [ibc-proto] Move ibc-proto source code into ibc-rs ([#142])
+- [ibc-proto]
+    - Move ibc-proto source code into ibc-rs ([#142]) and fixed code deduplication ([#282], [#284])
+    - Consolidate proto-compiler logic [#241]
 - [spec/relayer] Add support for APALACHE to the Relayer TLA+ spec ([#165])
 - [relayer] Update to tendermint v.0.16 and integrate with the new light client implementation ([#90], [#243])
 
 ### BUG FIXES:
+- [modules] Removed "Uninitialized" state from connection ([#217])
 - [relayer-cli] Fix for client query subcommands ([#231])
 - [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#209], [#213])
 
 [#90]: https://github.com/informalsystems/ibc-rs/issues/90
 [#124]: https://github.com/informalsystems/ibc-rs/issues/124
 [#142]: https://github.com/informalsystems/ibc-rs/issues/142
+[#149]: https://github.com/informalsystems/ibc-rs/issues/149
+[#150]: https://github.com/informalsystems/ibc-rs/issues/150
 [#159]: https://github.com/informalsystems/ibc-rs/issues/159
 [#160]: https://github.com/informalsystems/ibc-rs/issues/160
 [#165]: https://github.com/informalsystems/ibc-rs/issues/165
+[#191]: https://github.com/informalsystems/ibc-rs/issues/191
+[#205]: https://github.com/informalsystems/ibc-rs/issues/205
 [#206]: https://github.com/informalsystems/ibc-rs/issues/206
 [#207]: https://github.com/informalsystems/ibc-rs/issues/207
 [#209]: https://github.com/informalsystems/ibc-rs/issues/209
 [#213]: https://github.com/informalsystems/ibc-rs/issues/213
+[#217]: https://github.com/informalsystems/ibc-rs/issues/217
 [#218]: https://github.com/informalsystems/ibc-rs/issues/218
 [#221]: https://github.com/informalsystems/ibc-rs/issues/221
 [#223]: https://github.com/informalsystems/ibc-rs/issues/223
@@ -57,10 +73,26 @@ Additional highlights:
 [#232]: https://github.com/informalsystems/ibc-rs/issues/232
 [#234]: https://github.com/informalsystems/ibc-rs/issues/234
 [#237]: https://github.com/informalsystems/ibc-rs/issues/237
+[#241]: https://github.com/informalsystems/ibc-rs/issues/241
 [#243]: https://github.com/informalsystems/ibc-rs/issues/243
+[#245]: https://github.com/informalsystems/ibc-rs/issues/245
 [#249]: https://github.com/informalsystems/ibc-rs/issues/249
 [#253]: https://github.com/informalsystems/ibc-rs/issues/253
+[#269]: https://github.com/informalsystems/ibc-rs/issues/269
+[#272]: https://github.com/informalsystems/ibc-rs/issues/272
+[#273]: https://github.com/informalsystems/ibc-rs/issues/273
 [#276]: https://github.com/informalsystems/ibc-rs/issues/276
+[#278]: https://github.com/informalsystems/ibc-rs/issues/278
+[#282]: https://github.com/informalsystems/ibc-rs/issues/282
+[#284]: https://github.com/informalsystems/ibc-rs/issues/284
+[#286]: https://github.com/informalsystems/ibc-rs/issues/286
+[#293]: https://github.com/informalsystems/ibc-rs/issues/293
+[#295]: https://github.com/informalsystems/ibc-rs/issues/295
+[#296]: https://github.com/informalsystems/ibc-rs/issues/296
+[#297]: https://github.com/informalsystems/ibc-rs/issues/297
+[#300]: https://github.com/informalsystems/ibc-rs/issues/300
+[#302]: https://github.com/informalsystems/ibc-rs/issues/302
+[#308]: https://github.com/informalsystems/ibc-rs/issues/308
 [ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
 [disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
 [spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake

@@ -11,7 +11,7 @@ pub struct MsgTransfer {
     pub source_channel: std::string::String,
     /// the tokens to be transferred
     #[prost(message, optional, tag="3")]
-    pub token: ::std::option::Option<super::super::cosmos::base::v1beta1::Coin>,
+    pub token: ::std::option::Option<super::super::super::super::cosmos::base::v1beta1::Coin>,
     /// the sender address
     #[prost(string, tag="4")]
     pub sender: std::string::String,
@@ -21,7 +21,7 @@ pub struct MsgTransfer {
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to 0.
     #[prost(message, optional, tag="6")]
-    pub timeout_height: ::std::option::Option<super::client::Height>,
+    pub timeout_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
     /// Timeout timestamp (in nanoseconds) relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     #[prost(uint64, tag="7")]
@@ -94,7 +94,7 @@ pub struct QueryDenomTraceResponse {
 pub struct QueryDenomTracesRequest {
     /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag="1")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageRequest>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
 }
 /// QueryConnectionsResponse is the response type for the Query/DenomTraces RPC
 /// method.
@@ -105,7 +105,7 @@ pub struct QueryDenomTracesResponse {
     pub denom_traces: ::std::vec::Vec<DenomTrace>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag="2")]
-    pub pagination: ::std::option::Option<super::super::cosmos::base::query::v1beta1::PageResponse>,
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
 }
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]

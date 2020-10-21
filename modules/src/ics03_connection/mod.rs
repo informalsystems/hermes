@@ -8,6 +8,3 @@ pub mod events;
 /// Message processing logic (protocol) for ICS 03.
 pub mod handler;
 pub mod msgs;
-
-#[cfg(test)]
-pub mod context_mock;

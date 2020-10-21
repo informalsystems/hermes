@@ -49,14 +49,8 @@ impl QueryClientStateCmd {
 
         let opts = QueryClientStateOptions {
             client_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
+            proof: self.proof.unwrap_or(true),
         };
         Ok((chain_config, opts))
     }
@@ -125,8 +119,8 @@ pub struct QueryClientConsensusCmd {
 #[derive(Debug)]
 struct QueryClientConsensusOptions {
     client_id: ClientId,
-    consensus_epoch: u64,
-    consensus_height: u64,
+    version_number: u64,
+    version_height: u64,
     height: u64,
     proof: bool,
 }
@@ -140,19 +134,13 @@ impl QueryClientConsensusCmd {
             validate_common_options(&self.chain_id, &self.client_id, config)?;
 
         match (self.consensus_epoch, self.consensus_height) {
-            (Some(consensus_epoch), Some(consensus_height)) => {
+            (Some(version_number), Some(version_height)) => {
                 let opts = QueryClientConsensusOptions {
                     client_id,
-                    consensus_epoch,
-                    consensus_height,
-                    height: match self.height {
-                        Some(h) => h,
-                        None => 0 as u64,
-                    },
-                    proof: match self.proof {
-                        Some(proof) => proof,
-                        None => true,
-                    },
+                    version_number,
+                    version_height,
+                    height: self.height.unwrap_or(0_u64),
+                    proof: self.proof.unwrap_or(true),
                 };
                 Ok((chain_config, opts))
             }
@@ -187,8 +175,8 @@ impl Runnable for QueryClientConsensusCmd {
             .query(
                 ClientConsensusState {
                     client_id: opts.client_id,
-                    epoch: opts.consensus_epoch,
-                    height: opts.consensus_height,
+                    epoch: opts.version_number,
+                    height: opts.version_height,
                 },
                 opts.height.try_into().unwrap(),
                 opts.proof,
@@ -239,16 +227,12 @@ pub struct QueryClientConnectionsCmd {
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
-
-    #[options(help = "whether proof is required", short = "p")]
-    proof: Option<bool>,
 }
 
 #[derive(Debug)]
 struct QueryClientConnectionsOptions {
     client_id: ClientId,
     height: u64,
-    proof: bool,
 }
 
 impl QueryClientConnectionsCmd {
@@ -275,14 +259,7 @@ impl QueryClientConnectionsCmd {
 
         let opts = QueryClientConnectionsOptions {
             client_id,
-            height: match self.height {
-                Some(h) => h,
-                None => 0 as u64,
-            },
-            proof: match self.proof {
-                Some(proof) => proof,
-                None => true,
-            },
+            height: self.height.unwrap_or(0_u64),
         };
         Ok((chain_config.clone(), opts))
     }
@@ -309,7 +286,7 @@ impl Runnable for QueryClientConnectionsCmd {
             .query(
                 ClientConnections(opts.client_id),
                 opts.height.try_into().unwrap(),
-                opts.proof,
+                false,
             )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
@@ -418,7 +395,6 @@ mod tests {
             chain_id: Some("ibc0".to_string().parse().unwrap()),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
-            proof: Some(false),
         };
 
         struct Test {

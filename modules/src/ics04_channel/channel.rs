@@ -1,7 +1,7 @@
 use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
-use ibc_proto::ibc::channel::Channel as RawChannel;
+use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
 use anomaly::fail;
 use serde_derive::{Deserialize, Serialize};
@@ -67,7 +67,7 @@ impl From<ChannelEnd> for RawChannel {
         RawChannel {
             state: value.state.clone() as i32,
             ordering: value.ordering.clone() as i32,
-            counterparty: Some(ibc_proto::ibc::channel::Counterparty {
+            counterparty: Some(ibc_proto::ibc::core::channel::v1::Counterparty {
                 port_id: value.counterparty().port_id.to_string(),
                 channel_id: value.counterparty().channel_id.to_string(),
             }),
@@ -248,8 +248,8 @@ mod tests {
 
     use crate::ics04_channel::channel::ChannelEnd;
 
-    use ibc_proto::ibc::channel::Channel as RawChannel;
-    use ibc_proto::ibc::channel::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+    use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
     use std::convert::TryFrom;
 
     #[test]
