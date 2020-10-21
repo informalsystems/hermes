@@ -119,7 +119,7 @@ mod tests {
         let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().unwrap(),
+            msg_ack.counterparty_connection_id().unwrap().clone(),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
@@ -149,7 +149,7 @@ mod tests {
         // Build a connection end that will exercise the successful path.
         let correct_counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().unwrap(),
+            msg_ack.counterparty_connection_id().unwrap().clone(),
             CommitmentPrefix::from(b"ibc".to_vec()),
         )
         .unwrap();

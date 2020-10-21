@@ -18,9 +18,7 @@ use crate::Height;
 /// Message type for the `MsgConnectionOpenAck` message.
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
-///
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
@@ -38,8 +36,8 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the connection identifier of this message.
-    pub fn counterparty_connection_id(&self) -> Option<ConnectionId> {
-        self.counterparty_connection_id.clone()
+    pub fn counterparty_connection_id(&self) -> Option<&ConnectionId> {
+        self.counterparty_connection_id.as_ref()
     }
 
     /// Getter for accessing the client state.
