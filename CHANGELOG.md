@@ -4,7 +4,7 @@
 
 ### FEATURES
 
-- Added `CHANGELOG_PENDING.MD` to help streamline releases ([#274]).
+- Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274]).
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 
