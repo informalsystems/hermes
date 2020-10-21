@@ -1,7 +1,5 @@
 //! `version` subcommand
 
-#![allow(clippy::never_loop)]
-
 use super::CliCmd;
 use abscissa_core::{Command, Options, Runnable};
 
