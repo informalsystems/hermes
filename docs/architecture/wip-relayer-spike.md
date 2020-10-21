@@ -1,4 +1,4 @@
-Relyaer Spike
+Relayer Spike
 =============
 
 The goal is to outline the relayer logic as an object graph that can

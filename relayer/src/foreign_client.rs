@@ -1,7 +1,15 @@
-use crate::types::{Height, Hash, ChainId, ClientId, SignedHeader, MembershipProof, ConsensusState};
-use crate::msgs::Datagram;
-use crate::chain::Chain;
+use tendermint::{block::signed_header::SignedHeader, Hash};
 use thiserror::Error;
+
+use ibc::{
+    ics07_tendermint::consensus_state::ConsensusState,
+    ics23_commitment::commitment::CommitmentProof,
+    ics24_host::identifier::{ChainId, ClientId},
+    Height,
+};
+
+use crate::chain::handle::ChainHandle;
+use crate::msgs::Datagram;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -21,10 +29,10 @@ pub struct ForeignClientConfig {
 }
 
 impl ForeignClientConfig {
-    pub fn default() -> ForeignClientConfig {
-        return ForeignClientConfig {
-            client_id: "".to_string(),
-            chain_id: 0,
+    pub fn new(client_id: ClientId, chain_id: ChainId) -> ForeignClientConfig {
+        Self {
+            client_id,
+            chain_id,
         }
     }
 }
@@ -35,21 +43,21 @@ pub struct ForeignClient {
 
 impl ForeignClient {
     pub fn new(
-        src_chain: &dyn Chain,
-        dst_chain: &dyn Chain,
-        config: ForeignClientConfig) -> Result<ForeignClient, ForeignClientError> {
+        src_chain: &dyn ChainHandle,
+        dst_chain: &dyn ChainHandle,
+        config: ForeignClientConfig,
+    ) -> Result<ForeignClient, ForeignClientError> {
         // TODO: Client Handshake
-        return Ok(ForeignClient {
-            config,
-        })
+        Ok(ForeignClient { config })
     }
 
     // This is a completely different synchronous update strategy then bundeling a an update packet
     pub fn update(
         &mut self,
-        src_chain: &dyn Chain,
-        dst_chain: &dyn Chain,
-        src_target_height: Height) -> Result<Height, ForeignClientError> {
+        src_chain: &dyn ChainHandle,
+        dst_chain: &dyn ChainHandle,
+        src_target_height: Height,
+    ) -> Result<Height, ForeignClientError> {
         /*
         return Ok(src_target_height);
         let (src_consensus_state, dst_membership_proof) =
@@ -89,17 +97,19 @@ impl ForeignClient {
         }
         */
 
-        return Ok(src_target_height)
+        Ok(src_target_height)
     }
 }
 
-
-fn verify_consensus_state_inclusion(_consensus_state: &ConsensusState, _membership_proof: &MembershipProof, _hash: &Hash) -> bool {
-    return true
+fn verify_consensus_state_inclusion(
+    _consensus_state: &ConsensusState,
+    _membership_proof: &CommitmentProof,
+    _hash: &Hash,
+) -> bool {
+    true
 }
 
-// XXX: It's probably the link that can produe this
-fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram  {
-    return Datagram::NoOp()
+// XXX: It's probably the link that can produce this
+fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram {
+    Datagram::NoOp()
 }
-

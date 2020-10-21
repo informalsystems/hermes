@@ -1,10 +1,13 @@
-use crate::types::*;
-use crate::msgs::{Packet, IBCEvent, EncodedTransaction, Datagram};
-use crate::foreign_client::ForeignClient;
-use crossbeam_channel as channel;
 use std::time::Duration;
+
+use crossbeam_channel as channel;
+use tendermint::block::signed_header::SignedHeader;
 use thiserror::Error;
 
+use ibc::{ics24_host::identifier::ChainId, Height};
+
+use crate::foreign_client::ForeignClient;
+use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 
 pub type Datagrams = Vec<Datagram>;
 
@@ -18,13 +21,13 @@ pub type Datagrams = Vec<Datagram>;
 pub type Subscription = channel::Receiver<(Height, Vec<IBCEvent>)>;
 
 #[derive(Debug, Clone, Error)]
-pub enum ChainError {
-    #[error("Failed")]
-    Failed(),
+pub enum ChainHandleError {
+    #[error("failed")]
+    Failed,
 }
 
-pub trait Chain: Send {
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError>;
+pub trait ChainHandle: Send {
+    fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, ChainHandleError>;
 
     // Inclusion proofs
     // It might be good to include an inclusion proof method which abstracts over the light client
@@ -33,107 +36,120 @@ pub trait Chain: Send {
     // TODO: Error Handling, get rid of this?
     fn get_header(&self, height: Height) -> SignedHeader;
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError>;
+    fn get_minimal_set(
+        &self,
+        from: Height,
+        to: Height,
+    ) -> Result<Vec<SignedHeader>, ChainHandleError>;
 
-    fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError> {
-        return Ok(())
-    }
+    fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainHandleError>;
 
-    // Mocked: 
+    // Mocked:
     // - query the consensus_state of src on dst
     // - query the highest consensus_state
     // - verify if with the light client
     // - return the height
     // + TODO: Can eventually be populated be pre-populated by a event_monitor subscription to the
     // to the full node
-    fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError> {
-        return Ok(0);
-    }
+    fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainHandleError>;
 
     fn id(&self) -> ChainId;
 
-    fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError> {
-        return Ok(Packet {})
-    }
+    fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainHandleError>;
 }
 
 #[derive(Debug, Clone)]
-pub struct ProdChain {
+pub struct ProdChainHandle {
     pub chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     // TODO: account_prefix
 }
 
-impl ProdChain {
-    fn new(sender: channel::Sender<HandleInput>) -> Self {
-        return Self {
-            chain_id: 0,
-            sender,
-        }
+impl ProdChainHandle {
+    fn new(chain_id: ChainId, sender: channel::Sender<HandleInput>) -> Self {
+        Self { chain_id, sender }
     }
 }
 
-impl Chain for ProdChain {
+impl ChainHandle for ProdChainHandle {
     fn id(&self) -> ChainId {
-        return self.chain_id
+        self.chain_id.clone()
     }
 
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainHandleError> {
         let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
-        return Ok(receiver.recv().unwrap());
+        Ok(receiver.recv().unwrap())
     }
 
     fn get_header(&self, height: Height) -> SignedHeader {
-        return SignedHeader::default()
+        todo!()
     }
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<SignedHeader>, ChainError> {
-        return Ok(vec![SignedHeader::default()])
+    fn get_minimal_set(
+        &self,
+        from: Height,
+        to: Height,
+    ) -> Result<Vec<SignedHeader>, ChainHandleError> {
+        todo!()
+    }
+
+    fn submit(&self, _transaction: EncodedTransaction) -> Result<(), ChainHandleError> {
+        todo!()
+    }
+
+    fn get_height(&self, _client: &ForeignClient) -> Result<Height, ChainHandleError> {
+        todo!()
+    }
+
+    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, ChainHandleError> {
+        todo!()
     }
 }
 
-
-enum HandleInput {
+pub enum HandleInput {
     Terminate(channel::Sender<()>),
     Subscribe(channel::Sender<Subscription>),
 }
 
 pub struct ChainRuntime {
+    chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
 }
 
 impl ChainRuntime {
     // XXX: ChainConfig
-    pub fn new() -> ChainRuntime {
+    pub fn new(chain_id: ChainId) -> ChainRuntime {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
-        return Self {
+        Self {
+            chain_id,
             sender,
             receiver,
         }
     }
 
-    pub fn handle(&self) -> ProdChain {
+    pub fn handle(&self) -> ProdChainHandle {
         let sender = self.sender.clone();
-        return ProdChain::new(sender);
+        ProdChainHandle::new(self.chain_id.clone(), sender)
     }
 
-    pub fn run(self) -> Result<(), ChainError> {
+    pub fn run(self) -> Result<(), ChainHandleError> {
         // Mocked: EventMonitor
         // What we need here is a reliable stream of events produced by a connected full node.
         // Events received from this stream will be buffered (perhaps durably) and then routed to
-        // the various subscriptions. 
-        // let event_monitor = channel::tick(Duration::from_millis(1000));
+        // the various subscriptions.
+        let event_monitor = channel::tick(Duration::from_millis(1000));
+
         let mut subscriptions: Vec<channel::Sender<(Height, Vec<IBCEvent>)>> = vec![];
         loop {
             channel::select! {
                 recv(event_monitor) -> tick => {
                     println!("tick tick!");
                     for subscription in subscriptions.iter() {
-                        let target_height = 1;
-                        subscription.send((target_height, vec![IBCEvent::NoOp()])).unwrap();
+                        let target_height = Height::new(0, 1); // FIXME
+                        // subscription.send((target_height, vec![IBCEvent::NoOp()])).unwrap();
                     }
                 },
                 recv(self.receiver) -> maybe_event => {
@@ -147,7 +163,6 @@ impl ChainRuntime {
                         },
                         HandleInput::Terminate(sender) => {
                             sender.send(()).unwrap();
-                            return Ok(())
                         }
                     }
                 },
@@ -155,4 +170,3 @@ impl ChainRuntime {
         }
     }
 }
-
