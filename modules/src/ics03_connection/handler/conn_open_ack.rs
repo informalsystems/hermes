@@ -31,12 +31,8 @@ pub(crate) fn process(
 
             // Check that if the msg's counterparty connection id is not empty then it matches
             // the old connection's counterparty.
-            let counterparty_matches =
-                if let Some(counterparty_connection_id) = msg.counterparty_connection_id() {
-                    old_conn_end.counterparty().connection_id() == counterparty_connection_id
-                } else {
-                    true
-                };
+            let counterparty_matches = msg.counterparty_connection_id().is_none()
+                || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
 
             if state_is_consistent && counterparty_matches {
                 Ok(old_conn_end.clone())
@@ -62,7 +58,7 @@ pub(crate) fn process(
         Counterparty::new(
             // The counterparty is the local chain.
             new_conn_end.client_id().clone(), // The local client identifier.
-            msg.connection_id().clone(),      // Local connection id.
+            msg.counterparty_connection_id().cloned(), // This chain's connection id as known on counterparty.
             ctx.commitment_prefix(),          // Local commitment prefix.
         )?,
         vec![msg.version().clone()],
@@ -122,7 +118,7 @@ mod tests {
         let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().unwrap().clone(),
+            msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
@@ -152,7 +148,7 @@ mod tests {
         // Build a connection end that will exercise the successful path.
         let correct_counterparty = Counterparty::new(
             client_id.clone(),
-            msg_ack.counterparty_connection_id().unwrap().clone(),
+            msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(b"ibc".to_vec()),
         )
         .unwrap();

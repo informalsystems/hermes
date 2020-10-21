@@ -120,7 +120,7 @@ impl ConnectionEnd {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Counterparty {
     client_id: ClientId,
-    connection_id: ConnectionId,
+    connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
 }
 
@@ -130,15 +130,23 @@ impl TryFrom<RawCounterparty> for Counterparty {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
+        let connection_id = if value.connection_id.is_empty() {
+            None
+        } else {
+            Some(
+                value
+                    .connection_id
+                    .parse()
+                    .map_err(|e| Kind::IdentifierError.context(e))?,
+            )
+        };
+
         Ok(Counterparty::new(
             value
                 .client_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            value
-                .connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            connection_id,
             value
                 .prefix
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -152,7 +160,9 @@ impl From<Counterparty> for RawCounterparty {
     fn from(value: Counterparty) -> Self {
         RawCounterparty {
             client_id: value.client_id.as_str().to_string(),
-            connection_id: value.connection_id.as_str().to_string(),
+            connection_id: value
+                .connection_id
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
                 key_prefix: value.prefix.0,
             }),
@@ -163,7 +173,7 @@ impl From<Counterparty> for RawCounterparty {
 impl Counterparty {
     pub fn new(
         client_id: ClientId,
-        connection_id: ConnectionId,
+        connection_id: Option<ConnectionId>,
         prefix: CommitmentPrefix,
     ) -> Result<Self, Error> {
         Ok(Self {
@@ -179,8 +189,8 @@ impl Counterparty {
     }
 
     /// Getter for connection id.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
+    pub fn connection_id(&self) -> Option<&ConnectionId> {
+        self.connection_id.as_ref()
     }
 
     pub fn prefix(&self) -> &CommitmentPrefix {

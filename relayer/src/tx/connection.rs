@@ -33,7 +33,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<(), Error> {
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,
-        opts.dest_connection_id,
+        Some(opts.dest_connection_id),
         CommitmentPrefix::from(vec![]),
     );
 

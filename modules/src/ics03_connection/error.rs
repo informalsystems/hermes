@@ -53,6 +53,9 @@ pub enum Kind {
     #[error("invalid counterparty")]
     InvalidCounterparty,
 
+    #[error("counterparty chosen connection id {0} is different than the connection id {1}")]
+    ConnectionIdMismatch(ConnectionId, ConnectionId),
+
     #[error("missing counterparty")]
     MissingCounterparty,
 

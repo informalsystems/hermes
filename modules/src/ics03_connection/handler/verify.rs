@@ -92,13 +92,15 @@ pub fn verify_connection_proof(
     let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the connection state against the expected connection end.
+    // A counterparty connection id of None causes `unwrap()` below and indicates an internal
+    // error as this is the connection id on the counterparty chain that must always be present.
     Ok(client_def
         .verify_connection_state(
             &client_state,
             proof_height,
             connection_end.counterparty().prefix(),
             proof,
-            connection_end.counterparty().connection_id(),
+            &connection_end.counterparty().connection_id().unwrap(),
             expected_conn,
         )
         .map_err(|_| Kind::InvalidProof.context(id.to_string()))?)

@@ -49,6 +49,11 @@ impl MsgConnectionOpenTry {
         self.client_state.clone()
     }
 
+    /// Getter for accessing the counterparty connection identifier of this message.
+    pub fn counterparty_chosen_connection_id(&self) -> Option<ConnectionId> {
+        self.counterparty_chosen_connection_id.clone()
+    }
+
     /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
     pub fn counterparty(&self) -> Counterparty {
         self.counterparty.clone()

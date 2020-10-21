@@ -18,6 +18,15 @@ pub(crate) fn process(
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
     check_client_consensus_height(ctx, msg.consensus_height())?;
 
+    if let Some(chosen_id) = msg.counterparty_chosen_connection_id() {
+        if chosen_id != msg.connection_id().clone() {
+            return Err(Into::<Error>::into(Kind::ConnectionIdMismatch(
+                chosen_id,
+                msg.connection_id().clone(),
+            )));
+        }
+    }
+
     // Unwrap the old connection end (if any) and validate it against the message.
     let mut new_connection_end = match ctx.connection_end(msg.connection_id()) {
         Some(old_conn_end) => {
@@ -53,7 +62,7 @@ pub(crate) fn process(
         msg.counterparty().client_id().clone(),
         Counterparty::new(
             msg.client_id().clone(),
-            msg.connection_id().clone(),
+            msg.counterparty_chosen_connection_id(),
             ctx.commitment_prefix(),
         )?,
         msg.counterparty_versions(),
