@@ -114,12 +114,11 @@ See those changelogs for examples.
 We currently split changes for a given release between these four sections: Breaking
 Changes, Features, Improvements, Bug Fixes.
 
-Entries in the changelog should initially appear in
-[CHANGELOG_PENDING.md](CHANGELOG_PENDING.md), which
+Entries in the changelog should initially be logged in the __Unreleased__ section, which
 represents a "staging area" for accumulating all the changes throughout a
 release (see [Pull Requests](#pull-requests) below). With each release,
-the entries then move from the pending file into their permanent place in
-Changelog.
+the entries then move from this section into their permanent place under a
+specific release number in Changelog.
 
 Changelog entries should be formatted as follows:
 
@@ -160,7 +159,7 @@ PRs must:
 
 - make reference to an issue outlining the context.
 - update any relevant documentation and include tests.
-- update [CHANGELOG_PENDING.md](CHANGELOG_PENDING.md) with a description of the change in the relevant section.
+- update [CHANGELOG.md](CHANGELOG.md) with a description of the change in the __Unreleased__ section.
 
 Pull requests should aim to be small and self contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.
