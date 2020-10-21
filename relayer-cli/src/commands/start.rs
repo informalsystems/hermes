@@ -19,6 +19,15 @@ pub struct StartCmd {
     reset: bool,
 }
 
+impl StartCmd {
+    async fn cmd(&self) -> Result<(), BoxError> {
+        let config = app_config().clone();
+        let light_config = LightConfig::load(LIGHT_CONFIG_PATH)?;
+
+        start(config, light_config, self.reset).await
+    }
+}
+
 impl Runnable for StartCmd {
     fn run(&self) {
         abscissa_tokio::run(&APPLICATION, async move {
@@ -27,15 +36,6 @@ impl Runnable for StartCmd {
                 .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e));
         })
         .unwrap();
-    }
-}
-
-impl StartCmd {
-    async fn cmd(&self) -> Result<(), BoxError> {
-        let config = app_config().clone();
-        let light_config = LightConfig::load(LIGHT_CONFIG_PATH)?;
-
-        start(config, light_config, self.reset).await
     }
 }
 
