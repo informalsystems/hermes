@@ -31,9 +31,12 @@ pub(crate) fn process(
 
             // Check that if the msg's counterparty connection id is not empty then it matches
             // the old connection's counterparty.
-            let counterparty_matches = msg.counterparty_connection_id().is_none()
-                || old_conn_end.counterparty().connection_id().clone()
-                    == msg.counterparty_connection_id().unwrap();
+            let counterparty_matches =
+                if let Some(counterparty_connection_id) = msg.counterparty_connection_id() {
+                    old_conn_end.counterparty().connection_id() == counterparty_connection_id
+                } else {
+                    true
+                };
 
             if state_is_consistent && counterparty_matches {
                 Ok(old_conn_end.clone())
