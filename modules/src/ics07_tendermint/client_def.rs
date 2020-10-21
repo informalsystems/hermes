@@ -6,7 +6,7 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::ClientId;
 use crate::ics24_host::identifier::ConnectionId;
-use tendermint::block::Height;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TendermintClient;

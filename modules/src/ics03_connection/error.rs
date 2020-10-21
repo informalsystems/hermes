@@ -1,16 +1,15 @@
 // TODO: Update error types for Connection!!
+use anomaly::{BoxError, Context};
+use thiserror::Error;
+pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
-use anomaly::{BoxError, Context};
-use thiserror::Error;
-
-pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
     #[error("connection state unknown")]
-    UnknownState,
+    InvalidState(i32),
 
     #[error("connection exists (was initialized) already: {0}")]
     ConnectionExistsAlready(ConnectionId),
@@ -21,11 +20,11 @@ pub enum Kind {
     #[error("connection end for identifier {0} was never initialized")]
     UninitializedConnection(ConnectionId),
 
-    #[error("consensus height claimed by the client on the other party is too advanced: {0}")]
-    InvalidConsensusHeight(Height),
+    #[error("consensus height claimed by the client on the other party is too advanced: {0} (host chain current height: {1})")]
+    InvalidConsensusHeight(Height, Height),
 
-    #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0}")]
-    StaleConsensusHeight(Height),
+    #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0} (host chain current height: {1})")]
+    StaleConsensusHeight(Height, Height),
 
     #[error("identifier error")]
     IdentifierError,

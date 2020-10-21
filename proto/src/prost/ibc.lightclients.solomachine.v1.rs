@@ -63,15 +63,19 @@ pub struct Misbehaviour {
 pub struct SignatureAndData {
     #[prost(bytes, tag="1")]
     pub signature: std::vec::Vec<u8>,
-    #[prost(bytes, tag="2")]
+    #[prost(enumeration="DataType", tag="2")]
+    pub data_type: i32,
+    #[prost(bytes, tag="3")]
     pub data: std::vec::Vec<u8>,
+    #[prost(uint64, tag="4")]
+    pub timestamp: u64,
 }
-/// TimestampedSignature contains the signature and the timestamp of the
+/// TimestampedSignatureData contains the signature data and the timestamp of the
 /// signature.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TimestampedSignature {
+pub struct TimestampedSignatureData {
     #[prost(bytes, tag="1")]
-    pub signature: std::vec::Vec<u8>,
+    pub signature_data: std::vec::Vec<u8>,
     #[prost(uint64, tag="2")]
     pub timestamp: u64,
 }
@@ -84,11 +88,14 @@ pub struct SignBytes {
     pub timestamp: u64,
     #[prost(string, tag="3")]
     pub diversifier: std::string::String,
+    /// type of the data used
+    #[prost(enumeration="DataType", tag="4")]
+    pub data_type: i32,
     /// marshaled data
-    #[prost(bytes, tag="4")]
+    #[prost(bytes, tag="5")]
     pub data: std::vec::Vec<u8>,
 }
-/// HeaderData returns the SignBytes data for misbehaviour verification.
+/// HeaderData returns the SignBytes data for update verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HeaderData {
     /// header public key
@@ -106,7 +113,7 @@ pub struct ClientStateData {
     #[prost(message, optional, tag="2")]
     pub client_state: ::std::option::Option<::prost_types::Any>,
 }
-/// ConsensusStateSignBytes returns the SignBytes data for consensus state
+/// ConsensusStateData returns the SignBytes data for consensus state
 /// verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusStateData {
@@ -115,25 +122,25 @@ pub struct ConsensusStateData {
     #[prost(message, optional, tag="2")]
     pub consensus_state: ::std::option::Option<::prost_types::Any>,
 }
-/// ConnectionStateSignBytes returns the SignBytes data for connection state
+/// ConnectionStateData returns the SignBytes data for connection state
 /// verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionStateData {
     #[prost(bytes, tag="1")]
     pub path: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub connection: ::std::option::Option<super::super::super::connection::ConnectionEnd>,
+    pub connection: ::std::option::Option<super::super::super::core::connection::v1::ConnectionEnd>,
 }
-/// ChannelStateSignBytes returns the SignBytes data for channel state
+/// ChannelStateData returns the SignBytes data for channel state
 /// verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ChannelStateData {
     #[prost(bytes, tag="1")]
     pub path: std::vec::Vec<u8>,
     #[prost(message, optional, tag="2")]
-    pub channel: ::std::option::Option<super::super::super::channel::Channel>,
+    pub channel: ::std::option::Option<super::super::super::core::channel::v1::Channel>,
 }
-/// PacketCommitmentSignBytes returns the SignBytes data for packet commitment
+/// PacketCommitmentData returns the SignBytes data for packet commitment
 /// verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PacketCommitmentData {
@@ -142,7 +149,7 @@ pub struct PacketCommitmentData {
     #[prost(bytes, tag="2")]
     pub commitment: std::vec::Vec<u8>,
 }
-/// PacketAcknowledgementSignBytes returns the SignBytes data for acknowledgement
+/// PacketAcknowledgementData returns the SignBytes data for acknowledgement
 /// verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PacketAcknowledgementData {
@@ -151,14 +158,14 @@ pub struct PacketAcknowledgementData {
     #[prost(bytes, tag="2")]
     pub acknowledgement: std::vec::Vec<u8>,
 }
-/// PacketAcknowledgementAbsenceSignBytes returns the SignBytes data for
-/// acknowledgement absence verification.
+/// PacketReceiptAbsenceData returns the SignBytes data for
+/// packet receipt absence verification.
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PacketAcknowledgementAbsenseData {
+pub struct PacketReceiptAbsenceData {
     #[prost(bytes, tag="1")]
     pub path: std::vec::Vec<u8>,
 }
-/// NextSequenceRecv returns the SignBytes data for verification of the next
+/// NextSequenceRecvData returns the SignBytes data for verification of the next
 /// sequence to be received.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NextSequenceRecvData {
@@ -166,4 +173,30 @@ pub struct NextSequenceRecvData {
     pub path: std::vec::Vec<u8>,
     #[prost(uint64, tag="2")]
     pub next_seq_recv: u64,
+}
+/// DataType defines the type of solo machine proof being created. This is done to preserve uniqueness of different
+/// data sign byte encodings.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum DataType {
+    /// Default State
+    UninitializedUnspecified = 0,
+    /// Data type for client state verification
+    ClientState = 1,
+    /// Data type for consensus state verification
+    ConsensusState = 2,
+    /// Data type for connection state verification
+    ConnectionState = 3,
+    /// Data type for channel state verification
+    ChannelState = 4,
+    /// Data type for packet commitment verification
+    PacketCommitment = 5,
+    /// Data type for packet acknowledgement verification
+    PacketAcknowledgement = 6,
+    /// Data type for packet receipt absence verification
+    PacketReceiptAbsence = 7,
+    /// Data type for next sequence recv verification
+    NextSequenceRecv = 8,
+    /// Data type for header verification
+    Header = 9,
 }

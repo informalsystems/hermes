@@ -95,7 +95,7 @@ pub struct Result {
     /// Events contains a slice of Event objects that were emitted during message
     /// or handler execution.
     #[prost(message, repeated, tag="3")]
-    pub events: ::std::vec::Vec<super::super::super::super::tendermint::abci::Event>,
+    pub events: ::std::vec::Vec<::tendermint_proto::abci::Event>,
 }
 /// SimulationResponse defines the response generated when a transaction is
 /// successfully simulated.

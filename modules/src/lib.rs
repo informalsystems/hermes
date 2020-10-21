@@ -23,7 +23,6 @@
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
 
-pub mod context;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
@@ -41,13 +40,13 @@ pub mod proofs;
 pub mod tx_msg;
 
 #[cfg(test)]
-pub mod context_mock;
-
-#[cfg(test)]
 pub mod mock_client;
 
-/// Height of a block, same as in `tendermint` crate
-pub type Height = tendermint::block::Height;
+/// Re-export of ICS 002 Height domain type
+pub type Height = crate::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod mock_context; // Context mock: for testing all handlers.

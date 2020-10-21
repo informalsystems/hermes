@@ -1,7 +1,6 @@
 use crate::ics02_client::client_def::AnyHeader;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
-use crate::ics02_client::state::ClientState;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
@@ -37,7 +36,7 @@ where
     };
 
     if dest_client_latest_height > src_header.height() {
-        return Err(Kind::ClientAtHeigherHeight(
+        return Err(Kind::ClientAtHigherHeight(
             client_id.clone(),
             src_header.height(),
             dest_client_latest_height,
@@ -56,43 +55,34 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::ics02_client::state::ClientState;
     use crate::ics18_relayer::context::ICS18Context;
-    use crate::ics18_relayer::context_mock::MockICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::msgs::ICS26Envelope;
+
+    use crate::mock_context::MockContext;
+    use crate::Height;
     use std::str::FromStr;
-    use tendermint::block::Height;
 
     #[test]
     /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height(11);
-        let chain_b_start_height = Height(20);
-        let client_on_b_for_a_height = Height(10); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height(20); // Should be smaller than `chain_b_start_height`
-        let max_history_size = 3;
+        let chain_a_start_height = Height::new(1, 11);
+        let chain_b_start_height = Height::new(1, 20);
+        let client_on_b_for_a_height = Height::new(1, 10); // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = Height::new(1, 20); // Should be smaller than `chain_b_start_height`
         let num_iterations = 4;
 
         let client_on_a_for_b = ClientId::from_str("ibconeclient").unwrap();
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
         // Create two mock contexts, one for each chain.
-        let mut ctx_a = MockICS18Context::new(
-            chain_a_start_height,
-            max_history_size,
-            &client_on_a_for_b,
-            client_on_a_for_b_height,
-        );
-        let mut ctx_b = MockICS18Context::new(
-            chain_b_start_height,
-            max_history_size,
-            &client_on_b_for_a,
-            client_on_b_for_a_height,
-        );
+        let mut ctx_a = MockContext::new(5, chain_a_start_height)
+            .with_client(&client_on_a_for_b, client_on_a_for_b_height);
+        let mut ctx_b = MockContext::new(5, chain_b_start_height)
+            .with_client(&client_on_b_for_a, client_on_b_for_a_height);
 
         for _i in 0..num_iterations {
             // Update client on chain B to latest height of A.
@@ -111,6 +101,13 @@ mod tests {
 
             // - send the message to B
             let dispatch_res_b = ctx_b.send(ICS26Envelope::ICS2Msg(client_msg_b));
+            let validation_res = ctx_b.validate();
+            assert!(
+                validation_res.is_ok(),
+                "context validation failed with error {:?} for context {:?}",
+                validation_res,
+                ctx_b
+            );
 
             // Check if the update succeeded.
             assert!(dispatch_res_b.is_ok());
@@ -136,6 +133,13 @@ mod tests {
 
             // - send the message to A
             let dispatch_res_a = ctx_a.send(ICS26Envelope::ICS2Msg(client_msg_a));
+            let validation_res = ctx_a.validate();
+            assert!(
+                validation_res.is_ok(),
+                "context validation failed with error {:?} for context {:?}",
+                validation_res,
+                ctx_a
+            );
 
             // Check if the update succeeded.
             assert!(dispatch_res_a.is_ok());

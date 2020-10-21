@@ -145,7 +145,7 @@ pub mod mode_info {
     pub struct Multi {
         /// bitarray specifies which keys within the multisig are signing
         #[prost(message, optional, tag="1")]
-        pub bitarray: ::std::option::Option<super::super::super::base::crypto::v1beta1::CompactBitArray>,
+        pub bitarray: ::std::option::Option<super::super::super::crypto::multisig::v1beta1::CompactBitArray>,
         /// mode_infos is the corresponding modes of the signers of the multisig
         /// which could include nested multisig public keys
         #[prost(message, repeated, tag="2")]
@@ -175,4 +175,14 @@ pub struct Fee {
     /// before an out of gas error occurs
     #[prost(uint64, tag="2")]
     pub gas_limit: u64,
+    /// if unset, the first signer is responsible for paying the fees. If set, the specified account must pay the fees.
+    /// the payer must be a tx signer (and thus have signed this field in AuthInfo).
+    /// setting this field does *not* change the ordering of required signers for the transaction.
+    #[prost(string, tag="3")]
+    pub payer: std::string::String,
+    /// if set, the fee payer (either the first signer or the value of the payer field) requests that a fee grant be used
+    /// to pay fees instead of the fee payer's own balance. If an appropriate fee grant does not exist or the chain does
+    /// not support fee grants, this will fail
+    #[prost(string, tag="4")]
+    pub granter: std::string::String,
 }

@@ -1,13 +1,16 @@
 use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::Height;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::block::Height;
 
+/// Structure comprising proofs in a message. Proofs are typically present in messages for
+/// handshake protocols, e.g., ICS3 connection (open) handshake or ICS4 channel (open and close)
+/// handshake, as well as for ICS4 packets, timeouts, and acknowledgements.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Proofs {
     object_proof: CommitmentProof,
     client_proof: Option<CommitmentProof>,
     consensus_proof: Option<ConsensusProof>,
-    /// Height for both the above proofs
+    /// Height for the proofs above. When creating these proofs, the chain was at `height`.
     height: Height,
 }
 
@@ -16,25 +19,26 @@ impl Proofs {
         object_proof: CommitmentProof,
         client_proof: Option<CommitmentProof>,
         consensus_proof: Option<ConsensusProof>,
-        height: u64,
+        height: Height,
     ) -> Result<Self, String> {
-        if height == 0 {
+        if height.is_zero() {
             return Err("Proofs height cannot be zero".to_string());
         }
 
         if object_proof.is_empty() {
-            return Err("Proof cannot be empty".to_string());
+            return Err("Object proof cannot be empty".to_string());
         }
 
         Ok(Self {
             object_proof,
             client_proof,
             consensus_proof,
-            height: Height(height),
+            height,
         })
     }
 
-    /// Getter for the consensus_proof field of this proof.
+    /// Getter for the consensus_proof field of this proof. Intuitively, this is a proof that a
+    /// client on the source chain stores a consensus state for the destination chain.
     pub fn consensus_proof(&self) -> Option<ConsensusProof> {
         self.consensus_proof.clone()
     }
@@ -50,7 +54,7 @@ impl Proofs {
         &self.object_proof
     }
 
-    /// Getter for the client_proof
+    /// Getter for the client_proof.
     pub fn client_proof(&self) -> &Option<CommitmentProof> {
         &self.client_proof
     }
@@ -63,8 +67,8 @@ pub struct ConsensusProof {
 }
 
 impl ConsensusProof {
-    pub fn new(consensus_proof: CommitmentProof, consensus_height: u64) -> Result<Self, String> {
-        if consensus_height == 0 {
+    pub fn new(consensus_proof: CommitmentProof, consensus_height: Height) -> Result<Self, String> {
+        if consensus_height.is_zero() {
             return Err("Consensus height cannot be zero".to_string());
         }
         if consensus_proof.is_empty() {
@@ -73,7 +77,7 @@ impl ConsensusProof {
 
         Ok(Self {
             proof: consensus_proof,
-            height: Height(consensus_height),
+            height: consensus_height,
         })
     }
 

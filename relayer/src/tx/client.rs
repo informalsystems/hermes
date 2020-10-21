@@ -4,16 +4,15 @@ use std::time::Duration;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::msgs::MsgCreateAnyClient;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
-
-use tendermint::block::Height;
 
 use crate::chain::cosmos::block_on;
 use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use ibc::ics02_client::height::Height;
 
 #[derive(Clone, Debug)]
 pub struct CreateClientOptions {
@@ -27,10 +26,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Query the client state on destination chain.
-    if dest_chain
-        .query(ClientStatePath(opts.clone().dest_client_id), 0, false)
-        .is_ok()
-    {
+    let response = dest_chain.query(
+        ClientStatePath(opts.clone().dest_client_id),
+        tendermint::block::Height::from(0_u32),
+        false,
+    );
+
+    if response.is_ok() {
         return Err(Into::<Error>::into(Kind::CreateClient(
             opts.dest_client_id,
             "client already exists".into(),
@@ -48,7 +50,8 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
             .context(e)
         })?;
 
-    let height = tm_latest_header.signed_header.header.height;
+    let height = u64::from(tm_latest_header.signed_header.header.height);
+    let version = tm_latest_header.signed_header.header.chain_id.to_string();
 
     let tm_consensus_state = ibc::ics07_tendermint::consensus_state::ConsensusState::from(
         tm_latest_header.signed_header,
@@ -62,8 +65,9 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         src_chain.trusting_period(),
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
-        height,
-        Height(0),
+        Height::new(ChainId::chain_version(version.clone()), height),
+        Height::new(ChainId::chain_version(version), 0),
+        "".to_string(),
         false,
         false,
     )
@@ -83,11 +87,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
     // Build the domain type message
     let new_msg = MsgCreateAnyClient::new(
         opts.dest_client_id,
-        ClientType::Tendermint,
         any_client_state,
         any_consensus_state,
         signer,
-    );
+    )
+    .map_err(|e| {
+        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
+    })?;
 
     // Create a proto any message
     let mut proto_msgs: Vec<Any> = Vec::new();
