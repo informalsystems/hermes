@@ -10,6 +10,10 @@ use ibc::tx_msg::Msg;
 use prost_types::Any;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
+use crate::keyring::store::{KeyRingOperations, KeyEntry};
+use bitcoin::hashes::hex::ToHex;
+use serde_json::Value;
+use tendermint_rpc::Id;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
@@ -26,8 +30,9 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    let id_hex = "5804e70e971cc0ac65144a28adf94fdd1e60a48f";
-    let signer = AccountId::from_str(id_hex).unwrap();
+    // Get the key from key seed file
+    let key = dest_chain.keybase.key_from_seed_file(&opts.signer_key).map_err(|e| Kind::KeyBase.context(e))?;
+    let signer: AccountId = AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,
@@ -47,7 +52,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
    let msg_type = "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string();
 
     // Send message
-    let response = dest_chain.send(msg_type, msg.get_sign_bytes(), "".to_string(), 0)
+    let response = dest_chain.send(msg_type, msg.get_sign_bytes(), key, "".to_string(), 0)
         .map_err(|e| Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e))?;
 
     Ok(response)

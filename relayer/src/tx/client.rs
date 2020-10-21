@@ -13,17 +13,26 @@ use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use ibc::ics02_client::height::Height;
+use crate::keyring::store::{KeyEntry, KeyRingOperations};
+use bitcoin::hashes::hex::ToHex;
+use tendermint::account::Id as AccountId;
+use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct CreateClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
+    pub signer_key: String
 }
 
 pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+
+    // Get the key from key seed file
+    let key = dest_chain.keybase.key_from_seed_file(&opts.signer_key).map_err(|e| Kind::KeyBase.context(e))?;
+    let signer: AccountId = AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
     // Query the client state on destination chain.
     let response = dest_chain.query(
@@ -97,8 +106,9 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     let msg_type = "/ibc.client.MsgCreateClient".to_ascii_lowercase();
 
-    let response = dest_chain.send(msg_type, new_msg.get_sign_bytes(), "".to_string(), 0)
+    let response = dest_chain.send(msg_type, new_msg.get_sign_bytes(), key, "".to_string(), 0)
         .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
 
+    let response = vec![];
     Ok(response)
 }

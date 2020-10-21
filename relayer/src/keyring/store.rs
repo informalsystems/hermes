@@ -16,6 +16,10 @@ use bitcoin::secp256k1::{All, Message, Secp256k1};
 use std::convert::TryFrom;
 use crate::keyring::errors::{Error, Kind};
 use bech32::ToBase32;
+use serde_json::Value;
+use bitcoin::hashes::hex::ToHex;
+use tendermint::account::Id as AccountId;
+use std::str::FromStr;
 
 pub type Address = Vec<u8>;
 
@@ -29,6 +33,7 @@ pub enum StoreBackend {
 
 pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend) -> KeyRing;
+    fn key_from_seed_file(&mut self, key_file_content: &str ) -> Result<KeyEntry, Error>;
     fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error>;
     fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
@@ -61,6 +66,31 @@ impl KeyRingOperations for KeyRing {
                 let store: BTreeMap<Address, KeyEntry> = BTreeMap::new();
                 KeyRing::MemoryKeyStore { store }
             }
+        }
+    }
+
+    /// Get key from seed file
+    fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error> {
+
+        let key_json:Value = serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context("failed to parse key seed file"))?;
+
+        let signer: AccountId;
+        let key: KeyEntry;
+
+        let mnemonic: String = "".to_string();
+        let mnemonic_value = key_json.get("mnemonic");
+        match mnemonic_value {
+            Some(m) => {
+                let mnemonic = m.as_str();
+                match mnemonic {
+                    Some(v) => {
+                        key = self.add_from_mnemonic(v).map_err(|e| Kind::InvalidMnemonic.context(e))?;
+                        Ok(key)
+                    },
+                    None => return Err(Kind::InvalidMnemonic.context("invalid key file, cannot find mnemonic".to_string()))?
+                }
+            }
+            None => return Err(Kind::InvalidMnemonic.context("invalid key file, cannot find mnemonic".to_string()))?
         }
     }
 

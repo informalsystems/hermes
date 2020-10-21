@@ -48,8 +48,6 @@ impl TxRawConnInitCmd {
         let key_file_contents = fs::read_to_string(key_filename)
             .expect("Something went wrong reading the key seed file");
 
-        println!("{:?}", key_file_contents.clone());
-
         let src_chain_id = self
             .src_chain_id
             .clone()

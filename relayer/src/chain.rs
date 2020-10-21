@@ -11,7 +11,7 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
-use crate::keyring::store::KeyRing;
+use crate::keyring::store::{KeyRing, KeyEntry};
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
@@ -48,7 +48,7 @@ pub trait Chain {
     fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&mut self, msg_type: String, msg: Vec<u8>, memo: String, timeout_height: u64) -> Result<Vec<u8>, Self::Error>;
+    fn send(&mut self, msg_type: String, msg: Vec<u8>, key: KeyEntry, memo: String, timeout_height: u64) -> Result<Vec<u8>, Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {

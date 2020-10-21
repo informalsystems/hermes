@@ -24,7 +24,7 @@ use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
-use crate::keyring::store::{KeyRing, KeyRingOperations, StoreBackend};
+use crate::keyring::store::{KeyRing, KeyRingOperations, StoreBackend, KeyEntry};
 use futures::{TryFutureExt, FutureExt};
 use crate::error;
 use ibc::tx_msg::Msg;
@@ -81,7 +81,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
+    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, key: KeyEntry, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
 
         // Create a proto any message
         let mut proto_msgs: Vec<Any> = Vec::new();
@@ -107,12 +107,6 @@ impl Chain for CosmosSDKChain {
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
 
-        // TODO: Find way to get the addr, e.g. default if not specified
-        let key = self.keybase.add_from_mnemonic("section clerk spoil best fall lion sniff fee mushroom still require hard squeeze economy enhance protect flat recycle day squirrel solid primary dry pledge")
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        println!("Loaded key: {:?} - {:?}", hex::encode(key.clone().address), key.account);
-
        // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
         let pub_key_bytes = key.public_key.public_key.to_bytes();
 
@@ -131,7 +125,7 @@ impl Chain for CosmosSDKChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: 9,
+            sequence: 10,
         };
 
         // Gas Fee
