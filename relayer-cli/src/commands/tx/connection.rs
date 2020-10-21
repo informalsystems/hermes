@@ -4,6 +4,8 @@ use crate::error::{Error, Kind};
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
+use std::path::Path;
+use std::fs;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
@@ -24,10 +26,30 @@ pub struct TxRawConnInitCmd {
 
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: Option<String>,
+
+    #[options(free, help = "key file for the signer")]
+    signer_key: Option<String>,
 }
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
+
+        // Get content of key seed file
+        let key_filename = self
+            .signer_key
+            .clone()
+            .ok_or_else(|| "missing signer key file".to_string())?;
+
+        let key_file = Path::new(&key_filename).exists();
+        if !key_file {
+            return Err("cannot find key file specified".to_string());
+        }
+
+        let key_file_contents = fs::read_to_string(key_filename)
+            .expect("Something went wrong reading the key seed file");
+
+        println!("{:?}", key_file_contents.clone());
+
         let src_chain_id = self
             .src_chain_id
             .clone()
@@ -85,6 +107,7 @@ impl TxRawConnInitCmd {
             dest_connection_id,
             src_chain_config: src_chain_config.clone(),
             dest_chain_config: dest_chain_config.clone(),
+            signer_key: key_file_contents
         };
 
         Ok(opts)
