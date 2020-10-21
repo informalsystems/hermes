@@ -4,9 +4,9 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::height::chain_version;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 
 /// Tendermint consensus header
@@ -34,15 +34,11 @@ impl crate::ics02_client::header::Header for Header {
     }
 
     fn height(&self) -> Height {
-        Height {
-            version_number: chain_version(self.signed_header.header.chain_id.to_string()),
-            version_height: u64::from(self.signed_header.header.height),
-        }
+        Height::new(
+            ChainId::chain_version(self.signed_header.header.chain_id.to_string()),
+            u64::from(self.signed_header.header.height),
+        )
     }
-
-    // fn consensus_state(&self) -> &dyn crate::ics02_client::state::ConsensusState {
-    //     &self.consensus_state()
-    // }
 }
 
 #[cfg(test)]

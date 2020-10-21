@@ -23,7 +23,6 @@
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
 
-pub mod context;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
@@ -39,9 +38,6 @@ pub mod keys;
 pub mod macros;
 pub mod proofs;
 pub mod tx_msg;
-
-#[cfg(test)]
-pub mod context_mock;
 
 #[cfg(test)]
 pub mod mock_client;

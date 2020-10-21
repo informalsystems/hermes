@@ -68,7 +68,7 @@ mod tests {
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-        let context = MockContext::new(34, Height::new(0, 3));
+        let context = MockContext::default();
 
         let init_conn_end = &ConnectionEnd::new(
             State::Init,
@@ -104,8 +104,8 @@ mod tests {
         .into_iter()
         .collect();
 
-        for mut test in tests {
-            let res = dispatch(&mut test.ctx, test.msg.clone());
+        for test in tests {
+            let res = dispatch(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

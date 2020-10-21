@@ -21,8 +21,9 @@ pub trait ConnectionReader {
     /// Returns the current height of the local chain.
     fn host_current_height(&self) -> Height;
 
-    /// Returns the number of consensus state historical entries for the local chain.
-    fn chain_consensus_states_history_size(&self) -> usize;
+    /// Returns the number of consensus state entries that the local chain maintains. The history
+    /// size determines the pruning window of the host chain.
+    fn host_chain_history_size(&self) -> usize;
 
     /// Returns the prefix that the local chain uses in the KV store.
     fn commitment_prefix(&self) -> CommitmentPrefix;

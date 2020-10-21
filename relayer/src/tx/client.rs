@@ -4,7 +4,7 @@ use std::time::Duration;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::msgs::MsgCreateAnyClient;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
 
@@ -12,7 +12,7 @@ use crate::chain::cosmos::block_on;
 use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use ibc::ics02_client::height::{chain_version, Height};
+use ibc::ics02_client::height::Height;
 
 #[derive(Clone, Debug)]
 pub struct CreateClientOptions {
@@ -65,8 +65,8 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         src_chain.trusting_period(),
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
-        Height::new(chain_version(version.clone()), height),
-        Height::new(chain_version(version), 0),
+        Height::new(ChainId::chain_version(version.clone()), height),
+        Height::new(ChainId::chain_version(version), 0),
         "".to_string(),
         false,
         false,
