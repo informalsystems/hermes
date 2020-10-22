@@ -132,7 +132,13 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             Some(_) => Some(msg.proof_client.into()),
         };
 
-        let counterparty_chosen_connection_id = msg.counterparty_chosen_connection_id.map(|s| s.parse().map_err(|e| Kind::IdentifierError.context(e))).transpose()?;
+        let counterparty_chosen_connection_id = Some(msg.counterparty_chosen_connection_id)
+            .filter(|x| !x.is_empty())
+            .as_ref()
+            .map(|s| FromStr::from_str(s))
+            .transpose()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
+
         Ok(Self {
             connection_id: msg
                 .desired_connection_id
