@@ -36,7 +36,7 @@ mod default {
 pub struct Config {
     pub global: GlobalConfig,
     pub chains: Vec<ChainConfig>,
-    pub local_chains: Vec<LocalChainConfig>,
+    pub local_chains: Option<Vec<LocalChainConfig>>,
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 

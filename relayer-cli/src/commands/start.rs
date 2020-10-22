@@ -47,12 +47,12 @@ impl StartCmd {
         // abscissa_tokio::run(&APPLICATION, ...).unwrap();
 
         debug!("launching 'start' command");
-        if !config.local_chains.is_empty() {
-            debug!(
-                "found the following local chains: {:?}",
-                config.local_chains
-            );
-        }
+        // if !config.local_chains.is_empty() {
+        //     debug!(
+        //         "found the following local chains: {:?}",
+        //         config.local_chains
+        //     );
+        // }
 
         // Spawn all tasks on the same thread that calls `block_on`, ie. the main thread.
         // This allows us to spawn tasks which do not implement `Send`,
