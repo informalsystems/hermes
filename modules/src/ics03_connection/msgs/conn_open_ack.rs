@@ -116,8 +116,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let counterparty_connection_id = Some(msg.counterparty_connection_id)
             .filter(|x| !x.is_empty())
-            .as_ref()
-            .map(|s| FromStr::from_str(s))
+            .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
