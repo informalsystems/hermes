@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- [relayer-cli] Split tasks spawned by CLI commands into their own modules (#331)
+
 ## v0.0.4
 *September 30, 2020*
 
