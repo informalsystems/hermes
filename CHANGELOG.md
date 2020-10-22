@@ -1,8 +1,14 @@
 # Changelog
 
-## Unreleased
+## Unreleased Changes
 
-- [relayer] Integrate relayer spike into relayer crate (#335)
+### FEATURES
+
+- Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274]).
+- [relayer] Integrate relayer spike into relayer crate ([#335])
+
+[#274]: https://github.com/informalsystems/ibc-rs/issues/274
+[#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 
 ## v0.0.4
 *October 19, 2020*
