@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anomaly::fail;
+use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
 use tendermint::block::Height;
@@ -19,7 +20,8 @@ use std::error::Error;
 
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
-use prost_types::Any;
+
+pub mod handle;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
