@@ -7,10 +7,7 @@ pub mod error;
 pub mod events;
 pub mod handler;
 pub mod header;
+pub mod height;
 pub mod msgs;
 pub mod raw;
 pub mod state;
-
-#[cfg(test)]
-pub mod context_mock;
-pub mod height;

@@ -123,8 +123,7 @@ mod tests {
         )
         .unwrap();
 
-        // This context has very small height, tests should not pass.
-        let incorrect_context = MockContext::new(5, Height::new(0, 3));
+        let incorrect_context = MockContext::default();
 
         // A connection end (with incorrect state `Open`) that will be part of the context.
         let incorrect_conn_end_state = ConnectionEnd::new(
@@ -161,19 +160,23 @@ mod tests {
         )
         .unwrap();
 
-        // The proofs in Ack msg have height 10, so the host chain should have at least height 10.
-        let correct_context = MockContext::new(5, Height::new(0, 10));
+        // Parametrize the (correct) host chain to have a height at least as recent as the
+        // the height of the proofs in the Ack msg.
+        let correct_context = MockContext::new(
+            5,
+            Height::new(1, msg_ack.proofs().height().increment().version_height),
+        );
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
-                ctx: incorrect_context.clone(),
+                ctx: correct_context.clone(),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
             Test {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
@@ -183,7 +186,7 @@ mod tests {
             Test {
                 name: "Processing fails due to connections mismatch (incorrect versions)"
                     .to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
@@ -192,9 +195,18 @@ mod tests {
             },
             Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
-                ctx: incorrect_context
+                ctx: correct_context
+                    .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
+                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails due to MissingLocalConsensusState".to_string(),
+                ctx: incorrect_context
+                    .with_client(&client_id, Height::new(0, 10))
+                    .with_connection(msg_ack.connection_id().clone(), correct_conn_end.clone()),
                 msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
                 want_pass: false,
             },
@@ -210,8 +222,8 @@ mod tests {
         .into_iter()
         .collect();
 
-        for mut test in tests {
-            let res = dispatch(&mut test.ctx, test.msg.clone());
+        for test in tests {
+            let res = dispatch(&test.ctx, test.msg.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {

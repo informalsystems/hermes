@@ -111,7 +111,7 @@ mod tests {
             &client_id,
             height,
             Some(ClientType::Mock),
-            Some(height.increment()),
+            Some(height),
         );
         let height = Height::new(0, 30);
 

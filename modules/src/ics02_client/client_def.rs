@@ -485,9 +485,10 @@ impl ClientDef for AnyClient {
 #[cfg(test)]
 mod tests {
     use crate::ics02_client::client_def::AnyClientState;
-    use crate::ics02_client::height::{chain_version, Height};
+    use crate::ics02_client::height::Height;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics07_tendermint::header::test_util::get_dummy_header;
+    use crate::ics24_host::identifier::ChainId;
     use prost_types::Any;
     use std::convert::TryFrom;
     use std::time::Duration;
@@ -500,10 +501,10 @@ mod tests {
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
-            latest_height: Height {
-                version_number: chain_version(tm_header.signed_header.header.chain_id.to_string()),
-                version_height: u64::from(tm_header.signed_header.header.height),
-            },
+            latest_height: Height::new(
+                ChainId::chain_version(tm_header.signed_header.header.chain_id.to_string()),
+                u64::from(tm_header.signed_header.header.height),
+            ),
             frozen_height: Height::zero(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,

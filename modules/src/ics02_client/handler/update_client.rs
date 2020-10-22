@@ -49,7 +49,7 @@ pub fn process(
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
-        .map_err(|_| Kind::HeaderVerificationFailure)?;
+        .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
