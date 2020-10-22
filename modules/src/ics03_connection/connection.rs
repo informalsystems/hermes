@@ -1,5 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
@@ -130,17 +131,11 @@ impl TryFrom<RawCounterparty> for Counterparty {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(value: RawCounterparty) -> Result<Self, Self::Error> {
-        let connection_id = if value.connection_id.is_empty() {
-            None
-        } else {
-            Some(
-                value
-                    .connection_id
-                    .parse()
-                    .map_err(|e| Kind::IdentifierError.context(e))?,
-            )
-        };
-
+        let connection_id = Some(value.connection_id)
+            .filter(|x| !x.is_empty())
+            .map(|v| FromStr::from_str(v.as_str()))
+            .transpose()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
         Ok(Counterparty::new(
             value
                 .client_id
