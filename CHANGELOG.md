@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- [relayer] Integrate relayer spike into relayer crate (#335)
+
 ## v0.0.4
 *October 19, 2020*
 
