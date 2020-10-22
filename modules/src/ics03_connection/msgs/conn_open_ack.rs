@@ -18,13 +18,11 @@ use crate::Height;
 /// Message type for the `MsgConnectionOpenAck` message.
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
-///
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-///
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
-    counterparty_connection_id: ConnectionId,
+    counterparty_connection_id: Option<ConnectionId>,
     client_state: Option<AnyClientState>,
     proofs: Proofs,
     version: String,
@@ -38,8 +36,8 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for accessing the connection identifier of this message.
-    pub fn counterparty_connection_id(&self) -> &ConnectionId {
-        &self.counterparty_connection_id
+    pub fn counterparty_connection_id(&self) -> Option<&ConnectionId> {
+        self.counterparty_connection_id.as_ref()
     }
 
     /// Getter for accessing the client state.
@@ -116,15 +114,18 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             Some(_) => Some(msg.proof_client.into()),
         };
 
+        let counterparty_connection_id = Some(msg.counterparty_connection_id)
+            .filter(|x| !x.is_empty())
+            .map(|v| FromStr::from_str(v.as_str()))
+            .transpose()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
+
         Ok(Self {
             connection_id: msg
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_connection_id: msg
-                .counterparty_connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_connection_id,
             client_state: msg
                 .client_state
                 .map(AnyClientState::try_from)
@@ -148,7 +149,9 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
     fn from(ics_msg: MsgConnectionOpenAck) -> Self {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
-            counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
+            counterparty_connection_id: ics_msg
+                .counterparty_connection_id
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),

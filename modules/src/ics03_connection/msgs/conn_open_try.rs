@@ -26,7 +26,7 @@ pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
     client_state: Option<AnyClientState>,
-    counterparty_chosen_connection_id: ConnectionId,
+    counterparty_chosen_connection_id: Option<ConnectionId>,
     counterparty: Counterparty,
     counterparty_versions: Vec<String>,
     proofs: Proofs,
@@ -47,6 +47,11 @@ impl MsgConnectionOpenTry {
     /// Getter for accessing the client state.
     pub fn client_state(&self) -> Option<AnyClientState> {
         self.client_state.clone()
+    }
+
+    /// Getter for accessing the counterparty connection identifier of this message.
+    pub fn counterparty_chosen_connection_id(&self) -> Option<ConnectionId> {
+        self.counterparty_chosen_connection_id.clone()
     }
 
     /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
@@ -127,6 +132,12 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             Some(_) => Some(msg.proof_client.into()),
         };
 
+        let counterparty_chosen_connection_id = Some(msg.counterparty_chosen_connection_id)
+            .filter(|x| !x.is_empty())
+            .map(|v| FromStr::from_str(v.as_str()))
+            .transpose()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
+
         Ok(Self {
             connection_id: msg
                 .desired_connection_id
@@ -141,10 +152,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            counterparty_chosen_connection_id: msg
-                .counterparty_chosen_connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_chosen_connection_id,
             counterparty: msg
                 .counterparty
                 .ok_or_else(|| Kind::MissingCounterparty)?
@@ -177,8 +185,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
             proof_height: Some(ics_msg.proofs.height().into()),
             counterparty_chosen_connection_id: ics_msg
                 .counterparty_chosen_connection_id
-                .as_str()
-                .to_string(),
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             proof_init: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
