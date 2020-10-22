@@ -11,7 +11,6 @@ mod listen;
 mod query;
 mod start;
 mod tx;
-mod utils;
 mod version;
 
 use self::{
