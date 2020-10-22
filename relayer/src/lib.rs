@@ -14,10 +14,15 @@
 
 pub mod auth;
 pub mod chain;
+pub mod channel;
 pub mod client;
 pub mod config;
+pub mod connection;
 pub mod error;
 pub mod event_handler;
 pub mod event_monitor;
+pub mod foreign_client;
+pub mod link;
+pub mod msgs;
 pub mod tx;
 pub mod util;

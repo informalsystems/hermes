@@ -5,12 +5,15 @@
 ### FEATURES
 
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274]).
+- [relayer] Integrate relayer spike into relayer crate ([#335])
+
+[#274]: https://github.com/informalsystems/ibc-rs/issues/274
+[#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 
 ### IMPROVEMENTS
 
 - [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
 
-[#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#331]: https://github.com/informalsystems/ibc-rs/pulls/331
 
 ## v0.0.4
