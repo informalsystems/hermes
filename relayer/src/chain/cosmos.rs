@@ -81,7 +81,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, key: KeyEntry, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
+    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, key: KeyEntry, acct_seq: u64, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
 
         // Create a proto any message
         let mut proto_msgs: Vec<Any> = Vec::new();
@@ -125,7 +125,7 @@ impl Chain for CosmosSDKChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: 10,
+            sequence: acct_seq,
         };
 
         // Gas Fee

@@ -106,7 +106,8 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     let msg_type = "/ibc.client.MsgCreateClient".to_ascii_lowercase();
 
-    let response = dest_chain.send(msg_type, new_msg.get_sign_bytes(), key, "".to_string(), 0)
+    // TODO - Replace logic to fetch the proper account sequence via CLI parameter
+    let response = dest_chain.send(msg_type, new_msg.get_sign_bytes(), key, 0, "".to_string(), 0)
         .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
 
     let response = vec![];

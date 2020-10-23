@@ -24,15 +24,31 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: Option<String>,
 
-    #[options(help = "identifier of the destination connection", short = "d")]
+    #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: Option<String>,
 
-    #[options(free, help = "key file for the signer")]
+    #[options(help= "account sequence of the signer", short = "s")]
+    account_sequence: Option<String>,
+
+    #[options(help = "key file for the signer", short = "k")]
     signer_key: Option<String>,
+
 }
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
+
+        // Get the account sequence
+        let parsed = self
+            .account_sequence
+            .clone()
+            .ok_or_else(|| "missing account sequence".to_string())?
+            .parse::<u64>();
+
+        let acct_seq = match parsed {
+            Ok(v) => v,
+            Err(e) => return Err("invalid account sequence number".to_string())
+        };
 
         // Get content of key seed file
         let key_filename = self
@@ -107,7 +123,8 @@ impl TxRawConnInitCmd {
             dest_connection_id,
             src_chain_config: src_chain_config.clone(),
             dest_chain_config: dest_chain_config.clone(),
-            signer_key: key_file_contents
+            signer_key: key_file_contents,
+            account_sequence: acct_seq
         };
 
         Ok(opts)

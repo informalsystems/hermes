@@ -50,7 +50,7 @@ pub trait Chain {
     fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&mut self, msg_type: String, msg: Vec<u8>, key: KeyEntry, memo: String, timeout_height: u64) -> Result<Vec<u8>, Self::Error>;
+    fn send(&mut self, msg_type: String, msg: Vec<u8>, key: KeyEntry, acct_seq: u64, memo: String, timeout_height: u64) -> Result<Vec<u8>, Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
