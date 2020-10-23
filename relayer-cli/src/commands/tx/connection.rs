@@ -24,7 +24,7 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: Option<String>,
 
-    #[options(free, help = "identifier of the destination connection")]
+    #[options(help = "identifier of the destination connection", short = "d")]
     dest_connection_id: Option<String>,
 
     #[options(free, help = "key file for the signer")]
@@ -94,9 +94,11 @@ impl TxRawConnInitCmd {
         let dest_connection_id = self
             .dest_connection_id
             .as_ref()
-            .ok_or_else(|| "missing destination connection identifier".to_string())?
-            .parse()
-            .map_err(|_| "bad destination connection identifier".to_string())?;
+            .map(|v| {
+                v.parse()
+                    .map_err(|_| "bad destination connection identifier".to_string())
+            })
+            .transpose()?;
 
         let opts = ConnectionOpenInitOptions {
             src_client_id,

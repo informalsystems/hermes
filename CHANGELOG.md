@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased Changes
+
+### FEATURES
+
+- [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
+- [relayer] Integrate relayer spike into relayer crate ([#335])
+- [modules] Implement flexible connection id selection ([#332])
+
+[#274]: https://github.com/informalsystems/ibc-rs/issues/274
+[#332]: https://github.com/informalsystems/ibc-rs/issues/332
+[#335]: https://github.com/informalsystems/ibc-rs/pulls/335
+
+### IMPROVEMENTS
+
+- [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
+
+[#331]: https://github.com/informalsystems/ibc-rs/pulls/331
+
 ## v0.0.4
 *October 19, 2020*
 

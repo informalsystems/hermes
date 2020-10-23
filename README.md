@@ -105,6 +105,8 @@ This repo contains the TLA+ specification and Rust implementation for the IBC
 modules and relayer. If you're interested in contributing, please comment on an issue or open a new
 one!
 
+See also [CONTRIBUTING.MD](./CONTRIBUTING.md).
+
 ## Versioning
 
 We follow [Semantic Versioning](https://semver.org/), but none of the APIs are stable yet. Expect
