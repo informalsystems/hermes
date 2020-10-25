@@ -5,7 +5,7 @@ use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::context::{ClientKeeper, ClientReader};
 use ibc::ics02_client::error::Error as ICS02Error;
-use ibc::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
+use ibc::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use ibc::ics03_connection::error::Error as ICS03Error;
@@ -21,34 +21,38 @@ use ibc::Height;
 use ibc::ics26_routing::handler::dispatch;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
+use tendermint_light_client::types::LightBlock;
 
-/// A tendermint chain locally running in-process with the relayer. Exploits the `testgen` crate to
-/// generate fake (but realistic) light blocks.
-#[allow(dead_code)]
+/// A Tendermint chain locally running in-process with the relayer. Exploits the `testgen` crate to
+/// generate fake (but syntactically valid) light blocks.
 pub struct LocalChain {
     config: LocalChainConfig,
     height: u64,
+    blocks: Vec<LightBlock>, // to be replaced with a LightChain
 }
 
-#[allow(dead_code)]
-/// Internal interface, for writing the tests for relayer.
+/// Internal interface, for writing relayer tests.
 impl LocalChain {
     pub fn from_config(config: LocalChainConfig) -> Result<Self, Error> {
-        Ok(Self { config, height: 1 })
+        Ok(Self {
+            config,
+            height: 1,
+            blocks: Default::default(),
+        })
     }
 
     /// Submits an IBC message for creating an IBC client on the chain. It is assumed that this is
     /// a client for a mock chain.
-    pub fn create_client(
-        &mut self,
-        client_id: &ClientId,
-        src_header: AnyHeader,
-    ) -> Result<(), Error> {
-        let client_message = ClientMsg::UpdateClient(MsgUpdateAnyClient {
-            client_id: client_id.clone(),
-            header: src_header,
-            signer: AccountId::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap(),
-        });
+    pub fn create_client(&mut self, client_id: &ClientId) -> Result<(), Error> {
+        let client_message = ClientMsg::CreateClient(
+            MsgCreateAnyClient::new(
+                client_id.clone(),
+                todo!(),
+                todo!(),
+                AccountId::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap(),
+            )
+            .unwrap(),
+        );
 
         self.send(ICS26Envelope::ICS2Msg(client_message))
             .map_err(|_| {
@@ -200,14 +204,18 @@ mod tests {
     use tendermint::chain::Id as ChainId;
 
     #[test]
-    fn create_local_chain() {
+    fn create_local_chain_and_client() {
+        let _client_id = ClientId::from_str("clientonlocalchain").unwrap();
         let cfg = LocalChainConfig {
             id: ChainId::from_str("not-gaia").unwrap(),
             client_ids: vec![String::from("client_one"), String::from("client_two")],
         };
 
         let c = LocalChain::from_config(cfg);
-        assert!(c.is_ok())
+        assert!(c.is_ok());
+
+        let mut _chain = c.unwrap();
+        // assert!(chain.create_client(&client_id).is_ok());
     }
 
     #[test]

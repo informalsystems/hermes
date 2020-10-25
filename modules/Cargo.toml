@@ -35,11 +35,14 @@ regex = "1"
 
 [dependencies.tendermint]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
 
 [dependencies.tendermint-rpc]
 version = "0.17.0-rc1"
 features = ["http-client", "websocket-client"]
+git = "https://github.com/informalsystems/tendermint-rs"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
+tendermint-testgen = { version = "0.17.0-rc1", git = "https://github.com/informalsystems/tendermint-rs" } # Needed for generating (synthetic) light blocks & testing the relayer.

@@ -166,6 +166,21 @@ impl From<ClientState> for RawClientState {
 }
 
 #[cfg(test)]
+pub mod test_util {
+    // pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
+    //     RawMsgConnectionOpenConfirm {
+    //         connection_id: "srcconnection".to_string(),
+    //         proof_ack: get_dummy_proof(),
+    //         proof_height: Some(Height {
+    //             version_number: 0,
+    //             version_height: 10,
+    //         }),
+    //         signer: get_dummy_account_id_raw(),
+    //     }
+    // }
+}
+
+#[cfg(test)]
 mod tests {
     use std::time::Duration;
 
