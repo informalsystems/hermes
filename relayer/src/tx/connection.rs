@@ -15,7 +15,7 @@ pub struct ConnectionOpenInitOptions {
     pub src_client_id: ClientId,
     pub dest_client_id: ClientId,
     pub src_connection_id: ConnectionId,
-    pub dest_connection_id: ConnectionId,
+    pub dest_connection_id: Option<ConnectionId>,
     pub src_chain_config: ChainConfig,
     pub dest_chain_config: ChainConfig,
 }

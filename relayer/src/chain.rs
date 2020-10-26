@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use anomaly::fail;
+use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
 use tendermint::block::Height;
@@ -21,7 +22,8 @@ pub(crate) mod cosmos;
 pub(crate) mod local; // Local chain, used for relayer integration testing against IBC modules.
 
 pub use cosmos::CosmosSDKChain;
-use prost_types::Any;
+
+pub mod handle;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {

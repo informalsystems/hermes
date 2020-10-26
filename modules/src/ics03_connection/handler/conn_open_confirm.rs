@@ -43,7 +43,7 @@ pub(crate) fn process(
         Counterparty::new(
             // The counterparty is the local chain.
             new_conn_end.client_id().clone(), // The local client identifier.
-            msg.connection_id().clone(),      // Local connection id.
+            Some(msg.connection_id().clone()), // Local connection id.
             ctx.commitment_prefix(),          // Local commitment prefix.
         )?,
         new_conn_end.versions(),
@@ -103,7 +103,7 @@ mod tests {
             MsgConnectionOpenConfirm::try_from(get_dummy_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
-            msg_confirm.connection_id().clone(),
+            Some(msg_confirm.connection_id().clone()),
             CommitmentPrefix::from(vec![]),
         )
         .unwrap();
