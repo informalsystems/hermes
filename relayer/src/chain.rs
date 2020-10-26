@@ -67,9 +67,6 @@ pub trait Chain {
     /// Set a light client for this chain
     fn set_light_client(&mut self, light_client: Self::LightClient);
 
-    /// The trusting period configured for this chain
-    fn trusting_period(&self) -> Duration;
-
     /// The unbonding period of this chain
     /// TODO - this is a GRPC query, needs to be implemented
     fn unbonding_period(&self) -> Duration;

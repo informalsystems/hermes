@@ -1,17 +1,23 @@
 //! Read the relayer configuration into the Config struct, in examples for now
 //! to support ADR validation..should move to relayer/src soon
 
-use std::path::Path;
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::{chain, net, node};
 
-use crate::client::TrustOptions;
+use tendermint::{chain, net, node, Hash};
+use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
+
 use crate::error;
 
 /// Defaults for various fields
-mod default {
+pub mod default {
     use super::*;
 
     pub fn timeout() -> Duration {
@@ -29,13 +35,25 @@ mod default {
     pub fn trusting_period() -> Duration {
         Duration::from_secs(336 * 60 * 60) // 336 hours
     }
+
+    pub fn clock_drift() -> Duration {
+        Duration::from_secs(5) // 5 seconds
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub global: GlobalConfig,
+    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
     pub chains: Vec<ChainConfig>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub connections: Option<Vec<Connection>>, // use all for default
+    #[serde(
+        default = "HashMap::new",
+        skip_serializing_if = "HashMap::is_empty",
+        serialize_with = "toml::ser::tables_last"
+    )]
+    pub light_clients: HashMap<chain::Id, PeersConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -78,6 +96,11 @@ pub struct ChainConfig {
     pub client_ids: Vec<String>,
     #[serde(default = "default::gas")]
     pub gas: u64,
+
+    #[serde(default)]
+    pub trust_threshold: TrustThreshold,
+    #[serde(default = "default::clock_drift", with = "humantime_serde")]
+    pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
 
@@ -123,10 +146,29 @@ pub struct RelayPath {
     pub direction: Direction, // default bidirectional
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PeersConfig {
+    pub primary: PeerId,
+    pub peers: Vec<LightClientConfig>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LightClientConfig {
+    pub peer_id: PeerId,
+    pub address: net::Address,
+    pub trusted_header_hash: Hash,
+    pub trusted_height: Height,
+    // pub lightstore: LightStoreConfig,
+}
+
+// #[derive(Clone, Debug, Deserialize, Serialize)]
+// #[serde(tag = "type")]
+// pub enum LightStoreConfig {
+//     Persistent { db_path: PathBuf },
+//     Memory,
+// }
+
 /// Attempt to load and parse the config file into the Config struct.
-///
-/// TODO: If a file cannot be found, return a default Config allowing relayer
-///       to relay everything from any to any chain(?)
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
@@ -135,6 +177,22 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
         toml::from_str::<Config>(&config_toml[..]).map_err(|e| error::Kind::Config.context(e))?;
 
     Ok(config)
+}
+
+/// Attempt to serialize and store a Config in the given config file.
+pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
+    // This is a workaround to ensure that we can serialize the configuration without
+    // running into the dreaded 'values must be emitted before tables' TOML error.
+    // See https://github.com/alexcrichton/toml-rs/issues/142
+    let toml_value = toml::Value::try_from(config).map_err(|e| error::Kind::Config.context(e))?;
+
+    let toml_config =
+        toml::to_string_pretty(&toml_value).map_err(|e| error::Kind::Config.context(e))?;
+
+    let mut file = File::create(path).map_err(|e| error::Kind::Config.context(e))?;
+    writeln!(file, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
+
+    Ok(())
 }
 
 #[cfg(test)]

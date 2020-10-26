@@ -91,10 +91,6 @@ impl Chain for CosmosSDKChain {
         self.light_client.as_ref()
     }
 
-    fn trusting_period(&self) -> Duration {
-        self.config.trusting_period
-    }
-
     fn trust_threshold(&self) -> TrustThreshold {
         TrustThreshold::default()
     }
