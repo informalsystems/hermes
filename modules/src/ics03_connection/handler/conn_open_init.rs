@@ -54,7 +54,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
     use crate::Height;
 
     #[test]

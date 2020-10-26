@@ -1,6 +1,5 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-use crate::ics02_client;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -20,71 +19,29 @@ use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
 
-use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use crate::ics07_tendermint::header::Header as TMHeader;
+use crate::mock::host::{HostBlock, HostType};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
-use tendermint_testgen::light_block::TMLightBlock;
-use tendermint_testgen::{Generator, LightBlock};
 
-#[derive(Clone, Debug)]
-pub enum MockChainType {
-    Mock,                // A chain composed of `MockHeader` blocks.
-    SyntheticTendermint, // A chain with synthetically generated tendermint light blocks.
-}
-
-#[derive(Clone, Debug)]
-pub struct AnyBlockBuilder {
-    chain_id: ChainId,
-    chain_type: MockChainType,
-}
-
-impl AnyBlockBuilder {
-    fn new(chain_id: ChainId, chain_type: MockChainType) -> Self {
-        AnyBlockBuilder {
-            chain_type,
-            chain_id,
-        }
-    }
-
-    fn generate_block_for_height(&self, target_height: Height) -> AnyBlock {
-        match &self.chain_type {
-            MockChainType::Mock => AnyBlock::Mock(MockHeader(target_height)),
-            MockChainType::SyntheticTendermint => {
-                let mut block = LightBlock::new_default(target_height.version_height)
-                    .generate()
-                    .unwrap();
-                let a = block.signed_header.header.chain_id;
-                // let a = TMChainId::try_from("aa").unwrap();
-                // block.signed_header.header.chain_id = TMChainId::try_from("aa").unwrap();
-                block.signed_header.header.chain_id = a;
-                AnyBlock::SyntheticTendermint(Box::new(block))
-            }
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub enum AnyBlock {
-    Mock(MockHeader),
-    SyntheticTendermint(Box<TMLightBlock>),
-}
-
+/// This context implements the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
 pub struct MockContext {
-    /// Builder is in charge of creating new blocks for the history of this context.
-    block_builder: AnyBlockBuilder,
+    /// The type of host chain underlying this mock context.
+    host_chain_type: HostType,
 
-    /// Maximum size of the history.
+    host_chain_id: ChainId,
+
+    /// Maximum size of the history of the host chain.
     max_history_size: usize,
 
     /// Highest height of the headers in the history.
     latest_height: Height,
 
-    /// A list of `max_history_size` headers, ascending order by their height (latest is last).
-    history: Vec<AnyBlock>,
+    /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
+    /// blocks, ascending order by their height (latest block is on the last position).
+    history: Vec<HostBlock>,
 
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
@@ -94,60 +51,6 @@ pub struct MockContext {
 
     // All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
-}
-
-impl AnyBlock {
-    pub fn height(&self) -> Height {
-        match self {
-            AnyBlock::Mock(header) => header.height(),
-            AnyBlock::SyntheticTendermint(light_block) =>
-            // Warning: This is potentially problematic.
-            {
-                Height::new(
-                    ChainId::chain_version(light_block.signed_header.header.chain_id.to_string()),
-                    light_block.signed_header.header.height.value(),
-                )
-            }
-        }
-    }
-}
-
-impl From<AnyBlock> for AnyConsensusState {
-    fn from(any_block: AnyBlock) -> Self {
-        match any_block {
-            AnyBlock::Mock(mock_header) => mock_header.into(),
-            AnyBlock::SyntheticTendermint(light_block) => {
-                // Conversion between TMLightBlock and AnyConsensusState
-                let sh = light_block.signed_header;
-                let cs = TMConsensusState::from(sh);
-                AnyConsensusState::Tendermint(cs)
-            }
-        }
-    }
-}
-
-impl From<AnyBlock> for AnyHeader {
-    fn from(any_block: AnyBlock) -> Self {
-        match any_block {
-            AnyBlock::Mock(mock_header) => mock_header.into(),
-            AnyBlock::SyntheticTendermint(light_block_box) => {
-                // Conversion between TMLightBlock and AnyHeader
-                AnyHeader::Tendermint((*light_block_box).into())
-            }
-        }
-    }
-}
-
-impl From<TMLightBlock> for TMHeader {
-    fn from(light_block: TMLightBlock) -> Self {
-        // TODO: This conversion is incorrect for `trusted_height` and `trusted_validator_set`.
-        TMHeader {
-            signed_header: light_block.signed_header,
-            validator_set: light_block.validators,
-            trusted_height: Default::default(),
-            trusted_validator_set: light_block.next_validators,
-        }
-    }
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections are
@@ -164,25 +67,34 @@ impl Default for MockContext {
 impl MockContext {
     /// Creates a mock context. Parameter `max_history_size` determines how many headers will
     /// the chain maintain in its history, which also determines the pruning window. Parameter
-    /// `latest_height` determines the current height of the chain.
+    /// `latest_height` determines the current height of the chain.  This context
+    /// has support to emulate two type of underlying chains:
     pub fn new(max_history_size: usize, latest_height: Height) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
+
+        let host_chain_type = HostType::Mock;
+        let chain_id = ChainId::from_str("mockgaia-1").unwrap();
 
         assert_ne!(
             max_history_size, 0,
             "The chain must have a non-zero max_history_size"
         );
 
-        let block_builder =
-            AnyBlockBuilder::new(ChainId::from_str("aa-1").unwrap(), MockChainType::Mock);
         MockContext {
-            block_builder: block_builder.clone(),
+            host_chain_type,
+            host_chain_id: chain_id.clone(),
             max_history_size,
             latest_height,
             history: (0..n)
                 .rev()
-                .map(|i| block_builder.generate_block_for_height(latest_height.sub(i).unwrap()))
+                .map(|i| {
+                    HostBlock::generate_block(
+                        chain_id.clone(),
+                        host_chain_type,
+                        latest_height.sub(i).unwrap().version_height,
+                    )
+                })
                 .collect(),
             connections: Default::default(),
             clients: Default::default(),
@@ -241,7 +153,7 @@ impl MockContext {
 
     /// Accessor for a header of the local (host) chain of this context.
     /// May return `None` if the header for the requested height does not exist.
-    fn host_header(&self, target_height: Height) -> Option<&AnyBlock> {
+    fn host_header(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.version_height as usize;
         let latest = self.latest_height.version_height as usize;
 
@@ -255,9 +167,11 @@ impl MockContext {
 
     /// Triggers the advancing of the host chain, by extending the history of blocks (headers).
     pub fn advance_host_chain_height(&mut self) {
-        let new_block = self
-            .block_builder
-            .generate_block_for_height(self.latest_height.increment());
+        let new_block = HostBlock::generate_block(
+            self.host_chain_id.clone(),
+            self.host_chain_type,
+            self.latest_height.increment().version_height,
+        );
 
         // Append the new header at the tip of the history.
         if self.history.len() >= self.max_history_size {
@@ -318,7 +232,7 @@ impl ConnectionReader for MockContext {
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward method call to the ICS2 Client-specific method.
-        ics02_client::context::ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id)
     }
 
     fn host_current_height(&self) -> Height {
@@ -473,7 +387,7 @@ impl ICS18Context for MockContext {
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward call to ICS2.
-        ics02_client::context::ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id)
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
@@ -488,7 +402,7 @@ impl ICS18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
     use crate::Height;
 
     #[test]

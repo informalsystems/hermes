@@ -60,7 +60,7 @@ mod tests {
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::msgs::ICS26Envelope;
 
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
     use crate::Height;
     use std::str::FromStr;
 
