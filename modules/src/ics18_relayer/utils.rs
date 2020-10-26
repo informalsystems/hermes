@@ -57,10 +57,11 @@ where
 mod tests {
     use crate::ics18_relayer::context::ICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;
-    use crate::ics24_host::identifier::ClientId;
+    use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::ics26_routing::msgs::ICS26Envelope;
 
     use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
     use std::str::FromStr;
 
@@ -79,10 +80,20 @@ mod tests {
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
         // Create two mock contexts, one for each chain.
-        let mut ctx_a = MockContext::new(5, chain_a_start_height)
-            .with_client(&client_on_a_for_b, client_on_a_for_b_height);
-        let mut ctx_b = MockContext::new(5, chain_b_start_height)
-            .with_client(&client_on_b_for_a, client_on_b_for_a_height);
+        let mut ctx_a = MockContext::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
+            5,
+            chain_a_start_height,
+        )
+        .with_client(&client_on_a_for_b, client_on_a_for_b_height);
+        let mut ctx_b = MockContext::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
+            5,
+            chain_b_start_height,
+        )
+        .with_client(&client_on_b_for_a, client_on_b_for_a_height);
 
         for _i in 0..num_iterations {
             // Update client on chain B to latest height of A.

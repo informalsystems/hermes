@@ -4,10 +4,14 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::consensus_state::ConsensusState;
-use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
+
+#[cfg(test)]
+use {
+    crate::ics07_tendermint::consensus_state::ConsensusState,
+    crate::ics23_commitment::commitment::CommitmentRoot,
+};
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -18,6 +22,7 @@ pub struct Header {
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
 }
 
+#[cfg(test)]
 impl Header {
     pub(crate) fn consensus_state(&self) -> ConsensusState {
         ConsensusState {

@@ -1,3 +1,5 @@
+//! Host chain types and methods, used by context mock.
+
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::ics07_tendermint::header::Header as TMHeader;
@@ -7,7 +9,7 @@ use crate::Height;
 
 use tendermint::chain::Id as TMChainId;
 use tendermint_testgen::light_block::TMLightBlock;
-use tendermint_testgen::{Generator, LightBlock};
+use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
 use std::convert::TryFrom;
 
@@ -29,6 +31,7 @@ pub enum HostBlock {
 }
 
 impl HostBlock {
+    /// Returns the height of a block.
     pub fn height(&self) -> Height {
         match self {
             HostBlock::Mock(header) => header.height(),
@@ -39,20 +42,15 @@ impl HostBlock {
         }
     }
 
-    pub fn generate_block(
-        chain_id: ChainId,
-        chain_type: HostType,
-        target_version_height: u64,
-    ) -> HostBlock {
+    /// Generates a new block at `height` for the given chain identifier and chain type.
+    pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader(Height::new(
                 ChainId::chain_version(chain_id.to_string()),
-                target_version_height,
+                height,
             ))),
             HostType::SyntheticTendermint => {
-                let mut block = LightBlock::new_default(target_version_height)
-                    .generate()
-                    .unwrap();
+                let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
                 block.signed_header.header.chain_id =
                     TMChainId::try_from(chain_id.to_string()).unwrap();
                 HostBlock::SyntheticTendermint(Box::new(block))
@@ -66,9 +64,7 @@ impl From<HostBlock> for AnyConsensusState {
         match any_block {
             HostBlock::Mock(mock_header) => mock_header.into(),
             HostBlock::SyntheticTendermint(light_block) => {
-                // Conversion between TMLightBlock and AnyConsensusState
-                let sh = light_block.signed_header;
-                let cs = TMConsensusState::from(sh);
+                let cs = TMConsensusState::from(light_block.signed_header);
                 AnyConsensusState::Tendermint(cs)
             }
         }

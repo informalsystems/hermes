@@ -23,7 +23,6 @@ use crate::mock::host::{HostBlock, HostType};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::error::Error;
-use std::str::FromStr;
 
 /// This context implements the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -31,12 +30,13 @@ pub struct MockContext {
     /// The type of host chain underlying this mock context.
     host_chain_type: HostType,
 
+    /// Host chain identifier.
     host_chain_id: ChainId,
 
-    /// Maximum size of the history of the host chain.
+    /// Maximum size for the history of the host chain. Any block older than this is pruned.
     max_history_size: usize,
 
-    /// Highest height of the headers in the history.
+    /// Highest height (i.e., most recent) of the headers in the history.
     latest_height: Height,
 
     /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
@@ -58,7 +58,12 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(5, Height::new(1, 5))
+        Self::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
+            5,
+            Height::new(1, 5),
+        )
     }
 }
 
@@ -69,12 +74,20 @@ impl MockContext {
     /// the chain maintain in its history, which also determines the pruning window. Parameter
     /// `latest_height` determines the current height of the chain.  This context
     /// has support to emulate two type of underlying chains:
-    pub fn new(max_history_size: usize, latest_height: Height) -> Self {
+    pub fn new(
+        host_id: ChainId,
+        host_type: HostType,
+        max_history_size: usize,
+        latest_height: Height,
+    ) -> Self {
         // Compute the number of headers to store. If h is 0, nothing is stored.
         let n = min(max_history_size as u64, latest_height.version_height);
 
-        let host_chain_type = HostType::Mock;
-        let chain_id = ChainId::from_str("mockgaia-1").unwrap();
+        assert_eq!(
+            ChainId::chain_version(host_id.to_string()),
+            latest_height.version_number,
+            "The version in the chain identifier does not match the version in the latest height"
+        );
 
         assert_ne!(
             max_history_size, 0,
@@ -82,16 +95,16 @@ impl MockContext {
         );
 
         MockContext {
-            host_chain_type,
-            host_chain_id: chain_id.clone(),
+            host_chain_type: host_type,
+            host_chain_id: host_id.clone(),
             max_history_size,
             latest_height,
             history: (0..n)
                 .rev()
                 .map(|i| {
                     HostBlock::generate_block(
-                        chain_id.clone(),
-                        host_chain_type,
+                        host_id.clone(),
+                        host_type,
                         latest_height.sub(i).unwrap().version_height,
                     )
                 })
@@ -402,7 +415,9 @@ impl ICS18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
+    use crate::ics24_host::identifier::ChainId;
     use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
 
     #[test]
@@ -416,23 +431,48 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Empty history, small pruning window".to_string(),
-                ctx: MockContext::new(1, Height::new(cv, 0)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    1,
+                    Height::new(cv, 0),
+                ),
             },
             Test {
                 name: "Large pruning window".to_string(),
-                ctx: MockContext::new(30, Height::new(cv, 2)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    30,
+                    Height::new(cv, 2),
+                ),
             },
             Test {
                 name: "Small pruning window".to_string(),
-                ctx: MockContext::new(3, Height::new(cv, 30)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    3,
+                    Height::new(cv, 30),
+                ),
             },
             Test {
                 name: "Small pruning window, small starting height".to_string(),
-                ctx: MockContext::new(3, Height::new(cv, 2)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    3,
+                    Height::new(cv, 2),
+                ),
             },
             Test {
                 name: "Large pruning window, large starting height".to_string(),
-                ctx: MockContext::new(50, Height::new(cv, 2000)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    50,
+                    Height::new(cv, 2000),
+                ),
             },
         ];
 
@@ -440,7 +480,8 @@ mod tests {
             // All tests should yield a valid context after initialization.
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed while validating context {:?}",
+                "Failed in test {} while validating context {:?}",
+                test.name,
                 test.ctx
             );
 
@@ -450,7 +491,8 @@ mod tests {
             test.ctx.advance_host_chain_height();
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed while validating context {:?}",
+                "Failed in test {} while validating context {:?}",
+                test.name,
                 test.ctx
             );
 
