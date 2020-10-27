@@ -122,7 +122,7 @@ Invariants
 ClientHeightsAreBelowCounterpartyHeight ==
     \A chainID \in ChainIDs :
         \A clientNr \in 1..GetNrClientsByID(chainID) :
-            (GetChainByID(chainID).clientStates[clientNr].heights /= {} 
+            (GetChainByID(chainID).clientStates[clientNr].heights /= AsSetInt({})
                 => (Max(GetChainByID(chainID).clientStates[clientNr].heights) 
                      <= GetLatestHeight(GetChainByID(GetCounterpartyChainID(chainID)))))
 
