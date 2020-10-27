@@ -80,6 +80,9 @@ pub struct ChainConfig {
     pub gas: u64,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+
+    // TODO: Move the light client config
+    pub peer_id: node::Id,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

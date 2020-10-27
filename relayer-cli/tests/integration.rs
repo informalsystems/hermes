@@ -36,6 +36,7 @@ fn simd_config() -> Config {
         client_ids: vec!["ethbridge".to_string()],
         gas: 200000,
         trusting_period: Default::default(),
+        peer_id: "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap(),
     }];
     config
 }
