@@ -22,7 +22,7 @@ ClientStateType ==
 ChainStoreType ==  
     [
         height |-> Int,
-        clientStates |-> [Int -> ClientStateType]
+        clientStates |-> [Int -> [clientID |-> STRING, heights |-> {Int}]]
     ] 
 
 \* client datagram type
@@ -77,13 +77,15 @@ ClientStates(ClientIDs, maxHeight) ==
     [
         clientID : ClientIDs,
         heights : SUBSET(1..maxHeight)
-    ] <: ClientStateType
+    ] 
+    \* <: {ClientStateType}
     
 NullClientState ==
     [
-        clientID |-> nullClientID,
+        clientID |-> AsID(nullClientID),
         heights |-> AsSetInt({})
-    ] <: ClientStateType    
+    ] 
+    \* <: ClientStateType    
 
 (******************************** ChainStores ******************************
     A set of chain store records, with fields relevant for ICS02. 
@@ -100,7 +102,8 @@ ChainStores(NrClients, ClientIDs, maxHeight) ==
     [
         height : 1..maxHeight,
         clientStates : [1..NrClients -> ClientStates(ClientIDs, maxHeight)]
-    ] <: {ChainStoreType}
+    ] 
+    \* <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
  A set of datagrams.
@@ -109,7 +112,7 @@ Datagrams(ClientIDs, maxHeight) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : 1..maxHeight]
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : 1..maxHeight]   
-    <: {DatagramType}
+    \* <: {DatagramType}
 
 
 (***************************** ClientDatagrams *****************************
@@ -119,10 +122,11 @@ ClientDatagrams(ClientIDs, Heights) ==
     [type : {"CreateClient"}, clientID : ClientIDs, height : Heights]
     \union
     [type : {"ClientUpdate"}, clientID : ClientIDs, height : Heights]   
-    <: {DatagramType}
+    \* <: {DatagramType}
     
 NullDatagram == 
-    [type |-> "null"] <: DatagramType    
+    [type |-> "null"] 
+    <: DatagramType    
 
 (***************************************************************************
  Initial value of a chain store for ICS02
@@ -132,9 +136,10 @@ NullDatagram ==
 \*      - the counterparty clients are uninitialized
 ICS02InitChainStore(NrClients, ClientIDs) == 
     [
-        height |-> AsInt(1),
+        height |-> 1,
         clientStates |-> [clientNr \in 1..NrClients |-> NullClientState]
-    ] <: ChainStoreType
+    ] 
+    <: ChainStoreType
         
 (***************************************************************************
  Client helper operators
