@@ -3,8 +3,8 @@
 EXTENDS Integers, FiniteSets, Sequences, ICS02Definitions
 
 CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          NrClients, \* number of clients that will be created on the chain
-          ClientIDs \* a set of counterparty client IDs for the chain
+          NrClientsChainA, \* number of clients that will be created on the chain
+          ClientIDsChainA \* a set of counterparty client IDs for the chain
 
 ASSUME MaxHeight < 10
 
@@ -22,6 +22,8 @@ vars == <<chainAstore, datagramsChainA, history>>
 \* ChainA -- Instance of Chain.tla
 ChainA == INSTANCE ICS02Chain
           WITH ChainID <- "chainA",
+               NrClients <- NrClientsChainA,
+               ClientIDs <- ClientIDsChainA,
                chainStore <- chainAstore,
                incomingDatagrams <- datagramsChainA               
        
@@ -34,9 +36,9 @@ CreateDatagrams ==
     \* pick a sequence from the set of client datagrams non-deterministically
     /\ datagramsChainA' \in 
         SUBSET ClientDatagrams(
-            ClientIDs,  
-            1..MaxHeight
-        )  
+            ClientIDsChainA, 
+            SetHeights(1, MaxHeight)
+        )
         
     /\ UNCHANGED <<chainAstore, history>>
 
@@ -59,7 +61,7 @@ EnvironmentAction ==
 \* Initial state predicate
 Init ==
     /\ ChainA!Init
-    /\ history = [clientID \in ClientIDs |-> [created |-> FALSE, updated |-> FALSE]]   
+    /\ history = [clientID \in ClientIDsChainA |-> [created |-> FALSE, updated |-> FALSE]]   
     
 \* Next state action
 Next ==

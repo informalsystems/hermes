@@ -139,7 +139,7 @@ ICS02InitChainStore(NrClients, ClientIDs) ==
         height |-> 1,
         clientStates |-> [clientNr \in 1..NrClients |-> NullClientState]
     ] 
-    <: ChainStoreType
+    \* <: ChainStoreType
         
 (***************************************************************************
  Client helper operators

@@ -43,8 +43,8 @@ HandleCreateClient(chain, clientID, datagrams) ==
                     \* if the set of heights from datagrams is not empty
                        /\ createClientHeights /= AsSetInt({}) 
                     \* then create a client with clientID at the slot nextClientNr
-                    THEN AsClientState([clientID |-> AsID(clientID), 
-                                        heights |-> AsSetInt({Max(createClientHeights)})])
+                    THEN [clientID |-> clientID, 
+                          heights |-> {Max(createClientHeights)}]
                     \* otherwise, discard CreateClient datagrams  
                     ELSE chain.clientStates[nextClientNr]
              ]]
