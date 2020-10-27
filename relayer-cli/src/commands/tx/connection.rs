@@ -4,8 +4,8 @@ use crate::error::{Error, Kind};
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
@@ -27,17 +27,15 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: Option<String>,
 
-    #[options(help= "account sequence of the signer", short = "s")]
+    #[options(help = "account sequence of the signer", short = "s")]
     account_sequence: Option<String>,
 
     #[options(help = "key file for the signer", short = "k")]
     signer_key: Option<String>,
-
 }
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
-
         // Get the account sequence
         let parsed = self
             .account_sequence
@@ -47,7 +45,7 @@ impl TxRawConnInitCmd {
 
         let acct_seq = match parsed {
             Ok(v) => v,
-            Err(e) => return Err("invalid account sequence number".to_string())
+            Err(e) => return Err("invalid account sequence number".to_string()),
         };
 
         // Get content of key seed file
@@ -124,7 +122,7 @@ impl TxRawConnInitCmd {
             src_chain_config: src_chain_config.clone(),
             dest_chain_config: dest_chain_config.clone(),
             signer_key: key_file_contents,
-            account_sequence: acct_seq
+            account_sequence: acct_seq,
         };
 
         Ok(opts)

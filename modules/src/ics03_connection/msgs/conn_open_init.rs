@@ -86,7 +86,6 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
-
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -102,14 +101,13 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?
+                .map_err(|e| Kind::InvalidSigner.context(e))?,
         })
     }
 }
 
 impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
     fn from(ics_msg: MsgConnectionOpenInit) -> Self {
-
         // The msg needs to send the bech32 account as the signer
         let addr = bech32::encode("cosmos", ics_msg.signer.to_base32());
         RawMsgConnectionOpenInit {

@@ -16,8 +16,8 @@ mod v0;
 mod version;
 
 use self::{
-    config::ConfigCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    tx::TxCmd, v0::V0Cmd, version::VersionCmd, keys::KeysCmd
+    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
+    start::StartCmd, tx::TxCmd, v0::V0Cmd, version::VersionCmd,
 };
 
 use crate::config::Config;

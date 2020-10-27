@@ -1,34 +1,34 @@
 use std::str::FromStr;
 use std::time::Duration;
 
+use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc::ics07_tendermint::client_state::ClientState;
+use ibc::ics07_tendermint::consensus_state::ConsensusState;
+use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::block::Height;
 use tendermint_light_client::types::LightBlock;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
-use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::ics07_tendermint::client_state::ClientState;
-use ibc::ics07_tendermint::consensus_state::ConsensusState;
-use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
 use super::Chain;
 use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 
+use crate::error;
+use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use bytes::Bytes;
+use futures::{FutureExt, TryFutureExt};
+use ibc::tx_msg::Msg;
+use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw, Fee};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
-use crate::keyring::store::{KeyRing, KeyRingOperations, StoreBackend, KeyEntry};
-use futures::{TryFutureExt, FutureExt};
-use crate::error;
-use ibc::tx_msg::Msg;
-use ibc_proto::cosmos::base::v1beta1::Coin;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -81,8 +81,15 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
-    fn send(&mut self, msg_type: String, msg_bytes: Vec<u8>, key: KeyEntry, acct_seq: u64, memo: String, timeout_height: u64) -> Result<Vec<u8>, Error> {
-
+    fn send(
+        &mut self,
+        msg_type: String,
+        msg_bytes: Vec<u8>,
+        key: KeyEntry,
+        acct_seq: u64,
+        memo: String,
+        timeout_height: u64,
+    ) -> Result<Vec<u8>, Error> {
         // Create a proto any message
         let mut proto_msgs: Vec<Any> = Vec::new();
 
@@ -107,7 +114,7 @@ impl Chain for CosmosSDKChain {
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
 
-       // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
+        // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
         let pub_key_bytes = key.public_key.public_key.to_bytes();
 
         let mut pk_buf = Vec::new();
@@ -138,7 +145,7 @@ impl Chain for CosmosSDKChain {
             amount: vec![coin],
             gas_limit: 100000,
             payer: "".to_string(),
-            granter: "".to_string()
+            granter: "".to_string(),
         });
 
         let auth_info = AuthInfo {
@@ -154,7 +161,7 @@ impl Chain for CosmosSDKChain {
             body_bytes: body_buf.clone(),
             auth_info_bytes: auth_buf.clone(),
             chain_id: self.config.clone().id.to_string(),
-            account_number: 0
+            account_number: 0,
         };
 
         // A protobuf serialization of a SignDoc
@@ -175,7 +182,8 @@ impl Chain for CosmosSDKChain {
         //println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
         //let signed = sign(sign_doc);
-        let response = block_on(broadcast_tx(self, txraw_buf.clone())).map_err(|e| Kind::Rpc.context(e))?;
+        let response =
+            block_on(broadcast_tx(self, txraw_buf.clone())).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }

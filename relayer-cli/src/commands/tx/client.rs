@@ -5,8 +5,8 @@ use relayer::tx::client::{create_client, CreateClientOptions};
 use crate::application::app_config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -16,7 +16,10 @@ pub struct TxCreateClientCmd {
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: Option<String>,
 
-    #[options(free, help = "identifier of the client to be created on destination chain")]
+    #[options(
+        free,
+        help = "identifier of the client to be created on destination chain"
+    )]
     dest_client_id: Option<String>,
 
     #[options(free, help = "key file for the signer")]
@@ -25,7 +28,6 @@ pub struct TxCreateClientCmd {
 
 impl TxCreateClientCmd {
     fn validate_options(&self, config: &Config) -> Result<CreateClientOptions, String> {
-
         // Get content of key seed file
         let key_filename = self
             .signer_key
@@ -73,7 +75,7 @@ impl TxCreateClientCmd {
             dest_client_id,
             dest_chain_config: dest_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
-            signer_key: key_file_contents
+            signer_key: key_file_contents,
         })
     }
 }
@@ -91,7 +93,8 @@ impl Runnable for TxCreateClientCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let res: Result<Vec<u8>, Error> = create_client(opts).map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<u8>, Error> =
+            create_client(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_info!("client created, result: ", "{:?}", receipt),

@@ -1,39 +1,38 @@
-
-use std::collections::BTreeMap;
-use k256::{
-    ecdsa::{signature::Signer, signature::Verifier, Signature, SigningKey, VerifyKey},
-    EncodedPoint, SecretKey,
-};
-use bitcoin_wallet::account::MasterAccount;
-use bitcoin_wallet::mnemonic::Mnemonic;
+use crate::keyring::errors::{Error, Kind};
+use bech32::ToBase32;
+use bitcoin::hashes::hex::ToHex;
+use bitcoin::secp256k1::{All, Message, Secp256k1};
 use bitcoin::{
     network::constants::Network,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
     PrivateKey,
 };
+use bitcoin_wallet::account::MasterAccount;
+use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
-use bitcoin::secp256k1::{All, Message, Secp256k1};
-use std::convert::TryFrom;
-use crate::keyring::errors::{Error, Kind};
-use bech32::ToBase32;
+use k256::{
+    ecdsa::{signature::Signer, signature::Verifier, Signature, SigningKey, VerifyKey},
+    EncodedPoint, SecretKey,
+};
 use serde_json::Value;
-use bitcoin::hashes::hex::ToHex;
-use tendermint::account::Id as AccountId;
+use std::collections::BTreeMap;
+use std::convert::TryFrom;
 use std::str::FromStr;
+use tendermint::account::Id as AccountId;
 
 pub type Address = Vec<u8>;
 
 pub enum KeyRing {
-    MemoryKeyStore { store: BTreeMap<Address, KeyEntry> }
+    MemoryKeyStore { store: BTreeMap<Address, KeyEntry> },
 }
 
 pub enum StoreBackend {
-    Memory
+    Memory,
 }
 
 pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend) -> KeyRing;
-    fn key_from_seed_file(&mut self, key_file_content: &str ) -> Result<KeyEntry, Error>;
+    fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error>;
     fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error>;
     fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
@@ -53,12 +52,10 @@ pub struct KeyEntry {
     pub address: Vec<u8>,
 
     /// Account Bech32 format - TODO allow hrp
-    pub account: String
-
+    pub account: String,
 }
 
 impl KeyRingOperations for KeyRing {
-
     /// Initialize a in memory key entry store
     fn init(backend: StoreBackend) -> KeyRing {
         match backend {
@@ -71,8 +68,8 @@ impl KeyRingOperations for KeyRing {
 
     /// Get key from seed file
     fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error> {
-
-        let key_json:Value = serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context("failed to parse key seed file"))?;
+        let key_json: Value = serde_json::from_str(key_file_content)
+            .map_err(|e| Kind::InvalidKey.context("failed to parse key seed file"))?;
 
         let signer: AccountId;
         let key: KeyEntry;
@@ -84,27 +81,36 @@ impl KeyRingOperations for KeyRing {
                 let mnemonic = m.as_str();
                 match mnemonic {
                     Some(v) => {
-                        key = self.add_from_mnemonic(v).map_err(|e| Kind::InvalidMnemonic.context(e))?;
+                        key = self
+                            .add_from_mnemonic(v)
+                            .map_err(|e| Kind::InvalidMnemonic.context(e))?;
                         Ok(key)
-                    },
-                    None => return Err(Kind::InvalidMnemonic.context("invalid key file, cannot find mnemonic".to_string()))?
+                    }
+                    None => {
+                        return Err(Kind::InvalidMnemonic
+                            .context("invalid key file, cannot find mnemonic".to_string()))?
+                    }
                 }
             }
-            None => return Err(Kind::InvalidMnemonic.context("invalid key file, cannot find mnemonic".to_string()))?
+            None => {
+                return Err(Kind::InvalidMnemonic
+                    .context("invalid key file, cannot find mnemonic".to_string()))?
+            }
         }
     }
 
     /// Add a key entry in the store using a mnemonic.
     fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
-
         // Generate seed from mnemonic
-        let mnemonic = Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
+        let mnemonic =
+            Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
         let seed = mnemonic.to_seed(Some(""));
 
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
         let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
-            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path))).map_err(|e| Kind::PrivateKey.context(e))?;
+            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
+            .map_err(|e| Kind::PrivateKey.context(e))?;
 
         // Get Public Key from Private Key
         let public_key = ExtendedPubKey::from_private(&Secp256k1::new(), &private_key);
@@ -113,13 +119,14 @@ impl KeyRingOperations for KeyRing {
         let address = get_address(public_key);
 
         // Get Bech32 account
-        let account = bech32::encode("cosmos", address.to_base32()).map_err(|e| Kind::Bech32Account.context(e))?;
+        let account = bech32::encode("cosmos", address.to_base32())
+            .map_err(|e| Kind::Bech32Account.context(e))?;
 
         let key = KeyEntry {
             public_key,
             private_key,
             address,
-            account
+            account,
         };
 
         self.insert(key.clone().address, key.clone());
@@ -133,12 +140,11 @@ impl KeyRingOperations for KeyRing {
             KeyRing::MemoryKeyStore { store: s } => {
                 if !s.contains_key(&address) {
                     return Err(Kind::InvalidKey.into());
-                }
-                else {
+                } else {
                     let key = s.get(&address);
                     match key {
                         Some(k) => Ok(k),
-                        None => Err(Kind::InvalidKey.into())
+                        None => Err(Kind::InvalidKey.into()),
                     }
                 }
             }
@@ -148,7 +154,7 @@ impl KeyRingOperations for KeyRing {
     /// Insert an entry in the key store
     fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
         match self {
-            KeyRing::MemoryKeyStore { store: s} => {
+            KeyRing::MemoryKeyStore { store: s } => {
                 let ke = s.insert(addr, key);
                 ke
             }

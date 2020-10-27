@@ -29,7 +29,9 @@ impl KeyRestoreCmd {
             .chains
             .iter()
             .find(|c| c.id == chain_id.parse().unwrap())
-            .ok_or_else(|| "Invalid chain identifier. Cannot retrieve the chain configuration".to_string())?;
+            .ok_or_else(|| {
+                "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
+            })?;
 
         let key_name = self
             .name
@@ -61,7 +63,8 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res: Result<Vec<u8>, Error> = restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res: Result<Vec<u8>, Error> =
+            restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
             Ok(r) => status_info!("key restore result: ", "{:?}", hex::encode(r)),

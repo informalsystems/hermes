@@ -1,2 +1,2 @@
-pub mod store;
 pub mod errors;
+pub mod store;
