@@ -57,7 +57,12 @@ HandleIncomingDatagrams ==
                                /\ chainStore.clientStates[clientNr].clientID = nullClientID
                                /\ chainStore'.clientStates[clientNr].clientID /= nullClientID
                             THEN [created |-> TRUE, updated |-> history[clientID].updated]
-                            ELSE history[clientID]                               
+                            ELSE IF /\ clientNr /= 0
+                                    /\ history[clientID].created
+                                    /\ chainStore.clientStates[clientNr].heights /= chainStore'.clientStates[clientNr].heights
+                                    /\ chainStore.clientStates[clientNr].heights \subseteq chainStore'.clientStates[clientNr].heights
+                                THEN [created |-> history[clientID].created, updated |-> TRUE]
+                                ELSE history[clientID]                               
                       ]
         /\ incomingDatagrams' = {dgr \in incomingDatagrams : dgr.clientID /= clientID}       
 
