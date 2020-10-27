@@ -23,12 +23,11 @@ use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::LightBlock;
 
-/// A Tendermint chain locally running in-process with the relayer. Exploits the `testgen` crate to
-/// generate fake (but syntactically valid) light blocks.
+/// A Tendermint chain locally running in-process with the relayer. Wraps over a `MockContext`,
+/// which does most of the heavy lifting when it comes to implementing all IBC dependencies.
 pub struct LocalChain {
     config: LocalChainConfig,
-    height: u64,
-    blocks: Vec<LightBlock>, // to be replaced with a LightChain
+    // context: MockHeader,
 }
 
 /// Internal interface, for writing relayer tests.
@@ -36,8 +35,8 @@ impl LocalChain {
     pub fn from_config(config: LocalChainConfig) -> Result<Self, Error> {
         Ok(Self {
             config,
-            height: 1,
-            blocks: Default::default(),
+            // context: MockHeader(Height::new(1,1))
+            // context: MockContext::default(),
         })
     }
 
@@ -59,116 +58,7 @@ impl LocalChain {
                 Kind::CreateClient(client_id.clone(), "tx submission failed".into()).into()
             })
     }
-
-    /// Advances the chain height, by appending a new light block to its history.
-    pub fn advance(&mut self) {
-        self.height += 1;
-    }
 }
-
-/// The interface between the chain and IBC modules.
-impl ClientReader for LocalChain {
-    fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
-        unimplemented!()
-    }
-
-    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        unimplemented!()
-    }
-
-    fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
-        unimplemented!()
-    }
-}
-
-impl ClientKeeper for LocalChain {
-    fn store_client_type(
-        &mut self,
-        client_id: ClientId,
-        client_type: ClientType,
-    ) -> Result<(), ICS02Error> {
-        unimplemented!()
-    }
-
-    fn store_client_state(
-        &mut self,
-        client_id: ClientId,
-        client_state: AnyClientState,
-    ) -> Result<(), ICS02Error> {
-        unimplemented!()
-    }
-
-    fn store_consensus_state(
-        &mut self,
-        client_id: ClientId,
-        height: Height,
-        consensus_state: AnyConsensusState,
-    ) -> Result<(), ICS02Error> {
-        unimplemented!()
-    }
-}
-
-impl ConnectionReader for LocalChain {
-    fn connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd> {
-        unimplemented!()
-    }
-
-    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
-        unimplemented!()
-    }
-
-    fn host_current_height(&self) -> Height {
-        unimplemented!()
-    }
-
-    fn host_chain_history_size(&self) -> usize {
-        unimplemented!()
-    }
-
-    fn commitment_prefix(&self) -> CommitmentPrefix {
-        unimplemented!()
-    }
-
-    fn client_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Option<AnyConsensusState> {
-        unimplemented!()
-    }
-
-    fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        unimplemented!()
-    }
-
-    fn get_compatible_versions(&self) -> Vec<String> {
-        unimplemented!()
-    }
-
-    fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String {
-        unimplemented!()
-    }
-}
-
-impl ConnectionKeeper for LocalChain {
-    fn store_connection(
-        &mut self,
-        connection_id: &ConnectionId,
-        connection_end: &ConnectionEnd,
-    ) -> Result<(), ICS03Error> {
-        unimplemented!()
-    }
-
-    fn store_connection_to_client(
-        &mut self,
-        connection_id: &ConnectionId,
-        client_id: &ClientId,
-    ) -> Result<(), ICS03Error> {
-        unimplemented!()
-    }
-}
-
-impl ICS26Context for LocalChain {}
 
 /// The relayer-facing interface.
 impl ICS18Context for LocalChain {
@@ -186,7 +76,7 @@ impl ICS18Context for LocalChain {
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         // Forward the datagram directly into ICS26 routing handler.
-        dispatch(self, msg).map_err(|e| ICS18Kind::TransactionFailed.context(e))?;
+        // dispatch(self.context, msg).map_err(|e| ICS18Kind::TransactionFailed.context(e))?;
         Ok(())
     }
 }
@@ -203,6 +93,8 @@ mod tests {
     use std::str::FromStr;
     use tendermint::chain::Id as ChainId;
 
+    use ibc::mock::host::HostType;
+
     #[test]
     fn create_local_chain_and_client() {
         let _client_id = ClientId::from_str("clientonlocalchain").unwrap();
@@ -210,6 +102,8 @@ mod tests {
             id: ChainId::from_str("not-gaia").unwrap(),
             client_ids: vec![String::from("client_one"), String::from("client_two")],
         };
+
+        let _a = HostType::Mock;
 
         let c = LocalChain::from_config(cfg);
         assert!(c.is_ok());

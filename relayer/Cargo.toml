@@ -50,4 +50,6 @@ git = "https://github.com/informalsystems/tendermint-rs"
 #ripemd160 = { version = "0.9", optional = true }
 #sha2 = { version = "0.9.1", default-features = false }
 
-[dev-dependencies]
+[dev-dependencies.ibc]
+path = "../modules"
+features = [ "mocks" ]

@@ -24,7 +24,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 use {
     crate::mock_client::client_def::MockClient,
     crate::mock_client::header::MockHeader,
@@ -92,7 +92,7 @@ pub trait ClientDef: Clone {
 pub enum AnyHeader {
     Tendermint(tendermint::header::Header),
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
 }
 
@@ -101,7 +101,7 @@ impl Header for AnyHeader {
         match self {
             Self::Tendermint(header) => header.client_type(),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.client_type(),
         }
     }
@@ -110,7 +110,7 @@ impl Header for AnyHeader {
         match self {
             Self::Tendermint(header) => header.height(),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.height(),
         }
     }
@@ -120,7 +120,7 @@ impl Header for AnyHeader {
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "mocks"))]
     Mock(MockClientState),
 }
 
@@ -129,7 +129,7 @@ impl AnyClientState {
         match self {
             Self::Tendermint(tm_state) => tm_state.latest_height(),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.latest_height(),
         }
     }
@@ -137,7 +137,7 @@ impl AnyClientState {
         match self {
             Self::Tendermint(state) => state.client_type(),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(state) => state.client_type(),
         }
     }
@@ -155,7 +155,7 @@ impl TryFrom<Any> for AnyClientState {
                 TendermintClientState::decode_vec(&raw.value)?,
             )),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(MockClientState::decode_vec(
                 &raw.value,
             )?)),
@@ -174,7 +174,7 @@ impl From<AnyClientState> for Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: value.encode_vec().unwrap(),
             },
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
                 value: value.encode_vec().unwrap(),
@@ -200,7 +200,7 @@ impl ClientState for AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
         }
     }
@@ -210,7 +210,7 @@ impl ClientState for AnyClientState {
 pub enum AnyConsensusState {
     Tendermint(crate::ics07_tendermint::consensus_state::ConsensusState),
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
 }
 
@@ -219,7 +219,7 @@ impl AnyConsensusState {
         match self {
             AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(_cs) => ClientType::Mock,
         }
     }
@@ -236,7 +236,7 @@ impl TryFrom<Any> for AnyConsensusState {
                 TendermintConsensusState::decode_vec(&value.value)?,
             )),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
                 MockConsensusState::decode_vec(&value.value)?,
             )),
@@ -255,7 +255,7 @@ impl From<AnyConsensusState> for Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
                 value: value.encode_vec().unwrap(),
             },
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
                 value: value.encode_vec().unwrap(),
@@ -282,7 +282,7 @@ impl ConsensusState for AnyConsensusState {
 pub enum AnyClient {
     Tendermint(TendermintClient),
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "mocks"))]
     Mock(MockClient),
 }
 
@@ -291,7 +291,7 @@ impl AnyClient {
         match client_type {
             ClientType::Tendermint => Self::Tendermint(TendermintClient),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             ClientType::Mock => Self::Mock(MockClient),
         }
     }
@@ -325,7 +325,7 @@ impl ClientDef for AnyClient {
                 ))
             }
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let (client_state, header) = downcast!(
                     client_state => AnyClientState::Mock,
@@ -372,7 +372,7 @@ impl ClientDef for AnyClient {
                 )
             }
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
@@ -416,7 +416,7 @@ impl ClientDef for AnyClient {
                 )
             }
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
                     .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
@@ -461,7 +461,7 @@ impl ClientDef for AnyClient {
                 )
             }
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock

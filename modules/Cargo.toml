@@ -14,6 +14,11 @@ description = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
 """
 
+[features]
+# This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
+# Dependens on the testgen suite for generating Tendermint light blocks.
+mocks = [ "tendermint-testgen" ]
+
 [dependencies]
 tendermint-proto = "0.1.0"
 
@@ -42,7 +47,12 @@ version = "0.17.0-rc1"
 features = ["http-client", "websocket-client"]
 git = "https://github.com/informalsystems/tendermint-rs"
 
+[dependencies.tendermint-testgen]
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+optional = true
+
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "0.17.0-rc1", git = "https://github.com/informalsystems/tendermint-rs" } # Needed for generating (synthetic) light blocks & testing the relayer.
+tendermint-testgen = { version = "0.17.0-rc1", git = "https://github.com/informalsystems/tendermint-rs" } # Needed for generating (synthetic) light blocks.
