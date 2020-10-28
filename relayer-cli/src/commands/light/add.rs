@@ -118,8 +118,8 @@ impl AddCmd {
         relayer::config::store(&config, config_path)?;
 
         status_ok!(
-            "Success",
-            "Added light client peer:\npeer_id = {}\naddress = {}\nhash = {}\nheight = {}\nprimary = {}",
+            "Added",
+            "light client peer:\npeer_id = {}\naddress = {}\nhash = {}\nheight = {}\nprimary = {}",
             options.peer_id,
             options.address,
             options.trusted_hash,
