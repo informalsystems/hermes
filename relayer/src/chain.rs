@@ -15,6 +15,7 @@ use ibc::ics24_host::Path;
 use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
+use crate::util::block_on;
 
 use std::error::Error;
 
@@ -79,44 +80,30 @@ pub trait Chain {
     /// Sign message
     /// TODO - waiting for tendermint-rs upgrade to v0.16
     fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Self::Error>;
-}
 
-/// Query the latest height the chain is at via a RPC query
-pub async fn query_latest_height(chain: &impl Chain) -> Result<Height, error::Error> {
-    let status = chain
-        .rpc_client()
-        .status()
-        .await
-        .map_err(|e| error::Kind::Rpc.context(e))?;
+    /// Query a header at the given height via RPC
+    fn query_header_at_height(&self, height: Height) -> Result<Self::LightBlock, error::Error>;
 
-    if status.sync_info.catching_up {
-        fail!(
-            error::Kind::LightClient,
-            "node at {} running chain {} not caught up",
-            chain.config().rpc_addr,
-            chain.config().id,
-        );
+    /// Query the latest height the chain is at via a RPC query
+    fn query_latest_height(&self) -> Result<Height, error::Error> {
+        let status =
+            block_on(self.rpc_client().status()).map_err(|e| error::Kind::Rpc.context(e))?;
+
+        if status.sync_info.catching_up {
+            fail!(
+                error::Kind::LightClient,
+                "node at {} running chain {} not caught up",
+                self.config().rpc_addr,
+                self.config().id,
+            );
+        }
+
+        Ok(status.sync_info.latest_block_height)
     }
 
-    Ok(status.sync_info.latest_block_height)
-}
-
-/// Query the latest header
-pub async fn query_latest_header<C>(chain: &C) -> Result<C::LightBlock, error::Error>
-where
-    C: Chain,
-{
-    let h = query_latest_height(chain).await?;
-    Ok(query_header_at_height(chain, h).await?)
-}
-
-/// Query a header at the given height via the RPC requester
-pub async fn query_header_at_height<C>(
-    chain: &C,
-    height: Height,
-) -> Result<C::LightBlock, error::Error>
-where
-    C: Chain,
-{
-    todo!()
+    /// Query the latest header via RPC
+    fn query_latest_header(&self) -> Result<Self::LightBlock, error::Error> {
+        let height = self.query_latest_height()?;
+        self.query_header_at_height(height)
+    }
 }
