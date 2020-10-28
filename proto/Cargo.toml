@@ -21,6 +21,6 @@ all-features = true
 prost = { version = "0.6" }
 prost-types = { version = "0.6" }
 anomaly = "0.2"
-bytes = "0.5"
+bytes = "0.6"
 thiserror = "1.0"
 tendermint-proto = "0.1.0"
