@@ -7,8 +7,8 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::block::Height;
-use tendermint_light_client::types::LightBlock;
-use tendermint_light_client::types::TrustThreshold;
+use tendermint_light_client::types::{LightBlock, ValidatorSet};
+use tendermint_light_client::types::{SignedHeader, TrustThreshold};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
@@ -16,6 +16,7 @@ use super::Chain;
 use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::util::block_on;
 
 use crate::error;
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
@@ -216,6 +217,25 @@ impl Chain for CosmosSDKChain {
         // TODO - query chain
         Duration::from_secs(24 * 7 * 3)
     }
+
+    fn query_header_at_height(&self, height: Height) -> Result<LightBlock, Error> {
+        let client = self.rpc_client();
+
+        let signed_header = fetch_signed_header(client, height)?;
+        assert_eq!(height, signed_header.header.height);
+
+        let validator_set = fetch_validator_set(client, height)?;
+        let next_validator_set = fetch_validator_set(client, height.increment())?;
+
+        let light_block = LightBlock::new(
+            signed_header,
+            validator_set,
+            next_validator_set,
+            self.config().peer_id,
+        );
+
+        Ok(light_block)
+    }
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -251,6 +271,15 @@ async fn abci_query(
     Ok(response.value)
 }
 
+fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {
+    let res = block_on(client.commit(height));
+
+    match res {
+        Ok(response) => Ok(response.signed_header),
+        Err(err) => Err(Kind::Rpc.context(err).into()),
+    }
+}
+
 /// Perform a generic `broadcast_tx`, and return the corresponding deserialized response data.
 async fn broadcast_tx(
     chain: &CosmosSDKChain,
@@ -272,12 +301,11 @@ async fn broadcast_tx(
     Ok(response.data.as_bytes().to_vec())
 }
 
-/// block on future
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
+fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
+    let res = block_on(client.validators(height));
+
+    match res {
+        Ok(response) => Ok(ValidatorSet::new(response.validators)),
+        Err(err) => Err(Kind::Rpc.context(err).into()),
+    }
 }

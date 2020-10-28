@@ -7,10 +7,12 @@
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules] Implement flexible connection id selection ([#332])
+- [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
+[#336]: https://github.com/informalsystems/ibc-rs/issues/336
 
 ### IMPROVEMENTS
 

@@ -17,6 +17,9 @@ strategy = "naive"
   gas_price = "0.025stake"
   trusting_period = "336h"
 
+  # TODO: Move to light client config
+  peer_id = "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE"
+
 [[chains]]
   id = "chain_B"
   rpc_addr = "localhost:26557"
@@ -28,6 +31,9 @@ strategy = "naive"
   gas_adjustement = 1.3
   gas_price = "0.025stake"
   trusting_period = "336h"
+
+  # TODO: Move to light client config
+  peer_id = "DC0C0ADEADBEEFC0FFEEFACADEBADFADAD0BEFEE"
 
 [[connections]]
 

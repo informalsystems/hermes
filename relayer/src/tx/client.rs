@@ -8,11 +8,11 @@ use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
 
-use crate::chain::cosmos::block_on;
-use crate::chain::{query_latest_header, Chain, CosmosSDKChain};
+use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRingOperations};
+use crate::util::block_on;
 use bitcoin::hashes::hex::ToHex;
 use ibc::ics02_client::height::Height;
 use std::str::FromStr;
@@ -54,14 +54,13 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     // Get the latest header from the source chain and build the consensus state.
     let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let tm_latest_header =
-        block_on(query_latest_header::<CosmosSDKChain>(&src_chain)).map_err(|e| {
-            Kind::CreateClient(
-                opts.dest_client_id.clone(),
-                "failed to get the latest header".into(),
-            )
-            .context(e)
-        })?;
+    let tm_latest_header = src_chain.query_latest_header().map_err(|e| {
+        Kind::CreateClient(
+            opts.dest_client_id.clone(),
+            "failed to get the latest header".into(),
+        )
+        .context(e)
+    })?;
 
     let height = u64::from(tm_latest_header.signed_header.header.height);
     let version = tm_latest_header.signed_header.header.chain_id.to_string();
