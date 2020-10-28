@@ -18,16 +18,18 @@ use ibc::ics26_routing::context::ICS26Context;
 use ibc::ics26_routing::msgs::ICS26Envelope;
 use ibc::Height;
 
+use ibc::mock::context::MockContext;
+
 use ibc::ics26_routing::handler::dispatch;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::LightBlock;
 
 /// A Tendermint chain locally running in-process with the relayer. Wraps over a `MockContext`,
-/// which does most of the heavy lifting when it comes to implementing all IBC dependencies.
+/// which does most of the heavy lifting of implementing IBC dependencies.
 pub struct LocalChain {
     config: LocalChainConfig,
-    // context: MockHeader,
+    context: MockContext,
 }
 
 /// Internal interface, for writing relayer tests.
@@ -35,8 +37,7 @@ impl LocalChain {
     pub fn from_config(config: LocalChainConfig) -> Result<Self, Error> {
         Ok(Self {
             config,
-            // context: MockHeader(Height::new(1,1))
-            // context: MockContext::default(),
+            context: MockContext::default(),
         })
     }
 
@@ -93,8 +94,6 @@ mod tests {
     use std::str::FromStr;
     use tendermint::chain::Id as ChainId;
 
-    use ibc::mock::host::HostType;
-
     #[test]
     fn create_local_chain_and_client() {
         let _client_id = ClientId::from_str("clientonlocalchain").unwrap();
@@ -102,8 +101,6 @@ mod tests {
             id: ChainId::from_str("not-gaia").unwrap(),
             client_ids: vec![String::from("client_one"), String::from("client_two")],
         };
-
-        let _a = HostType::Mock;
 
         let c = LocalChain::from_config(cfg);
         assert!(c.is_ok());
