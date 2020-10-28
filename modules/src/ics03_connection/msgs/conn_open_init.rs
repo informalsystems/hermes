@@ -10,9 +10,8 @@ use crate::ics03_connection::connection::{validate_version, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
-use std::str::FromStr;
 
-use bech32::ToBase32;
+use bech32::{FromBase32, ToBase32};
 
 /// Message type for the `MsgConnectionOpenInit` message.
 pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
@@ -86,6 +85,19 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenInit) -> Result<Self, Self::Error> {
+        let (_hrp, data) = bech32::decode(&msg.signer).map_err(|e| {
+            Kind::InvalidAddress
+                .context("Error decoding signer ".to_string() + &msg.signer + ":" + &e.to_string())
+        })?;
+        let addr_bytes = Vec::<u8>::from_base32(&data).map_err(|e| {
+            Kind::InvalidAddress
+                .context("Error converting from bech32: ".to_string() + &e.to_string())
+        })?;
+        let acct = AccountId::try_from(addr_bytes).map_err(|e| {
+            Kind::InvalidAddress
+                .context("Error converting to account ID: ".to_string() + &e.to_string())
+        })?;
+
         Ok(Self {
             connection_id: msg
                 .connection_id
@@ -100,8 +112,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .try_into()?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: acct,
         })
     }
 }
@@ -109,12 +120,12 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
 impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
     fn from(ics_msg: MsgConnectionOpenInit) -> Self {
         // The msg needs to send the bech32 account as the signer
-        let addr = bech32::encode("cosmos", ics_msg.signer.to_base32());
+        let addr = bech32::encode("cosmos", ics_msg.signer.to_base32()).unwrap();
         RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            signer: addr.unwrap(),
+            signer: addr,
             version: ics_msg.version,
         }
     }
@@ -125,7 +136,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id_raw, get_dummy_counterparty,
+        get_dummy_bech32_account, get_dummy_counterparty,
     };
 
     /// Returns a dummy message, for testing only.
@@ -136,7 +147,7 @@ pub mod test_util {
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
             version: "1.0.0".to_string(),
-            signer: get_dummy_account_id_raw(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }
