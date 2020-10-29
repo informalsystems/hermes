@@ -42,7 +42,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     let counterparty = Counterparty::new(
         opts.dest_client_id,
         opts.dest_connection_id,
-        CommitmentPrefix::from(b"ibc".to_vec()),
+        CommitmentPrefix::from(dest_chain.config().store_prefix.as_bytes().to_vec()),
     );
 
     let msg = MsgConnectionOpenInit {
