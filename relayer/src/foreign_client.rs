@@ -5,6 +5,7 @@ use ibc::{
     ics07_tendermint::consensus_state::ConsensusState,
     ics23_commitment::commitment::CommitmentProof,
     ics24_host::identifier::{ChainId, ClientId},
+    ics24_host::Path::ClientState as ClientStatePath,
     Height,
 };
 
@@ -13,16 +14,11 @@ use crate::msgs::Datagram;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
-    #[error("Fail")]
-    Fail(),
-
-    #[error("Verificaiton failed")]
-    VerificationError(),
-
-    #[error("Headers didn't match")]
-    HeaderMismatch(),
+    #[error("error raised while creating client: {0}")]
+    ClientCreation(String),
 }
 
+#[derive(Clone)]
 pub struct ForeignClientConfig {
     id: ClientId,
     // timeout: Duration // How much to wait before giving up on client creation.
@@ -52,13 +48,29 @@ impl ForeignClient {
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
         // Query the client state on source chain.
-        // let response = source.query(
-        //     ClientStatePath(opts.clone().dest_client_id),
-        //     tendermint::block::Height::from(0_u32),
-        //     false,
-        // );
+        let response = host.query(ClientStatePath(config.clone().id), Height::zero(), false);
+        if response.is_ok() {
+            // The chain already hosts a client with the required id.
+            Ok(ForeignClient { config })
+        } else {
+            Self::create_client(host, source)?;
+            // Create a new client
+            Ok(ForeignClient { config })
+        }
+    }
 
-        Ok(ForeignClient { config })
+    fn create_client(
+        dst: &dyn ChainHandle, // The chain that will host the client.
+        src: &dyn ChainHandle, // The client will store headers of this chain.
+    ) -> Result<(), ForeignClientError> {
+        let latest_header = src.get_header(Height::zero()).map_err(|e| {
+            ForeignClientError::ClientCreation(format!(
+                "failed to fetch latest header ({:?})",
+                e
+            ))
+        })?;
+
+        Ok(())
     }
 
     // This is a completely different synchronous update strategy then bundeling a an update packet

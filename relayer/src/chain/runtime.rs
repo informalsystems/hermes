@@ -1,4 +1,4 @@
-use crate::chain::handle::{cosmos::ProdChainHandle, ChainHandleError, HandleInput};
+use crate::chain::handle::{cosmos::CosmosSDKHandle, ChainHandleError, HandleInput};
 use crate::config::ChainConfig;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 
@@ -27,9 +27,9 @@ impl ChainRuntime {
         }
     }
 
-    pub fn handle(&self) -> Result<ProdChainHandle, ChainHandleError> {
+    pub fn handle(&self) -> Result<CosmosSDKHandle, ChainHandleError> {
         let sender = self.sender.clone();
-        ProdChainHandle::new(
+        CosmosSDKHandle::new(
             self.chain_id.clone(),
             sender,
             self.chain_config.rpc_addr.clone(),

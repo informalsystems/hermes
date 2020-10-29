@@ -18,19 +18,18 @@ use std::str::FromStr;
 use std::time::Duration;
 use thiserror::Error;
 
-/// The handle for interacting with a production chain.
-/// TODO: Rename this struct into CosmosSDKHandle
-/// The `sender` enables communication with the chain runtime (mainly for subscribe).
+/// The handle for interacting with a Cosmos chain.
+/// The `sender` enables communication with the chain runtime (mainly for `subscribe`).
 /// The `rpc_client` is the gateway to a full-node for fulfilling ABCI queries.
 #[derive(Debug, Clone)]
-pub struct ProdChainHandle {
+pub struct CosmosSDKHandle {
     pub chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     rpc_client: HttpClient,
     // TODO: account_prefix
 }
 
-impl ProdChainHandle {
+impl CosmosSDKHandle {
     pub(crate) fn new(
         chain_id: ChainId,
         sender: channel::Sender<HandleInput>,
@@ -83,7 +82,7 @@ impl ProdChainHandle {
     }
 }
 
-impl ChainHandle for ProdChainHandle {
+impl ChainHandle for CosmosSDKHandle {
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainHandleError> {
         let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
@@ -110,7 +109,7 @@ impl ChainHandle for ProdChainHandle {
         Ok(response)
     }
 
-    fn get_header(&self, height: Height) -> SignedHeader {
+    fn get_header(&self, height: Height) -> Result<SignedHeader, ChainHandleError> {
         todo!()
     }
 

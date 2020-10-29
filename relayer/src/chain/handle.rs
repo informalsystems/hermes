@@ -48,14 +48,9 @@ pub enum HandleInput {
 pub trait ChainHandle: Send {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, ChainHandleError>;
 
-    // Inclusion proofs
-    // It might be good to include an inclusion proof method which abstracts over the light client
-    // to prove that a peice of data is stored on the chain
-
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainHandleError>;
 
-    // TODO: Error Handling, get rid of this?
-    fn get_header(&self, height: Height) -> SignedHeader;
+    fn get_header(&self, height: Height) -> Result<SignedHeader, ChainHandleError>;
 
     fn get_minimal_set(
         &self,
@@ -65,13 +60,6 @@ pub trait ChainHandle: Send {
 
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainHandleError>;
 
-    // Mocked:
-    // - query the consensus_state of src on dst
-    // - query the highest consensus_state
-    // - verify if with the light client
-    // - return the height
-    // + TODO: Can eventually be populated be pre-populated by a event_monitor subscription to the
-    // to the full node
     fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainHandleError>;
 
     fn id(&self) -> ChainId;
