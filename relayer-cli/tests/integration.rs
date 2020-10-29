@@ -35,10 +35,10 @@ fn simd_config() -> Config {
         store_prefix: "ibc".to_string(),
         client_ids: vec!["ethbridge".to_string()],
         gas: 200000,
-        peer_id: "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap(),
         trust_threshold: Default::default(),
         trusting_period: default::trusting_period(),
         clock_drift: default::clock_drift(),
+        peers: None,
     }];
     config
 }

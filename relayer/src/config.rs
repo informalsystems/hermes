@@ -48,12 +48,6 @@ pub struct Config {
     pub chains: Vec<ChainConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connections: Option<Vec<Connection>>, // use all for default
-    #[serde(
-        default = "HashMap::new",
-        skip_serializing_if = "HashMap::is_empty",
-        serialize_with = "toml::ser::tables_last"
-    )]
-    pub light_clients: HashMap<chain::Id, PeersConfig>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -104,8 +98,19 @@ pub struct ChainConfig {
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
 
-    // TODO: Move the light client config
-    pub peer_id: node::Id,
+    pub peers: Option<PeersConfig>, // initially empty, to configure with the `light add/rm` commands
+}
+
+impl ChainConfig {
+    pub fn primary(&self) -> Option<&LightClientConfig> {
+        let peers = self.peers.as_ref()?;
+        peers.peer(peers.primary)
+    }
+
+    pub fn peer(&self, id: PeerId) -> Option<&LightClientConfig> {
+        let peers = self.peers.as_ref()?;
+        peers.peer(id)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -150,6 +155,16 @@ pub struct RelayPath {
 pub struct PeersConfig {
     pub primary: PeerId,
     pub peers: Vec<LightClientConfig>,
+}
+
+impl PeersConfig {
+    pub fn peer(&self, id: PeerId) -> Option<&LightClientConfig> {
+        self.peers.iter().find(|p| p.peer_id == id)
+    }
+
+    pub fn peer_mut(&mut self, id: PeerId) -> Option<&mut LightClientConfig> {
+        self.peers.iter_mut().find(|p| p.peer_id == id)
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

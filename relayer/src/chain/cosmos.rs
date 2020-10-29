@@ -31,8 +31,12 @@ pub struct CosmosSDKChain {
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
+        let primary = config
+            .primary()
+            .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
+
         let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+            HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(Self {
             config,
@@ -102,6 +106,10 @@ impl Chain for CosmosSDKChain {
 
     fn query_header_at_height(&self, height: Height) -> Result<LightBlock, Error> {
         let client = self.rpc_client();
+        let primary = self
+            .config()
+            .primary()
+            .ok_or_else(|| Kind::LightClient.context("no primary peer configured"))?;
 
         let signed_header = fetch_signed_header(client, height)?;
         assert_eq!(height, signed_header.header.height);
@@ -113,7 +121,7 @@ impl Chain for CosmosSDKChain {
             signed_header,
             validator_set,
             next_validator_set,
-            self.config().peer_id,
+            primary.peer_id,
         );
 
         Ok(light_block)

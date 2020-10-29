@@ -80,17 +80,14 @@ impl AddCmd {
     fn update_config(options: AddOptions, config: &mut Config) -> Result<PeerId, BoxError> {
         let chain_config = config
             .chains
-            .iter()
+            .iter_mut()
             .find(|c| c.id == options.chain_id)
             .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
 
-        let peers_config = config
-            .light_clients
-            .entry(chain_config.id.clone())
-            .or_insert(PeersConfig {
-                primary: options.peer_id,
-                peers: vec![],
-            });
+        let peers_config = chain_config.peers.get_or_insert_with(|| PeersConfig {
+            primary: options.peer_id,
+            peers: vec![],
+        });
 
         let light_client_config = LightClientConfig {
             peer_id: options.peer_id,

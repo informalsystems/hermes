@@ -52,13 +52,13 @@ impl RmCmd {
     fn update_config(options: RmOptions, config: &mut Config) -> Result<PeerId, BoxError> {
         let chain_config = config
             .chains
-            .iter()
+            .iter_mut()
             .find(|c| c.id == options.chain_id)
             .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
 
-        let peers_config = config
-            .light_clients
-            .get_mut(&chain_config.id)
+        let peers_config = chain_config
+            .peers
+            .as_mut()
             .ok_or_else(|| format!("no peers configured for chain: {}", options.chain_id))?;
 
         let peer_exists = !peers_config
