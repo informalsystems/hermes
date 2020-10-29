@@ -104,12 +104,12 @@ pub struct ChainConfig {
 impl ChainConfig {
     pub fn primary(&self) -> Option<&LightClientConfig> {
         let peers = self.peers.as_ref()?;
-        peers.peer(peers.primary)
+        peers.light_client(peers.primary)
     }
 
-    pub fn peer(&self, id: PeerId) -> Option<&LightClientConfig> {
+    pub fn light_client(&self, id: PeerId) -> Option<&LightClientConfig> {
         let peers = self.peers.as_ref()?;
-        peers.peer(id)
+        peers.light_client(id)
     }
 }
 
@@ -154,16 +154,16 @@ pub struct RelayPath {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PeersConfig {
     pub primary: PeerId,
-    pub peers: Vec<LightClientConfig>,
+    pub light_clients: Vec<LightClientConfig>,
 }
 
 impl PeersConfig {
-    pub fn peer(&self, id: PeerId) -> Option<&LightClientConfig> {
-        self.peers.iter().find(|p| p.peer_id == id)
+    pub fn light_client(&self, id: PeerId) -> Option<&LightClientConfig> {
+        self.light_clients.iter().find(|p| p.peer_id == id)
     }
 
-    pub fn peer_mut(&mut self, id: PeerId) -> Option<&mut LightClientConfig> {
-        self.peers.iter_mut().find(|p| p.peer_id == id)
+    pub fn light_client_mut(&mut self, id: PeerId) -> Option<&mut LightClientConfig> {
+        self.light_clients.iter_mut().find(|p| p.peer_id == id)
     }
 }
 

@@ -20,15 +20,6 @@ trusting_period = '14days'
 numerator = '1'
 denominator = '3'
 
-[chains.peers]
-primary = 'DDDDADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
-
-[[chains.peers.peers]]
-peer_id = 'DDDDADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
-address = 'tcp://127.0.0.1:26657'
-trusted_header_hash = 'D291DC2F798E5ADB8D6B9E9A75F52FA4D2CFD2E6A18EBDDD7E1B6BE6DA692DE8'
-trusted_height = '142'
-
 [[chains]]
 id = 'chain_B'
 rpc_addr = 'tcp://localhost:26557'

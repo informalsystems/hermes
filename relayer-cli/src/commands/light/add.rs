@@ -33,6 +33,9 @@ pub struct AddCmd {
     /// trusted header height
     #[options(short = "h")]
     height: Option<Height>,
+
+    /// allow overriding an existing peer
+    force: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -52,8 +55,11 @@ struct AddOptions {
     /// trusted header height
     trusted_height: Height,
 
-    /// whether this is the primary peer
+    /// whether this is the primary peer or not
     primary: bool,
+
+    /// allow overriding an existing peer
+    force: bool,
 }
 
 impl AddOptions {
@@ -64,6 +70,7 @@ impl AddOptions {
         let trusted_hash = cmd.hash.ok_or("missing trusted hash")?;
         let trusted_height = cmd.height.ok_or("missing chain identifier")?;
         let primary = cmd.primary;
+        let force = cmd.force;
 
         Ok(AddOptions {
             chain_id,
@@ -72,6 +79,7 @@ impl AddOptions {
             trusted_hash,
             trusted_height,
             primary,
+            force,
         })
     }
 }
@@ -86,8 +94,15 @@ impl AddCmd {
 
         let peers_config = chain_config.peers.get_or_insert_with(|| PeersConfig {
             primary: options.peer_id,
-            peers: vec![],
+            light_clients: vec![],
         });
+
+        // Check if the given peer exists already, in which case throw an error except if the
+        // --force flag is set.
+        let peer_exists = peers_config.light_client(options.peer_id).is_some();
+        if peer_exists && !options.force {
+            return Err(format!("a peer with id {} already exists, remove it first or pass the --force flag to override it", options.peer_id).into());
+        }
 
         let light_client_config = LightClientConfig {
             peer_id: options.peer_id,
@@ -96,7 +111,14 @@ impl AddCmd {
             trusted_height: options.trusted_height,
         };
 
-        peers_config.peers.push(light_client_config);
+        if peer_exists {
+            // Filter out the light client config with the specified peer id
+            peers_config
+                .light_clients
+                .retain(|p| p.peer_id != options.peer_id);
+        }
+
+        peers_config.light_clients.push(light_client_config);
 
         if options.primary {
             peers_config.primary = options.peer_id;

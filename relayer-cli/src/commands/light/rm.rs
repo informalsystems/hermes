@@ -61,28 +61,34 @@ impl RmCmd {
             .as_mut()
             .ok_or_else(|| format!("no peers configured for chain: {}", options.chain_id))?;
 
-        let peer_exists = !peers_config
-            .peers
-            .iter()
-            .any(|p| p.peer_id == options.peer_id);
-
+        // Check if the given peer actually exists already, if not throw an error.
+        let peer_exists = peers_config.light_client(options.peer_id).is_some();
         if !peer_exists {
             return Err(format!("cannot find peer: {}", options.peer_id).into());
         }
 
+        // Only allow remove the primary peer if the --force option is set
         let is_primary = peers_config.primary == options.peer_id;
         if is_primary && !options.force {
             return Err("cannot remove primary peer, pass --force flag to force removal".into());
         }
 
-        peers_config.peers.retain(|p| p.peer_id != options.peer_id);
+        // Filter out the light client config with the specified peer id
+        peers_config
+            .light_clients
+            .retain(|p| p.peer_id != options.peer_id);
 
-        if peers_config.peers.is_empty() {
-            return Err("cannot remove sole peer, add other peers before removing this one".into());
+        // Disallow removing the last remaining peer
+        if peers_config.light_clients.is_empty() {
+            return Err(
+                "cannot remove last remaining peer, add other peers before removing this one"
+                    .into(),
+            );
         }
 
+        // If the peer we removed was the primary peer, use the next available peer as the primary
         if is_primary {
-            let new_primary = peers_config.peers.first().unwrap(); // SAFETY: safe because of emptiness check above
+            let new_primary = peers_config.light_clients.first().unwrap(); // SAFETY: safe because of check above
             peers_config.primary = new_primary.peer_id;
         }
 
