@@ -23,6 +23,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::util::block_on;
 
+/// TODO: This will slowly be replaced by ChainRuntime + ChainHandle.
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,

@@ -24,16 +24,17 @@ pub enum ForeignClientError {
 }
 
 pub struct ForeignClientConfig {
-    client_id: ClientId,
-    chain_id: ChainId,
+    id: ClientId,
+    // timeout: Duration // How much to wait before giving up on client creation.
 }
 
 impl ForeignClientConfig {
-    pub fn new(client_id: ClientId, chain_id: ChainId) -> ForeignClientConfig {
-        Self {
-            client_id,
-            chain_id,
-        }
+    pub fn new(client_id: ClientId) -> ForeignClientConfig {
+        Self { id: client_id }
+    }
+
+    pub fn client_id(&self) -> &ClientId {
+        &self.id
     }
 }
 
@@ -42,12 +43,21 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
+    /// Creates a new foreign client.
+    /// Post-condition: chain `host` will host an IBC client for chain `source`.
+    /// TODO: pre-conditions for success: live handle to each of `host` and `target` chains enough?
     pub fn new(
-        src_chain: &dyn ChainHandle,
-        dst_chain: &dyn ChainHandle,
+        host: &dyn ChainHandle,
+        source: &dyn ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
-        // TODO: Client Handshake
+        // Query the client state on source chain.
+        // let response = source.query(
+        //     ClientStatePath(opts.clone().dest_client_id),
+        //     tendermint::block::Height::from(0_u32),
+        //     false,
+        // );
+
         Ok(ForeignClient { config })
     }
 

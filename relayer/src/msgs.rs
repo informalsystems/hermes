@@ -9,6 +9,8 @@ pub enum Datagram {
     ClientUpdate(ClientUpdate),
 }
 
+pub type Datagrams = Vec<Datagram>;
+
 #[derive(Clone)]
 pub struct Packet {
     // type

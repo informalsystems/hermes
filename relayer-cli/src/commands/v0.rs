@@ -5,7 +5,7 @@ use abscissa_core::{
 };
 
 use relayer::{
-    chain::handle::ChainRuntime,
+    chain::runtime::ChainRuntime,
     channel::{Channel, ChannelConfig},
     connection::{Connection, ConnectionConfig},
     foreign_client::{ForeignClient, ForeignClientConfig},
@@ -33,16 +33,24 @@ impl Runnable for V0Cmd {
     }
 }
 
-pub fn v0_task(_config: Config) -> Result<(), BoxError> {
-    let src_chain = ChainRuntime::new(todo!()); // TODO: Pass chain config
-    let dst_chain = ChainRuntime::new(todo!()); // TODO: Pass chain config
+pub fn v0_task(config: Config) -> Result<(), BoxError> {
+    let src_chain_config = config
+        .chains
+        .get(0)
+        .ok_or_else(|| "Configuration for source chain (position 0 in chains config) not found")?;
+    let dst_chain_config = config.chains.get(1).ok_or_else(|| {
+        "Configuration for destination chain (position 1 in chains config) not found"
+    })?;
 
-    let src_chain_handle = src_chain.handle();
+    let src_chain = ChainRuntime::new(src_chain_config);
+    let dst_chain = ChainRuntime::new(dst_chain_config);
+
+    let src_chain_handle = src_chain.handle()?;
     thread::spawn(move || {
         src_chain.run().unwrap();
     });
 
-    let dst_chain_handle = dst_chain.handle();
+    let dst_chain_handle = dst_chain.handle()?;
     thread::spawn(move || {
         // What should we do on return here?
         dst_chain.run().unwrap();
@@ -53,16 +61,23 @@ pub fn v0_task(_config: Config) -> Result<(), BoxError> {
     // I think this is actualy what we want
     // Think about how that would work with multiple links
 
-    let foreign_client = ForeignClient::new(
+    // Instantiate the foreign client on the source chain.
+    let client_on_src = ForeignClient::new(
         &src_chain_handle,
         &dst_chain_handle,
-        ForeignClientConfig::new(todo!(), todo!()),
+        ForeignClientConfig::new(todo!()),
+    )?;
+
+    let client_on_dst = ForeignClient::new(
+        &dst_chain_handle,
+        &src_chain_handle,
+        ForeignClientConfig::new(todo!()),
     )?;
 
     let connection = Connection::new(
         &src_chain_handle,
         &dst_chain_handle,
-        &foreign_client, // Create a semantic dependecy
+        &client_on_src, // Create a semantic dependecy
         ConnectionConfig::new(todo!(), todo!()),
     )
     .unwrap();
@@ -78,8 +93,8 @@ pub fn v0_task(_config: Config) -> Result<(), BoxError> {
     let link = Link::new(
         src_chain_handle,
         dst_chain_handle,
-        foreign_client, // Actual dependecy
-        channel,        // Semantic dependecy
+        client_on_src, // Actual dependecy
+        channel,       // Semantic dependecy
         LinkConfig::new(todo!(), todo!(), todo!()),
     )?;
 
