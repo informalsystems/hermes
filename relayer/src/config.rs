@@ -173,15 +173,7 @@ pub struct LightClientConfig {
     pub address: net::Address,
     pub trusted_header_hash: Hash,
     pub trusted_height: Height,
-    // pub lightstore: LightStoreConfig,
 }
-
-// #[derive(Clone, Debug, Deserialize, Serialize)]
-// #[serde(tag = "type")]
-// pub enum LightStoreConfig {
-//     Persistent { db_path: PathBuf },
-//     Memory,
-// }
 
 /// Attempt to load and parse the config file into the Config struct.
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
