@@ -4,10 +4,7 @@ use abscissa_core::{
     application::fatal_error, error::BoxError, tracing::info, Command, Options, Runnable,
 };
 
-use relayer::{
-    chain::CosmosSDKChain,
-    config::{Config, LightClientConfig},
-};
+use relayer::{chain::CosmosSDKChain, config::Config};
 
 use crate::{application::APPLICATION, prelude::*, tasks};
 
@@ -20,7 +17,6 @@ pub struct StartCmd {
 impl StartCmd {
     async fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config().clone();
-        dbg!(&config);
         start(config, self.reset).await
     }
 }
@@ -37,16 +33,15 @@ impl Runnable for StartCmd {
 }
 
 async fn start(config: Config, reset: bool) -> Result<(), BoxError> {
-    let chains: Vec<CosmosSDKChain> = vec![];
+    let mut chains: Vec<CosmosSDKChain> = vec![];
 
     for chain_config in &config.chains {
-        let light_config: LightClientConfig = todo!();
-        // let light_config = todo!().ok_or_else(|| {
-        //     format!(
-        //         "could not find light client configuration for chain {}",
-        //         chain_config.id
-        //     )
-        // })?;
+        let light_config = chain_config.primary().ok_or_else(|| {
+            format!(
+                "could not find light client configuration for chain {}",
+                chain_config.id
+            )
+        })?;
 
         info!(chain.id = %chain_config.id, "spawning light client");
 
