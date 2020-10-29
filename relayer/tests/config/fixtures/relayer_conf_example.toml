@@ -16,9 +16,6 @@ trusting_period = '14days'
 denominator = '3'
 numerator = '1'
 
-# TODO: Move to light client config
-peer_id = "FC0FFEEFACADEBADFADAD0BEFEEDC0C0ADEADBEE"
-
 [[chains]]
 account_prefix = 'cosmos'
 client_ids = ['clB1']
@@ -33,9 +30,6 @@ trusting_period = '14days'
 [chains.trust_threshold]
 denominator = '3'
 numerator = '1'
-
-# TODO: Move to light client config
-peer_id = "DC0C0ADEADBEEFC0FFEEFACADEBADFADAD0BEFEE"
 
 [[connections]]
 [[connections.paths]]
