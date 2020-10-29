@@ -1,72 +1,74 @@
+[global]
+timeout = '10s'
+strategy = 'naive'
+
 [[chains]]
+id = 'chain_A'
+rpc_addr = 'tcp://localhost:26657'
 account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
 client_ids = [
     'clA1',
     'clA2',
 ]
-clock_drift = '5s'
 gas = 200000
-id = 'chain_A'
-key_name = 'testkey'
-rpc_addr = 'tcp://localhost:26657'
-store_prefix = 'ibc'
+clock_drift = '5s'
 trusting_period = '14days'
 
 [chains.trust_threshold]
-denominator = '3'
 numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = 'DDDDADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
+
+[[chains.peers.peers]]
+peer_id = 'DDDDADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
+address = 'tcp://127.0.0.1:26657'
+trusted_header_hash = 'D291DC2F798E5ADB8D6B9E9A75F52FA4D2CFD2E6A18EBDDD7E1B6BE6DA692DE8'
+trusted_height = '142'
 
 [[chains]]
-account_prefix = 'cosmos'
-client_ids = ['clB1']
-clock_drift = '5s'
-gas = 200000
 id = 'chain_B'
-key_name = 'testkey'
 rpc_addr = 'tcp://localhost:26557'
+account_prefix = 'cosmos'
+key_name = 'testkey'
 store_prefix = 'ibc'
+client_ids = ['clB1']
+gas = 200000
+clock_drift = '5s'
 trusting_period = '14days'
 
 [chains.trust_threshold]
-denominator = '3'
 numerator = '1'
+denominator = '3'
 
 [[connections]]
-[[connections.paths]]
-dest_port = 'portB1'
-direction = 'unidirectional'
-src_port = 'portA1'
-
-[[connections.paths]]
-dest_port = 'portB2'
-direction = 'bidirectional'
-src_port = 'portA2'
-
-[[connections.paths]]
-dest_channel = 'chan3onB'
-dest_port = 'portB3'
-direction = 'bidirectional'
-src_channel = 'chan3onA'
-src_port = 'portA3'
+[connections.src]
+chain_id = 'chain_A'
+client_id = 'clB1'
+connection_id = 'connAtoB'
 
 [connections.dest]
 chain_id = 'chain_B'
 client_id = 'clA1'
 connection_id = 'connBtoA'
 
-[connections.src]
-chain_id = 'chain_A'
-client_id = 'clB1'
-connection_id = 'connAtoB'
+[[connections.paths]]
+src_port = 'portA1'
+dest_port = 'portB1'
+direction = 'unidirectional'
 
-[global]
-strategy = 'naive'
-timeout = '10s'
-[light_clients.chain_A]
-primary = 'BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
+[[connections.paths]]
+src_port = 'portA2'
+dest_port = 'portB2'
+direction = 'bidirectional'
 
-[[light_clients.chain_A.peers]]
-address = 'tcp://127.0.0.1:26657'
-peer_id = 'BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE'
-trusted_header_hash = 'D291DC2F798E5ADB8D6B9E9A75F52FA4D2CFD2E6A18EBDDD7E1B6BE6DA692DE8'
-trusted_height = '42'
+[[connections.paths]]
+src_port = 'portA3'
+dest_port = 'portB3'
+src_channel = 'chan3onA'
+dest_channel = 'chan3onB'
+direction = 'bidirectional'
+

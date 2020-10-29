@@ -89,15 +89,15 @@ pub struct ChainConfig {
     pub client_ids: Vec<String>,
     #[serde(default = "default::gas")]
     pub gas: u64,
-
-    #[serde(default)]
-    pub trust_threshold: TrustThreshold,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
+    #[serde(default)]
+    pub trust_threshold: TrustThreshold,
 
     // initially empty, to configure with the `light add/rm` commands
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub peers: Option<PeersConfig>,
 }
 
@@ -194,13 +194,8 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error
 
 /// Serialize the given `Config` as TOML to the given writer.
 pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), error::Error> {
-    // This is a workaround to ensure that we can serialize the configuration without
-    // running into the dreaded 'values must be emitted before tables' TOML error.
-    // See https://github.com/alexcrichton/toml-rs/issues/142
-    let toml_value = toml::Value::try_from(config).map_err(|e| error::Kind::Config.context(e))?;
-
     let toml_config =
-        toml::to_string_pretty(&toml_value).map_err(|e| error::Kind::Config.context(e))?;
+        toml::to_string_pretty(&config).map_err(|e| error::Kind::Config.context(e))?;
 
     writeln!(writer, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
 
