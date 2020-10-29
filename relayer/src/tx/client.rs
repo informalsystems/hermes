@@ -121,6 +121,5 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         )
         .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
 
-    let response = vec![];
     Ok(response)
 }
