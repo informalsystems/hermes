@@ -2,7 +2,6 @@
 //! to support ADR validation..should move to relayer/src soon
 
 use std::{
-    collections::HashMap,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -98,7 +97,8 @@ pub struct ChainConfig {
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
     pub trusting_period: Duration,
 
-    pub peers: Option<PeersConfig>, // initially empty, to configure with the `light add/rm` commands
+    // initially empty, to configure with the `light add/rm` commands
+    pub peers: Option<PeersConfig>,
 }
 
 impl ChainConfig {
@@ -175,7 +175,7 @@ pub struct LightClientConfig {
     pub trusted_height: Height,
 }
 
-/// Attempt to load and parse the config file into the Config struct.
+/// Attempt to load and parse the TOML config file as a `Config`.
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
         std::fs::read_to_string(&path).map_err(|e| error::Kind::ConfigIo.context(e))?;
@@ -186,8 +186,14 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     Ok(config)
 }
 
-/// Attempt to serialize and store a Config in the given config file.
+/// Serialize the given `Config` as TOML to the given config file.
 pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
+    let mut file = File::create(path).map_err(|e| error::Kind::Config.context(e))?;
+    store_writer(config, &mut file)
+}
+
+/// Serialize the given `Config` as TOML to the given writer.
+pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<(), error::Error> {
     // This is a workaround to ensure that we can serialize the configuration without
     // running into the dreaded 'values must be emitted before tables' TOML error.
     // See https://github.com/alexcrichton/toml-rs/issues/142
@@ -196,15 +202,14 @@ pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error
     let toml_config =
         toml::to_string_pretty(&toml_value).map_err(|e| error::Kind::Config.context(e))?;
 
-    let mut file = File::create(path).map_err(|e| error::Kind::Config.context(e))?;
-    writeln!(file, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
+    writeln!(writer, "{}", toml_config).map_err(|e| error::Kind::Config.context(e))?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse;
+    use super::{parse, store_writer};
 
     #[test]
     fn parse_valid_config() {
@@ -216,5 +221,19 @@ mod tests {
         let config = parse(path);
         println!("{:?}", config);
         assert!(config.is_ok());
+    }
+
+    #[test]
+    fn serialize_valid_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example.toml"
+        );
+
+        let config = parse(path).expect("could not parse config");
+        let mut buffer = Vec::new();
+
+        let result = store_writer(&config, &mut buffer);
+        assert!(result.is_ok());
     }
 }
