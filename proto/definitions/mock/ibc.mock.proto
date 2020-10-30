@@ -1,0 +1,16 @@
+syntax = "proto3";
+package ibc.mock;
+
+import "ibc/core/client/v1/client.proto";
+
+message Header {
+  ibc.core.client.v1.Height height = 1;
+}
+
+message ClientState {
+  Header header = 1;
+}
+
+message ConsensusState {
+  Header header = 1;
+}

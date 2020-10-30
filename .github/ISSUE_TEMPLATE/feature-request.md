@@ -11,6 +11,10 @@ v    Word of caution: poorly thought-out proposals may be rejected
 v                     without deliberation 
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
 
+## Crate
+
+<!-- Which crate does this feature concern? -->
+
 ## Summary
 
 <!-- Short, concise description of the proposed feature -->
@@ -32,5 +36,6 @@ ____
 
 - [ ] Not duplicate issue
 - [ ] Appropriate labels applied
+- [ ] Appropriate milestone (priority) applied
 - [ ] Appropriate contributors tagged
 - [ ] Contributor assigned/self-assigned

@@ -17,9 +17,8 @@ ______
 
 For contributor use:
 
-- [ ] Unit tests written
-- [ ] Added test to CI if applicable 
-- [ ] Updated CHANGELOG_PENDING.md
+- [ ] Updated the __Unreleased__ section of [CHANGELOG.md](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG.md) with the issue.
+- [ ] If applicable: Unit tests written, added test to CI.
 - [ ] Linked to Github issue with discussion and accepted design OR link to spec that describes this work.
-- [ ] Updated relevant documentation (`docs/`) and code comments
-- [ ] Re-reviewed `Files changed` in the Github PR explorer
+- [ ] Updated relevant documentation (`docs/`) and code comments.
+- [ ] Re-reviewed `Files changed` in the Github PR explorer.

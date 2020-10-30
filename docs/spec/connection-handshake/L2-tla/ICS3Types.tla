@@ -10,12 +10,13 @@
 
  ***************************************************************************)
 
-EXTENDS Naturals
+EXTENDS Naturals, Sequences
 
 CONSTANTS MaxHeight,
           AllConnectionIDs,
           AllClientIDs,
-          AllChainIDs
+          AllChainIDs,
+          AllVersionSeqs
 
 
 (******************************* InitClients ********************************
@@ -67,7 +68,7 @@ InitMsgs(le, re) ==
     ]
 
 
-(******************************* ICS3MessageTypes *****************************
+(***************************** ICS3MessageTypes ****************************
 
     The set of valid message types that the ICS3Module can
     handle, e.g., as incoming or outgoing messages.
@@ -185,9 +186,10 @@ ConnectionParameters ==
     this special record. 
      
  ***************************************************************************)
-NullConnection == [
-    parameters |-> NullConnectionParameters,
-    state |-> "UNINIT"
+NullConnections == [
+    parameters : {NullConnectionParameters},
+    state : {"UNINIT"},
+    version : AllVersionSeqs \ {<<>>}
 ]
 
 
@@ -205,7 +207,8 @@ NullConnection == [
 Connections ==
     [
         parameters : ConnectionParameters,
-        state : ICS3ConnectionStates
+        state : ICS3ConnectionStates, 
+        version : AllVersionSeqs
     ]
 
 
@@ -276,7 +279,8 @@ ConnectionHandshakeMessages ==
         parameters : ConnectionParameters,
         proofHeight : Heights,
         connProof : ConnProofs,
-        clientProof : ClientProofs
+        clientProof : ClientProofs,
+        version : AllVersionSeqs
     ]
     \union
     [
@@ -284,7 +288,8 @@ ConnectionHandshakeMessages ==
         parameters : ConnectionParameters,
         proofHeight : Heights,
         connProof : ConnProofs,
-        clientProof : ClientProofs
+        clientProof : ClientProofs,
+        version : AllVersionSeqs
     ]
     \union
     [
@@ -346,13 +351,14 @@ Stores ==
     [
         chainID : AllChainIDs,
         latestHeight : Heights,
-        connection : Connections \union { NullConnection },
+        connection : Connections \union NullConnections,
         client : Clients
     ]
 
 
 =============================================================================
 \* Modification History
+\* Last modified Thu Aug 20 14:14:03 CEST 2020 by ilinastoilkovska
 \* Last modified Tue Jun 23 13:47:17 CEST 2020 by adi
 \* Created Mon May 18 17:53:08 CEST 2020 by adi
 

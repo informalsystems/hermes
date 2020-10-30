@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR)
 
-This is a location to record all high-level architecture decisions in the Tendermint-RS project.
+This is a location to record all high-level architecture decisions in the IBC-RS project.
 
 You can read more about the ADR concept in this [blog post](https://product.reverb.com/documenting-architecture-decisions-the-reverb-way-a3563bb24bd0#.78xhdix6t).
 
@@ -27,5 +27,5 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 | ADR \# | Description | Status |
 | ------ | ----------- | ------ |
-| [001](./adr-001-repo.md) | Repository structure for `ibc-rs` | |
-| [002](./adr-002-relayer.md) | IBC Relayer | |
+| [001](./adr-001-repo.md) | Repository structure for `ibc-rs` | Proposed |
+| [002](./adr-002-ibc-relayer.md) | IBC Relayer in Rust |  |
