@@ -86,16 +86,14 @@ impl KeyRingOperations for KeyRing {
                             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
                         Ok(key)
                     }
-                    None => {
-                        return Err(Kind::InvalidMnemonic
-                            .context("invalid key file, cannot find mnemonic".to_string()))?
-                    }
+                    None => Err(Kind::InvalidMnemonic
+                        .context("invalid key file, cannot find mnemonic".to_string())
+                        .into()),
                 }
             }
-            None => {
-                return Err(Kind::InvalidMnemonic
-                    .context("invalid key file, cannot find mnemonic".to_string()))?
-            }
+            None => Err(Kind::InvalidMnemonic
+                .context("invalid key file, cannot find mnemonic".to_string())
+                .into()),
         }
     }
 
@@ -139,7 +137,7 @@ impl KeyRingOperations for KeyRing {
         match &self {
             KeyRing::MemoryKeyStore { store: s } => {
                 if !s.contains_key(&address) {
-                    return Err(Kind::InvalidKey.into());
+                    Err(Kind::InvalidKey.into())
                 } else {
                     let key = s.get(&address);
                     match key {
@@ -154,10 +152,7 @@ impl KeyRingOperations for KeyRing {
     /// Insert an entry in the key store
     fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
         match self {
-            KeyRing::MemoryKeyStore { store: s } => {
-                let ke = s.insert(addr, key);
-                ke
-            }
+            KeyRing::MemoryKeyStore { store: s } => s.insert(addr, key),
         }
     }
 

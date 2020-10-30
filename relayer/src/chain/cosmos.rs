@@ -183,8 +183,7 @@ impl Chain for CosmosSDKChain {
         //println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
         //let signed = sign(sign_doc);
-        let response =
-            block_on(broadcast_tx(self, txraw_buf.clone())).map_err(|e| Kind::Rpc.context(e))?;
+        let response = block_on(broadcast_tx(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }
@@ -294,7 +293,7 @@ async fn broadcast_tx(
 
     if !response.code.is_ok() {
         // Fail with response log.
-        println!("Tx Error Response: {:?}", response.clone());
+        println!("Tx Error Response: {:?}", response);
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
 

@@ -3,7 +3,6 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRingOperations};
 use bitcoin::hashes::hex::ToHex;
-use hex;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
