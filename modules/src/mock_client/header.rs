@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -11,7 +10,7 @@ use crate::ics02_client::header::Header;
 use crate::mock_client::state::MockConsensusState;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockHeader(pub Height);
 
 impl DomainType<RawMockHeader> for MockHeader {}

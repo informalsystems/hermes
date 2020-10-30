@@ -7,13 +7,12 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 
 pub const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenInit {
     port_id: PortId,
     channel_id: ChannelId,
@@ -82,7 +81,7 @@ impl Msg for MsgChannelOpenInit {
 
 pub const TYPE_MSG_CHANNEL_OPEN_TRY: &str = "channel_open_try";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenTry {
     port_id: PortId,
     channel_id: ChannelId,
@@ -163,7 +162,7 @@ impl Msg for MsgChannelOpenTry {
 
 pub const TYPE_MSG_CHANNEL_OPEN_ACK: &str = "channel_open_ack";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenAck {
     port_id: PortId,
     channel_id: ChannelId,
@@ -225,7 +224,7 @@ impl Msg for MsgChannelOpenAck {
 
 pub const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenConfirm {
     port_id: PortId,
     channel_id: ChannelId,
@@ -283,7 +282,7 @@ impl Msg for MsgChannelOpenConfirm {
 
 pub const TYPE_MSG_CHANNEL_CLOSE_INIT: &str = "channel_close_init";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseInit {
     port_id: PortId,
     channel_id: ChannelId,
@@ -336,7 +335,7 @@ impl Msg for MsgChannelCloseInit {
 
 pub const TYPE_MSG_CHANNEL_CLOSE_CONFIRM: &str = "channel_close_confirm";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseConfirm {
     port_id: PortId,
     channel_id: ChannelId,
@@ -394,7 +393,7 @@ impl Msg for MsgChannelCloseConfirm {
 
 pub const TYPE_MSG_PACKET: &str = "ics04/opaque";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgPacket {
     packet: Packet,
     proofs: Proofs,
@@ -453,7 +452,7 @@ impl Msg for MsgPacket {
 
 pub const TYPE_MSG_TIMEOUT: &str = "ics04/timeout";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
     packet: Packet,
     next_sequence_recv: Option<u64>,
@@ -509,7 +508,7 @@ impl Msg for MsgTimeout {
 
 pub const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgAcknowledgement {
     packet: Packet,
     acknowledgement: Vec<u8>,
@@ -570,13 +569,13 @@ impl Msg for MsgAcknowledgement {
 #[cfg(test)]
 mod tests {
     use super::MsgChannelOpenInit;
-    use crate::ics03_connection::msgs::test_util::get_dummy_proof;
     use crate::ics04_channel::channel::Order;
     use crate::ics04_channel::msgs::{
         MsgChannelCloseConfirm, MsgChannelCloseInit, MsgChannelOpenAck, MsgChannelOpenConfirm,
         MsgChannelOpenTry,
     };
     use crate::ics23_commitment::commitment::CommitmentProof;
+    use crate::test_utils::get_dummy_proof;
     use crate::Height;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;

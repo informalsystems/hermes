@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
@@ -18,7 +17,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 ///
 /// Message definition `MsgConnectionOpenInit`  (i.e., the `ConnOpenInit` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgConnectionOpenInit {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,
@@ -135,9 +134,8 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::{
-        get_dummy_bech32_account, get_dummy_counterparty,
-    };
+    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.

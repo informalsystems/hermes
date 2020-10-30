@@ -3,18 +3,23 @@
 //! handles these messages in two layers: first with the general ICS 02 client handler, which
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
-use std::convert::TryFrom;
-
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use crate::ics02_client::error;
-use crate::ics24_host::identifier::ClientId;
-use crate::tx_msg::Msg;
+use bech32::{FromBase32, ToBase32};
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-use std::str::FromStr;
+use std::convert::TryFrom;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::{DomainType, Error, Kind};
+use tendermint_proto::DomainType;
 
+use crate::ics02_client::client_def::AnyHeader;
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::error;
+use crate::ics02_client::error::{Error, Kind};
+use crate::ics24_host::identifier::ClientId;
+use crate::tx_msg::Msg;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+use std::str::FromStr;
+
+const TYPE_MSG_UPDATE_CLIENT: &str = "update_client";
 const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
 
 #[allow(clippy::large_enum_variant)]
@@ -39,7 +44,7 @@ impl MsgCreateAnyClient {
         client_state: AnyClientState,
         consensus_state: AnyConsensusState,
         signer: AccountId,
-    ) -> Result<Self, error::Error> {
+    ) -> Result<Self, Error> {
         if client_state.client_type() != consensus_state.client_type() {
             return Err(error::Kind::RawClientAndConsensusStateTypesMismatch {
                 state_type: client_state.client_type(),
@@ -89,6 +94,7 @@ impl Msg for MsgCreateAnyClient {
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
+        println!("signers: {:?}", self.signer);
         vec![self.signer]
     }
 }
@@ -99,24 +105,30 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgCreateClient) -> Result<Self, Self::Error> {
+        let (_hrp, data) =
+            bech32::decode(&raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+        let addr_bytes =
+            Vec::<u8>::from_base32(&data).map_err(|e| Kind::InvalidAddress.context(e))?;
+        let signer =
+            AccountId::try_from(addr_bytes).map_err(|e| Kind::InvalidAddress.context(e))?;
+
         let raw_client_state = raw
             .client_state
-            .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawClientState))?;
+            .ok_or_else(|| Kind::InvalidRawClientState)?;
 
         let raw_consensus_state = raw
             .consensus_state
-            .ok_or_else(|| Kind::DecodeMessage.context(error::Kind::InvalidRawConsensusState))?;
+            .ok_or_else(|| Kind::InvalidRawConsensusState)?;
 
         Ok(MsgCreateAnyClient::new(
             ClientId::from_str(raw.client_id.as_str())
-                .map_err(|e| Kind::DecodeMessage.context(e))?,
+                .map_err(|e| Kind::InvalidIdentifier.context(e))?,
             AnyClientState::try_from(raw_client_state)
-                .map_err(|e| Kind::DecodeMessage.context(e))?,
+                .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             AnyConsensusState::try_from(raw_consensus_state)
-                .map_err(|e| Kind::DecodeMessage.context(e))?,
-            AccountId::from_str(raw.signer.as_str()).map_err(|e| Kind::DecodeMessage.context(e))?,
-        )
-        .map_err(|e| Kind::DecodeMessage.context(e))?)
+                .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
+            signer,
+        )?)
     }
 }
 
@@ -126,46 +138,126 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
             client_id: ics_msg.client_id.to_string(),
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: ics_msg.signer.to_string(),
+            signer: bech32::encode("cosmos", ics_msg.signer.to_base32()).unwrap(),
         }
     }
 }
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgUpdateAnyClient {
     pub client_id: ClientId,
     pub header: AnyHeader,
     pub signer: AccountId,
 }
 
+impl MsgUpdateAnyClient {
+    pub fn new(client_id: ClientId, header: AnyHeader, signer: AccountId) -> Self {
+        MsgUpdateAnyClient {
+            client_id,
+            header,
+            signer,
+        }
+    }
+}
+
+impl Msg for MsgUpdateAnyClient {
+    type ValidationError = crate::ics24_host::error::ValidationError;
+
+    fn route(&self) -> String {
+        crate::keys::ROUTER_KEY.to_string()
+    }
+
+    fn get_type(&self) -> String {
+        TYPE_MSG_UPDATE_CLIENT.to_string()
+    }
+
+    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
+        // Nothing to validate since all fields are validated on creation.
+        Ok(())
+    }
+
+    fn get_sign_bytes(&self) -> Vec<u8> {
+        let mut buf = Vec::new();
+        let raw_msg: RawMsgUpdateClient = self.clone().into();
+        prost::Message::encode(&raw_msg, &mut buf).unwrap();
+        buf
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
+    }
+}
+
+impl DomainType<RawMsgUpdateClient> for MsgUpdateAnyClient {}
+
+impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
+    type Error = Error;
+
+    fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
+        let (_hrp, data) =
+            bech32::decode(&raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+        let addr_bytes =
+            Vec::<u8>::from_base32(&data).map_err(|e| Kind::InvalidAddress.context(e))?;
+        let signer =
+            AccountId::try_from(addr_bytes).map_err(|e| Kind::InvalidAddress.context(e))?;
+
+        let raw_header = raw.header.ok_or_else(|| Kind::InvalidRawHeader)?;
+
+        Ok(MsgUpdateAnyClient {
+            client_id: raw.client_id.parse().unwrap(),
+            header: AnyHeader::try_from(raw_header).unwrap(),
+            signer,
+        })
+    }
+}
+
+impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
+    fn from(ics_msg: MsgUpdateAnyClient) -> Self {
+        RawMsgUpdateClient {
+            client_id: ics_msg.client_id.to_string(),
+            header: Some(ics_msg.header.into()),
+            signer: bech32::encode("cosmos", ics_msg.signer.to_base32()).unwrap(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
+    use std::convert::{TryFrom, TryInto};
     use std::time::Duration;
 
-    use ibc_proto::ibc::core::client::v1::MsgCreateClient;
+    use ibc_proto::ibc::core::client::v1::{MsgCreateClient, MsgUpdateClient};
 
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::msgs::MsgCreateAnyClient;
-    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+    use crate::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
     use crate::ics07_tendermint::client_state::ClientState;
-    use crate::ics07_tendermint::header::test_util::get_dummy_header;
     use crate::ics24_host::identifier::ClientId;
     use crate::Height;
 
+    use crate::ics07_tendermint::header::test_util::{
+        get_dummy_ics07_header, get_dummy_tendermint_header,
+    };
+    use crate::test_utils::{default_consensus_params, get_dummy_account_id};
+    use tendermint::trust_threshold::TrustThresholdFraction;
+
     #[test]
-    fn to_and_from_any() {
+    fn client_state_serialization() {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let tm_header = get_dummy_header();
+        let tm_header = get_dummy_tendermint_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.signed_header.header.chain_id.to_string(),
+            chain_id: tm_header.chain_id.to_string(),
+            trust_level: TrustThresholdFraction {
+                numerator: 1,
+                denominator: 3,
+            },
             trusting_period: Duration::from_secs(64000),
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
-            latest_height: Height::new(0, u64::from(tm_header.signed_header.header.height)),
+            latest_height: Height::new(0, u64::from(tm_header.height)),
+            consensus_params: default_consensus_params(),
             frozen_height: Height::default(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
@@ -175,7 +267,7 @@ mod tests {
         let msg = MsgCreateAnyClient::new(
             client_id,
             tm_client_state,
-            AnyConsensusState::Tendermint(tm_header.consensus_state()),
+            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
             signer,
         )
         .unwrap();
@@ -183,6 +275,21 @@ mod tests {
         let raw = MsgCreateClient::from(msg.clone());
         let msg_back = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
         let raw_back = MsgCreateClient::from(msg_back.clone());
+        assert_eq!(msg, msg_back);
+        assert_eq!(raw, raw_back);
+    }
+
+    #[test]
+    fn consensus_state_serialization() {
+        let client_id: ClientId = "tendermint".parse().unwrap();
+        let signer = get_dummy_account_id();
+
+        let header = get_dummy_ics07_header();
+
+        let msg = MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header), signer);
+        let raw = MsgUpdateClient::from(msg.clone());
+        let msg_back = MsgUpdateAnyClient::try_from(raw.clone()).unwrap();
+        let raw_back = MsgUpdateClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
         assert_eq!(raw, raw_back);
     }

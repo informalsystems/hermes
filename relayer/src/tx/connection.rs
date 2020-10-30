@@ -30,13 +30,8 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    // Get the key from key seed file
-    let key = dest_chain
-        .keybase
-        .key_from_seed_file(&opts.signer_key)
-        .map_err(|e| Kind::KeyBase.context(e))?;
-    let signer: AccountId =
-        AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+    // Get the key and signer from key seed file
+    let (key, signer) = dest_chain.key_and_signer(&opts.signer_key)?;
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,

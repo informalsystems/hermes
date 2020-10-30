@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::time::Duration;
 
 use anomaly::fail;
@@ -9,37 +10,36 @@ use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
+use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
+use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path;
-
-use crate::keyring::store::{KeyEntry, KeyRing};
+use ibc::tx_msg::Msg;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
+use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::util::block_on;
-
-use std::error::Error;
 
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 
 pub mod handle;
-use ibc::tx_msg::Msg;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
     /// Type of light blocks for this chain
-    type LightBlock: Send + Sync + Serialize + DeserializeOwned;
+    type LightBlock: Send + Sync;
 
     /// Type of light client for this chain
     type LightClient: LightClient<Self::LightBlock> + Send + Sync;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
+    type ConsensusState: ConsensusState + Send + Sync;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState + Send + Sync + Serialize + DeserializeOwned;
+    type ClientState: ClientState + Send + Sync;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type RpcClient: RpcClient + Send + Sync;
@@ -113,4 +113,6 @@ pub trait Chain {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }
+
+    fn query_client_state(&self, client_id: &ClientId) -> Result<AnyClientState, error::Error>;
 }

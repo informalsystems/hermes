@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -21,7 +20,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
 ///
 /// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
@@ -207,12 +206,10 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-
-    use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
-    };
 
     /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
     /// `proof_height` represents the height, on the source chain, at which this chain produced the

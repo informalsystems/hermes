@@ -1,8 +1,6 @@
-use serde_derive::{Deserialize, Serialize};
-
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
     pub fn from_bytes(bytes: &[u8]) -> Self {
@@ -18,10 +16,10 @@ impl From<Vec<u8>> for CommitmentRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentProof(Vec<u8>);
 impl CommitmentProof {
     pub fn is_empty(&self) -> bool {
@@ -41,7 +39,7 @@ impl From<CommitmentProof> for Vec<u8> {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq)]
 pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
 
 impl CommitmentPrefix {

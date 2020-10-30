@@ -34,10 +34,6 @@ pub enum Kind {
     #[error("Bad Notification")]
     Event,
 
-    /// Response parsing error
-    #[error("Could not parse/unmarshall response")]
-    ResponseParsing,
-
     /// Response does not contain data
     #[error("Empty response value")]
     EmptyResponseValue,
@@ -49,6 +45,14 @@ pub enum Kind {
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]
     MessageTransaction(String),
+
+    /// Failed query
+    #[error("Bad parameter")]
+    Query,
+
+    /// Bad parameter
+    #[error("Bad parameter")]
+    BadParameter,
 
     /// Keybase related error
     #[error("Keybase error")]

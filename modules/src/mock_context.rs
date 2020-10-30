@@ -416,7 +416,8 @@ mod tests {
             // All tests should yield a valid context after initialization.
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed while validating context {:?}",
+                "Failed ({}) while validating context {:?}",
+                test.name,
                 test.ctx
             );
 

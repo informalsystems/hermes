@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -19,7 +18,7 @@ use crate::Height;
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
     counterparty_connection_id: Option<ConnectionId>,
@@ -178,10 +177,9 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {

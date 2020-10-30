@@ -60,6 +60,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::str::FromStr;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -68,7 +69,6 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::handler::dispatch;
@@ -76,8 +76,8 @@ mod tests {
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::{MockClientState, MockConsensusState};
     use crate::mock_context::MockContext;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
-    use std::convert::TryFrom;
 
     #[test]
     // These tests exercise two main paths: (1) the ability of the ICS26 routing module to dispatch

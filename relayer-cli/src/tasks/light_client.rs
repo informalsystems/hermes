@@ -134,8 +134,8 @@ async fn client_task(chain_id: chain::Id, handle: SupervisorHandle) -> Result<()
             info!(
                 chain.id = %chain_id,
                 "spawned new client now at trusted state: {} at height {}",
-                trusted_state.signed_header.header.hash(),
-                trusted_state.signed_header.header.height,
+                trusted_state.signed_header.header().hash(),
+                trusted_state.signed_header.header().height,
             );
 
             update_client(chain_id, handle).await?;
@@ -174,8 +174,8 @@ async fn update_client(chain_id: chain::Id, handle0: SupervisorHandle) -> Result
             Ok(trusted_state) => info!(
                 chain.id = %chain_id,
                 "client updated to trusted state: {} at height {}",
-                trusted_state.signed_header.header.hash(),
-                trusted_state.signed_header.header.height
+                trusted_state.signed_header.header().hash(),
+                trusted_state.signed_header.header().height
             ),
 
             Err(err) => error!(chain.id = %chain_id, "error when updating headers: {}", err),

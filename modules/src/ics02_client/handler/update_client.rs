@@ -68,12 +68,13 @@ mod tests {
     use crate::ics02_client::handler::ClientResult::{Create, Update};
     use crate::ics02_client::handler::{dispatch, ClientEvent};
     use crate::ics02_client::header::Header;
-    use crate::ics02_client::msgs::{ClientMsg, MsgUpdateAnyClient};
-    use crate::ics03_connection::msgs::test_util::get_dummy_account_id;
+    use crate::ics02_client::msgs::ClientMsg;
+    use crate::ics02_client::msgs::MsgUpdateAnyClient;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock_client::header::MockHeader;
     use crate::mock_client::state::MockClientState;
     use crate::mock_context::MockContext;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
     use std::str::FromStr;
 

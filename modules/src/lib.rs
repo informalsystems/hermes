@@ -9,7 +9,6 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(dead_code)]
 
 //! Implementation of the following ICS modules:
 //!
@@ -47,6 +46,9 @@ pub type Height = crate::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod test_utils;
 
 #[cfg(test)]
 mod mock_context; // Context mock: for testing all handlers.

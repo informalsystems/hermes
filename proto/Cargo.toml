@@ -23,4 +23,8 @@ prost-types = { version = "0.6" }
 anomaly = "0.2"
 bytes = "0.6"
 thiserror = "1.0"
-tendermint-proto = "0.1.0"
+
+[dependencies.tendermint-proto]
+#git = "https://github.com/informalsystems/tendermint-rs"
+#branch = "greg/research-json"
+path = "../../tendermint-rs/proto"
