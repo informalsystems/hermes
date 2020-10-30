@@ -36,25 +36,25 @@ rust-crypto = "0.2.36"
 bech32 = "0.7.2"
 
 [dependencies.tendermint]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-path = "../../tendermint-rs/tendermint"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint-rpc]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-path = "../../tendermint-rs/rpc"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
+
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-path = "../../tendermint-rs/light-client"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint-proto]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-#branch = "greg/research-json"
-path = "../../tendermint-rs/proto"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dev-dependencies]

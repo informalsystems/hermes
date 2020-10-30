@@ -33,20 +33,19 @@ regex = "1"
 bech32 = "0.7.2"
 
 [dependencies.tendermint-proto]
-#git = "https://github.com/informalsystems/tendermint-rs"
-#branch = "greg/research-json"
-#version = "0.17.0-rc1"
-path = "../../tendermint-rs/proto"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-path = "../../tendermint-rs/tendermint"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint-rpc]
-#version = "0.17.0-rc1"
-#git = "https://github.com/informalsystems/tendermint-rs"
-path = "../../tendermint-rs/rpc"
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 features = ["http-client", "websocket-client"]
 
 [dev-dependencies]
