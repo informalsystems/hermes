@@ -11,7 +11,7 @@ use tendermint::net;
 use tendermint_rpc::HttpClient;
 
 use crossbeam_channel as channel;
-use ibc::ics02_client::client_def::AnyHeader;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use std::str::FromStr;
 use std::time::Duration;
 use thiserror::Error;
@@ -40,6 +40,9 @@ pub enum ChainHandleError {
 
     #[error("invalid chain identifier format: {0}")]
     ChainIdentifier(String),
+
+    #[error("the input header is not recognized as a header for this chain")]
+    InvalidInputHeader,
 }
 
 // Inputs that a Handle may send to a Runtime.
@@ -67,5 +70,13 @@ pub trait ChainHandle: Send {
 
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainHandleError>;
 
-    // fn assemble_client_state() -> Result<AnyClientState, ChainHandleError>;
+    /// Given a header originating from this chain, constructs a client state.
+    fn assemble_client_state(&self, header: &AnyHeader)
+        -> Result<AnyClientState, ChainHandleError>;
+
+    /// Given a header originating from this chain, constructs a consensus state.
+    fn assemble_consensus_state(
+        &self,
+        header: &AnyHeader,
+    ) -> Result<AnyConsensusState, ChainHandleError>;
 }

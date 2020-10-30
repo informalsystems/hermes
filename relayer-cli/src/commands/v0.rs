@@ -65,13 +65,13 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     let client_on_src = ForeignClient::new(
         &src_chain_handle,
         &dst_chain_handle,
-        ForeignClientConfig::new(todo!()),
+        ForeignClientConfig::new(todo!(), todo!()),
     )?;
 
     let client_on_dst = ForeignClient::new(
         &dst_chain_handle,
         &src_chain_handle,
-        ForeignClientConfig::new(todo!()),
+        ForeignClientConfig::new(todo!(), todo!()),
     )?;
 
     let connection = Connection::new(

@@ -4,6 +4,7 @@ use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
 
+use ibc::downcast;
 use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
 use ibc::Height;
 
@@ -13,8 +14,8 @@ use tendermint::net;
 use tendermint_rpc::{Client, HttpClient};
 
 use crossbeam_channel as channel;
-use ibc::ics02_client::client_def::AnyHeader;
-use std::convert::TryFrom;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
 use thiserror::Error;
@@ -27,7 +28,9 @@ pub struct CosmosSDKHandle {
     pub chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     rpc_client: HttpClient,
-    // TODO: account_prefix
+    trusting_period: Duration,
+    unbonding_period: Duration,
+    chain_version: u64, // TODO: account_prefix
 }
 
 impl CosmosSDKHandle {
@@ -49,6 +52,9 @@ impl CosmosSDKHandle {
             chain_id,
             sender,
             rpc_client,
+            trusting_period: todo!(),
+            unbonding_period: todo!(),
+            chain_version: ChainId::chain_version(chain_id_raw.to_string()),
         })
     }
 
@@ -139,5 +145,47 @@ impl ChainHandle for CosmosSDKHandle {
 
     fn create_packet(&self, _event: IBCEvent) -> Result<Packet, ChainHandleError> {
         todo!()
+    }
+
+    fn assemble_client_state(
+        &self,
+        header: &AnyHeader,
+    ) -> Result<AnyClientState, ChainHandleError> {
+        // Downcast from the generic any header into a header specific for this type of chain.
+        if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
+            let height = u64::from(our_header.signed_header.header.height);
+
+            // Build the client state.
+            ibc::ics07_tendermint::client_state::ClientState::new(
+                self.chain_id.to_string(), // The id of this chain.
+                self.trusting_period,
+                self.unbonding_period,
+                Duration::from_millis(3000),
+                Height::new(self.chain_version, height),
+                Height::new(self.chain_version, 0),
+                "".to_string(),
+                false,
+                false,
+            ) // TODO more useful err message below :(
+            .map_err(|e| ChainHandleError::Failed)
+            .map(AnyClientState::Tendermint)
+        } else {
+            Err(ChainHandleError::InvalidInputHeader)
+        }
+    }
+
+    fn assemble_consensus_state(
+        &self,
+        header: &AnyHeader,
+    ) -> Result<AnyConsensusState, ChainHandleError> {
+        if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
+            Ok(AnyConsensusState::Tendermint(
+                ibc::ics07_tendermint::consensus_state::ConsensusState::from(
+                    our_header.signed_header.clone(),
+                ),
+            ))
+        } else {
+            Err(ChainHandleError::InvalidInputHeader)
+        }
     }
 }

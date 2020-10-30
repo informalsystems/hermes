@@ -1,4 +1,5 @@
 use prost_types::Any;
+use tendermint::account::Id as AccountId;
 use tendermint::{block::signed_header::SignedHeader, Hash};
 use thiserror::Error;
 
@@ -24,16 +25,24 @@ pub enum ForeignClientError {
 #[derive(Clone)]
 pub struct ForeignClientConfig {
     id: ClientId,
+    signer: AccountId,
     // create_timeout: Duration // How much to wait before giving up on client creation.
 }
 
 impl ForeignClientConfig {
-    pub fn new(client_id: ClientId) -> ForeignClientConfig {
-        Self { id: client_id }
+    pub fn new(client_id: ClientId, signer: AccountId) -> ForeignClientConfig {
+        Self {
+            id: client_id,
+            signer,
+        }
     }
 
     pub fn client_id(&self) -> &ClientId {
         &self.id
+    }
+
+    pub fn signer(&self) -> &AccountId {
+        &self.signer
     }
 }
 
@@ -59,7 +68,7 @@ impl ForeignClient {
             Ok(ForeignClient { config }) // Nothing left to do.
         } else {
             // Create a new client on the host chain.
-            Self::create_client(host, source)?;
+            Self::create_client(host, source, config.client_id(), config.signer())?;
             // Now subscribe and wait at most `config.create_timeout` to confirm the success.
             // dst.subscribe();
             Ok(ForeignClient { config })
@@ -70,25 +79,41 @@ impl ForeignClient {
     fn create_client(
         dst: &dyn ChainHandle, // The chain that will host the client.
         src: &dyn ChainHandle, // The client will store headers of this chain.
+        client_id: &ClientId,
+        signer: &AccountId,
     ) -> Result<(), ForeignClientError> {
         // Fetch latest header of the source chain.
         let latest_header = src.get_header(Height::zero()).map_err(|e| {
             ForeignClientError::ClientCreation(format!("failed to fetch latest header ({:?})", e))
         })?;
 
+        // Build the client state. The source chain handle will take care of the details.
+        let client_state = src.assemble_client_state(&latest_header).map_err(|e| {
+            ForeignClientError::ClientCreation(format!("failed to assemble client state ({:?})", e))
+        })?;
+
         // Build the consensus state.
         // The destination chain handle knows the internals of assembling this message.
-        // let consensus_state =
-        //     AnyConsensusState::Tendermint(tm_consensus_state);
-        //     tm_latest_header.signed_header,
-        // );
+        let consensus_state = src.assemble_consensus_state(&latest_header).map_err(|e| {
+            ForeignClientError::ClientCreation(format!(
+                "failed to assemble client consensus state ({:?})",
+                e
+            ))
+        })?;
 
-        // let tm_consensus_state = dst.
-        //     ibc::ics07_tendermint::consensus_state::ConsensusState::from(
-        //     tm_latest_header.signed_header,
-        // );
-
-        // Build the client state. Destination chain handle will take care of the details.
+        // Build the domain type message.
+        let create_client_msg = MsgCreateAnyClient::new(
+            client_id.clone(),
+            client_state,
+            consensus_state,
+            *signer,
+        )
+        .map_err(|e| {
+            ForeignClientError::ClientCreation(format!(
+                "failed to assemble the create client message ({:?})",
+                e
+            ))
+        })?;
 
         // Create a proto any message.
         let proto_msgs = vec![Any {
