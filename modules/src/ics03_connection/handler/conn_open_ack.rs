@@ -35,7 +35,7 @@ pub(crate) fn process(
                 || old_conn_end.counterparty().connection_id() == msg.counterparty_connection_id();
 
             if state_is_consistent && counterparty_matches {
-                Ok(old_conn_end.clone())
+                Ok(old_conn_end)
             } else {
                 // Old connection end is in incorrect state, propagate the error.
                 Err(Into::<Error>::into(Kind::ConnectionMismatch(
