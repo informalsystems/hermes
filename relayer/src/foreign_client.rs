@@ -1,7 +1,9 @@
+use prost_types::Any;
 use tendermint::{block::signed_header::SignedHeader, Hash};
 use thiserror::Error;
 
 use ibc::{
+    ics02_client::{header::Header, msgs::MsgCreateAnyClient},
     ics07_tendermint::consensus_state::ConsensusState,
     ics23_commitment::commitment::CommitmentProof,
     ics24_host::identifier::{ChainId, ClientId},
@@ -11,6 +13,7 @@ use ibc::{
 
 use crate::chain::handle::ChainHandle;
 use crate::msgs::Datagram;
+use ibc::ics02_client::client_def::AnyConsensusState;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -21,7 +24,7 @@ pub enum ForeignClientError {
 #[derive(Clone)]
 pub struct ForeignClientConfig {
     id: ClientId,
-    // timeout: Duration // How much to wait before giving up on client creation.
+    // create_timeout: Duration // How much to wait before giving up on client creation.
 }
 
 impl ForeignClientConfig {
@@ -41,7 +44,8 @@ pub struct ForeignClient {
 impl ForeignClient {
     /// Creates a new foreign client.
     /// Post-condition: chain `host` will host an IBC client for chain `source`.
-    /// TODO: pre-conditions for success: live handle to each of `host` and `target` chains enough?
+    /// TODO: pre-conditions for success?
+    /// Is it enough to have a "live" handle to each of `host` and `target` chains?
     pub fn new(
         host: &dyn ChainHandle,
         source: &dyn ChainHandle,
@@ -49,26 +53,52 @@ impl ForeignClient {
     ) -> Result<ForeignClient, ForeignClientError> {
         // Query the client state on source chain.
         let response = host.query(ClientStatePath(config.clone().id), Height::zero(), false);
+
+        // The chain may already host a client with this id.
         if response.is_ok() {
-            // The chain already hosts a client with the required id.
-            Ok(ForeignClient { config })
+            Ok(ForeignClient { config }) // Nothing left to do.
         } else {
+            // Create a new client on the host chain.
             Self::create_client(host, source)?;
-            // Create a new client
+            // Now subscribe and wait at most `config.create_timeout` to confirm the success.
+            // dst.subscribe();
             Ok(ForeignClient { config })
         }
     }
 
+    /// Creates on the `dst` chain an IBC client which will store headers for `src` chain.
     fn create_client(
         dst: &dyn ChainHandle, // The chain that will host the client.
         src: &dyn ChainHandle, // The client will store headers of this chain.
     ) -> Result<(), ForeignClientError> {
+        // Fetch latest header of the source chain.
         let latest_header = src.get_header(Height::zero()).map_err(|e| {
-            ForeignClientError::ClientCreation(format!(
-                "failed to fetch latest header ({:?})",
-                e
-            ))
+            ForeignClientError::ClientCreation(format!("failed to fetch latest header ({:?})", e))
         })?;
+
+        // Build the consensus state.
+        // The destination chain handle knows the internals of assembling this message.
+        // let consensus_state =
+        //     AnyConsensusState::Tendermint(tm_consensus_state);
+        //     tm_latest_header.signed_header,
+        // );
+
+        // let tm_consensus_state = dst.
+        //     ibc::ics07_tendermint::consensus_state::ConsensusState::from(
+        //     tm_latest_header.signed_header,
+        // );
+
+        // Build the client state. Destination chain handle will take care of the details.
+
+        // Create a proto any message.
+        let proto_msgs = vec![Any {
+            // TODO - add get_url_type() to prepend proper string to get_type()
+            type_url: "/ibc.client.MsgCreateClient".to_ascii_lowercase(),
+            value: vec![], //new_msg.get_sign_bytes(),
+        }];
+
+        // TODO: Bridge from Any message into EncodedTransaction.
+        // dst.submit(&proto_msgs)?
 
         Ok(())
     }

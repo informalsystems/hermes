@@ -2,14 +2,12 @@ use crate::chain::handle::{cosmos::CosmosSDKHandle, ChainHandleError, HandleInpu
 use crate::config::ChainConfig;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 
-use ibc::ics24_host::identifier::ChainId;
 use ibc::Height;
 
 use crossbeam_channel as channel;
 use std::time::Duration;
 
 pub struct ChainRuntime {
-    chain_id: ChainId,
     chain_config: ChainConfig,
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
@@ -20,7 +18,6 @@ impl ChainRuntime {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
         Self {
-            chain_id: todo!(),
             chain_config: chain_config.clone(),
             sender,
             receiver,
@@ -29,8 +26,9 @@ impl ChainRuntime {
 
     pub fn handle(&self) -> Result<CosmosSDKHandle, ChainHandleError> {
         let sender = self.sender.clone();
+
         CosmosSDKHandle::new(
-            self.chain_id.clone(),
+            self.chain_config.id.as_str(),
             sender,
             self.chain_config.rpc_addr.clone(),
         )

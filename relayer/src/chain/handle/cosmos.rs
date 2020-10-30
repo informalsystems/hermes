@@ -8,11 +8,12 @@ use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
 use ibc::Height;
 
 use tendermint::abci::Path as ABCIPath;
-use tendermint::block::{signed_header::SignedHeader, Height as TMHeight};
+use tendermint::block::Height as TMHeight;
 use tendermint::net;
 use tendermint_rpc::{Client, HttpClient};
 
 use crossbeam_channel as channel;
+use ibc::ics02_client::client_def::AnyHeader;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use std::time::Duration;
@@ -31,7 +32,7 @@ pub struct CosmosSDKHandle {
 
 impl CosmosSDKHandle {
     pub(crate) fn new(
-        chain_id: ChainId,
+        chain_id_raw: &str,
         sender: channel::Sender<HandleInput>,
         rpc_addr: net::Address,
     ) -> Result<Self, ChainHandleError> {
@@ -41,6 +42,9 @@ impl CosmosSDKHandle {
                 e.to_string()
             ))
         })?;
+        let chain_id = ChainId::from_str(chain_id_raw)
+            .map_err(|e| ChainHandleError::ChainIdentifier(e.to_string()))?;
+
         Ok(Self {
             chain_id,
             sender,
@@ -109,7 +113,7 @@ impl ChainHandle for CosmosSDKHandle {
         Ok(response)
     }
 
-    fn get_header(&self, height: Height) -> Result<SignedHeader, ChainHandleError> {
+    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainHandleError> {
         todo!()
     }
 
@@ -117,7 +121,7 @@ impl ChainHandle for CosmosSDKHandle {
         &self,
         from: Height,
         to: Height,
-    ) -> Result<Vec<SignedHeader>, ChainHandleError> {
+    ) -> Result<Vec<AnyHeader>, ChainHandleError> {
         todo!()
     }
 

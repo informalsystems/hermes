@@ -1,3 +1,5 @@
+/// THIS WILL SOON BE MOVED INTO chain/handle/cosmos.rs.
+/// Should implement the `ChainHandler` trait.
 use std::future::Future;
 use std::str::FromStr;
 use std::time::Duration;

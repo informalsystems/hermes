@@ -1,5 +1,6 @@
 pub use ibc::events::IBCEvent;
-pub use tendermint::{block::signed_header::SignedHeader, Signature};
+use ibc::ics02_client::client_def::AnyHeader;
+pub use tendermint::Signature;
 
 // What is the actual type here?
 #[derive(Clone)]
@@ -46,11 +47,11 @@ impl SignedTransaction {
 
 #[derive(Clone)]
 pub struct ClientUpdate {
-    signed_headers: Vec<SignedHeader>,
+    signed_headers: Vec<AnyHeader>,
 }
 
 impl ClientUpdate {
-    pub fn new(signed_headers: Vec<SignedHeader>) -> ClientUpdate {
+    pub fn new(signed_headers: Vec<AnyHeader>) -> ClientUpdate {
         ClientUpdate { signed_headers }
     }
 }

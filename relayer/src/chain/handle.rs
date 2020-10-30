@@ -7,11 +7,11 @@ use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
 use ibc::Height;
 
 use tendermint::abci::Path as ABCIPath;
-use tendermint::block::signed_header::SignedHeader;
 use tendermint::net;
 use tendermint_rpc::HttpClient;
 
 use crossbeam_channel as channel;
+use ibc::ics02_client::client_def::AnyHeader;
 use std::str::FromStr;
 use std::time::Duration;
 use thiserror::Error;
@@ -37,6 +37,9 @@ pub enum ChainHandleError {
 
     #[error("rpc client returned error: {0}")]
     RPC(String),
+
+    #[error("invalid chain identifier format: {0}")]
+    ChainIdentifier(String),
 }
 
 // Inputs that a Handle may send to a Runtime.
@@ -50,14 +53,12 @@ pub trait ChainHandle: Send {
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainHandleError>;
 
-    fn get_header(&self, height: Height) -> Result<SignedHeader, ChainHandleError>;
+    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainHandleError>;
 
-    fn get_minimal_set(
-        &self,
-        from: Height,
-        to: Height,
-    ) -> Result<Vec<SignedHeader>, ChainHandleError>;
+    fn get_minimal_set(&self, from: Height, to: Height)
+        -> Result<Vec<AnyHeader>, ChainHandleError>;
 
+    /// Submits a transaction.
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainHandleError>;
 
     fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainHandleError>;
@@ -65,4 +66,6 @@ pub trait ChainHandle: Send {
     fn id(&self) -> ChainId;
 
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainHandleError>;
+
+    // fn assemble_client_state() -> Result<AnyClientState, ChainHandleError>;
 }
