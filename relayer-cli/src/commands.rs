@@ -6,6 +6,7 @@
 //! application's configuration file.
 
 mod config;
+mod keys;
 mod light;
 mod listen;
 mod query;
@@ -15,8 +16,8 @@ mod v0;
 mod version;
 
 use self::{
-    config::ConfigCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd,
-    tx::TxCmd, v0::V0Cmd, version::VersionCmd,
+    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
+    start::StartCmd, tx::TxCmd, v0::V0Cmd, version::VersionCmd,
 };
 
 use crate::config::Config;
@@ -64,6 +65,10 @@ pub enum CliCmd {
     /// The `light` subcommand
     #[options(help = "basic functionality for managing the lite clients")]
     Light(LightCmd),
+
+    /// The `keys` subcommand
+    #[options(help = "manage keys in the relayer for each chain")]
+    Keys(KeysCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.

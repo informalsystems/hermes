@@ -49,6 +49,10 @@ pub enum Kind {
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]
     MessageTransaction(String),
+
+    /// Keybase related error
+    #[error("Keybase error")]
+    KeyBase,
 }
 
 impl Kind {
