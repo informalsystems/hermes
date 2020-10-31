@@ -22,7 +22,7 @@ pub struct ConnectionOpenInitOptions {
     pub dest_connection_id: Option<ConnectionId>,
     pub src_chain_config: ChainConfig,
     pub dest_chain_config: ChainConfig,
-    pub signer_key: String,
+    pub signer_seed: String,
     pub account_sequence: u64,
 }
 
@@ -31,7 +31,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Get the key and signer from key seed file
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_key)?;
+    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
     let counterparty = Counterparty::new(
         opts.dest_client_id,

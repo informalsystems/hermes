@@ -44,15 +44,12 @@ impl TryFrom<RawHeader> for Header {
     type Error = Error;
 
     fn try_from(raw: RawHeader) -> Result<Self, Self::Error> {
-        let sh = raw
-            .signed_header
-            .ok_or_else(|| Kind::InvalidRawHeader.context("missing signed header"))?;
-
-        let signed_header: SignedHeader = sh
-            .try_into()
-            .map_err(|_| Kind::InvalidHeader.context("signed header conversion"))?;
         Ok(Self {
-            signed_header,
+            signed_header: raw
+                .signed_header
+                .ok_or_else(|| Kind::InvalidRawHeader.context("missing signed header"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidHeader.context("signed header conversion"))?,
             validator_set: raw
                 .validator_set
                 .ok_or_else(|| Kind::InvalidRawHeader.context("missing validator set"))?

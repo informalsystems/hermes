@@ -9,6 +9,7 @@ use tendermint::account::Id as AccountId;
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::{validate_versions, Counterparty};
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -110,7 +111,6 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        // TODO: implement TryFrom for ConsensusProof & move casting of raw heights in there.
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
@@ -126,10 +126,9 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProof::from);
 
         let counterparty_chosen_connection_id = Some(msg.counterparty_chosen_connection_id)
             .filter(|x| !x.is_empty())

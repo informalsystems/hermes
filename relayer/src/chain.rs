@@ -89,7 +89,8 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query a header at the given height via RPC
-    fn query_header_at_height(&self, height: Height) -> Result<Self::LightBlock, error::Error>;
+    fn query_light_block_at_height(&self, height: Height)
+        -> Result<Self::LightBlock, error::Error>;
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<Height, error::Error> {
@@ -109,9 +110,9 @@ pub trait Chain {
     }
 
     /// Query the latest header via RPC
-    fn query_latest_header(&self) -> Result<Self::LightBlock, error::Error> {
+    fn query_latest_ligh_block(&self) -> Result<Self::LightBlock, error::Error> {
         let height = self.query_latest_height()?;
-        self.query_header_at_height(height)
+        self.query_light_block_at_height(height)
     }
 
     fn query_client_state(&self, client_id: &ClientId) -> Result<AnyClientState, error::Error>;

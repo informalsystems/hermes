@@ -9,6 +9,7 @@ use tendermint::account::Id as AccountId;
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -108,10 +109,9 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProof::from);
 
         let counterparty_connection_id = Some(msg.counterparty_connection_id)
             .filter(|x| !x.is_empty())

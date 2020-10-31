@@ -21,7 +21,7 @@
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
-
+pub mod address;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;

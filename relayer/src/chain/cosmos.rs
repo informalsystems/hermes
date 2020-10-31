@@ -1,10 +1,13 @@
+use std::convert::TryInto;
 use std::str::FromStr;
 use std::time::Duration;
 
 use bytes::Bytes;
 use prost::Message;
 use prost_types::Any;
-use tendermint::abci::{Path as TendermintABCIPath, Transaction};
+
+use bitcoin::hashes::hex::ToHex;
+use k256::ecdsa::{SigningKey, VerifyKey};
 
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics07_tendermint::client_state::ClientState;
@@ -12,37 +15,34 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 
+use tendermint_proto::DomainType;
+
+use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
+use tendermint::consensus::Params;
 use tendermint::validator::Info;
+use tendermint::vote::Power;
 use tendermint_light_client::types::{LightBlock, ValidatorSet};
 use tendermint_light_client::types::{SignedHeader, TrustThreshold};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
-use super::Chain;
-use crate::client::tendermint::LightClient;
-use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
-
-use crate::error;
-use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-
-use crate::util::block_on;
+use ibc_proto::cosmos::base::v1beta1::Coin;
+use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::tx_msg::Msg;
-use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use k256::ecdsa::{SigningKey, VerifyKey};
-use std::convert::TryInto;
-use tendermint::consensus::Params;
-use tendermint::vote::Power;
 
-use bitcoin::hashes::hex::ToHex;
-use tendermint_proto::DomainType;
+use super::Chain;
+use crate::client::tendermint::LightClient;
+use crate::config::ChainConfig;
+use crate::error::{Error, Kind};
+use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+
+use crate::util::block_on;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -70,16 +70,16 @@ impl CosmosSDKChain {
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
         Ok(block_on(self.rpc_client().genesis())
-            .map_err(|e| error::Kind::Rpc.context(e))?
+            .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
     }
 
     /// Get the key and account Id - temporary solution
-    pub fn key_and_signer(&mut self, seed_file_name: &str) -> Result<(KeyEntry, AccountId), Error> {
+    pub fn key_and_signer(&mut self, signer_file: &str) -> Result<(KeyEntry, AccountId), Error> {
         // Get the key from key seed file
         let key = self
             .keybase
-            .key_from_seed_file(seed_file_name)
+            .key_from_seed_file(signer_file)
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let signer: AccountId =
@@ -252,16 +252,16 @@ impl Chain for CosmosSDKChain {
         Duration::from_secs(24 * 7 * 3 * 3600)
     }
 
-    fn query_header_at_height(&self, height: Height) -> Result<LightBlock, Error> {
+    fn query_light_block_at_height(&self, height: Height) -> Result<LightBlock, Error> {
         let client = self.rpc_client();
 
         let signed_header = fetch_signed_header(client, height)?;
         assert_eq!(height, signed_header.header().height);
 
-        // Get the validator list
+        // Get the validator list.
         let validators = fetch_validators(client, height)?;
 
-        // Get the proposer
+        // Get the proposer.
         let proposer = validators
             .iter()
             .find(|v| v.address == signed_header.header().proposer_address)
@@ -269,16 +269,15 @@ impl Chain for CosmosSDKChain {
 
         let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
 
-        // Create the validator set with the proposer from the header
-        // This is required by IBC on-chain validation
+        // Create the validator set with the proposer from the header.
+        // This is required by IBC on-chain validation.
         let validator_set = ValidatorSet::new(
             validators.clone(),
             Some(*proposer),
-            // 0_u64.try_into().unwrap(), // TODO - iterate and add voting powers
-            voting_power.try_into().unwrap(), // TODO - iterate and add voting powers
+            voting_power.try_into().map_err(|e| Kind::Rpc.context(e))?,
         );
 
-        // Create the next validator set without the proposer
+        // Create the next validator set without the proposer.
         let next_validator_set = fetch_validator_set(client, height.increment())?;
 
         let light_block = LightBlock::new(
@@ -301,8 +300,7 @@ impl Chain for CosmosSDKChain {
                 false,
             )
             .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e)))
-            .map_err(|_| Kind::Query)?)
+            .and_then(|v| AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
     }
 }
 
@@ -347,7 +345,7 @@ async fn broadcast_tx(
     // Use the Tendermint-rs RPC client to do the query.
     let response = chain
         .rpc_client()
-        .broadcast_tx_sync(Transaction::from(data))
+        .broadcast_tx_sync(data.into())
         .await
         .map_err(|e| Kind::Rpc.context(e))?;
 
@@ -361,32 +359,17 @@ async fn broadcast_tx(
 }
 
 fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {
-    let res = block_on(client.commit(height));
-
-    match res {
-        Ok(response) => Ok(response.signed_header),
-        Err(err) => Err(Kind::Rpc.context(err).into()),
-    }
+    Ok(block_on(client.commit(height))
+        .map_err(|e| Kind::Rpc.context(e))?
+        .signed_header)
 }
 
 fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
-    let res = block_on(client.validators(height));
-
-    match res {
-        Ok(response) => Ok(ValidatorSet::new(
-            response.validators.clone(),
-            Some(response.validators[0]),
-            0_u64.try_into().unwrap(),
-        )),
-        Err(err) => Err(Kind::Rpc.context(err).into()),
-    }
+    Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
 }
 
 fn fetch_validators(client: &HttpClient, height: Height) -> Result<Vec<Info>, Error> {
-    let res = block_on(client.validators(height));
-
-    match res {
-        Ok(response) => Ok(response.validators),
-        Err(err) => Err(Kind::Rpc.context(err).into()),
-    }
+    Ok(block_on(client.validators(height))
+        .map_err(|e| Kind::Rpc.context(e))?
+        .validators)
 }

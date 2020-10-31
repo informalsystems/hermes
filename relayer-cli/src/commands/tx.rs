@@ -1,6 +1,7 @@
 //! `tx` subcommand
-use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 use abscissa_core::{Command, Help, Options, Runnable};
+
+use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 
 mod client;
 mod connection;

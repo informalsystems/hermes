@@ -1,6 +1,6 @@
 use tendermint::account::Id as AccountId;
 
-pub trait Msg: Sized {
+pub trait Msg {
     type ValidationError: std::error::Error;
 
     // TODO -- clarify what is this function supposed to do & its connection to ICS26 routing mod.

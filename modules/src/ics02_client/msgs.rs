@@ -3,24 +3,25 @@
 //! handles these messages in two layers: first with the general ICS 02 client handler, which
 //! subsequently calls into the chain-specific (e.g., ICS 07) client handler. See:
 //! https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics#create.
-use bech32::{FromBase32, ToBase32};
 
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use std::convert::TryFrom;
+use std::str::FromStr;
+
 use tendermint::account::Id as AccountId;
 use tendermint_proto::DomainType;
 
-use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+
+use crate::address::{account_to_string, string_to_account};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::error;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-use std::str::FromStr;
 
-const TYPE_MSG_UPDATE_CLIENT: &str = "update_client";
 const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
+const TYPE_MSG_UPDATE_CLIENT: &str = "update_client";
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
@@ -94,7 +95,6 @@ impl Msg for MsgCreateAnyClient {
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
-        println!("signers: {:?}", self.signer);
         vec![self.signer]
     }
 }
@@ -105,20 +105,15 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgCreateClient) -> Result<Self, Self::Error> {
-        let (_hrp, data) =
-            bech32::decode(&raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-        let addr_bytes =
-            Vec::<u8>::from_base32(&data).map_err(|e| Kind::InvalidAddress.context(e))?;
-        let signer =
-            AccountId::try_from(addr_bytes).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         let raw_client_state = raw
             .client_state
-            .ok_or_else(|| Kind::InvalidRawClientState)?;
+            .ok_or_else(|| Kind::InvalidRawClientState.context("missing client state"))?;
 
         let raw_consensus_state = raw
             .consensus_state
-            .ok_or_else(|| Kind::InvalidRawConsensusState)?;
+            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing consensus state"))?;
+
+        let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
         Ok(MsgCreateAnyClient::new(
             ClientId::from_str(raw.client_id.as_str())
@@ -138,7 +133,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
             client_id: ics_msg.client_id.to_string(),
             client_state: Some(ics_msg.client_state.into()),
             consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: bech32::encode("cosmos", ics_msg.signer.to_base32()).unwrap(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
@@ -195,14 +190,8 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let (_hrp, data) =
-            bech32::decode(&raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
-        let addr_bytes =
-            Vec::<u8>::from_base32(&data).map_err(|e| Kind::InvalidAddress.context(e))?;
-        let signer =
-            AccountId::try_from(addr_bytes).map_err(|e| Kind::InvalidAddress.context(e))?;
-
         let raw_header = raw.header.ok_or_else(|| Kind::InvalidRawHeader)?;
+        let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
         Ok(MsgUpdateAnyClient {
             client_id: raw.client_id.parse().unwrap(),
@@ -217,7 +206,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
         RawMsgUpdateClient {
             client_id: ics_msg.client_id.to_string(),
             header: Some(ics_msg.header.into()),
-            signer: bech32::encode("cosmos", ics_msg.signer.to_base32()).unwrap(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }

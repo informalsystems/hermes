@@ -16,8 +16,8 @@ use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::height::Height;
 use ibc::ics02_client::msgs::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::MsgUpdateAnyClient;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
@@ -31,15 +31,15 @@ use crate::keyring::store::{KeyEntry, KeyRingOperations};
 use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug)]
-pub struct CreateClientOptions {
+pub struct ClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub signer_key: String,
+    pub signer_seed: String,
     pub account_sequence: u64,
 }
 
-pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
+pub fn create_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
     // Get the source and destination chains.
     let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
@@ -54,16 +54,20 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     }
 
     // Get the latest header from the source chain and build the consensus state.
-    let tm_latest_header = src_chain.query_latest_header()?;
+    let tm_latest_light_block = src_chain.query_latest_ligh_block()?;
     let tm_consensus_params = src_chain.query_consensus_params()?;
 
     // Build the consensus state.
     let consensus_state = AnyConsensusState::Tendermint(TendermintConsensusState::from(
-        tm_latest_header.signed_header.header().clone(),
+        tm_latest_light_block.signed_header.header().clone(),
     ));
 
-    let height = u64::from(tm_latest_header.signed_header.header().height);
-    let version = tm_latest_header.signed_header.header().chain_id.to_string();
+    let height = u64::from(tm_latest_light_block.signed_header.header().height);
+    let version = tm_latest_light_block
+        .signed_header
+        .header()
+        .chain_id
+        .to_string();
 
     // TODO get this from the configuration
     let trust_level = TrustThresholdFraction {
@@ -95,7 +99,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     .map(AnyClientState::Tendermint)?;
 
     // Get the key and signer from key seed file.
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_key)?;
+    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
     // Build the domain type message.
     let new_msg =
@@ -119,23 +123,14 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     Ok(response)
 }
 
-#[derive(Clone, Debug)]
-pub struct UpdateClientOptions {
-    pub dest_client_id: ClientId,
-    pub dest_chain_config: ChainConfig,
-    pub src_chain_config: ChainConfig,
-    pub signer_key: String,
-    pub account_sequence: u64,
-}
-
-pub fn update_client(opts: UpdateClientOptions) -> Result<Vec<u8>, Error> {
+pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
     // Get the source and destination chains
     let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    // Get the last header from source chain and verify it.
+    // Get the latest light block from source chain and verify it.
     // TODO - add client verification
-    let latest_header = src_chain.query_latest_header()?;
+    let latest_light_block = src_chain.query_latest_ligh_block()?;
 
     // Get the client state from the destination chain
     let last_state = dest_chain.query_client_state(&opts.dest_client_id)?;
@@ -146,20 +141,21 @@ pub fn update_client(opts: UpdateClientOptions) -> Result<Vec<u8>, Error> {
         .latest_height()
         .version_height
         .try_into()
-        .map_err(|_| Kind::Query)?;
-    // Get the trusted header from the source chain.
-    let chain_trusted_header = src_chain.query_header_at_height(chain_trusted_height)?;
+        .map_err(|e| Kind::Query.context(e))?;
+
+    // Get the light block at chain_trusted_height from the source chain.
+    let chain_trusted_light_block = src_chain.query_light_block_at_height(chain_trusted_height)?;
 
     // Create the ics07 Header to be included in the MsgUpdateClient.
     let header = AnyHeader::Tendermint(TendermintHeader {
-        signed_header: latest_header.signed_header,
-        validator_set: latest_header.validators,
+        signed_header: latest_light_block.signed_header,
+        validator_set: latest_light_block.validators,
         trusted_height: last_state.latest_height(),
-        trusted_validator_set: chain_trusted_header.validators,
+        trusted_validator_set: chain_trusted_light_block.validators,
     });
 
     // Get the key and signer from key seed file.
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_key)?;
+    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
     // Build the domain type message.
     let new_msg = MsgUpdateAnyClient::new(opts.dest_client_id, header, signer);

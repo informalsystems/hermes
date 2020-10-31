@@ -19,15 +19,9 @@ impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
-        if raw.height.is_none() {
-            return Err(error::Kind::InvalidRawHeader
-                .context("no height in header")
-                .into());
-        }
-
         Ok(MockHeader(
             raw.height
-                .ok_or_else(|| error::Kind::InvalidRawHeader)?
+                .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
         ))

@@ -1,13 +1,11 @@
 use prost_types::Any;
 use std::convert::TryFrom;
 
-use tendermint_proto::{DomainType, Error, Kind};
-
-use crate::Height;
+use tendermint_proto::DomainType;
 
 use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -18,6 +16,7 @@ use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsen
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
@@ -125,19 +124,20 @@ impl DomainType<Any> for AnyHeader {}
 impl TryFrom<Any> for AnyHeader {
     type Error = Error;
 
-    // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(TendermintHeader::decode_vec(
-                &raw.value,
-            )?)),
+            TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
+                TendermintHeader::decode_vec(&raw.value)
+                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+            )),
 
             #[cfg(test)]
-            MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(MockHeader::decode_vec(&raw.value)?)),
+            MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
+                MockHeader::decode_vec(&raw.value)
+                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+            )),
 
-            _ => Err(Kind::DecodeMessage
-                .context(error::Kind::UnknownHeaderType(raw.type_url))
-                .into()),
+            _ => Err(Kind::UnknownHeaderType(raw.type_url).into()),
         }
     }
 }
@@ -194,17 +194,17 @@ impl TryFrom<Any> for AnyClientState {
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                TendermintClientState::decode_vec(&raw.value)?,
+                TendermintClientState::decode_vec(&raw.value)
+                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             )),
 
             #[cfg(test)]
-            MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(MockClientState::decode_vec(
-                &raw.value,
-            )?)),
+            MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
+                MockClientState::decode_vec(&raw.value)
+                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
+            )),
 
-            _ => Err(Kind::DecodeMessage
-                .context(error::Kind::UnknownClientStateType(raw.type_url))
-                .into()),
+            _ => Err(Kind::UnknownClientStateType(raw.type_url).into()),
         }
     }
 }
@@ -275,17 +275,17 @@ impl TryFrom<Any> for AnyConsensusState {
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TendermintConsensusState::decode_vec(&value.value)?,
+                TendermintConsensusState::decode_vec(&value.value)
+                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
             )),
 
             #[cfg(test)]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)?,
+                MockConsensusState::decode_vec(&value.value)
+                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
             )),
 
-            _ => Err(Kind::DecodeMessage
-                .context(error::Kind::UnknownConsensusStateType(value.type_url))
-                .into()),
+            _ => Err(Kind::UnknownConsensusStateType(value.type_url).into()),
         }
     }
 }
@@ -356,7 +356,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Tendermint,
                     header => AnyHeader::Tendermint,
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(client_state, header)?;
@@ -373,7 +373,7 @@ impl ClientDef for AnyClient {
                     client_state => AnyClientState::Mock,
                     header => AnyHeader::Mock,
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(client_state, header)?;
@@ -401,7 +401,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -419,7 +419,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
                 client.verify_client_consensus_state(
                     client_state,
@@ -446,7 +446,7 @@ impl ClientDef for AnyClient {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
-                    .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -461,7 +461,7 @@ impl ClientDef for AnyClient {
             #[cfg(test)]
             Self::Mock(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Mock)
-                    .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
                 client.verify_connection_state(
                     client_state,
@@ -490,7 +490,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Tendermint
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
 
                 client.verify_client_full_state(
                     client_state,
@@ -508,7 +508,7 @@ impl ClientDef for AnyClient {
                 let client_state = downcast!(
                     client_state => AnyClientState::Mock
                 )
-                .ok_or_else(|| error::Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+                .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
 
                 client.verify_client_full_state(
                     client_state,
