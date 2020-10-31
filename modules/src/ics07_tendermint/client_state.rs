@@ -2,6 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
+use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::DomainType;
 
 use crate::Height;
@@ -10,12 +11,11 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics23_commitment::merkle::cosmos_specs;
 use tendermint::consensus::Params;
-use tendermint::trust_threshold::TrustThresholdFraction;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClientState {
     pub chain_id: String,
-    pub trust_level: TrustThresholdFraction,
+    pub trust_level: TrustThreshold,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
@@ -34,7 +34,7 @@ impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: String,
-        trust_level: TrustThresholdFraction,
+        trust_level: TrustThreshold,
         trusting_period: Duration,
         unbonding_period: Duration,
         max_clock_drift: Duration,
@@ -123,7 +123,7 @@ impl TryFrom<RawClientState> for ClientState {
 
         Ok(Self {
             chain_id: raw.chain_id,
-            trust_level: TrustThresholdFraction {
+            trust_level: TrustThreshold {
                 numerator: trust_level.numerator as u64,
                 denominator: trust_level.denominator as u64,
             },
@@ -190,13 +190,14 @@ impl From<ClientState> for RawClientState {
 mod tests {
     use std::time::Duration;
 
+    use tendermint::consensus::Params;
+    use tendermint_light_client::types::TrustThreshold;
+    use tendermint_rpc::endpoint::abci_query::AbciQuery;
+
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::test::test_serialization_roundtrip;
     use crate::test_utils::default_consensus_params;
     use crate::Height;
-    use tendermint::consensus::Params;
-    use tendermint::trust_threshold::TrustThresholdFraction;
-    use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
@@ -218,7 +219,7 @@ mod tests {
         #[derive(Clone, Debug, PartialEq)]
         struct ClientStateParams {
             id: String,
-            trust_level: TrustThresholdFraction,
+            trust_level: TrustThreshold,
             trusting_period: Duration,
             unbonding_period: Duration,
             max_clock_drift: Duration,
@@ -233,7 +234,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: "thisisthechainid".to_string(),
-            trust_level: TrustThresholdFraction {
+            trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
             },

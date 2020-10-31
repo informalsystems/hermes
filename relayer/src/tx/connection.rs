@@ -39,7 +39,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
         CommitmentPrefix::from(dest_chain.config().store_prefix.as_bytes().to_vec()),
     );
 
-    let msg = MsgConnectionOpenInit {
+    let new_msg = MsgConnectionOpenInit {
         client_id: opts.src_client_id,
         connection_id: opts.src_connection_id,
         counterparty: counterparty.unwrap(),
@@ -47,21 +47,17 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
         signer,
     };
 
-    let msg_type = "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string();
+    let mut proto_msgs: Vec<Any> = Vec::new();
 
-    // Send message
-    let response = dest_chain
-        .send(
-            msg_type,
-            msg.get_sign_bytes(),
-            key,
-            opts.account_sequence,
-            "".to_string(),
-            0,
-        )
-        .map_err(|e| {
-            Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e)
-        })?;
+    let any_msg = Any {
+        type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
+        value: new_msg.get_sign_bytes(),
+    };
+
+    // Add proto message
+    proto_msgs.push(any_msg);
+
+    let response = dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?;
 
     Ok(response)
 }

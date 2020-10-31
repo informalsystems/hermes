@@ -5,16 +5,20 @@ use anomaly::fail;
 use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
+/// TODO - tendermint deps should not be here
+use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path;
 use ibc::tx_msg::Msg;
+use ibc::Height as ICSHeight;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
@@ -29,6 +33,7 @@ pub mod handle;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
+    /// TODO - Should these be part of the Chain trait?
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync;
 
@@ -43,6 +48,7 @@ pub trait Chain {
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type RpcClient: RpcClient + Send + Sync;
+    /// TODO<end>
 
     /// Error types defined by this chain
     type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
@@ -53,8 +59,7 @@ pub trait Chain {
     /// send a transaction with `msgs` to chain.
     fn send(
         &mut self,
-        msg_type: String,
-        msg: Vec<u8>,
+        proto_msgs: Vec<Any>,
         key: KeyEntry,
         acct_seq: u64,
         memo: String,
@@ -70,50 +75,46 @@ pub trait Chain {
     fn config(&self) -> &ChainConfig;
 
     /// Get a low-level RPC client for this chain
+    /// TODO - Should this be part of the Chain trait?
     fn rpc_client(&self) -> &Self::RpcClient;
 
     /// Get a light client for this chain
+    /// TODO - Should this be part of the Chain trait?
     fn light_client(&self) -> Option<&Self::LightClient>;
 
     /// Set a light client for this chain
+    /// TODO - Should this be part of the Chain trait?
     fn set_light_client(&mut self, light_client: Self::LightClient);
 
     /// The trusting period configured for this chain
+    /// TODO - Should this be part of the Chain trait?
     fn trusting_period(&self) -> Duration;
 
     /// The unbonding period of this chain
     /// TODO - this is a GRPC query, needs to be implemented
+    /// TODO - Should this be part of the Chain trait?
     fn unbonding_period(&self) -> Duration;
 
     /// The trust threshold configured for this chain
+    /// TODO - Should this be part of the Chain trait?
     fn trust_threshold(&self) -> TrustThreshold;
 
-    /// Query a header at the given height via RPC
-    fn query_light_block_at_height(&self, height: Height)
-        -> Result<Self::LightBlock, error::Error>;
-
-    /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<Height, error::Error> {
-        let status =
-            block_on(self.rpc_client().status()).map_err(|e| error::Kind::Rpc.context(e))?;
-
-        if status.sync_info.catching_up {
-            fail!(
-                error::Kind::LightClient,
-                "node at {} running chain {} not caught up",
-                self.config().rpc_addr,
-                self.config().id,
-            );
-        }
-
-        Ok(status.sync_info.latest_block_height)
-    }
-
-    /// Query the latest header via RPC
-    fn query_latest_ligh_block(&self) -> Result<Self::LightBlock, error::Error> {
-        let height = self.query_latest_height()?;
-        self.query_light_block_at_height(height)
-    }
+    /// Query the latest height the chain is at
+    fn query_latest_height(&self) -> Result<Height, error::Error>;
 
     fn query_client_state(&self, client_id: &ClientId) -> Result<AnyClientState, error::Error>;
+
+    fn build_create_client_msg(
+        &self,
+        client_id: ClientId,
+        signer: AccountId,
+    ) -> Result<MsgCreateAnyClient, error::Error>;
+
+    fn build_update_client_msg(
+        &self,
+        client_id: ClientId,
+        trusted_height: ICSHeight,
+        target_height: Height,
+        signer: AccountId,
+    ) -> Result<MsgUpdateAnyClient, error::Error>;
 }

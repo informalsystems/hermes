@@ -46,6 +46,8 @@ mod tests {
     use std::str::FromStr;
     use std::time::Duration;
 
+    use tendermint_light_client::types::TrustThreshold;
+
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
@@ -63,7 +65,6 @@ mod tests {
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::test_utils::{default_consensus_params, get_dummy_account_id};
     use std::convert::TryInto;
-    use tendermint::trust_threshold::TrustThresholdFraction;
 
     #[test]
     fn test_create_client_ok() {
@@ -241,7 +242,7 @@ mod tests {
         let tm_header = get_dummy_tendermint_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.chain_id.to_string(),
-            trust_level: TrustThresholdFraction {
+            trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
             },

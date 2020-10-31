@@ -10,6 +10,12 @@ pub trait Msg {
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 
+    // fn get_sign_bytes<M>(&self) -> Vec<u8> {
+    //     let mut buf = Vec::new();
+    //     let raw_msg: M = self.clone().into();
+    //     prost::Message::encode(&raw_msg, &mut buf).unwrap();
+    //     buf
+
     fn get_sign_bytes(&self) -> Vec<u8>;
 
     fn get_signers(&self) -> Vec<AccountId>;

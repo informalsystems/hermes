@@ -217,6 +217,7 @@ mod tests {
     use std::time::Duration;
 
     use ibc_proto::ibc::core::client::v1::{MsgCreateClient, MsgUpdateClient};
+    use tendermint_light_client::types::TrustThreshold;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
     use crate::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
@@ -228,7 +229,6 @@ mod tests {
         get_dummy_ics07_header, get_dummy_tendermint_header,
     };
     use crate::test_utils::{default_consensus_params, get_dummy_account_id};
-    use tendermint::trust_threshold::TrustThresholdFraction;
 
     #[test]
     fn client_state_serialization() {
@@ -238,7 +238,7 @@ mod tests {
         let tm_header = get_dummy_tendermint_header();
         let tm_client_state = AnyClientState::Tendermint(ClientState {
             chain_id: tm_header.chain_id.to_string(),
-            trust_level: TrustThresholdFraction {
+            trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
             },
