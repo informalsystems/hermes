@@ -65,15 +65,12 @@ impl Msg for MsgConnectionOpenInit {
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        let raw_msg: RawMsgConnectionOpenInit = self.clone().into();
-        prost::Message::encode(&raw_msg, &mut buf).unwrap();
-        buf
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string()
     }
 }
 

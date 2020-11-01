@@ -87,11 +87,8 @@ impl Msg for MsgCreateAnyClient {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        let raw_msg: RawMsgCreateClient = self.clone().into();
-        prost::Message::encode(&raw_msg, &mut buf).unwrap();
-        buf
+    fn type_url(&self) -> String {
+        "/ibc.core.client.v1.MsgCreateClient".to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -172,15 +169,12 @@ impl Msg for MsgUpdateAnyClient {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        let mut buf = Vec::new();
-        let raw_msg: RawMsgUpdateClient = self.clone().into();
-        prost::Message::encode(&raw_msg, &mut buf).unwrap();
-        buf
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.client.v1.MsgUpdateClient".to_string()
     }
 }
 

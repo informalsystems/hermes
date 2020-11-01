@@ -50,10 +50,6 @@ impl Msg for MsgConnectionOpenConfirm {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }

@@ -11,6 +11,7 @@ use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::TrustThreshold;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::height::Height;
@@ -59,11 +60,7 @@ pub fn create_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
 
     // Build client create message with the data from the source chain.
     let new_msg = src_chain.build_create_client_msg(opts.dest_client_id, signer)?;
-    let any_msg = Any {
-        type_url: "/ibc.core.client.v1.MsgCreateClient".to_string(),
-        value: new_msg.get_sign_bytes(),
-    };
-    let proto_msgs: Vec<Any> = vec![any_msg];
+    let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgCreateClient>()];
 
     // Send the transaction to the destination chain
     Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
@@ -91,11 +88,8 @@ pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
         target_height,
         signer,
     )?;
-    let any_msg = Any {
-        type_url: "/ibc.core.client.v1.MsgUpdateClient".to_string(),
-        value: new_msg.get_sign_bytes(),
-    };
-    let proto_msgs = vec![any_msg];
+
+    let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgUpdateClient>()];
 
     Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
 }

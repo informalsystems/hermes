@@ -1,18 +1,23 @@
-use crate::chain::{Chain, CosmosSDKChain};
-use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRingOperations};
+use prost_types::Any;
+use serde_json::Value;
+use std::str::FromStr;
+
 use bitcoin::hashes::hex::ToHex;
+
+use tendermint::account::Id as AccountId;
+use tendermint_rpc::Id;
+
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
-use prost_types::Any;
-use serde_json::Value;
-use std::str::FromStr;
-use tendermint::account::Id as AccountId;
-use tendermint_rpc::Id;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+
+use crate::chain::{Chain, CosmosSDKChain};
+use crate::config::ChainConfig;
+use crate::error::{Error, Kind};
+use crate::keyring::store::{KeyEntry, KeyRingOperations};
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
@@ -38,11 +43,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
 
     let new_msg = dest_chain.build_conn_open_init_msg(opts.clone(), prefix, signer)?;
 
-    let any_msg = Any {
-        type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
-        value: new_msg.get_sign_bytes(),
-    };
-    let proto_msgs: Vec<Any> = vec![any_msg];
+    let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgConnectionOpenInit>()];
 
     Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
 }

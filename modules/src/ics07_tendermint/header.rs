@@ -6,11 +6,10 @@ use tendermint_proto::DomainType;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::Height;
-
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
+use crate::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, Debug, PartialEq)]

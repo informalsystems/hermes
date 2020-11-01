@@ -70,10 +70,6 @@ impl Msg for MsgChannelOpenInit {
         self.channel.validate_basic()
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -151,10 +147,6 @@ impl Msg for MsgChannelOpenTry {
         self.channel.validate_basic()
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -213,10 +205,6 @@ impl Msg for MsgChannelOpenAck {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -271,10 +259,6 @@ impl Msg for MsgChannelOpenConfirm {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -322,10 +306,6 @@ impl Msg for MsgChannelCloseInit {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -380,10 +360,6 @@ impl Msg for MsgChannelCloseConfirm {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -441,10 +417,6 @@ impl Msg for MsgPacket {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -495,10 +467,6 @@ impl Msg for MsgTimeout {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -555,10 +523,6 @@ impl Msg for MsgAcknowledgement {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
