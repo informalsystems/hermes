@@ -60,7 +60,7 @@ pub(crate) fn process(
             new_conn_end.client_id().clone(), // The local client identifier.
             msg.counterparty_connection_id().cloned(), // This chain's connection id as known on counterparty.
             ctx.commitment_prefix(),                   // Local commitment prefix.
-        )?,
+        ),
         vec![msg.version().clone()],
     )?;
     // 2. Pass the details to the verification function.
@@ -120,8 +120,7 @@ mod tests {
             client_id.clone(),
             msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(vec![]),
-        )
-        .unwrap();
+        );
 
         let incorrect_context = MockContext::default();
 
@@ -150,8 +149,7 @@ mod tests {
             client_id.clone(),
             msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(b"ibc".to_vec()),
-        )
-        .unwrap();
+        );
         let correct_conn_end = ConnectionEnd::new(
             State::Init,
             client_id.clone(),

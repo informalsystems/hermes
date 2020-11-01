@@ -45,7 +45,7 @@ pub(crate) fn process(
             new_conn_end.client_id().clone(), // The local client identifier.
             Some(msg.connection_id().clone()), // Local connection id.
             ctx.commitment_prefix(),          // Local commitment prefix.
-        )?,
+        ),
         new_conn_end.versions(),
     )?;
     // 2. Pass the details to the verification function.
@@ -105,8 +105,7 @@ mod tests {
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),
             CommitmentPrefix::from(vec![]),
-        )
-        .unwrap();
+        );
 
         let context = MockContext::default();
 

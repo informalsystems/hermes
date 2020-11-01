@@ -32,8 +32,10 @@ use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
+
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
@@ -44,7 +46,11 @@ use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::tx::connection::ConnectionOpenInitOptions;
 use crate::util::block_on;
+use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
+use ibc::ics04_channel::msgs::MsgChannelOpenInit;
+use ibc_proto::ibc::core::connection::v1::ConnectionPaths;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -136,7 +142,6 @@ impl CosmosSDKChain {
 }
 
 impl Chain for CosmosSDKChain {
-    // TODO - Should these be part of the Chain trait?
     type LightBlock = LightBlock;
     type LightClient = LightClient;
     type RpcClient = HttpClient;
@@ -262,27 +267,22 @@ impl Chain for CosmosSDKChain {
         &self.config
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn rpc_client(&self) -> &HttpClient {
         &self.rpc_client
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn set_light_client(&mut self, light_client: LightClient) {
         self.light_client = Some(light_client);
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn light_client(&self) -> Option<&LightClient> {
         self.light_client.as_ref()
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn trusting_period(&self) -> Duration {
         self.config.trusting_period
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn trust_threshold(&self) -> TrustThreshold {
         // TODO - get it from src config when avail
         // TODO - Should this be part of the Chain trait?
@@ -292,7 +292,6 @@ impl Chain for CosmosSDKChain {
         }
     }
 
-    // TODO - Should this be part of the Chain trait?
     fn unbonding_period(&self) -> Duration {
         // TODO - query chain
         Duration::from_secs(24 * 7 * 3 * 3600)
@@ -314,15 +313,14 @@ impl Chain for CosmosSDKChain {
         Ok(status.sync_info.latest_block_height)
     }
 
-    fn query_client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error> {
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+        proof: bool,
+    ) -> Result<AnyClientState, Error> {
         Ok(self
-            .query(
-                ClientStatePath(client_id.clone()),
-                0_u64
-                    .try_into()
-                    .map_err(|e| Kind::BadParameter.context(e))?,
-                false,
-            )
+            .query(ClientStatePath(client_id.clone()), height, proof)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
     }
@@ -392,12 +390,6 @@ impl Chain for CosmosSDKChain {
         let height =
             Height::try_from(trusted_height.version_height).map_err(|e| Kind::Query.context(e))?;
         let trusted_light_block = self.query_light_block_at_height(height)?;
-
-        let version = target_light_block
-            .signed_header
-            .header()
-            .chain_id
-            .to_string();
 
         // Create the ics07 Header to be included in the MsgUpdateClient.
         let header = AnyHeader::Tendermint(TendermintHeader {

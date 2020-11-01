@@ -64,7 +64,7 @@ pub(crate) fn process(
             msg.client_id().clone(),
             msg.counterparty_chosen_connection_id(),
             ctx.commitment_prefix(),
-        )?,
+        ),
         msg.counterparty_versions(),
     )?;
 

@@ -146,7 +146,7 @@ impl TryFrom<RawCounterparty> for Counterparty {
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .key_prefix
                 .into(),
-        )?)
+        ))
     }
 }
 
@@ -169,12 +169,12 @@ impl Counterparty {
         client_id: ClientId,
         connection_id: Option<ConnectionId>,
         prefix: CommitmentPrefix,
-    ) -> Result<Self, Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             client_id,
             connection_id,
             prefix,
-        })
+        }
     }
 
     /// Getter for the client id.

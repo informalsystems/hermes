@@ -1,7 +1,7 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use thiserror::Error;
 
 /// An error that can be raised by the relayer.
@@ -41,6 +41,10 @@ pub enum Kind {
     /// Create client failure
     #[error("Failed to create client {0}: {1}")]
     CreateClient(ClientId, String),
+
+    /// Connection open init failure
+    #[error("Failed to build conn open init {0}: {1}")]
+    ConnOpenInit(ConnectionId, String),
 
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]

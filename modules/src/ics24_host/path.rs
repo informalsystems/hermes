@@ -17,7 +17,7 @@ pub enum Path {
         height: u64,
     },
     ClientConnections(ClientId),
-    Connections(ConnectionId),
+    Connection(ConnectionId),
     Ports(PortId),
     ChannelEnds(PortId, ChannelId),
     SeqSends(PortId, ChannelId),
@@ -68,7 +68,7 @@ impl Display for Path {
                 client_id, epoch, height
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
-            Path::Connections(connection_id) => write!(f, "connections/{}", connection_id),
+            Path::Connection(connection_id) => write!(f, "connections/{}", connection_id),
             Path::Ports(port_id) => write!(f, "ports/{}", port_id),
             Path::ChannelEnds(port_id, channel_id) => {
                 write!(f, "channelEnds/ports/{}/channels/{}", port_id, channel_id)

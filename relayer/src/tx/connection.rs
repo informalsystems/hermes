@@ -27,37 +27,22 @@ pub struct ConnectionOpenInitOptions {
 }
 
 pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
-    // Get the destination chain
+    // Get the source and destination chains
+    let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     // Get the key and signer from key seed file
     let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
-    let counterparty = Counterparty::new(
-        opts.dest_client_id,
-        opts.dest_connection_id,
-        CommitmentPrefix::from(dest_chain.config().store_prefix.as_bytes().to_vec()),
-    );
+    let prefix = src_chain.query_commitment_prefix()?;
 
-    let new_msg = MsgConnectionOpenInit {
-        client_id: opts.src_client_id,
-        connection_id: opts.src_connection_id,
-        counterparty: counterparty.unwrap(),
-        version: "".to_string(),
-        signer,
-    };
-
-    let mut proto_msgs: Vec<Any> = Vec::new();
+    let new_msg = dest_chain.build_conn_open_init_msg(opts.clone(), prefix, signer)?;
 
     let any_msg = Any {
         type_url: "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string(),
         value: new_msg.get_sign_bytes(),
     };
+    let proto_msgs: Vec<Any> = vec![any_msg];
 
-    // Add proto message
-    proto_msgs.push(any_msg);
-
-    let response = dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?;
-
-    Ok(response)
+    Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
 }

@@ -1,9 +1,11 @@
-use std::error::Error;
+use std::convert::TryFrom;
 use std::time::Duration;
 
 use anomaly::fail;
 use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
+
+use tendermint_proto::DomainType;
 
 /// TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
@@ -15,15 +17,19 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
 use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
+use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path;
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
-use crate::error;
+use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::tx::connection::ConnectionOpenInitOptions;
 use crate::util::block_on;
 
 pub(crate) mod cosmos;
@@ -51,7 +57,7 @@ pub trait Chain {
     /// TODO<end>
 
     /// Error types defined by this chain
-    type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
+    type Error: Into<Box<dyn std::error::Error + Send + Sync + 'static>>;
 
     /// Perform a generic `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
@@ -100,15 +106,20 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<Height, error::Error>;
+    fn query_latest_height(&self) -> Result<Height, Error>;
 
-    fn query_client_state(&self, client_id: &ClientId) -> Result<AnyClientState, error::Error>;
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+        proof: bool,
+    ) -> Result<AnyClientState, Error>;
 
     fn build_create_client_msg(
         &self,
         client_id: ClientId,
         signer: AccountId,
-    ) -> Result<MsgCreateAnyClient, error::Error>;
+    ) -> Result<MsgCreateAnyClient, Error>;
 
     fn build_update_client_msg(
         &self,
@@ -116,5 +127,53 @@ pub trait Chain {
         trusted_height: ICSHeight,
         target_height: Height,
         signer: AccountId,
-    ) -> Result<MsgUpdateAnyClient, error::Error>;
+    ) -> Result<MsgUpdateAnyClient, Error>;
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
+    }
+
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: Height,
+        proof: bool,
+    ) -> Result<ConnectionEnd, Error> {
+        Ok(self
+            .query(Path::Connection(connection_id.clone()), height, proof)
+            .map_err(|e| Kind::Query.context(e))
+            .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
+    }
+
+    fn build_conn_open_init_msg(
+        &self,
+        opts: ConnectionOpenInitOptions,
+        prefix: CommitmentPrefix,
+        signer: AccountId,
+    ) -> Result<MsgConnectionOpenInit, Error> {
+        let connection = self.query_connection(
+            &opts.src_connection_id,
+            Height::try_from(0_u64).unwrap(),
+            false,
+        );
+        if connection.is_ok() {
+            return Err(Kind::ConnOpenInit(
+                opts.src_connection_id,
+                "connection already exist".into(),
+            )
+            .into());
+        }
+
+        let counterparty = Counterparty::new(opts.dest_client_id, opts.dest_connection_id, prefix);
+
+        Ok(MsgConnectionOpenInit {
+            client_id: opts.src_client_id,
+            connection_id: opts.src_connection_id,
+            counterparty,
+            version: "".to_string(),
+            signer,
+        })
+    }
 }

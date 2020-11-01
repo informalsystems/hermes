@@ -45,7 +45,8 @@ pub fn create_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
 
     // Verify that the client has not been created already, i.e the destination chain does not
     // have a state for this client.
-    let client_state = dest_chain.query_client_state(&opts.dest_client_id);
+    let client_state =
+        dest_chain.query_client_state(&opts.dest_client_id, 0_u64.try_into().unwrap(), false);
     if client_state.is_ok() {
         return Err(Into::<Error>::into(Kind::CreateClient(
             opts.dest_client_id,
@@ -75,7 +76,7 @@ pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
 
     // Get the latest trusted height from the client state on destination.
     let trusted_height = dest_chain
-        .query_client_state(&opts.dest_client_id)?
+        .query_client_state(&opts.dest_client_id, 0_u64.try_into().unwrap(), false)?
         .latest_height();
 
     // Get the latest light block from source chain and verify it.
@@ -96,7 +97,5 @@ pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
     };
     let proto_msgs = vec![any_msg];
 
-    let response = dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?;
-
-    Ok(response)
+    Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
 }
