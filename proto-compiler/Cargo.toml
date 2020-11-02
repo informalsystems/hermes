@@ -1,0 +1,12 @@
+[package]
+name    = "ibc-proto-compiler"
+version = "0.1.0"
+authors = ["Greg Szabo <greg@philosobear.com>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+git2 = "0.13"
+prost-build = "0.6"
+tempdir = "0.3.7"
+walkdir = "2.3"

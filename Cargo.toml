@@ -2,6 +2,11 @@
 
 members = [
     "modules",
-    "relayer/relay",
-    "relayer/cli",
+    "relayer",
+    "relayer-cli",
+    "proto"
+]
+
+exclude = [
+    "proto-compiler"
 ]

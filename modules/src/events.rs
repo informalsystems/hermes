@@ -3,14 +3,18 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
+
+use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
+
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
+use tendermint::block::Height;
 
-use tendermint_rpc::event_listener::{ResultEvent, TMEventData};
+use tracing::warn;
 
+/// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEvent {
     NewBlock(NewBlock),
@@ -50,7 +54,7 @@ impl IBCEvent {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RawObject {
-    pub height: block::Height,
+    pub height: Height,
     pub action: String,
     pub idx: usize,
     pub events: HashMap<String, Vec<String>>,
@@ -58,7 +62,7 @@ pub struct RawObject {
 
 impl RawObject {
     pub fn new(
-        height: block::Height,
+        height: Height,
         action: String,
         idx: usize,
         events: HashMap<String, Vec<String>>,
@@ -118,30 +122,37 @@ fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, 
     Ok(result)
 }
 
-pub fn get_all_events(result: ResultEvent) -> Result<Vec<IBCEvent>, String> {
+pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
     let mut vals: Vec<IBCEvent> = vec![];
 
     match &result.data {
-        TMEventData::EventDataNewBlock(nb) => {
-            let block = (&nb.block).as_ref().ok_or("missing block")?;
+        RpcEventData::NewBlock { block, .. } => {
+            let block = block.as_ref().ok_or("missing block")?;
             vals.push(NewBlock::new(block.header.height).into());
         }
 
-        TMEventData::EventDataTx(_tx) => {
+        RpcEventData::Tx { .. } => {
             let events = &result.events.ok_or("missing events")?;
-            let height = events.get("tx.height").ok_or("tx.height")?[0]
+            let height_raw = events.get("tx.height").ok_or("tx.height")?[0]
                 .parse::<u64>()
                 .map_err(|e| e.to_string())?;
+            let height: Height = height_raw
+                .try_into()
+                .map_err(|_| "height parsing overflow")?;
+
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                let ev = build_event(RawObject::new(
-                    height.into(),
+                let event = build_event(RawObject::new(
+                    height,
                     action.0,
-                    action.1.try_into().unwrap(),
+                    action.1 as usize,
                     events.clone(),
-                ))
-                .map_err(|e| e.to_string())?;
-                vals.push(ev);
+                ));
+
+                match event {
+                    Ok(event) => vals.push(event),
+                    Err(e) => warn!("error while building event {}", e.to_string()),
+                }
             }
         }
         _ => {}

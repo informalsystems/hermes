@@ -1,0 +1,37 @@
+# Automatically open PRs to update outdated deps
+# See https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates
+
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "cargo"
+    # Look for Cargo `.toml` and `.lock` files in the `root` directory
+    directory: "/"
+    # Check the cargo registry for updates every day (weekdays)
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "modules"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "proto"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "proto-compiler"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "relayer"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "relayer-cli"
+    schedule:
+      interval: "weekly"

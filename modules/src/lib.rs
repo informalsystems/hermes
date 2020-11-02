@@ -15,27 +15,38 @@
 //!
 //! - ICS 02: Client
 //! - ICS 03: Connection
+//! - ICS 04: Channel
 //! - ICS 07: Tendermint Client
+//! - ICS 18: Basic relayer functions
+//! - ICS 20: Fungible Token
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
+//! - ICS 26: Routing
 
-pub mod error;
 pub mod events;
+pub mod handler;
 pub mod ics02_client;
 pub mod ics03_connection;
 pub mod ics04_channel;
 pub mod ics07_tendermint;
+pub mod ics18_relayer;
 pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
+pub mod ics26_routing;
 pub mod keys;
-pub mod path;
+pub mod macros;
 pub mod proofs;
-pub mod try_from_raw;
 pub mod tx_msg;
 
-/// Height of a block, same as in `tendermint` crate
-pub type Height = tendermint::lite::Height;
+#[cfg(test)]
+pub mod mock_client;
+
+/// Re-export of ICS 002 Height domain type
+pub type Height = crate::ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod mock_context; // Context mock: for testing all handlers.

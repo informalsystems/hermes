@@ -16,11 +16,14 @@ pub enum ValidationKind {
         max: usize,
     },
 
-    #[error("identifier {id} must only contain lowercase alphanumeric characters")]
-    NotLowerAlpha { id: String },
+    #[error("identifier {id} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`")]
+    InvalidCharacter { id: String },
 
     #[error("identifier cannot be empty")]
     Empty,
+
+    #[error("chain identifiers are expected to be in epoch format {id}")]
+    ChainIdInvalidFormat { id: String },
 }
 
 impl ValidationKind {
@@ -37,12 +40,16 @@ impl ValidationKind {
         }
     }
 
-    pub fn not_lower_alpha(id: String) -> Self {
-        Self::NotLowerAlpha { id }
+    pub fn invalid_character(id: String) -> Self {
+        Self::InvalidCharacter { id }
     }
 
     pub fn empty() -> Self {
         Self::Empty
+    }
+
+    pub fn chain_id_invalid_format(id: String) -> Self {
+        Self::ChainIdInvalidFormat { id }
     }
 
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
