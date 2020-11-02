@@ -1,14 +1,16 @@
-# ADR 003: Domain Decomposition
+# ADR 004: Relayer Domain Decomposition
 
 ## Changelog
 * 21.7.2020: Initial sketch
 * 27.7.2020: Dependencies outline
 * 5.10.2020: Update based on sketch
+* 2.11.2020: Reviewed & accepted
 
 ## Context
 
-The IBC handlers queries and relayer are defined loosely in the spec.
-The goal of this ADR is to provide clarity around the domain objects,
+The IBC handlers queries and relayer are defined loosely in the [specs].
+The goal of this ADR is to provide clarity around the basic domain objects
+from the perspective of the relayer,
 their interfaces as well as dependencies between them in order to
 guide the implementation. The success criteria for the decomposition is
 how well it can be tested. It's expected that any decomposition will
@@ -19,6 +21,8 @@ in the code base with confidence.
 The decomposition should be motivated by what we want to test and what
 we need to mock out to exercise the core logic.
 
+We want to be able to test the following high-level functions:
+
 * Client create and update
     * With different chain states
 * Connection handshake
@@ -28,15 +32,14 @@ we need to mock out to exercise the core logic.
 * Datagram Construction
     * With different chain states
 * Datagram to Transaction
-    * batching
+    * Batching
     * Signing
 * Datagram Submission
     * With different chain states
     * Missing Client Updates
     * With Missing Proofs
-
 * Handlers (datagrams, chain state) -> events
-    * handling the batch of datagrams 
+    * Handling the batch of datagrams 
         * With different chain states
         * Specifically, the key value store
     * Produce events
@@ -45,7 +48,7 @@ we need to mock out to exercise the core logic.
 
 In this section, we map the operations which need to be performed at different
 stages of both the relayer and the IBC handlers. This gives an outline
-of what operations and dependencies need to be mocked out to test each
+of what low-level operations and dependencies need to be mocked out to test each
 stage in isolation, and will inform the design of the various traits needed
 to mock those out.
 
@@ -58,7 +61,7 @@ outlined below cover all the possible dependencies at each stage.
 - Query chain B for its commitment prefix (ABCI query)
 - Send `MsgConnectionOpenInit` message to chain A (transaction)
 
-### ConnOpenInit (Handler)
+### `ConnOpenInit` (Handler)
 
 - Provable store
 - Private store
@@ -88,58 +91,52 @@ Channel datagrams are built similarly. Packet datagrams are triggered by events,
 
 ### IBC Module
 
-On a transaction in a block of height H:
+For every a transaction in a block of height H:
 
-- call appropriate Handler
-- If handler succeeds (transaction is not aborted),
+- call appropriate handler (this is realized by ICS26 routing sub-module),
+- If handler succeeds (transaction does not abort), then
+  apply the updates to the key-value store (provable & private), and also
   get the current height H and emit appropriate events.
 
 ## Objects
-The main domain objects (ForeignClient, Connection, Channel) will be
-created as concrete types which contain their configuration.
+
+The main domain objects in the relayer (`ForeignClient`, `Connection`, `Channel`) 
+will be created as concrete types which contain their configuration.
+These objects are the relayer's representation of different parts of state from the two chains. 
 Dependencies between types indicate runtime dependencies of the chain
-state, ie. objects parameterized by ForeignClient have the pre-condition
-that the Client creation has completed at some point in the runtime.
+state. For instance, objects parameterized by a `ForeignClient` type, such as a `Connection`,
+have the pre-condition that the runtime completed client creation before operating with
+those objects.
 
-### Chain
-The Chain trait is a local representation of a foreign chain state.
-The API of a Chain provides reliable access to chain state whether
-crashed, constructed or queried. We invision a mock version of this chain
-will be used to test both handler and relayer logic.
+### ChainHandle
 
-```rust 
-struct ChainData {
-    // That represents the data that is stored on chain
-    // It's expected that the IBC handlers are producing such a state
-    // It's expected the the Chain object and queries are effectively
-    // caching such a state
-    ...
-}
+The ChainHandle trait is a local representation of a chain state on the relayer.
+The API of a ChainHandle provides reliable access to chain state whether
+crashed, constructed or queried. We envision a mock version of a chain
+will be used to test both handler and relayer logic ([#158]).
 
-```
-
-The method set of the Chain trait will reflect specific needs and not
+The method set of the ChainHandle trait will reflect specific needs and not
 intermediate representations. Query and light client verification
-concerns will be internal to the chain implementation and not exposed
-via API. Users of Chain trait implementations can assume verified data
-or receive an Error and act appropriately.
+concerns will be internal to the chain handle implementation and not exposed
+via this API. Users of a ChainHandle implementation (i.e., relayer methods)
+can assume verified data or receive an Error and act appropriately.
 
 ```rust
-trait Chain {
-	// Generate a packet as the 
-	fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError>
+trait ChainHandle {
+	// Generate a packet
+	fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError>;
 
-	// Fetch the height of a foreign client on a chain
+	// Fetch the height of an IBC client hosted by a chain
 	// - query the consensus_state of src on dst
 	// - query the highest consensus_state
 	// - verify if with the light client
 	// - return the height
-	fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError>
+	fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError>;
 
 	// Submit a transaction to a chains underlying full node
-	fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError>
+	fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError>;
 
-	...
+	// ...
 }
 
 ```
@@ -148,10 +145,15 @@ trait Chain {
 
 ```rust
 impl Connection {
-    fn new(chain_a: ..., chain_b: ..., foreign_client_a: ..., foreign_client_b: ..., config: ...) -> Result<Connection, Error> {
-        // Establish a connection ChainA and ChainB via handshake
-        // For a first version this can be completely synchronous
-        ...
+    fn new(
+        chain_a: &ChainHandle,
+        chain_b: &ChainHandle, 
+        foreign_client_a: &ForeignClient, 
+        foreign_client_b: &ForeignClient,
+        config: ConnectionConfig)
+    -> Result<Connection, Error> {
+        // Establish a connection between ChainA and ChainB via ICS 3 handshake.
+        // For a first version this can be completely synchronous (a blocking call).
     }
 }
 ```
@@ -159,30 +161,37 @@ impl Connection {
 ### Channel 
 ```rust
 impl Channel {
-    fn new(chain_a: Chain, chain_b: Chain, connection: ..., config: ...) -> Result<Channel, Error> {
-        // Establish a channel between two modules
-        ...
+    fn new(
+        chain_a: &ChainHandle, 
+        chain_b: &ChainHandle, 
+        connection: &Connection, 
+        config: ChannelConfig) 
+    -> Result<Channel, Error> {
+        // Establish a channel between two modules (i.e., ICS4 handshake).
     }
 }
 ```
 
 ## Link
-A link is the entity that connects two specific modules on separate chains. Links are responsible for relaying packets from `chain_a`
-to `chain_b` and are therefore oriented.  A single relayer process 
+
+A link is the object that connects two specific modules on separate chains.
+Links are responsible for relaying packets from `chain_a`
+to `chain_b` and are therefore uni-directional. A single relayer process 
 should be able to support multiple link instances and each link should
-run in its own thread.  Links require established ForeignClient-s,
-Connection and Channel.
+run in its own thread. Links depend on `ForeignClient`s,
+`Connection` and `Channel`.
 
 ```rust
 struct Link {
-    src_chain: Chain,
-    dst_chain: Chain,
-    channel: Channel,
+    src_chain: &ChainHandle,
+    dst_chain: &ChainHandle,
+    channel: &Channel,
 }
 
 impl Link {
-	fn new(..., channel: Channel, config: Config) -> Link {
-		...
+	fn new(channel: &Channel, config: LinkConfig) 
+    -> Link {
+		// ...
 	}
 
 	/// Relay Link specific packets from src_chain to dst_chain
@@ -191,11 +200,11 @@ impl Link {
 		let subscription = self.src_chain.subscribe(&self.channel);
 
 		for (target_height, events) in subscription.iter() {
-			...
+			// ...
             
 			let datagrams = events.map(|event| {
 				Datagram::Packet(self.dsrc_chain.build_packet(target_height, event))
-			})
+			});
 
 			for attempt in self.config_submission_attempts {
                 let current_height = self.dst_chain.get_height(&self.connection.channel.foreign_client)?;
@@ -214,6 +223,7 @@ impl Link {
 ```
 
 ### Example Main
+
 Example of the initializing of a single link between two chains. Each
 chain has its own runtime and exposes a `handle` to communicate with
 that runtime from different threads. There are dependencies between
@@ -276,7 +286,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ## Status
 
-Implemented [#335](https://github.com/informalsystems/ibc-rs/pull/335).
+- Accepted (first implementation in [#335](https://github.com/informalsystems/ibc-rs/pull/335)).
 
 ## Consequences
 
@@ -290,3 +300,6 @@ Implemented [#335](https://github.com/informalsystems/ibc-rs/pull/335).
 ### Neutral
 
 ## References
+
+[specs]: https://github.com/cosmos/ics/tree/master/spec
+[#158]: https://github.com/informalsystems/ibc-rs/issues/158
