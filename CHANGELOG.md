@@ -2,6 +2,8 @@
 
 ## Unreleased Changes
 
+Special thanks to external contributors for this release: @CharlyCst ([#347]).
+
 ### FEATURES
 
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
@@ -17,8 +19,10 @@
 ### IMPROVEMENTS
 
 - [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
+- [modules] Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
 
 [#331]: https://github.com/informalsystems/ibc-rs/pulls/331
+[#347]: https://github.com/informalsystems/ibc-rs/issues/347
 
 ## v0.0.4
 *October 19, 2020*
