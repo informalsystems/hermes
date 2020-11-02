@@ -266,11 +266,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ## Status
 
-Partially implemented in [#162](https://github.com/informalsystems/ibc-rs/pull/162).
+Implemented [#335](https://github.com/informalsystems/ibc-rs/pull/335).
 
 ## Consequences
 
 ### Positive
+* Clean abstractions an isolation from IO
+* Handshakes are correct by construction
+* Sane error handling
 
 ### Negative
 
