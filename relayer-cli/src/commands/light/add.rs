@@ -1,41 +1,37 @@
-use std::ops::Deref;
-
-use crate::prelude::*;
+use std::{fmt, io, io::Write, ops::Deref};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
-use relayer::config::{Config, LightClientConfig, PeersConfig};
+use relayer::{
+    config::{Config, LightClientConfig, PeersConfig},
+    util::block_on,
+};
 use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
 use tendermint::{block::Height, net};
 use tendermint_light_client::types::PeerId;
+use tendermint_rpc::{Client, HttpClient};
+
+use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct AddCmd {
-    #[options(free, help = "identifier of the chain")]
-    chain_id: Option<ChainId>,
+    /// RPC network address
+    #[options(free)]
+    address: Option<net::Address>,
 
-    /// peer id for this client
-    #[options(short = "i")]
-    peer_id: Option<PeerId>,
+    /// identifier of the chain
+    #[options(short = "c")]
+    chain_id: Option<ChainId>,
 
     /// whether this is the primary peer
     primary: bool,
 
-    /// trusted header hash
-    #[options(short = "x")]
-    hash: Option<Hash>,
-
-    /// RPC network address
-    #[options(short = "a")]
-    address: Option<net::Address>,
-
-    /// trusted header height
-    #[options(short = "h")]
-    height: Option<Height>,
-
     /// allow overriding an existing peer
     force: bool,
+
+    /// skip confirmation
+    yes: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -43,110 +39,176 @@ struct AddOptions {
     /// identifier of the chain
     chain_id: ChainId,
 
-    /// peer id for this client
-    peer_id: PeerId,
-
     /// RPC network address
     address: net::Address,
-
-    /// trusted header hash
-    trusted_hash: Hash,
-
-    /// trusted header height
-    trusted_height: Height,
 
     /// whether this is the primary peer or not
     primary: bool,
 
     /// allow overriding an existing peer
     force: bool,
+
+    /// skip confirmation
+    yes: bool,
 }
 
 impl AddOptions {
     fn from_cmd(cmd: &AddCmd) -> Result<AddOptions, BoxError> {
         let chain_id = cmd.chain_id.clone().ok_or("missing chain identifier")?;
-        let peer_id = cmd.peer_id.ok_or("missing peer identifier")?;
         let address = cmd.address.clone().ok_or("missing RPC network address")?;
-        let trusted_hash = cmd.hash.ok_or("missing trusted hash")?;
-        let trusted_height = cmd.height.ok_or("missing chain identifier")?;
         let primary = cmd.primary;
         let force = cmd.force;
+        let yes = cmd.yes;
 
         Ok(AddOptions {
             chain_id,
-            peer_id,
             address,
-            trusted_hash,
-            trusted_height,
             primary,
             force,
+            yes,
         })
     }
 }
 
-impl AddCmd {
-    fn update_config(options: AddOptions, config: &mut Config) -> Result<PeerId, BoxError> {
-        let chain_config = config
-            .chains
-            .iter_mut()
-            .find(|c| c.id == options.chain_id)
-            .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
+#[derive(Debug, Clone)]
+pub struct NodeStatus {
+    chain_id: ChainId,
+    address: net::Address,
+    peer_id: PeerId,
+    latest_hash: Hash,
+    latest_height: Height,
+}
 
-        let peers_config = chain_config.peers.get_or_insert_with(|| PeersConfig {
-            primary: options.peer_id,
-            light_clients: vec![],
-        });
-
-        // Check if the given peer exists already, in which case throw an error except if the
-        // --force flag is set.
-        let peer_exists = peers_config.light_client(options.peer_id).is_some();
-        if peer_exists && !options.force {
-            return Err(format!("a peer with id {} already exists, remove it first or pass the --force flag to override it", options.peer_id).into());
-        }
-
-        let light_client_config = LightClientConfig {
-            peer_id: options.peer_id,
-            address: options.address.clone(),
-            trusted_header_hash: options.trusted_hash,
-            trusted_height: options.trusted_height,
-        };
-
-        if peer_exists {
-            // Filter out the light client config with the specified peer id
-            peers_config
-                .light_clients
-                .retain(|p| p.peer_id != options.peer_id);
-        }
-
-        peers_config.light_clients.push(light_client_config);
-
-        if options.primary {
-            peers_config.primary = options.peer_id;
-        }
-
-        Ok(peers_config.primary)
-    }
-
-    fn cmd(&self) -> Result<(), BoxError> {
-        let options = AddOptions::from_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
-        let mut config = (*app_config()).clone();
-
-        let new_primary = Self::update_config(options.clone(), &mut config)?;
-
-        let config_path = crate::config::config_path()?;
-        relayer::config::store(&config, config_path)?;
-
-        status_ok!(
-            "Added",
-            "light client peer:\npeer_id = {}\naddress = {}\nhash = {}\nheight = {}\nprimary = {}",
-            options.peer_id,
-            options.address,
-            options.trusted_hash,
-            options.trusted_height,
-            options.peer_id == new_primary,
-        );
+impl fmt::Display for NodeStatus {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "  chain id: {}", self.chain_id)?;
+        writeln!(f, "  address:  {}", self.address)?;
+        writeln!(f, "  peer id:  {}", self.peer_id)?;
+        writeln!(f, "  height:   {}", self.latest_height)?;
+        writeln!(f, "  hash:     {}", self.latest_hash)?;
 
         Ok(())
+    }
+}
+
+fn confirm(status: &NodeStatus, primary: bool) -> Result<bool, BoxError> {
+    print!("Light client configuration:\n{}", status);
+    println!("  primary:  {}", primary);
+
+    loop {
+        print!("\n? Do you want to add a new light client with these trust options? (y/n) > ");
+        io::stdout().flush()?; // need to flush stdout since stdout is often line-buffered
+
+        let mut choice = String::new();
+        io::stdin().read_line(&mut choice)?;
+
+        match choice.trim_end() {
+            "y" | "yes" => return Ok(true),
+            "n" | "no" => return Ok(false),
+            _ => continue,
+        }
+    }
+}
+
+fn add(mut config: Config, options: AddOptions) -> Result<(), BoxError> {
+    let status = fetch_status(options.chain_id.clone(), options.address.clone())?;
+
+    if !(options.yes || confirm(&status, options.primary)?) {
+        return Ok(());
+    }
+
+    let new_primary = update_config(options, status.clone(), &mut config)?;
+
+    let config_path = crate::config::config_path()?;
+    relayer::config::store(&config, config_path)?;
+
+    status_ok!(
+        "Success",
+        "Added light client:\n{}  primary:  {}",
+        status,
+        status.peer_id == new_primary,
+    );
+
+    Ok(())
+}
+
+fn fetch_status(chain_id: ChainId, address: net::Address) -> Result<NodeStatus, BoxError> {
+    let rpc_client = HttpClient::new(address.clone())?;
+    let response = block_on(rpc_client.status())?;
+
+    let peer_id = response.node_info.id;
+    let latest_height = response.sync_info.latest_block_height;
+    let latest_hash = response
+        .sync_info
+        .latest_block_hash
+        .ok_or_else(|| "missing latest block hash in RPC status response")?;
+
+    Ok(NodeStatus {
+        chain_id,
+        address,
+        peer_id,
+        latest_hash,
+        latest_height,
+    })
+}
+
+fn update_config(
+    options: AddOptions,
+    status: NodeStatus,
+    config: &mut Config,
+) -> Result<PeerId, BoxError> {
+    let chain_config = config
+        .chains
+        .iter_mut()
+        .find(|c| c.id == options.chain_id)
+        .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
+
+    let peers_config = chain_config.peers.get_or_insert_with(|| PeersConfig {
+        primary: status.peer_id,
+        light_clients: vec![],
+    });
+
+    // Check if the given peer exists already, in which case throw an error except if the
+    // --force flag is set.
+    let peer_exists = peers_config.light_client(status.peer_id).is_some();
+    if peer_exists && !options.force {
+        return Err(format!(
+            "a peer with id {} already exists, remove it first \
+            or pass the --force flag to override it",
+            status.peer_id
+        )
+        .into());
+    }
+
+    let light_client_config = LightClientConfig {
+        peer_id: status.peer_id,
+        address: status.address.clone(),
+        trusted_header_hash: status.latest_hash,
+        trusted_height: status.latest_height,
+    };
+
+    if peer_exists {
+        // Filter out the light client config with the specified peer id
+        peers_config
+            .light_clients
+            .retain(|p| p.peer_id != status.peer_id);
+    }
+
+    peers_config.light_clients.push(light_client_config);
+
+    if options.primary {
+        peers_config.primary = status.peer_id;
+    }
+
+    Ok(peers_config.primary)
+}
+
+impl AddCmd {
+    fn cmd(&self) -> Result<(), BoxError> {
+        let config = (*app_config()).clone();
+        let options = AddOptions::from_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
+
+        add(config, options)
     }
 }
 
