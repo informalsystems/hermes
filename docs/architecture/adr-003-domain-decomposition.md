@@ -16,16 +16,17 @@ lend itself to tight unit tests allowing more collaborators make change
 in the code base with confidence.
 
 ## Decision
-The decomposition should be motivated by what we want to tests and what
-do we need to mock out to exercise the core logic.
+The decomposition should be motivated by what we want to test and what
+we need to mock out to exercise the core logic.
 
+* Client create and update
+    * With different chain states
 * Connection handshake
     * With different chain states
 * Channel Setup
     * With different chain states
 * Datagram Construction
     * With different chain states
-    * With different light client states
 * Datagram to Transaction
     * batching
     * Signing
@@ -35,7 +36,8 @@ do we need to mock out to exercise the core logic.
     * With Missing Proofs
 
 * Handlers (datagrams, chain state) -> events
-    * batch of datagrams and chain states
+    * handling the batch of datagrams 
+        * With different chain states
         * Specifically, the key value store
     * Produce events
 
@@ -43,7 +45,7 @@ do we need to mock out to exercise the core logic.
 
 In this section, we map the operations which need to be performed at different
 stages of both the relayer and the IBC handlers. This gives an outline
-of what operations and depedencies need to be mocked out to test each
+of what operations and dependencies need to be mocked out to test each
 stage in isolation, and will inform the design of the various traits needed
 to mock those out.
 
@@ -63,7 +65,7 @@ outlined below cover all the possible dependencies at each stage.
 
 ### `updateIBCClient` (Relayer)
 
-- get latest height from chain A (Query)
+- get the latest height from chain A (Query)
 - get client consensus state from chain B (Query)
 - get latest header + minimal set from chain A (Light Client)
 - verify client state proof (Prover)
@@ -73,13 +75,16 @@ outlined below cover all the possible dependencies at each stage.
 - wait for UpdateClient event (Event Subscription)
 
 ### `pendingDatagrams` (Relayer)
-
+Builds the datagrams required by the given on-chain states. 
+For connection datagrams:
 - get connection objects from chain A (Query)
 - get connection objects from chain B (Query)
-- get proof\* that A has a connection in INIT state (Query, Prover, Light Client)
-- get proof\* that A has a consensus state in a given state (Query, Prover, Light Client)
+- get proof\* of connection state (e.g. `Init`) from chain A (Query, Prover, Light Client)
+- get proof\* of client state and consensus state from chain A (Query, Prover, Light Client)
   - \* involves querying the chain + get header/minimal set + verify proof
-- build `ConnOpenTry` message (Message Builder)
+- build the next message in the connection handshake, e.g. `ConnOpenTry` (Message Builder)
+
+Channel datagrams are built similarly. Packet datagrams are triggered by events, and they are detailed in the Link section below.
 
 ### IBC Module
 
@@ -90,20 +95,20 @@ On a transaction in a block of height H:
   get the current height H and emit appropriate events.
 
 ## Objects
-The main domain objects (ForeignClient, Connection, Channnel) will be
+The main domain objects (ForeignClient, Connection, Channel) will be
 created as concrete types which contain their configuration.
-Dependencies between types indiciate runtime dependencies of the chain
-state. ie. Objects parameterized by ForeignClient have the pre-condition
-that the Client handshake was completed at some point in the runtime.
+Dependencies between types indicate runtime dependencies of the chain
+state, ie. objects parameterized by ForeignClient have the pre-condition
+that the Client creation has completed at some point in the runtime.
 
 ### Chain
 The Chain trait is a local representation of a foreign chain state.
-The API of a Chain provides reliable access to chain state wether
-cashed, constructed or queried. We invision mock version of this chain
+The API of a Chain provides reliable access to chain state whether
+crashed, constructed or queried. We invision a mock version of this chain
 will be used to test both handler and relayer logic.
 
 ```rust 
-struct Chain {
+struct ChainData {
     // That represents the data that is stored on chain
     // It's expected that the IBC handlers are producing such a state
     // It's expected the the Chain object and queries are effectively
@@ -113,7 +118,7 @@ struct Chain {
 
 ```
 
-The methodset of the Chain trait will reflect specific needs and not
+The method set of the Chain trait will reflect specific needs and not
 intermediate representations. Query and light client verification
 concerns will be internal to the chain implementation and not exposed
 via API. Users of Chain trait implementations can assume verified data
@@ -142,8 +147,8 @@ trait Chain {
 ### Connection
 
 ```rust
-struct Connection {
-    fn new(chain_a: ..., chain_b: ..., foreign_client: ..., config: ...) -> Result<Connection, Error> {
+impl Connection {
+    fn new(chain_a: ..., chain_b: ..., foreign_client_a: ..., foreign_client_b: ..., config: ...) -> Result<Connection, Error> {
         // Establish a connection ChainA and ChainB via handshake
         // For a first version this can be completely synchronous
         ...
@@ -153,7 +158,7 @@ struct Connection {
 
 ### Channel 
 ```rust
-struct Channel {
+impl Channel {
     fn new(chain_a: Chain, chain_b: Chain, connection: ..., config: ...) -> Result<Channel, Error> {
         // Establish a channel between two modules
         ...
@@ -162,11 +167,10 @@ struct Channel {
 ```
 
 ## Link
-The entity which connects two specific modules on seperate chains is
-called a link. Links are responsible for relaying packets from `chain_a`
+A link is the entity that connects two specific modules on separate chains. Links are responsible for relaying packets from `chain_a`
 to `chain_b` and are therefore oriented.  A single relayer process 
 should be able to support multiple link instances and each link should
-run in it's own thread.  Links require established ForeignClient,
+run in its own thread.  Links require established ForeignClient-s,
 Connection and Channel.
 
 ```rust
@@ -210,12 +214,12 @@ impl Link {
 ```
 
 ### Example Main
-Example of the initalizing on a single link between two chains. Each
-chain has it's own runtime and exposes a `handle` to communicate with
+Example of the initializing of a single link between two chains. Each
+chain has its own runtime and exposes a `handle` to communicate with
 that runtime from different threads. There are dependencies between
 ForeignClients, Connections, Channels and Links which are encoded in the
 type system. The construction of them reflects that their corresponding
-handshake protocol was completed successfully.
+handshake protocol has completed successfully.
 
 ```rust
 fn main() -> Result<(), Box<dyn Error>> {
@@ -235,7 +239,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         dst_chain.run().unwrap();
     });
 
-    let foreign_client = ForeignClient::new(
+    let src_foreign_client_on_dst = ForeignClient::new(
+        &src_chain_handle,
+        &dst_chain_handle,
+        ForeignClientConfig::default())?;
+
+    let dst_foreign_client_on_src = ForeignClient::new(
         &src_chain_handle,
         &dst_chain_handle,
         ForeignClientConfig::default())?;
@@ -243,7 +252,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let connection = Connection::new(
         &src_chain_handle,
         &dst_chain_handle,
-        foreign_client,
+        dst_foreign_client_on_src,
+        src_foreign_client_on_dst,
         ConnectionConfig::default()).unwrap();
 
     let channel = Channel::new(
