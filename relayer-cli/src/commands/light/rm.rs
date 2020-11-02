@@ -10,12 +10,13 @@ use tendermint_light_client::types::PeerId;
 
 #[derive(Command, Debug, Options)]
 pub struct RmCmd {
-    #[options(free, help = "identifier of the chain")]
-    chain_id: Option<ChainId>,
-
     /// peer id for this client
-    #[options(short = "i")]
+    #[options(free)]
     peer_id: Option<PeerId>,
+
+    #[options(short = "c")]
+    /// identifier of the chain
+    chain_id: Option<ChainId>,
 
     /// force removal of primary peer
     #[options(short = "f")]
