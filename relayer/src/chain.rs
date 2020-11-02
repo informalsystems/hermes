@@ -12,6 +12,8 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::Path;
 
+use crate::keyring::store::{KeyEntry, KeyRing};
+
 use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
@@ -23,6 +25,7 @@ pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 
 pub mod handle;
+use ibc::tx_msg::Msg;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
@@ -48,7 +51,15 @@ pub trait Chain {
     fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
-    fn send(&self, _msgs: &[Any]) -> Result<(), Self::Error>;
+    fn send(
+        &mut self,
+        msg_type: String,
+        msg: Vec<u8>,
+        key: KeyEntry,
+        acct_seq: u64,
+        memo: String,
+        timeout_height: u64,
+    ) -> Result<Vec<u8>, Self::Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
@@ -73,10 +84,6 @@ pub trait Chain {
 
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThreshold;
-
-    /// Sign message
-    /// TODO - waiting for tendermint-rs upgrade to v0.16
-    fn sign_tx(&self, _msgs: &[Any]) -> Result<Vec<u8>, Self::Error>;
 
     /// Query a header at the given height via RPC
     fn query_header_at_height(&self, height: Height) -> Result<Self::LightBlock, error::Error>;

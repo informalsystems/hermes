@@ -22,6 +22,8 @@ pub mod error;
 pub mod event_handler;
 pub mod event_monitor;
 pub mod foreign_client;
+pub mod keyring;
+pub mod keys;
 pub mod link;
 pub mod msgs;
 pub mod tx;

@@ -4,6 +4,8 @@ use crate::error::{Error, Kind};
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
+use std::fs;
+use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
@@ -22,12 +24,44 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: Option<String>,
 
-    #[options(help = "identifier of the destination connection", short = "d")]
+    #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: Option<String>,
+
+    #[options(help = "account sequence of the signer", short = "s")]
+    account_sequence: Option<String>,
+
+    #[options(help = "key file for the signer", short = "k")]
+    signer_key: Option<String>,
 }
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
+        // Get the account sequence
+        let parsed = self
+            .account_sequence
+            .clone()
+            .ok_or_else(|| "missing account sequence".to_string())?
+            .parse::<u64>();
+
+        let acct_seq = match parsed {
+            Ok(v) => v,
+            Err(e) => return Err("invalid account sequence number".to_string()),
+        };
+
+        // Get content of key seed file
+        let key_filename = self
+            .signer_key
+            .clone()
+            .ok_or_else(|| "missing signer key file".to_string())?;
+
+        let key_file = Path::new(&key_filename).exists();
+        if !key_file {
+            return Err("cannot find key file specified".to_string());
+        }
+
+        let key_file_contents = fs::read_to_string(key_filename)
+            .expect("Something went wrong reading the key seed file");
+
         let src_chain_id = self
             .src_chain_id
             .clone()
@@ -87,6 +121,8 @@ impl TxRawConnInitCmd {
             dest_connection_id,
             src_chain_config: src_chain_config.clone(),
             dest_chain_config: dest_chain_config.clone(),
+            signer_key: key_file_contents,
+            account_sequence: acct_seq,
         };
 
         Ok(opts)
@@ -106,7 +142,7 @@ impl Runnable for TxRawConnInitCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let res: Result<(), Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<u8>, Error> = conn_init(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),

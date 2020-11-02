@@ -11,19 +11,32 @@ use ibc::tx_msg::Msg;
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::keyring::store::{KeyEntry, KeyRingOperations};
 use crate::util::block_on;
+use bitcoin::hashes::hex::ToHex;
 use ibc::ics02_client::height::Height;
+use std::str::FromStr;
+use tendermint::account::Id as AccountId;
 
 #[derive(Clone, Debug)]
 pub struct CreateClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
+    pub signer_key: String,
 }
 
-pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
+pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
-    let dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+
+    // Get the key from key seed file
+    let key = dest_chain
+        .keybase
+        .key_from_seed_file(&opts.signer_key)
+        .map_err(|e| Kind::KeyBase.context(e))?;
+    let signer: AccountId =
+        AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
     // Query the client state on destination chain.
     let response = dest_chain.query(
@@ -94,14 +107,19 @@ pub fn create_client(opts: CreateClientOptions) -> Result<(), Error> {
         Kind::MessageTransaction("failed to build the create client message".into()).context(e)
     })?;
 
-    // Create a proto any message
-    let mut proto_msgs: Vec<Any> = Vec::new();
-    let any_msg = Any {
-        // TODO - add get_url_type() to prepend proper string to get_type()
-        type_url: "/ibc.client.MsgCreateClient".to_ascii_lowercase(),
-        value: new_msg.get_sign_bytes(),
-    };
+    let msg_type = "/ibc.client.MsgCreateClient".to_ascii_lowercase();
 
-    proto_msgs.push(any_msg);
-    dest_chain.send(&proto_msgs)
+    // TODO - Replace logic to fetch the proper account sequence via CLI parameter
+    let response = dest_chain
+        .send(
+            msg_type,
+            new_msg.get_sign_bytes(),
+            key,
+            0,
+            "".to_string(),
+            0,
+        )
+        .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
+
+    Ok(response)
 }
