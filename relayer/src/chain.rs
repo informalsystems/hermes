@@ -142,7 +142,7 @@ pub trait Chain {
         proof: bool,
     ) -> Result<ConnectionEnd, Error> {
         Ok(self
-            .query(Path::Connection(connection_id.clone()), height, proof)
+            .query(Path::Connections(connection_id.clone()), height, proof)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
     }

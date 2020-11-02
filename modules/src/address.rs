@@ -1,3 +1,4 @@
+/// TODO - remove when ICS message signer changes from AccountId to String
 use bech32::FromBase32;
 use bech32::ToBase32;
 use std::convert::TryFrom;
@@ -9,7 +10,6 @@ pub fn account_to_string(addr: AccountId) -> Result<String, String> {
         .map_err(|e| "cannot generate bech32 account".to_string() + &e.to_string())?)
 }
 
-/// TODO - find a better place for this
 pub fn string_to_account(raw: String) -> Result<AccountId, String> {
     let (_hrp, data) =
         bech32::decode(&raw).map_err(|e| "bad signer".to_string() + &e.to_string())?;

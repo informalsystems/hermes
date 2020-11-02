@@ -331,20 +331,18 @@ impl Chain for CosmosSDKChain {
         signer: AccountId,
     ) -> Result<MsgCreateAnyClient, Error> {
         // Get the latest header from the source chain and build the consensus state.
-        let latest_light_block = self.query_latest_light_block()?;
-        let consensus_params = self.query_consensus_params()?;
-
-        // Build the consensus state.
-        let consensus_state = AnyConsensusState::Tendermint(TendermintConsensusState::from(
-            latest_light_block.signed_header.header().clone(),
-        ));
-
-        let height = u64::from(latest_light_block.signed_header.header().height);
-        let version = latest_light_block
+        let latest_header = self
+            .query_latest_light_block()?
             .signed_header
             .header()
-            .chain_id
-            .to_string();
+            .clone();
+
+        // Build the consensus state.
+        let consensus_state =
+            AnyConsensusState::Tendermint(TendermintConsensusState::from(latest_header.clone()));
+
+        let height = u64::from(latest_header.height);
+        let version = latest_header.chain_id.to_string();
 
         // Build the client state.
         let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
@@ -354,8 +352,8 @@ impl Chain for CosmosSDKChain {
             self.unbonding_period(),
             Duration::from_millis(3000), // TODO - get it from src config when avail
             ICSHeight::new(ChainId::chain_version(version), height),
-            consensus_params,
             ICSHeight::zero(),
+            self.query_consensus_params()?,
             "upgrade/upgradedClient".to_string(),
             false,
             false,
@@ -383,10 +381,10 @@ impl Chain for CosmosSDKChain {
         target_height: Height,
         signer: AccountId,
     ) -> Result<MsgUpdateAnyClient, Error> {
-        // Get the light block at target_height from source chain.
+        // Get the light block at target_height from chain.
         let target_light_block = self.query_light_block_at_height(target_height)?;
 
-        // Get the light block at trusted_height from the source chain.
+        // Get the light block at trusted_height from the chain.
         let height =
             Height::try_from(trusted_height.version_height).map_err(|e| Kind::Query.context(e))?;
         let trusted_light_block = self.query_light_block_at_height(height)?;
@@ -463,12 +461,12 @@ fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHead
         .signed_header)
 }
 
-fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
-    Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
-}
-
 fn fetch_validators(client: &HttpClient, height: Height) -> Result<Vec<Info>, Error> {
     Ok(block_on(client.validators(height))
         .map_err(|e| Kind::Rpc.context(e))?
         .validators)
+}
+
+fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
+    Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
 }

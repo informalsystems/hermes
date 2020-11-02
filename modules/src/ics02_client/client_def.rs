@@ -18,6 +18,13 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, Com
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
+#[cfg(test)]
+use {
+    crate::mock_client::client_def::MockClient,
+    crate::mock_client::header::MockHeader,
+    crate::mock_client::state::{MockClientState, MockConsensusState},
+};
+
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
@@ -26,13 +33,6 @@ pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.He
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
-
-#[cfg(test)]
-use {
-    crate::mock_client::client_def::MockClient,
-    crate::mock_client::header::MockHeader,
-    crate::mock_client::state::{MockClientState, MockConsensusState},
-};
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -521,5 +521,22 @@ impl ClientDef for AnyClient {
                 )
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use prost_types::Any;
+    use std::convert::TryFrom;
+
+    #[test]
+    fn any_client_state_serialization() {
+        let tm_client_state = get_dummy_tendermint_client_state();
+
+        let raw: Any = tm_client_state.clone().into();
+        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
+        assert_eq!(tm_client_state, tm_client_state_back);
     }
 }

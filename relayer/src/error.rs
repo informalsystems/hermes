@@ -54,10 +54,6 @@ pub enum Kind {
     #[error("Bad parameter")]
     Query,
 
-    /// Bad parameter
-    #[error("Bad parameter")]
-    BadParameter,
-
     /// Keybase related error
     #[error("Keybase error")]
     KeyBase,

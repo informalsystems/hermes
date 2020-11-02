@@ -39,8 +39,8 @@ impl ClientState {
         unbonding_period: Duration,
         max_clock_drift: Duration,
         latest_height: Height,
-        consensus_params: Params,
         frozen_height: Height,
+        consensus_params: Params,
         upgrade_path: String,
         allow_update_after_expiry: bool,
         allow_update_after_misbehaviour: bool, // proof_specs: Specs
@@ -308,8 +308,8 @@ mod tests {
                 p.unbonding_period,
                 p.max_clock_drift,
                 p.latest_height,
-                p.consensus_params,
                 p.frozen_height,
+                p.consensus_params,
                 p.upgrade_path,
                 p.allow_update_after_expiry,
                 p.allow_update_after_misbehaviour,
@@ -324,5 +324,39 @@ mod tests {
                 cs_result.err(),
             );
         }
+    }
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::height::Height;
+    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
+    use crate::ics24_host::identifier::ChainId;
+    use crate::test_utils::default_consensus_params;
+    use std::time::Duration;
+
+    pub fn get_dummy_tendermint_client_state() -> AnyClientState {
+        let tm_header = get_dummy_tendermint_header();
+        AnyClientState::Tendermint(
+            ClientState::new(
+                tm_header.chain_id.to_string(),
+                Default::default(),
+                Duration::from_secs(64000),
+                Duration::from_secs(128000),
+                Duration::from_millis(3000),
+                Height::new(
+                    ChainId::chain_version(tm_header.chain_id.to_string()),
+                    u64::from(tm_header.height),
+                ),
+                Height::zero(),
+                default_consensus_params(),
+                "".to_string(),
+                false,
+                false,
+            )
+            .unwrap(),
+        )
     }
 }

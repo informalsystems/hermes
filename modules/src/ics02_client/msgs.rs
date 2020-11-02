@@ -208,44 +208,26 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
 #[cfg(test)]
 mod tests {
     use std::convert::{TryFrom, TryInto};
-    use std::time::Duration;
 
     use ibc_proto::ibc::core::client::v1::{MsgCreateClient, MsgUpdateClient};
-    use tendermint_light_client::types::TrustThreshold;
 
-    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+    use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
     use crate::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
-    use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ClientId;
-    use crate::Height;
 
+    use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::{
         get_dummy_ics07_header, get_dummy_tendermint_header,
     };
-    use crate::test_utils::{default_consensus_params, get_dummy_account_id};
+    use crate::test_utils::get_dummy_account_id;
 
     #[test]
-    fn client_state_serialization() {
+    fn msg_create_client_serialization() {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = get_dummy_account_id();
 
         let tm_header = get_dummy_tendermint_header();
-        let tm_client_state = AnyClientState::Tendermint(ClientState {
-            chain_id: tm_header.chain_id.to_string(),
-            trust_level: TrustThreshold {
-                numerator: 1,
-                denominator: 3,
-            },
-            trusting_period: Duration::from_secs(64000),
-            unbonding_period: Duration::from_secs(128000),
-            max_clock_drift: Duration::from_millis(3000),
-            latest_height: Height::new(0, u64::from(tm_header.height)),
-            consensus_params: default_consensus_params(),
-            frozen_height: Height::default(),
-            allow_update_after_expiry: false,
-            allow_update_after_misbehaviour: false,
-            upgrade_path: "".to_string(),
-        });
+        let tm_client_state = get_dummy_tendermint_client_state();
 
         let msg = MsgCreateAnyClient::new(
             client_id,
@@ -263,7 +245,7 @@ mod tests {
     }
 
     #[test]
-    fn consensus_state_serialization() {
+    fn msg_update_client_serialization() {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = get_dummy_account_id();
 

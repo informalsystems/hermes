@@ -31,10 +31,6 @@ impl crate::ics02_client::header::Header for Header {
             u64::from(self.signed_header.header().height),
         )
     }
-
-    // fn consensus_state(&self) -> &dyn crate::ics02_client::state::ConsensusState {
-    //     &self.consensus_state()
-    // }
 }
 
 impl DomainType<RawHeader> for Header {}
@@ -81,6 +77,7 @@ impl From<Header> for RawHeader {
 
 #[cfg(test)]
 pub mod test_util {
+    use std::convert::TryInto;
     use subtle_encoding::hex;
 
     use tendermint::block::signed_header::SignedHeader;
@@ -90,7 +87,13 @@ pub mod test_util {
 
     use crate::ics07_tendermint::header::Header;
     use crate::Height;
-    use std::convert::TryInto;
+
+    pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
+        serde_json::from_str::<SignedHeader>(include_str!("../../tests/support/signed_header.json"))
+            .unwrap()
+            .header()
+            .clone()
+    }
 
     // TODO: This should be replaced with a ::default() or ::produce().
     // The implementation of this function comprises duplicate code (code borrowed from
@@ -134,12 +137,5 @@ pub mod test_util {
             trusted_height: Height::new(0, 1),
             trusted_validator_set: vs,
         }
-    }
-
-    pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
-        serde_json::from_str::<SignedHeader>(include_str!("../../tests/support/signed_header.json"))
-            .unwrap()
-            .header()
-            .clone()
     }
 }
