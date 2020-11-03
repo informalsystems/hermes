@@ -8,11 +8,13 @@
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules] Implement flexible connection id selection ([#332])
 - [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+- [relayer-cli] Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
+[#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 
 ### IMPROVEMENTS
 
