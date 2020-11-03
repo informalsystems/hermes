@@ -29,7 +29,6 @@ pub mod runtime;
 
 /// TODO: delete everything below here. `Chain` will be superseded by ChainRuntime & ChainHandle.
 
-
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
     /// Type of light blocks for this chain

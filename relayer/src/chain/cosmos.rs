@@ -1,6 +1,5 @@
 /// THIS WILL SOON BE MOVED INTO chain/handle/cosmos.rs.
 /// Should implement the `ChainHandler` trait.
-
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -21,7 +20,6 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::util::block_on;
 
-
 use crate::error;
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use bytes::Bytes;
@@ -34,7 +32,6 @@ use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
 use std::future::Future;
-
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
