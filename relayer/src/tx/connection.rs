@@ -21,27 +21,42 @@ use crate::keyring::store::{KeyEntry, KeyRingOperations};
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
-    pub src_client_id: ClientId,
-    pub dest_client_id: ClientId,
-    pub src_connection_id: ConnectionId,
-    pub dest_connection_id: Option<ConnectionId>,
-    pub src_chain_config: ChainConfig,
     pub dest_chain_config: ChainConfig,
+    pub src_chain_config: ChainConfig,
+    pub dest_client_id: ClientId,
+    pub src_client_id: ClientId,
+    pub dest_connection_id: ConnectionId,
+    pub src_connection_id: Option<ConnectionId>,
     pub signer_seed: String,
     pub account_sequence: u64,
 }
 
-pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
+pub fn conn_init(opts: &ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the source and destination chains
-    let src_chain = CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    let src_chain = CosmosSDKChain::from_config(opts.src_chain_config.clone())?;
+    let mut dest_chain = CosmosSDKChain::from_config(opts.dest_chain_config.clone())?;
 
+    // Check that the destination chain will accept the message, i.e. it does not have the connection
+    dest_chain.check_connection_for_init(opts.dest_connection_id.clone())?;
     // Get the key and signer from key seed file
     let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
     let prefix = src_chain.query_commitment_prefix()?;
 
-    let new_msg = dest_chain.build_conn_open_init_msg(opts.clone(), prefix, signer)?;
+    let counterparty = Counterparty::new(
+        opts.src_client_id.clone(),
+        opts.src_connection_id.clone(),
+        prefix,
+    );
+
+    // Build the domain type message
+    let new_msg = MsgConnectionOpenInit {
+        client_id: opts.dest_client_id.clone(),
+        connection_id: opts.dest_connection_id.clone(),
+        counterparty,
+        version: "".to_string(),
+        signer,
+    };
 
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgConnectionOpenInit>()];
 

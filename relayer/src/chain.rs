@@ -147,33 +147,14 @@ pub trait Chain {
             .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
     }
 
-    fn build_conn_open_init_msg(
-        &self,
-        opts: ConnectionOpenInitOptions,
-        prefix: CommitmentPrefix,
-        signer: AccountId,
-    ) -> Result<MsgConnectionOpenInit, Error> {
-        let connection = self.query_connection(
-            &opts.src_connection_id,
-            Height::try_from(0_u64).unwrap(),
-            false,
-        );
+    fn check_connection_for_init(&self, connection_id: ConnectionId) -> Result<(), Error> {
+        let connection =
+            self.query_connection(&connection_id, Height::try_from(0_u64).unwrap(), false);
         if connection.is_ok() {
-            return Err(Kind::ConnOpenInit(
-                opts.src_connection_id,
-                "connection already exist".into(),
-            )
-            .into());
+            return Err(
+                Kind::ConnOpenInit(connection_id, "connection already exist".into()).into(),
+            );
         }
-
-        let counterparty = Counterparty::new(opts.dest_client_id, opts.dest_connection_id, prefix);
-
-        Ok(MsgConnectionOpenInit {
-            client_id: opts.src_client_id,
-            connection_id: opts.src_connection_id,
-            counterparty,
-            version: "".to_string(),
-            signer,
-        })
+        Ok(())
     }
 }
