@@ -74,7 +74,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Build the client state.
     let any_client_state = ibc::ics07_tendermint::client_state::ClientState::new(
         src_chain.id().to_string(),
-        src_chain.trusting_period(),
+        src_chain.config().trusting_period,
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
         Height::new(ChainId::chain_version(version.clone()), height),
