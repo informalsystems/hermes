@@ -1,40 +1,50 @@
-use crate::chain::handle::{cosmos::CosmosSDKHandle, ChainHandleError, HandleInput};
-use crate::config::ChainConfig;
-use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
-
-use ibc::Height;
-
-use crossbeam_channel as channel;
 use std::time::Duration;
 
-pub struct ChainRuntime {
-    chain_config: ChainConfig,
+use crossbeam_channel as channel;
+use tendermint::block::signed_header::SignedHeader;
+use thiserror::Error;
+
+use ibc::{ics24_host::identifier::ChainId, Height};
+
+use crate::config::ChainConfig;
+use crate::foreign_client::ForeignClient;
+use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
+
+use super::{
+    error::ChainError,
+    handle::{HandleInput, ProdChainHandle},
+    Chain,
+};
+
+pub struct ChainRuntime<Chain> {
+    chain: Chain,
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
 }
 
-impl ChainRuntime {
-    pub fn new(chain_config: &ChainConfig) -> ChainRuntime {
+impl<C: Chain> ChainRuntime<C> {
+    pub fn from_config(config: ChainConfig) -> Result<ChainConfig, ChainError> {
+        todo!()
+    }
+
+    pub fn new(chain: C) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
         Self {
-            chain_config: chain_config.clone(),
+            chain,
             sender,
             receiver,
         }
     }
 
-    pub fn handle(&self) -> Result<CosmosSDKHandle, ChainHandleError> {
+    pub fn handle(&self) -> ProdChainHandle {
+        let chain_id = self.chain.id().clone();
         let sender = self.sender.clone();
 
-        CosmosSDKHandle::new(
-            self.chain_config.id.as_str(),
-            sender,
-            self.chain_config.rpc_addr.clone(),
-        )
+        ProdChainHandle::new(chain_id, sender)
     }
 
-    pub fn run(self) -> Result<(), ChainHandleError> {
+    pub fn run(self) -> Result<(), ChainError> {
         // Mocked: EventMonitor
         // What we need here is a reliable stream of events produced by a connected full node.
         // Events received from this stream will be buffered (perhaps durably) and then routed to
@@ -51,21 +61,28 @@ impl ChainRuntime {
                         // subscription.send((target_height, vec![IBCEvent::NoOp()])).unwrap();
                     }
                 },
-                recv(self.receiver) -> maybe_event => {
-                    let event = maybe_event.unwrap();
+                recv(self.receiver) -> event => {
                     match event {
-                        HandleInput::Subscribe(sender) => {
-                            println!("Subscribing!");
-                            let (sub_sender, sub_receiver) = channel::unbounded::<(Height, Vec<IBCEvent>)>();
-                            subscriptions.push(sub_sender);
-                            sender.send(sub_receiver).unwrap();
+                        Ok(HandleInput::Subscribe(sender)) => {
+                            let (tx, rx) = channel::unbounded();
+                            subscriptions.push(tx);
+                            sender.send(rx).map_err(|e| ChainError::Channel)?;
                         },
-                        HandleInput::Terminate(sender) => {
-                            sender.send(()).unwrap();
+                        Ok(HandleInput::Terminate(sender)) => {
+                            sender.send(()).map_err(|e| ChainError::Channel)?;
+                            break;
+                        }
+                        Ok(HandleInput::GetHeader(_height, _sender)) => {
+                            todo!()
+                        }
+                        Err(e) => {
+                            todo!()
                         }
                     }
                 },
             }
         }
+
+        Ok(())
     }
 }

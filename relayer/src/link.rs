@@ -1,6 +1,6 @@
 use std::ops::Range;
 
-use crate::chain::handle::{ChainHandle, ChainHandleError};
+use crate::chain::{error::ChainError, handle::ChainHandle};
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::channel::{Channel, ChannelError};
 use crate::connection::ConnectionError;
@@ -10,7 +10,7 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
 };
-use retry::{delay::Fixed, retry, Error as RetryError};
+use retry::{delay::Fixed, retry};
 use tendermint::Signature;
 use thiserror::Error;
 
@@ -20,7 +20,7 @@ pub enum LinkError {
     Failed,
 
     #[error("Chain handle error")]
-    ChainError(#[from] ChainHandleError),
+    ChainError(#[from] ChainError),
 
     #[error("Foreign client error")]
     ForeignClientError(#[from] ForeignClientError),
@@ -31,8 +31,8 @@ pub enum LinkError {
     #[error("ChannelError:")]
     ChannelError(#[from] ChannelError),
 
-    #[error("RetryExhausted:")]
-    RetryError(#[from] RetryError<ChainHandleError>),
+    #[error("exhausted max number of retries:")]
+    RetryError,
 }
 
 pub enum Order {
@@ -118,7 +118,7 @@ impl Link {
                 if let Some(attempt) = tries.next() {
                     self.step(target_height, datagrams.clone(), signature)
                 } else {
-                    Err(ChainHandleError::Failed)
+                    Err(LinkError::RetryError)
                 }
             });
 
@@ -142,7 +142,7 @@ impl Link {
         target_height: Height,
         mut datagrams: Vec<Datagram>,
         signature: Signature,
-    ) -> Result<(), ChainHandleError> {
+    ) -> Result<(), LinkError> {
         let height = self.dst_chain.get_height(&self.foreign_client)?;
         // XXX: Check that height > target_height, no client update needed
         let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;

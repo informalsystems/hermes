@@ -1,8 +1,10 @@
-use crate::config::ChainConfig;
-use crate::foreign_client::ForeignClient;
-use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
-use crate::util::block_on;
+use std::str::FromStr;
+use std::time::Duration;
 
+use crossbeam_channel as channel;
+use thiserror::Error;
+
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
 use ibc::Height;
 
@@ -10,22 +12,14 @@ use tendermint::abci::Path as ABCIPath;
 use tendermint::net;
 use tendermint_rpc::HttpClient;
 
-use crossbeam_channel as channel;
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use std::str::FromStr;
-use std::time::Duration;
-use thiserror::Error;
+use crate::config::ChainConfig;
+use crate::foreign_client::ForeignClient;
+use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
+use crate::util::block_on;
+
+use super::{error::ChainError, Chain, Subscription};
 
 pub(crate) mod cosmos; // Implementation of handle specific for Cosmos SDK chains.
-
-// Simplified:
-// Subscriptions should have provide processing semantics such
-// that event processing can fail and potentially be retried. For instance if a IBCEvent
-// contains a Packet to be sent to a full node, it's possible that the receiving full node
-// will fail but that packet still needs to be sent. In this case the subscription iterable
-// semantics should ensure that that same packet is retried on a new full node when
-// requested.
-pub type Subscription = channel::Receiver<(Height, Vec<IBCEvent>)>;
 
 #[derive(Debug, Clone, Error)]
 pub enum ChainHandleError {
@@ -52,7 +46,9 @@ pub enum HandleInput {
 }
 
 pub trait ChainHandle: Send {
-    fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, ChainHandleError>;
+    fn id(&self) -> ChainId;
+
+    fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, ChainError>;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainHandleError>;
 
@@ -65,8 +61,6 @@ pub trait ChainHandle: Send {
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainHandleError>;
 
     fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainHandleError>;
-
-    fn id(&self) -> ChainId;
 
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainHandleError>;
 

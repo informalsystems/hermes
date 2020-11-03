@@ -5,17 +5,18 @@ use abscissa_core::{
 };
 
 use relayer::{
-    chain::runtime::ChainRuntime,
+    chain::{runtime::ChainRuntime, CosmosSDKChain},
     channel::{Channel, ChannelConfig},
     connection::{Connection, ConnectionConfig},
     foreign_client::{ForeignClient, ForeignClientConfig},
     link::{Link, LinkConfig},
 };
 
-use crate::config::Config;
-use crate::prelude::*;
 use ibc::ics24_host::identifier::ClientId;
 use std::str::FromStr;
+
+use crate::config::Config;
+use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct V0Cmd {}

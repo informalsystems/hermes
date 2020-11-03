@@ -1,31 +1,41 @@
+pub(crate) mod cosmos;
+pub use cosmos::CosmosSDKChain;
+
+pub mod error;
+pub mod handle;
+pub mod runtime;
+
+// Simplified:
+// Subscriptions should have provide processing semantics such
+// that event processing can fail and potentially be retried. For instance if a IBCEvent
+// contains a Packet to be sent to a full node, it's possible that the receiving full node
+// will fail but that packet still needs to be sent. In this case the subscription iterable
+// semantics should ensure that that same packet is retried on a new full node when
+// requested.
+pub type Subscription = crossbeam_channel::Receiver<(ibc::Height, Vec<IBCEvent>)>;
+
+use std::error::Error;
 use std::time::Duration;
 
 use anomaly::fail;
 use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
+// TODO: Switch to ibc::Height
 use tendermint::block::Height;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
+use ibc::events::IBCEvent;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::Path;
-
-use crate::keyring::store::{KeyEntry, KeyRing};
+use ibc::tx_msg::Msg;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
-use crate::error;
+use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::util::block_on;
-
-use std::error::Error;
-
-pub(crate) mod cosmos;
-pub use cosmos::CosmosSDKChain;
-
-pub mod handle;
-pub mod runtime;
 
 /// TODO: delete everything below here. `Chain` will be superseded by ChainRuntime & ChainHandle.
 
@@ -88,16 +98,19 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query a header at the given height via RPC
-    fn query_header_at_height(&self, height: Height) -> Result<Self::LightBlock, error::Error>;
+    fn query_header_at_height(
+        &self,
+        height: Height,
+    ) -> Result<Self::LightBlock, crate::error::Error>;
 
     /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<Height, error::Error> {
+    fn query_latest_height(&self) -> Result<Height, crate::error::Error> {
         let status =
-            block_on(self.rpc_client().status()).map_err(|e| error::Kind::Rpc.context(e))?;
+            block_on(self.rpc_client().status()).map_err(|e| crate::error::Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
-                error::Kind::LightClient,
+                crate::error::Kind::LightClient,
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
@@ -108,7 +121,7 @@ pub trait Chain {
     }
 
     /// Query the latest header via RPC
-    fn query_latest_header(&self) -> Result<Self::LightBlock, error::Error> {
+    fn query_latest_header(&self) -> Result<Self::LightBlock, crate::error::Error> {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }
