@@ -7,7 +7,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use tendermint_proto::DomainType;
 
-/// TODO - tendermint deps should not be here
+// TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;

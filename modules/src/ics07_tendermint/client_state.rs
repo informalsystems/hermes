@@ -159,7 +159,7 @@ impl TryFrom<RawClientState> for ClientState {
                 .consensus_params
                 .ok_or_else(|| Kind::InvalidRawClientState.context("missing consensus parameters"))?
                 .try_into()
-                .map_err(|_| Kind::InvalidRawHeight)?,
+                .map_err(|e| Kind::InvalidRawClientState.context(e))?,
         })
     }
 }

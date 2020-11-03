@@ -53,8 +53,9 @@ impl TxRawConnInitCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let signer_seed = std::fs::read_to_string(&self.seed_file)
-            .map_err(|e| "invalid signer seed file".to_string() + &e.to_string())?;
+        let signer_seed = std::fs::read_to_string(&self.seed_file).map_err(|e| {
+            anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
+        })?;
 
         let opts = ConnectionOpenInitOptions {
             dest_client_id: self.dest_client_id.clone(),
@@ -87,8 +88,8 @@ impl Runnable for TxRawConnInitCmd {
         let res: Result<Vec<u8>, Error> = conn_init(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn init failed, error: ", "{}", e),
+            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
+            Err(e) => status_err!("client update failed: {}", e),
         }
     }
 }

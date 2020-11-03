@@ -53,8 +53,8 @@ impl Runnable for TxCreateClientCmd {
             create_client(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("client created, result: ", "{:?}", receipt),
-            Err(e) => status_info!("client create failed, error: ", "{}", e),
+            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
+            Err(e) => status_err!("client update failed: {}", e),
         }
     }
 }
@@ -104,8 +104,8 @@ impl Runnable for TxUpdateClientCmd {
             update_client(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("client updated, result: ", "{:?}", receipt),
-            Err(e) => status_info!("client update failed, error: ", "{}", e),
+            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
+            Err(e) => status_err!("client update failed: {}", e),
         }
     }
 }
@@ -141,8 +141,9 @@ fn validate_common_options(
         .find(|c| c.id == src_chain_id)
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
-    let signer_seed = std::fs::read_to_string(seed_file)
-        .map_err(|e| "invalid signer seed file".to_string() + &e.to_string())?;
+    let signer_seed = std::fs::read_to_string(seed_file).map_err(|e| {
+        anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
+    })?;
 
     Ok(ClientOptions {
         dest_client_id: dest_client_id.clone(),
