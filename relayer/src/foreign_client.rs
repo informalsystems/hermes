@@ -25,24 +25,16 @@ pub enum ForeignClientError {
 #[derive(Clone)]
 pub struct ForeignClientConfig {
     id: ClientId,
-    signer: AccountId,
     // create_timeout: Duration // How much to wait before giving up on client creation.
 }
 
 impl ForeignClientConfig {
-    pub fn new(client_id: ClientId, signer: AccountId) -> ForeignClientConfig {
-        Self {
-            id: client_id,
-            signer,
-        }
+    pub fn new(client_id: ClientId) -> ForeignClientConfig {
+        Self { id: client_id }
     }
 
     pub fn client_id(&self) -> &ClientId {
         &self.id
-    }
-
-    pub fn signer(&self) -> &AccountId {
-        &self.signer
     }
 }
 
@@ -51,9 +43,10 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client.
+    /// Creates a new foreign client. Blocks until the client is created on `host` chain (or
+    /// times-out with error).
     /// Post-condition: chain `host` will host an IBC client for chain `source`.
-    /// TODO: pre-conditions for success?
+    /// TODO: what are the pre-conditions for success?
     /// Is it enough to have a "live" handle to each of `host` and `target` chains?
     pub fn new(
         host: &dyn ChainHandle,
@@ -68,7 +61,7 @@ impl ForeignClient {
             Ok(ForeignClient { config }) // Nothing left to do.
         } else {
             // Create a new client on the host chain.
-            Self::create_client(host, source, config.client_id(), config.signer())?;
+            Self::create_client(host, source, config.client_id())?;
             // Now subscribe and wait at most `config.create_timeout` to confirm the success.
             // dst.subscribe();
             Ok(ForeignClient { config })
@@ -80,7 +73,6 @@ impl ForeignClient {
         dst: &dyn ChainHandle, // The chain that will host the client.
         src: &dyn ChainHandle, // The client will store headers of this chain.
         client_id: &ClientId,
-        signer: &AccountId,
     ) -> Result<(), ForeignClientError> {
         // Fetch latest header of the source chain.
         let latest_header = src.get_header(Height::zero()).map_err(|e| {
@@ -93,7 +85,7 @@ impl ForeignClient {
         })?;
 
         // Build the consensus state.
-        // The destination chain handle knows the internals of assembling this message.
+        // The source chain handle knows the internals of assembling this message.
         let consensus_state = src.assemble_consensus_state(&latest_header).map_err(|e| {
             ForeignClientError::ClientCreation(format!(
                 "failed to assemble client consensus state ({:?})",
@@ -101,19 +93,18 @@ impl ForeignClient {
             ))
         })?;
 
+        // Extract the signer from the destination chain handle, for example `dst.get_signer()`.
+        let signer: AccountId = todo!();
+
         // Build the domain type message.
-        let create_client_msg = MsgCreateAnyClient::new(
-            client_id.clone(),
-            client_state,
-            consensus_state,
-            *signer,
-        )
-        .map_err(|e| {
-            ForeignClientError::ClientCreation(format!(
-                "failed to assemble the create client message ({:?})",
-                e
-            ))
-        })?;
+        let create_client_msg =
+            MsgCreateAnyClient::new(client_id.clone(), client_state, consensus_state, signer)
+                .map_err(|e| {
+                    ForeignClientError::ClientCreation(format!(
+                        "failed to assemble the create client message ({:?})",
+                        e
+                    ))
+                })?;
 
         // Create a proto any message.
         let proto_msgs = vec![Any {

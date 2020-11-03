@@ -4,9 +4,10 @@ use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
 
-use ibc::downcast;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use ibc::ics07_tendermint::{client_state::ClientState, consensus_state::ConsensusState};
 use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
-use ibc::Height;
+use ibc::{downcast, Height};
 
 use tendermint::abci::Path as ABCIPath;
 use tendermint::block::Height as TMHeight;
@@ -14,7 +15,6 @@ use tendermint::net;
 use tendermint_rpc::{Client, HttpClient};
 
 use crossbeam_channel as channel;
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
@@ -156,7 +156,7 @@ impl ChainHandle for CosmosSDKHandle {
             let height = u64::from(our_header.signed_header.header.height);
 
             // Build the client state.
-            ibc::ics07_tendermint::client_state::ClientState::new(
+            ClientState::new(
                 self.chain_id.to_string(), // The id of this chain.
                 self.trusting_period,
                 self.unbonding_period,
@@ -179,11 +179,9 @@ impl ChainHandle for CosmosSDKHandle {
         header: &AnyHeader,
     ) -> Result<AnyConsensusState, ChainHandleError> {
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
-            Ok(AnyConsensusState::Tendermint(
-                ibc::ics07_tendermint::consensus_state::ConsensusState::from(
-                    our_header.signed_header.clone(),
-                ),
-            ))
+            Ok(AnyConsensusState::Tendermint(ConsensusState::from(
+                our_header.signed_header.clone(),
+            )))
         } else {
             Err(ChainHandleError::InvalidInputHeader)
         }
