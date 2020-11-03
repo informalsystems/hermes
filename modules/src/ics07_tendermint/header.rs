@@ -12,7 +12,7 @@ use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 
 /// Tendermint consensus header
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once present in tendermint-rs
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header

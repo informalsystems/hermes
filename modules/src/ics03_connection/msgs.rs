@@ -25,7 +25,7 @@ pub mod conn_open_try;
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ConnectionMsg {
     ConnectionOpenInit(MsgConnectionOpenInit),
     ConnectionOpenTry(Box<MsgConnectionOpenTry>),

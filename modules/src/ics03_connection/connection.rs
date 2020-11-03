@@ -117,7 +117,7 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,

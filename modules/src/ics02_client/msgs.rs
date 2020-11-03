@@ -136,7 +136,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
 }
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
 pub struct MsgUpdateAnyClient {
     pub client_id: ClientId,
     pub header: AnyHeader,

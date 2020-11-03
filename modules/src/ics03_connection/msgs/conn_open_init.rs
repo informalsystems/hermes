@@ -16,7 +16,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
 ///
 /// Message definition `MsgConnectionOpenInit`  (i.e., the `ConnOpenInit` datagram).
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenInit {
     pub connection_id: ConnectionId,
     pub client_id: ClientId,

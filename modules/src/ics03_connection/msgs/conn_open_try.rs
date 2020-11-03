@@ -21,7 +21,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
 ///
 /// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenTry {
     connection_id: ConnectionId,
     client_id: ClientId,
