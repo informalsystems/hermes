@@ -24,6 +24,10 @@ pub enum Kind {
     /// Error during transaction submission
     #[error("tx error")]
     Tx,
+
+    /// Error during transaction submission
+    #[error("keys error")]
+    Keys,
 }
 
 impl Kind {

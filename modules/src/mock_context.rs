@@ -202,8 +202,8 @@ impl MockContext {
 impl ICS26Context for MockContext {}
 
 impl ConnectionReader for MockContext {
-    fn connection_end(&self, cid: &ConnectionId) -> Option<&ConnectionEnd> {
-        self.connections.get(cid)
+    fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
+        self.connections.get(cid).cloned()
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {

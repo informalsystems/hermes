@@ -13,7 +13,7 @@ use crate::Height;
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ConnectionReader {
     /// Returns the ConnectionEnd for the given identifier `conn_id`.
-    fn connection_end(&self, conn_id: &ConnectionId) -> Option<&ConnectionEnd>;
+    fn connection_end(&self, conn_id: &ConnectionId) -> Option<ConnectionEnd>;
 
     /// Returns the ClientState for the given identifier `client_id`.
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
