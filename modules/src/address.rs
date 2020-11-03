@@ -1,4 +1,5 @@
-/// TODO - remove when ICS message signer changes from AccountId to String
+// TODO - remove when ICS message signer changes from AccountId to String
+
 use std::convert::TryFrom;
 
 use anomaly::{BoxError, Context};
