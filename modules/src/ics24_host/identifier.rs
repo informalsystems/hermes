@@ -1,16 +1,18 @@
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
+
+use crate::ics24_host::error::ValidationKind;
 
 use super::error::ValidationError;
 use super::validate::*;
-use crate::ics24_host::error::ValidationKind;
 
 /// This type is subject to future changes.
 /// TODO: ChainId validation is not standardized yet.
 /// `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
 /// https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
 /// Also, contrast with tendermint-rs `ChainId` type.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ChainId(String);
 
 impl ChainId {
@@ -30,6 +32,11 @@ impl ChainId {
         ChainId::from_str(format!("{}-{}", chain_name, chain_epoch_number.to_string()).as_str())
     }
 
+    /// Get a reference to the underlying string.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
     /// The chainID must be in the form: `{chainID}-{version}`
     /// ```
@@ -44,7 +51,8 @@ impl ChainId {
         re.is_match(chain_id.as_str())
     }
 
-    // todo: this should probably be named epoch_number.
+    // TODO: this should probably be named epoch_number.
+    /// Extract the version from the given chain identifier.
     pub fn chain_version(chain_id: String) -> u64 {
         if !Self::is_epoch_format(chain_id.clone()) {
             return 0;
@@ -68,6 +76,18 @@ impl FromStr for ChainId {
 impl std::fmt::Display for ChainId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.0)
+    }
+}
+
+impl From<ChainId> for tendermint::chain::Id {
+    fn from(id: ChainId) -> Self {
+        tendermint::chain::Id::from_str(id.as_str()).unwrap()
+    }
+}
+
+impl From<tendermint::chain::Id> for ChainId {
+    fn from(id: tendermint::chain::Id) -> Self {
+        ChainId::from_str(id.as_str()).unwrap()
     }
 }
 

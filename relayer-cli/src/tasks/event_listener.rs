@@ -40,7 +40,7 @@ async fn init_monitor(
     tx: mpsc::Sender<(ChainId, Vec<IBCEvent>)>,
 ) -> Result<EventMonitor, BoxError> {
     let mut event_monitor =
-        EventMonitor::create(chain_config.id, chain_config.rpc_addr.clone(), tx)
+        EventMonitor::create(chain_config.id.into(), chain_config.rpc_addr.clone(), tx)
             .await
             .map_err(|e| format!("couldn't initialize event monitor: {}", e))?;
 

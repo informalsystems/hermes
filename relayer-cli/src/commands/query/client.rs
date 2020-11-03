@@ -7,11 +7,11 @@ use crate::error::{Error, Kind};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
-use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
 use std::convert::TryInto;

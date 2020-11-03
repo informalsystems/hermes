@@ -10,6 +10,7 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
+use ibc::ics24_host::identifier::ChainId;
 use tendermint::{chain, net, node, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
@@ -80,7 +81,7 @@ impl Default for GlobalConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
-    pub id: chain::Id,
+    pub id: ChainId,
     #[serde(default = "default::rpc_addr")]
     pub rpc_addr: net::Address,
     pub account_prefix: String,

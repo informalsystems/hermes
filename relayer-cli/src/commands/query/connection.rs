@@ -6,10 +6,10 @@ use relayer::config::{ChainConfig, Config};
 use crate::error::{Error, Kind};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc::ics24_host::Path::Connections;
 use relayer::chain::{Chain, CosmosSDKChain};
-use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
 
 use std::convert::TryInto;

@@ -20,7 +20,6 @@ use relayer::config::{default, ChainConfig, Config};
 use tendermint::net::Address;
 use tendermint_proto::DomainType;
 
-use std::convert::TryInto;
 use std::str::FromStr;
 use tendermint::block::Height;
 
@@ -28,7 +27,7 @@ use tendermint::block::Height;
 fn simd_config() -> Config {
     let mut config = Config::default();
     config.chains = vec![ChainConfig {
-        id: "ibc-test".try_into().unwrap(),
+        id: "ibc-test".parse().unwrap(),
         rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
         account_prefix: "cosmos".to_string(),
         key_name: "testkey".to_string(),

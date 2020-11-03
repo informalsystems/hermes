@@ -5,11 +5,11 @@ use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
 use tendermint::block::Height;
-use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::state::{ClientState, ConsensusState};
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::Path;
 
 use crate::keyring::store::{KeyEntry, KeyRing};

@@ -8,7 +8,7 @@ use abscissa_core::{
 };
 
 use futures::Future;
-use tendermint::chain;
+use ibc::ics24_host::identifier::ChainId;
 use tendermint_light_client::{
     builder::{LightClientBuilder, SupervisorBuilder},
     light_client, store,
@@ -122,7 +122,7 @@ async fn create_client(
     Ok(supervisor)
 }
 
-async fn client_task(chain_id: chain::Id, handle: SupervisorHandle) -> Result<(), BoxError> {
+async fn client_task(chain_id: ChainId, handle: SupervisorHandle) -> Result<(), BoxError> {
     match handle.latest_trusted() {
         Ok(Some(trusted_state)) => {
             info!(
@@ -151,7 +151,7 @@ async fn client_task(chain_id: chain::Id, handle: SupervisorHandle) -> Result<()
     Ok(())
 }
 
-async fn update_client(chain_id: chain::Id, handle0: SupervisorHandle) -> Result<(), BoxError> {
+async fn update_client(chain_id: ChainId, handle0: SupervisorHandle) -> Result<(), BoxError> {
     debug!(chain.id = %chain_id, "updating headers");
 
     let mut interval = tokio::time::interval(Duration::from_secs(3));

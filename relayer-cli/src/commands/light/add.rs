@@ -2,11 +2,11 @@ use std::{fmt, io, io::Write, ops::Deref};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
+use ibc::ics24_host::identifier::ChainId;
 use relayer::{
     config::{Config, LightClientConfig, PeersConfig},
     util::block_on,
 };
-use tendermint::chain::Id as ChainId;
 use tendermint::hash::Hash;
 use tendermint::{block::Height, net};
 use tendermint_light_client::types::PeerId;
