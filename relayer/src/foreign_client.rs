@@ -4,6 +4,7 @@ use tendermint::{block::signed_header::SignedHeader, Hash};
 use thiserror::Error;
 
 use ibc::{
+    ics02_client::client_def::AnyConsensusState,
     ics02_client::{header::Header, msgs::MsgCreateAnyClient},
     ics07_tendermint::consensus_state::ConsensusState,
     ics23_commitment::commitment::CommitmentProof,
@@ -12,20 +13,20 @@ use ibc::{
     Height,
 };
 
-use crate::chain::handle::ChainHandle;
-use crate::msgs::Datagram;
-use ibc::ics02_client::client_def::AnyConsensusState;
+use crate::{chain::handle::ChainHandle, msgs::Datagram};
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
     #[error("error raised while creating client: {0}")]
-    ClientCreation(String),
+    ClientCreate(String),
+
+    #[error("error raised while updating client: {0}")]
+    ClientUpdate(String),
 }
 
 #[derive(Clone)]
 pub struct ForeignClientConfig {
     id: ClientId,
-    // create_timeout: Duration // How much to wait before giving up on client creation.
 }
 
 impl ForeignClientConfig {
@@ -44,7 +45,7 @@ pub struct ForeignClient {
 
 impl ForeignClient {
     /// Creates a new foreign client. Blocks until the client is created on `host` chain (or
-    /// times-out with error).
+    /// panics???).
     /// Post-condition: chain `host` will host an IBC client for chain `source`.
     /// TODO: what are the pre-conditions for success?
     /// Is it enough to have a "live" handle to each of `host` and `target` chains?
@@ -62,8 +63,6 @@ impl ForeignClient {
         } else {
             // Create a new client on the host chain.
             Self::create_client(host, source, config.client_id())?;
-            // Now subscribe and wait at most `config.create_timeout` to confirm the success.
-            // dst.subscribe();
             Ok(ForeignClient { config })
         }
     }
@@ -76,18 +75,18 @@ impl ForeignClient {
     ) -> Result<(), ForeignClientError> {
         // Fetch latest header of the source chain.
         let latest_header = src.get_header(Height::zero()).map_err(|e| {
-            ForeignClientError::ClientCreation(format!("failed to fetch latest header ({:?})", e))
+            ForeignClientError::ClientCreate(format!("failed to fetch latest header ({:?})", e))
         })?;
 
         // Build the client state. The source chain handle will take care of the details.
         let client_state = src.assemble_client_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreation(format!("failed to assemble client state ({:?})", e))
+            ForeignClientError::ClientCreate(format!("failed to assemble client state ({:?})", e))
         })?;
 
         // Build the consensus state.
         // The source chain handle knows the internals of assembling this message.
         let consensus_state = src.assemble_consensus_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreation(format!(
+            ForeignClientError::ClientCreate(format!(
                 "failed to assemble client consensus state ({:?})",
                 e
             ))
@@ -100,7 +99,7 @@ impl ForeignClient {
         let create_client_msg =
             MsgCreateAnyClient::new(client_id.clone(), client_state, consensus_state, signer)
                 .map_err(|e| {
-                    ForeignClientError::ClientCreation(format!(
+                    ForeignClientError::ClientCreate(format!(
                         "failed to assemble the create client message ({:?})",
                         e
                     ))
@@ -119,7 +118,6 @@ impl ForeignClient {
         Ok(())
     }
 
-    // This is a completely different synchronous update strategy then bundeling a an update packet
     pub fn update(
         &mut self,
         src_chain: &dyn ChainHandle,

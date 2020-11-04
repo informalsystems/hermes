@@ -21,11 +21,11 @@ use std::time::Duration;
 use thiserror::Error;
 
 /// The handle for interacting with a Cosmos chain.
-/// The `sender` enables communication with the chain runtime (mainly for `subscribe`).
-/// The `rpc_client` is the gateway to a full-node for fulfilling ABCI queries.
+///     - `sender` enables communication with the chain runtime (mainly for `subscribe`).
+///     - `rpc_client` is the gateway to a full-node for fulfilling ABCI queries.
 #[derive(Debug, Clone)]
 pub struct CosmosSDKHandle {
-    pub chain_id: ChainId,
+    chain_id: ChainId,
     sender: channel::Sender<HandleInput>,
     rpc_client: HttpClient,
     trusting_period: Duration,

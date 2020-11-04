@@ -14,6 +14,8 @@ use relayer::{
 
 use crate::config::Config;
 use crate::prelude::*;
+use ibc::ics24_host::identifier::ClientId;
+use std::str::FromStr;
 
 #[derive(Command, Debug, Options)]
 pub struct V0Cmd {}
@@ -57,17 +59,34 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         dst_chain.run().unwrap();
     });
 
+    // Parse & validate client identifiers
+    let client_src_id = ClientId::from_str(
+        src_chain_config
+            .client_ids
+            .get(0)
+            .ok_or_else(|| "Config for client on source chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
+    let client_dst_id = ClientId::from_str(
+        dst_chain_config
+            .client_ids
+            .get(0)
+            .ok_or_else(|| "Config for client for dest. chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
+
     // Instantiate the foreign client on the source chain.
     let client_on_src = ForeignClient::new(
         &src_chain_handle,
         &dst_chain_handle,
-        ForeignClientConfig::new(todo!()),
+        ForeignClientConfig::new(client_src_id),
     )?;
 
+    // Instantiate the foreign client on the destination chain.
     let client_on_dst = ForeignClient::new(
         &dst_chain_handle,
         &src_chain_handle,
-        ForeignClientConfig::new(todo!()),
+        ForeignClientConfig::new(client_dst_id),
     )?;
 
     let connection = Connection::new(
