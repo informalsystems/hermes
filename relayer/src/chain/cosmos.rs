@@ -74,6 +74,12 @@ impl CosmosSDKChain {
         })
     }
 
+    /// The unbonding period of this chain
+    fn unbonding_period(&self) -> Duration {
+        // TODO - query chain
+        Duration::from_secs(24 * 7 * 3 * 3600)
+    }
+
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
@@ -275,11 +281,6 @@ impl Chain for CosmosSDKChain {
 
     fn light_client(&self) -> Option<&LightClient> {
         self.light_client.as_ref()
-    }
-
-    fn unbonding_period(&self) -> Duration {
-        // TODO - query chain
-        Duration::from_secs(24 * 7 * 3 * 3600)
     }
 
     /// Query the latest height the chain is at via a RPC query
