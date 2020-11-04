@@ -25,7 +25,7 @@ pub(crate) fn process(
                     msg.connection_id().clone(),
                 )))
             } else {
-                Ok(old_conn_end.clone())
+                Ok(old_conn_end)
             }
         }
         None => {

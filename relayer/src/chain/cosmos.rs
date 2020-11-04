@@ -56,8 +56,12 @@ pub struct CosmosSDKChain {
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
+        let primary = config
+            .primary()
+            .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
+
         let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+            HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         let key_store = KeyRing::init(StoreBackend::Memory);
 
@@ -123,7 +127,7 @@ impl CosmosSDKChain {
             signed_header,
             validator_set,
             next_validator_set,
-            self.config().peer_id,
+            self.config().peers.clone().ok_or_else(|| Kind::Config.context("no peers configured".to_string()))?.primary,
         );
 
         Ok(light_block)
@@ -268,19 +272,6 @@ impl Chain for CosmosSDKChain {
         self.light_client.as_ref()
     }
 
-    fn trusting_period(&self) -> Duration {
-        self.config.trusting_period
-    }
-
-    fn trust_threshold(&self) -> TrustThreshold {
-        // TODO - get it from src config when avail
-        // TODO - Should this be part of the Chain trait?
-        TrustThreshold {
-            numerator: 1,
-            denominator: 3,
-        }
-    }
-
     fn unbonding_period(&self) -> Duration {
         // TODO - query chain
         Duration::from_secs(24 * 7 * 3 * 3600)
@@ -321,8 +312,8 @@ impl Chain for CosmosSDKChain {
         // Build the client state.
         let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
-            self.trust_threshold(),
-            self.trusting_period(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
             self.unbonding_period(),
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,

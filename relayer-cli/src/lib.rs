@@ -20,6 +20,5 @@ pub mod application;
 pub mod commands;
 pub mod config;
 pub mod error;
-pub mod light;
 pub mod prelude;
 pub mod tasks;

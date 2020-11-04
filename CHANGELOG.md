@@ -2,23 +2,29 @@
 
 ## Unreleased Changes
 
+Special thanks to external contributors for this release: @CharlyCst ([#347]).
+
 ### FEATURES
 
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules] Implement flexible connection id selection ([#332])
 - [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+- [relayer-cli] Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
+[#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 
 ### IMPROVEMENTS
 
 - [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
+- [modules] Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
 
 [#331]: https://github.com/informalsystems/ibc-rs/pulls/331
+[#347]: https://github.com/informalsystems/ibc-rs/issues/347
 
 ## v0.0.4
 *October 19, 2020*

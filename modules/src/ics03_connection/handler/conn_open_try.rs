@@ -37,7 +37,7 @@ pub(crate) fn process(
                 && old_conn_end.client_id_matches(msg.client_id())
             {
                 // A ConnectionEnd already exists and all validation passed.
-                Ok(old_conn_end.clone())
+                Ok(old_conn_end)
             } else {
                 // A ConnectionEnd already exists and validation failed.
                 Err(Into::<Error>::into(

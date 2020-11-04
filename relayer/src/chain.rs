@@ -92,18 +92,10 @@ pub trait Chain {
     /// TODO - Should this be part of the Chain trait?
     fn set_light_client(&mut self, light_client: Self::LightClient);
 
-    /// The trusting period configured for this chain
-    /// TODO - Should this be part of the Chain trait?
-    fn trusting_period(&self) -> Duration;
-
     /// The unbonding period of this chain
     /// TODO - this is a GRPC query, needs to be implemented
     /// TODO - Should this be part of the Chain trait?
     fn unbonding_period(&self) -> Duration;
-
-    /// The trust threshold configured for this chain
-    /// TODO - Should this be part of the Chain trait?
-    fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query the latest height the chain is at
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;

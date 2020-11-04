@@ -6,12 +6,7 @@ use abscissa_core::{
 
 use relayer::{chain::CosmosSDKChain, config::Config};
 
-use crate::{
-    application::APPLICATION,
-    light::config::{LightConfig, LIGHT_CONFIG_PATH},
-    prelude::*,
-    tasks,
-};
+use crate::{application::APPLICATION, prelude::*, tasks};
 
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
@@ -22,9 +17,7 @@ pub struct StartCmd {
 impl StartCmd {
     async fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config().clone();
-        let light_config = LightConfig::load(LIGHT_CONFIG_PATH)?;
-
-        start(config, light_config, self.reset).await
+        start(config, self.reset).await
     }
 }
 
@@ -39,11 +32,11 @@ impl Runnable for StartCmd {
     }
 }
 
-async fn start(config: Config, light_config: LightConfig, reset: bool) -> Result<(), BoxError> {
+async fn start(config: Config, reset: bool) -> Result<(), BoxError> {
     let mut chains: Vec<CosmosSDKChain> = vec![];
 
     for chain_config in &config.chains {
-        let light_config = light_config.for_chain(&chain_config.id).ok_or_else(|| {
+        let light_config = chain_config.primary().ok_or_else(|| {
             format!(
                 "could not find light client configuration for chain {}",
                 chain_config.id
