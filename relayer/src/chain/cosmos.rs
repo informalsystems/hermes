@@ -34,6 +34,7 @@ use std::future::Future;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use tonic::codegen::http::Uri;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -134,7 +135,9 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_seq_resp = block_on(query_account_sequence(
+        // TODO: Read this address from the key_seed.json
+        let acct_response = block_on(query_account(
+            self,
             "cosmos19v6xglc9h6aknldnkte5m3jfg7hn70dk8u2zc6".to_string(),
         ))
         .map_err(|e| Kind::Grpc.context(e))?;
@@ -145,7 +148,7 @@ impl Chain for CosmosSDKChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: acct_seq_resp,
+            sequence: acct_response.sequence,
         };
 
         // Gas Fee
@@ -321,9 +324,10 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
     }
 }
 
-async fn query_account_sequence(address: String) -> Result<u64, Error> {
-    // TODO: Fetch the url from the config/context
-    let mut client = QueryClient::connect("http://[::1]:9091")
+/// Uses the GRPC client to retrieve the account sequence
+async fn query_account(chain: &mut CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
+    let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+    let mut client = QueryClient::connect(grpc_addr)
         .await
         .map_err(|e| Kind::Grpc.context(e))?;
 
@@ -342,5 +346,5 @@ async fn query_account_sequence(address: String) -> Result<u64, Error> {
     )
     .map_err(|e| Kind::Grpc.context(e))?;
 
-    Ok(base_account.sequence)
+    Ok(base_account)
 }
