@@ -32,8 +32,8 @@ use prost_types::Any;
 use std::future::Future;
 
 // Support for GRPC
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -95,7 +95,6 @@ impl Chain for CosmosSDKChain {
         msg_type: String,
         msg_bytes: Vec<u8>,
         key: KeyEntry,
-        acct_seq: u64,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Error> {
@@ -135,7 +134,10 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_seq_resp = block_on(query_account_sequence("cosmos19v6xglc9h6aknldnkte5m3jfg7hn70dk8u2zc6".to_string())).map_err(|e| Kind::Grpc.context(e))?;
+        let acct_seq_resp = block_on(query_account_sequence(
+            "cosmos19v6xglc9h6aknldnkte5m3jfg7hn70dk8u2zc6".to_string(),
+        ))
+        .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -245,7 +247,6 @@ impl Chain for CosmosSDKChain {
 
         Ok(light_block)
     }
-
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -321,20 +322,25 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
 }
 
 async fn query_account_sequence(address: String) -> Result<u64, Error> {
-
     // TODO: Fetch the url from the config/context
     let mut client = QueryClient::connect("http://[::1]:9091")
         .await
         .map_err(|e| Kind::Grpc.context(e))?;
 
-    let request = tonic::Request::new(QueryAccountRequest {
-        address,
-    });
+    let request = tonic::Request::new(QueryAccountRequest { address });
 
     let response = client.account(request).await;
 
-    let base_account: BaseAccount = BaseAccount::decode(response.unwrap().into_inner().account.unwrap().value.as_slice())
-        .map_err(|e| Kind::Grpc.context(e))?;
+    let base_account: BaseAccount = BaseAccount::decode(
+        response
+            .unwrap()
+            .into_inner()
+            .account
+            .unwrap()
+            .value
+            .as_slice(),
+    )
+    .map_err(|e| Kind::Grpc.context(e))?;
 
     Ok(base_account.sequence)
 }

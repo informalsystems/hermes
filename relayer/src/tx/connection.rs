@@ -23,7 +23,6 @@ pub struct ConnectionOpenInitOptions {
     pub src_chain_config: ChainConfig,
     pub dest_chain_config: ChainConfig,
     pub signer_key: String,
-    pub account_sequence: u64,
 }
 
 pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
@@ -56,14 +55,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
 
     // Send message
     let response = dest_chain
-        .send(
-            msg_type,
-            msg.get_sign_bytes(),
-            key,
-            opts.account_sequence,
-            "".to_string(),
-            0,
-        )
+        .send(msg_type, msg.get_sign_bytes(), key, "".to_string(), 0)
         .map_err(|e| {
             Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e)
         })?;

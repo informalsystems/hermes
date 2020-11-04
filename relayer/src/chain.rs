@@ -56,7 +56,6 @@ pub trait Chain {
         msg_type: String,
         msg: Vec<u8>,
         key: KeyEntry,
-        acct_seq: u64,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Self::Error>;
@@ -110,5 +109,4 @@ pub trait Chain {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }
-
 }
