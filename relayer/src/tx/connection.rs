@@ -37,7 +37,17 @@ pub fn conn_init(opts: &ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     let mut dest_chain = CosmosSDKChain::from_config(opts.dest_chain_config.clone())?;
 
     // Check that the destination chain will accept the message, i.e. it does not have the connection
-    dest_chain.check_connection_for_init(opts.dest_connection_id.clone())?;
+    if dest_chain
+        .query_connection(&opts.dest_connection_id, 0_u32.into(), false)
+        .is_ok()
+    {
+        return Err(Kind::ConnOpenInit(
+            opts.dest_connection_id.clone(),
+            "connection already exist".into(),
+        )
+        .into());
+    }
+
     // Get the key and signer from key seed file
     let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 

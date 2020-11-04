@@ -27,7 +27,7 @@ use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
-use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
@@ -35,7 +35,6 @@ use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
-
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
@@ -46,11 +45,7 @@ use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use crate::tx::connection::ConnectionOpenInitOptions;
 use crate::util::block_on;
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
-use ibc::ics04_channel::msgs::MsgChannelOpenInit;
-use ibc_proto::ibc::core::connection::v1::ConnectionPaths;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -94,12 +89,6 @@ impl CosmosSDKChain {
             AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok((key, signer))
-    }
-
-    /// Query the latest header via RPC
-    fn query_latest_light_block(&self) -> Result<LightBlock, Error> {
-        let height = self.query_latest_height()?;
-        self.query_light_block_at_height(height)
     }
 
     fn query_light_block_at_height(&self, height: Height) -> Result<LightBlock, Error> {
@@ -298,7 +287,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<Height, Error> {
+    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
         let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
@@ -310,7 +299,10 @@ impl Chain for CosmosSDKChain {
             );
         }
 
-        Ok(status.sync_info.latest_block_height)
+        Ok(ICSHeight {
+            version_number: ChainId::chain_version(status.node_info.network.to_string()),
+            version_height: u64::from(status.sync_info.latest_block_height),
+        })
     }
 
     fn query_client_state(
@@ -325,25 +317,7 @@ impl Chain for CosmosSDKChain {
             .and_then(|v| AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
     }
 
-    fn build_create_client_msg(
-        &self,
-        client_id: ClientId,
-        signer: AccountId,
-    ) -> Result<MsgCreateAnyClient, Error> {
-        // Get the latest header from the source chain and build the consensus state.
-        let latest_header = self
-            .query_latest_light_block()?
-            .signed_header
-            .header()
-            .clone();
-
-        // Build the consensus state.
-        let consensus_state =
-            AnyConsensusState::Tendermint(TendermintConsensusState::from(latest_header.clone()));
-
-        let height = u64::from(latest_header.height);
-        let version = latest_header.chain_id.to_string();
-
+    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error> {
         // Build the client state.
         let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
@@ -351,53 +325,64 @@ impl Chain for CosmosSDKChain {
             self.trusting_period(),
             self.unbonding_period(),
             Duration::from_millis(3000), // TODO - get it from src config when avail
-            ICSHeight::new(ChainId::chain_version(version), height),
+            height,
             ICSHeight::zero(),
             self.query_consensus_params()?,
             "upgrade/upgradedClient".to_string(),
             false,
             false,
         )
-        .map_err(|e| {
-            Kind::CreateClient(client_id.clone(), "failed to build the client state".into())
-                .context(e)
-        })
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))
         .map(AnyClientState::Tendermint)?;
 
-        Ok(
-            MsgCreateAnyClient::new(client_id, client_state, consensus_state, signer).map_err(
-                |e| {
-                    Kind::MessageTransaction("failed to build the create client message".into())
-                        .context(e)
-                },
-            )?,
-        )
+        Ok(client_state)
     }
 
-    fn build_update_client_msg(
+    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error> {
+        // Build the client state.
+        let tm_height = height
+            .version_height
+            .try_into()
+            .map_err(|e| Kind::InvalidHeight.context(e))?;
+        let latest_header = self
+            .query_light_block_at_height(tm_height)?
+            .signed_header
+            .header()
+            .clone();
+
+        // Build the consensus state.
+        let consensus_state =
+            AnyConsensusState::Tendermint(TendermintConsensusState::from(latest_header));
+
+        Ok(consensus_state)
+    }
+
+    fn build_header(
         &self,
-        client_id: ClientId,
         trusted_height: ICSHeight,
-        target_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgUpdateAnyClient, Error> {
+        target_height: ICSHeight,
+    ) -> Result<AnyHeader, Error> {
         // Get the light block at target_height from chain.
-        let target_light_block = self.query_light_block_at_height(target_height)?;
+        let tm_target_height = trusted_height
+            .version_height
+            .try_into()
+            .map_err(|e| Kind::Query.context(e))?;
+        let target_light_block = self.query_light_block_at_height(tm_target_height)?;
 
         // Get the light block at trusted_height from the chain.
-        let height =
-            Height::try_from(trusted_height.version_height).map_err(|e| Kind::Query.context(e))?;
+        let height = trusted_height
+            .version_height
+            .try_into()
+            .map_err(|e| Kind::Query.context(e))?;
         let trusted_light_block = self.query_light_block_at_height(height)?;
 
         // Create the ics07 Header to be included in the MsgUpdateClient.
-        let header = AnyHeader::Tendermint(TendermintHeader {
+        Ok(AnyHeader::Tendermint(TendermintHeader {
             signed_header: target_light_block.signed_header,
             validator_set: target_light_block.validators,
             trusted_height,
             trusted_validator_set: trusted_light_block.validators,
-        });
-
-        Ok(MsgUpdateAnyClient::new(client_id, header, signer))
+        }))
     }
 }
 

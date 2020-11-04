@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use anomaly::fail;
@@ -14,7 +14,7 @@ use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
-use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
@@ -106,7 +106,7 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query the latest height the chain is at
-    fn query_latest_height(&self) -> Result<Height, Error>;
+    fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
     fn query_client_state(
         &self,
@@ -115,19 +115,15 @@ pub trait Chain {
         proof: bool,
     ) -> Result<AnyClientState, Error>;
 
-    fn build_create_client_msg(
-        &self,
-        client_id: ClientId,
-        signer: AccountId,
-    ) -> Result<MsgCreateAnyClient, Error>;
+    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error>;
 
-    fn build_update_client_msg(
+    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error>;
+
+    fn build_header(
         &self,
-        client_id: ClientId,
         trusted_height: ICSHeight,
-        target_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgUpdateAnyClient, Error>;
+        target_height: ICSHeight,
+    ) -> Result<AnyHeader, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         Ok(CommitmentPrefix::from(
@@ -145,16 +141,5 @@ pub trait Chain {
             .query(Path::Connections(connection_id.clone()), height, proof)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
-    }
-
-    fn check_connection_for_init(&self, connection_id: ConnectionId) -> Result<(), Error> {
-        let connection =
-            self.query_connection(&connection_id, Height::try_from(0_u64).unwrap(), false);
-        if connection.is_ok() {
-            return Err(
-                Kind::ConnOpenInit(connection_id, "connection already exist".into()).into(),
-            );
-        }
-        Ok(())
     }
 }

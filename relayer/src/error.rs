@@ -38,6 +38,14 @@ pub enum Kind {
     #[error("Empty response value")]
     EmptyResponseValue,
 
+    /// Invalid height
+    #[error("Invalid height")]
+    InvalidHeight,
+
+    /// Unable to build the client state
+    #[error("Failed to create client state")]
+    BuildClientStateFailure,
+
     /// Create client failure
     #[error("Failed to create client {0}: {1}")]
     CreateClient(ClientId, String),

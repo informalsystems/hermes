@@ -57,8 +57,18 @@ pub fn create_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
     // Get the key and signer from key seed file.
     let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
-    // Build client create message with the data from the source chain.
-    let new_msg = src_chain.build_create_client_msg(opts.dest_client_id, signer)?;
+    // Build client create message with the data from the source chain at latest height.
+    let latest_height = src_chain.query_latest_height()?;
+    let new_msg = MsgCreateAnyClient::new(
+        opts.dest_client_id,
+        src_chain.build_client_state(latest_height)?,
+        src_chain.build_consensus_state(latest_height)?,
+        signer,
+    )
+    .map_err(|e| {
+        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
+    })?;
+
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgCreateClient>()];
 
     // Send the transaction to the destination chain
@@ -75,18 +85,17 @@ pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
         .query_client_state(&opts.dest_client_id, 0_u32.into(), false)?
         .latest_height();
 
-    // Get the latest light block from source chain and verify it.
+    // Set the target height to latest.
     let target_height = src_chain.query_latest_height()?;
 
     // Get the key and signer from key seed file.
     let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
 
-    let new_msg = src_chain.build_update_client_msg(
-        opts.dest_client_id,
-        trusted_height,
-        target_height,
+    let new_msg = MsgUpdateAnyClient {
+        client_id: opts.dest_client_id,
+        header: src_chain.build_header(trusted_height, target_height)?,
         signer,
-    )?;
+    };
 
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgUpdateClient>()];
 
