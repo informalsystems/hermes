@@ -15,8 +15,8 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::height::Height;
-use ibc::ics02_client::msgs::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::MsgUpdateAnyClient;
+use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState;

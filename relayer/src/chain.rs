@@ -15,7 +15,8 @@ use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use ibc::ics02_client::msgs::{MsgCreateAnyClient, MsgUpdateAnyClient};
+use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;

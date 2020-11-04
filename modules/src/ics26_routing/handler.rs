@@ -64,7 +64,9 @@ mod tests {
     use std::str::FromStr;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-    use crate::ics02_client::msgs::{ClientMsg, MsgCreateAnyClient, MsgUpdateAnyClient};
+    use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
+    use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+    use crate::ics02_client::msgs::ClientMsg;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;

@@ -6,7 +6,7 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
-use crate::ics02_client::msgs::MsgCreateAnyClient;
+use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
@@ -53,8 +53,8 @@ mod tests {
     use crate::ics02_client::client_type::ClientType;
     use crate::ics02_client::error::Kind;
     use crate::ics02_client::handler::{dispatch, ClientEvent, ClientResult};
+    use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
-    use crate::ics02_client::msgs::MsgCreateAnyClient;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock_client::header::MockHeader;
