@@ -135,7 +135,7 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_seq_resp = block_on(query_account_sequence("cosmos1a883tdrf24ynplrpawgp5mz4nlll365svlcqe0".to_string()));
+        let acct_seq_resp = block_on(query_account_sequence("cosmos19v6xglc9h6aknldnkte5m3jfg7hn70dk8u2zc6".to_string())).map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -143,7 +143,7 @@ impl Chain for CosmosSDKChain {
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: acct_seq,
+            sequence: acct_seq_resp,
         };
 
         // Gas Fee
@@ -320,16 +320,7 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
     }
 }
 
-async fn query_account_sequence(address: String) -> Result<u32, Error> {
-
-    // pub mod cli_proto {
-    //     include!("../../proto/cosmos.auth.v1beta1.rs");
-    // }
-    //
-    // use cli_proto::query_client::QueryClient;
-    // use cli_proto::QueryAccountRequest;
-    // use crate::cli::client::cli_proto::BaseAccount;
-    // use prost::Message;
+async fn query_account_sequence(address: String) -> Result<u64, Error> {
 
     // TODO: Fetch the url from the config/context
     let mut client = QueryClient::connect("http://[::1]:9091")
@@ -345,13 +336,5 @@ async fn query_account_sequence(address: String) -> Result<u32, Error> {
     let base_account: BaseAccount = BaseAccount::decode(response.unwrap().into_inner().account.unwrap().value.as_slice())
         .map_err(|e| Kind::Grpc.context(e))?;
 
-    // let value = match String::from_utf8(response.into_inner().account.unwrap().value.to_vec()) {
-    //     Ok(v) => {
-    //         v
-    //     }
-    //     Err(e) => panic!("Invalid response: {:?}", e)
-    // };
-
-    //println!("Sequence {:?}", base_account.clone());
-    Ok(base_account.sequence as u32)
+    Ok(base_account.sequence)
 }
