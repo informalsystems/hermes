@@ -110,4 +110,5 @@ pub trait Chain {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }
+
 }

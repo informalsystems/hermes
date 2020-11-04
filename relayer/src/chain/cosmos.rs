@@ -31,6 +31,10 @@ use prost::Message;
 use prost_types::Any;
 use std::future::Future;
 
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
+
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
@@ -130,6 +134,8 @@ impl Chain for CosmosSDKChain {
             type_url: "/cosmos.crypto.secp256k1.PubKey".to_string(),
             value: pk_buf,
         };
+
+        let acct_seq_resp = block_on(query_account_sequence("cosmos1a883tdrf24ynplrpawgp5mz4nlll365svlcqe0".to_string()));
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -239,6 +245,7 @@ impl Chain for CosmosSDKChain {
 
         Ok(light_block)
     }
+
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -311,4 +318,40 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
         Ok(response) => Ok(ValidatorSet::new(response.validators)),
         Err(err) => Err(Kind::Rpc.context(err).into()),
     }
+}
+
+async fn query_account_sequence(address: String) -> Result<u32, Error> {
+
+    // pub mod cli_proto {
+    //     include!("../../proto/cosmos.auth.v1beta1.rs");
+    // }
+    //
+    // use cli_proto::query_client::QueryClient;
+    // use cli_proto::QueryAccountRequest;
+    // use crate::cli::client::cli_proto::BaseAccount;
+    // use prost::Message;
+
+    // TODO: Fetch the url from the config/context
+    let mut client = QueryClient::connect("http://[::1]:9091")
+        .await
+        .map_err(|e| Kind::Grpc.context(e))?;
+
+    let request = tonic::Request::new(QueryAccountRequest {
+        address,
+    });
+
+    let response = client.account(request).await;
+
+    let base_account: BaseAccount = BaseAccount::decode(response.unwrap().into_inner().account.unwrap().value.as_slice())
+        .map_err(|e| Kind::Grpc.context(e))?;
+
+    // let value = match String::from_utf8(response.into_inner().account.unwrap().value.to_vec()) {
+    //     Ok(v) => {
+    //         v
+    //     }
+    //     Err(e) => panic!("Invalid response: {:?}", e)
+    // };
+
+    //println!("Sequence {:?}", base_account.clone());
+    Ok(base_account.sequence as u32)
 }
