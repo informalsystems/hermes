@@ -128,7 +128,7 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
     match &result.data {
         RpcEventData::NewBlock { block, .. } => {
             let block = block.as_ref().ok_or("missing block")?;
-            vals.push(NewBlock::new(block.header.height).into());
+            vals.push(NewBlock::new(block.header().height).into());
         }
 
         RpcEventData::Tx { .. } => {

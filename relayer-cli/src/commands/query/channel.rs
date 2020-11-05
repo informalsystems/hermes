@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::convert::TryInto;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
@@ -12,8 +13,6 @@ use ibc::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
-
-use std::convert::TryInto;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {

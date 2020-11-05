@@ -1,31 +1,23 @@
-use serde_derive::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
 
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
+use tendermint_proto::DomainType;
+
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::ics02_client::client_type::ClientType;
-use crate::ics07_tendermint::consensus_state::ConsensusState;
-use crate::ics23_commitment::commitment::CommitmentRoot;
+use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
 
 /// Tendermint consensus header
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once present in tendermint-rs
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
     pub trusted_height: Height, // the height of a trusted header seen by client less than or equal to Header
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
-}
-
-impl Header {
-    pub(crate) fn consensus_state(&self) -> ConsensusState {
-        ConsensusState {
-            timestamp: self.signed_header.header.time,
-            root: CommitmentRoot::from_bytes(self.signed_header.header.app_hash.as_ref()),
-            next_validators_hash: self.signed_header.header.next_validators_hash,
-        }
-    }
 }
 
 impl crate::ics02_client::header::Header for Header {
@@ -35,29 +27,89 @@ impl crate::ics02_client::header::Header for Header {
 
     fn height(&self) -> Height {
         Height::new(
-            ChainId::chain_version(self.signed_header.header.chain_id.to_string()),
-            u64::from(self.signed_header.header.height),
+            ChainId::chain_version(self.signed_header.header().chain_id.to_string()),
+            u64::from(self.signed_header.header().height),
         )
+    }
+}
+
+impl DomainType<RawHeader> for Header {}
+
+impl TryFrom<RawHeader> for Header {
+    type Error = Error;
+
+    fn try_from(raw: RawHeader) -> Result<Self, Self::Error> {
+        Ok(Self {
+            signed_header: raw
+                .signed_header
+                .ok_or_else(|| Kind::InvalidRawHeader.context("missing signed header"))?
+                .try_into()
+                .map_err(|_| Kind::InvalidHeader.context("signed header conversion"))?,
+            validator_set: raw
+                .validator_set
+                .ok_or_else(|| Kind::InvalidRawHeader.context("missing validator set"))?
+                .try_into()
+                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+            trusted_height: raw
+                .trusted_height
+                .ok_or_else(|| Kind::InvalidRawHeader.context("missing height"))?
+                .try_into()
+                .map_err(|e| Kind::InvalidRawHeight.context(e))?,
+            trusted_validator_set: raw
+                .trusted_validators
+                .ok_or_else(|| Kind::InvalidRawHeader.context("missing trusted validator set"))?
+                .try_into()
+                .map_err(|e| Kind::InvalidRawHeader.context(e))?,
+        })
+    }
+}
+
+impl From<Header> for RawHeader {
+    fn from(value: Header) -> Self {
+        RawHeader {
+            signed_header: Some(value.signed_header.into()),
+            validator_set: Some(value.validator_set.into()),
+            trusted_height: Some(value.trusted_height.into()),
+            trusted_validators: Some(value.trusted_validator_set.into()),
+        }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
+    use std::convert::TryInto;
     use subtle_encoding::hex;
 
     use tendermint::block::signed_header::SignedHeader;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;
-    use tendermint::{vote, PublicKey};
+    use tendermint::PublicKey;
 
     use crate::ics07_tendermint::header::Header;
     use crate::Height;
+
+    pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
+        serde_json::from_str::<SignedHeader>(include_str!("../../tests/support/signed_header.json"))
+            .unwrap()
+            .header()
+            .clone()
+    }
 
     // TODO: This should be replaced with a ::default() or ::produce().
     // The implementation of this function comprises duplicate code (code borrowed from
     // `tendermint-rs` for assembling a Header).
     // See https://github.com/informalsystems/tendermint-rs/issues/381.
-    pub fn get_dummy_header() -> Header {
+    //
+    // The normal flow is:
+    // - get the (trusted) signed header and the `trusted_validator_set` at a `trusted_height`
+    // - get the `signed_header` and the `validator_set` at latest height
+    // - build the ics07 Header
+    // For testing purposes this function does:
+    // - get the `signed_header` from a .json file
+    // - create the `validator_set` with a single validator that is also the proposer
+    // - assume a `trusted_height` of 1 and no change in the validator set since height 1,
+    //   i.e. `trusted_validator_set` = `validator_set`
+    pub fn get_dummy_ics07_header() -> Header {
         // Build a SignedHeader from a JSON file.
         let shdr = serde_json::from_str::<SignedHeader>(include_str!(
             "../../tests/support/signed_header.json"
@@ -74,15 +126,15 @@ pub mod test_util {
                 .unwrap(),
             )
             .unwrap(),
-            vote::Power::new(281_815),
+            281_815_u64.try_into().unwrap(),
         );
 
-        let vs = ValidatorSet::new(vec![v1]);
+        let vs = ValidatorSet::new(vec![v1], Some(v1), 281_815_u64.try_into().unwrap());
 
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: Height::new(0, 9),
+            trusted_height: Height::new(0, 1),
             trusted_validator_set: vs,
         }
     }

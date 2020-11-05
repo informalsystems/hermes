@@ -1,6 +1,7 @@
 //! `tx` subcommand
-use crate::commands::tx::client::TxCreateClientCmd;
 use abscissa_core::{Command, Help, Options, Runnable};
+
+use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 
 mod client;
 mod connection;
@@ -30,4 +31,8 @@ pub enum TxRawCommands {
     /// The `tx raw client-create` subcommand submits a MsgCreateClient in a transaction to a chain
     #[options(help = "tx raw create-client")]
     CreateClient(TxCreateClientCmd),
+
+    /// The `tx raw client-update` subcommand submits a MsgUpdateClient in a transaction to a chain
+    #[options(help = "tx raw update-client")]
+    UpdateClient(TxUpdateClientCmd),
 }

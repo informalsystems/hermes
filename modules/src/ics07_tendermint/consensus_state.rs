@@ -1,11 +1,8 @@
 use chrono::{TimeZone, Utc};
-use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
-use tendermint::block::signed_header::SignedHeader;
-use tendermint::hash::Algorithm;
 use tendermint::time::Time;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
@@ -13,8 +10,9 @@ use tendermint_proto::DomainType;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentRoot;
+use tendermint::hash::Algorithm;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,
@@ -80,12 +78,12 @@ impl From<ConsensusState> for RawConsensusState {
     }
 }
 
-impl From<SignedHeader> for ConsensusState {
-    fn from(header: SignedHeader) -> Self {
+impl From<tendermint::block::Header> for ConsensusState {
+    fn from(header: tendermint::block::Header) -> Self {
         Self {
-            root: CommitmentRoot::from_bytes(header.header.app_hash.as_ref()),
-            timestamp: header.header.time,
-            next_validators_hash: header.header.next_validators_hash,
+            root: CommitmentRoot::from_bytes(header.app_hash.as_ref()),
+            timestamp: header.time,
+            next_validators_hash: header.next_validators_hash,
         }
     }
 }
