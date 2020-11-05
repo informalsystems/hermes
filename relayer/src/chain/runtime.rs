@@ -12,8 +12,8 @@ use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 
 use super::{
     error::ChainError,
-    handle::{HandleInput, ProdChainHandle},
-    Chain,
+    handle::{ChainHandle, HandleInput, ProdChainHandle},
+    Chain, CosmosSDKChain,
 };
 
 pub struct ChainRuntime<Chain> {
@@ -22,11 +22,13 @@ pub struct ChainRuntime<Chain> {
     receiver: channel::Receiver<HandleInput>,
 }
 
-impl<C: Chain> ChainRuntime<C> {
-    pub fn from_config(config: ChainConfig) -> Result<ChainConfig, ChainError> {
+impl ChainRuntime<CosmosSDKChain> {
+    pub fn cosmos_sdk(config: ChainConfig) -> Self {
         todo!()
     }
+}
 
+impl<C: Chain> ChainRuntime<C> {
     pub fn new(chain: C) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
@@ -37,7 +39,7 @@ impl<C: Chain> ChainRuntime<C> {
         }
     }
 
-    pub fn handle(&self) -> ProdChainHandle {
+    pub fn handle(&self) -> impl ChainHandle {
         let chain_id = self.chain.id().clone();
         let sender = self.sender.clone();
 
@@ -45,31 +47,17 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     pub fn run(self) -> Result<(), ChainError> {
-        // Mocked: EventMonitor
-        // What we need here is a reliable stream of events produced by a connected full node.
-        // Events received from this stream will be buffered (perhaps durably) and then routed to
-        // the various subscriptions.
-        let event_monitor = channel::tick(Duration::from_millis(1000));
-
-        let mut subscriptions: Vec<channel::Sender<(Height, Vec<IBCEvent>)>> = vec![];
         loop {
             channel::select! {
-                recv(event_monitor) -> tick => {
-                    println!("tick tick!");
-                    for subscription in subscriptions.iter() {
-                        let target_height = Height::new(0, 1); // FIXME
-                        // subscription.send((target_height, vec![IBCEvent::NoOp()])).unwrap();
-                    }
-                },
                 recv(self.receiver) -> event => {
                     match event {
                         Ok(HandleInput::Subscribe(sender)) => {
                             let (tx, rx) = channel::unbounded();
-                            subscriptions.push(tx);
-                            sender.send(rx).map_err(|e| ChainError::Channel)?;
+                            // TODO: Handle subscription
+                            sender.send(rx).map_err(|_| ChainError::Channel)?;
                         },
                         Ok(HandleInput::Terminate(sender)) => {
-                            sender.send(()).map_err(|e| ChainError::Channel)?;
+                            sender.send(()).map_err(|_| ChainError::Channel)?;
                             break;
                         }
                         Ok(HandleInput::GetHeader(_height, _sender)) => {

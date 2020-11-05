@@ -1,4 +1,4 @@
-use crate::chain::handle::{ChainHandle, ChainHandleError, HandleInput, Subscription};
+use crate::chain::handle::{ChainError, ChainHandle, HandleInput, Subscription};
 use crate::config::ChainConfig;
 use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
@@ -38,15 +38,15 @@ impl CosmosSDKHandle {
         chain_id_raw: &str,
         sender: channel::Sender<HandleInput>,
         rpc_addr: net::Address,
-    ) -> Result<Self, ChainHandleError> {
+    ) -> Result<Self, ChainError> {
         let rpc_client = HttpClient::new(rpc_addr).map_err(|e| {
-            ChainHandleError::RPC(format!(
+            ChainError::RPC(format!(
                 "could not initialize http client; error: {}",
                 e.to_string()
             ))
         })?;
         let chain_id = ChainId::from_str(chain_id_raw)
-            .map_err(|e| ChainHandleError::ChainIdentifier(e.to_string()))?;
+            .map_err(|e| ChainError::ChainIdentifier(e.to_string()))?;
 
         Ok(Self {
             chain_id,
@@ -64,7 +64,7 @@ impl CosmosSDKHandle {
         data: String,
         height: Height,
         prove: bool,
-    ) -> Result<Vec<u8>, ChainHandleError> {
+    ) -> Result<Vec<u8>, ChainError> {
         let height = if height.is_zero() {
             None
         } else {
@@ -77,15 +77,15 @@ impl CosmosSDKHandle {
             .rpc_client
             .abci_query(Some(path), data.into_bytes(), height, prove)
             .await
-            .map_err(|e| ChainHandleError::RPC(e.to_string()))?;
+            .map_err(|e| ChainError::RPC(e.to_string()))?;
 
         if !response.code.is_ok() {
             // Fail with response log.
-            return Err(ChainHandleError::RPC(response.log.to_string()));
+            return Err(ChainError::RPC(response.log.to_string()));
         }
         if response.value.is_empty() {
             // Fail due to empty response value (nothing to decode).
-            return Err(ChainHandleError::RPC("Empty response value".to_string()));
+            return Err(ChainError::RPC("Empty response value".to_string()));
         }
 
         Ok(response.value)
@@ -93,20 +93,15 @@ impl CosmosSDKHandle {
 }
 
 impl ChainHandle for CosmosSDKHandle {
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainHandleError> {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
         let (sender, receiver) = channel::bounded::<Subscription>(1);
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
         Ok(receiver.recv().unwrap())
     }
 
-    fn query(
-        &self,
-        data_path: Path,
-        height: Height,
-        prove: bool,
-    ) -> Result<Vec<u8>, ChainHandleError> {
+    fn query(&self, data_path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainError> {
         if !data_path.is_provable() & prove {
-            return Err(ChainHandleError::NonProvableData);
+            return Err(ChainError::NonProvableData);
         }
 
         let response = block_on(self.abci_query(data_path.to_string(), height, prove))?;
@@ -119,23 +114,19 @@ impl ChainHandle for CosmosSDKHandle {
         Ok(response)
     }
 
-    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainHandleError> {
+    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainError> {
         todo!()
     }
 
-    fn get_minimal_set(
-        &self,
-        from: Height,
-        to: Height,
-    ) -> Result<Vec<AnyHeader>, ChainHandleError> {
+    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, ChainError> {
         todo!()
     }
 
-    fn submit(&self, _transaction: EncodedTransaction) -> Result<(), ChainHandleError> {
+    fn submit(&self, _transaction: EncodedTransaction) -> Result<(), ChainError> {
         todo!()
     }
 
-    fn get_height(&self, _client: &ForeignClient) -> Result<Height, ChainHandleError> {
+    fn get_height(&self, _client: &ForeignClient) -> Result<Height, ChainError> {
         todo!()
     }
 
@@ -143,14 +134,11 @@ impl ChainHandle for CosmosSDKHandle {
         self.chain_id.clone()
     }
 
-    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, ChainHandleError> {
+    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, ChainError> {
         todo!()
     }
 
-    fn assemble_client_state(
-        &self,
-        header: &AnyHeader,
-    ) -> Result<AnyClientState, ChainHandleError> {
+    fn assemble_client_state(&self, header: &AnyHeader) -> Result<AnyClientState, ChainError> {
         // Downcast from the generic any header into a header specific for this type of chain.
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
             let height = u64::from(our_header.signed_header.header.height);
@@ -167,23 +155,23 @@ impl ChainHandle for CosmosSDKHandle {
                 false,
                 false,
             ) // TODO more useful err message below :(
-            .map_err(|e| ChainHandleError::Failed)
+            .map_err(|e| ChainError::Failed)
             .map(AnyClientState::Tendermint)
         } else {
-            Err(ChainHandleError::InvalidInputHeader)
+            Err(ChainError::InvalidInputHeader)
         }
     }
 
     fn assemble_consensus_state(
         &self,
         header: &AnyHeader,
-    ) -> Result<AnyConsensusState, ChainHandleError> {
+    ) -> Result<AnyConsensusState, ChainError> {
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
             Ok(AnyConsensusState::Tendermint(ConsensusState::from(
                 our_header.signed_header.clone(),
             )))
         } else {
-            Err(ChainHandleError::InvalidInputHeader)
+            Err(ChainError::InvalidInputHeader)
         }
     }
 }

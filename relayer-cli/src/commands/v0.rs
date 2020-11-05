@@ -5,7 +5,7 @@ use abscissa_core::{
 };
 
 use relayer::{
-    chain::{runtime::ChainRuntime, CosmosSDKChain},
+    chain::runtime::ChainRuntime,
     channel::{Channel, ChannelConfig},
     connection::{Connection, ConnectionConfig},
     foreign_client::{ForeignClient, ForeignClientConfig},
@@ -46,16 +46,16 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         .get(1)
         .ok_or_else(|| "Configuration for dest. chain (position 1 in chains config) not found")?;
 
-    let src_chain = ChainRuntime::new(src_chain_config);
-    let dst_chain = ChainRuntime::new(dst_chain_config);
+    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config.clone());
+    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config.clone());
 
-    let src_chain_handle = src_chain.handle()?;
+    let src_chain_handle = src_chain.handle();
     thread::spawn(move || {
         // TODO: What should we do on return here? Probably unrecoverable error.
         src_chain.run().unwrap();
     });
 
-    let dst_chain_handle = dst_chain.handle()?;
+    let dst_chain_handle = dst_chain.handle();
     thread::spawn(move || {
         dst_chain.run().unwrap();
     });
