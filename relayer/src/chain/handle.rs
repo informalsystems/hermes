@@ -25,11 +25,13 @@ pub mod cosmos;
 mod prod;
 pub use prod::ProdChainHandle;
 
+pub type ReplyTo<T> = channel::Sender<T>;
+
 /// Inputs that a Handle may send to a Runtime.
 pub enum HandleInput {
-    Terminate(channel::Sender<()>),
-    Subscribe(channel::Sender<Subscription>),
-    GetHeader(Height, channel::Sender<AnyHeader>),
+    Terminate(ReplyTo<()>),
+    Subscribe(ReplyTo<Subscription>),
+    GetHeader(Height, ReplyTo<AnyHeader>),
 }
 
 pub trait ChainHandle: Send {
@@ -38,6 +40,10 @@ pub trait ChainHandle: Send {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, ChainError>;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainError>;
+
+    // Inclusion proofs
+    // It might be good to include an inclusion proof method which abstracts over the light client
+    // to prove that a piece of data is stored on the chain
 
     fn get_header(&self, height: Height) -> Result<AnyHeader, ChainError>;
 
