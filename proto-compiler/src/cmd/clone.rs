@@ -1,6 +1,6 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, process};
 
-use git2::build::RepoBuilder;
+use git2::Repository;
 
 use argh::FromArgs;
 
@@ -8,35 +8,47 @@ use argh::FromArgs;
 #[argh(subcommand, name = "clone-sdk")]
 /// Clone
 pub struct CloneCmd {
-    #[argh(option, short = 'b')]
-    /// branch to checkout
-    branch: Option<String>,
+    /// commit to checkout
+    #[argh(option, short = 'c')]
+    commit: Option<String>,
     /// where to checkout the repository
-    #[argh(positional)]
+    #[argh(option, short = 'o')]
     path: PathBuf,
 }
 
 impl CloneCmd {
     pub fn run(&self) {
-        if self.path.exists() {
+        let repo = if self.path.exists() {
             println!(
                 "[info ] Found Cosmos SDK source at '{}'",
                 self.path.display()
             );
+
+            Repository::open(&self.path).unwrap_or_else(|e| {
+                println!("[error] Failed to open repository: {}", e);
+                process::exit(1)
+            })
         } else {
             println!("[info ] Cloning cosmos/cosmos-sdk repository...");
 
             let url = "https://github.com/cosmos/cosmos-sdk";
-            let mut builder = RepoBuilder::new();
 
-            if let Some(branch) = &self.branch {
-                println!("[info ] Will check out branch '{}'", branch);
-                builder.branch(branch);
-            }
+            Repository::clone(url, &self.path).unwrap_or_else(|e| {
+                println!("[error] Failed to clone the repository: {}", e);
+                process::exit(1)
+            })
+        };
 
-            let _repo = builder.clone(url, &self.path).unwrap();
+        if let Some(ref commit) = self.commit {
+            let treeish = format!("refs/heads/{}", commit);
+            repo.set_head(&treeish).unwrap_or_else(|e| {
+                println!("[error] Failed to set HEAD to {}: {}", commit, e);
+                process::exit(1)
+            });
 
-            println!("[info ] => Cloned at '{}'", self.path.display());
+            println!("[info ] HEAD is at {}", commit);
         }
+
+        println!("[info ] Cloned at '{}'", self.path.display());
     }
 }

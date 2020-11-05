@@ -20,7 +20,6 @@ enum Command {
 
 fn main() {
     let app: App = argh::from_env();
-    dbg!(&app);
 
     match app.cmd {
         Command::Clone(clone) => clone.run(),

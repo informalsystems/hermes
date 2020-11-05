@@ -11,10 +11,10 @@ use argh::FromArgs;
 #[argh(subcommand, name = "compile")]
 /// Compile
 pub struct CompileCmd {
-    #[argh(option)]
+    #[argh(option, short = 's')]
     /// path to the Cosmos SDK
     sdk: PathBuf,
-    #[argh(positional)]
+    #[argh(option, short = 'o')]
     /// path to output the generated Rust sources into
     out: PathBuf,
 }
@@ -73,8 +73,6 @@ impl CompileCmd {
         config.out_dir(out_dir);
         config.extern_path(".tendermint", "::tendermint_proto");
         config.compile_protos(&protos, &includes).unwrap();
-
-        println!("[info ] => Done!");
     }
 
     fn copy_generated_files(from_dir: &Path, to_dir: &Path) {
@@ -112,7 +110,5 @@ impl CompileCmd {
 
             panic!("[error] Aborted.");
         }
-
-        println!("[info ] => Done!");
     }
 }
