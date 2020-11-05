@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -10,6 +9,7 @@ use tendermint::account::Id as AccountId;
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -19,7 +19,7 @@ use crate::Height;
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
     counterparty_connection_id: Option<ConnectionId>,
@@ -80,10 +80,6 @@ impl Msg for MsgConnectionOpenAck {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -109,10 +105,9 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProof::from);
 
         let counterparty_connection_id = Some(msg.counterparty_connection_id)
             .filter(|x| !x.is_empty())
@@ -178,10 +173,9 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {

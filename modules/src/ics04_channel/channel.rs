@@ -4,12 +4,11 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
 use anomaly::fail;
-use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use std::str::FromStr;
 use tendermint_proto::DomainType;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ChannelEnd {
     state: State,
     ordering: Order,
@@ -136,7 +135,7 @@ impl ChannelEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Counterparty {
     port_id: PortId,
     channel_id: ChannelId,
@@ -167,7 +166,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -208,7 +207,7 @@ impl FromStr for Order {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum State {
     Uninitialized = 0,
     Init,

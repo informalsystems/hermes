@@ -2,105 +2,93 @@
 /// initialize a connection with Chain B.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenInit {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub connection_id: std::string::String,
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag="3")]
     pub counterparty: ::std::option::Option<Counterparty>,
-    #[prost(string, tag = "4")]
+    #[prost(string, tag="4")]
     pub version: std::string::String,
-    #[prost(string, tag = "5")]
+    #[prost(string, tag="5")]
     pub signer: std::string::String,
 }
-/// MsgConnectionOpenInitResponse defines the Msg/ConnectionOpenInit response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenInitResponse {}
 /// MsgConnectionOpenTry defines a msg sent by a Relayer to try to open a
 /// connection on Chain B.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenTry {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub desired_connection_id: std::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub counterparty_chosen_connection_id: std::string::String,
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub client_state: ::std::option::Option<::prost_types::Any>,
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag="5")]
     pub counterparty: ::std::option::Option<Counterparty>,
-    #[prost(string, repeated, tag = "6")]
+    #[prost(string, repeated, tag="6")]
     pub counterparty_versions: ::std::vec::Vec<std::string::String>,
-    #[prost(message, optional, tag = "7")]
+    #[prost(message, optional, tag="7")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
     /// proof of the initialization the connection on Chain A: `UNITIALIZED ->
     /// INIT`
-    #[prost(bytes, tag = "8")]
+    #[prost(bytes, tag="8")]
     pub proof_init: std::vec::Vec<u8>,
     /// proof of client state included in message
-    #[prost(bytes, tag = "9")]
+    #[prost(bytes, tag="9")]
     pub proof_client: std::vec::Vec<u8>,
     /// proof of client consensus state
-    #[prost(bytes, tag = "10")]
+    #[prost(bytes, tag="10")]
     pub proof_consensus: std::vec::Vec<u8>,
-    #[prost(message, optional, tag = "11")]
+    #[prost(message, optional, tag="11")]
     pub consensus_height: ::std::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "12")]
+    #[prost(string, tag="12")]
     pub signer: std::string::String,
 }
-/// MsgConnectionOpenTryResponse defines the Msg/ConnectionOpenTry response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenTryResponse {}
 /// MsgConnectionOpenAck defines a msg sent by a Relayer to Chain A to
 /// acknowledge the change of connection state to TRYOPEN on Chain B.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenAck {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub connection_id: std::string::String,
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub counterparty_connection_id: std::string::String,
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub version: std::string::String,
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub client_state: ::std::option::Option<::prost_types::Any>,
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag="5")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
     /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
     /// TRYOPEN`
-    #[prost(bytes, tag = "6")]
+    #[prost(bytes, tag="6")]
     pub proof_try: std::vec::Vec<u8>,
     /// proof of client state included in message
-    #[prost(bytes, tag = "7")]
+    #[prost(bytes, tag="7")]
     pub proof_client: std::vec::Vec<u8>,
     /// proof of client consensus state
-    #[prost(bytes, tag = "8")]
+    #[prost(bytes, tag="8")]
     pub proof_consensus: std::vec::Vec<u8>,
-    #[prost(message, optional, tag = "9")]
+    #[prost(message, optional, tag="9")]
     pub consensus_height: ::std::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "10")]
+    #[prost(string, tag="10")]
     pub signer: std::string::String,
 }
-/// MsgConnectionOpenAckResponse defines the Msg/ConnectionOpenAck response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenAckResponse {}
 /// MsgConnectionOpenConfirm defines a msg sent by a Relayer to Chain B to
 /// acknowledge the change of connection state to OPEN on Chain A.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgConnectionOpenConfirm {
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub connection_id: std::string::String,
     /// proof for the change of the connection state on Chain A: `INIT -> OPEN`
-    #[prost(bytes, tag = "2")]
+    #[prost(bytes, tag="2")]
     pub proof_ack: std::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag="3")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
-    #[prost(string, tag = "4")]
+    #[prost(string, tag="4")]
     pub signer: std::string::String,
 }
-/// MsgConnectionOpenConfirmResponse defines the Msg/ConnectionOpenConfirm response type.
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgConnectionOpenConfirmResponse {}
 // ICS03 - Connection Data Structures as defined in
 // https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#data-structures
 
@@ -110,17 +98,17 @@ pub struct MsgConnectionOpenConfirmResponse {}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionEnd {
     /// client associated with this connection.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
     /// IBC version which can be utilised to determine encodings or protocols for
     /// channels or packets utilising this connection
-    #[prost(string, repeated, tag = "2")]
+    #[prost(string, repeated, tag="2")]
     pub versions: ::std::vec::Vec<std::string::String>,
     /// current state of the connection end.
-    #[prost(enumeration = "State", tag = "3")]
+    #[prost(enumeration="State", tag="3")]
     pub state: i32,
     /// counterparty chain associated with this connection.
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub counterparty: ::std::option::Option<Counterparty>,
 }
 /// IdentifiedConnection defines a connection with additional connection
@@ -128,20 +116,20 @@ pub struct ConnectionEnd {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct IdentifiedConnection {
     /// connection identifier.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub id: std::string::String,
     /// client associated with this connection.
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub client_id: std::string::String,
     /// IBC version which can be utilised to determine encodings or protocols for
     /// channels or packets utilising this connection
-    #[prost(string, repeated, tag = "3")]
+    #[prost(string, repeated, tag="3")]
     pub versions: ::std::vec::Vec<std::string::String>,
     /// current state of the connection end.
-    #[prost(enumeration = "State", tag = "4")]
+    #[prost(enumeration="State", tag="4")]
     pub state: i32,
     /// counterparty chain associated with this connection.
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag="5")]
     pub counterparty: ::std::option::Option<Counterparty>,
 }
 /// Counterparty defines the counterparty chain associated with a connection end.
@@ -149,31 +137,31 @@ pub struct IdentifiedConnection {
 pub struct Counterparty {
     /// identifies the client on the counterparty chain associated with a given
     /// connection.
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
     /// identifies the connection end on the counterparty chain associated with a
     /// given connection.
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub connection_id: std::string::String,
     /// commitment merkle prefix of the counterparty chain
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag="3")]
     pub prefix: ::std::option::Option<super::super::commitment::v1::MerklePrefix>,
 }
 /// ClientPaths define all the connection paths for a client state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientPaths {
     /// list of connection paths
-    #[prost(string, repeated, tag = "1")]
+    #[prost(string, repeated, tag="1")]
     pub paths: ::std::vec::Vec<std::string::String>,
 }
 /// ConnectionPaths define all the connection paths for a given client state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConnectionPaths {
     /// client state unique identifier
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
     /// list of connection paths
-    #[prost(string, repeated, tag = "2")]
+    #[prost(string, repeated, tag="2")]
     pub paths: ::std::vec::Vec<std::string::String>,
 }
 /// Version defines the versioning scheme used to negotiate the IBC verison in
@@ -181,10 +169,10 @@ pub struct ConnectionPaths {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Version {
     /// unique version identifier
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub identifier: std::string::String,
     /// list of features compatible with the specified identifier
-    #[prost(string, repeated, tag = "2")]
+    #[prost(string, repeated, tag="2")]
     pub features: ::std::vec::Vec<std::string::String>,
 }
 /// State defines if a connection is in one of the following states:
@@ -205,9 +193,9 @@ pub enum State {
 /// GenesisState defines the ibc connection submodule's genesis state.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
+    #[prost(message, repeated, tag="1")]
     pub connections: ::std::vec::Vec<IdentifiedConnection>,
-    #[prost(message, repeated, tag = "2")]
+    #[prost(message, repeated, tag="2")]
     pub client_connection_paths: ::std::vec::Vec<ConnectionPaths>,
 }
 /// QueryConnectionRequest is the request type for the Query/Connection RPC
@@ -215,7 +203,7 @@ pub struct GenesisState {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionRequest {
     /// connection unique identifier
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub connection_id: std::string::String,
 }
 /// QueryConnectionResponse is the response type for the Query/Connection RPC
@@ -224,41 +212,37 @@ pub struct QueryConnectionRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionResponse {
     /// connection associated with the request identifier
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub connection: ::std::option::Option<ConnectionEnd>,
     /// merkle proof of existence
-    #[prost(bytes, tag = "2")]
+    #[prost(bytes, tag="2")]
     pub proof: std::vec::Vec<u8>,
     /// merkle proof path
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub proof_path: std::string::String,
     /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
 }
 /// QueryConnectionsRequest is the request type for the Query/Connections RPC
 /// method
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionsRequest {
-    #[prost(message, optional, tag = "1")]
-    pub pagination: ::std::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
+    #[prost(message, optional, tag="1")]
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
 }
 /// QueryConnectionsResponse is the response type for the Query/Connections RPC
 /// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionsResponse {
     /// list of stored connections of the chain.
-    #[prost(message, repeated, tag = "1")]
+    #[prost(message, repeated, tag="1")]
     pub connections: ::std::vec::Vec<IdentifiedConnection>,
     /// pagination response
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::std::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::std::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
     /// query block height
-    #[prost(message, optional, tag = "3")]
+    #[prost(message, optional, tag="3")]
     pub height: ::std::option::Option<super::super::client::v1::Height>,
 }
 /// QueryClientConnectionsRequest is the request type for the
@@ -266,7 +250,7 @@ pub struct QueryConnectionsResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientConnectionsRequest {
     /// client identifier associated with a connection
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub client_id: std::string::String,
 }
 /// QueryClientConnectionsResponse is the response type for the
@@ -274,16 +258,16 @@ pub struct QueryClientConnectionsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryClientConnectionsResponse {
     /// slice of all the connection paths associated with a client.
-    #[prost(string, repeated, tag = "1")]
+    #[prost(string, repeated, tag="1")]
     pub connection_paths: ::std::vec::Vec<std::string::String>,
     /// merkle proof of existence
-    #[prost(bytes, tag = "2")]
+    #[prost(bytes, tag="2")]
     pub proof: std::vec::Vec<u8>,
     /// merkle proof path
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub proof_path: std::string::String,
     /// height at which the proof was generated
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
 }
 /// QueryConnectionClientStateRequest is the request type for the
@@ -291,7 +275,7 @@ pub struct QueryClientConnectionsResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionClientStateRequest {
     /// connection identifier
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub connection_id: std::string::String,
 }
 /// QueryConnectionClientStateResponse is the response type for the
@@ -299,17 +283,16 @@ pub struct QueryConnectionClientStateRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionClientStateResponse {
     /// client state associated with the channel
-    #[prost(message, optional, tag = "1")]
-    pub identified_client_state:
-        ::std::option::Option<super::super::client::v1::IdentifiedClientState>,
+    #[prost(message, optional, tag="1")]
+    pub identified_client_state: ::std::option::Option<super::super::client::v1::IdentifiedClientState>,
     /// merkle proof of existence
-    #[prost(bytes, tag = "2")]
+    #[prost(bytes, tag="2")]
     pub proof: std::vec::Vec<u8>,
     /// merkle proof path
-    #[prost(string, tag = "3")]
+    #[prost(string, tag="3")]
     pub proof_path: std::string::String,
     /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "4")]
+    #[prost(message, optional, tag="4")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
 }
 /// QueryConnectionConsensusStateRequest is the request type for the
@@ -317,11 +300,11 @@ pub struct QueryConnectionClientStateResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionConsensusStateRequest {
     /// connection identifier
-    #[prost(string, tag = "1")]
+    #[prost(string, tag="1")]
     pub connection_id: std::string::String,
-    #[prost(uint64, tag = "2")]
+    #[prost(uint64, tag="2")]
     pub version_number: u64,
-    #[prost(uint64, tag = "3")]
+    #[prost(uint64, tag="3")]
     pub version_height: u64,
 }
 /// QueryConnectionConsensusStateResponse is the response type for the
@@ -329,18 +312,18 @@ pub struct QueryConnectionConsensusStateRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryConnectionConsensusStateResponse {
     /// consensus state associated with the channel
-    #[prost(message, optional, tag = "1")]
+    #[prost(message, optional, tag="1")]
     pub consensus_state: ::std::option::Option<::prost_types::Any>,
     /// client ID associated with the consensus state
-    #[prost(string, tag = "2")]
+    #[prost(string, tag="2")]
     pub client_id: std::string::String,
     /// merkle proof of existence
-    #[prost(bytes, tag = "3")]
+    #[prost(bytes, tag="3")]
     pub proof: std::vec::Vec<u8>,
     /// merkle proof path
-    #[prost(string, tag = "4")]
+    #[prost(string, tag="4")]
     pub proof_path: std::string::String,
     /// height at which the proof was retrieved
-    #[prost(message, optional, tag = "5")]
+    #[prost(message, optional, tag="5")]
     pub proof_height: ::std::option::Option<super::super::client::v1::Height>,
 }

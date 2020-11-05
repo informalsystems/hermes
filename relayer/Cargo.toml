@@ -9,8 +9,6 @@ authors = [
 [dependencies]
 ibc = { path = "../modules" }
 ibc-proto = { version = "0.4.0", path = "../proto" }
-tendermint-proto = "0.1.0"
-
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
@@ -40,19 +38,24 @@ tonic = "0.3.1"
 
 [dependencies.tendermint]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint-rpc]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
+
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
-# Needed for tx sign when ready in tendermint upgrade
-#tendermint-rpc = "0.15"
-#rust-crypto = "0.2.36"
-#hex = "0.4"
-#ripemd160 = { version = "0.9", optional = true }
-#sha2 = { version = "0.9.1", default-features = false }
+[dependencies.tendermint-proto]
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dev-dependencies]
