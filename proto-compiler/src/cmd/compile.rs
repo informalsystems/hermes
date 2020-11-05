@@ -2,6 +2,7 @@ use std::fs::remove_dir_all;
 use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 
+use git2::Repository;
 use tempdir::TempDir;
 use walkdir::WalkDir;
 
@@ -22,8 +23,19 @@ pub struct CompileCmd {
 impl CompileCmd {
     pub fn run(&self) {
         let tmp = TempDir::new("ibc-proto").unwrap();
+
+        Self::output_sdk_version(&self.sdk, tmp.as_ref());
         Self::compile_protos(&self.sdk, tmp.as_ref());
         Self::copy_generated_files(tmp.as_ref(), &self.out);
+    }
+
+    fn output_sdk_version(sdk_dir: &Path, out_dir: &Path) {
+        let repo = Repository::open(sdk_dir).unwrap();
+        let commit = repo.head().unwrap();
+        let rev = commit.shorthand().unwrap();
+        let path = out_dir.join("COSMOS_SDK_COMMIT");
+
+        std::fs::write(path, rev).unwrap();
     }
 
     fn compile_protos(sdk_dir: &Path, out_dir: &Path) {
