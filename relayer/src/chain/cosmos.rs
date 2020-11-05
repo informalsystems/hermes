@@ -135,12 +135,8 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        // TODO: Read this address from the key_seed.json
-        let acct_response = block_on(query_account(
-            self,
-            "cosmos19v6xglc9h6aknldnkte5m3jfg7hn70dk8u2zc6".to_string(),
-        ))
-        .map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response =
+            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
