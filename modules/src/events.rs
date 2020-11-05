@@ -122,13 +122,16 @@ fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, 
     Ok(result)
 }
 
-pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
-    let mut vals: Vec<IBCEvent> = vec![];
+pub fn get_all_events(result: RpcEvent) -> Result<Vec<(Height, IBCEvent)>, String> {
+    let mut vals: Vec<(Height, IBCEvent)> = vec![];
 
     match &result.data {
         RpcEventData::NewBlock { block, .. } => {
             let block = block.as_ref().ok_or("missing block")?;
-            vals.push(NewBlock::new(block.header.height).into());
+            vals.push((
+                block.header.height,
+                NewBlock::new(block.header.height).into(),
+            ));
         }
 
         RpcEventData::Tx { .. } => {
@@ -142,21 +145,20 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<IBCEvent>, String> {
 
             let actions_and_indices = extract_helper(&events)?;
             for action in actions_and_indices {
-                let event = build_event(RawObject::new(
+                match build_event(RawObject::new(
                     height,
                     action.0,
                     action.1 as usize,
                     events.clone(),
-                ));
-
-                match event {
-                    Ok(event) => vals.push(event),
+                )) {
+                    Ok(event) => vals.push((height, event)),
                     Err(e) => warn!("error while building event {}", e.to_string()),
                 }
             }
         }
         _ => {}
     }
+
     Ok(vals)
 }
 

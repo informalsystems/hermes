@@ -5,15 +5,6 @@ pub mod error;
 pub mod handle;
 pub mod runtime;
 
-// Simplified:
-// Subscriptions should have provide processing semantics such
-// that event processing can fail and potentially be retried. For instance if a IBCEvent
-// contains a Packet to be sent to a full node, it's possible that the receiving full node
-// will fail but that packet still needs to be sent. In this case the subscription iterable
-// semantics should ensure that that same packet is retried on a new full node when
-// requested.
-pub type Subscription = crossbeam_channel::Receiver<(ibc::Height, Vec<IBCEvent>)>;
-
 use std::error::Error;
 use std::time::Duration;
 

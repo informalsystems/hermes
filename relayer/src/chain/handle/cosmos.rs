@@ -20,6 +20,8 @@ use std::str::FromStr;
 use std::time::Duration;
 use thiserror::Error;
 
+use super::reply_channel;
+
 /// The handle for interacting with a Cosmos chain.
 ///     - `sender` enables communication with the chain runtime (mainly for `subscribe`).
 ///     - `rpc_client` is the gateway to a full-node for fulfilling ABCI queries.
@@ -94,9 +96,9 @@ impl CosmosSDKHandle {
 
 impl ChainHandle for CosmosSDKHandle {
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
-        let (sender, receiver) = channel::bounded::<Subscription>(1);
+        let (sender, receiver) = reply_channel();
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
-        Ok(receiver.recv().unwrap())
+        receiver.recv().unwrap()
     }
 
     fn query(&self, data_path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainError> {

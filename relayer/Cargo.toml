@@ -36,6 +36,7 @@ bitcoin-wallet = "1.1.0"
 hdpath = { version = "0.4.0", features = ["with-bitcoin"] }
 rust-crypto = "0.2.36"
 bech32 = "0.7.2"
+itertools = "0.9.0"
 
 [dependencies.tendermint]
 version = "0.17.0-rc1"

@@ -10,9 +10,34 @@ use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
 };
+use itertools::Itertools;
 use retry::{delay::Fixed, retry};
 use tendermint::Signature;
 use thiserror::Error;
+
+trait SplitResults: Iterator {
+    fn split_results<T, E>(self) -> (Vec<T>, Vec<E>)
+    where
+        Self: Iterator<Item = Result<T, E>> + Sized,
+    {
+        let mut oks = vec![];
+        let mut errs = vec![];
+
+        for item in self {
+            match item {
+                Ok(ok) => oks.push(ok),
+                Err(err) => errs.push(err),
+            }
+        }
+
+        (oks, errs)
+    }
+}
+
+impl<T> SplitResults for T where T: Iterator {}
+
+// TODO: move to config
+const MAX_RETRIES: usize = 10_usize;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -98,21 +123,16 @@ impl Link {
         let signature = todo!();
 
         // XXX: What about Packet Acks for ordered channels
-        for (target_height, events) in subscription.iter() {
-            let packets: Result<Vec<_>, _> = events
+        for (chain_id, target_height, events) in subscription.iter() {
+            let (datagrams, errors) = events
                 .into_iter()
                 .map(|event| self.src_chain.create_packet(event))
-                .collect();
+                .map_results(Datagram::Packet)
+                .split_results();
 
-            let committed_packets = packets?;
+            // TODO: Report the errors?
 
-            let datagrams = committed_packets
-                .into_iter()
-                .map(Datagram::Packet)
-                .collect::<Vec<_>>();
-
-            let max_retries = 10_usize; // XXX: move to config
-            let mut tries = 0..max_retries;
+            let mut tries = 0..MAX_RETRIES;
 
             let result = retry(Fixed::from_millis(100), || {
                 if let Some(attempt) = tries.next() {

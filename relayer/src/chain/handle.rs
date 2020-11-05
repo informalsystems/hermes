@@ -17,7 +17,7 @@ use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
 
-use super::{error::ChainError, Chain, Subscription};
+use super::{error::ChainError, Chain};
 
 /// Implementation of handle specific for Cosmos SDK chains
 pub mod cosmos;

@@ -6,12 +6,12 @@ use ibc::{
 use tendermint_light_client::types::SignedHeader;
 
 use crate::{
-    chain::{error::ChainError, Subscription},
+    chain::error::ChainError,
     foreign_client::ForeignClient,
     msgs::{EncodedTransaction, Packet},
 };
 
-use super::{ChainHandle, HandleInput};
+use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -31,23 +31,26 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
-        let (sender, receiver) = channel::bounded::<Subscription>(1);
+        let (sender, receiver) = reply_channel();
 
         self.sender
             .send(HandleInput::Subscribe(sender))
             .map_err(|e| ChainError::Channel)?;
 
-        Ok(receiver.recv().map_err(|e| ChainError::Channel)?)
+        receiver.recv().map_err(|e| ChainError::Channel)?
     }
 
     fn get_header(&self, height: Height) -> Result<AnyHeader, ChainError> {
-        let (sender, receiver) = channel::bounded::<AnyHeader>(1);
+        let (sender, receiver) = reply_channel();
 
         self.sender
-            .send(HandleInput::GetHeader(height, sender))
+            .send(HandleInput::GetHeader {
+                height,
+                reply_to: sender,
+            })
             .map_err(|e| ChainError::Channel)?;
 
-        Ok(receiver.recv().map_err(|e| ChainError::Channel)?)
+        receiver.recv().map_err(|e| ChainError::Channel)?
     }
 
     fn query(

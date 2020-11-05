@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use ibc::events::IBCEvent;
-use tendermint::{chain, net, Error as TMError};
+use tendermint::{block::Height, chain, net, Error as TMError};
 use tendermint_rpc::{
     query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
     WebSocketClientDriver,
@@ -8,6 +10,7 @@ use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;
 
 use futures::{stream::select_all, Stream};
+use itertools::Itertools;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
@@ -23,7 +26,7 @@ pub struct EventMonitor {
     /// Async task handle for the WebSocket client's driver
     websocket_driver_handle: JoinHandle<tendermint_rpc::Result<()>>,
     /// Channel to handler where the monitor for this chain sends the events
-    channel_to_handler: Sender<(chain::Id, Vec<IBCEvent>)>,
+    channel_to_handler: Sender<(chain::Id, Height, Vec<IBCEvent>)>,
     /// Node Address
     node_addr: net::Address,
     /// Queries
@@ -37,7 +40,7 @@ impl EventMonitor {
     pub async fn create(
         chain_id: chain::Id,
         rpc_addr: net::Address,
-        channel_to_handler: Sender<(chain::Id, Vec<IBCEvent>)>,
+        channel_to_handler: Sender<(chain::Id, Height, Vec<IBCEvent>)>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let (websocket_client, websocket_driver) = WebSocketClient::new(rpc_addr.clone()).await?;
         let websocket_driver_handle = tokio::spawn(async move { websocket_driver.run().await });
@@ -136,9 +139,13 @@ impl EventMonitor {
                     Ok(event) => {
                         match ibc::events::get_all_events(event.clone()) {
                             Ok(ibc_events) => {
+                                let events_by_height = ibc_events.into_iter().into_group_map();
+
+                                for (height, events) in events_by_height {
                                 self.channel_to_handler
-                                    .send((self.chain_id.clone(), ibc_events))
-                                    .await?
+                                    .send((self.chain_id.clone(), height, events))
+                                    .await?;
+                                }
                             },
                             Err(err) => {
                                error!("Error {} when extracting IBC events from {:?}: ", err, event);
