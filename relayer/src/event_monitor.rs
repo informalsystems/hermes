@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use ibc::events::IBCEvent;
 use tendermint::{block::Height, chain, net, Error as TMError};
 use tendermint_rpc::{
@@ -17,6 +15,14 @@ use tracing::{debug, error, info};
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
 type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + Unpin;
 
+/// A batch of events from a chain at a specific height
+#[derive(Clone, Debug)]
+pub struct EventBatch {
+    pub chain_id: chain::Id,
+    pub height: Height,
+    pub events: Vec<IBCEvent>,
+}
+
 /// Connect to a TM node, receive push events over a websocket and filter them for the
 /// event handler.
 pub struct EventMonitor {
@@ -26,7 +32,7 @@ pub struct EventMonitor {
     /// Async task handle for the WebSocket client's driver
     websocket_driver_handle: JoinHandle<tendermint_rpc::Result<()>>,
     /// Channel to handler where the monitor for this chain sends the events
-    channel_to_handler: Sender<(chain::Id, Height, Vec<IBCEvent>)>,
+    channel_to_handler: Sender<EventBatch>,
     /// Node Address
     node_addr: net::Address,
     /// Queries
@@ -40,7 +46,7 @@ impl EventMonitor {
     pub async fn create(
         chain_id: chain::Id,
         rpc_addr: net::Address,
-        channel_to_handler: Sender<(chain::Id, Height, Vec<IBCEvent>)>,
+        channel_to_handler: Sender<EventBatch>,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let (websocket_client, websocket_driver) = WebSocketClient::new(rpc_addr.clone()).await?;
         let websocket_driver_handle = tokio::spawn(async move { websocket_driver.run().await });
@@ -142,8 +148,11 @@ impl EventMonitor {
                                 let events_by_height = ibc_events.into_iter().into_group_map();
 
                                 for (height, events) in events_by_height {
+                                    let batch = EventBatch{
+                chain_id: self.chain_id.clone(), height, events
+                                    };
                                 self.channel_to_handler
-                                    .send((self.chain_id.clone(), height, events))
+                                    .send(batch)
                                     .await?;
                                 }
                             },

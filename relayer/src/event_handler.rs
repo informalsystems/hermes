@@ -5,18 +5,17 @@ use tokio::sync::mpsc::Receiver;
 use ::tendermint::chain::Id as ChainId;
 use tracing::{debug, info};
 
+use crate::event_monitor::EventBatch;
+
 /// The Event Handler handles IBC events from the monitors.
 pub struct EventHandler {
-    channel_from_monitors: Receiver<(ChainId, Height, Vec<IBCEvent>)>,
+    channel_from_monitors: Receiver<EventBatch>,
     relay: bool,
 }
 
 impl EventHandler {
     /// Constructor for the Event Handler
-    pub fn new(
-        channel_from_monitors: Receiver<(ChainId, Height, Vec<IBCEvent>)>,
-        relay: bool,
-    ) -> Self {
+    pub fn new(channel_from_monitors: Receiver<EventBatch>, relay: bool) -> Self {
         Self {
             channel_from_monitors,
             relay,
@@ -28,9 +27,9 @@ impl EventHandler {
         info!("running IBC Event Handler");
 
         loop {
-            if let Some((chain_id, height, events)) = self.channel_from_monitors.recv().await {
-                for event in events {
-                    self.handle(&chain_id, height, event);
+            if let Some(batch) = self.channel_from_monitors.recv().await {
+                for event in batch.events {
+                    self.handle(&batch.chain_id, batch.height, event);
                 }
             }
         }

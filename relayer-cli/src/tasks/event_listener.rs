@@ -8,9 +8,6 @@ use relayer::config::ChainConfig;
 use relayer::event_handler::*;
 use relayer::event_monitor::*;
 
-use ibc::events::IBCEvent;
-use tendermint::{block::Height, chain::Id as ChainId};
-
 use crate::config::Config;
 
 /// Start the event monitor
@@ -37,7 +34,7 @@ pub async fn start(config: &Config, relay: bool) -> Result<(), BoxError> {
 
 async fn init_monitor(
     chain_config: ChainConfig,
-    tx: mpsc::Sender<(ChainId, Height, Vec<IBCEvent>)>,
+    tx: mpsc::Sender<EventBatch>,
 ) -> Result<EventMonitor, BoxError> {
     let mut event_monitor =
         EventMonitor::create(chain_config.id.into(), chain_config.rpc_addr.clone(), tx)
