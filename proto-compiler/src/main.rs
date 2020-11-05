@@ -17,6 +17,7 @@ fn main() {
 
     let sdk_dir = clone_cosmos_sdk();
     compile_protos(&sdk_dir, &out_dir);
+    compile_proto_services(&sdk_dir, &out_dir);
     copy_generated_files(&out_dir, &target_dir);
 }
 
@@ -85,6 +86,38 @@ fn compile_protos(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
     config.out_dir(out_dir.as_ref());
     config.extern_path(".tendermint", "::tendermint_proto");
     config.compile_protos(&protos, &includes).unwrap();
+
+    println!("[info ] => Done!");
+}
+
+fn compile_proto_services(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
+
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let sdk_dir = sdk_dir.as_ref().to_owned();
+
+    let proto_includes_paths = [
+        root.join("../proto"),
+        sdk_dir.join("proto"),
+        sdk_dir.join("third_party/proto"),
+    ];
+
+    // List available paths for dependencies
+    let includes = proto_includes_paths.iter().map(|p| p.as_os_str().to_os_string()).collect::<Vec<_>>();
+
+    let proto_services_path = [
+        sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto")
+    ];
+
+    // List available paths for dependencies
+    let services = proto_services_path.iter().map(|p| p.as_os_str().to_os_string()).collect::<Vec<_>>();
+
+    // Compile all proto client for GRPC services
+    println!("[info ] Compiling proto clients for GRPC services!");
+    tonic_build::configure()
+        .build_client(true)
+        .build_server(false)
+        .out_dir(out_dir)
+        .compile(&services, &includes).unwrap();
 
     println!("[info ] => Done!");
 }
