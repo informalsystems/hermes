@@ -1,11 +1,14 @@
 use std::ops::Range;
 
-use crate::chain::{error::ChainError, handle::ChainHandle};
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::channel::{Channel, ChannelError};
 use crate::connection::ConnectionError;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::msgs::{ClientUpdate, Datagram, Packet, Transaction};
+use crate::{
+    chain::{error::ChainError, handle::ChainHandle},
+    util::iter::SplitResults,
+};
 use ibc::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
     Height,
@@ -14,27 +17,6 @@ use itertools::Itertools;
 use retry::{delay::Fixed, retry};
 use tendermint::Signature;
 use thiserror::Error;
-
-trait SplitResults: Iterator {
-    fn split_results<T, E>(self) -> (Vec<T>, Vec<E>)
-    where
-        Self: Iterator<Item = Result<T, E>> + Sized,
-    {
-        let mut oks = vec![];
-        let mut errs = vec![];
-
-        for item in self {
-            match item {
-                Ok(ok) => oks.push(ok),
-                Err(err) => errs.push(err),
-            }
-        }
-
-        (oks, errs)
-    }
-}
-
-impl<T> SplitResults for T where T: Iterator {}
 
 // TODO: move to config
 const MAX_RETRIES: usize = 10_usize;
