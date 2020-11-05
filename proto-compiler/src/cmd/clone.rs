@@ -1,6 +1,6 @@
 use std::{path::PathBuf, process};
 
-use git2::Repository;
+use git2::{Oid, Repository};
 
 use argh::FromArgs;
 
@@ -39,16 +39,29 @@ impl CloneCmd {
             })
         };
 
-        if let Some(ref commit) = self.commit {
-            let treeish = format!("refs/heads/{}", commit);
-            repo.set_head(&treeish).unwrap_or_else(|e| {
-                println!("[error] Failed to set HEAD to {}: {}", commit, e);
+        if let Some(ref rev) = self.commit {
+            checkout_commit(&repo, rev).unwrap_or_else(|e| {
+                println!("[error] Failed to checkout {}: {}", rev, e);
                 process::exit(1)
             });
 
-            println!("[info ] HEAD is at {}", commit);
+            println!("[info ] HEAD is at {}", rev);
         }
 
         println!("[info ] Cloned at '{}'", self.path.display());
     }
+}
+
+fn checkout_commit(repo: &Repository, rev: &str) -> Result<(), git2::Error> {
+    let oid = Oid::from_str(rev)?;
+    let commit = repo.find_commit(oid)?;
+    repo.branch(rev, &commit, false)?;
+
+    let treeish = format!("refs/heads/{}", rev);
+    let object = repo.revparse_single(&treeish)?;
+
+    repo.checkout_tree(&object, None)?;
+    repo.set_head(&treeish)?;
+
+    Ok(())
 }
