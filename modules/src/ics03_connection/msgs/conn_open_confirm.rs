@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
@@ -17,7 +16,7 @@ pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 ///
 /// Message definition for `MsgConnectionOpenConfirm` (i.e., `ConnOpenConfirm` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenConfirm {
     connection_id: ConnectionId,
     proofs: Proofs,
@@ -49,10 +48,6 @@ impl Msg for MsgConnectionOpenConfirm {
 
     fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -100,7 +95,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
+    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {

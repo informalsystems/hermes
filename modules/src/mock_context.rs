@@ -329,7 +329,7 @@ impl ClientKeeper for MockContext {
                 client_record.client_state = client_state;
                 Ok(())
             }
-            _ => Err(ICS2ErrorKind::BadClientState.into()),
+            _ => Err(ICS2ErrorKind::InvalidClientStateForStore.into()),
         }
     }
 
@@ -351,7 +351,7 @@ impl ClientKeeper for MockContext {
                     .insert(height, consensus_state);
                 Ok(())
             }
-            _ => Err(ICS2ErrorKind::BadClientState.into()),
+            _ => Err(ICS2ErrorKind::InvalidClientStateForStore.into()),
         }
     }
 }
@@ -416,7 +416,8 @@ mod tests {
             // All tests should yield a valid context after initialization.
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed while validating context {:?}",
+                "Failed ({}) while validating context {:?}",
+                test.name,
                 test.ctx
             );
 
