@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use std::time::Duration;
+use std::{collections::HashMap, str::FromStr};
 
 use crossbeam_channel as channel;
 use thiserror::Error;
@@ -8,8 +8,8 @@ use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader
 use ibc::ics24_host::{identifier::ChainId, Path, IBC_QUERY_PATH};
 use ibc::Height;
 
-use tendermint::abci::Path as ABCIPath;
 use tendermint::net;
+use tendermint::{abci::Path as ABCIPath, chain};
 use tendermint_rpc::HttpClient;
 
 use crate::config::ChainConfig;
@@ -25,13 +25,38 @@ pub mod cosmos;
 mod prod;
 pub use prod::ProdChainHandle;
 
-pub type ReplyTo<T> = channel::Sender<T>;
+pub type Subscription = channel::Receiver<(chain::Id, Height, Vec<IBCEvent>)>;
+
+pub type ReplyTo<T> = channel::Sender<Result<T, ChainError>>;
+pub type Reply<T> = channel::Receiver<Result<T, ChainError>>;
+
+pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
+    channel::bounded(1)
+}
 
 /// Inputs that a Handle may send to a Runtime.
 pub enum HandleInput {
     Terminate(ReplyTo<()>),
+
     Subscribe(ReplyTo<Subscription>),
-    GetHeader(Height, ReplyTo<AnyHeader>),
+
+    Query {
+        path: Path,
+        height: Height,
+        prove: bool,
+        reply_to: ReplyTo<Vec<u8>>,
+    },
+
+    GetHeader {
+        height: Height,
+        reply_to: ReplyTo<AnyHeader>,
+    },
+
+    GetMinimalSet {
+        from: Height,
+        to: Height,
+        reply_to: ReplyTo<Vec<AnyHeader>>,
+    },
 }
 
 pub trait ChainHandle: Send {

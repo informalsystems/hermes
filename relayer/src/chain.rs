@@ -13,7 +13,7 @@ use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
 // TODO: Switch to ibc::Height
-use tendermint::block::Height;
+use tendermint::{block::Height, chain};
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 

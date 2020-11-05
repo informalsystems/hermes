@@ -54,15 +54,17 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::Subscribe(sender)) => {
                             let (tx, rx) = channel::unbounded();
                             // TODO: Handle subscription
-                            sender.send(rx).map_err(|_| ChainError::Channel)?;
+                            sender.send(Ok(rx)).map_err(|_| ChainError::Channel)?;
                         },
                         Ok(HandleInput::Terminate(sender)) => {
-                            sender.send(()).map_err(|_| ChainError::Channel)?;
+                            sender.send(Ok(())).map_err(|_| ChainError::Channel)?;
                             break;
                         }
-                        Ok(HandleInput::GetHeader(_height, _sender)) => {
+                        Ok(HandleInput::GetHeader { height, reply_to }) => {
                             todo!()
                         }
+                        Ok(HandleInput::GetMinimalSet {..}) => todo!(),
+                        Ok(HandleInput::Query {..}) => todo!(),
                         Err(e) => {
                             todo!()
                         }
