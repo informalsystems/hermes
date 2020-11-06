@@ -22,7 +22,6 @@ pub struct ConnectionOpenInitOptions {
     pub dest_connection_id: Option<ConnectionId>,
     pub src_chain_config: ChainConfig,
     pub dest_chain_config: ChainConfig,
-    pub signer_key: String,
 }
 
 pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
