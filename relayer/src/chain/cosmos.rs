@@ -34,8 +34,8 @@ use std::future::Future;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use tonic::codegen::http::Uri;
 use std::fs;
+use tonic::codegen::http::Uri;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -63,11 +63,9 @@ impl CosmosSDKChain {
         match key_entry {
             Ok(k) => {
                 key_store.add(config.clone().key_name, k);
-            },
+            }
             Err(e) => {
-                return Err(Kind::KeyBase
-                    .context("error reading the key file")
-                    .into());
+                return Err(Kind::KeyBase.context("error reading the key file").into());
             }
         }
 
@@ -152,8 +150,8 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_response =
-            block_on(query_account(self, key.clone().account)).map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response = block_on(query_account(self, key.account))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -198,7 +196,9 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(self.config().key_name.clone(), signdoc_buf);
+        let signed = self
+            .keybase
+            .sign(self.config().key_name.clone(), signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,

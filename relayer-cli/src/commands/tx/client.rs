@@ -5,8 +5,6 @@ use relayer::tx::client::{create_client, CreateClientOptions};
 use crate::application::app_config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use std::fs;
-use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -21,27 +19,10 @@ pub struct TxCreateClientCmd {
         help = "identifier of the client to be created on destination chain"
     )]
     dest_client_id: Option<String>,
-
-    #[options(free, help = "key file for the signer")]
-    signer_key: Option<String>,
 }
 
 impl TxCreateClientCmd {
     fn validate_options(&self, config: &Config) -> Result<CreateClientOptions, String> {
-        // Get content of key seed file
-        let key_filename = self
-            .signer_key
-            .clone()
-            .ok_or_else(|| "missing signer key file".to_string())?;
-
-        let key_file = Path::new(&key_filename).exists();
-        if !key_file {
-            return Err("cannot find key file specified".to_string());
-        }
-
-        let key_file_contents = fs::read_to_string(key_filename)
-            .expect("Something went wrong reading the key seed file");
-
         let dest_chain_id = self
             .dest_chain_id
             .clone()
@@ -75,7 +56,6 @@ impl TxCreateClientCmd {
             dest_client_id,
             dest_chain_config: dest_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
-            signer_key: key_file_contents,
         })
     }
 }

@@ -23,7 +23,6 @@ pub struct CreateClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub signer_key: String,
 }
 
 pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
@@ -32,12 +31,14 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     // Retrieve the key specified in the config file
     let key_name = dest_chain.config();
-    let key = dest_chain.keybase.get(key_name.key_name.clone())
+    let key = dest_chain
+        .keybase
+        .get(key_name.key_name.clone())
         .map_err(|e| Kind::KeyBase.context("failed to retrieve the key"))?;
 
     let signer: AccountId =
         AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-    
+
     // Query the client state on destination chain.
     let response = dest_chain.query(
         ClientStatePath(opts.clone().dest_client_id),

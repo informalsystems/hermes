@@ -24,14 +24,10 @@ pub struct TxRawConnInitCmd {
 
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: Option<String>,
-
-    #[options(help = "key file for the signer", short = "k")]
-    signer_key: Option<String>,
 }
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
-
         let src_chain_id = self
             .src_chain_id
             .clone()

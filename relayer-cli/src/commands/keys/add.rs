@@ -5,8 +5,8 @@ use relayer::config::Config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 use relayer::keys::add::{add_key, KeysAddOptions};
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyAddCmd {
@@ -74,8 +74,7 @@ impl Runnable for KeyAddCmd {
             Ok(result) => result,
         };
 
-        let res: Result<Vec<u8>, Error> =
-            add_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res: Result<Vec<u8>, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
             Ok(r) => status_info!("key add result: ", "{:?}", r),

@@ -1,8 +1,8 @@
 //! `keys` subcommand
 use abscissa_core::{Command, Help, Options, Runnable};
 
-mod restore;
 mod add;
+mod restore;
 
 /// `keys` subcommand
 #[derive(Command, Debug, Options, Runnable)]

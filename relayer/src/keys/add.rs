@@ -12,6 +12,7 @@ pub struct KeysAddOptions {
 }
 
 pub fn add_key(opts: KeysAddOptions) -> Result<Vec<u8>, Error> {
+    // TODO - Implement the logic to persist the key in the filesystem
     // Get the destination chain
     // let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
     Ok(vec![])

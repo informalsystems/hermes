@@ -12,10 +12,6 @@ In order to run the Relayer please ensure you have [Rust installed on your machi
 
 The `tx raw conn-init` command works now. Signing the message is working and the gaia chain (stargate-4) accepts the transaction. 
 
-The command accepts a parameter that allows you to send a transaction:
-
-* **signer-key** (-k) -> specify a key file (name and location) that will be used by the signer. This key seed file has a mnemonic (seed phrase) that can be used to retrieve the private key (BIP-39) used to sign the transaction.
-
 #### Steps to testing the transaction: 
 
 * Start two chains using the `dev-env` script from the [ovrclk/relayer](https://github.com/ovrclk/relayer) (make sure to checkout stargate-4 version)
@@ -30,9 +26,13 @@ The command accepts a parameter that allows you to send a transaction:
             "mnemonic":"[MNEMONIC WORDS"}
         }
 
+*  Run command to add the key to the configured chain
+
+    `[TODO]`
+
 *  Run the transaction command. This will try to initialize an `ibczeroconn2` connection on chain `ibc1`
 
-   `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml tx raw conn-init ibc0 ibc1 ibczeroclient ibconeclient ibczeroconn2 ibconeconn -k key_seed.json`
+   `$ cargo run --bin relayer -- -c ./relayer-cli/tests/fixtures/two_chains.toml tx raw conn-init ibc0 ibc1 ibczeroclient ibconeclient ibczeroconn2 ibconeconn`
 
     If you get an empty response it means the tx worked
 
