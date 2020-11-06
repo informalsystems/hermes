@@ -33,9 +33,9 @@ pub enum StoreBackend {
 pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend) -> KeyRing;
     fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error>;
-    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
+    fn key_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error>;
-    fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
+    fn add(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
     fn sign(&self, signer: Vec<u8>, msg: Vec<u8>) -> Vec<u8>;
 }
 
@@ -82,7 +82,7 @@ impl KeyRingOperations for KeyRing {
                 match mnemonic {
                     Some(v) => {
                         key = self
-                            .add_from_mnemonic(v)
+                            .key_from_mnemonic(v)
                             .map_err(|e| Kind::InvalidMnemonic.context(e))?;
                         Ok(key)
                     }
@@ -98,7 +98,7 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Add a key entry in the store using a mnemonic.
-    fn add_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
+    fn key_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error> {
         // Generate seed from mnemonic
         let mnemonic =
             Mnemonic::from_str(mnemonic_words).map_err(|e| Kind::InvalidMnemonic.context(e))?;
@@ -127,7 +127,7 @@ impl KeyRingOperations for KeyRing {
             account,
         };
 
-        self.insert(key.clone().address, key.clone());
+        self.add(key.clone().address, key.clone());
 
         Ok(key)
     }
@@ -150,7 +150,7 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Insert an entry in the key store
-    fn insert(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
+    fn add(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
         match self {
             KeyRing::MemoryKeyStore { store: s } => s.insert(addr, key),
         }

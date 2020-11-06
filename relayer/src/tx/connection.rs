@@ -28,11 +28,9 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    // Get the key from key seed file
-    let key = dest_chain
-        .keybase
-        .key_from_seed_file(&opts.signer_key)
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let key = dest_chain.keybase.get(dest_chain.config().key_name.as_bytes().to_vec())
+        .map_err(|e| Kind::KeyBase.context("failed to retrieve the key"))?;
+
     let signer: AccountId =
         AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
@@ -54,7 +52,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
 
     // Send message
     let response = dest_chain
-        .send(msg_type, msg.get_sign_bytes(), key, "".to_string(), 0)
+        .send(msg_type, msg.get_sign_bytes(), &key, "".to_string(), 0)
         .map_err(|e| {
             Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e)
         })?;

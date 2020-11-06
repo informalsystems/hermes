@@ -35,6 +35,7 @@ use std::future::Future;
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use tonic::codegen::http::Uri;
+use std::fs;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -52,7 +53,23 @@ impl CosmosSDKChain {
         let rpc_client =
             HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
-        let key_store = KeyRing::init(StoreBackend::Memory);
+        // Initialize key store and load key
+        let mut key_store = KeyRing::init(StoreBackend::Memory);
+        let key_file_contents = fs::read_to_string(config.clone().key_name)
+            .expect("Something went wrong reading the key seed file");
+
+        let key_entry = key_store.key_from_seed_file(&key_file_contents);
+
+        match key_entry {
+            Ok(k) => {
+                key_store.add(k.clone().address, k);
+            },
+            Err(e) => {
+                return Err(Kind::KeyBase
+                    .context("error reading the key file")
+                    .into());
+            }
+        }
 
         Ok(Self {
             config,
@@ -95,7 +112,7 @@ impl Chain for CosmosSDKChain {
         &mut self,
         msg_type: String,
         msg_bytes: Vec<u8>,
-        key: KeyEntry,
+        key: &KeyEntry,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Error> {
@@ -136,7 +153,7 @@ impl Chain for CosmosSDKChain {
         };
 
         let acct_response =
-            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
+            block_on(query_account(self, key.clone().account)).map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -181,7 +198,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(key.address, signdoc_buf);
+        let signed = self.keybase.sign(key.clone().address, signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,

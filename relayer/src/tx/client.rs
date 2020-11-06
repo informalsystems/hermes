@@ -111,7 +111,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     // TODO - Replace logic to fetch the proper account sequence via CLI parameter
     let response = dest_chain
-        .send(msg_type, new_msg.get_sign_bytes(), key, "".to_string(), 0)
+        .send(msg_type, new_msg.get_sign_bytes(), &key, "".to_string(), 0)
         .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
 
     Ok(response)

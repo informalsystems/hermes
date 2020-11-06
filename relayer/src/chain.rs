@@ -55,7 +55,7 @@ pub trait Chain {
         &mut self,
         msg_type: String,
         msg: Vec<u8>,
-        key: KeyEntry,
+        key: &KeyEntry,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Self::Error>;

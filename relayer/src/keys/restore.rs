@@ -17,7 +17,7 @@ pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
 
     let address = chain
         .keybase
-        .add_from_mnemonic(&opts.mnemonic)
+        .key_from_mnemonic(&opts.mnemonic)
         .map_err(|e| error::Kind::KeyBase.context(e))?;
 
     Ok(address.account.as_bytes().to_vec())
