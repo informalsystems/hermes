@@ -83,8 +83,8 @@ impl Runnable for TxRawConnInitCmd {
         let res: Result<Vec<u8>, Error> = conn_init(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
-            Err(e) => status_err!("client update failed: {}", e),
+            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn init failed, error: ", "{}", e),
         }
     }
 }
