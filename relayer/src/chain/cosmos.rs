@@ -367,7 +367,7 @@ impl Chain for CosmosSDKChain {
         target_height: ICSHeight,
     ) -> Result<AnyHeader, Error> {
         // Get the light block at target_height from chain.
-        let tm_target_height = trusted_height
+        let tm_target_height = target_height
             .version_height
             .try_into()
             .map_err(|e| Kind::Query.context(e))?;
