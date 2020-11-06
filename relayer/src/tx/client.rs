@@ -30,14 +30,14 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    // Get the key from key seed file
-    let key = dest_chain
-        .keybase
-        .key_from_seed_file(&opts.signer_key)
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    // Retrieve the key specified in the config file
+    let key_name = dest_chain.config();
+    let key = dest_chain.keybase.get(key_name.key_name.clone())
+        .map_err(|e| Kind::KeyBase.context("failed to retrieve the key"))?;
+
     let signer: AccountId =
         AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
+    
     // Query the client state on destination chain.
     let response = dest_chain.query(
         ClientStatePath(opts.clone().dest_client_id),
@@ -111,7 +111,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
 
     // TODO - Replace logic to fetch the proper account sequence via CLI parameter
     let response = dest_chain
-        .send(msg_type, new_msg.get_sign_bytes(), &key, "".to_string(), 0)
+        .send(msg_type, new_msg.get_sign_bytes(), key, "".to_string(), 0)
         .map_err(|e| Kind::MessageTransaction("failed to create client".to_string()).context(e))?;
 
     Ok(response)

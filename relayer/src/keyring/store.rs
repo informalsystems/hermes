@@ -23,7 +23,7 @@ use tendermint::account::Id as AccountId;
 pub type Address = Vec<u8>;
 
 pub enum KeyRing {
-    MemoryKeyStore { store: BTreeMap<Address, KeyEntry> },
+    MemoryKeyStore { store: BTreeMap<String, KeyEntry> },
 }
 
 pub enum StoreBackend {
@@ -34,9 +34,9 @@ pub trait KeyRingOperations: Sized {
     fn init(backend: StoreBackend) -> KeyRing;
     fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error>;
     fn key_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
-    fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error>;
-    fn add(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry>;
-    fn sign(&self, signer: Vec<u8>, msg: Vec<u8>) -> Vec<u8>;
+    fn get(&self, key_id: String) -> Result<KeyEntry, Error>;
+    fn add(&mut self, key_id: String, key: KeyEntry) -> Option<KeyEntry>;
+    fn sign(&self, key_id: String, msg: Vec<u8>) -> Vec<u8>;
 }
 
 /// Key entry stores the Private Key and Public Key as well the address
@@ -60,7 +60,7 @@ impl KeyRingOperations for KeyRing {
     fn init(backend: StoreBackend) -> KeyRing {
         match backend {
             StoreBackend::Memory => {
-                let store: BTreeMap<Address, KeyEntry> = BTreeMap::new();
+                let store: BTreeMap<String, KeyEntry> = BTreeMap::new();
                 KeyRing::MemoryKeyStore { store }
             }
         }
@@ -127,21 +127,19 @@ impl KeyRingOperations for KeyRing {
             account,
         };
 
-        self.add(key.clone().address, key.clone());
-
         Ok(key)
     }
 
     /// Return a key entry from a key name
-    fn get(&self, address: Vec<u8>) -> Result<&KeyEntry, Error> {
+    fn get(&self, key_id: String) -> Result<KeyEntry, Error> {
         match &self {
             KeyRing::MemoryKeyStore { store: s } => {
-                if !s.contains_key(&address) {
+                if !s.contains_key(&key_id) {
                     Err(Kind::InvalidKey.into())
                 } else {
-                    let key = s.get(&address);
+                    let key = s.get(&key_id);
                     match key {
-                        Some(k) => Ok(k),
+                        Some(k) => Ok(k.clone()),
                         None => Err(Kind::InvalidKey.into()),
                     }
                 }
@@ -150,15 +148,15 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Insert an entry in the key store
-    fn add(&mut self, addr: Vec<u8>, key: KeyEntry) -> Option<KeyEntry> {
+    fn add(&mut self, key_id: String, key: KeyEntry) -> Option<KeyEntry> {
         match self {
-            KeyRing::MemoryKeyStore { store: s } => s.insert(addr, key),
+            KeyRing::MemoryKeyStore { store: s } => s.insert(key_id, key),
         }
     }
 
     /// Sign a message
-    fn sign(&self, signer: Vec<u8>, msg: Vec<u8>) -> Vec<u8> {
-        let key = self.get(signer).unwrap();
+    fn sign(&self, key_id: String, msg: Vec<u8>) -> Vec<u8> {
+        let key = self.get(key_id).unwrap();
         let private_key_bytes = key.private_key.private_key.to_bytes();
         let signing_key = SigningKey::new(private_key_bytes.as_slice()).unwrap();
         let signature: Signature = signing_key.sign(&msg);

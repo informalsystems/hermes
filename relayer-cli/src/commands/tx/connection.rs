@@ -4,8 +4,6 @@ use crate::error::{Error, Kind};
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 use relayer::tx::connection::{conn_init, ConnectionOpenInitOptions};
-use std::fs;
-use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {

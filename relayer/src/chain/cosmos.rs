@@ -62,7 +62,7 @@ impl CosmosSDKChain {
 
         match key_entry {
             Ok(k) => {
-                key_store.add(k.clone().address, k);
+                key_store.add(config.clone().key_name, k);
             },
             Err(e) => {
                 return Err(Kind::KeyBase
@@ -112,7 +112,7 @@ impl Chain for CosmosSDKChain {
         &mut self,
         msg_type: String,
         msg_bytes: Vec<u8>,
-        key: &KeyEntry,
+        key: KeyEntry,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Error> {
@@ -198,7 +198,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(key.clone().address, signdoc_buf);
+        let signed = self.keybase.sign(self.config().key_name.clone(), signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,

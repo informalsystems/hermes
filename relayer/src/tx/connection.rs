@@ -13,6 +13,7 @@ use serde_json::Value;
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint_rpc::Id;
+use futures::SinkExt;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
@@ -28,7 +29,9 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
     let mut dest_chain = CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    let key = dest_chain.keybase.get(dest_chain.config().key_name.as_bytes().to_vec())
+    // Retrieve the key specified in the config file
+    let key_name = dest_chain.config();
+    let key = dest_chain.keybase.get(key_name.key_name.clone())
         .map_err(|e| Kind::KeyBase.context("failed to retrieve the key"))?;
 
     let signer: AccountId =
@@ -37,7 +40,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
     let counterparty = Counterparty::new(
         opts.dest_client_id,
         opts.dest_connection_id,
-        CommitmentPrefix::from(dest_chain.config().store_prefix.as_bytes().to_vec()),
+        CommitmentPrefix::from(dest_chain.config().store_prefix.clone().as_bytes().to_vec()),
     );
 
     let msg = MsgConnectionOpenInit {
@@ -52,7 +55,7 @@ pub fn conn_init(opts: ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
 
     // Send message
     let response = dest_chain
-        .send(msg_type, msg.get_sign_bytes(), &key, "".to_string(), 0)
+        .send(msg_type, msg.get_sign_bytes(), key, "".to_string(), 0)
         .map_err(|e| {
             Kind::MessageTransaction("failed to initialize open connection".to_string()).context(e)
         })?;
