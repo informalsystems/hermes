@@ -106,7 +106,7 @@ impl CosmosSDKChain {
         let client = self.rpc_client();
 
         let signed_header = fetch_signed_header(client, height)?;
-        assert_eq!(height, signed_header.header().height);
+        assert_eq!(height, signed_header.header.height);
 
         // Get the validator list.
         let validators = fetch_validators(client, height)?;
@@ -114,7 +114,7 @@ impl CosmosSDKChain {
         // Get the proposer.
         let proposer = validators
             .iter()
-            .find(|v| v.address == signed_header.header().proposer_address)
+            .find(|v| v.address == signed_header.header.proposer_address)
             .ok_or_else(|| Kind::EmptyResponseValue)?;
 
         let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
@@ -344,8 +344,7 @@ impl Chain for CosmosSDKChain {
         let latest_header = self
             .query_light_block_at_height(tm_height)?
             .signed_header
-            .header()
-            .clone();
+            .header;
 
         // Build the consensus state.
         let consensus_state =

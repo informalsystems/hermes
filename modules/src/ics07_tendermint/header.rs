@@ -27,8 +27,8 @@ impl crate::ics02_client::header::Header for Header {
 
     fn height(&self) -> Height {
         Height::new(
-            ChainId::chain_version(self.signed_header.header().chain_id.to_string()),
-            u64::from(self.signed_header.header().height),
+            ChainId::chain_version(self.signed_header.header.chain_id.to_string()),
+            u64::from(self.signed_header.header.height),
         )
     }
 }
@@ -91,8 +91,7 @@ pub mod test_util {
     pub fn get_dummy_tendermint_header() -> tendermint::block::Header {
         serde_json::from_str::<SignedHeader>(include_str!("../../tests/support/signed_header.json"))
             .unwrap()
-            .header()
-            .clone()
+            .header
     }
 
     // TODO: This should be replaced with a ::default() or ::produce().
