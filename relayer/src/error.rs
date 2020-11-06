@@ -22,6 +22,10 @@ pub enum Kind {
     #[error("RPC error")]
     Rpc,
 
+    /// GRPC error (typically raised by the GRPC client or the GRPC requester)
+    #[error("GRPC error")]
+    Grpc,
+
     /// Light client error, typically raised by a `Client`
     #[error("Light client error")]
     LightClient,

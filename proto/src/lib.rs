@@ -12,6 +12,11 @@
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
 
 pub mod cosmos {
+    pub mod auth {
+        pub mod v1beta1 {
+            include!("prost/cosmos.auth.v1beta1.rs");
+        }
+    }
     pub mod base {
         pub mod abci {
             pub mod v1beta1 {

@@ -29,9 +29,6 @@ pub struct TxRawConnInitCmd {
     #[options(help = "identifier of the source connection", short = "d")]
     src_connection_id: Option<ConnectionId>,
 
-    #[options(help = "account sequence of the signer", short = "s")]
-    account_sequence: u64,
-
     #[options(
         help = "json key file for the signer, must include mnemonic",
         short = "k"
@@ -46,7 +43,6 @@ impl TxRawConnInitCmd {
             .iter()
             .find(|c| c.id == self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
         let src_chain_config = config
             .chains
             .iter()
@@ -65,7 +61,6 @@ impl TxRawConnInitCmd {
             dest_chain_config: dest_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
             signer_seed,
-            account_sequence: self.account_sequence,
         };
 
         Ok(opts)
@@ -88,8 +83,8 @@ impl Runnable for TxRawConnInitCmd {
         let res: Result<Vec<u8>, Error> = conn_init(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
-            Err(e) => status_err!("client update failed: {}", e),
+            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn init failed, error: ", "{}", e),
         }
     }
 }

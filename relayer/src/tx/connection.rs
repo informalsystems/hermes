@@ -28,7 +28,6 @@ pub struct ConnectionOpenInitOptions {
     pub dest_connection_id: ConnectionId,
     pub src_connection_id: Option<ConnectionId>,
     pub signer_seed: String,
-    pub account_sequence: u64,
 }
 
 pub fn conn_init(opts: &ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
@@ -70,5 +69,5 @@ pub fn conn_init(opts: &ConnectionOpenInitOptions) -> Result<Vec<u8>, Error> {
 
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgConnectionOpenInit>()];
 
-    Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
+    Ok(dest_chain.send(proto_msgs, key, "".to_string(), 0)?)
 }

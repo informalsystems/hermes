@@ -53,8 +53,8 @@ impl Runnable for TxCreateClientCmd {
             create_client(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
-            Err(e) => status_err!("client update failed: {}", e),
+            Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
+            Err(e) => status_err!("client create failed: {}", e),
         }
     }
 }

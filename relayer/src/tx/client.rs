@@ -72,7 +72,7 @@ pub fn create_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgCreateClient>()];
 
     // Send the transaction to the destination chain
-    Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
+    Ok(dest_chain.send(proto_msgs, key, "".to_string(), 0)?)
 }
 
 pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
@@ -99,5 +99,5 @@ pub fn update_client(opts: ClientOptions) -> Result<Vec<u8>, Error> {
 
     let proto_msgs: Vec<Any> = vec![new_msg.to_any::<RawMsgUpdateClient>()];
 
-    Ok(dest_chain.send(proto_msgs, key, opts.account_sequence, "".to_string(), 0)?)
+    Ok(dest_chain.send(proto_msgs, key, "".to_string(), 0)?)
 }

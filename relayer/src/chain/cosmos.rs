@@ -48,6 +48,11 @@ use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::util::block_on;
 
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use tonic::codegen::http::Uri;
+
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
@@ -177,7 +182,6 @@ impl Chain for CosmosSDKChain {
         &mut self,
         proto_msgs: Vec<Any>,
         key: KeyEntry,
-        acct_seq: u64,
         memo: String,
         timeout_height: u64,
     ) -> Result<Vec<u8>, Error> {
@@ -206,13 +210,16 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
+        let acct_response =
+            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
+
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
         let mode = Some(ModeInfo { sum: sum_single });
         let signer_info = SignerInfo {
             public_key: Some(pk_any),
             mode_info: mode,
-            sequence: acct_seq,
+            sequence: acct_response.sequence,
         };
 
         // Gas Fee
@@ -359,7 +366,7 @@ impl Chain for CosmosSDKChain {
         target_height: ICSHeight,
     ) -> Result<AnyHeader, Error> {
         // Get the light block at target_height from chain.
-        let tm_target_height = trusted_height
+        let tm_target_height = target_height
             .version_height
             .try_into()
             .map_err(|e| Kind::Query.context(e))?;
@@ -450,4 +457,29 @@ fn fetch_validators(client: &HttpClient, height: Height) -> Result<Vec<Info>, Er
 
 fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
     Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
+}
+
+/// Uses the GRPC client to retrieve the account sequence
+async fn query_account(chain: &mut CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
+    let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+    let mut client = QueryClient::connect(grpc_addr)
+        .await
+        .map_err(|e| Kind::Grpc.context(e))?;
+
+    let request = tonic::Request::new(QueryAccountRequest { address });
+
+    let response = client.account(request).await;
+
+    let base_account = BaseAccount::decode(
+        response
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner()
+            .account
+            .unwrap()
+            .value
+            .as_slice(),
+    )
+    .map_err(|e| Kind::Grpc.context(e))?;
+
+    Ok(base_account)
 }
