@@ -7,7 +7,7 @@ The `ibc-proto-compiler` is a simple command-line tool to automate the compilati
 From within the `proto-compiler` directory, run the following command to clone the Cosmos SDK repository:
 
 ```bash
-$ cargo run -- clone-sdk --commit ce3994020a0d5c246016c8832ba4a668e8b7c77b --out /tmp/sdk
+$ cargo run -- clone-sdk --commit 15324920548c2629e51d837bcefc1cbc40797c5d --path /tmp/sdk
 ```
 
 To generate the Rust sources from the Protobuf definitions, and copy them to the `src/prost` folder `ibc-proto` crate within the `ibc-rs` project:

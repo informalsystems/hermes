@@ -28,6 +28,8 @@ use tendermint_rpc::HttpClient;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+
 use tonic::codegen::http::Uri;
 
 use ibc_proto::cosmos::base::v1beta1::Coin;
@@ -86,9 +88,30 @@ impl CosmosSDKChain {
     }
 
     /// The unbonding period of this chain
-    fn unbonding_period(&self) -> Duration {
-        // TODO - query chain
-        Duration::from_secs(24 * 7 * 3 * 3600)
+    async fn unbonding_period(&self) -> Result<Duration, Error> {
+        // TODO - generalize this
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client =
+            ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr)
+                .await
+                .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request =
+            tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
+
+        let response = client
+            .params(request)
+            .await
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let res = response
+            .into_inner()
+            .params
+            .ok_or_else(|| Kind::Grpc.context("none staking params".to_string()))?
+            .unbonding_time
+            .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
+        Ok(Duration::from_secs(res.seconds as u64))
     }
 
     /// Query the consensus parameters via an RPC query
@@ -359,7 +382,7 @@ impl Chain for CosmosSDKChain {
             self.id().to_string(),
             self.config.trust_threshold,
             self.config.trusting_period,
-            self.unbonding_period(),
+            block_on(self.unbonding_period())?,
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,
             ICSHeight::zero(),
@@ -526,9 +549,10 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
 /// Uses the GRPC client to retrieve the account sequence
 async fn query_account(chain: &mut CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
     let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-    let mut client = QueryClient::connect(grpc_addr)
-        .await
-        .map_err(|e| Kind::Grpc.context(e))?;
+    let mut client =
+        ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)
+            .await
+            .map_err(|e| Kind::Grpc.context(e))?;
 
     let request = tonic::Request::new(QueryAccountRequest { address });
 
