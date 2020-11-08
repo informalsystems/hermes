@@ -1,7 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 use super::channel::{ChannelEnd, Counterparty, Order};
 
-use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
@@ -106,9 +105,6 @@ impl MsgChannelOpenTry {
             .map(|s| ConnectionId::from_str(s.as_str()))
             .collect();
 
-        let version =
-            validate_version(channel_version).map_err(|e| Kind::InvalidVersion.context(e))?;
-
         Ok(Self {
             port_id: port_id
                 .parse()
@@ -121,10 +117,9 @@ impl MsgChannelOpenTry {
                 Counterparty::new(counterparty_port_id, counterparty_channel_id)
                     .map_err(|e| Kind::IdentifierError.context(e))?,
                 connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
-                version,
+                channel_version,
             ),
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            counterparty_version,
             proofs: Proofs::new(proof_init, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
@@ -179,8 +174,7 @@ impl MsgChannelOpenAck {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            counterparty_version,
             proofs: Proofs::new(proof_try, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
@@ -755,14 +749,6 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Empty counterparty version".to_string(),
-                params: OpenTryParams {
-                    counterparty_version: " ".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Bad proof height, height = 0".to_string(),
                 params: OpenTryParams {
                     proof_height: Height {
@@ -816,14 +802,6 @@ mod tests {
             //     },
             //     want_pass: false,
             // },
-            Test {
-                name: "Empty channel version".to_string(),
-                params: OpenTryParams {
-                    channel_version: " ".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
             Test {
                 name: "Bad counterparty port, name too long".to_string(),
                 params: OpenTryParams {
@@ -953,14 +931,6 @@ mod tests {
                 name: "Bad channel, name too long".to_string(),
                 params: OpenAckParams {
                     channel_id: "abcdefghsdfasdfasfdasfdwewefsdfasdfasdfasdfasdfasdfsfdijklmnopqrstu".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Empty counterparty version".to_string(),
-                params: OpenAckParams {
-                    counterparty_version: " ".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,

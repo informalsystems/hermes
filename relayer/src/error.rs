@@ -42,6 +42,14 @@ pub enum Kind {
     #[error("Empty response value")]
     EmptyResponseValue,
 
+    /// Response does not contain a proof
+    #[error("Empty response proof")]
+    EmptyResponseProof,
+
+    /// Response does not contain a proof
+    #[error("Malformed proof")]
+    MalformedProof,
+
     /// Invalid height
     #[error("Invalid height")]
     InvalidHeight,
@@ -57,6 +65,10 @@ pub enum Kind {
     /// Connection open init failure
     #[error("Failed to build conn open init {0}: {1}")]
     ConnOpenInit(ConnectionId, String),
+
+    /// Connection open try failure
+    #[error("Failed to build conn open init {0}: {1}")]
+    ConnOpenTry(ConnectionId, String),
 
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]

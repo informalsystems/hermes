@@ -10,7 +10,10 @@ use prost_types::Any;
 use bitcoin::hashes::hex::ToHex;
 use k256::ecdsa::{SigningKey, VerifyKey};
 
+use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::DomainType;
+use tendermint_rpc::endpoint::abci_query::AbciQuery;
+use tendermint_rpc::endpoint::broadcast;
 
 use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::account::Id as AccountId;
@@ -22,8 +25,14 @@ use tendermint_light_client::types::{LightBlock, SignedHeader, TrustThreshold, V
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use tonic::codegen::http::Uri;
+
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -34,24 +43,21 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensu
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 
 use super::Chain;
+use crate::chain::QueryResponse;
 use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::util::block_on;
-
-// Support for GRPC
-use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use tonic::codegen::http::Uri;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -158,7 +164,18 @@ impl Chain for CosmosSDKChain {
     type ClientState = ClientState;
     type Error = Error;
 
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error> {
+    fn ics_query(
+        &self,
+        data: Path,
+        height: ICSHeight,
+        prove: bool,
+    ) -> Result<QueryResponse, Self::Error> {
+        let height =
+            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+        self.query(data, height, prove)
+    }
+
+    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Self::Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
         if !data.is_provable() & prove {
@@ -178,13 +195,14 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send a transaction that includes the specified messages
+    /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
     fn send(
         &mut self,
         proto_msgs: Vec<Any>,
         key: KeyEntry,
         memo: String,
         timeout_height: u64,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<String, Error> {
         // Create TxBody
         let body = TxBody {
             messages: proto_msgs.to_vec(),
@@ -230,7 +248,7 @@ impl Chain for CosmosSDKChain {
 
         let fee = Some(Fee {
             amount: vec![coin],
-            gas_limit: 100000,
+            gas_limit: 150000,
             payer: "".to_string(),
             granter: "".to_string(),
         });
@@ -266,10 +284,9 @@ impl Chain for CosmosSDKChain {
 
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
-        //println!("TxRAW {:?}", hex::encode(txraw_buf.clone()));
 
-        //let signed = sign(sign_doc);
-        let response = block_on(broadcast_tx(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+        let response =
+            block_on(broadcast_tx_sync(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }
@@ -312,13 +329,28 @@ impl Chain for CosmosSDKChain {
     fn query_client_state(
         &self,
         client_id: &ClientId,
-        height: Height,
-        proof: bool,
+        height: ICSHeight,
     ) -> Result<AnyClientState, Error> {
         Ok(self
-            .query(ClientStatePath(client_id.clone()), height, proof)
+            .ics_query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
+            .and_then(|v| {
+                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+            })?)
+    }
+
+    fn proven_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
+        let res = self
+            .ics_query(ClientStatePath(client_id.clone()), height, true)
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let state = AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((state, res.proof))
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error> {
@@ -396,7 +428,7 @@ async fn abci_query(
     data: String,
     height: Height,
     prove: bool,
-) -> Result<Vec<u8>, anomaly::Error<Kind>> {
+) -> Result<QueryResponse, anomaly::Error<Kind>> {
     let height = if height.value() == 0 {
         None
     } else {
@@ -418,16 +450,33 @@ async fn abci_query(
         // Fail due to empty response value (nothing to decode).
         return Err(Kind::EmptyResponseValue.into());
     }
+    if prove && response.proof.is_none() {
+        // Fail due to empty proof
+        return Err(Kind::EmptyResponseProof.into());
+    }
 
-    Ok(response.value)
+    let raw_proof_ops = response
+        .proof
+        .map(ProofOps::try_from)
+        .transpose()
+        .map_err(|e| Kind::MalformedProof.context(e))?;
+
+    let response = QueryResponse {
+        value: response.value,
+        proof: MerkleProof {
+            proof: raw_proof_ops,
+        },
+        height: response.height,
+    };
+
+    Ok(response)
 }
 
-/// Perform a generic `broadcast_tx`, and return the corresponding deserialized response data.
-async fn broadcast_tx(
+/// Perform a `broadcast_tx_async`, and return the corresponding deserialized response data.
+async fn broadcast_tx_sync(
     chain: &CosmosSDKChain,
     data: Vec<u8>,
-) -> Result<Vec<u8>, anomaly::Error<Kind>> {
-    // Use the Tendermint-rs RPC client to do the query.
+) -> Result<String, anomaly::Error<Kind>> {
     let response = chain
         .rpc_client()
         .broadcast_tx_sync(data.into())
@@ -440,7 +489,22 @@ async fn broadcast_tx(
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
 
-    Ok(response.data.as_bytes().to_vec())
+    Ok(serde_json::to_string_pretty(&response).unwrap())
+}
+
+/// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
+/// TODO - move send() to this once RPC tendermint response is fixed
+async fn broadcast_tx_commit(
+    chain: &CosmosSDKChain,
+    data: Vec<u8>,
+) -> Result<String, anomaly::Error<Kind>> {
+    let response = chain
+        .rpc_client()
+        .broadcast_tx_commit(data.into())
+        .await
+        .map_err(|e| Kind::Rpc.context(e))?;
+
+    Ok(serde_json::to_string(&response).unwrap())
 }
 
 fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {

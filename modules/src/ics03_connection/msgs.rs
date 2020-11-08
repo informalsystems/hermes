@@ -21,8 +21,14 @@ pub mod conn_open_confirm;
 pub mod conn_open_init;
 pub mod conn_open_try;
 
-/// Message type for the `MsgConnectionOpenConfirm` message.
-pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
+/// Enumeration of all possible message types that the ICS3 protocol processes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ConnectionMsgType {
+    OpenInit,
+    OpenTry,
+    OpenAck,
+    OpenConfirm,
+}
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -238,10 +238,6 @@ impl ConnectionReader for MockContext {
         Some(hi.into())
     }
 
-    fn get_compatible_versions(&self) -> Vec<String> {
-        vec!["test".to_string()]
-    }
-
     fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String {
         counterparty_candidate_versions
             .get(0)
