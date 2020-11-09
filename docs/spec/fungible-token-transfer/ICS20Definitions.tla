@@ -11,36 +11,15 @@ EXTENDS Integers, FiniteSets, Sequences
 \* operator for type annotations
 a <: b == a
 
-\* client state type
-ClientStateType ==
+\* channel end type
+ChannelEndType ==
     [
-        clientID |-> STRING,
-        heights |-> {Int}
-    ]
-    
-\* chain store type 
-ChainStoreType ==  
-    [
-        height |-> Int,
-        clientStates |-> [Int -> [clientID |-> STRING, heights |-> {Int}]]
-    ] 
-
-\* client datagram type
-ClientDatagramType ==
-    [
-        type |-> STRING,
-        clientID |-> STRING,
-        height |-> Int   
+        state |-> STRING, 
+        order |-> STRING, 
+        channelID |-> STRING, 
+        counterpartyChannelID |-> STRING
     ]
 
-\* datagram type (record type containing fields of all datagrams)                  
-DatagramType ==
-    [
-        type |-> STRING,
-        height |-> Int,
-        clientID |-> STRING
-    ]
-    
 \* packet commitment type
 PacketCommitmentType == 
     [
@@ -63,7 +42,7 @@ PacketAcknowledgementType ==
         sequence |-> Int,
         acknowledgement |-> BOOLEAN
     ]
-    
+
 \* ICS20 packet data type    
 FungibleTokenPacketDataType ==
     [
@@ -82,7 +61,35 @@ PacketType ==
         srcChainID |-> STRING,
         dstChainID |-> STRING
     ]
-    
+
+
+\* chain store type 
+ChainStoreType ==  
+    [
+        height |-> Int,
+        channelEnd |-> ChannelEndType,
+        packetCommitments |-> {PacketCommitmentType},
+        packetsToAcknowledge |-> Seq(PacketType),
+        packetReceipts |-> {PacketReceiptType},
+        packetAcknowledgements |-> {PacketAcknowledgementType}
+    ] 
+
+\* client datagram type
+ClientDatagramType ==
+    [
+        type |-> STRING,
+        clientID |-> STRING,
+        height |-> Int   
+    ]
+
+\* datagram type (record type containing fields of all datagrams)                  
+DatagramType ==
+    [
+        type |-> STRING,
+        height |-> Int,
+        clientID |-> STRING
+    ]
+           
 \* packet log entry type    
 PacketLogEntryType ==
     [
@@ -90,9 +97,13 @@ PacketLogEntryType ==
         srcChainID |-> STRING,
         sequence |-> Int,
         timeoutHeight |-> Int,
-        acknowledgement |-> BOOLEAN
+        acknowledgement |-> BOOLEAN,
+        data |-> FungibleTokenPacketDataType
     ]
     
+\* pairs of packets with acknowledgement    
+PacketsToAckType ==
+    <<PacketType, BOOLEAN>>    
 
 AsID(ID) == ID <: STRING
 AsInt(n) == n <: Int
@@ -101,7 +112,6 @@ AsSetInt(S) == S <: {Int}
 AsString(s) == s <: STRING
 
 AsChainStore(chainStore) == chainStore <: ChainStoreType
-AsClientState(clientState) == clientState <: ClientStateType
 
 AsDatagram(dgr) == dgr <: DatagramType
 AsSetDatagrams(Dgrs) == Dgrs <: {DatagramType}
@@ -123,8 +133,11 @@ AsSetPacketAcknowledgement(PA) == PA <: {PacketAcknowledgementType}
 AsPacketLogEntry(logEntry) == logEntry <: PacketLogEntryType
 AsPacketLog(packetLog) == packetLog <: Seq(PacketLogEntryType)
 
+AsSeqPacketsToAck(pa) == pa <: PacketsToAckType
+
 
 (********************** Common operator definitions ***********************)
+ChainIDs == {"chainA", "chainB"}
 ChannelIDs == {"chanAtoB", "chanBtoA"}
 ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
 
@@ -186,23 +199,26 @@ PacketAcknowledgements(maxPacketSeq) ==
     
 (************************* FungibleTokenPacketData *************************
  A set of records defining ICS20 packet data.
+ 
+ Denominations are defined as Seq(ChannelIDs \cup {Denomination}), 
+ where Denomination is a native denomination.
  ***************************************************************************)    
-FungibleTokenPacketData(EscrowAddresses, Denominations) ==
+FungibleTokenPacketData(maxBalance, Denominations) ==
     [
-        denomination : Seq(ChannelIDs \cup Denominations),
-        amount : 0..1,
-        sender : EscrowAddresses,
-        receiver : EscrowAddresses
+        denomination : Denominations,
+        amount : 0..maxBalance,
+        sender : ChainIDs,
+        receiver : ChainIDs
     ]
 
 (********************************* Packets *********************************
  A set of packets.
  ***************************************************************************)
-Packets(maxHeight, maxPacketSeq, EscrowAddresses, Denominations) ==
+Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
     [
         sequence : 1..maxPacketSeq,
         timeoutHeight : 1..maxHeight,
-        data : FungibleTokenPacketData(EscrowAddresses, Denominations),
+        data : FungibleTokenPacketData(maxBalance, Denominations),
         srcChannelID : ChannelIDs,
         dstChannelID : ChannelIDs
     ] <: {PacketType} 
@@ -217,35 +233,32 @@ Packets(maxHeight, maxPacketSeq, EscrowAddresses, Denominations) ==
     
     - channelEnd : a channel end.
     
-    - channelEscrowAddress : an escrow address. 
       
  ***************************************************************************)
-ChainStores(maxHeight, maxPacketSeq, EscrowAddresses, Denomination) ==    
+ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==    
     [
         height : 1..maxHeight,
         channelEnd : ChannelEnds,
         
         packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
-        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, EscrowAddresses, Denomination)),
-        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
-        
-        channelEscrowAddress : EscrowAddresses,
-        denomination : {Denomination},
-        supply : 0..1,
-        escrowAccount : [amount : 0..1, denomination : Seq(ChannelIDs \cup {Denomination})] 
+        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, maxBalance, 
+                                           Seq(ChannelIDs \cup {Denomination}))
+                                   \X
+                                   BOOLEAN),
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
     ] 
     
 (******************************** Datagrams ********************************
  A set of datagrams.
  ***************************************************************************)
-Datagrams(maxHeight, maxPacketSeq, EscrowAddresses, Denominations) ==
+Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
     [type : {"PacketRecv"}, 
-     packet : Packets(maxHeight, maxPacketSeq, EscrowAddresses, Denominations), 
+     packet : Packets(maxHeight, maxPacketSeq, maxBalance, Seq(ChannelIDs \cup {Denomination})), 
      proofHeight : 1..maxHeight]
     \union 
     [type : {"PacketAck"}, 
-     packet : Packets(maxHeight, maxPacketSeq, EscrowAddresses, Denominations), 
+     packet : Packets(maxHeight, maxPacketSeq, maxBalance, Seq(ChannelIDs \cup {Denomination})), 
      acknowledgement : BOOLEAN, 
      proofHeight : 1..maxHeight]
     <: {DatagramType}
@@ -254,49 +267,14 @@ Datagrams(maxHeight, maxPacketSeq, EscrowAddresses, Denominations) ==
 NullDatagram == 
     [type |-> "null"] 
     <: DatagramType    
-
+    
 (***************************************************************************
- Initial values of a channel end, chain store for ICS02
- ***************************************************************************)
-\* Initial value of a channel end:
-\*      - state is "OPEN" (we assume channel handshake has successfully finished)
-\*      - order is "UNORDERED" (requirement of ICS20)
-\*      - channelID, counterpartyChannelID are uninitialized
-InitUnorderedChannelEnd(ChainID) ==
-    [state |-> "OPEN",
-     order |-> "UNORDERED",
-     channelID |-> nullChannelID,
-     counterpartyChannelID |-> nullChannelID] 
-
-\* A set of initial values of the chain store for ICS20: 
-\*      - height is initialized to 1
-\*      - the channelEnd is initialized to InitUnorderedChannelEnd
-\*      - the channelEscrowAddress is initialized to some address in EscrowAddresses
-\*      - the 
-ICS20InitChainStore(ChainID, EscrowAddresses, Denomination) == 
-    [
-        height : {1},
-        channelEnd : {InitUnorderedChannelEnd(ChainID)},
-        
-        packetCommitments : {AsSetPacketCommitment({})},
-        packetReceipts : {AsSetPacketReceipt({})},
-        packetsToAcknowledge : {AsSeqPacket(<<>>)},
-        packetAcknowledgements : {AsSetPacketAcknowledgement({})},
-     
-        channelEscrowAddress : EscrowAddresses,
-        denomination : {Denomination},
-        supply : {1},
-        escrowAccount : [amount : {0}, denomination : {<<>>}],
-        vouchers : <<>>
-    ] 
-
-(***************************************************************************
- Channel helper operators
+ Chain helper operators
  ***************************************************************************)
 
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
-    IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")    
+    IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")     
 
 \* get the channel ID of the channel end at the connection end of chainID
 GetChannelID(chainID) ==
@@ -313,10 +291,55 @@ GetCounterpartyChannelID(chainID) ==
     ELSE IF chainID = "chainB"
          THEN AsID("chanAtoB")
          ELSE AsID(nullChannelID) 
-                   
 
+\* get the latest height of chain
+GetLatestHeight(chain) ==
+    AsInt(chain.height) 
+
+\* get the escrow accounts of chain         
+GetEscrowAccounts(chain) ==
+    chain.escrowAccounts    
+
+\* get the account ballance of an escrow account on chain given a denomination         
+GetEscrowAccountBalance(chain, denomination) ==
+    chain.escrowAccounts[denomination]    
+                       
+
+(***************************************************************************
+ Initial values of a channel end, chain store, accounts for ICS02
+ ***************************************************************************)
+\* Initial value of a channel end:
+\*      - state is "OPEN" (we assume channel handshake has successfully finished)
+\*      - order is "UNORDERED" (requirement of ICS20)
+\*      - channelID, counterpartyChannelID are uninitialized
+InitUnorderedChannelEnd(ChainID) ==
+    [state |-> "OPEN",
+     order |-> "UNORDERED",
+     channelID |-> GetChannelID(ChainID),
+     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID)] 
+
+\* A set of initial values of the chain store for ICS20: 
+\*      - height is initialized to 1
+\*      - the channelEnd is initialized to InitUnorderedChannelEnd
+\*      - the channelEscrowAddress is initialized to some address in EscrowAddresses
+\*      - the packet committments, receipts, acknowledgements, and packets to acknowledge 
+\*        are empty
+\*      - the bank accouts and escrow accounts are functions that initially 
+\*        map the native denomination to maxBalance and 0, respectively 
+ICS20InitChainStore(ChainID, Denomination) == 
+    [
+        height |-> 1,
+        channelEnd |-> InitUnorderedChannelEnd(ChainID),
+        
+        packetCommitments |-> AsSetPacketCommitment({}),
+        packetReceipts |-> AsSetPacketReceipt({}),
+        packetsToAcknowledge |-> AsSeqPacketsToAck(<<>>),
+        packetAcknowledgements |-> AsSetPacketAcknowledgement({}),
+        
+        escrowAccounts |-> [<<chanID, denom>> \in {<<GetChannelID(ChainID), Denomination>>} |-> 0]
+    ] 
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Oct 29 19:39:08 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 06 15:57:22 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska
