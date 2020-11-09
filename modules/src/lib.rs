@@ -38,7 +38,7 @@ pub mod macros;
 pub mod proofs;
 pub mod tx_msg;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 pub mod mock_client;
 
 /// Re-export of ICS 002 Height domain type
@@ -50,5 +50,5 @@ mod test;
 #[cfg(test)]
 mod test_utils;
 
-#[cfg(test)]
-mod mock_context; // Context mock: for testing all handlers.
+#[cfg(any(test, feature = "mocks"))]
+pub mod mock_context; // Context mock: for testing all handlers.

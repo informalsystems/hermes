@@ -5,7 +5,6 @@ use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
-use crate::test_utils::get_dummy_account_id;
 
 /// Creates a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
@@ -47,7 +46,7 @@ where
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
         header: src_header,
-        signer: get_dummy_account_id(),
+        signer: dest.signer(),
     }))
 }
 

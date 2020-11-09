@@ -23,6 +23,8 @@ use crate::Height;
 use std::cmp::min;
 use std::collections::HashMap;
 use std::error::Error;
+use std::str::FromStr;
+use tendermint::account::Id;
 
 #[derive(Clone, Debug)]
 pub struct MockContext {
@@ -373,6 +375,10 @@ impl ICS18Context for MockContext {
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         self.recv(msg)
+    }
+
+    fn signer(&self) -> Id {
+        Id::from_str("0CDA3F47EF3C4906693B170EF650EB968C5F4B2C").unwrap()
     }
 }
 
