@@ -384,7 +384,7 @@ impl ICS18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
     use crate::Height;
 
     #[test]

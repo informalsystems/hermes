@@ -62,9 +62,10 @@ branch = "greg/research-json"
 [dependencies.tendermint-testgen]
 version = "0.17.0-rc1"
 git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "0.17.0-rc1", git = "https://github.com/informalsystems/tendermint-rs" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "0.17.0-rc1", git = "https://github.com/informalsystems/tendermint-rs", branch = "greg/research-json" } # Needed for generating (synthetic) light blocks.

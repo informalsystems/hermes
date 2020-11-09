@@ -51,4 +51,4 @@ mod test;
 mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
-pub mod mock_context; // Context mock: for testing all handlers.
+mod mock; // Context mock and the underlying host chain: for testing all handlers.
