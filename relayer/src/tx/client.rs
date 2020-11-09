@@ -5,7 +5,6 @@ use std::time::Duration;
 use bitcoin::hashes::hex::ToHex;
 use prost_types::Any;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::DomainType;
@@ -13,6 +12,8 @@ use tendermint_proto::DomainType;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
+use ibc::Height;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -21,7 +22,6 @@ use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::tx_msg::Msg;
-use ibc::Height;
 
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;

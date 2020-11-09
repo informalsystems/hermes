@@ -77,22 +77,12 @@ impl Runnable for QueryConnectionEndCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
-        // let height = if opts.height == 0 {
-        //     ibc::Height::default()
-        // } else {
-        //     ibc::Height {
-        //         version_number: ICSChainId::chain_version(chain.id().to_string()),
-        //         version_height: opts.height,
-        //     }
-        // };
-
         let height = ibc::Height::new(
             ICSChainId::chain_version(chain.id().to_string()),
             opts.height,
         );
 
+        // TODO - any value in querying with proof from the CLI?
         let res: Result<ConnectionEnd, Error> = chain
             .query_connection(&opts.connection_id, height)
             .map_err(|e| Kind::Query.context(e).into());

@@ -495,7 +495,7 @@ async fn abci_query(
     Ok(response)
 }
 
-/// Perform a `broadcast_tx_async`, and return the corresponding deserialized response data.
+/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
 async fn broadcast_tx_sync(
     chain: &CosmosSDKChain,
     data: Vec<u8>,

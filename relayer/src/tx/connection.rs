@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
+use ibc::Height as ICSHeight;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -20,7 +21,6 @@ use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
-use ibc::Height as ICSHeight;
 
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
@@ -99,46 +99,6 @@ pub struct ConnectionOpenTryOptions {
     pub dest_connection_id: ConnectionId,
     pub src_connection_id: ConnectionId,
     pub signer_seed: String,
-}
-
-// Build the expected connection end on the destination chain based on the CLI parameters.
-// In the relayer loop the opts values should be taken from src_chain.query_connection())
-pub fn dest_expected_connection(
-    opts: ConnectionOpenTryOptions,
-    src_prefix: CommitmentPrefix,
-) -> Result<ConnectionEnd, Error> {
-    let dest_expected_counterpary = Counterparty::new(
-        opts.src_client_id.clone(),
-        Some(opts.src_connection_id.clone()),
-        src_prefix,
-    );
-    let dest_expected_connection = ConnectionEnd::new(
-        State::Init,
-        opts.dest_client_id.clone(),
-        dest_expected_counterpary,
-        vec!["".to_string()],
-    ) // TODO - get compatible versions from query
-    .map_err(|e| Kind::ConnOpenTry(opts.dest_connection_id.clone(), "invalid parameters".into()))?;
-    Ok(dest_expected_connection)
-}
-
-pub fn src_expected_connection(
-    opts: ConnectionOpenTryOptions,
-    dest_prefix: CommitmentPrefix,
-) -> Result<ConnectionEnd, Error> {
-    let src_expected_counterpary = Counterparty::new(
-        opts.dest_client_id.clone(),
-        Some(opts.dest_connection_id.clone()),
-        dest_prefix,
-    );
-    let src_expected_connection = ConnectionEnd::new(
-        State::TryOpen, // highest state, could be Init
-        opts.src_client_id.clone(),
-        src_expected_counterpary,
-        vec!["".to_string()],
-    ) // TODO - get compatible versions from query
-    .map_err(|e| Kind::ConnOpenTry(opts.src_connection_id.clone(), "invalid parameters".into()))?;
-    Ok(src_expected_connection)
 }
 
 fn check_connection_state_for_try(
