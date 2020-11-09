@@ -1,5 +1,8 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
+// TODO: remove this clippy exception (some code is not covered in `mocks` feature).
+#![allow(dead_code)]
+
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
