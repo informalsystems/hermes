@@ -114,7 +114,9 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::ics24_host::identifier::ChainId;
     use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
 
     #[test]
@@ -127,7 +129,12 @@ mod tests {
         }
 
         let host_chain_height = Height::new(1, 35);
-        let context = MockContext::new(5, host_chain_height);
+        let context = MockContext::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
+            5,
+            host_chain_height,
+        );
         let pruning_window = context.host_chain_history_size() as u64;
         let client_consensus_state_height = 10;
 

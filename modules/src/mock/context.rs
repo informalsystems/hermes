@@ -1,6 +1,5 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-use crate::ics02_client;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -12,10 +11,11 @@ use crate::ics03_connection::error::Error as ICS3Error;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::dispatch;
 use crate::ics26_routing::msgs::ICS26Envelope;
+use crate::mock::host::{HostBlock, HostType};
 use crate::mock_client::header::MockHeader;
 use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
@@ -26,24 +26,32 @@ use std::error::Error;
 use std::str::FromStr;
 use tendermint::account::Id;
 
+/// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
 pub struct MockContext {
-    /// Maximum size of the history.
+    /// The type of host chain underlying this mock context.
+    host_chain_type: HostType,
+
+    /// Host chain identifier.
+    host_chain_id: ChainId,
+
+    /// Maximum size for the history of the host chain. Any block older than this is pruned.
     max_history_size: usize,
 
-    /// Highest height of the headers in the history.
+    /// Highest height (i.e., most recent) of the blocks in the history.
     latest_height: Height,
 
-    /// A list of `max_history_size` headers, ascending order by their height (latest is last).
-    history: Vec<MockHeader>,
+    /// The chain of blocks underlying this context. A vector of size up to `max_history_size`
+    /// blocks, ascending order by their height (latest block is on the last position).
+    history: Vec<HostBlock>,
 
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
-    // Association between client ids and connection ids.
+    /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
 
-    // All the connections in the store.
+    /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
 }
 
@@ -52,31 +60,56 @@ pub struct MockContext {
 /// creation of new domain objects.
 impl Default for MockContext {
     fn default() -> Self {
-        Self::new(5, Height::new(1, 5))
+        Self::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
+            5,
+            Height::new(1, 5),
+        )
     }
 }
 
 /// Implementation of internal interface for use in testing. The methods in this interface should
 /// _not_ be accessible to any ICS handler.
 impl MockContext {
-    /// Creates a mock context. Parameter `max_history_size` determines how many headers will
+    /// Creates a mock context. Parameter `max_history_size` determines how many blocks will
     /// the chain maintain in its history, which also determines the pruning window. Parameter
-    /// `latest_height` determines the current height of the chain.
-    pub fn new(max_history_size: usize, latest_height: Height) -> Self {
-        // Compute the number of headers to store. If h is 0, nothing is stored.
-        let n = min(max_history_size as u64, latest_height.version_height);
-
+    /// `latest_height` determines the current height of the chain. This context
+    /// has support to emulate two type of underlying chains: Mock or SyntheticTendermint.
+    pub fn new(
+        host_id: ChainId,
+        host_type: HostType,
+        max_history_size: usize,
+        latest_height: Height,
+    ) -> Self {
         assert_ne!(
             max_history_size, 0,
             "The chain must have a non-zero max_history_size"
         );
 
+        // Compute the number of blocks to store. If latest_height is 0, nothing is stored.
+        let n = min(max_history_size as u64, latest_height.version_height);
+
+        assert_eq!(
+            ChainId::chain_version(host_id.to_string()),
+            latest_height.version_number,
+            "The version in the chain identifier must match the version in the latest height"
+        );
+
         MockContext {
+            host_chain_type: host_type,
+            host_chain_id: host_id.clone(),
             max_history_size,
             latest_height,
             history: (0..n)
                 .rev()
-                .map(|i| MockHeader(latest_height.sub(i).unwrap()))
+                .map(|i| {
+                    HostBlock::generate_block(
+                        host_id.clone(),
+                        host_type,
+                        latest_height.sub(i).unwrap().version_height,
+                    )
+                })
                 .collect(),
             connections: Default::default(),
             clients: Default::default(),
@@ -133,34 +166,38 @@ impl MockContext {
         }
     }
 
-    /// Accessor for a header of the local (host) chain of this context.
-    /// May return `None` if the header for the requested height does not exist.
-    fn host_header(&self, target_height: Height) -> Option<MockHeader> {
+    /// Accessor for a block of the local (host) chain from this context.
+    /// Returns `None` if the block at the requested height does not exist.
+    fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.version_height as usize;
         let latest = self.latest_height.version_height as usize;
 
-        // Check that the header is not too advanced, nor has it been pruned.
+        // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
-            None // Header for requested height does not exist in history.
+            None // Block for requested height does not exist in history.
         } else {
-            Some(self.history[self.history.len() + target - latest - 1])
+            Some(&self.history[self.history.len() + target - latest - 1])
         }
     }
 
-    /// Triggers the advancing of the host chain, by extending the history of blocks (headers).
+    /// Triggers the advancing of the host chain, by extending the history of blocks (or headers).
     pub fn advance_host_chain_height(&mut self) {
-        let new_header = MockHeader(self.latest_height.increment());
+        let new_block = HostBlock::generate_block(
+            self.host_chain_id.clone(),
+            self.host_chain_type,
+            self.latest_height.increment().version_height,
+        );
 
         // Append the new header at the tip of the history.
         if self.history.len() >= self.max_history_size {
             // History is full, we rotate and replace the tip with the new header.
             self.history.rotate_left(1);
-            self.history[self.max_history_size - 1] = new_header;
+            self.history[self.max_history_size - 1] = new_block;
         } else {
             // History is not full yet.
-            self.history.push(new_header);
+            self.history.push(new_block);
         }
-        self.latest_height = new_header.height();
+        self.latest_height = self.latest_height.increment();
     }
 
     /// A datagram passes from the relayer to the IBC module (on host chain).
@@ -181,8 +218,8 @@ impl MockContext {
 
         // Check the content of the history.
         if !self.history.is_empty() {
-            // Get the highest header.
-            let lh = self.history[self.history.len() - 1];
+            // Get the highest block.
+            let lh = &self.history[self.history.len() - 1];
             // Check latest is properly updated with highest header height.
             if lh.height() != self.latest_height {
                 return Err("latest height is not updated".to_string().into());
@@ -191,8 +228,8 @@ impl MockContext {
 
         // Check that headers in the history are in sequential order.
         for i in 1..self.history.len() {
-            let ph = self.history[i - 1];
-            let h = self.history[i];
+            let ph = &self.history[i - 1];
+            let h = &self.history[i];
             if ph.height().increment() != h.height() {
                 return Err("headers in history not sequential".to_string().into());
             }
@@ -210,7 +247,7 @@ impl ConnectionReader for MockContext {
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward method call to the ICS2 Client-specific method.
-        ics02_client::context::ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id)
     }
 
     fn host_current_height(&self) -> Height {
@@ -236,8 +273,8 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let hi = self.host_header(height)?;
-        Some(hi.into())
+        let block_ref = self.host_block(height);
+        block_ref.cloned().map(Into::into)
     }
 
     fn get_compatible_versions(&self) -> Vec<String> {
@@ -365,12 +402,12 @@ impl ICS18Context for MockContext {
 
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         // Forward call to ICS2.
-        ics02_client::context::ClientReader::client_state(self, client_id)
+        ClientReader::client_state(self, client_id)
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
-        let hi = self.host_header(self.host_current_height())?;
-        Some(hi.into())
+        let block_ref = self.host_block(self.host_current_height());
+        block_ref.cloned().map(Into::into)
     }
 
     fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
@@ -384,7 +421,9 @@ impl ICS18Context for MockContext {
 
 #[cfg(test)]
 mod tests {
+    use crate::ics24_host::identifier::ChainId;
     use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
 
     #[test]
@@ -398,23 +437,48 @@ mod tests {
         let tests: Vec<Test> = vec![
             Test {
                 name: "Empty history, small pruning window".to_string(),
-                ctx: MockContext::new(1, Height::new(cv, 0)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    1,
+                    Height::new(cv, 0),
+                ),
             },
             Test {
                 name: "Large pruning window".to_string(),
-                ctx: MockContext::new(30, Height::new(cv, 2)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    30,
+                    Height::new(cv, 2),
+                ),
             },
             Test {
                 name: "Small pruning window".to_string(),
-                ctx: MockContext::new(3, Height::new(cv, 30)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    3,
+                    Height::new(cv, 30),
+                ),
             },
             Test {
                 name: "Small pruning window, small starting height".to_string(),
-                ctx: MockContext::new(3, Height::new(cv, 2)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    3,
+                    Height::new(cv, 2),
+                ),
             },
             Test {
                 name: "Large pruning window, large starting height".to_string(),
-                ctx: MockContext::new(50, Height::new(cv, 2000)),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::Mock,
+                    50,
+                    Height::new(cv, 2000),
+                ),
             },
         ];
 
@@ -422,7 +486,7 @@ mod tests {
             // All tests should yield a valid context after initialization.
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed ({}) while validating context {:?}",
+                "Failed in test {} while validating context {:?}",
                 test.name,
                 test.ctx
             );
@@ -433,7 +497,8 @@ mod tests {
             test.ctx.advance_host_chain_height();
             assert!(
                 test.ctx.validate().is_ok(),
-                "Failed while validating context {:?}",
+                "Failed in test {} while validating context {:?}",
+                test.name,
                 test.ctx
             );
 
@@ -445,7 +510,7 @@ mod tests {
             );
             if current_height > Height::new(cv, 0) {
                 assert_eq!(
-                    test.ctx.host_header(current_height).unwrap().height(),
+                    test.ctx.host_block(current_height).unwrap().height(),
                     current_height,
                     "Failed while fetching height {:?} of context {:?}",
                     current_height,
