@@ -164,9 +164,9 @@ impl MockContext {
         }
     }
 
-    /// Accessor for a header of the local (host) chain of this context.
-    /// May return `None` if the header for the requested height does not exist.
-    fn host_header(&self, target_height: Height) -> Option<&HostBlock> {
+    /// Accessor for a block of the local (host) chain from this context.
+    /// Returns `None` if the block at the requested height does not exist.
+    fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
         let target = target_height.version_height as usize;
         let latest = self.latest_height.version_height as usize;
 
@@ -271,8 +271,8 @@ impl ConnectionReader for MockContext {
     }
 
     fn host_consensus_state(&self, height: Height) -> Option<AnyConsensusState> {
-        let hi = self.host_header(height);
-        hi.cloned().map(Into::into)
+        let block_ref = self.host_block(height);
+        block_ref.cloned().map(Into::into)
     }
 
     fn get_compatible_versions(&self) -> Vec<String> {
@@ -404,7 +404,7 @@ impl ICS18Context for MockContext {
     }
 
     fn query_latest_header(&self) -> Option<AnyHeader> {
-        let block_ref = self.host_header(self.host_current_height());
+        let block_ref = self.host_block(self.host_current_height());
         block_ref.cloned().map(Into::into)
     }
 
@@ -504,7 +504,7 @@ mod tests {
             );
             if current_height > Height::new(cv, 0) {
                 assert_eq!(
-                    test.ctx.host_header(current_height).unwrap().height(),
+                    test.ctx.host_block(current_height).unwrap().height(),
                     current_height,
                     "Failed while fetching height {:?} of context {:?}",
                     current_height,

@@ -1,4 +1,3 @@
-use crate::config::LocalChainConfig;
 use crate::error::{Error, Kind};
 use ibc::handler::HandlerOutput;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
@@ -82,7 +81,7 @@ impl ICS18Context for LocalChain {
     }
 }
 
-#[cfg(test)]
+#[cfg(test)]    // TODO: This module is already configured for `tests`.
 mod tests {
     use crate::chain::local::LocalChain;
     use crate::config::LocalChainConfig;

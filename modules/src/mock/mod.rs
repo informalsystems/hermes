@@ -1,4 +1,4 @@
-//! Mock context implementation, used for testing.
+//! Implementation of mocks for context and host chain.
 
-pub mod context; // Context definition and implementation.
+pub mod context;
 pub mod host;

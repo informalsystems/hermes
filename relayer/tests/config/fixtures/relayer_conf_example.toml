@@ -5,10 +5,6 @@ title = "IBC Relayer Config Example"
 timeout = "10s"
 strategy = "naive"
 
-[[local_chains]]
-  id = "localchain_A"
-  client_ids = ["lc_clientA"]
-
 [[chains]]
   id = "chain_A"
   rpc_addr = "localhost:26657"

@@ -5,7 +5,6 @@ use std::path::Path;
 use std::time::Duration;
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::chain::Id as ChainId;
 use tendermint::{chain, net, node};
 
 use crate::client::TrustOptions;
@@ -36,7 +35,6 @@ mod default {
 pub struct Config {
     pub global: GlobalConfig,
     pub chains: Vec<ChainConfig>,
-    pub local_chains: Option<Vec<LocalChainConfig>>,
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 
@@ -67,12 +65,6 @@ impl Default for GlobalConfig {
             strategy: Strategy::default(),
         }
     }
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LocalChainConfig {
-    pub id: ChainId,
-    pub client_ids: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
