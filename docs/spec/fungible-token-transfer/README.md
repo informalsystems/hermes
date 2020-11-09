@@ -9,7 +9,7 @@ The specification has the following modules:
   - `ICS20Chain.tla`
   - `ICS20Definitions.tla`
   - `PacketHandlers.tla`
-  - `FungibleTokeTransferHandlers.tla`
+  - `FungibleTokenTransferHandlers.tla`
   - `Bank.tla`
 
 The module `ICS20Environment.tla` creates instances of 
@@ -17,7 +17,7 @@ The module `ICS20Environment.tla` creates instances of
  - two instances of `ICS20Chain.tla`, specifying the behaviors of two chains, `ChainA` and `ChainB`.
 
 The module `ICS20Chain.tla` captures the chain logic relevant to ICS-020. 
-It extends the modules `PacketHandlers.tla` and `FungibleTokeTransferHandlers.tla`,which contain definition of operators that handle packet 
+It extends the modules `PacketHandlers.tla` and `FungibleTokenTransferHandlers.tla`,which contain definition of operators that handle packet 
 datagrams and encode the token transfer application logic, respectively.
 The module `ICS20Definitions.tla` contains definition of operators that are used across all the 
 modules.
