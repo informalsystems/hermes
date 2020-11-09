@@ -139,7 +139,6 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
-#[cfg(test)]
 impl From<MockConsensusState> for AnyConsensusState {
     fn from(mcs: MockConsensusState) -> Self {
         Self::Mock(mcs)
