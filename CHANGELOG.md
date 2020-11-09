@@ -8,7 +8,9 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
-- [modules] Implement flexible connection id selection ([#332])
+- [modules]
+    - Implement flexible connection id selection ([#332])
+    - Introduce LightBlock support for MockContext ([#389])
 - [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
 - [relayer-cli]
     - Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
@@ -22,6 +24,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 [#366]: https://github.com/informalsystems/ibc-rs/issues/366
+[#389]: https://github.com/informalsystems/ibc-rs/issues/389
 
 ### IMPROVEMENTS
 
