@@ -4,7 +4,7 @@ A TLA+ specification of the ICS18 Relayer algorithm.
 
 ## Modules
 
-The specification has seven modules: 
+The specification has the following modules: 
   - `ICS18Environment.tla` (the main module)
   - `Relayer.tla` 
   - `Chain.tla`

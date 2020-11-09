@@ -120,8 +120,8 @@ UpdateChainStoreAndPacketLog(chainID, datagrams, packetDatagrams, log) ==
     LET channelUpdatedStore == ChannelUpdate(chainID, connectionUpdatedStore, datagrams) IN
 
     \* ICS 004: Packet transmission
-    LET packetUpdatedStoreAndLogEntry == PacketUpdate(chainID, channelUpdatedStore, packetDatagrams, log) IN
-    LET packetUpdatedStore == packetUpdatedStoreAndLogEntry.chainStore IN
+    LET packetUpdatedStoreAndLog == PacketUpdate(chainID, channelUpdatedStore, packetDatagrams, log) IN
+    LET packetUpdatedStore == packetUpdatedStoreAndLog.chainStore IN
 
     \* update height
     LET updatedChainStore == 
@@ -132,7 +132,7 @@ UpdateChainStoreAndPacketLog(chainID, datagrams, packetDatagrams, log) ==
     IN
 
     [chainStore |-> updatedChainStore, 
-     packetLog |-> packetUpdatedStoreAndLogEntry.packetLog]
+     packetLog |-> packetUpdatedStoreAndLog.packetLog]
 
 (***************************************************************************
  Chain actions

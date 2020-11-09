@@ -28,7 +28,7 @@ VARIABLES chainAstore, \* store of ChainA
           historyChainB, \* history variables for ChainB
           packetLog, \* a set of packets sent by both chains
           appPacketSeqChainA, \* packet sequence number from the application on ChainA
-          appPacketSeqChainB \* packet sequence number from the application on ChainA
+          appPacketSeqChainB \* packet sequence number from the application on ChainB
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,

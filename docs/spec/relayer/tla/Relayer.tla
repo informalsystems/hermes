@@ -244,18 +244,25 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
-    LET packetData(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+    \* the source chain of the packet that is received by dstChainID is srcChainID
+    LET recvPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
                                  srcChannelID |-> srcChannelID,
                                  dstChannelID |-> dstChannelID]) IN
     
+    \* the source chain of the packet that is acknowledged by srcChainID is dstChainID
+    LET ackPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> dstChannelID,
+                                 dstChannelID |-> srcChannelID]) IN
+    
     IF packetLogEntry.type = "PacketSent"
     THEN AsDatagram([type |-> "PacketRecv",
-          packet |-> packetData(packetLogEntry),  
+          packet |-> recvPacket(packetLogEntry),  
           proofHeight |-> srcHeight])
     ELSE IF packetLogEntry.type = "WriteAck"
          THEN AsDatagram([type |-> "PacketAck",
-                  packet |-> packetData(packetLogEntry),
+                  packet |-> ackPacket(packetLogEntry),
                   acknowledgement |-> packetLogEntry.acknowledgement,  
                   proofHeight |-> srcHeight])
          ELSE NullDatagram 
