@@ -5,15 +5,13 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
-
 /// Message type for the `MsgTimeout` message.
 const TYPE_MSG_TIMEOUT: &str = "ics04/timeout";
 
 ///
 /// Message definition for packet timeout domain type.
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
     packet: Packet,
     next_sequence_recv: Option<u64>,
@@ -56,10 +54,6 @@ impl Msg for MsgTimeout {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

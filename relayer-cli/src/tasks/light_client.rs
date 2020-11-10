@@ -18,7 +18,8 @@ use tendermint_light_client::{
 
 use relayer::{
     chain::{Chain, CosmosSDKChain},
-    client::{self, TrustOptions},
+    client,
+    config::LightClientConfig,
 };
 
 use crate::prelude::*;
@@ -34,7 +35,7 @@ use crate::prelude::*;
 /// otherwise it will resume from the latest trusted block in the store.
 pub async fn create(
     chain: &mut CosmosSDKChain,
-    trust_options: TrustOptions,
+    config: LightClientConfig,
     reset: bool,
 ) -> Result<impl Future<Output = Result<(), BoxError>>, BoxError> {
     status_info!(
@@ -43,7 +44,7 @@ pub async fn create(
         chain.config().id,
     );
 
-    let supervisor = create_client(chain, trust_options, reset).await?;
+    let supervisor = create_client(chain, config, reset).await?;
     let handle = supervisor.handle();
     let thread_handle = std::thread::spawn(|| supervisor.run());
     let task = client_task(chain.id().clone(), handle.clone());
@@ -59,7 +60,7 @@ fn build_instance(
     chain: &CosmosSDKChain,
     store: store::sled::SledStore,
     options: light_client::Options,
-    trust_options: TrustOptions,
+    config: LightClientConfig,
     reset: bool,
 ) -> Result<supervisor::Instance, BoxError> {
     let builder = LightClientBuilder::prod(
@@ -72,7 +73,7 @@ fn build_instance(
 
     let builder = if reset {
         info!(chain.id = %chain.id(), "resetting client to trust options state");
-        builder.trust_primary_at(trust_options.height, trust_options.header_hash)?
+        builder.trust_primary_at(config.trusted_height, config.trusted_header_hash)?
     } else {
         info!(chain.id = %chain.id(), "starting client from stored trusted state");
         builder.trust_from_store()?
@@ -83,7 +84,7 @@ fn build_instance(
 
 async fn create_client(
     chain: &mut CosmosSDKChain,
-    trust_options: TrustOptions,
+    config: LightClientConfig,
     reset: bool,
 ) -> Result<Supervisor, BoxError> {
     let chain_config = chain.config();
@@ -97,9 +98,9 @@ async fn create_client(
     let witness_peer_id: PeerId = "DC0C0ADEADBEEFC0FFEEFACADEBADFADAD0BEFEE".parse().unwrap();
 
     let options = light_client::Options {
-        trust_threshold: trust_options.trust_threshold,
-        trusting_period: trust_options.trusting_period,
-        clock_drift: Duration::from_secs(5), // TODO: Make configurable
+        trust_threshold: chain_config.trust_threshold,
+        trusting_period: chain_config.trusting_period,
+        clock_drift: chain_config.clock_drift,
     };
 
     let primary = build_instance(
@@ -107,18 +108,11 @@ async fn create_client(
         &chain,
         store.clone(),
         options,
-        trust_options.clone(),
+        config.clone(),
         reset,
     )?;
 
-    let witness = build_instance(
-        witness_peer_id,
-        &chain,
-        store,
-        options,
-        trust_options,
-        reset,
-    )?;
+    let witness = build_instance(witness_peer_id, &chain, store, options, config, reset)?;
 
     let supervisor = SupervisorBuilder::new()
         .primary(primary_peer_id, chain_config.rpc_addr.clone(), primary)

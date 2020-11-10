@@ -7,7 +7,6 @@ use crate::tx_msg::Msg;
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Message type for the `MsgChannelOpenInit` message.
@@ -16,7 +15,7 @@ const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
 ///
 /// Message definition for the first step in the channel open handshake (`ChanOpenInit` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenInit {
     port_id: PortId,
     channel_id: ChannelId,
@@ -72,10 +71,6 @@ impl Msg for MsgChannelOpenInit {
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         self.channel.validate_basic()
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

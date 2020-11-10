@@ -9,7 +9,6 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
 
 /// Message type for the `MsgChannelOpenTry` message.
@@ -18,7 +17,7 @@ const TYPE_MSG_CHANNEL_OPEN_TRY: &str = "channel_open_try";
 ///
 /// Message definition for the second step in the channel open handshake (`ChanOpenTry` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenTry {
     port_id: PortId,
     channel_id: ChannelId,
@@ -88,10 +87,6 @@ impl Msg for MsgChannelOpenTry {
         self.channel.validate_basic()
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -99,10 +94,10 @@ impl Msg for MsgChannelOpenTry {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics03_connection::msgs::test_util::get_dummy_proof;
     use crate::ics04_channel::channel::Order;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics23_commitment::commitment::CommitmentProof;
+    use crate::test_utils::get_dummy_proof;
     use crate::Height;
     use std::str::FromStr;
     use tendermint::account::Id as AccountId;

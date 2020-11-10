@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -12,7 +11,7 @@ use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -118,7 +117,7 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -147,7 +146,7 @@ impl TryFrom<RawCounterparty> for Counterparty {
                 .ok_or_else(|| Kind::MissingCounterparty)?
                 .key_prefix
                 .into(),
-        )?)
+        ))
     }
 }
 
@@ -170,12 +169,12 @@ impl Counterparty {
         client_id: ClientId,
         connection_id: Option<ConnectionId>,
         prefix: CommitmentPrefix,
-    ) -> Result<Self, Error> {
-        Ok(Self {
+    ) -> Self {
+        Self {
             client_id,
             connection_id,
             prefix,
-        })
+        }
     }
 
     /// Getter for the client id.
@@ -216,7 +215,7 @@ pub fn validate_version(version: String) -> Result<String, String> {
     Ok(version)
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum State {
     Init = 1,
     TryOpen = 2,

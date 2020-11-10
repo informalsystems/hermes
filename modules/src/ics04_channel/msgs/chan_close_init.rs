@@ -4,15 +4,13 @@ use crate::tx_msg::Msg;
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
-
 /// Message type for the `MsgChannelCloseInit` message.
 const TYPE_MSG_CHANNEL_CLOSE_INIT: &str = "channel_close_init";
 
 ///
 /// Message definition for the first step in the channel close handshake (`ChanCloseInit` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseInit {
     port_id: PortId,
     channel_id: ChannelId,
@@ -52,10 +50,6 @@ impl Msg for MsgChannelCloseInit {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

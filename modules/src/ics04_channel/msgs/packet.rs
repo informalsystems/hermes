@@ -5,15 +5,13 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
-
 /// Message type for `MsgPacket`.
 const TYPE_MSG_PACKET: &str = "ics04/opaque";
 
 ///
 /// Message definition for the packet wrapper domain type (`OpaquePacket` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgPacket {
     packet: Packet,
     proofs: Proofs,
@@ -59,10 +57,6 @@ impl Msg for MsgPacket {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

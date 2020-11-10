@@ -16,7 +16,7 @@ use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections};
 use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use relayer::config::{default, ChainConfig, Config};
 use tendermint::net::Address;
 use tendermint_proto::DomainType;
 
@@ -30,13 +30,16 @@ fn simd_config() -> Config {
     config.chains = vec![ChainConfig {
         id: "ibc-test".try_into().unwrap(),
         rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
+        grpc_addr: "tcp://localhost:9090".parse().unwrap(),
         account_prefix: "cosmos".to_string(),
         key_name: "testkey".to_string(),
         store_prefix: "ibc".to_string(),
         client_ids: vec!["ethbridge".to_string()],
         gas: 200000,
-        trusting_period: Default::default(),
-        peer_id: "BADFADAD0BEFEEDC0C0ADEADBEEFC0FFEEFACADE".parse().unwrap(),
+        trust_threshold: Default::default(),
+        trusting_period: default::trusting_period(),
+        clock_drift: default::clock_drift(),
+        peers: None,
     }];
     config
 }

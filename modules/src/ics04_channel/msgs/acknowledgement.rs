@@ -5,15 +5,13 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use tendermint::account::Id as AccountId;
 
-use serde_derive::{Deserialize, Serialize};
-
 /// Message type for the `MsgAcknowledgement` message.
 const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
 
 ///
 /// Message definition for packet acknowledgements.
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgAcknowledgement {
     packet: Packet,
     acknowledgement: Vec<u8>,
@@ -60,10 +58,6 @@ impl Msg for MsgAcknowledgement {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
-    }
-
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        todo!()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
