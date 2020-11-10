@@ -4,7 +4,6 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
-use std::error::Error;
 use std::time::Duration;
 
 use anomaly::fail;
@@ -25,12 +24,11 @@ use ibc::{
     ics04_channel::packet::Packet,
 };
 
-use crate::client::LightClient;
 use crate::config::ChainConfig;
+use crate::error::Error;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::util::block_on;
-
-/// TODO: delete everything below here. `Chain` will be superseded by ChainRuntime & ChainHandle.
+use crate::{client::LightClient, error::Kind};
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
@@ -52,11 +50,8 @@ pub trait Chain {
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type RpcClient: RpcClient + Send + Sync;
 
-    /// Error types defined by this chain
-    type Error: Into<Box<dyn Error + Send + Sync + 'static>>;
-
     /// Perform a generic `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
+    fn query(&self, data: Path, height: ibc::Height, prove: bool) -> Result<Vec<u8>, Error>;
 
     /// send a transaction with `msgs` to chain.
     fn send(
@@ -67,7 +62,7 @@ pub trait Chain {
         acct_seq: u64,
         memo: String,
         timeout_height: u64,
-    ) -> Result<Vec<u8>, Self::Error>;
+    ) -> Result<Vec<u8>, Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
@@ -94,28 +89,24 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query a header at the given height via RPC
-    fn query_header_at_height(&self, height: Height) -> Result<Self::Header, crate::error::Error>;
+    fn query_header_at_height(&self, height: Height) -> Result<Self::Header, Error>;
 
-    fn create_packet(&self, event: IBCEvent) -> Result<Packet, crate::error::Error>;
+    fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
 
-    fn assemble_client_state(
-        &self,
-        header: &Self::Header,
-    ) -> Result<Self::ClientState, crate::error::Error>;
+    fn assemble_client_state(&self, header: &Self::Header) -> Result<Self::ClientState, Error>;
 
     fn assemble_consensus_state(
         &self,
         header: &Self::Header,
-    ) -> Result<Self::ConsensusState, crate::error::Error>;
+    ) -> Result<Self::ConsensusState, Error>;
 
     /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<Height, crate::error::Error> {
-        let status =
-            block_on(self.rpc_client().status()).map_err(|e| crate::error::Kind::Rpc.context(e))?;
+    fn query_latest_height(&self) -> Result<Height, Error> {
+        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
-                crate::error::Kind::LightClient,
+                Kind::LightClient,
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
@@ -126,7 +117,7 @@ pub trait Chain {
     }
 
     /// Query the latest header via RPC
-    fn query_latest_header(&self) -> Result<Self::Header, crate::error::Error> {
+    fn query_latest_header(&self) -> Result<Self::Header, Error> {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }

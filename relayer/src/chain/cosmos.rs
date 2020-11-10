@@ -1,13 +1,13 @@
+use std::time::Duration;
 /// THIS WILL SOON BE MOVED INTO chain/handle/cosmos.rs.
 /// Should implement the `ChainHandler` trait.
-use std::str::FromStr;
-use std::time::Duration;
+use std::{convert::TryFrom, str::FromStr};
 
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
 use ibc::{events::IBCEvent, ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit};
 use ibc::{ics04_channel::packet::Packet, ics07_tendermint::client_state::ClientState};
-use tendermint::abci::{Path as TendermintABCIPath, Transaction};
+use tendermint::abci::{Path as ABCIPath, Transaction};
 use tendermint::block::Height;
 use tendermint_light_client::types::{LightBlock, ValidatorSet};
 use tendermint_light_client::types::{SignedHeader, TrustThreshold};
@@ -58,6 +58,39 @@ impl CosmosSDKChain {
             light_client: None,
         })
     }
+
+    /// Performs a generic abci_query, and returns the response data.
+    async fn abci_query(
+        &self,
+        data: String,
+        height: ibc::Height,
+        prove: bool,
+    ) -> Result<Vec<u8>, Error> {
+        let height = Some(height)
+            .filter(|h| !h.is_zero())
+            .map(|h| Height::try_from(h.version_height).unwrap());
+
+        let path = ABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
+        // Use the Tendermint-rs RPC client to do the query.
+        let response = self
+            .rpc_client
+            .abci_query(Some(path), data.into_bytes(), height, prove)
+            .await
+            .map_err(|e| Kind::Rpc.context(e))?;
+
+        if !response.code.is_ok() {
+            // Fail with response log.
+            return Err(Kind::Rpc.context(response.log.to_string()).into());
+        }
+
+        if response.value.is_empty() {
+            // Fail due to empty response value (nothing to decode).
+            return Err(Kind::Rpc.context("Empty response value".to_string()).into());
+        }
+
+        Ok(response.value)
+    }
 }
 
 impl Chain for CosmosSDKChain {
@@ -67,18 +100,15 @@ impl Chain for CosmosSDKChain {
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
-    type Error = Error;
 
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error> {
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
-
+    fn query(&self, data: Path, height: ibc::Height, prove: bool) -> Result<Vec<u8>, Error> {
         if !data.is_provable() & prove {
             return Err(Kind::Store
                 .context("requested proof for a path in the privateStore")
                 .into());
         }
 
-        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response = block_on(self.abci_query(data.to_string(), height, prove))?;
 
         // Verify response proof, if requested.
         if prove {
@@ -271,39 +301,6 @@ impl Chain for CosmosSDKChain {
     fn assemble_consensus_state(&self, header: &SignedHeader) -> Result<ConsensusState, Error> {
         Ok(ConsensusState::from(header.clone()))
     }
-}
-
-/// Perform a generic `abci_query`, and return the corresponding deserialized response data.
-async fn abci_query(
-    chain: &CosmosSDKChain,
-    path: TendermintABCIPath,
-    data: String,
-    height: Height,
-    prove: bool,
-) -> Result<Vec<u8>, anomaly::Error<Kind>> {
-    let height = if height.value() == 0 {
-        None
-    } else {
-        Some(height)
-    };
-
-    // Use the Tendermint-rs RPC client to do the query.
-    let response = chain
-        .rpc_client()
-        .abci_query(Some(path), data.into_bytes(), height, prove)
-        .await
-        .map_err(|e| Kind::Rpc.context(e))?;
-
-    if !response.code.is_ok() {
-        // Fail with response log.
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
-    }
-    if response.value.is_empty() {
-        // Fail due to empty response value (nothing to decode).
-        return Err(Kind::EmptyResponseValue.into());
-    }
-
-    Ok(response.value)
 }
 
 fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {

@@ -12,8 +12,6 @@ use ibc::ics24_host::Path::Connections;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint_proto::DomainType;
 
-use std::convert::TryInto;
-
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
     #[options(free, help = "identifier of the chain to query")]
@@ -81,14 +79,12 @@ impl Runnable for QueryConnectionEndCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
+
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
         let res: Result<ConnectionEnd, Error> = chain
-            .query(
-                Connections(opts.connection_id),
-                opts.height.try_into().unwrap(),
-                opts.proof,
-            )
+            .query(Connections(opts.connection_id), height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
 

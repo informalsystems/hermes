@@ -62,40 +62,6 @@ impl CosmosSDKHandle {
             chain_version,
         })
     }
-
-    /// Performs a generic abci_query for , and returns the response data.
-    async fn abci_query(
-        &self,
-        data: String,
-        height: Height,
-        prove: bool,
-    ) -> Result<Vec<u8>, Error> {
-        let height = if height.is_zero() {
-            None
-        } else {
-            Some(TMHeight::try_from(height.version_height).unwrap())
-        };
-        let path = ABCIPath::from_str(IBC_QUERY_PATH).unwrap();
-
-        // Use the Tendermint-rs RPC client to do the query.
-        let response = self
-            .rpc_client
-            .abci_query(Some(path), data.into_bytes(), height, prove)
-            .await
-            .map_err(|e| Kind::Rpc.context(e))?;
-
-        if !response.code.is_ok() {
-            // Fail with response log.
-            return Err(Kind::Rpc.context(response.log.to_string()).into());
-        }
-
-        if response.value.is_empty() {
-            // Fail due to empty response value (nothing to decode).
-            return Err(Kind::Rpc.context("Empty response value".to_string()).into());
-        }
-
-        Ok(response.value)
-    }
 }
 
 impl ChainHandle for CosmosSDKHandle {
@@ -106,18 +72,18 @@ impl ChainHandle for CosmosSDKHandle {
     }
 
     fn query(&self, data_path: Path, height: Height, prove: bool) -> Result<Vec<u8>, Error> {
-        if !data_path.is_provable() & prove {
-            return Err(Kind::NonProvableData.into());
-        }
+        let (sender, receiver) = reply_channel();
 
-        let response = block_on(self.abci_query(data_path.to_string(), height, prove))?;
+        self.sender
+            .send(HandleInput::Query {
+                path: data_path,
+                height,
+                prove,
+                reply_to: sender,
+            })
+            .unwrap();
 
-        // Verify response proof, if requested.
-        if prove {
-            dbg!("Todo: implement proof verification."); // Todo: Verify proof
-        }
-
-        Ok(response)
+        receiver.recv().unwrap()
     }
 
     fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {

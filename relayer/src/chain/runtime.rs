@@ -11,10 +11,10 @@ use ibc::{
     Height,
 };
 
-use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
+use crate::{config::ChainConfig, util::block_on};
 
 use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
@@ -28,8 +28,9 @@ pub struct ChainRuntime<Chain> {
 }
 
 impl ChainRuntime<CosmosSDKChain> {
-    pub fn cosmos_sdk(config: ChainConfig) -> Self {
-        todo!()
+    pub fn cosmos_sdk(config: ChainConfig) -> Result<Self, Error> {
+        let chain = CosmosSDKChain::from_config(config)?;
+        Ok(Self::new(chain))
     }
 }
 
@@ -63,21 +64,31 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::Subscribe(reply_to)) => {
                             self.subscribe(reply_to)?
                         },
-                        Ok(HandleInput::Query {path, height, prove, reply_to}) => {
+                        Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
                             self.query(path, height, prove, reply_to)?
                         },
                         Ok(HandleInput::GetHeader { height, reply_to }) => {
                             self.get_header(height, reply_to)?
                         }
-                        Ok(HandleInput::GetMinimalSet {..}) => todo!(),
-                        Ok(HandleInput::Submit {..}) => todo!(),
-                        Ok(HandleInput::GetHeight {..}) => todo!(),
-                        Ok(HandleInput::CreatePacket {..}) => todo!(),
-                        Ok(HandleInput::AssembleClientState {..}) => todo!(),
-                        Ok(HandleInput::AssembleConsensusState {..}) => todo!(),
-                        Err(e) => {
-                            todo!()
+                        Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
+                            self.get_minimal_set(from, to, reply_to)?
                         }
+                        Ok(HandleInput::Submit { transaction, reply_to, }) => {
+                            self.submit(transaction, reply_to)?
+                        },
+                        Ok(HandleInput::GetHeight { client, reply_to }) => {
+                            self.get_height(client, reply_to)?
+                        }
+                        Ok(HandleInput::CreatePacket { event, reply_to }) => {
+                            self.create_packet(event, reply_to)?
+                        }
+                        Ok(HandleInput::AssembleClientState { header, reply_to }) => {
+                            self.assemble_client_state(header, reply_to)?
+                        }
+                        Ok(HandleInput::AssembleConsensusState { header, reply_to }) => {
+                            self.assemble_consensus_state(header, reply_to)?
+                        }
+                        Err(e) => todo!(),
                     }
                 },
             }
@@ -87,12 +98,7 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     fn subscribe(&self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
-        let (tx, rx) = channel::unbounded();
-        // TODO: Handle subscription
-        reply_to
-            .send(Ok(rx))
-            .map_err(|e| Kind::Channel.context(e))?;
-        Ok(())
+        todo!()
     }
 
     fn query(
@@ -102,7 +108,22 @@ impl<C: Chain> ChainRuntime<C> {
         prove: bool,
         reply_to: ReplyTo<Vec<u8>>,
     ) -> Result<(), Error> {
-        todo!()
+        if !path.is_provable() & prove {
+            return Err(Kind::NonProvableData.into());
+        }
+
+        let response = self.chain.query(path, height, prove)?;
+
+        // Verify response proof, if requested.
+        if prove {
+            dbg!("TODO: implement proof verification."); // TODO: Verify proof
+        }
+
+        reply_to
+            .send(Ok(response))
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
     }
 
     fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
@@ -110,6 +131,7 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     fn get_minimal_set(
+        &self,
         from: Height,
         to: Height,
         reply_to: ReplyTo<Vec<AnyHeader>>,
@@ -117,20 +139,21 @@ impl<C: Chain> ChainRuntime<C> {
         todo!()
     }
 
-    fn submit(transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
+    fn submit(&self, transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
         todo!()
     }
 
-    fn get_height(client: ForeignClient, reply_to: ReplyTo<Height>) -> Result<(), Error> {
+    fn get_height(&self, client: ForeignClient, reply_to: ReplyTo<Height>) -> Result<(), Error> {
         todo!()
     }
 
-    fn create_packet(event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
+    fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
         todo!()
     }
 
     /// Given a header originating from this chain, constructs a client state.
     fn assemble_client_state(
+        &self,
         header: AnyHeader,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
@@ -139,6 +162,7 @@ impl<C: Chain> ChainRuntime<C> {
 
     /// Given a header originating from this chain, constructs a consensus state.
     fn assemble_consensus_state(
+        &self,
         header: AnyHeader,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {

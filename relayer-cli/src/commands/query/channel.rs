@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics04_channel::channel::ChannelEnd;
@@ -96,10 +94,11 @@ impl Runnable for QueryChannelEndCmd {
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
         let res: Result<ChannelEnd, Error> = chain
             .query(
                 ChannelEnds(opts.port_id, opts.channel_id),
-                opts.height.try_into().unwrap(),
+                height,
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())

@@ -14,8 +14,6 @@ use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use tendermint_proto::DomainType;
 
-use std::convert::TryInto;
-
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -76,13 +74,10 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyClientState, Error> = chain
-            .query(
-                ClientState(opts.client_id),
-                opts.height.try_into().unwrap(),
-                opts.proof,
-            )
+            .query(ClientState(opts.client_id), height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
@@ -171,6 +166,8 @@ impl Runnable for QueryClientConsensusCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
+
         let res: Result<AnyConsensusState, Error> = chain
             .query(
                 ClientConsensusState {
@@ -178,7 +175,7 @@ impl Runnable for QueryClientConsensusCmd {
                     epoch: opts.version_number,
                     height: opts.version_height,
                 },
-                opts.height.try_into().unwrap(),
+                height,
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
@@ -282,14 +279,13 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
+
         let res: Result<ConnectionIDs, Error> = chain
-            .query(
-                ClientConnections(opts.client_id),
-                opts.height.try_into().unwrap(),
-                false,
-            )
+            .query(ClientConnections(opts.client_id), height, false)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
             Err(e) => status_info!("client connections query error", "{}", e),

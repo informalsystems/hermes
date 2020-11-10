@@ -21,7 +21,6 @@ use tendermint::net::Address;
 use tendermint_proto::DomainType;
 
 use std::str::FromStr;
-use tendermint::block::Height;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
@@ -88,7 +87,7 @@ fn query_channel_id() {
                     PortId::from_str("firstport").unwrap(),
                     ChannelId::from_str("firstchannel").unwrap(),
                 ),
-                Height::from(0_u32),
+                ibc::Height::new(chain.id().version(), 0),
                 false,
             )
             .unwrap(),
@@ -112,7 +111,7 @@ fn query_client_id() {
         &chain
             .query(
                 ClientConnections(ClientId::from_str("clientidone").unwrap()),
-                Height::from(0_u32),
+                ibc::Height::new(chain.id().version(), 0),
                 false,
             )
             .unwrap(),

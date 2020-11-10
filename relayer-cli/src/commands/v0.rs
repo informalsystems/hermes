@@ -37,17 +37,35 @@ impl Runnable for V0Cmd {
 }
 
 pub fn v0_task(config: Config) -> Result<(), BoxError> {
-    let src_chain_config = config
-        .chains
-        .get(0)
-        .ok_or_else(|| "Configuration for source chain (position 0 in chains config) not found")?;
-    let dst_chain_config = config
-        .chains
-        .get(1)
-        .ok_or_else(|| "Configuration for dest. chain (position 1 in chains config) not found")?;
+    let src_chain_config =
+        config.chains.get(0).cloned().ok_or_else(|| {
+            "Configuration for source chain (position 0 in chains config) not found"
+        })?;
 
-    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config.clone());
-    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config.clone());
+    let dst_chain_config =
+        config.chains.get(1).cloned().ok_or_else(|| {
+            "Configuration for dest. chain (position 1 in chains config) not found"
+        })?;
+
+    // Parse & validate client identifiers
+    let client_src_id = ClientId::from_str(
+        src_chain_config
+            .client_ids
+            .get(0)
+            .ok_or_else(|| "Config for client on source chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
+
+    let client_dst_id = ClientId::from_str(
+        dst_chain_config
+            .client_ids
+            .get(0)
+            .ok_or_else(|| "Config for client for dest. chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
+
+    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config)?;
+    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config)?;
 
     let src_chain_handle = src_chain.handle();
     thread::spawn(move || {
@@ -59,22 +77,6 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     thread::spawn(move || {
         dst_chain.run().unwrap();
     });
-
-    // Parse & validate client identifiers
-    let client_src_id = ClientId::from_str(
-        src_chain_config
-            .client_ids
-            .get(0)
-            .ok_or_else(|| "Config for client on source chain not found")?,
-    )
-    .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
-    let client_dst_id = ClientId::from_str(
-        dst_chain_config
-            .client_ids
-            .get(0)
-            .ok_or_else(|| "Config for client for dest. chain not found")?,
-    )
-    .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 
     // Instantiate the foreign client on the source chain.
     let client_on_src = ForeignClient::new(

@@ -41,7 +41,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
     // Query the client state on destination chain.
     let response = dest_chain.query(
         ClientStatePath(opts.clone().dest_client_id),
-        tendermint::block::Height::from(0_u32),
+        ibc::Height::new(dest_chain.id().version(), 0),
         false,
     );
 
