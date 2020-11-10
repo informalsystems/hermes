@@ -15,10 +15,10 @@ use tendermint::{block::Height, chain};
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
-use ibc::ics24_host::Path;
 use ibc::tx_msg::Msg;
 use ibc::{events::IBCEvent, ics02_client::client_def::AnyHeader};
 use ibc::{ics02_client::client_def::AnyClientState, ics24_host::identifier::ChainId};
+use ibc::{ics02_client::client_def::AnyConsensusState, ics24_host::Path};
 use ibc::{
     ics02_client::state::{ClientState, ConsensusState},
     ics04_channel::packet::Packet,
@@ -50,20 +50,6 @@ pub trait Chain {
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type RpcClient: RpcClient + Send + Sync;
 
-    /// Perform a generic `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: ibc::Height, prove: bool) -> Result<Vec<u8>, Error>;
-
-    /// send a transaction with `msgs` to chain.
-    fn send(
-        &mut self,
-        msg_type: String,
-        msg: Vec<u8>,
-        key: KeyEntry,
-        acct_seq: u64,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<Vec<u8>, Error>;
-
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
         &self.config().id
@@ -88,6 +74,20 @@ pub trait Chain {
     /// The trust threshold configured for this chain
     fn trust_threshold(&self) -> TrustThreshold;
 
+    /// Perform a generic `query`, and return the corresponding response data.
+    fn query(&self, data: Path, height: ibc::Height, prove: bool) -> Result<Vec<u8>, Error>;
+
+    /// send a transaction with `msgs` to chain.
+    fn send(
+        &mut self,
+        msg_type: String,
+        msg: Vec<u8>,
+        key: KeyEntry,
+        acct_seq: u64,
+        memo: String,
+        timeout_height: u64,
+    ) -> Result<Vec<u8>, Error>;
+
     /// Query a header at the given height via RPC
     fn query_header_at_height(&self, height: Height) -> Result<Self::Header, Error>;
 
@@ -99,6 +99,14 @@ pub trait Chain {
         &self,
         header: &Self::Header,
     ) -> Result<Self::ConsensusState, Error>;
+
+    // Downcast methods
+    fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header>;
+    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<Self::ClientState>;
+    fn downcast_consensus_state(
+        &self,
+        consensus_state: AnyConsensusState,
+    ) -> Option<Self::ConsensusState>;
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<Height, Error> {

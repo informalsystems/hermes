@@ -5,7 +5,7 @@ use std::time::Duration;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 use tendermint_proto::DomainType;
 
-use crate::Height;
+use crate::{ics02_client::client_def::AnyClientState, Height};
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
@@ -105,6 +105,10 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         !self.frozen_height.is_zero()
+    }
+
+    fn wrap_any(self) -> AnyClientState {
+        AnyClientState::Tendermint(self)
     }
 }
 

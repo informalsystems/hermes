@@ -1,12 +1,31 @@
-use std::time::Duration;
-/// THIS WILL SOON BE MOVED INTO chain/handle/cosmos.rs.
-/// Should implement the `ChainHandler` trait.
-use std::{convert::TryFrom, str::FromStr};
+use std::{convert::TryFrom, future::Future, str::FromStr, time::Duration};
 
-use ibc::ics07_tendermint::consensus_state::ConsensusState;
-use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-use ibc::{events::IBCEvent, ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit};
-use ibc::{ics04_channel::packet::Packet, ics07_tendermint::client_state::ClientState};
+use bytes::Bytes;
+use futures::{FutureExt, TryFutureExt};
+use k256::ecdsa::{SigningKey, VerifyKey};
+use prost::Message;
+use prost_types::Any;
+
+use ibc::{
+    downcast,
+    events::IBCEvent,
+    ics02_client::client_def::{AnyClientState, AnyHeader},
+    ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit,
+    ics04_channel::packet::Packet,
+    ics07_tendermint::client_state::ClientState,
+    ics07_tendermint::consensus_state::ConsensusState,
+    ics24_host::{Path, IBC_QUERY_PATH},
+};
+use ibc::{ics02_client::client_def::AnyConsensusState, tx_msg::Msg};
+
+use ibc_proto::cosmos::{
+    base::v1beta1::Coin,
+    tx::v1beta1::{
+        mode_info::{Single, Sum},
+        AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw,
+    },
+};
+
 use tendermint::abci::{Path as ABCIPath, Transaction};
 use tendermint::block::Height;
 use tendermint_light_client::types::{LightBlock, ValidatorSet};
@@ -17,21 +36,10 @@ use tendermint_rpc::HttpClient;
 use super::Chain;
 use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
-use crate::util::block_on;
-
 use crate::error;
+use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use bytes::Bytes;
-use futures::{FutureExt, TryFutureExt};
-use ibc::tx_msg::Msg;
-use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use k256::ecdsa::{SigningKey, VerifyKey};
-use prost::Message;
-use prost_types::Any;
-use std::future::Future;
+use crate::util::block_on;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -300,6 +308,21 @@ impl Chain for CosmosSDKChain {
 
     fn assemble_consensus_state(&self, header: &SignedHeader) -> Result<ConsensusState, Error> {
         Ok(ConsensusState::from(header.clone()))
+    }
+
+    fn downcast_header(&self, header: AnyHeader) -> Option<SignedHeader> {
+        downcast!(header => AnyHeader::Tendermint).map(|h| h.signed_header)
+    }
+
+    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<ClientState> {
+        downcast!(client_state => AnyClientState::Tendermint)
+    }
+
+    fn downcast_consensus_state(
+        &self,
+        consensus_state: AnyConsensusState,
+    ) -> Option<Self::ConsensusState> {
+        downcast!(consensus_state => AnyConsensusState::Tendermint)
     }
 }
 

@@ -20,9 +20,6 @@ use crate::util::block_on;
 
 use super::Chain;
 
-/// Implementation of handle specific for Cosmos SDK chains
-pub mod cosmos;
-
 mod prod;
 pub use prod::ProdChainHandle;
 

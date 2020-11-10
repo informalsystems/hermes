@@ -10,7 +10,7 @@ use tendermint::time::Time;
 use tendermint::Hash;
 use tendermint_proto::DomainType;
 
-use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::{client_def::AnyConsensusState, client_type::ClientType};
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 
@@ -42,6 +42,10 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
 
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()
+    }
+
+    fn wrap_any(self) -> AnyConsensusState {
+        AnyConsensusState::Tendermint(self)
     }
 }
 

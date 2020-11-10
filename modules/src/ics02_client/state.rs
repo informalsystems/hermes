@@ -1,4 +1,7 @@
-use super::client_type::ClientType;
+use super::{
+    client_def::{AnyClientState, AnyConsensusState},
+    client_type::ClientType,
+};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::Height;
 
@@ -12,6 +15,9 @@ pub trait ConsensusState: Clone + std::fmt::Debug {
 
     /// Performs basic validation of the consensus state
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Wrap into an `AnyConsensusState`
+    fn wrap_any(self) -> AnyConsensusState;
 }
 
 #[dyn_clonable::clonable]
@@ -27,4 +33,7 @@ pub trait ClientState: Clone + std::fmt::Debug {
 
     /// Freeze status of the client
     fn is_frozen(&self) -> bool;
+
+    /// Wrap into an `AnyClientState`
+    fn wrap_any(self) -> AnyClientState;
 }

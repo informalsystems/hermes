@@ -5,7 +5,10 @@ use tendermint::block::signed_header::SignedHeader;
 use thiserror::Error;
 
 use ibc::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics02_client::{
+        client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+        state::{ClientState, ConsensusState},
+    },
     ics24_host::identifier::ChainId,
     ics24_host::Path,
     Height,
@@ -109,10 +112,13 @@ impl<C: Chain> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u8>>,
     ) -> Result<(), Error> {
         if !path.is_provable() & prove {
-            return Err(Kind::NonProvableData.into());
+            reply_to
+                .send(Err(Kind::NonProvableData.into()))
+                .map_err(|e| Kind::Channel.context(e))?;
+            return Ok(());
         }
 
-        let response = self.chain.query(path, height, prove)?;
+        let response = self.chain.query(path, height, prove);
 
         // Verify response proof, if requested.
         if prove {
@@ -120,7 +126,7 @@ impl<C: Chain> ChainRuntime<C> {
         }
 
         reply_to
-            .send(Ok(response))
+            .send(response)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -157,7 +163,20 @@ impl<C: Chain> ChainRuntime<C> {
         header: AnyHeader,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
-        todo!()
+        if let Some(header) = self.chain.downcast_header(header) {
+            let client_state = self
+                .chain
+                .assemble_client_state(&header)
+                .map(|cs| cs.wrap_any());
+
+            reply_to
+                .send(client_state)
+                .map_err(|e| Kind::Channel.context(e))?;
+
+            Ok(())
+        } else {
+            Err(Kind::InvalidInputHeader.into())
+        }
     }
 
     /// Given a header originating from this chain, constructs a consensus state.
@@ -166,6 +185,19 @@ impl<C: Chain> ChainRuntime<C> {
         header: AnyHeader,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        todo!()
+        if let Some(header) = self.chain.downcast_header(header) {
+            let consensus_state = self
+                .chain
+                .assemble_consensus_state(&header)
+                .map(|cs| cs.wrap_any());
+
+            reply_to
+                .send(consensus_state)
+                .map_err(|e| Kind::Channel.context(e))?;
+
+            Ok(())
+        } else {
+            Err(Kind::InvalidInputHeader.into())
+        }
     }
 }

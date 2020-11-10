@@ -59,7 +59,18 @@ impl ChainHandle for ProdChainHandle {
         height: Height,
         prove: bool,
     ) -> Result<Vec<u8>, Error> {
-        todo!()
+        let (sender, receiver) = reply_channel();
+
+        self.sender
+            .send(HandleInput::Query {
+                path,
+                height,
+                prove,
+                reply_to: sender,
+            })
+            .map_err(|e| Kind::Channel)?;
+
+        receiver.recv().map_err(|e| Kind::Channel)?
     }
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {

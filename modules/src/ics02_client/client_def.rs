@@ -204,6 +204,10 @@ impl ClientState for AnyClientState {
             AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
         }
     }
+
+    fn wrap_any(self) -> AnyClientState {
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -275,6 +279,10 @@ impl ConsensusState for AnyConsensusState {
 
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
+    }
+
+    fn wrap_any(self) -> AnyConsensusState {
+        self
     }
 }
 
