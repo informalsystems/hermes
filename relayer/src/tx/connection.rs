@@ -72,7 +72,7 @@ pub fn build_conn_init(
         client_id: opts.dest_client_id.clone(),
         connection_id: opts.dest_connection_id.clone(),
         counterparty,
-        version: "".to_string(),
+        version: dest_chain.query_compatible_versions()?[0].clone(),
         signer,
     };
 
@@ -106,7 +106,13 @@ fn check_connection_state_for_try(
     existing_connection: ConnectionEnd,
     expected_connection: ConnectionEnd,
 ) -> Result<(), Error> {
-    if existing_connection != expected_connection {
+    if existing_connection.client_id() != expected_connection.client_id()
+        || existing_connection.counterparty().client_id()
+            != expected_connection.counterparty().client_id()
+        || existing_connection.counterparty().connection_id().is_some()
+            && existing_connection.counterparty().connection_id()
+                != expected_connection.counterparty().connection_id()
+    {
         Err(Kind::ConnOpenTry(
             connection_id,
             "connection already exist in an incompatible state".into(),
@@ -148,8 +154,14 @@ pub fn build_conn_try(
         )?
     }
 
-    let src_connection =
-        src_chain.query_connection(&opts.src_connection_id.clone(), ICSHeight::default())?;
+    let src_connection = src_chain
+        .query_connection(&opts.src_connection_id.clone(), ICSHeight::default())
+        .map_err(|e| {
+            Kind::ConnOpenTry(
+                opts.src_connection_id.clone(),
+                "missing connection on source chain".to_string(),
+            )
+        })?;
     // TODO - check that the src connection is consistent with the try options
 
     // TODO - Build add send the message(s) for updating client on source (when we don't need the key seed anymore)
@@ -185,13 +197,19 @@ pub fn build_conn_try(
         ics_target_height,
     )?;
 
+    let counterparty_versions = if src_connection.versions().is_empty() {
+        src_chain.query_compatible_versions()?
+    } else {
+        src_connection.versions()
+    };
+
     let new_msg = MsgConnectionOpenTry {
         connection_id: opts.dest_connection_id.clone(),
         client_id: opts.dest_client_id.clone(),
         client_state: Some(client_state),
         counterparty_chosen_connection_id: src_connection.counterparty().connection_id().cloned(),
         counterparty,
-        counterparty_versions: src_chain.query_compatible_versions()?,
+        counterparty_versions,
         proofs,
         signer,
     };

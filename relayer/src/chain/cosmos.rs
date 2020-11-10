@@ -309,7 +309,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
         let response =
-            block_on(broadcast_tx_sync(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }
