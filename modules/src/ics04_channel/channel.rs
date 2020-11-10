@@ -242,36 +242,47 @@ impl State {
 }
 
 #[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+    use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
+
+    /// Returns a dummy `RawCounterparty`, for testing only!
+    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
+        RawCounterparty {
+            port_id: "0123456789".into(),
+            channel_id: "0987654321".into(),
+        }
+    }
+
+    /// Returns a dummy `RawChannel`, for testing only!
+    pub fn get_dummy_raw_channel_end() -> RawChannel {
+        RawChannel {
+            state: 0,
+            ordering: 0,
+            counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec![],
+            version: "".to_string(), // The version is not validated.
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::ics04_channel::channel::ChannelEnd;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-    use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
     use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {
+        let raw_channel_end = get_dummy_raw_channel_end();
+
         let empty_raw_channel_end = RawChannel {
-            state: 0,
-            ordering: 0,
             counterparty: None,
-            connection_hops: vec![],
-            version: "".to_string(),
-        };
-
-        let cparty = RawCounterparty {
-            port_id: "0123456789".into(),
-            channel_id: "0987654321".into(),
-        };
-
-        let raw_channel_end = RawChannel {
-            state: 0,
-            ordering: 0,
-            counterparty: Some(cparty),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            ..raw_channel_end.clone()
         };
 
         struct Test {

@@ -20,6 +20,9 @@ pub enum Kind {
     #[error("invalid version")]
     InvalidVersion,
 
+    #[error("invalid signer address")]
+    InvalidSigner,
+
     #[error("invalid proof")]
     InvalidProof,
 
@@ -31,6 +34,9 @@ pub enum Kind {
 
     #[error("missing counterparty")]
     MissingCounterparty,
+
+    #[error("missing channel end")]
+    MissingChannel,
 }
 
 impl Kind {
