@@ -6,7 +6,7 @@ use ibc::{
 use tendermint_light_client::types::SignedHeader;
 
 use crate::{
-    chain::error::ChainError,
+    error::{Error, Kind},
     foreign_client::ForeignClient,
     msgs::{EncodedTransaction, Packet},
 };
@@ -30,17 +30,17 @@ impl ChainHandle for ProdChainHandle {
         self.chain_id.clone()
     }
 
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, Error> {
         let (sender, receiver) = reply_channel();
 
         self.sender
             .send(HandleInput::Subscribe(sender))
-            .map_err(|e| ChainError::Channel)?;
+            .map_err(|e| Kind::Channel)?;
 
-        receiver.recv().map_err(|e| ChainError::Channel)?
+        receiver.recv().map_err(|e| Kind::Channel)?
     }
 
-    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainError> {
+    fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
         let (sender, receiver) = reply_channel();
 
         self.sender
@@ -48,9 +48,9 @@ impl ChainHandle for ProdChainHandle {
                 height,
                 reply_to: sender,
             })
-            .map_err(|e| ChainError::Channel)?;
+            .map_err(|e| Kind::Channel)?;
 
-        receiver.recv().map_err(|e| ChainError::Channel)?
+        receiver.recv().map_err(|e| Kind::Channel)?
     }
 
     fn query(
@@ -58,37 +58,37 @@ impl ChainHandle for ProdChainHandle {
         path: ibc::ics24_host::Path,
         height: Height,
         prove: bool,
-    ) -> Result<Vec<u8>, ChainError> {
+    ) -> Result<Vec<u8>, Error> {
         todo!()
     }
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, ChainError> {
+    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
         todo!()
     }
 
-    fn submit(&self, transaction: EncodedTransaction) -> Result<(), ChainError> {
+    fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
         todo!()
     }
 
-    fn get_height(&self, client: &ForeignClient) -> Result<Height, ChainError> {
+    fn get_height(&self, client: &ForeignClient) -> Result<Height, Error> {
         todo!()
     }
 
-    fn create_packet(&self, event: IBCEvent) -> Result<Packet, ChainError> {
+    fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
         todo!()
     }
 
     fn assemble_client_state(
         &self,
         header: &AnyHeader,
-    ) -> Result<ibc::ics02_client::client_def::AnyClientState, ChainError> {
+    ) -> Result<ibc::ics02_client::client_def::AnyClientState, Error> {
         todo!()
     }
 
     fn assemble_consensus_state(
         &self,
         header: &AnyHeader,
-    ) -> Result<ibc::ics02_client::client_def::AnyConsensusState, ChainError> {
+    ) -> Result<ibc::ics02_client::client_def::AnyConsensusState, Error> {
         todo!()
     }
 }

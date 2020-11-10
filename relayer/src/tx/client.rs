@@ -62,12 +62,12 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         .context(e)
     })?;
 
-    let height = u64::from(tm_latest_header.signed_header.header.height);
-    let version = tm_latest_header.signed_header.header.chain_id.to_string();
+    let height = u64::from(tm_latest_header.header.height);
+    let chain_id = tm_latest_header.header.chain_id.to_string();
+    let chain_version = ChainId::chain_version(&chain_id);
 
-    let tm_consensus_state = ibc::ics07_tendermint::consensus_state::ConsensusState::from(
-        tm_latest_header.signed_header,
-    );
+    let tm_consensus_state =
+        ibc::ics07_tendermint::consensus_state::ConsensusState::from(tm_latest_header);
 
     let any_consensus_state = AnyConsensusState::Tendermint(tm_consensus_state);
 
@@ -77,8 +77,8 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         src_chain.config().trusting_period,
         src_chain.unbonding_period(),
         Duration::from_millis(3000),
-        Height::new(ChainId::chain_version(version.clone()), height),
-        Height::new(ChainId::chain_version(version), 0),
+        Height::new(chain_version, height),
+        Height::new(chain_version, 0),
         "".to_string(),
         false,
         false,

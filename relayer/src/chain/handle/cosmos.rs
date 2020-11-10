@@ -1,5 +1,6 @@
-use crate::chain::handle::{ChainError, ChainHandle, HandleInput, Subscription};
+use crate::chain::handle::{ChainHandle, HandleInput, Subscription};
 use crate::config::ChainConfig;
+use crate::error::{Error, Kind};
 use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
@@ -40,15 +41,17 @@ impl CosmosSDKHandle {
         chain_id_raw: &str,
         sender: channel::Sender<HandleInput>,
         rpc_addr: net::Address,
-    ) -> Result<Self, ChainError> {
+    ) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(rpc_addr).map_err(|e| {
-            ChainError::RPC(format!(
+            Kind::Rpc.context(format!(
                 "could not initialize http client; error: {}",
                 e.to_string()
             ))
         })?;
-        let chain_id = ChainId::from_str(chain_id_raw)
-            .map_err(|e| ChainError::ChainIdentifier(e.to_string()))?;
+
+        let chain_id =
+            ChainId::from_str(chain_id_raw).map_err(|e| Kind::ChainIdentifier(e.to_string()))?;
+        let chain_version = chain_id.version();
 
         Ok(Self {
             chain_id,
@@ -56,7 +59,7 @@ impl CosmosSDKHandle {
             rpc_client,
             trusting_period: todo!(),
             unbonding_period: todo!(),
-            chain_version: ChainId::chain_version(chain_id_raw.to_string()),
+            chain_version,
         })
     }
 
@@ -66,7 +69,7 @@ impl CosmosSDKHandle {
         data: String,
         height: Height,
         prove: bool,
-    ) -> Result<Vec<u8>, ChainError> {
+    ) -> Result<Vec<u8>, Error> {
         let height = if height.is_zero() {
             None
         } else {
@@ -79,15 +82,16 @@ impl CosmosSDKHandle {
             .rpc_client
             .abci_query(Some(path), data.into_bytes(), height, prove)
             .await
-            .map_err(|e| ChainError::RPC(e.to_string()))?;
+            .map_err(|e| Kind::Rpc.context(e))?;
 
         if !response.code.is_ok() {
             // Fail with response log.
-            return Err(ChainError::RPC(response.log.to_string()));
+            return Err(Kind::Rpc.context(response.log.to_string()).into());
         }
+
         if response.value.is_empty() {
             // Fail due to empty response value (nothing to decode).
-            return Err(ChainError::RPC("Empty response value".to_string()));
+            return Err(Kind::Rpc.context("Empty response value".to_string()).into());
         }
 
         Ok(response.value)
@@ -95,15 +99,15 @@ impl CosmosSDKHandle {
 }
 
 impl ChainHandle for CosmosSDKHandle {
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, ChainError> {
+    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, Error> {
         let (sender, receiver) = reply_channel();
         self.sender.send(HandleInput::Subscribe(sender)).unwrap();
         receiver.recv().unwrap()
     }
 
-    fn query(&self, data_path: Path, height: Height, prove: bool) -> Result<Vec<u8>, ChainError> {
+    fn query(&self, data_path: Path, height: Height, prove: bool) -> Result<Vec<u8>, Error> {
         if !data_path.is_provable() & prove {
-            return Err(ChainError::NonProvableData);
+            return Err(Kind::NonProvableData.into());
         }
 
         let response = block_on(self.abci_query(data_path.to_string(), height, prove))?;
@@ -116,19 +120,19 @@ impl ChainHandle for CosmosSDKHandle {
         Ok(response)
     }
 
-    fn get_header(&self, height: Height) -> Result<AnyHeader, ChainError> {
+    fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
         todo!()
     }
 
-    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, ChainError> {
+    fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
         todo!()
     }
 
-    fn submit(&self, _transaction: EncodedTransaction) -> Result<(), ChainError> {
+    fn submit(&self, _transaction: EncodedTransaction) -> Result<(), Error> {
         todo!()
     }
 
-    fn get_height(&self, _client: &ForeignClient) -> Result<Height, ChainError> {
+    fn get_height(&self, _client: &ForeignClient) -> Result<Height, Error> {
         todo!()
     }
 
@@ -136,17 +140,17 @@ impl ChainHandle for CosmosSDKHandle {
         self.chain_id.clone()
     }
 
-    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, ChainError> {
+    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, Error> {
         todo!()
     }
 
-    fn assemble_client_state(&self, header: &AnyHeader) -> Result<AnyClientState, ChainError> {
+    fn assemble_client_state(&self, header: &AnyHeader) -> Result<AnyClientState, Error> {
         // Downcast from the generic any header into a header specific for this type of chain.
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
             let height = u64::from(our_header.signed_header.header.height);
 
             // Build the client state.
-            ClientState::new(
+            let client_state = ClientState::new(
                 self.chain_id.to_string(), // The id of this chain.
                 self.trusting_period,
                 self.unbonding_period,
@@ -156,24 +160,23 @@ impl ChainHandle for CosmosSDKHandle {
                 "".to_string(),
                 false,
                 false,
-            ) // TODO more useful err message below :(
-            .map_err(|e| ChainError::Failed)
+            )
             .map(AnyClientState::Tendermint)
+            .map_err(|e| Kind::Ics007.context(e))?;
+
+            Ok(client_state)
         } else {
-            Err(ChainError::InvalidInputHeader)
+            Err(Kind::InvalidInputHeader.into())
         }
     }
 
-    fn assemble_consensus_state(
-        &self,
-        header: &AnyHeader,
-    ) -> Result<AnyConsensusState, ChainError> {
+    fn assemble_consensus_state(&self, header: &AnyHeader) -> Result<AnyConsensusState, Error> {
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
             Ok(AnyConsensusState::Tendermint(ConsensusState::from(
                 our_header.signed_header.clone(),
             )))
         } else {
-            Err(ChainError::InvalidInputHeader)
+            Err(Kind::InvalidInputHeader.into())
         }
     }
 }

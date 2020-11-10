@@ -3,10 +3,10 @@
 use std::str::FromStr;
 use std::time::Duration;
 
-use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
+use ibc::{events::IBCEvent, ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit};
+use ibc::{ics04_channel::packet::Packet, ics07_tendermint::client_state::ClientState};
 use tendermint::abci::{Path as TendermintABCIPath, Transaction};
 use tendermint::block::Height;
 use tendermint_light_client::types::{LightBlock, ValidatorSet};
@@ -61,6 +61,7 @@ impl CosmosSDKChain {
 }
 
 impl Chain for CosmosSDKChain {
+    type Header = SignedHeader;
     type LightBlock = LightBlock;
     type LightClient = LightClient;
     type RpcClient = HttpClient;
@@ -219,7 +220,7 @@ impl Chain for CosmosSDKChain {
         Duration::from_secs(24 * 7 * 3)
     }
 
-    fn query_header_at_height(&self, height: Height) -> Result<LightBlock, Error> {
+    fn query_header_at_height(&self, height: Height) -> Result<SignedHeader, Error> {
         let client = self.rpc_client();
         let primary = self
             .config()
@@ -229,17 +230,46 @@ impl Chain for CosmosSDKChain {
         let signed_header = fetch_signed_header(client, height)?;
         assert_eq!(height, signed_header.header.height);
 
-        let validator_set = fetch_validator_set(client, height)?;
-        let next_validator_set = fetch_validator_set(client, height.increment())?;
+        // let validator_set = fetch_validator_set(client, height)?;
+        // let next_validator_set = fetch_validator_set(client, height.increment())?;
 
-        let light_block = LightBlock::new(
-            signed_header,
-            validator_set,
-            next_validator_set,
-            primary.peer_id,
-        );
+        // let light_block = LightBlock::new(
+        //     signed_header,
+        //     validator_set,
+        //     next_validator_set,
+        //     primary.peer_id,
+        // );
 
-        Ok(light_block)
+        Ok(signed_header)
+    }
+
+    fn create_packet(&self, _event: IBCEvent) -> Result<Packet, Error> {
+        todo!()
+    }
+
+    fn assemble_client_state(&self, header: &SignedHeader) -> Result<Self::ClientState, Error> {
+        // Downcast from the generic any header into a header specific for this type of chain.
+        let height = u64::from(header.header.height);
+
+        // Build the client state.
+        let client_state = ClientState::new(
+            self.id().to_string(), // The id of this chain.
+            self.config.trusting_period,
+            self.unbonding_period(),
+            Duration::from_millis(3000),
+            ibc::Height::new(self.id().version(), height),
+            ibc::Height::new(self.id().version(), 0),
+            "".to_string(),
+            false,
+            false,
+        )
+        .map_err(|e| Kind::Ics007.context(e))?;
+
+        Ok(client_state)
+    }
+
+    fn assemble_consensus_state(&self, header: &SignedHeader) -> Result<ConsensusState, Error> {
+        Ok(ConsensusState::from(header.clone()))
     }
 }
 

@@ -502,7 +502,7 @@ mod tests {
             unbonding_period: Duration::from_secs(128000),
             max_clock_drift: Duration::from_millis(3000),
             latest_height: Height::new(
-                ChainId::chain_version(tm_header.signed_header.header.chain_id.to_string()),
+                ChainId::chain_version(tm_header.signed_header.header.chain_id.as_str()),
                 u64::from(tm_header.signed_header.header.height),
             ),
             frozen_height: Height::zero(),

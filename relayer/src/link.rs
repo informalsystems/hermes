@@ -1,22 +1,22 @@
 use std::ops::Range;
 
+use itertools::Itertools;
+use retry::{delay::Fixed, retry};
+use thiserror::Error;
+
+use ibc::{
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    Height,
+};
+use tendermint::Signature;
+
+use crate::chain::handle::ChainHandle;
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::channel::{Channel, ChannelError};
 use crate::connection::ConnectionError;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::msgs::{ClientUpdate, Datagram, Packet, Transaction};
-use crate::{
-    chain::{error::ChainError, handle::ChainHandle},
-    util::iter::SplitResults,
-};
-use ibc::{
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
-    Height,
-};
-use itertools::Itertools;
-use retry::{delay::Fixed, retry};
-use tendermint::Signature;
-use thiserror::Error;
+use crate::util::iter::SplitResults;
 
 // TODO: move to config
 const MAX_RETRIES: usize = 10_usize;
@@ -26,9 +26,6 @@ pub enum LinkError {
     #[error("Failed")]
     Failed,
 
-    #[error("Chain handle error")]
-    ChainError(#[from] ChainError),
-
     #[error("Foreign client error")]
     ForeignClientError(#[from] ForeignClientError),
 
@@ -37,6 +34,9 @@ pub enum LinkError {
 
     #[error("ChannelError:")]
     ChannelError(#[from] ChannelError),
+
+    #[error("ChainError:")]
+    ChainError(#[from] crate::error::Error),
 
     #[error("exhausted max number of retries:")]
     RetryError,

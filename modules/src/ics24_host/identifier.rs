@@ -41,22 +41,33 @@ impl ChainId {
     /// The chainID must be in the form: `{chainID}-{version}`
     /// ```
     /// use ibc::ics24_host::identifier::ChainId;
-    /// assert_eq!(ChainId::is_epoch_format("chainA-0".to_string()), false);
-    /// assert_eq!(ChainId::is_epoch_format("chainA".to_string()), false);
-    /// assert_eq!(ChainId::is_epoch_format("chainA-1".to_string()), true);
+    /// assert_eq!(ChainId::is_epoch_format("chainA-0"), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA"), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA-1"), true);
     /// ```
-    pub fn is_epoch_format(chain_id: String) -> bool {
-        use regex::Regex;
-        let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
-        re.is_match(chain_id.as_str())
+    pub fn is_epoch_format(chain_id: &str) -> bool {
+        let re = regex::Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
+        re.is_match(chain_id)
+    }
+
+    // TODO: this should probably be named epoch_number.
+    /// Extract the version from this chain identifier.
+    pub fn version(&self) -> u64 {
+        if !Self::is_epoch_format(self.as_str()) {
+            return 0;
+        }
+
+        let split: Vec<_> = self.as_str().split('-').collect();
+        split[1].parse().unwrap_or(0)
     }
 
     // TODO: this should probably be named epoch_number.
     /// Extract the version from the given chain identifier.
-    pub fn chain_version(chain_id: String) -> u64 {
-        if !Self::is_epoch_format(chain_id.clone()) {
+    pub fn chain_version(chain_id: &str) -> u64 {
+        if !Self::is_epoch_format(chain_id) {
             return 0;
         }
+
         let split: Vec<_> = chain_id.split('-').collect();
         split[1].parse().unwrap_or(0)
     }
@@ -66,7 +77,7 @@ impl FromStr for ChainId {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match Self::is_epoch_format(s.to_string()) {
+        match Self::is_epoch_format(s) {
             true => Ok(Self(s.to_string())),
             false => Err(ValidationKind::chain_id_invalid_format(s.into()).into()),
         }

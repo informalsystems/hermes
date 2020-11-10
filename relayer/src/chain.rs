@@ -1,7 +1,6 @@
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 
-pub mod error;
 pub mod handle;
 pub mod runtime;
 
@@ -17,11 +16,14 @@ use tendermint::{block::Height, chain};
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
-use ibc::events::IBCEvent;
-use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::Path;
 use ibc::tx_msg::Msg;
+use ibc::{events::IBCEvent, ics02_client::client_def::AnyHeader};
+use ibc::{ics02_client::client_def::AnyClientState, ics24_host::identifier::ChainId};
+use ibc::{
+    ics02_client::state::{ClientState, ConsensusState},
+    ics04_channel::packet::Packet,
+};
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
@@ -32,6 +34,9 @@ use crate::util::block_on;
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
+    /// Type of headers for this chain
+    type Header: Send + Sync + Serialize + DeserializeOwned;
+
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync + Serialize + DeserializeOwned;
 
@@ -89,10 +94,19 @@ pub trait Chain {
     fn trust_threshold(&self) -> TrustThreshold;
 
     /// Query a header at the given height via RPC
-    fn query_header_at_height(
+    fn query_header_at_height(&self, height: Height) -> Result<Self::Header, crate::error::Error>;
+
+    fn create_packet(&self, event: IBCEvent) -> Result<Packet, crate::error::Error>;
+
+    fn assemble_client_state(
         &self,
-        height: Height,
-    ) -> Result<Self::LightBlock, crate::error::Error>;
+        header: &Self::Header,
+    ) -> Result<Self::ClientState, crate::error::Error>;
+
+    fn assemble_consensus_state(
+        &self,
+        header: &Self::Header,
+    ) -> Result<Self::ConsensusState, crate::error::Error>;
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<Height, crate::error::Error> {
@@ -112,7 +126,7 @@ pub trait Chain {
     }
 
     /// Query the latest header via RPC
-    fn query_latest_header(&self) -> Result<Self::LightBlock, crate::error::Error> {
+    fn query_latest_header(&self) -> Result<Self::Header, crate::error::Error> {
         let height = self.query_latest_height()?;
         self.query_header_at_height(height)
     }

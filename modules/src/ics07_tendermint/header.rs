@@ -35,7 +35,7 @@ impl crate::ics02_client::header::Header for Header {
 
     fn height(&self) -> Height {
         Height::new(
-            ChainId::chain_version(self.signed_header.header.chain_id.to_string()),
+            ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
     }
