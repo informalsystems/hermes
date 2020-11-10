@@ -9,6 +9,7 @@ use tendermint_proto::DomainType;
 
 // TODO - tendermint deps should not be here
 //use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
@@ -26,7 +27,6 @@ use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsgType;
 use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
-use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path;
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;

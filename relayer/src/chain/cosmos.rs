@@ -35,6 +35,7 @@ use tonic::codegen::http::Uri;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -45,7 +46,6 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensu
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
