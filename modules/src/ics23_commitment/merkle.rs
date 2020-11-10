@@ -3,8 +3,8 @@ use std::convert::TryFrom;
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
-use crate::ics23_commitment::error::{Error, Kind};
+use crate::ics23_commitment::commitment::CommitmentPrefix;
+use crate::ics23_commitment::error::Error;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
@@ -100,8 +100,8 @@ pub struct MerkleProof {
 // Implementations of (de)serializers and conversions:
 //  - commitment.rs:
 //      Vec<u8> <-> CommitmentProof
-//  - merkle.rs:
 //      CommitmentProof <-> RawMerkleProof
+//  - merkle.rs:
 //      RawMerkleProof <-> MerkleProof
 //  - tendermint-rs/src/merkle/proof.rs:
 //      TmProof <-> RawProofOps
@@ -118,24 +118,5 @@ impl TryFrom<RawMerkleProof> for MerkleProof {
 impl From<MerkleProof> for RawMerkleProof {
     fn from(value: MerkleProof) -> Self {
         RawMerkleProof { proof: value.proof }
-    }
-}
-
-impl From<RawMerkleProof> for CommitmentProof {
-    fn from(proof: RawMerkleProof) -> Self {
-        let mut buf = Vec::new();
-        prost::Message::encode(&proof, &mut buf).unwrap();
-        buf.into()
-    }
-}
-
-impl TryFrom<CommitmentProof> for RawMerkleProof {
-    type Error = Error;
-
-    fn try_from(value: CommitmentProof) -> Result<Self, Self::Error> {
-        let value: Vec<u8> = value.into();
-        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
-            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
-        Ok(res)
     }
 }
