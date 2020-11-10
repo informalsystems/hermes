@@ -224,7 +224,7 @@ pub trait Chain {
         let mut consensus_proof = None;
 
         match message_type {
-            ConnectionMsgType::OpenTry | ConnectionMsgType::OpenConfirm => {
+            ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state, client_state_proof) =
                     self.proven_client_state(&client_id, query_height)?;
 

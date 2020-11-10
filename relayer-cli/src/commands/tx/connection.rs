@@ -170,8 +170,8 @@ impl Runnable for TxRawConnTryCmd {
             build_conn_try_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn init failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("conn try, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn try failed, error: ", "{}", e),
         }
     }
 }
