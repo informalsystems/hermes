@@ -67,7 +67,7 @@ pub enum Kind {
     ConnOpenInit(ConnectionId, String),
 
     /// Connection open try failure
-    #[error("Failed to build conn open init {0}: {1}")]
+    #[error("Failed to build conn open try {0}: {1}")]
     ConnOpenTry(ConnectionId, String),
 
     /// A message transaction failure

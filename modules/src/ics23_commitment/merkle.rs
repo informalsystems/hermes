@@ -1,4 +1,4 @@
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 
@@ -85,13 +85,6 @@ impl TryFrom<Vec<u8>> for MerkleProof {
         let res: RawMerkleProof = prost::Message::decode(value.as_ref())
             .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
         Ok(res.try_into()?)
-    }
-}
-
-impl From<MerkleProof> for CommitmentProof {
-    fn from(p: MerkleProof) -> Self {
-        let vec: Vec<u8> = p.into();
-        vec.into()
     }
 }
 

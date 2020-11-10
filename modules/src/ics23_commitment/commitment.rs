@@ -1,3 +1,4 @@
+use crate::ics23_commitment::merkle::MerkleProof;
 use std::fmt;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -37,6 +38,13 @@ impl From<Vec<u8>> for CommitmentProof {
 impl From<CommitmentProof> for Vec<u8> {
     fn from(p: CommitmentProof) -> Vec<u8> {
         p.0
+    }
+}
+
+impl From<MerkleProof> for CommitmentProof {
+    fn from(p: MerkleProof) -> Self {
+        let vec: Vec<u8> = p.into();
+        vec.into()
     }
 }
 
