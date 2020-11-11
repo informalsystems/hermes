@@ -19,6 +19,9 @@ relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_
 
 relayer-cli -c config.toml tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id -d src_connection_id
     -k seed_file.json
+
+relayer-cli -c config.toml tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id src_connection_id
+    -k seed_file.json
 ```
 
 Note: This is work in progress, more commands will be implemented and tested with gaia stargate-4 chains.

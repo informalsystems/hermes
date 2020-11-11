@@ -1,4 +1,9 @@
+use std::convert::TryFrom;
 use std::fmt;
+
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+use crate::ics23_commitment::error::{Error, Kind};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
@@ -37,6 +42,25 @@ impl From<Vec<u8>> for CommitmentProof {
 impl From<CommitmentProof> for Vec<u8> {
     fn from(p: CommitmentProof) -> Vec<u8> {
         p.0
+    }
+}
+
+impl From<RawMerkleProof> for CommitmentProof {
+    fn from(proof: RawMerkleProof) -> Self {
+        let mut buf = Vec::new();
+        prost::Message::encode(&proof, &mut buf).unwrap();
+        buf.into()
+    }
+}
+
+impl TryFrom<CommitmentProof> for RawMerkleProof {
+    type Error = Error;
+
+    fn try_from(value: CommitmentProof) -> Result<Self, Self::Error> {
+        let value: Vec<u8> = value.into();
+        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
+            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
+        Ok(res)
     }
 }
 

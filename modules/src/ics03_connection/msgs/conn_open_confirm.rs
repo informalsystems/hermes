@@ -5,10 +5,10 @@ use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
 
+use crate::address::{account_to_string, string_to_account};
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::{proofs::Proofs, tx_msg::Msg};
-use std::str::FromStr;
 
 /// Message type for the `MsgConnectionOpenConfirm` message.
 pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
@@ -61,6 +61,8 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
+        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+
         let proof_height = msg
             .proof_height
             .ok_or_else(|| Kind::MissingProofHeight)?
@@ -73,8 +75,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer,
         })
     }
 }
@@ -85,7 +86,7 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             proof_ack: ics_msg.proofs.object_proof().clone().into(),
             proof_height: Some(ics_msg.proofs.height().into()),
-            signer: ics_msg.signer.to_string(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
@@ -95,7 +96,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
-    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_confirm() -> RawMsgConnectionOpenConfirm {
         RawMsgConnectionOpenConfirm {
@@ -105,7 +106,7 @@ pub mod test_util {
                 version_number: 0,
                 version_height: 10,
             }),
-            signer: get_dummy_account_id_raw(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }

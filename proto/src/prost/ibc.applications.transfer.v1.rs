@@ -72,16 +72,6 @@ pub struct Params {
     #[prost(bool, tag="2")]
     pub receive_enabled: bool,
 }
-/// GenesisState defines the ibc-transfer genesis state
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(string, tag="1")]
-    pub port_id: std::string::String,
-    #[prost(message, repeated, tag="2")]
-    pub denom_traces: ::std::vec::Vec<DenomTrace>,
-    #[prost(message, optional, tag="3")]
-    pub params: ::std::option::Option<Params>,
-}
 /// QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
 /// method
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -126,5 +116,15 @@ pub struct QueryParamsRequest {
 pub struct QueryParamsResponse {
     /// params defines the parameters of the module.
     #[prost(message, optional, tag="1")]
+    pub params: ::std::option::Option<Params>,
+}
+/// GenesisState defines the ibc-transfer genesis state
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(string, tag="1")]
+    pub port_id: std::string::String,
+    #[prost(message, repeated, tag="2")]
+    pub denom_traces: ::std::vec::Vec<DenomTrace>,
+    #[prost(message, optional, tag="3")]
     pub params: ::std::option::Option<Params>,
 }

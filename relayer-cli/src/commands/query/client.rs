@@ -85,7 +85,7 @@ impl Runnable for QueryClientStateCmd {
             )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
-                AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
             Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
@@ -183,7 +183,7 @@ impl Runnable for QueryClientConsensusCmd {
             )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
-                AnyConsensusState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+                AnyConsensusState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
 
         match res {
@@ -289,7 +289,9 @@ impl Runnable for QueryClientConnectionsCmd {
                 false,
             )
             .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .and_then(|v| {
+                ConnectionIDs::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+            });
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
             Err(e) => status_info!("client connections query error", "{}", e),
