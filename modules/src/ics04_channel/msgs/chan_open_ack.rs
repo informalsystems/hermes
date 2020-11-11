@@ -1,4 +1,3 @@
-use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -37,8 +36,7 @@ impl MsgChannelOpenAck {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            counterparty_version,
             proofs: Proofs::new(proof_try, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
@@ -158,14 +156,6 @@ mod tests {
                 name: "Bad channel, name too long".to_string(),
                 params: OpenAckParams {
                     channel_id: "abcdefghsdfasdfasfdasfdwewefsdfasdfasdfasdfasdfasdfsfdijklmnopqrstu".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Empty counterparty version".to_string(),
-                params: OpenAckParams {
-                    counterparty_version: " ".to_string(),
                     ..default_params.clone()
                 },
                 want_pass: false,
