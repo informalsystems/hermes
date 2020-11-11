@@ -1,6 +1,6 @@
+use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::address::{account_to_string, string_to_account};
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;

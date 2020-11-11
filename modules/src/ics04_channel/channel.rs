@@ -246,7 +246,6 @@ pub fn validate_version(version: String) -> Result<String, Error> {
     Ok(version)
 }
 
-
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;

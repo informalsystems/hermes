@@ -1,8 +1,8 @@
-use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, validate_version};
+use crate::address::{account_to_string, string_to_account};
+use crate::ics04_channel::channel::{validate_version, ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
@@ -21,7 +21,7 @@ const TYPE_MSG_CHANNEL_OPEN_TRY: &str = "channel_open_try";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenTry {
     port_id: PortId,
-    channel_id: ChannelId,  // Labeled `desired_channel_id` in raw types.
+    channel_id: ChannelId, // Labeled `desired_channel_id` in raw types.
     counterparty_chosen_channel_id: Option<ChannelId>,
     channel: ChannelEnd,
     counterparty_version: String,
@@ -31,7 +31,7 @@ pub struct MsgChannelOpenTry {
 
 impl MsgChannelOpenTry {
     #[allow(dead_code, clippy::too_many_arguments)]
-    // TODO: Not used (yet). Also missing `counterparty_chose_channel_id` value.
+    // TODO: Not used (yet). Also missing `counterparty_chosen_channel_id` value.
     fn new(
         port_id: String,
         channel_id: String,
@@ -110,8 +110,13 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             raw_msg.proof_init.into(),
             None,
             None,
-            raw_msg.proof_height.ok_or_else(|| Kind::MissingHeight)?.try_into().map_err(|e| Kind::InvalidProof.context(e))?
-        ).map_err(|e| Kind::InvalidProof.context(e))?;
+            raw_msg
+                .proof_height
+                .ok_or_else(|| Kind::MissingHeight)?
+                .try_into()
+                .map_err(|e| Kind::InvalidProof.context(e))?,
+        )
+        .map_err(|e| Kind::InvalidProof.context(e))?;
 
         let counterparty_chosen_channel_id = Some(raw_msg.counterparty_chosen_channel_id)
             .filter(|x| !x.is_empty())
@@ -145,10 +150,11 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
         RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
             desired_channel_id: domain_msg.channel_id.to_string(),
-            counterparty_chosen_channel_id: domain_msg.counterparty_chosen_channel_id
+            counterparty_chosen_channel_id: domain_msg
+                .counterparty_chosen_channel_id
                 .map_or_else(|| "".to_string(), |id| id.to_string()),
             channel: Some(domain_msg.channel.into()),
-            counterparty_version: domain_msg.counterparty_version.into(),
+            counterparty_version: domain_msg.counterparty_version,
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: account_to_string(domain_msg.signer).unwrap(),
@@ -173,7 +179,10 @@ pub mod test_util {
             channel: Some(get_dummy_raw_channel_end()),
             counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
-            proof_height: Some(Height {version_number: 1, version_height: proof_height}),
+            proof_height: Some(Height {
+                version_number: 1,
+                version_height: proof_height,
+            }),
             signer: get_dummy_bech32_account(),
         }
     }
@@ -181,11 +190,11 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
+    use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-    use std::convert::TryFrom;
     use ibc_proto::ibc::core::client::v1::Height;
+    use std::convert::TryFrom;
 
     #[test]
     fn channel_open_try_from_raw() {
@@ -254,9 +263,49 @@ mod tests {
                 want_pass: false,
             },
             Test {
+                name: "Empty counterparty chosen channel id (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_chosen_channel_id: "".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "[Counterparty] Correct channel identifier".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_chosen_channel_id: "cpartyid34".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "[Counterparty] Bad channel, name too short".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_chosen_channel_id: "cparty".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "[Counterparty] Bad channel, name too long".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_chosen_channel_id: "cpartydefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
                 name: "Empty counterparty version (valid choice)".to_string(),
                 raw: RawMsgChannelOpenTry {
                     counterparty_version: " ".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Arbitrary counterparty version (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_version: "anyversion".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: true,
@@ -281,12 +330,12 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Empty counterparty chosen channel id (valid choice)".to_string(),
+                name: "Missing proof init (object proof)".to_string(),
                 raw: RawMsgChannelOpenTry {
-                    counterparty_chosen_channel_id: "".to_string(),
-                    ..default_raw_msg.clone()
+                    proof_init: vec![],
+                    ..default_raw_msg
                 },
-                want_pass: true,
+                want_pass: false,
             },
         ]
             .into_iter()

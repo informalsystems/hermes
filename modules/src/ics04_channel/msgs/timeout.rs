@@ -1,7 +1,7 @@
+use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
@@ -80,7 +80,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             packet: todo!(),
             next_sequence_recv: None,
             signer,
-            proofs: todo!()
+            proofs: todo!(),
         })
     }
 }
