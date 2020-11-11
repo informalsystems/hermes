@@ -185,6 +185,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
     use std::convert::TryFrom;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     #[test]
     fn channel_open_try_from_raw() {
@@ -194,8 +195,8 @@ mod tests {
             raw: RawMsgChannelOpenTry,
             want_pass: bool,
         }
-        let proof_height = 10;
 
+        let proof_height = 10;
         let default_raw_msg = get_dummy_raw_msg_chan_open_try(proof_height);
 
         let tests: Vec<Test> = vec![
@@ -204,140 +205,89 @@ mod tests {
                 raw: default_raw_msg.clone(),
                 want_pass: true,
             },
-    //         Test {
-    //             name: "Correct port".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 port_id: "p34".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: true,
-    //         },
-    //         Test {
-    //             name: "Bad port, name too short".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 port_id: "p".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad port, name too long".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 port_id: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Correct channel identifier".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 channel_id: "channelid34".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: true,
-    //         },
-    //         Test {
-    //             name: "Bad channel, name too short".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 channel_id: "chshort".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad channel, name too long".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Empty counterparty version".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 counterparty_version: " ".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad proof height, height = 0".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 proof_height: Height {
-    //                     version_number: 0,
-    //                     version_height: 0,
-    //                 },
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad order".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 order: 99,
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Correct connection hops (connection id)".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 connection_hops: vec!["connection124".to_string()].into_iter().collect(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: true,
-    //         },
-    //         Test {
-    //             name: "Bad connection hops, connection id too long".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 connection_hops: vec!["abcdefghadvvxvczxcvzxvxvzxvcsddsfsdsdfasdfasfasdasdgasdfasdfasdfadsfasdfijklmnopqrstu".to_string()]
-    //                     .into_iter()
-    //                     .collect(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad connection hops, connection id too short".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 connection_hops: vec!["connid".to_string()].into_iter().collect(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         // Currently failing because we don't validate connection hops
-    //         // Test {
-    //         //     name: "Bad connection hops, more than 1".to_string(),
-    //         //     raw: RawMsgChannelOpenTry {
-    //         //         connection_hops: vec!["connectionhop".to_string(), "connectionhopnext".to_string()].into_iter().collect(),
-    //         //         ..default_params.clone()
-    //         //     },
-    //         //     want_pass: false,
-    //         // },
-    //         Test {
-    //             name: "Empty channel version".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 channel_version: " ".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Bad counterparty port, name too long".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 counterparty_port_id: "abcdefgaszdsfgasdasdvsdfasdfasdfdfasdfasdfadsgasdfasdfasdfasdfasdfasdfhijklmnopqrstu".to_string(),
-    //                 ..default_params.clone()
-    //             },
-    //             want_pass: false,
-    //         },
-    //         Test {
-    //             name: "Correct counterparty channel identifier".to_string(),
-    //             raw: RawMsgChannelOpenTry {
-    //                 counterparty_channel_id: "channelid34".to_string(),
-    //                 ..default_params
-    //             },
-    //             want_pass: true,
-    //         },
+            Test {
+                name: "Correct port".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    port_id: "p34".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Bad port, name too short".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    port_id: "p".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad port, name too long".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    port_id: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Correct channel identifier".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    desired_channel_id: "channelid34".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    desired_channel_id: "chshort".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    desired_channel_id: "abcdefghijkasdfasdfasdfasgdasdgasdfasdfadflmnoasdasdasdfasdfasdfasdfadadgadgadsfpqrstu".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty counterparty version (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_version: " ".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Bad proof height, height = 0".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    proof_height: Some(Height {
+                        version_number: 0,
+                        version_height: 0,
+                    }),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Missing proof height".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    proof_height: None,
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty counterparty chosen channel id (valid choice)".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    counterparty_chosen_channel_id: "".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
         ]
             .into_iter()
             .collect();
@@ -354,5 +304,15 @@ mod tests {
                 res_msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_raw_msg_chan_open_try(10);
+        let msg = MsgChannelOpenTry::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgChannelOpenTry::from(msg.clone());
+        let msg_back = MsgChannelOpenTry::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }
