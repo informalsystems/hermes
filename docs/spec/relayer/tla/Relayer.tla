@@ -236,25 +236,30 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 (***************************************************************************
  Packet datagrams
  ***************************************************************************)
-\* Compute a packet datagram designated for dstChainID, based on the packetLogEntry
-PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
-    
-    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
-    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+\* Compute a packet datagram based on the packetLogEntry
+PacketDatagram(packetLogEntry) ==
+    \* get srcChainID and its channel end
+    LET chainID == packetLogEntry.srcChainID IN
+    LET channelEnd == GetChainByID(chainID).connectionEnd.channelEnd IN
+    \* get channelID and counterpartyChannelID
+    LET channelID == channelEnd.channelID IN \* "chanAtoB" (if srcChainID = "chainA")
+    LET counterpartyChannelID == channelEnd.counterpartyChannelID IN \* "chanBtoA" (if srcChainID = "chainA")
     
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
-    \* the source chain of the packet that is received by dstChainID is srcChainID
+    \* the srcChannelID of the packet that is received is channelID,
+    \* the dstChannelID of the packet that is received is counterpartyChannelID
     LET recvPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 dstChannelID |-> dstChannelID]) IN
+                                 srcChannelID |-> channelID,
+                                 dstChannelID |-> counterpartyChannelID]) IN
     
-    \* the source chain of the packet that is acknowledged by srcChainID is dstChainID
+    \* the srcChannelID of the packet that is acknowledged is counterpartyChannelID,
+    \* the dstChannelID of the packet that is acknowledged is channelID
     LET ackPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> dstChannelID,
-                                 dstChannelID |-> srcChannelID]) IN
+                                 srcChannelID |-> counterpartyChannelID,
+                                 dstChannelID |-> channelID]) IN
     
     IF packetLogEntry.type = "PacketSent"
     THEN AsDatagram([type |-> "PacketRecv",
@@ -332,10 +337,10 @@ Relay(srcChainID, dstChainID) ==
 \* given an entry from the packet log, create a packet datagram and 
 \* append it to the outgoing packet datagram queue for dstChainID      
 RelayPacketDatagram(packetLogEntry) ==
-    LET srcChainID == packetLogEntry.srcChainID IN
-    LET dstChainID == GetCounterpartyChainID(srcChainID) IN
-    
-    LET packetDatagram == PacketDatagram(srcChainID, dstChainID, packetLogEntry) IN 
+    \* get dstChainID
+    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
+    \* create a packet datagram from packet log entry
+    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
     
     IF packetDatagram /= NullDatagram
     THEN [outgoingPacketDatagrams EXCEPT 
@@ -400,5 +405,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 17:26:08 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Nov 11 17:26:08 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska
