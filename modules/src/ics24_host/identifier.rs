@@ -132,6 +132,12 @@ impl FromStr for ClientId {
     }
 }
 
+impl Default for ClientId {
+    fn default() -> Self {
+        "defaultclientid".to_string().parse().unwrap()
+    }
+}
+
 /// Equality check against string literal (satisfies &ClientId == &str).
 /// ```
 /// use std::str::FromStr;
@@ -176,6 +182,11 @@ impl FromStr for ConnectionId {
     }
 }
 
+impl Default for ConnectionId {
+    fn default() -> Self {
+        "defaultconnectionid".to_string().parse().unwrap()
+    }
+}
 /// Equality check against string literal (satisfies &ConnectionId == &str).
 /// ```
 /// use std::str::FromStr;

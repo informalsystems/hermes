@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -11,7 +10,7 @@ use crate::ics02_client::header::Header;
 use crate::mock_client::state::MockConsensusState;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockHeader(pub Height);
 
 impl DomainType<RawMockHeader> for MockHeader {}
@@ -20,15 +19,9 @@ impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
-        if raw.height.is_none() {
-            return Err(error::Kind::InvalidRawHeader
-                .context("no height in header")
-                .into());
-        }
-
         Ok(MockHeader(
             raw.height
-                .ok_or_else(|| error::Kind::InvalidRawHeader)?
+                .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
         ))

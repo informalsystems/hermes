@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -7,9 +6,11 @@ use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
 
+use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::validate_version;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -19,7 +20,7 @@ use crate::Height;
 pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
     connection_id: ConnectionId,
     counterparty_connection_id: Option<ConnectionId>,
@@ -80,10 +81,6 @@ impl Msg for MsgConnectionOpenAck {
         Ok(())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -95,6 +92,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
+        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
@@ -109,10 +108,9 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProof::from);
 
         let counterparty_connection_id = Some(msg.counterparty_connection_id)
             .filter(|x| !x.is_empty())
@@ -139,8 +137,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer,
         })
     }
 }
@@ -171,17 +168,17 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             version: ics_msg.version,
-            signer: ics_msg.signer.to_string(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::ics03_connection::version::default_version_string;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-
-    use crate::ics03_connection::msgs::test_util::{get_dummy_account_id_raw, get_dummy_proof};
 
     pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
@@ -199,8 +196,8 @@ pub mod test_util {
             }),
             client_state: None,
             proof_client: vec![],
-            version: "1.0.0".to_string(),
-            signer: get_dummy_account_id_raw(),
+            version: default_version_string(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }

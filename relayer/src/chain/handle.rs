@@ -18,7 +18,7 @@ use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
 
-use super::Chain;
+use super::{Chain, QueryResponse};
 
 mod prod;
 pub use prod::ProdChainHandle;
@@ -42,7 +42,7 @@ pub enum HandleInput {
         path: Path,
         height: Height,
         prove: bool,
-        reply_to: ReplyTo<Vec<u8>>,
+        reply_to: ReplyTo<QueryResponse>,
     },
 
     GetHeader {
@@ -71,15 +71,13 @@ pub enum HandleInput {
         reply_to: ReplyTo<Packet>,
     },
 
-    /// Given a header originating from this chain, constructs a client state.
     AssembleClientState {
-        header: AnyHeader,
+        height: Height,
         reply_to: ReplyTo<AnyClientState>,
     },
 
-    /// Given a header originating from this chain, constructs a consensus state.
     AssembleConsensusState {
-        header: AnyHeader,
+        height: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     },
 }
@@ -89,7 +87,7 @@ pub trait ChainHandle: Send {
 
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
 
-    fn query(&self, path: Path, height: Height, prove: bool) -> Result<Vec<u8>, Error>;
+    fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
 
     // Inclusion proofs
     // It might be good to include an inclusion proof method which abstracts over the light client

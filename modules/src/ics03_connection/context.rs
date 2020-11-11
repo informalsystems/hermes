@@ -6,6 +6,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::version::{get_compatible_versions, pick_version};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
@@ -40,11 +41,19 @@ pub trait ConnectionReader {
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
     /// handshake protocol supports.
-    fn get_compatible_versions(&self) -> Vec<String>;
+    fn get_compatible_versions(&self) -> Vec<String> {
+        get_compatible_versions()
+    }
 
     /// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
     /// connection handshake protocol prefers.
-    fn pick_version(&self, counterparty_candidate_versions: Vec<String>) -> String;
+    fn pick_version(
+        &self,
+        supported_versions: Vec<String>,
+        counterparty_candidate_versions: Vec<String>,
+    ) -> Result<String, Error> {
+        pick_version(supported_versions, counterparty_candidate_versions)
+    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)

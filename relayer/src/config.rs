@@ -85,6 +85,7 @@ pub struct ChainConfig {
     pub id: ChainId,
     #[serde(default = "default::rpc_addr")]
     pub rpc_addr: net::Address,
+    pub grpc_addr: String,
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,

@@ -60,7 +60,7 @@ pub(crate) fn process(
             new_conn_end.client_id().clone(), // The local client identifier.
             msg.counterparty_connection_id().cloned(), // This chain's connection id as known on counterparty.
             ctx.commitment_prefix(),                   // Local commitment prefix.
-        )?,
+        ),
         vec![msg.version().clone()],
     )?;
     // 2. Pass the details to the verification function.
@@ -120,8 +120,7 @@ mod tests {
             client_id.clone(),
             msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(vec![]),
-        )
-        .unwrap();
+        );
 
         let incorrect_context = MockContext::default();
 
@@ -150,8 +149,7 @@ mod tests {
             client_id.clone(),
             msg_ack.counterparty_connection_id().cloned(),
             CommitmentPrefix::from(b"ibc".to_vec()),
-        )
-        .unwrap();
+        );
         let correct_conn_end = ConnectionEnd::new(
             State::Init,
             client_id.clone(),
@@ -171,7 +169,7 @@ mod tests {
             Test {
                 name: "Processing fails due to missing connection in context".to_string(),
                 ctx: correct_context.clone(),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
             },
             Test {
@@ -180,7 +178,7 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_state),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
             },
             Test {
@@ -190,7 +188,7 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
             },
             Test {
@@ -199,7 +197,7 @@ mod tests {
                     .clone()
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_prefix),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
             },
             Test {
@@ -207,7 +205,7 @@ mod tests {
                 ctx: incorrect_context
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), correct_conn_end.clone()),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: false,
             },
             Test {
@@ -215,7 +213,7 @@ mod tests {
                 ctx: correct_context
                     .with_client(&client_id, Height::new(0, 10))
                     .with_connection(msg_ack.connection_id().clone(), correct_conn_end),
-                msg: ConnectionMsg::ConnectionOpenAck(msg_ack.clone()),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: true,
             },
         ]

@@ -1,18 +1,20 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::{ChainConfig, Config};
 
-use crate::error::{Error, Kind};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
+
+use tendermint_proto::DomainType;
+
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
-use tendermint_proto::DomainType;
+use relayer::config::{ChainConfig, Config};
+
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
@@ -77,10 +79,10 @@ impl Runnable for QueryClientStateCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyClientState, Error> = chain
-            .query(ClientState(opts.client_id), height, opts.proof)
+            .ics_query(ClientState(opts.client_id), height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
-                AnyClientState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
             Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
@@ -169,7 +171,7 @@ impl Runnable for QueryClientConsensusCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyConsensusState, Error> = chain
-            .query(
+            .ics_query(
                 ClientConsensusState {
                     client_id: opts.client_id,
                     epoch: opts.version_number,
@@ -180,7 +182,7 @@ impl Runnable for QueryClientConsensusCmd {
             )
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
-                AnyConsensusState::decode_vec(&v).map_err(|e| Kind::Query.context(e).into())
+                AnyConsensusState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
 
         match res {
@@ -282,9 +284,11 @@ impl Runnable for QueryClientConnectionsCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<ConnectionIDs, Error> = chain
-            .query(ClientConnections(opts.client_id), height, false)
+            .ics_query(ClientConnections(opts.client_id), height, false)
             .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ConnectionIDs::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .and_then(|v| {
+                ConnectionIDs::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+            });
 
         match res {
             Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),

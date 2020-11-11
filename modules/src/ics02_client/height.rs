@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::{cmp::Ordering, convert::TryFrom};
 
 use tendermint_proto::DomainType;
@@ -6,7 +5,7 @@ use tendermint_proto::DomainType;
 use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Height {
     pub version_number: u64,
     pub version_height: u64,

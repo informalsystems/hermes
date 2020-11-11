@@ -166,10 +166,7 @@ fn fetch_status(chain_id: ChainId, address: net::Address) -> Result<NodeStatus, 
 
     let peer_id = response.node_info.id;
     let latest_height = response.sync_info.latest_block_height;
-    let latest_hash = response
-        .sync_info
-        .latest_block_hash
-        .ok_or_else(|| "missing latest block hash in RPC status response")?;
+    let latest_hash = response.sync_info.latest_block_hash;
 
     Ok(NodeStatus {
         chain_id,

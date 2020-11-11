@@ -24,7 +24,7 @@ use crate::{foreign_client::ForeignClient, light_client::LightBlock};
 
 use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
-    Chain, CosmosSDKChain,
+    Chain, CosmosSDKChain, QueryResponse,
 };
 
 pub struct ChainRuntime<C: Chain> {
@@ -90,11 +90,11 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::CreatePacket { event, reply_to }) => {
                             self.create_packet(event, reply_to)?
                         }
-                        Ok(HandleInput::AssembleClientState { header, reply_to }) => {
-                            self.assemble_client_state(header, reply_to)?
+                        Ok(HandleInput::AssembleClientState { height, reply_to }) => {
+                            self.assemble_client_state(height, reply_to)?
                         }
-                        Ok(HandleInput::AssembleConsensusState { header, reply_to }) => {
-                            self.assemble_consensus_state(header, reply_to)?
+                        Ok(HandleInput::AssembleConsensusState { height, reply_to }) => {
+                            self.assemble_consensus_state(height, reply_to)?
                         }
                         Err(e) => todo!(),
                     }
@@ -114,7 +114,7 @@ impl<C: Chain> ChainRuntime<C> {
         path: Path,
         height: Height,
         prove: bool,
-        reply_to: ReplyTo<Vec<u8>>,
+        reply_to: ReplyTo<QueryResponse>,
     ) -> Result<(), Error> {
         if !path.is_provable() & prove {
             reply_to
@@ -123,7 +123,7 @@ impl<C: Chain> ChainRuntime<C> {
             return Ok(());
         }
 
-        let response = self.chain.query(path, height, prove);
+        let response = self.chain.ics_query(path, height, prove);
 
         // Verify response proof, if requested.
         if prove {
@@ -172,44 +172,36 @@ impl<C: Chain> ChainRuntime<C> {
     /// Given a header originating from this chain, constructs a client state.
     fn assemble_client_state(
         &self,
-        header: AnyHeader,
+        height: Height,
         reply_to: ReplyTo<AnyClientState>,
     ) -> Result<(), Error> {
-        if let Some(header) = self.chain.downcast_header(header) {
-            let client_state = self
-                .chain
-                .assemble_client_state(&header)
-                .map(|cs| cs.wrap_any());
+        let client_state = self
+            .chain
+            .build_client_state(height)
+            .map(|cs| cs.wrap_any());
 
-            reply_to
-                .send(client_state)
-                .map_err(|e| Kind::Channel.context(e))?;
+        reply_to
+            .send(client_state)
+            .map_err(|e| Kind::Channel.context(e))?;
 
-            Ok(())
-        } else {
-            Err(Kind::InvalidInputHeader.into())
-        }
+        Ok(())
     }
 
     /// Given a header originating from this chain, constructs a consensus state.
     fn assemble_consensus_state(
         &self,
-        header: AnyHeader,
+        height: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        if let Some(header) = self.chain.downcast_header(header) {
-            let consensus_state = self
-                .chain
-                .assemble_consensus_state(&header)
-                .map(|cs| cs.wrap_any());
+        let consensus_state = self
+            .chain
+            .build_consensus_state(height)
+            .map(|cs| cs.wrap_any());
 
-            reply_to
-                .send(consensus_state)
-                .map_err(|e| Kind::Channel.context(e))?;
+        reply_to
+            .send(consensus_state)
+            .map_err(|e| Kind::Channel.context(e))?;
 
-            Ok(())
-        } else {
-            Err(Kind::InvalidInputHeader.into())
-        }
+        Ok(())
     }
 }

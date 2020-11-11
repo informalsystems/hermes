@@ -96,13 +96,15 @@ impl Runnable for QueryChannelEndCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
         let res: Result<ChannelEnd, Error> = chain
-            .query(
+            .ics_query(
                 ChannelEnds(opts.port_id, opts.channel_id),
                 height,
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ChannelEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .and_then(|v| {
+                ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+            });
 
         match res {
             Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),

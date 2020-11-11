@@ -8,7 +8,20 @@
 #![forbid(unsafe_code)]
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.4.0")]
 
+/// The version (commit hash) of the Cosmos SDK used when generating this library.
+pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
+
 pub mod cosmos {
+    pub mod auth {
+        pub mod v1beta1 {
+            include!("prost/cosmos.auth.v1beta1.rs");
+        }
+    }
+    pub mod staking {
+        pub mod v1beta1 {
+            include!("prost/cosmos.staking.v1beta1.rs");
+        }
+    }
     pub mod base {
         pub mod abci {
             pub mod v1beta1 {

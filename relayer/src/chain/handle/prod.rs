@@ -6,6 +6,7 @@ use ibc::{
 use tendermint_light_client::types::SignedHeader;
 
 use crate::{
+    chain::QueryResponse,
     error::{Error, Kind},
     foreign_client::ForeignClient,
     msgs::{EncodedTransaction, Packet},
@@ -58,7 +59,7 @@ impl ChainHandle for ProdChainHandle {
         path: ibc::ics24_host::Path,
         height: Height,
         prove: bool,
-    ) -> Result<Vec<u8>, Error> {
+    ) -> Result<QueryResponse, Error> {
         let (sender, receiver) = reply_channel();
 
         self.sender

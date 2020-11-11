@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use ibc::{
     ics02_client::client_def::AnyConsensusState,
-    ics02_client::{header::Header, msgs::MsgCreateAnyClient},
+    ics02_client::header::Header,
     ics07_tendermint::consensus_state::ConsensusState,
     ics23_commitment::commitment::CommitmentProof,
     ics24_host::identifier::{ChainId, ClientId},
@@ -96,14 +96,15 @@ impl ForeignClient {
         let signer: AccountId = todo!();
 
         // Build the domain type message.
-        let create_client_msg =
-            MsgCreateAnyClient::new(client_id.clone(), client_state, consensus_state, signer)
-                .map_err(|e| {
-                    ForeignClientError::ClientCreate(format!(
-                        "failed to assemble the create client message ({:?})",
-                        e
-                    ))
-                })?;
+        let create_client_msg = unimplemented!();
+        // TODO Make the create message public.
+        // MsgCreateAnyClient::new(client_id.clone(), client_state, consensus_state, signer)
+        //     .map_err(|e| {
+        //         ForeignClientError::ClientCreate(format!(
+        //             "failed to assemble the create client message ({:?})",
+        //             e
+        //         ))
+        //     })?;
 
         // Create a proto any message.
         let proto_msgs = vec![Any {

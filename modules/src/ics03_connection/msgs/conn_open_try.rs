@@ -1,4 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -7,9 +6,12 @@ use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
 
+use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics03_connection::connection::{validate_versions, Counterparty};
+use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::validate_versions;
+use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -21,16 +23,16 @@ pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
 ///
 /// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
 ///
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenTry {
-    connection_id: ConnectionId,
-    client_id: ClientId,
-    client_state: Option<AnyClientState>,
-    counterparty_chosen_connection_id: Option<ConnectionId>,
-    counterparty: Counterparty,
-    counterparty_versions: Vec<String>,
-    proofs: Proofs,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub client_id: ClientId,
+    pub client_state: Option<AnyClientState>,
+    pub counterparty_chosen_connection_id: Option<ConnectionId>,
+    pub counterparty: Counterparty,
+    pub counterparty_versions: Vec<String>,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgConnectionOpenTry {
@@ -96,12 +98,12 @@ impl Msg for MsgConnectionOpenTry {
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn get_sign_bytes(&self) -> Vec<u8> {
-        unimplemented!()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string()
     }
 }
 
@@ -111,7 +113,6 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        // TODO: implement TryFrom for ConsensusProof & move casting of raw heights in there.
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
@@ -127,10 +128,9 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
-        let client_proof = match msg.client_state {
-            None => None,
-            Some(_) => Some(msg.proof_client.into()),
-        };
+        let client_proof = Some(msg.proof_client)
+            .filter(|x| !x.is_empty())
+            .map(CommitmentProof::from);
 
         let counterparty_chosen_connection_id = Some(msg.counterparty_chosen_connection_id)
             .filter(|x| !x.is_empty())
@@ -166,8 +166,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer: string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?,
         })
     }
 }
@@ -200,19 +199,18 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
-            signer: ics_msg.signer.to_string(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::version::get_compatible_versions;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-
-    use crate::ics03_connection::msgs::test_util::{
-        get_dummy_account_id_raw, get_dummy_counterparty, get_dummy_proof,
-    };
 
     /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
     /// `proof_height` represents the height, on the source chain, at which this chain produced the
@@ -227,7 +225,7 @@ pub mod test_util {
             desired_connection_id: "srcconnection".to_string(),
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
-            counterparty_versions: vec!["1.0.0".to_string()],
+            counterparty_versions: get_compatible_versions(),
             counterparty_chosen_connection_id: "srcconnection".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
@@ -240,7 +238,7 @@ pub mod test_util {
                 version_height: consensus_height,
             }),
             proof_client: vec![],
-            signer: get_dummy_account_id_raw(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }
