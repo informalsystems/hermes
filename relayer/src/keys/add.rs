@@ -5,6 +5,7 @@ use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyRing, KeyRingOperations};
 use std::fs;
 use std::path::Path;
+use futures::AsyncReadExt;
 
 #[derive(Clone, Debug)]
 pub struct KeysAddOptions {
@@ -13,30 +14,31 @@ pub struct KeysAddOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn add_key(opts: KeysAddOptions) -> Result<Vec<u8>, Error> {
+pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     // TODO - Implement the logic to persist the key in the filesystem
     // Get the destination chain
     let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
 
-    // Check if the key file exists
-    if fs::metadata(Path::new(&opts.file)).is_err() {
-        return Err(Kind::KeyBase.context("error reading the key file, file does not exist").into());
-    };
+    let file = Path::new(&opts.file);
 
-    let key_file_contents = fs::read_to_string(&opts.name).map_err(|e| Kind::KeyBase.context("error reading the key file"))?;
+    if !file.exists() {
+        return Err(Kind::Store.context("cannot find key file specified".to_string()))?;
+    }
 
-    let key_entry = chain.keybase.key_from_seed_file(&opts.file);
+    let key_file_contents = fs::read_to_string(&file).map_err(|e| Kind::KeyBase.context("error reading the key file"))?;
+
+    let key_entry = chain.keybase.key_from_seed_file(&key_file_contents);
 
     match key_entry {
         Ok(k) => {
             chain
                 .keybase
-                .add(opts.name, k.clone())
+                .add(opts.name.clone(), k.clone())
                 .map_err(|e| error::Kind::KeyBase.context(e))?;
-            Ok(k.address)
+            Ok(format!("Added {} key - Account: {}", opts.name.as_str(), k.account.as_str()))
         }
         Err(e) => {
-            return Err(Kind::KeyBase.context("error reading the key file").into());
+            return Err(Kind::KeyBase.context(e).into());
         }
     }
 }

@@ -5,7 +5,7 @@ pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
-    #[error("cannot retrieve key for address")]
+    #[error("invalid key")]
     InvalidKey,
 
     #[error("key already exists")]

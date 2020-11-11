@@ -5,8 +5,6 @@ use relayer::config::Config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 use relayer::keys::add::{add_key, KeysAddOptions};
-use std::fs;
-use std::path::Path;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyAddCmd {
@@ -40,23 +38,14 @@ impl KeyAddCmd {
             .clone()
             .ok_or_else(|| "missing key name".to_string())?;
 
-        // Get content of key seed file
         let key_filename = self
             .file
             .clone()
             .ok_or_else(|| "missing signer key file".to_string())?;
 
-        let key_file = Path::new(&key_filename).exists();
-        if !key_file {
-            return Err("cannot find key file specified".to_string());
-        }
-
-        let key_file_contents = fs::read_to_string(key_filename)
-            .expect("Something went wrong reading the key seed file");
-
         Ok(KeysAddOptions {
             name: key_name,
-            file: key_file_contents,
+            file: key_filename,
             chain_config: chain_config.clone(),
         })
     }
@@ -74,7 +63,7 @@ impl Runnable for KeyAddCmd {
             Ok(result) => result,
         };
 
-        let res: Result<Vec<u8>, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
             Ok(r) => status_info!("key add result: ", "{:?}", r),

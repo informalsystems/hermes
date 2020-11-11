@@ -152,7 +152,7 @@ impl KeyRingOperations for KeyRing {
         match self {
             KeyRing::MemoryKeyStore { store: s } => {
                 match s.get(&key_id) {
-                    Some(s) => return Err(Kind::ExistingKey.context("Key already exists".to_string()))?,
+                    Some(s) => return Err(Kind::ExistingKey.context("key already exists".to_string()))?,
                     None => {
                         s.insert(key_id, key.clone());
                         Ok(key)
