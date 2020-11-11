@@ -167,7 +167,6 @@ mod tests {
 
     #[test]
     fn parse_channel_open_ack_msg() {
-        #[derive(Clone, Debug, PartialEq)]
         struct Test {
             name: String,
             raw: RawMsgChannelOpenAck,

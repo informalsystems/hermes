@@ -123,7 +123,6 @@ mod tests {
 
     #[test]
     fn parse_channel_close_init_msg() {
-        #[derive(Clone, Debug, PartialEq)]
         struct Test {
             name: String,
             raw: RawMsgChannelCloseInit,

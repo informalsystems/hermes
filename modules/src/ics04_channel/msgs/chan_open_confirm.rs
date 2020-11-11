@@ -152,7 +152,6 @@ mod tests {
 
     #[test]
     fn parse_channel_open_confirm_msg() {
-        #[derive(Clone, Debug, PartialEq)]
         struct Test {
             name: String,
             raw: RawMsgChannelOpenConfirm,

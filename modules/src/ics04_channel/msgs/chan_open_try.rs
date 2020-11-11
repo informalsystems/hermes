@@ -198,7 +198,6 @@ mod tests {
 
     #[test]
     fn channel_open_try_from_raw() {
-        #[derive(Clone, Debug, PartialEq)]
         struct Test {
             name: String,
             raw: RawMsgChannelOpenTry,
