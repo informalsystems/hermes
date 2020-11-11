@@ -1,8 +1,11 @@
-use serde_derive::{Deserialize, Serialize};
-
+use std::convert::TryFrom;
 use std::fmt;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+
+use crate::ics23_commitment::error::{Error, Kind};
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
     pub fn from_bytes(bytes: &[u8]) -> Self {
@@ -18,11 +21,12 @@ impl From<Vec<u8>> for CommitmentRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentProof(Vec<u8>);
+
 impl CommitmentProof {
     pub fn is_empty(&self) -> bool {
         self.0.len() == 0
@@ -41,7 +45,26 @@ impl From<CommitmentProof> for Vec<u8> {
     }
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+impl From<RawMerkleProof> for CommitmentProof {
+    fn from(proof: RawMerkleProof) -> Self {
+        let mut buf = Vec::new();
+        prost::Message::encode(&proof, &mut buf).unwrap();
+        buf.into()
+    }
+}
+
+impl TryFrom<CommitmentProof> for RawMerkleProof {
+    type Error = Error;
+
+    fn try_from(value: CommitmentProof) -> Result<Self, Self::Error> {
+        let value: Vec<u8> = value.into();
+        let res: RawMerkleProof = prost::Message::decode(value.as_ref())
+            .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;
+        Ok(res)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
 
 impl CommitmentPrefix {

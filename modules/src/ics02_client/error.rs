@@ -33,17 +33,17 @@ pub enum Kind {
     #[error("unknown client consensus state type: {0}")]
     UnknownConsensusStateType(String),
 
+    #[error("unknown header type: {0}")]
+    UnknownHeaderType(String),
+
     #[error("invalid raw client state")]
     InvalidRawClientState,
 
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
-    #[error("mismatch raw client consensus state")]
-    RawClientAndConsensusStateTypesMismatch {
-        state_type: ClientType,
-        consensus_type: ClientType,
-    },
+    #[error("invalid identifer")]
+    InvalidIdentifier,
 
     #[error("invalid raw header")]
     InvalidRawHeader,
@@ -51,14 +51,20 @@ pub enum Kind {
     #[error("invalid height result")]
     InvalidHeightResult,
 
-    #[error("Protobuf decoding failure")]
-    ProtoDecodingFailure,
+    #[error("cannot store this client state")]
+    InvalidClientStateForStore,
+
+    #[error("invalid address")]
+    InvalidAddress,
 
     #[error("mismatch between client and arguments types, expected: {0:?}")]
     ClientArgsTypeMismatch(ClientType),
 
-    #[error("bad client state (expected mock client)")]
-    BadClientState,
+    #[error("mismatch raw client consensus state")]
+    RawClientAndConsensusStateTypesMismatch {
+        state_type: ClientType,
+        consensus_type: ClientType,
+    },
 }
 
 impl Kind {
