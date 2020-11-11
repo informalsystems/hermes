@@ -54,20 +54,7 @@ impl CosmosSDKChain {
             HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         // Initialize key store and load key
-        let mut key_store = KeyRing::init(StoreBackend::Memory);
-        let key_file_contents = fs::read_to_string(config.clone().key_name)
-            .expect("Something went wrong reading the key seed file");
-
-        let key_entry = key_store.key_from_seed_file(&key_file_contents);
-
-        match key_entry {
-            Ok(k) => {
-                key_store.add(config.clone().key_name, k);
-            }
-            Err(e) => {
-                return Err(Kind::KeyBase.context("error reading the key file").into());
-            }
-        }
+        let key_store = KeyRing::init(StoreBackend::Memory);
 
         Ok(Self {
             config,

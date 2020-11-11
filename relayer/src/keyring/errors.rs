@@ -8,6 +8,9 @@ pub enum Kind {
     #[error("cannot retrieve key for address")]
     InvalidKey,
 
+    #[error("key already exists")]
+    ExistingKey,
+
     #[error("invalid mnemonic")]
     InvalidMnemonic,
 

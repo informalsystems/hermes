@@ -35,7 +35,7 @@ pub trait KeyRingOperations: Sized {
     fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error>;
     fn key_from_mnemonic(&mut self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get(&self, key_id: String) -> Result<KeyEntry, Error>;
-    fn add(&mut self, key_id: String, key: KeyEntry) -> Option<KeyEntry>;
+    fn add(&mut self, key_id: String, key: KeyEntry) -> Result<KeyEntry, Error>;
     fn sign(&self, key_id: String, msg: Vec<u8>) -> Vec<u8>;
 }
 
@@ -148,9 +148,17 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Insert an entry in the key store
-    fn add(&mut self, key_id: String, key: KeyEntry) -> Option<KeyEntry> {
+    fn add(&mut self, key_id: String, key: KeyEntry) -> Result<KeyEntry, Error> {
         match self {
-            KeyRing::MemoryKeyStore { store: s } => s.insert(key_id, key),
+            KeyRing::MemoryKeyStore { store: s } => {
+                match s.get(&key_id) {
+                    Some(s) => return Err(Kind::ExistingKey.context("Key already exists".to_string()))?,
+                    None => {
+                        s.insert(key_id, key.clone());
+                        Ok(key)
+                    }
+                }
+            },
         }
     }
 
