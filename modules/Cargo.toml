@@ -15,8 +15,6 @@ description = """
 """
 
 [dependencies]
-tendermint-proto = "0.1.0"
-
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.4.0", path = "../proto" }
 
@@ -36,10 +34,25 @@ bech32 = "0.7.2"
 
 [dependencies.tendermint]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dependencies.tendermint-rpc]
 version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
+
 features = ["http-client", "websocket-client"]
+
+[dependencies.tendermint-light-client]
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
+
+[dependencies.tendermint-proto]
+version = "0.17.0-rc1"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "greg/research-json"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }

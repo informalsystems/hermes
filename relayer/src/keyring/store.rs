@@ -68,8 +68,8 @@ impl KeyRingOperations for KeyRing {
 
     /// Get key from seed file
     fn key_from_seed_file(&mut self, key_file_content: &str) -> Result<KeyEntry, Error> {
-        let key_json: Value = serde_json::from_str(key_file_content)
-            .map_err(|e| Kind::InvalidKey.context("failed to parse key seed file"))?;
+        let key_json: Value =
+            serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
         let signer: AccountId;
         let key: KeyEntry;

@@ -32,6 +32,9 @@ pub enum Kind {
     #[error("invalid version")]
     InvalidVersion,
 
+    #[error("no commong version")]
+    NoCommonVersion,
+
     #[error("invalid address")]
     InvalidAddress,
 

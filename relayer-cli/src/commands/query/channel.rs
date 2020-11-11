@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use std::convert::TryInto;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::{ChainConfig, Config};
@@ -12,8 +13,6 @@ use ibc::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
 use tendermint_proto::DomainType;
-
-use std::convert::TryInto;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
@@ -103,7 +102,9 @@ impl Runnable for QueryChannelEndCmd {
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ChannelEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .and_then(|v| {
+                ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+            });
 
         match res {
             Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),

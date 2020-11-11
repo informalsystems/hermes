@@ -153,22 +153,23 @@ impl ChainHandle for CosmosSDKHandle {
     ) -> Result<AnyClientState, ChainHandleError> {
         // Downcast from the generic any header into a header specific for this type of chain.
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
-            let height = u64::from(our_header.signed_header.header.height);
+            // let height = u64::from(our_header.signed_header.header.height);
 
             // Build the client state.
-            ClientState::new(
-                self.chain_id.to_string(), // The id of this chain.
-                self.trusting_period,
-                self.unbonding_period,
-                Duration::from_millis(3000),
-                Height::new(self.chain_version, height),
-                Height::new(self.chain_version, 0),
-                "".to_string(),
-                false,
-                false,
-            ) // TODO more useful err message below :(
-            .map_err(|e| ChainHandleError::Failed)
-            .map(AnyClientState::Tendermint)
+            // ClientState::new(
+            //     self.chain_id.to_string(), // The id of this chain.
+            //     self.trusting_period,
+            //     self.unbonding_period,
+            //     Duration::from_millis(3000),
+            //     Height::new(self.chain_version, height),
+            //     Height::new(self.chain_version, 0),
+            //     "".to_string(),
+            //     false,
+            //     false,
+            // ) // TODO more useful err message below :(
+            // .map_err(|e| ChainHandleError::Failed)
+            // .map(AnyClientState::Tendermint)
+            unimplemented!() // This is changing.
         } else {
             Err(ChainHandleError::InvalidInputHeader)
         }
@@ -180,7 +181,7 @@ impl ChainHandle for CosmosSDKHandle {
     ) -> Result<AnyConsensusState, ChainHandleError> {
         if let Some(our_header) = downcast!(header => AnyHeader::Tendermint) {
             Ok(AnyConsensusState::Tendermint(ConsensusState::from(
-                our_header.signed_header.clone(),
+                our_header.signed_header.header.clone(),
             )))
         } else {
             Err(ChainHandleError::InvalidInputHeader)

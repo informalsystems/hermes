@@ -30,6 +30,7 @@ fn simd_config() -> Config {
     config.chains = vec![ChainConfig {
         id: "ibc-test".try_into().unwrap(),
         rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
+        grpc_addr: "tcp://localhost:9090".parse().unwrap(),
         account_prefix: "cosmos".to_string(),
         key_name: "testkey".to_string(),
         store_prefix: "ibc".to_string(),
@@ -92,7 +93,8 @@ fn query_channel_id() {
                 Height::from(0_u32),
                 false,
             )
-            .unwrap(),
+            .unwrap()
+            .value,
     )
     .unwrap();
 
@@ -116,7 +118,8 @@ fn query_client_id() {
                 Height::from(0_u32),
                 false,
             )
-            .unwrap(),
+            .unwrap()
+            .value,
     )
     .unwrap();
 

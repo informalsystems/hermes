@@ -1,18 +1,13 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::{ChainConfig, Config};
-
-use crate::error::{Error, Kind};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::ConnectionId;
-use ibc::ics24_host::Path::Connections;
+use ibc::ics24_host::identifier::{ChainId as ICSChainId, ConnectionId};
 use relayer::chain::{Chain, CosmosSDKChain};
+use relayer::config::{ChainConfig, Config};
 use tendermint::chain::Id as ChainId;
-use tendermint_proto::DomainType;
 
-use std::convert::TryInto;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -67,6 +62,7 @@ impl QueryConnectionEndCmd {
     }
 }
 
+// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
@@ -81,16 +77,15 @@ impl Runnable for QueryConnectionEndCmd {
         status_info!("Options", "{:?}", opts);
 
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3 -p false
+        let height = ibc::Height::new(
+            ICSChainId::chain_version(chain.id().to_string()),
+            opts.height,
+        );
+
+        // TODO - any value in querying with proof from the CLI?
         let res: Result<ConnectionEnd, Error> = chain
-            .query(
-                Connections(opts.connection_id),
-                opts.height.try_into().unwrap(),
-                opts.proof,
-            )
-            .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .query_connection(&opts.connection_id, height)
+            .map_err(|e| Kind::Query.context(e).into());
 
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
