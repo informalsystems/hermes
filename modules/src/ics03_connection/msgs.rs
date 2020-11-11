@@ -11,6 +11,7 @@
 //!
 //! Another difference to ICS3 specs is that each message comprises an additional field called
 //! `signer` which is specific to Cosmos-SDK.
+
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
