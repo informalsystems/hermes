@@ -4,8 +4,8 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
-use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgPacket;
-use std::convert::TryFrom;
+use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+use std::convert::{TryFrom, TryInto};
 use tendermint::account::Id as AccountId;
 use tendermint_proto::DomainType;
 
@@ -14,21 +14,22 @@ const TYPE_MSG_PACKET: &str = "ics04/opaque";
 
 ///
 /// Message definition for the packet wrapper domain type (`OpaquePacket` datagram).
+/// This whole module is WIP: https://github.com/informalsystems/ibc-rs/issues/95.
 ///
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgPacket {
+pub struct MsgRecvPacket {
     packet: Packet,
     proofs: Proofs,
     signer: AccountId,
 }
 
-impl MsgPacket {
+impl MsgRecvPacket {
     pub fn new(
         packet: Packet,
         proof: CommitmentProof,
         proof_height: Height,
         signer: AccountId,
-    ) -> Result<MsgPacket, Error> {
+    ) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
             packet: packet
                 .validate()
@@ -46,7 +47,7 @@ impl MsgPacket {
     }
 }
 
-impl Msg for MsgPacket {
+impl Msg for MsgRecvPacket {
     type ValidationError = Error;
 
     fn route(&self) -> String {
@@ -68,30 +69,43 @@ impl Msg for MsgPacket {
     }
 }
 
-impl DomainType<RawMsgPacket> for MsgPacket {}
+impl DomainType<RawMsgRecvPacket> for MsgRecvPacket {}
 
-#[allow(unreachable_code, unused_variables)]
-impl TryFrom<RawMsgPacket> for MsgPacket {
+impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
     type Error = anomaly::Error<Kind>;
 
-    fn try_from(raw_msg: RawMsgPacket) -> Result<Self, Self::Error> {
+    // This depends on Packet domain type (not implemented yet).
+    #[allow(unreachable_code, unused_variables)]
+    fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
         let signer =
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
 
-        Ok(MsgPacket {
-            packet: Packet,
-            proofs: todo!(),
+        let proofs = Proofs::new(
+            raw_msg.proof.into(),
+            None,
+            None,
+            raw_msg
+                .proof_height
+                .ok_or_else(|| Kind::MissingHeight)?
+                .try_into()
+                .map_err(|e| Kind::InvalidProof.context(e))?,
+        )
+        .map_err(|e| Kind::InvalidProof.context(e))?;
+
+        Ok(MsgRecvPacket {
+            packet: todo!(),
+            proofs,
             signer,
         })
     }
 }
 
-impl From<MsgPacket> for RawMsgPacket {
-    fn from(domain_msg: MsgPacket) -> Self {
-        RawMsgPacket {
-            packet: None,
-            proof: vec![],
-            proof_height: None,
+impl From<MsgRecvPacket> for RawMsgRecvPacket {
+    fn from(domain_msg: MsgRecvPacket) -> Self {
+        RawMsgRecvPacket {
+            packet: None, // TODO: Should be: `Some(domain_msg.packet.into())`.
+            proof: domain_msg.proofs.object_proof().clone().into(),
+            proof_height: Some(domain_msg.proofs.height().into()),
             signer: account_to_string(domain_msg.signer).unwrap(),
         }
     }
