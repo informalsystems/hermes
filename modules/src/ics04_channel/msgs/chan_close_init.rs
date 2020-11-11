@@ -23,7 +23,9 @@ pub struct MsgChannelCloseInit {
 }
 
 impl MsgChannelCloseInit {
-    pub fn new(
+    // todo: Constructor not used yet.
+    #[allow(dead_code)]
+    fn new(
         port_id: String,
         channel_id: String,
         signer: AccountId,
@@ -96,84 +98,91 @@ impl From<MsgChannelCloseInit> for RawMsgChannelCloseInit {
 }
 
 #[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
+
+    use crate::test_utils::get_dummy_bech32_account;
+
+    /// Returns a dummy `RawMsgChannelCloseInit`, for testing only!
+    pub fn get_dummy_raw_msg_chan_close_init() -> RawMsgChannelCloseInit {
+        RawMsgChannelCloseInit {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+}
+
+#[cfg(test)]
 mod tests {
+    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
+
     use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-    use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
+    use crate::ics04_channel::msgs::chan_close_init::test_util::get_dummy_raw_msg_chan_close_init;
+    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_close_init_msg() {
-        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-        let acc = AccountId::from_str(id_hex).unwrap();
-
         #[derive(Clone, Debug, PartialEq)]
-        struct CloseInitParams {
-            port_id: String,
-            channel_id: String,
-        }
-
-        let default_params = CloseInitParams {
-            port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
-        };
-
         struct Test {
             name: String,
-            params: CloseInitParams,
+            raw: RawMsgChannelCloseInit,
             want_pass: bool,
         }
+
+        let default_raw_msg = get_dummy_raw_msg_chan_close_init();
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_params.clone(),
+                raw: default_raw_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Correct port".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     port_id: "p34".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: true,
             },
             Test {
                 name: "Bad port, name too short".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     port_id: "p".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad port, name too long".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     port_id: "abcdefsdfasdfasdfasdfasdfasdfadsfasdgafsgadfasdfasdfasdfsdfasdfaghijklmnopqrstu".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Correct channel identifier".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     channel_id: "channelid34".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: true,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     channel_id: "chshort".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad channel, name too long".to_string(),
-                params: CloseInitParams {
+                raw: RawMsgChannelCloseInit {
                     channel_id: "abcdeasdfasdfasdfasdfasdfasdfasdfasdfdgasdfasdfasdfghijklmnopqrstu".to_string(),
-                    ..default_params
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },
@@ -182,18 +191,26 @@ mod tests {
             .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let msg = MsgChannelCloseInit::new(p.port_id, p.channel_id, acc);
+            let msg = MsgChannelCloseInit::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
-                "MsgChanCloseInit::new failed for test {}, \nmsg {:?} with error {:?}",
+                "MsgChanCloseInit::try_from failed for test {}, \nmsg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
+                test.raw,
                 msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_raw_msg_chan_close_init();
+        let msg = MsgChannelCloseInit::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgChannelCloseInit::from(msg.clone());
+        let msg_back = MsgChannelCloseInit::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }
