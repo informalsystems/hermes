@@ -9,6 +9,7 @@ use relayer::{
     channel::{Channel, ChannelConfig},
     connection::{Connection, ConnectionConfig},
     foreign_client::{ForeignClient, ForeignClientConfig},
+    light_client::tendermint::LightClient as TMLightClient,
     link::{Link, LinkConfig},
 };
 
@@ -60,16 +61,21 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         dst_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client for dest. chain not found")?,
+            .ok_or_else(|| "Config for client for destination chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
+
+    let (src_light_client, src_supervisor) = TMLightClient::from_config(&src_chain_config, true)?;
+    let (dst_light_client, dst_supervisor) = TMLightClient::from_config(&dst_chain_config, true)?;
+
+    thread::spawn(move || src_supervisor.run().unwrap());
+    thread::spawn(move || dst_supervisor.run().unwrap());
 
     let src_chain = ChainRuntime::cosmos_sdk(src_chain_config)?;
     let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config)?;
 
     let src_chain_handle = src_chain.handle();
     thread::spawn(move || {
-        // TODO: What should we do on return here? Probably unrecoverable error.
         src_chain.run().unwrap();
     });
 
@@ -97,16 +103,14 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         &dst_chain_handle,
         &client_on_src, // Semantic dependency.
         ConnectionConfig::new(todo!(), todo!()),
-    )
-    .unwrap();
+    )?;
 
     let channel = Channel::new(
         &src_chain_handle,
         &dst_chain_handle,
         connection, // Semantic dependecy
         ChannelConfig::new(todo!(), todo!()),
-    )
-    .unwrap();
+    )?;
 
     let link = Link::new(
         src_chain_handle,

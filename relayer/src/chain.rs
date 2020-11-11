@@ -26,20 +26,15 @@ use ibc::{
 
 use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::error::Kind;
 use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::light_client::LightClient;
 use crate::util::block_on;
-use crate::{client::LightClient, error::Kind};
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
     /// Type of headers for this chain
     type Header: Send + Sync + Serialize + DeserializeOwned;
-
-    /// Type of light blocks for this chain
-    type LightBlock: Send + Sync + Serialize + DeserializeOwned;
-
-    /// Type of light client for this chain
-    type LightClient: LightClient<Self::LightBlock> + Send + Sync;
 
     /// Type of consensus state for this chain
     type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
@@ -60,12 +55,6 @@ pub trait Chain {
 
     /// Get a low-level RPC client for this chain
     fn rpc_client(&self) -> &Self::RpcClient;
-
-    /// Get a light client for this chain
-    fn light_client(&self) -> Option<&Self::LightClient>;
-
-    /// Set a light client for this chain
-    fn set_light_client(&mut self, light_client: Self::LightClient);
 
     /// The unbonding period of this chain
     /// TODO - this is a GRPC query, needs to be implemented

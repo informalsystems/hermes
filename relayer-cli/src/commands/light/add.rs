@@ -4,6 +4,7 @@ use abscissa_core::{application::fatal_error, error::BoxError, Command, Options,
 
 use ibc::ics24_host::identifier::ChainId;
 use relayer::{
+    config,
     config::{Config, LightClientConfig, PeersConfig},
     util::block_on,
 };
@@ -183,6 +184,7 @@ fn update_config(
     let light_client_config = LightClientConfig {
         peer_id: status.peer_id,
         address: status.address.clone(),
+        timeout: config::default::timeout(),
         trusted_header_hash: status.latest_hash,
         trusted_height: status.latest_height,
     };

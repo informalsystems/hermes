@@ -112,6 +112,18 @@ impl ChainConfig {
         let peers = self.peers.as_ref()?;
         peers.light_client(id)
     }
+
+    pub fn witnesses(&self) -> Option<Vec<&LightClientConfig>> {
+        let peers = self.peers.as_ref()?;
+
+        Some(
+            peers
+                .light_clients
+                .iter()
+                .filter(|p| p.peer_id != peers.primary)
+                .collect(),
+        )
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -172,6 +184,8 @@ impl PeersConfig {
 pub struct LightClientConfig {
     pub peer_id: PeerId,
     pub address: net::Address,
+    #[serde(default = "default::timeout", with = "humantime_serde")]
+    pub timeout: Duration,
     pub trusted_header_hash: Hash,
     pub trusted_height: Height,
 }

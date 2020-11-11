@@ -28,17 +28,16 @@ use ibc_proto::cosmos::{
 
 use tendermint::abci::{Path as ABCIPath, Transaction};
 use tendermint::block::Height;
-use tendermint_light_client::types::{LightBlock, ValidatorSet};
-use tendermint_light_client::types::{SignedHeader, TrustThreshold};
+use tendermint_light_client::types::{SignedHeader, TrustThreshold, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
 use super::Chain;
-use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::light_client::tendermint::LightClient;
 use crate::util::block_on;
 
 pub struct CosmosSDKChain {
@@ -103,8 +102,6 @@ impl CosmosSDKChain {
 
 impl Chain for CosmosSDKChain {
     type Header = SignedHeader;
-    type LightBlock = LightBlock;
-    type LightClient = LightClient;
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
@@ -241,14 +238,6 @@ impl Chain for CosmosSDKChain {
         &self.rpc_client
     }
 
-    fn set_light_client(&mut self, light_client: LightClient) {
-        self.light_client = Some(light_client);
-    }
-
-    fn light_client(&self) -> Option<&LightClient> {
-        self.light_client.as_ref()
-    }
-
     fn trust_threshold(&self) -> TrustThreshold {
         TrustThreshold::default()
     }
@@ -267,16 +256,6 @@ impl Chain for CosmosSDKChain {
 
         let signed_header = fetch_signed_header(client, height)?;
         assert_eq!(height, signed_header.header.height);
-
-        // let validator_set = fetch_validator_set(client, height)?;
-        // let next_validator_set = fetch_validator_set(client, height.increment())?;
-
-        // let light_block = LightBlock::new(
-        //     signed_header,
-        //     validator_set,
-        //     next_validator_set,
-        //     primary.peer_id,
-        // );
 
         Ok(signed_header)
     }
@@ -354,13 +333,4 @@ async fn broadcast_tx(
     }
 
     Ok(response.data.as_bytes().to_vec())
-}
-
-fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
-    let res = block_on(client.validators(height));
-
-    match res {
-        Ok(response) => Ok(ValidatorSet::new(response.validators)),
-        Err(err) => Err(Kind::Rpc.context(err).into()),
-    }
 }
