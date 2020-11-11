@@ -1,13 +1,13 @@
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::address::{account_to_string, string_to_account};
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::DomainType;
 
-use crate::address::{account_to_string, string_to_account};
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
@@ -148,7 +148,7 @@ mod tests {
     use std::convert::TryFrom;
 
     #[test]
-    fn parse_channel_open_init_msg() {
+    fn channel_open_init_from_raw() {
         #[derive(Clone, Debug, PartialEq)]
         struct Test {
             name: String,

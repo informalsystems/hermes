@@ -1,10 +1,15 @@
-use crate::ics03_connection::connection::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::channel::validate_version;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
+
+use std::convert::TryFrom;
 
 /// Message type for the `MsgChannelOpenAck` message.
 const TYPE_MSG_CHANNEL_OPEN_ACK: &str = "channel_open_ack";
@@ -65,6 +70,46 @@ impl Msg for MsgChannelOpenAck {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+}
+
+impl DomainType<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
+
+#[allow(unreachable_code)]
+impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
+        let signer =
+            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
+
+        Ok(MsgChannelOpenAck {
+            port_id: raw_msg
+                .port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: raw_msg
+                .channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            counterparty_version: "".to_string(),
+            signer,
+            proofs: todo!()
+        })
+    }
+}
+
+impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
+    fn from(domain_msg: MsgChannelOpenAck) -> Self {
+        RawMsgChannelOpenAck {
+            port_id: domain_msg.port_id.to_string(),
+            channel_id: domain_msg.channel_id.to_string(),
+            counterparty_channel_id: "".to_string(),
+            counterparty_version: "".to_string(),
+            proof_try: vec![],
+            signer: account_to_string(domain_msg.signer).unwrap(),
+            proof_height: None
+        }
     }
 }
 

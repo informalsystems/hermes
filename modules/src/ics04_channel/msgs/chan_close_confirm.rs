@@ -1,9 +1,14 @@
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
+use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
+
+use std::convert::TryFrom;
 
 /// Message type for the `MsgChannelCloseConfirm` message.
 const TYPE_MSG_CHANNEL_CLOSE_CONFIRM: &str = "channel_close_confirm";
@@ -61,6 +66,43 @@ impl Msg for MsgChannelCloseConfirm {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+}
+
+impl DomainType<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {}
+
+#[allow(unreachable_code, unused_variables)]
+impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
+        let signer =
+            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
+
+        Ok(MsgChannelCloseConfirm {
+            port_id: raw_msg
+                .port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: raw_msg
+                .channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            proofs: todo!(),
+            signer,
+        })
+    }
+}
+
+impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
+    fn from(domain_msg: MsgChannelCloseConfirm) -> Self {
+        RawMsgChannelCloseConfirm {
+            port_id: domain_msg.port_id.to_string(),
+            channel_id: domain_msg.channel_id.to_string(),
+            proof_init: vec![],
+            proof_height: None,
+            signer: account_to_string(domain_msg.signer).unwrap(),
+        }
     }
 }
 

@@ -26,6 +26,9 @@ pub enum Kind {
     #[error("invalid proof")]
     InvalidProof,
 
+    #[error("invalid proof: missing height")]
+    MissingHeight,
+
     #[error("invalid packet")]
     InvalidPacket,
 

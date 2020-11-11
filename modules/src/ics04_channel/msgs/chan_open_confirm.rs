@@ -1,9 +1,14 @@
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
+
+use std::convert::TryFrom;
 
 /// Message type for the `MsgChannelOpenConfirm` message.
 const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
@@ -61,6 +66,43 @@ impl Msg for MsgChannelOpenConfirm {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+}
+
+impl DomainType<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {}
+
+#[allow(unreachable_code, unused_variables)]
+impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(raw_msg: RawMsgChannelOpenConfirm) -> Result<Self, Self::Error> {
+        let signer =
+            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
+
+        Ok(MsgChannelOpenConfirm {
+            port_id: raw_msg
+                .port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: raw_msg
+                .channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            proofs: todo!(),
+            signer,
+        })
+    }
+}
+
+impl From<MsgChannelOpenConfirm> for RawMsgChannelOpenConfirm {
+    fn from(domain_msg: MsgChannelOpenConfirm) -> Self {
+        RawMsgChannelOpenConfirm {
+            port_id: domain_msg.port_id.to_string(),
+            channel_id: domain_msg.channel_id.to_string(),
+            proof_ack: vec![],
+            proof_height: None,
+            signer: account_to_string(domain_msg.signer).unwrap(),
+        }
     }
 }
 

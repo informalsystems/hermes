@@ -2,11 +2,11 @@ use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+use tendermint_proto::DomainType;
 
 use anomaly::fail;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChannelEnd {
@@ -50,9 +50,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        // This field is supposed to be opaque to the core IBC protocol. Empty
-        // version is allowed by the specification (cf. ICS 004). No explicit validation necessary.
-        let version = value.version;
+        let version = validate_version(value.version)?;
 
         let mut channel_end = ChannelEnd::new(chan_ordering, remote, connection_hops, version);
         channel_end.set_state(chan_state);
@@ -240,6 +238,14 @@ impl State {
         }
     }
 }
+
+/// Version validation, specific for channel (ICS4) opening handshake protocol.
+/// This field is supposed to be opaque to the core IBC protocol. No explicit validation necessary,
+/// and empty version is currently allowed by the specification (cf. ICS 004, v1).
+pub fn validate_version(version: String) -> Result<String, Error> {
+    Ok(version)
+}
+
 
 #[cfg(test)]
 pub mod test_util {

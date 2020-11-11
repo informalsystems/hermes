@@ -1,9 +1,13 @@
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::address::{account_to_string, string_to_account};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
+use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgPacket;
 use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
+use std::convert::TryFrom;
 
 /// Message type for `MsgPacket`.
 const TYPE_MSG_PACKET: &str = "ics04/opaque";
@@ -61,5 +65,34 @@ impl Msg for MsgPacket {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+}
+
+impl DomainType<RawMsgPacket> for MsgPacket {}
+
+#[allow(unreachable_code, unused_variables)]
+impl TryFrom<RawMsgPacket> for MsgPacket {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(raw_msg: RawMsgPacket) -> Result<Self, Self::Error> {
+        let signer =
+            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
+
+        Ok(MsgPacket {
+            packet: Packet,
+            proofs: todo!(),
+            signer,
+        })
+    }
+}
+
+impl From<MsgPacket> for RawMsgPacket {
+    fn from(domain_msg: MsgPacket) -> Self {
+        RawMsgPacket {
+            packet: None,
+            proof: vec![],
+            proof_height: None,
+            signer: account_to_string(domain_msg.signer).unwrap(),
+        }
     }
 }
