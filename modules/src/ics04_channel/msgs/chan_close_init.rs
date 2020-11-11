@@ -117,8 +117,8 @@ pub mod test_util {
 mod tests {
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
-    use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
     use crate::ics04_channel::msgs::chan_close_init::test_util::get_dummy_raw_msg_chan_close_init;
+    use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
     use std::convert::TryFrom;
 
     #[test]
