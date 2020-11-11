@@ -114,6 +114,10 @@ impl Header for AnyHeader {
             Self::Mock(header) => header.height(),
         }
     }
+
+    fn wrap_any(self) -> AnyHeader {
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]

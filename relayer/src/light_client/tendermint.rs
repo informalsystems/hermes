@@ -1,7 +1,7 @@
 use anomaly::BoxError;
 use async_trait::async_trait;
 use humantime_serde::re::humantime::Duration;
-use std::sync::Arc;
+use std::{convert::TryFrom, sync::Arc};
 use tokio::task::spawn_blocking;
 
 use tendermint::block::Height;
@@ -11,6 +11,7 @@ use tendermint_light_client::{
     light_client, store, supervisor,
     supervisor::Supervisor,
     supervisor::{Handle, SupervisorHandle},
+    types::Height as TMHeight,
     types::LightBlock,
     types::PeerId,
 };
@@ -18,7 +19,7 @@ use tendermint_rpc as rpc;
 
 use crate::{
     chain::CosmosSDKChain,
-    config::{ChainConfig, LightClientConfig},
+    config::{ChainConfig, LightClientConfig, StoreConfig},
     error,
 };
 
@@ -26,7 +27,7 @@ pub struct LightClient {
     handle: Box<dyn Handle>,
 }
 
-impl super::LightClient<LightBlock> for LightClient {
+impl super::LightClient<CosmosSDKChain> for LightClient {
     fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error> {
         self.handle
             .latest_trusted()
@@ -39,7 +40,8 @@ impl super::LightClient<LightBlock> for LightClient {
             .map_err(|e| error::Kind::LightClient.context(e).into())
     }
 
-    fn verify_to_target(&self, height: Height) -> Result<LightBlock, error::Error> {
+    fn verify_to_target(&self, height: ibc::Height) -> Result<LightBlock, error::Error> {
+        let height = TMHeight::try_from(height.version_height).unwrap();
         self.handle
             .verify_to_target(height)
             .map_err(|e| error::Kind::LightClient.context(e).into())
@@ -47,9 +49,9 @@ impl super::LightClient<LightBlock> for LightClient {
 
     fn get_minimal_set(
         &self,
-        latest_client_state_height: Height,
-        target_height: Height,
-    ) -> Result<Vec<Height>, error::Error> {
+        latest_client_state_height: ibc::Height,
+        target_height: ibc::Height,
+    ) -> Result<Vec<ibc::Height>, error::Error> {
         todo!()
     }
 }
@@ -80,12 +82,18 @@ fn build_instance(
     let rpc_client = rpc::HttpClient::new(config.address.clone())
         .map_err(|e| error::Kind::LightClient.context(e))?;
 
-    let store = store::sled::SledStore::new(todo!());
+    let store: Box<dyn store::LightStore> = match &config.store {
+        StoreConfig::Disk { path } => {
+            let db = sled::open(path).map_err(|e| error::Kind::LightClient.context(e))?;
+            Box::new(store::sled::SledStore::new(db))
+        }
+        StoreConfig::Memory { .. } => Box::new(store::memory::MemoryStore::new()),
+    };
 
     let builder = LightClientBuilder::prod(
         config.peer_id,
         rpc_client,
-        Box::new(store),
+        store,
         options,
         Some(config.timeout),
     );

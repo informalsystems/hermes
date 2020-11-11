@@ -61,6 +61,10 @@ impl Header for MockHeader {
     fn height(&self) -> Height {
         todo!()
     }
+
+    fn wrap_any(self) -> AnyHeader {
+        todo!()
+    }
 }
 
 impl From<MockHeader> for AnyConsensusState {

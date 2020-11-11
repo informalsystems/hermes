@@ -9,7 +9,10 @@ use prost_types::Any;
 use ibc::{
     downcast,
     events::IBCEvent,
-    ics02_client::client_def::{AnyClientState, AnyHeader},
+    ics02_client::{
+        client_def::{AnyClientState, AnyHeader},
+        header::Header,
+    },
     ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit,
     ics04_channel::packet::Packet,
     ics07_tendermint::client_state::ClientState,
@@ -28,17 +31,19 @@ use ibc_proto::cosmos::{
 
 use tendermint::abci::{Path as ABCIPath, Transaction};
 use tendermint::block::Height;
-use tendermint_light_client::types::{SignedHeader, TrustThreshold, ValidatorSet};
+use tendermint_light_client::types::{
+    LightBlock as TMLightBlock, SignedHeader, TrustThreshold, ValidatorSet,
+};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
 use super::Chain;
-use crate::config::ChainConfig;
 use crate::error;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient;
 use crate::util::block_on;
+use crate::{config::ChainConfig, light_client::LightBlock};
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
@@ -100,8 +105,15 @@ impl CosmosSDKChain {
     }
 }
 
+impl LightBlock<CosmosSDKChain> for TMLightBlock {
+    fn signed_header(&self) -> &SignedHeader {
+        &self.signed_header
+    }
+}
+
 impl Chain for CosmosSDKChain {
     type Header = SignedHeader;
+    type LightBlock = TMLightBlock;
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;

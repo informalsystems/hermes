@@ -15,10 +15,10 @@ use tendermint::{block::Height, chain};
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
 
-use ibc::tx_msg::Msg;
 use ibc::{events::IBCEvent, ics02_client::client_def::AnyHeader};
 use ibc::{ics02_client::client_def::AnyClientState, ics24_host::identifier::ChainId};
 use ibc::{ics02_client::client_def::AnyConsensusState, ics24_host::Path};
+use ibc::{ics02_client::header::Header, tx_msg::Msg};
 use ibc::{
     ics02_client::state::{ClientState, ConsensusState},
     ics04_channel::packet::Packet,
@@ -28,19 +28,22 @@ use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::error::Kind;
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::light_client::LightClient;
+use crate::light_client::{LightBlock, LightClient};
 use crate::util::block_on;
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain {
+pub trait Chain: Sized {
     /// Type of headers for this chain
     type Header: Send + Sync + Serialize + DeserializeOwned;
 
+    /// Type of light blocks for this chain
+    type LightBlock: LightBlock<Self> + Serialize + DeserializeOwned;
+
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState + Send + Sync + Serialize + DeserializeOwned;
+    type ConsensusState: ConsensusState + Serialize + DeserializeOwned;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState + Send + Sync + Serialize + DeserializeOwned;
+    type ClientState: ClientState + Serialize + DeserializeOwned;
 
     /// Type of RPC requester (wrapper around low-level RPC client) for this chain
     type RpcClient: RpcClient + Send + Sync;
@@ -77,9 +80,6 @@ pub trait Chain {
         timeout_height: u64,
     ) -> Result<Vec<u8>, Error>;
 
-    /// Query a header at the given height via RPC
-    fn query_header_at_height(&self, height: Height) -> Result<Self::Header, Error>;
-
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
 
     fn assemble_client_state(&self, header: &Self::Header) -> Result<Self::ClientState, Error>;
@@ -96,6 +96,8 @@ pub trait Chain {
         &self,
         consensus_state: AnyConsensusState,
     ) -> Option<Self::ConsensusState>;
+
+    fn query_header_at_height(&self, height: Height) -> Result<Self::Header, Error>;
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<Height, Error> {

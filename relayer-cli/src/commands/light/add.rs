@@ -1,7 +1,8 @@
-use std::{fmt, io, io::Write, ops::Deref};
+use std::{fmt, io, io::Write, ops::Deref, path::PathBuf};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
+use config::StoreConfig;
 use ibc::ics24_host::identifier::ChainId;
 use relayer::{
     config,
@@ -25,6 +26,9 @@ pub struct AddCmd {
     #[options(short = "c")]
     chain_id: Option<ChainId>,
 
+    /// Path to light client store for this peer
+    store_path: Option<PathBuf>,
+
     /// whether this is the primary peer
     primary: bool,
 
@@ -43,6 +47,9 @@ struct AddOptions {
     /// RPC network address
     address: net::Address,
 
+    /// Path to light client store for this peer
+    store_path: PathBuf,
+
     /// whether this is the primary peer or not
     primary: bool,
 
@@ -57,6 +64,7 @@ impl AddOptions {
     fn from_cmd(cmd: &AddCmd) -> Result<AddOptions, BoxError> {
         let chain_id = cmd.chain_id.clone().ok_or("missing chain identifier")?;
         let address = cmd.address.clone().ok_or("missing RPC network address")?;
+        let store_path = cmd.store_path.clone().ok_or("missing store path")?;
         let primary = cmd.primary;
         let force = cmd.force;
         let yes = cmd.yes;
@@ -64,10 +72,29 @@ impl AddOptions {
         Ok(AddOptions {
             chain_id,
             address,
+            store_path,
             primary,
             force,
             yes,
         })
+    }
+
+    fn validate(&self) -> Result<(), BoxError> {
+        if !self.store_path.exists() {
+            return Err(
+                format!("Store path '{}' does not exists", self.store_path.display()).into(),
+            );
+        }
+
+        if !self.store_path.is_dir() {
+            return Err(format!(
+                "Store path '{}' is not a directory",
+                self.store_path.display()
+            )
+            .into());
+        }
+
+        Ok(())
     }
 }
 
@@ -187,6 +214,9 @@ fn update_config(
         timeout: config::default::timeout(),
         trusted_header_hash: status.latest_hash,
         trusted_height: status.latest_height,
+        store: StoreConfig::Disk {
+            path: options.store_path.join(status.peer_id.to_string()),
+        },
     };
 
     if peer_exists {
@@ -209,6 +239,10 @@ impl AddCmd {
     fn cmd(&self) -> Result<(), BoxError> {
         let config = (*app_config()).clone();
         let options = AddOptions::from_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
+
+        options
+            .validate()
+            .map_err(|e| format!("invalid options: {}", e))?;
 
         add(config, options)
     }

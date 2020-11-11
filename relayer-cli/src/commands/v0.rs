@@ -71,8 +71,8 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
-    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config)?;
-    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config)?;
+    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config, src_light_client)?;
+    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config, dst_light_client)?;
 
     let src_chain_handle = src_chain.handle();
     thread::spawn(move || {

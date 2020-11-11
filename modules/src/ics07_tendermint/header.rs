@@ -3,7 +3,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
-use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::{client_def::AnyHeader, client_type::ClientType};
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
@@ -38,6 +38,10 @@ impl crate::ics02_client::header::Header for Header {
             ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
+    }
+
+    fn wrap_any(self) -> AnyHeader {
+        AnyHeader::Tendermint(self)
     }
 }
 

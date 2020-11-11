@@ -14,37 +14,42 @@ use ibc::{
     Height,
 };
 
-use crate::error::{Error, Kind};
-use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::{config::ChainConfig, util::block_on};
+use crate::{
+    error::{Error, Kind},
+    light_client::{tendermint::LightClient as TMLightClient, LightClient},
+};
+use crate::{foreign_client::ForeignClient, light_client::LightBlock};
 
 use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
     Chain, CosmosSDKChain,
 };
 
-pub struct ChainRuntime<Chain> {
-    chain: Chain,
+pub struct ChainRuntime<C: Chain> {
+    chain: C,
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
+    light_client: Box<dyn LightClient<C>>,
 }
 
 impl ChainRuntime<CosmosSDKChain> {
-    pub fn cosmos_sdk(config: ChainConfig) -> Result<Self, Error> {
+    pub fn cosmos_sdk(config: ChainConfig, light_client: TMLightClient) -> Result<Self, Error> {
         let chain = CosmosSDKChain::from_config(config)?;
-        Ok(Self::new(chain))
+        Ok(Self::new(chain, light_client))
     }
 }
 
 impl<C: Chain> ChainRuntime<C> {
-    pub fn new(chain: C) -> Self {
+    pub fn new(chain: C, light_client: impl LightClient<C> + 'static) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
         Self {
             chain,
             sender,
             receiver,
+            light_client: Box::new(light_client),
         }
     }
 
@@ -133,7 +138,14 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
-        todo!()
+        let light_block = self.light_client.verify_to_target(height);
+        let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
+
+        reply_to
+            .send(header)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
     }
 
     fn get_minimal_set(

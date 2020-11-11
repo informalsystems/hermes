@@ -35,6 +35,7 @@ pub fn create_client(opts: CreateClientOptions) -> Result<Vec<u8>, Error> {
         .keybase
         .key_from_seed_file(&opts.signer_key)
         .map_err(|e| Kind::KeyBase.context(e))?;
+
     let signer: AccountId =
         AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 

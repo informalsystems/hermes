@@ -6,7 +6,7 @@ use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::Height;
 
 #[dyn_clonable::clonable]
-pub trait ConsensusState: Clone + std::fmt::Debug {
+pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -21,7 +21,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug {
 }
 
 #[dyn_clonable::clonable]
-pub trait ClientState: Clone + std::fmt::Debug {
+pub trait ClientState: Clone + std::fmt::Debug + Send + Sync {
     /// Client ID of this state
     fn chain_id(&self) -> String;
 

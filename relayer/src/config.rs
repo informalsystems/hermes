@@ -2,6 +2,7 @@
 //! to support ADR validation..should move to relayer/src soon
 
 use std::{
+    fs,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -188,6 +189,16 @@ pub struct LightClientConfig {
     pub timeout: Duration,
     pub trusted_header_hash: Hash,
     pub trusted_height: Height,
+    pub store: StoreConfig,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum StoreConfig {
+    #[serde(rename = "disk")]
+    Disk { path: PathBuf },
+    #[serde(rename = "memory")]
+    Memory { dummy: () },
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -203,7 +214,13 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
 
 /// Serialize the given `Config` as TOML to the given config file.
 pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
-    let mut file = File::create(path).map_err(|e| error::Kind::Config.context(e))?;
+    let mut file = if path.as_ref().exists() {
+        fs::OpenOptions::new().write(true).open(path)
+    } else {
+        File::create(path)
+    }
+    .map_err(|e| error::Kind::Config.context(e))?;
+
     store_writer(config, &mut file)
 }
 
