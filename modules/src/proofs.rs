@@ -9,7 +9,8 @@ pub struct Proofs {
     object_proof: CommitmentProof,
     client_proof: Option<CommitmentProof>,
     consensus_proof: Option<ConsensusProof>,
-    /// Height for the proofs above. When creating these proofs, the chain was at `height`.
+    /// Height for the commitment root for proving the proofs above.
+    /// When creating these proofs, the chain is queried at `height-1`.
     height: Height,
 }
 

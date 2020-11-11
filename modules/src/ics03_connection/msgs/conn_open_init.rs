@@ -6,8 +6,9 @@ use tendermint_proto::DomainType;
 use tendermint::account::Id as AccountId;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics03_connection::connection::{validate_version, Counterparty};
+use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::validate_version;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
 
@@ -107,8 +108,8 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            signer: account_to_string(ics_msg.signer).unwrap(),
             version: ics_msg.version,
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
@@ -118,6 +119,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::version::default_version_string;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy message, for testing only.
@@ -127,7 +129,7 @@ pub mod test_util {
             client_id: "srcclient".to_string(),
             connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            version: "1.0.0".to_string(),
+            version: default_version_string(),
             signer: get_dummy_bech32_account(),
         }
     }

@@ -7,7 +7,6 @@ use tempdir::TempDir;
 use walkdir::WalkDir;
 
 use argh::FromArgs;
-
 #[derive(Debug, FromArgs)]
 #[argh(subcommand, name = "compile")]
 /// Compile
@@ -53,6 +52,7 @@ impl CompileCmd {
             format!("{}/proto/ibc", sdk_dir.display()),
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
             format!("{}/proto/cosmos/base", sdk_dir.display()),
+            format!("{}/proto/cosmos/staking", sdk_dir.display()),
         ];
 
         let proto_includes_paths = [
@@ -103,7 +103,8 @@ impl CompileCmd {
         let includes = proto_includes_paths.iter().map(|p| p.as_os_str().to_os_string()).collect::<Vec<_>>();
 
         let proto_services_path = [
-            sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto")
+            sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
+            sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
         ];
 
         // List available paths for dependencies
