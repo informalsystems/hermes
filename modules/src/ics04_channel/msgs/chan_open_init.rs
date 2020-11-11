@@ -1,4 +1,3 @@
-
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
