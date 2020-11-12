@@ -2,7 +2,7 @@ use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use thiserror::Error;
 
 use crate::chain::{handle::ChainHandle, Chain};
-use crate::foreign_client::ForeignClient;
+// use crate::foreign_client::ForeignClient;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {

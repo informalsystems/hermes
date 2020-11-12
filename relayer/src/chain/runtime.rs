@@ -20,15 +20,16 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::{config::ChainConfig, util::block_on};
+// use crate::foreign_client::ForeignClient;
+
 use crate::{
+    config::ChainConfig,
     error::{Error, Kind},
-    light_client::{tendermint::LightClient as TMLightClient, LightClient},
-};
-use crate::{foreign_client::ForeignClient, light_client::LightBlock};
-use crate::{
     keyring::store::KeyEntry,
+    light_client::LightBlock,
+    light_client::{tendermint::LightClient as TMLightClient, LightClient},
     msgs::{Datagram, EncodedTransaction, IBCEvent, Packet},
+    util::block_on,
 };
 
 use super::{
@@ -87,19 +88,21 @@ impl<C: Chain> ChainRuntime<C> {
                             self.query(path, height, prove, reply_to)?
                         },
 
-                        Ok(HandleInput::GetHeader { height, reply_to }) => {
-                            self.get_header(height, reply_to)?
-                        }
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
                             self.get_minimal_set(from, to, reply_to)?
                         }
 
-                        Ok(HandleInput::Submit { transaction, reply_to, }) => {
-                            self.submit(transaction, reply_to)?
-                        },
-                        Ok(HandleInput::CreatePacket { event, reply_to }) => {
-                            self.create_packet(event, reply_to)?
-                        }
+                        // Ok(HandleInput::GetHeader { height, reply_to }) => {
+                        //     self.get_header(height, reply_to)?
+                        // }
+                        //
+                        // Ok(HandleInput::Submit { transaction, reply_to, }) => {
+                        //     self.submit(transaction, reply_to)?
+                        // },
+                        //
+                        // Ok(HandleInput::CreatePacket { event, reply_to }) => {
+                        //     self.create_packet(event, reply_to)?
+                        // }
 
                         Ok(HandleInput::KeyAndSigner { key_file_contents, reply_to }) => {
                             self.key_and_signer(key_file_contents, reply_to)?
@@ -199,16 +202,16 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
-    fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
-        let light_block = self.light_client.verify_to_target(height);
-        let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
+    // fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
+    //     let light_block = self.light_client.verify_to_target(height);
+    //     let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
 
-        reply_to
-            .send(header)
-            .map_err(|e| Kind::Channel.context(e))?;
+    //     reply_to
+    //         .send(header)
+    //         .map_err(|e| Kind::Channel.context(e))?;
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     fn get_minimal_set(
         &self,
@@ -219,13 +222,13 @@ impl<C: Chain> ChainRuntime<C> {
         todo!()
     }
 
-    fn submit(&self, transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
-        todo!()
-    }
+    // fn submit(&self, transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
+    //     todo!()
+    // }
 
-    fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
-        todo!()
-    }
+    // fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
+    //     todo!()
+    // }
 
     fn key_and_signer(
         &mut self,

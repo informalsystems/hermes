@@ -25,7 +25,7 @@ use tendermint_rpc::HttpClient;
 use tendermint::account::Id as AccountId;
 
 use crate::error::{Error, Kind};
-use crate::foreign_client::ForeignClient;
+// use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
 use crate::{config::ChainConfig, keyring::store::KeyEntry};
@@ -61,22 +61,20 @@ pub enum HandleInput {
         reply_to: ReplyTo<QueryResponse>,
     },
 
-    GetHeader {
-        height: Height,
-        reply_to: ReplyTo<AnyHeader>,
-    },
-
+    // GetHeader {
+    //     height: Height,
+    //     reply_to: ReplyTo<AnyHeader>,
+    // },
     GetMinimalSet {
         from: Height,
         to: Height,
         reply_to: ReplyTo<Vec<AnyHeader>>,
     },
 
-    Submit {
-        transaction: EncodedTransaction,
-        reply_to: ReplyTo<()>,
-    },
-
+    // Submit {
+    //     transaction: EncodedTransaction,
+    //     reply_to: ReplyTo<()>,
+    // },
     KeyAndSigner {
         key_file_contents: String,
         reply_to: ReplyTo<(KeyEntry, AccountId)>,
@@ -86,11 +84,10 @@ pub enum HandleInput {
         reply_to: ReplyTo<Height>,
     },
 
-    CreatePacket {
-        event: IBCEvent,
-        reply_to: ReplyTo<Packet>,
-    },
-
+    // CreatePacket {
+    //     event: IBCEvent,
+    //     reply_to: ReplyTo<Packet>,
+    // },
     BuildHeader {
         trusted_height: Height,
         target_height: Height,
@@ -175,16 +172,15 @@ pub trait ChainHandle: Clone + Send + Sync {
     // It might be good to include an inclusion proof method which abstracts over the light client
     // to prove that a piece of data is stored on the chain
 
-    fn get_header(&self, height: Height) -> Result<AnyHeader, Error>;
+    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error>;
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
     fn key_and_signer(&self, key_file_contents: String) -> Result<(KeyEntry, AccountId), Error>;
 
-    /// Submits a transaction.
-    fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
+    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
 
-    fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
+    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 

@@ -19,7 +19,7 @@ use tendermint_light_client::types::SignedHeader;
 use crate::{
     chain::QueryResponse,
     error::{Error, Kind},
-    foreign_client::ForeignClient,
+    // foreign_client::ForeignClient,
     keyring::store::KeyEntry,
     msgs::{EncodedTransaction, Packet},
 };
@@ -85,9 +85,9 @@ impl ChainHandle for ProdChainHandle {
         todo!()
     }
 
-    fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
-        self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
-    }
+    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
+    //     self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
+    // }
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
         self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
@@ -100,16 +100,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
-        self.send(|reply_to| HandleInput::Submit {
-            transaction,
-            reply_to,
-        })
-    }
+    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
+    //     self.send(|reply_to| HandleInput::Submit {
+    //         transaction,
+    //         reply_to,
+    //     })
+    // }
 
-    fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
-        self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
-    }
+    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
+    //     self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
+    // }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         self.send(|reply_to| HandleInput::QueryLatestHeight { reply_to })
