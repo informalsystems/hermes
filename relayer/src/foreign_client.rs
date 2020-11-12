@@ -39,6 +39,7 @@ impl ForeignClientConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct ForeignClient {
     config: ForeignClientConfig,
 }
@@ -79,18 +80,25 @@ impl ForeignClient {
         })?;
 
         // Build the client state. The source chain handle will take care of the details.
-        let client_state = src.assemble_client_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreate(format!("failed to assemble client state ({:?})", e))
-        })?;
+        let client_state = src
+            .build_client_state(latest_header.height())
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed to assemble client state ({:?})",
+                    e
+                ))
+            })?;
 
         // Build the consensus state.
         // The source chain handle knows the internals of assembling this message.
-        let consensus_state = src.assemble_consensus_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreate(format!(
-                "failed to assemble client consensus state ({:?})",
-                e
-            ))
-        })?;
+        let consensus_state = src
+            .build_consensus_state(latest_header.height())
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed to assemble client consensus state ({:?})",
+                    e
+                ))
+            })?;
 
         // Extract the signer from the destination chain handle, for example `dst.get_signer()`.
         let signer: AccountId = todo!();

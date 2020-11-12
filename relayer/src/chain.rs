@@ -97,6 +97,25 @@ pub trait Chain {
         timeout_height: u64,
     ) -> Result<String, Error>;
 
+    // Build states
+    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error>;
+    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error>;
+    fn build_header(
+        &self,
+        trusted_height: ICSHeight,
+        target_height: ICSHeight,
+    ) -> Result<AnyHeader, Error>;
+
+    // Downcast methods
+    fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header>;
+    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<Self::ClientState>;
+    fn downcast_consensus_state(
+        &self,
+        consensus_state: AnyConsensusState,
+    ) -> Option<Self::ConsensusState>;
+
+    // Queries
+
     /// Query the latest height the chain is at
     fn query_latest_height(&self) -> Result<ICSHeight, Error>;
 
@@ -106,23 +125,38 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<AnyClientState, Error>;
 
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        // TODO - do a real chain query
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
+    }
+
+    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
+        // TODO - do a real chain query
+        Ok(get_compatible_versions())
+    }
+
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<ConnectionEnd, Error> {
+        Ok(self
+            .query(Path::Connections(connection_id.clone()), height, false)
+            .map_err(|e| Kind::Query.context(e))
+            .and_then(|v| {
+                ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+            })?)
+    }
+
+    // Provable queries
+
     fn proven_client_state(
         &self,
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(AnyClientState, MerkleProof), Error>;
-
-    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error>;
-
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error>;
-
-    // Downcast methods
-    fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header>;
-    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<Self::ClientState>;
-    fn downcast_consensus_state(
-        &self,
-        consensus_state: AnyConsensusState,
-    ) -> Option<Self::ConsensusState>;
 
     fn proven_connection(
         &self,
@@ -159,37 +193,6 @@ pub trait Chain {
             AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
         Ok((consensus_state, res.proof))
-    }
-
-    fn build_header(
-        &self,
-        trusted_height: ICSHeight,
-        target_height: ICSHeight,
-    ) -> Result<AnyHeader, Error>;
-
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        // TODO - do a real chain query
-        Ok(CommitmentPrefix::from(
-            self.config().store_prefix.as_bytes().to_vec(),
-        ))
-    }
-
-    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
-        // TODO - do a real chain query
-        Ok(get_compatible_versions())
-    }
-
-    fn query_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: ICSHeight,
-    ) -> Result<ConnectionEnd, Error> {
-        Ok(self
-            .query(Path::Connections(connection_id.clone()), height, false)
-            .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| {
-                ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
-            })?)
     }
 
     /// Build the required proofs for connection handshake messages. The proofs are obtained from

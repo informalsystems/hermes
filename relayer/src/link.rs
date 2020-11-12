@@ -145,7 +145,7 @@ impl Link {
         mut datagrams: Vec<Datagram>,
         signature: Signature,
     ) -> Result<(), LinkError> {
-        let height = self.dst_chain.get_height(&self.foreign_client)?;
+        let height = self.dst_chain.query_latest_height(&self.foreign_client)?;
         // XXX: Check that height > target_height, no client update needed
         let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 

@@ -1,7 +1,15 @@
 use crossbeam_channel as channel;
 
 use ibc::{
-    events::IBCEvent, ics02_client::client_def::AnyHeader, ics24_host::identifier::ChainId, Height,
+    events::IBCEvent,
+    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics03_connection::connection::ConnectionEnd,
+    ics03_connection::msgs::ConnectionMsgType,
+    ics23_commitment::commitment::CommitmentPrefix,
+    ics23_commitment::merkle::MerkleProof,
+    ics24_host::identifier::ChainId,
+    ics24_host::identifier::{ClientId, ConnectionId},
+    Height,
 };
 use tendermint_light_client::types::SignedHeader;
 
@@ -24,6 +32,20 @@ impl ProdChainHandle {
     pub fn new(chain_id: ChainId, sender: channel::Sender<HandleInput>) -> Self {
         Self { chain_id, sender }
     }
+
+    fn send<F, O>(&self, f: F) -> Result<O, Error>
+    where
+        F: FnOnce(ReplyTo<O>) -> HandleInput,
+    {
+        let (sender, receiver) = reply_channel();
+        let input = f(sender);
+
+        self.sender
+            .send(input)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        receiver.recv().map_err(|e| Kind::Channel.context(e))?
+    }
 }
 
 impl ChainHandle for ProdChainHandle {
@@ -32,26 +54,7 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, Error> {
-        let (sender, receiver) = reply_channel();
-
-        self.sender
-            .send(HandleInput::Subscribe(sender))
-            .map_err(|e| Kind::Channel)?;
-
-        receiver.recv().map_err(|e| Kind::Channel)?
-    }
-
-    fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
-        let (sender, receiver) = reply_channel();
-
-        self.sender
-            .send(HandleInput::GetHeader {
-                height,
-                reply_to: sender,
-            })
-            .map_err(|e| Kind::Channel)?;
-
-        receiver.recv().map_err(|e| Kind::Channel)?
+        self.send(|reply_to| HandleInput::Subscribe { reply_to })
     }
 
     fn query(
@@ -60,47 +63,153 @@ impl ChainHandle for ProdChainHandle {
         height: Height,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
-        let (sender, receiver) = reply_channel();
+        self.send(|reply_to| HandleInput::Query {
+            path,
+            height,
+            prove,
+            reply_to,
+        })
+    }
 
-        self.sender
-            .send(HandleInput::Query {
-                path,
-                height,
-                prove,
-                reply_to: sender,
-            })
-            .map_err(|e| Kind::Channel)?;
+    fn send_tx(
+        &mut self,
+        proto_msgs: Vec<prost_types::Any>,
+        key: crate::keyring::store::KeyEntry,
+        memo: String,
+        timeout_height: u64,
+    ) -> Result<String, Error> {
+        todo!()
+    }
 
-        receiver.recv().map_err(|e| Kind::Channel)?
+    fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
+        self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
     }
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
-        todo!()
+        self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
     }
 
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn get_height(&self, client: &ForeignClient) -> Result<Height, Error> {
-        todo!()
+        self.send(|reply_to| HandleInput::Submit {
+            transaction,
+            reply_to,
+        })
     }
 
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
-        todo!()
+        self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
     }
 
-    fn assemble_client_state(
-        &self,
-        header: &AnyHeader,
-    ) -> Result<ibc::ics02_client::client_def::AnyClientState, Error> {
-        todo!()
+    fn query_latest_height(&self, client: &ForeignClient) -> Result<Height, Error> {
+        self.send(|reply_to| HandleInput::QueryLatestHeight {
+            client: client.clone(),
+            reply_to,
+        })
     }
 
-    fn assemble_consensus_state(
+    fn query_client_state(
         &self,
-        header: &AnyHeader,
-    ) -> Result<ibc::ics02_client::client_def::AnyConsensusState, Error> {
-        todo!()
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<AnyClientState, Error> {
+        self.send(|reply_to| HandleInput::QueryClientState {
+            client_id: client_id.clone(),
+            height,
+            reply_to,
+        })
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        self.send(|reply_to| HandleInput::QueryCommitmentPrefix { reply_to })
+    }
+
+    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
+        self.send(|reply_to| HandleInput::QueryCompatibleVersions { reply_to })
+    }
+
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: Height,
+    ) -> Result<ConnectionEnd, Error> {
+        self.send(|reply_to| HandleInput::QueryConnection {
+            connection_id: connection_id.clone(),
+            height,
+            reply_to,
+        })
+    }
+
+    fn proven_client_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<(AnyClientState, MerkleProof), Error> {
+        self.send(|reply_to| HandleInput::ProvenClientState {
+            client_id: client_id.clone(),
+            height,
+            reply_to,
+        })
+    }
+
+    fn proven_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: Height,
+    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
+        self.send(|reply_to| HandleInput::ProvenConnection {
+            connection_id: connection_id.clone(),
+            height,
+            reply_to,
+        })
+    }
+
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: Height,
+        height: Height,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        self.send(|reply_to| HandleInput::ProvenClientConsensus {
+            client_id: client_id.clone(),
+            consensus_height,
+            height,
+            reply_to,
+        })
+    }
+
+    fn build_header(
+        &self,
+        trusted_height: Height,
+        target_height: Height,
+    ) -> Result<AnyHeader, Error> {
+        self.send(|reply_to| HandleInput::BuildHeader {
+            trusted_height,
+            target_height,
+            reply_to,
+        })
+    }
+
+    fn build_client_state(&self, height: Height) -> Result<AnyClientState, Error> {
+        self.send(|reply_to| HandleInput::BuildClientState { height, reply_to })
+    }
+
+    fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error> {
+        self.send(|reply_to| HandleInput::BuildConsensusState { height, reply_to })
+    }
+
+    fn build_connection_proofs(
+        &self,
+        message_type: ConnectionMsgType,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<ibc::proofs::Proofs, Error> {
+        self.send(|reply_to| HandleInput::BuildConnectionProofs {
+            message_type,
+            connection_id: connection_id.clone(),
+            client_id: client_id.clone(),
+            height,
+            reply_to,
+        })
     }
 }

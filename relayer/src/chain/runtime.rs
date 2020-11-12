@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use crossbeam_channel as channel;
-use tendermint::block::signed_header::SignedHeader;
 use thiserror::Error;
 
 use ibc::{
@@ -9,10 +8,15 @@ use ibc::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         state::{ClientState, ConsensusState},
     },
-    ics24_host::identifier::ChainId,
+    ics03_connection::{connection::ConnectionEnd, msgs::ConnectionMsgType},
+    ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
+    ics24_host::identifier::{ChainId, ClientId, ConnectionId},
     ics24_host::Path,
+    proofs::Proofs,
     Height,
 };
+
+use tendermint::block::signed_header::SignedHeader;
 
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::{config::ChainConfig, util::block_on};
@@ -65,11 +69,11 @@ impl<C: Chain> ChainRuntime<C> {
             channel::select! {
                 recv(self.receiver) -> event => {
                     match event {
-                        Ok(HandleInput::Terminate(reply_to)) => {
+                        Ok(HandleInput::Terminate { reply_to }) => {
                             reply_to.send(Ok(())).map_err(|_| Kind::Channel)?;
                             break;
                         }
-                        Ok(HandleInput::Subscribe(reply_to)) => {
+                        Ok(HandleInput::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
                         },
                         Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
@@ -84,11 +88,12 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::Submit { transaction, reply_to, }) => {
                             self.submit(transaction, reply_to)?
                         },
-                        Ok(HandleInput::GetHeight { client, reply_to }) => {
-                            self.get_height(client, reply_to)?
-                        }
                         Ok(HandleInput::CreatePacket { event, reply_to }) => {
                             self.create_packet(event, reply_to)?
+                        }
+
+                        Ok(HandleInput::BuildHeader { trusted_height, target_height, reply_to }) => {
+                            self.build_header(trusted_height, target_height, reply_to)?
                         }
                         Ok(HandleInput::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
@@ -96,6 +101,40 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::BuildConsensusState { height, reply_to }) => {
                             self.build_consensus_state(height, reply_to)?
                         }
+                        Ok(HandleInput::BuildConnectionProofs { message_type, connection_id, client_id, height, reply_to }) => {
+                            self.build_connection_proofs(message_type, connection_id, client_id, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryLatestHeight { client, reply_to }) => {
+                            self.query_latest_height(client, reply_to)?
+                        }
+                        Ok(HandleInput::QueryClientState { client_id, height, reply_to }) => {
+                            self.query_client_state(client_id, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryCommitmentPrefix { reply_to }) => {
+                            self.query_commitment_prefix(reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryCompatibleVersions { reply_to }) => {
+                            self.query_compatible_versions(reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryConnection { connection_id, height, reply_to }) => {
+                            self.query_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
+                            self.proven_client_state(client_id, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::ProvenConnection { connection_id, height, reply_to }) => {
+                            self.proven_connection(connection_id, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
+                            self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
+                        },
                         Err(e) => todo!(),
                     }
                 },
@@ -161,11 +200,24 @@ impl<C: Chain> ChainRuntime<C> {
         todo!()
     }
 
-    fn get_height(&self, client: ForeignClient, reply_to: ReplyTo<Height>) -> Result<(), Error> {
+    fn query_latest_height(
+        &self,
+        client: ForeignClient,
+        reply_to: ReplyTo<Height>,
+    ) -> Result<(), Error> {
         todo!()
     }
 
     fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
+        todo!()
+    }
+
+    fn build_header(
+        &self,
+        trusted_height: Height,
+        target_height: Height,
+        reply_to: ReplyTo<AnyHeader>,
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -200,6 +252,130 @@ impl<C: Chain> ChainRuntime<C> {
 
         reply_to
             .send(consensus_state)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn build_connection_proofs(
+        &self,
+        message_type: ConnectionMsgType,
+        connection_id: ConnectionId,
+        client_id: ClientId,
+        height: Height,
+        reply_to: ReplyTo<Proofs>,
+    ) -> Result<(), Error> {
+        let proofs =
+            self.chain
+                .build_connection_proofs(message_type, &connection_id, &client_id, height);
+
+        reply_to
+            .send(proofs)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: ClientId,
+        height: Height,
+        reply_to: ReplyTo<AnyClientState>,
+    ) -> Result<(), Error> {
+        let client_state = self
+            .chain
+            .query_client_state(&client_id, height)
+            .map(|cs| cs.wrap_any());
+
+        reply_to
+            .send(client_state)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_commitment_prefix(&self, reply_to: ReplyTo<CommitmentPrefix>) -> Result<(), Error> {
+        let prefix = self.chain.query_commitment_prefix();
+
+        reply_to
+            .send(prefix)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_compatible_versions(&self, reply_to: ReplyTo<Vec<String>>) -> Result<(), Error> {
+        let versions = self.chain.query_compatible_versions();
+
+        reply_to
+            .send(versions)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_connection(
+        &self,
+        connection_id: ConnectionId,
+        height: Height,
+        reply_to: ReplyTo<ConnectionEnd>,
+    ) -> Result<(), Error> {
+        let connection_end = self.chain.query_connection(&connection_id, height);
+
+        reply_to
+            .send(connection_end)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn proven_client_state(
+        &self,
+        client_id: ClientId,
+        height: Height,
+        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .proven_client_state(&client_id, height)
+            .map(|(cs, mp)| (cs.wrap_any(), mp));
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn proven_connection(
+        &self,
+        connection_id: ConnectionId,
+        height: Height,
+        reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.proven_connection(&connection_id, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn proven_client_consensus(
+        &self,
+        client_id: ClientId,
+        consensus_height: Height,
+        height: Height,
+        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .proven_client_consensus(&client_id, consensus_height, height)
+            .map(|(cs, mp)| (cs.wrap_any(), mp));
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
