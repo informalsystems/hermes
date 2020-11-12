@@ -11,12 +11,16 @@ use ibc::{
     ics24_host::identifier::{ClientId, ConnectionId},
     Height,
 };
+
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::SignedHeader;
 
 use crate::{
     chain::QueryResponse,
     error::{Error, Kind},
     foreign_client::ForeignClient,
+    keyring::store::KeyEntry,
     msgs::{EncodedTransaction, Packet},
 };
 
@@ -72,9 +76,9 @@ impl ChainHandle for ProdChainHandle {
     }
 
     fn send_tx(
-        &mut self,
+        &self,
         proto_msgs: Vec<prost_types::Any>,
-        key: crate::keyring::store::KeyEntry,
+        key: KeyEntry,
         memo: String,
         timeout_height: u64,
     ) -> Result<String, Error> {
@@ -89,6 +93,13 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
     }
 
+    fn key_and_signer(&self, key_file_contents: String) -> Result<(KeyEntry, AccountId), Error> {
+        self.send(|reply_to| HandleInput::KeyAndSigner {
+            key_file_contents,
+            reply_to,
+        })
+    }
+
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
         self.send(|reply_to| HandleInput::Submit {
             transaction,
@@ -100,11 +111,8 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
     }
 
-    fn query_latest_height(&self, client: &ForeignClient) -> Result<Height, Error> {
-        self.send(|reply_to| HandleInput::QueryLatestHeight {
-            client: client.clone(),
-            reply_to,
-        })
+    fn query_latest_height(&self) -> Result<Height, Error> {
+        self.send(|reply_to| HandleInput::QueryLatestHeight { reply_to })
     }
 
     fn query_client_state(

@@ -6,11 +6,11 @@ use abscissa_core::{
 
 use relayer::{
     chain::runtime::ChainRuntime,
-    channel::{Channel, ChannelConfig},
-    connection::{Connection, ConnectionConfig},
-    foreign_client::{ForeignClient, ForeignClientConfig},
     light_client::tendermint::LightClient as TMLightClient,
-    link::{Link, LinkConfig},
+    // channel::{Channel, ChannelConfig},
+    // connection::{Connection, ConnectionConfig},
+    // foreign_client::{ForeignClient, ForeignClientConfig},
+    // link::{Link, LinkConfig},
 };
 
 use ibc::ics24_host::identifier::ClientId;
@@ -91,42 +91,45 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     });
 
     // Instantiate the foreign client on the source chain.
-    let client_on_src = ForeignClient::new(
-        &src_chain_handle,
-        &dst_chain_handle,
-        ForeignClientConfig::new(client_src_id),
-    )?;
+    // let client_on_src = ForeignClient::new(
+    //     &src_chain_handle,
+    //     &dst_chain_handle,
+    //     ForeignClientConfig::new(client_src_id),
+    // )?;
 
     // Instantiate the foreign client on the destination chain.
-    let client_on_dst = ForeignClient::new(
-        &dst_chain_handle,
-        &src_chain_handle,
-        ForeignClientConfig::new(client_dst_id),
-    )?;
+    // let client_on_dst = ForeignClient::new(
+    //     &dst_chain_handle,
+    //     &src_chain_handle,
+    //     ForeignClientConfig::new(client_dst_id),
+    // )?;
 
-    let connection = Connection::new(
-        &src_chain_handle,
-        &dst_chain_handle,
-        &client_on_src, // Semantic dependency.
-        ConnectionConfig::new(todo!(), todo!()),
-    )?;
+    // Initialize a connection between the two chains
+    // let connection = Connection::new(
+    //     &src_chain_handle,
+    //     &dst_chain_handle,
+    //     &client_on_src, // Semantic dependency.
+    //     ConnectionConfig::new(todo!(), todo!()),
+    // )?;
 
-    let channel = Channel::new(
-        &src_chain_handle,
-        &dst_chain_handle,
-        connection, // Semantic dependecy
-        ChannelConfig::new(todo!(), todo!()),
-    )?;
+    // Initialize a channel over the connection
+    // let channel = Channel::new(
+    //     &src_chain_handle,
+    //     &dst_chain_handle,
+    //     connection, // Semantic dependecy
+    //     ChannelConfig::new(todo!(), todo!()),
+    // )?;
 
-    let link = Link::new(
-        src_chain_handle,
-        dst_chain_handle,
-        client_on_src, // Actual dependecy
-        channel,       // Semantic dependecy
-        LinkConfig::new(todo!(), todo!(), todo!()),
-    )?;
+    // TODO: Re-enable `link` module in `relayer/src/lib.rs`
+    // let link = Link::new(
+    //     src_chain_handle,
+    //     dst_chain_handle,
+    //     client_on_src, // Actual dependecy
+    //     channel,       // Semantic dependecy
+    //     LinkConfig::new(todo!(), todo!(), todo!()),
+    // )?;
 
-    link.run()?;
+    // link.run()?;
 
     Ok(())
 }

@@ -16,15 +16,19 @@ use ibc::{
     Height,
 };
 
-use tendermint::block::signed_header::SignedHeader;
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 
-use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::{config::ChainConfig, util::block_on};
 use crate::{
     error::{Error, Kind},
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
 };
 use crate::{foreign_client::ForeignClient, light_client::LightBlock};
+use crate::{
+    keyring::store::KeyEntry,
+    msgs::{Datagram, EncodedTransaction, IBCEvent, Packet},
+};
 
 use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
@@ -64,7 +68,7 @@ impl<C: Chain> ChainRuntime<C> {
         ProdChainHandle::new(chain_id, sender)
     }
 
-    pub fn run(self) -> Result<(), Error> {
+    pub fn run(mut self) -> Result<(), Error> {
         loop {
             channel::select! {
                 recv(self.receiver) -> event => {
@@ -73,23 +77,31 @@ impl<C: Chain> ChainRuntime<C> {
                             reply_to.send(Ok(())).map_err(|_| Kind::Channel)?;
                             break;
                         }
+
                         Ok(HandleInput::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
                         },
+
                         Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
                             self.query(path, height, prove, reply_to)?
                         },
+
                         Ok(HandleInput::GetHeader { height, reply_to }) => {
                             self.get_header(height, reply_to)?
                         }
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
                             self.get_minimal_set(from, to, reply_to)?
                         }
+
                         Ok(HandleInput::Submit { transaction, reply_to, }) => {
                             self.submit(transaction, reply_to)?
                         },
                         Ok(HandleInput::CreatePacket { event, reply_to }) => {
                             self.create_packet(event, reply_to)?
+                        }
+
+                        Ok(HandleInput::KeyAndSigner { key_file_contents, reply_to }) => {
+                            self.key_and_signer(key_file_contents, reply_to)?
                         }
 
                         Ok(HandleInput::BuildHeader { trusted_height, target_height, reply_to }) => {
@@ -105,8 +117,8 @@ impl<C: Chain> ChainRuntime<C> {
                             self.build_connection_proofs(message_type, connection_id, client_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryLatestHeight { client, reply_to }) => {
-                            self.query_latest_height(client, reply_to)?
+                        Ok(HandleInput::QueryLatestHeight { reply_to }) => {
+                            self.query_latest_height(reply_to)?
                         }
                         Ok(HandleInput::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
@@ -176,6 +188,16 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_latest_height(&self, reply_to: ReplyTo<Height>) -> Result<(), Error> {
+        let latest_height = self.chain.query_latest_height();
+
+        reply_to
+            .send(latest_height)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
         let light_block = self.light_client.verify_to_target(height);
         let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
@@ -200,16 +222,22 @@ impl<C: Chain> ChainRuntime<C> {
         todo!()
     }
 
-    fn query_latest_height(
-        &self,
-        client: ForeignClient,
-        reply_to: ReplyTo<Height>,
-    ) -> Result<(), Error> {
+    fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
         todo!()
     }
 
-    fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
-        todo!()
+    fn key_and_signer(
+        &mut self,
+        key_file_contents: String,
+        reply_to: ReplyTo<(KeyEntry, AccountId)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.key_and_signer(&key_file_contents);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
     }
 
     fn build_header(
@@ -245,9 +273,11 @@ impl<C: Chain> ChainRuntime<C> {
         height: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
+        let latest_light_block = self.light_client.verify_to_target(height)?;
+
         let consensus_state = self
             .chain
-            .build_consensus_state(height)
+            .build_consensus_state(latest_light_block)
             .map(|cs| cs.wrap_any());
 
         reply_to

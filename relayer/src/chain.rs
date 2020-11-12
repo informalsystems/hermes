@@ -14,7 +14,7 @@ use serde::{de::DeserializeOwned, Serialize};
 use tendermint_proto::DomainType;
 
 // TODO - tendermint deps should not be here
-// use tendermint::account::Id as AccountId;
+use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_rpc::Client as RpcClient;
@@ -97,9 +97,17 @@ pub trait Chain {
         timeout_height: u64,
     ) -> Result<String, Error>;
 
+    /// Get the key and account Id - temporary solution
+    fn key_and_signer(&mut self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error>;
+
     // Build states
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error>;
+
     fn build_header(
         &self,
         trusted_height: ICSHeight,

@@ -33,8 +33,8 @@ impl ConnectionConfig {
 
 impl Connection {
     pub fn new(
-        _src_chain: &dyn ChainHandle,
-        _dst_chain: &dyn ChainHandle,
+        _src_chain: impl ChainHandle,
+        _dst_chain: impl ChainHandle,
         _foreign_client: &ForeignClient,
         config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {

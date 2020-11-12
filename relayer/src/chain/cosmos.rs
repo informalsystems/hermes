@@ -124,20 +124,6 @@ impl CosmosSDKChain {
             .consensus_params)
     }
 
-    /// Get the key and account Id - temporary solution
-    pub fn key_and_signer(&mut self, signer_file: &str) -> Result<(KeyEntry, AccountId), Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase
-            .key_from_seed_file(signer_file)
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok((key, signer))
-    }
-
     fn query_light_block_at_height(&self, height: Height) -> Result<TMLightBlock, Error> {
         let client = self.rpc_client();
 
@@ -187,6 +173,14 @@ impl Chain for CosmosSDKChain {
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
+
+    fn config(&self) -> &ChainConfig {
+        &self.config
+    }
+
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
@@ -307,12 +301,18 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
-    fn config(&self) -> &ChainConfig {
-        &self.config
-    }
+    /// Get the key and account Id - temporary solution
+    fn key_and_signer(&mut self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase
+            .key_from_seed_file(key_file_contents)
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok((key, signer))
     }
 
     /// Query the latest height the chain is at via a RPC query
@@ -406,21 +406,11 @@ impl Chain for CosmosSDKChain {
         Ok(client_state)
     }
 
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
-        // Build the client state.
-        let tm_height = height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
-        let latest_header = self
-            .query_light_block_at_height(tm_height)?
-            .signed_header
-            .header;
-
-        // Build the consensus state.
-        let consensus_state = TMConsensusState::from(latest_header);
-
-        Ok(consensus_state)
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error> {
+        Ok(TMConsensusState::from(light_block.signed_header.header))
     }
 
     fn build_header(

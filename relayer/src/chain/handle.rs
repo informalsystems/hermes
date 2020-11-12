@@ -21,6 +21,9 @@ use tendermint::net;
 use tendermint::{abci::Path as ABCIPath, chain};
 use tendermint_rpc::HttpClient;
 
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
+
 use crate::error::{Error, Kind};
 use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
@@ -74,8 +77,12 @@ pub enum HandleInput {
         reply_to: ReplyTo<()>,
     },
 
+    KeyAndSigner {
+        key_file_contents: String,
+        reply_to: ReplyTo<(KeyEntry, AccountId)>,
+    },
+
     QueryLatestHeight {
-        client: ForeignClient,
         reply_to: ReplyTo<Height>,
     },
 
@@ -148,7 +155,7 @@ pub enum HandleInput {
     },
 }
 
-pub trait ChainHandle: Send {
+pub trait ChainHandle: Clone + Send + Sync {
     fn id(&self) -> ChainId;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
@@ -157,7 +164,7 @@ pub trait ChainHandle: Send {
 
     /// Send a transaction with `msgs` to chain.
     fn send_tx(
-        &mut self,
+        &self,
         proto_msgs: Vec<prost_types::Any>,
         key: KeyEntry,
         memo: String,
@@ -172,12 +179,14 @@ pub trait ChainHandle: Send {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
+    fn key_and_signer(&self, key_file_contents: String) -> Result<(KeyEntry, AccountId), Error>;
+
     /// Submits a transaction.
     fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
 
     fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
 
-    fn query_latest_height(&self, client: &ForeignClient) -> Result<Height, Error>;
+    fn query_latest_height(&self) -> Result<Height, Error>;
 
     fn query_client_state(
         &self,
