@@ -12,7 +12,7 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
-    #[options(free, help = "identifier of the dstination chain")]
+    #[options(free, help = "identifier of the destination chain")]
     dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
@@ -20,7 +20,7 @@ pub struct TxCreateClientCmd {
 
     #[options(
         free,
-        help = "identifier of the client to be created on dstination chain"
+        help = "identifier of the client to be created on destination chain"
     )]
     dst_client_id: ClientId,
 
@@ -59,7 +59,7 @@ impl Runnable for TxCreateClientCmd {
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpdateClientCmd {
-    #[options(free, help = "identifier of the dstination chain")]
+    #[options(free, help = "identifier of the destination chain")]
     dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
@@ -67,7 +67,7 @@ pub struct TxUpdateClientCmd {
 
     #[options(
         free,
-        help = "identifier of the client to be updated on dstination chain"
+        help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
 
@@ -118,18 +118,18 @@ fn validate_common_options(
     // Validate parameters
     let dst_chain_id = dst_chain_id
         .parse()
-        .map_err(|_| "bad dstination chain identifier".to_string())?;
+        .map_err(|_| "bad destination chain identifier".to_string())?;
 
     let src_chain_id = src_chain_id
         .parse()
         .map_err(|_| "bad source chain identifier".to_string())?;
 
-    // Get the source and dstination chain configuration
+    // Get the source and destination chain configuration
     let dst_chain_config = config
         .chains
         .iter()
         .find(|c| c.id == dst_chain_id)
-        .ok_or_else(|| "missing dstination chain configuration".to_string())?;
+        .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
     let src_chain_config = config
         .chains

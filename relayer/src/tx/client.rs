@@ -46,7 +46,7 @@ pub fn build_create_client(
     dst_client_id: ClientId,
     signer_seed: String,
 ) -> Result<MsgCreateAnyClient, Error> {
-    // Verify that the client has not been created already, i.e the dstination chain does not
+    // Verify that the client has not been created already, i.e the destination chain does not
     // have a state for this client.
     let client_state = dst_chain.query_client_state(&dst_client_id, Height::default());
     if client_state.is_ok() {
@@ -73,17 +73,17 @@ pub fn build_create_client(
 }
 
 pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Initialize the source and dstination light clients
+    // Initialize the source and destination light clients
     let (src_light_client, src_supervisor) =
         TMLightClient::from_config(&opts.src_chain_config, true)?;
     let (dst_light_client, dst_supervisor) =
         TMLightClient::from_config(&opts.dst_chain_config, true)?;
 
-    // Spawn the source and dstination light clients
+    // Spawn the source and destination light clients
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
-    // Initialize the source and dstination chain runtimes
+    // Initialize the source and destination chain runtimes
     let src_chain_runtime = ChainRuntime::cosmos_sdk(opts.src_chain_config, src_light_client)?;
     let dst_chain_runtime = ChainRuntime::cosmos_sdk(opts.dst_chain_config, dst_light_client)?;
 
@@ -108,13 +108,13 @@ pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error
 }
 
 pub fn build_update_client(
-    dst_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     dst_client_id: ClientId,
     target_height: Height,
-    signer_seed: &str,
+    signer_seed: String,
 ) -> Result<Vec<Any>, Error> {
-    // Get the latest trusted height from the client state on dstination.
+    // Get the latest trusted height from the client state on destination.
     let trusted_height = dst_chain
         .query_client_state(&dst_client_id, Height::default())?
         .latest_height();
@@ -122,11 +122,13 @@ pub fn build_update_client(
     // Get the key and signer from key seed file.
     let (key, signer) = dst_chain.key_and_signer(signer_seed)?;
 
+    let header = src_chain
+        .build_header(trusted_height, target_height)?
+        .wrap_any();
+
     let new_msg = MsgUpdateAnyClient {
         client_id: dst_client_id,
-        header: src_chain
-            .build_header(trusted_height, target_height)?
-            .wrap_any(),
+        header,
         signer,
     };
 
@@ -134,19 +136,33 @@ pub fn build_update_client(
 }
 
 pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Get the source and dstination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let dst_chain = &mut CosmosSDKChain::from_config(opts.clone().dst_chain_config)?;
+    // Initialize the source and destination light clients
+    let (src_light_client, src_supervisor) =
+        TMLightClient::from_config(&opts.src_chain_config, true)?;
+    let (dst_light_client, dst_supervisor) =
+        TMLightClient::from_config(&opts.dst_chain_config, true)?;
+
+    // Spawn the source and destination light clients
+    thread::spawn(move || src_supervisor.run().unwrap());
+    thread::spawn(move || dst_supervisor.run().unwrap());
+
+    // Initialize the source and destination chain runtimes
+    let src_chain_runtime = ChainRuntime::cosmos_sdk(opts.src_chain_config, src_light_client)?;
+    let dst_chain_runtime = ChainRuntime::cosmos_sdk(opts.dst_chain_config, dst_light_client)?;
+
+    let src_chain = src_chain_runtime.handle();
+    let dst_chain = dst_chain_runtime.handle();
 
     let target_height = src_chain.query_latest_height()?;
     let new_msgs = build_update_client(
-        dst_chain,
+        dst_chain.clone(),
         src_chain,
         opts.dst_client_id,
         target_height,
-        &opts.signer_seed,
+        opts.signer_seed.clone(),
     )?;
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
-    Ok(dst_chain.send(new_msgs, key, "".to_string(), 0)?)
+    let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
+
+    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
 }

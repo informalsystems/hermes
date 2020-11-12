@@ -90,22 +90,20 @@ impl CosmosSDKChain {
     }
 
     /// The unbonding period of this chain
-    async fn unbonding_period(&self) -> Result<Duration, Error> {
+    pub fn unbonding_period(&self) -> Result<Duration, Error> {
         // TODO - generalize this
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-        let mut client =
-            ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr)
-                .await
-                .map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = block_on(
+            ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
+        )
+        .map_err(|e| Kind::Grpc.context(e))?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
-        let response = client
-            .params(request)
-            .await
-            .map_err(|e| Kind::Grpc.context(e))?;
+        let response = block_on(client.params(request)).map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
             .into_inner()
@@ -113,6 +111,7 @@ impl CosmosSDKChain {
             .ok_or_else(|| Kind::Grpc.context("none staking params".to_string()))?
             .unbonding_time
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
+
         Ok(Duration::from_secs(res.seconds as u64))
     }
 
@@ -122,48 +121,6 @@ impl CosmosSDKChain {
         Ok(block_on(self.rpc_client().genesis())
             .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
-    }
-
-    fn query_light_block_at_height(&self, height: Height) -> Result<TMLightBlock, Error> {
-        let client = self.rpc_client();
-
-        let signed_header = fetch_signed_header(client, height)?;
-        assert_eq!(height, signed_header.header.height);
-
-        // Get the validator list.
-        let validators = fetch_validators(client, height)?;
-
-        // Get the proposer.
-        let proposer = validators
-            .iter()
-            .find(|v| v.address == signed_header.header.proposer_address)
-            .ok_or_else(|| Kind::EmptyResponseValue)?;
-
-        let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
-
-        // Create the validator set with the proposer from the header.
-        // This is required by IBC on-chain validation.
-        let validator_set = ValidatorSet::new(
-            validators.clone(),
-            Some(*proposer),
-            voting_power.try_into().map_err(|e| Kind::Rpc.context(e))?,
-        );
-
-        // Create the next validator set without the proposer.
-        let next_validator_set = fetch_validator_set(client, height.increment())?;
-
-        let light_block = TMLightBlock::new(
-            signed_header,
-            validator_set,
-            next_validator_set,
-            self.config()
-                .peers
-                .clone()
-                .ok_or_else(|| Kind::Config.context("no peers configured".to_string()))?
-                .primary,
-        );
-
-        Ok(light_block)
     }
 }
 
@@ -392,7 +349,7 @@ impl Chain for CosmosSDKChain {
             self.id().to_string(),
             self.config.trust_threshold,
             self.config.trusting_period,
-            block_on(self.unbonding_period())?,
+            self.unbonding_period()?,
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,
             ICSHeight::zero(),
@@ -415,28 +372,16 @@ impl Chain for CosmosSDKChain {
 
     fn build_header(
         &self,
-        trusted_height: ICSHeight,
-        target_height: ICSHeight,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
-        // Get the light block at target_height from chain.
-        let tm_target_height = target_height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::Query.context(e))?;
-        let target_light_block = self.query_light_block_at_height(tm_target_height)?;
+        let trusted_height =
+            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
-        // Get the light block at trusted_height from the chain.
-        let height = trusted_height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::Query.context(e))?;
-        let trusted_light_block = self.query_light_block_at_height(height)?;
-
-        // Create the ics07 Header to be included in the MsgUpdateClient.
         Ok(TMHeader {
+            trusted_height,
             signed_header: target_light_block.signed_header,
             validator_set: target_light_block.validators,
-            trusted_height,
             trusted_validator_set: trusted_light_block.validators,
         })
     }

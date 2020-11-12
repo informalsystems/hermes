@@ -110,8 +110,8 @@ pub trait Chain {
 
     fn build_header(
         &self,
-        trusted_height: ICSHeight,
-        target_height: ICSHeight,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error>;
 
     // Downcast methods

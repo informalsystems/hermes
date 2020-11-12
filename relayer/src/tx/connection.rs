@@ -23,42 +23,43 @@ use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRingOperations};
+use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::tx::client::{build_update_client, build_update_client_and_send, ClientOptions};
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
-    pub dest_chain_config: ChainConfig,
+    pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub dest_client_id: ClientId,
+    pub dst_client_id: ClientId,
     pub src_client_id: ClientId,
-    pub dest_connection_id: ConnectionId,
+    pub dst_connection_id: ConnectionId,
     pub src_connection_id: Option<ConnectionId>,
     pub signer_seed: String,
 }
 
 pub fn build_conn_init(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenInitOptions,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message, i.e. it does not have the connection
-    if dest_chain
-        .query_connection(&opts.dest_connection_id, ICSHeight::default())
+    if dst_chain
+        .query_connection(&opts.dst_connection_id, ICSHeight::default())
         .is_ok()
     {
         return Err(Kind::ConnOpenInit(
-            opts.dest_connection_id.clone(),
+            opts.dst_connection_id.clone(),
             "connection already exist".into(),
         )
         .into());
     }
 
     // Get the key and signer from key seed file
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let (key, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
 
     let prefix = src_chain.query_commitment_prefix()?;
 
@@ -70,10 +71,10 @@ pub fn build_conn_init(
 
     // Build the domain type message
     let new_msg = MsgConnectionOpenInit {
-        client_id: opts.dest_client_id.clone(),
-        connection_id: opts.dest_connection_id.clone(),
+        client_id: opts.dst_client_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
         counterparty,
-        version: dest_chain.query_compatible_versions()?[0].clone(),
+        version: dst_chain.query_compatible_versions()?[0].clone(),
         signer,
     };
 
@@ -81,23 +82,38 @@ pub fn build_conn_init(
 }
 
 pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination light clients
+    let (src_light_client, src_supervisor) =
+        TMLightClient::from_config(&opts.src_chain_config, true)?;
+    let (dst_light_client, dst_supervisor) =
+        TMLightClient::from_config(&opts.dst_chain_config, true)?;
 
-    let new_msgs = build_conn_init(dest_chain, src_chain, opts)?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    // Spawn the source and destination light clients
+    thread::spawn(move || src_supervisor.run().unwrap());
+    thread::spawn(move || dst_supervisor.run().unwrap());
 
-    Ok(dest_chain.send(new_msgs, key, "".to_string(), 0)?)
+    // Initialize the source and destination chain runtimes
+    let src_chain_runtime =
+        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client)?;
+    let dst_chain_runtime =
+        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client)?;
+
+    let src_chain = src_chain_runtime.handle();
+    let dst_chain = dst_chain_runtime.handle();
+
+    let new_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
+    let (key, _) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+
+    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
 }
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenTryOptions {
-    pub dest_chain_config: ChainConfig,
+    pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub dest_client_id: ClientId,
+    pub dst_client_id: ClientId,
     pub src_client_id: ClientId,
-    pub dest_connection_id: ConnectionId,
+    pub dst_connection_id: ConnectionId,
     pub src_connection_id: ConnectionId,
     pub signer_seed: String,
 }
@@ -124,10 +140,10 @@ fn check_connection_state_for_try(
     }
 }
 
-/// Attempts to send a MsgConnOpenTry to the dest_chain.
+/// Attempts to send a MsgConnOpenTry to the dst_chain.
 pub fn build_conn_try(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenTryOptions,
 ) -> Result<Vec<Any>, Error> {
     // If there is a connection present on the destination chain it should look like this
@@ -136,22 +152,23 @@ pub fn build_conn_try(
         Some(opts.src_connection_id.clone()),
         src_chain.query_commitment_prefix()?,
     );
-    let dest_expected_connection = ConnectionEnd::new(
+
+    let dst_expected_connection = ConnectionEnd::new(
         State::Init,
-        opts.dest_client_id.clone(),
+        opts.dst_client_id.clone(),
         counterparty.clone(),
         src_chain.query_compatible_versions()?,
     )
     .unwrap();
 
     // Check that if a connection exists on destination it is consistent with the try options
-    if let Ok(dest_connection) =
-        dest_chain.query_connection(&opts.dest_connection_id.clone(), ICSHeight::default())
+    if let Ok(dst_connection) =
+        dst_chain.query_connection(&opts.dst_connection_id.clone(), ICSHeight::default())
     {
         check_connection_state_for_try(
-            opts.dest_connection_id.clone(),
-            dest_connection,
-            dest_expected_connection,
+            opts.dst_connection_id.clone(),
+            dst_connection,
+            dst_expected_connection,
         )?
     }
 
@@ -163,30 +180,31 @@ pub fn build_conn_try(
                 "missing connection on source chain".to_string(),
             )
         })?;
+
     // TODO - check that the src connection is consistent with the try options
 
     // TODO - Build add send the message(s) for updating client on source (when we don't need the key seed anymore)
     // TODO - add check if it is required
     // let (key, signer) = src_chain.key_and_signer(&opts.signer_seed)?;
     // build_update_client_and_send(ClientOptions {
-    //     dest_client_id: opts.src_client_id.clone(),
-    //     dest_chain_config: src_chain.config().clone(),
-    //     src_chain_config: dest_chain.config().clone(),
+    //     dst_client_id: opts.src_client_id.clone(),
+    //     dst_chain_config: src_chain.config().clone(),
+    //     src_chain_config: dst_chain.config().clone(),
     //     signer_seed: "".to_string(),
     // })?;
 
     // Get the key and signer from key seed file
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let (key, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id.clone(),
+        dst_chain,
+        src_chain.clone(),
+        opts.dst_client_id.clone(),
         ics_target_height,
-        &opts.signer_seed,
+        opts.signer_seed.clone(),
     )?;
 
     let client_state = src_chain.query_client_state(&opts.src_client_id, ics_target_height)?;
@@ -205,8 +223,8 @@ pub fn build_conn_try(
     };
 
     let new_msg = MsgConnectionOpenTry {
-        connection_id: opts.dest_connection_id.clone(),
-        client_id: opts.dest_client_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
+        client_id: opts.dst_client_id.clone(),
         client_state: Some(client_state.wrap_any()),
         counterparty_chosen_connection_id: src_connection.counterparty().connection_id().cloned(),
         counterparty,
@@ -223,12 +241,27 @@ pub fn build_conn_try(
 }
 
 pub fn build_conn_try_and_send(opts: ConnectionOpenTryOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.src_chain_config.clone())?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination light clients
+    let (src_light_client, src_supervisor) =
+        TMLightClient::from_config(&opts.src_chain_config, true)?;
+    let (dst_light_client, dst_supervisor) =
+        TMLightClient::from_config(&opts.dst_chain_config, true)?;
 
-    let dest_msgs = build_conn_try(dest_chain, src_chain, &opts)?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    // Spawn the source and destination light clients
+    thread::spawn(move || src_supervisor.run().unwrap());
+    thread::spawn(move || dst_supervisor.run().unwrap());
 
-    Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
+    // Initialize the source and destination chain runtimes
+    let src_chain_runtime =
+        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client)?;
+    let dst_chain_runtime =
+        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client)?;
+
+    let src_chain = src_chain_runtime.handle();
+    let dst_chain = dst_chain_runtime.handle();
+
+    let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
+    let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
+
+    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }

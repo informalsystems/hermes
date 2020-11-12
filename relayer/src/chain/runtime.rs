@@ -6,6 +6,7 @@ use thiserror::Error;
 use ibc::{
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+        header::Header,
         state::{ClientState, ConsensusState},
     },
     ics03_connection::{connection::ConnectionEnd, msgs::ConnectionMsgType},
@@ -246,7 +247,25 @@ impl<C: Chain> ChainRuntime<C> {
         target_height: Height,
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
-        todo!()
+        let header = {
+            // Get the light block at target_height from chain.
+            let target_light_block = self.light_client.verify_to_target(target_height)?;
+
+            // Get the light block at trusted_height from the chain.
+            let trusted_light_block = self.light_client.verify_to_target(trusted_height)?;
+
+            let header = self
+                .chain
+                .build_header(target_light_block, trusted_light_block)?;
+
+            Ok(header.wrap_any())
+        };
+
+        reply_to
+            .send(header)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
     }
 
     /// Constructs a client state for the given height
