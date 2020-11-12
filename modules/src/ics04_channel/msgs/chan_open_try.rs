@@ -1,9 +1,8 @@
 use crate::address::{account_to_string, string_to_account};
-use crate::ics04_channel::channel::{validate_version, ChannelEnd, Counterparty, Order};
+use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::{proofs::Proofs, tx_msg::Msg};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint::account::Id as AccountId;
@@ -29,54 +28,6 @@ pub struct MsgChannelOpenTry {
     signer: AccountId,
 }
 
-impl MsgChannelOpenTry {
-    #[allow(dead_code, clippy::too_many_arguments)]
-    // TODO: Not used (yet). Also missing `counterparty_chosen_channel_id` value.
-    fn new(
-        port_id: String,
-        channel_id: String,
-        channel_version: String,
-        order: i32,
-        connection_hops: Vec<String>,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        counterparty_version: String,
-        proof_init: CommitmentProof,
-        proofs_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgChannelOpenTry, Error> {
-        let connection_hops: Result<Vec<_>, _> = connection_hops
-            .into_iter()
-            .map(|s| ConnectionId::from_str(s.as_str()))
-            .collect();
-
-        let version =
-            validate_version(channel_version).map_err(|e| Kind::InvalidVersion.context(e))?;
-
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_chosen_channel_id: None,
-            channel: ChannelEnd::new(
-                Order::from_i32(order)?,
-                Counterparty::new(counterparty_port_id, counterparty_channel_id)
-                    .map_err(|e| Kind::IdentifierError.context(e))?,
-                connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
-                version,
-            ),
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_init, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
-        })
-    }
-}
-
 impl Msg for MsgChannelOpenTry {
     type ValidationError = Error;
 
@@ -90,6 +41,10 @@ impl Msg for MsgChannelOpenTry {
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         self.channel.validate_basic()
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgChannelOpenTry".to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

@@ -29,7 +29,7 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(help = "identifier of the source connection", short = "d")]
+    #[options(help = "identifier of the source connection", short = "s")]
     src_connection_id: Option<ConnectionId>,
 
     #[options(

@@ -66,6 +66,10 @@ impl Msg for MsgChannelOpenConfirm {
         Ok(())
     }
 
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgChannelOpenAck".to_string()
+    }
+
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
