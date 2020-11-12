@@ -7,6 +7,7 @@ use ibc_proto::ibc::core::connection::v1::{
 use tendermint_proto::DomainType;
 
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::validate_versions;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -45,7 +46,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
             client_id: value.client_id.to_string(),
             versions: value.versions,
             state: value.state as i32,
-            counterparty: Some(RawCounterparty::from(value.counterparty)),
+            counterparty: Some(value.counterparty.into()),
         }
     }
 }
@@ -63,6 +64,11 @@ impl ConnectionEnd {
             counterparty,
             versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
         })
+    }
+
+    /// Getter for the state of this connection end.
+    pub fn state(&self) -> &State {
+        &self.state
     }
 
     /// Setter for the `state` field.
@@ -89,11 +95,6 @@ impl ConnectionEnd {
     /// Helper function to compare the state of this end with another state.
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)
-    }
-
-    /// Getter for the state of this connection end.
-    pub fn state(&self) -> &State {
-        &self.state
     }
 
     /// Getter for the client id on the local party of this connection end.
@@ -194,25 +195,6 @@ impl Counterparty {
     pub fn validate_basic(&self) -> Result<(), ValidationError> {
         Ok(())
     }
-}
-
-pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, String> {
-    let v: Vec<String> = versions.to_vec();
-    if v.is_empty() {
-        return Err("missing versions".to_string());
-    }
-
-    for v in versions.into_iter() {
-        validate_version(v)?;
-    }
-    Ok(v)
-}
-
-pub fn validate_version(version: String) -> Result<String, String> {
-    if version.trim().is_empty() {
-        return Err("empty version string".to_string());
-    }
-    Ok(version)
 }
 
 #[derive(Clone, Debug, PartialEq)]

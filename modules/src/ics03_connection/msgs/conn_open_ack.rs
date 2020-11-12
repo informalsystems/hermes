@@ -6,9 +6,10 @@ use tendermint_proto::DomainType;
 
 use tendermint::account::Id as AccountId;
 
+use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
-use crate::ics03_connection::connection::validate_version;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::version::validate_version;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
@@ -91,6 +92,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
 
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
+        let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+
         let consensus_height = msg
             .consensus_height
             .ok_or_else(|| Kind::MissingConsensusHeight)?
@@ -134,8 +137,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer: AccountId::from_str(msg.signer.as_str())
-                .map_err(|e| Kind::InvalidSigner.context(e))?,
+            signer,
         })
     }
 }
@@ -166,14 +168,15 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             version: ics_msg.version,
-            signer: ics_msg.signer.to_string(),
+            signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::test_utils::{get_dummy_account_id_raw, get_dummy_proof};
+    use crate::ics03_connection::version::default_version_string;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
@@ -193,8 +196,8 @@ pub mod test_util {
             }),
             client_state: None,
             proof_client: vec![],
-            version: "1.0.0".to_string(),
-            signer: get_dummy_account_id_raw(),
+            version: default_version_string(),
+            signer: get_dummy_bech32_account(),
         }
     }
 }

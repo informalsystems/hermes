@@ -8,7 +8,8 @@ use serde::{de::DeserializeOwned, Serialize};
 use tendermint_proto::DomainType;
 
 // TODO - tendermint deps should not be here
-use tendermint::account::Id as AccountId;
+//use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use tendermint::block::Height;
 use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::TrustThreshold;
@@ -17,26 +18,39 @@ use tendermint_rpc::Client as RpcClient;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::Height as ICSHeight;
+
 use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
+use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc::ics03_connection::msgs::ConnectionMsgType;
+use ibc::ics03_connection::version::get_compatible_versions;
+use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path;
+use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
+use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::tx_msg::Msg;
-use ibc::Height as ICSHeight;
 
 use crate::client::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::tx::connection::ConnectionOpenInitOptions;
+use crate::tx::connection::{ConnectionOpenInitOptions, ConnectionOpenTryOptions};
 use crate::util::block_on;
 
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
-
 pub mod handle;
+
+/// Generic query response type
+/// TODO - will slowly move to GRPC protobuf specs for queries
+pub struct QueryResponse {
+    pub value: Vec<u8>,
+    pub proof: MerkleProof,
+    pub height: Height,
+}
 
 /// Defines a blockchain as understood by the relayer
 pub trait Chain {
@@ -61,7 +75,16 @@ pub trait Chain {
     type Error: Into<Box<dyn std::error::Error + Send + Sync + 'static>>;
 
     /// Perform a generic `query`, and return the corresponding response data.
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<Vec<u8>, Self::Error>;
+    // TODO - migrate callers to use ics_query() and then remove this
+    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Self::Error>;
+
+    /// Perform a generic ICS `query`, and return the corresponding response data.
+    fn ics_query(
+        &self,
+        data: Path,
+        height: ICSHeight,
+        prove: bool,
+    ) -> Result<QueryResponse, Self::Error>;
 
     /// send a transaction with `msgs` to chain.
     fn send(
@@ -70,9 +93,10 @@ pub trait Chain {
         key: KeyEntry,
         memo: String,
         timeout_height: u64,
-    ) -> Result<Vec<u8>, Self::Error>;
+    ) -> Result<String, Self::Error>;
 
     /// Returns the chain's identifier
+    /// TODO - move to ICS Chain Id
     fn id(&self) -> &ChainId {
         &self.config().id
     }
@@ -98,13 +122,55 @@ pub trait Chain {
     fn query_client_state(
         &self,
         client_id: &ClientId,
-        height: Height,
-        proof: bool,
+        height: ICSHeight,
     ) -> Result<AnyClientState, Error>;
+
+    fn proven_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(AnyClientState, MerkleProof), Error>;
 
     fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error>;
 
     fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error>;
+
+    fn proven_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
+        let res = self
+            .ics_query(Path::Connections(connection_id.clone()), height, true)
+            .map_err(|e| Kind::Query.context(e))?;
+        let connection_end =
+            ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((connection_end, res.proof))
+    }
+
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
+        let res = self
+            .ics_query(
+                ClientConsensusPath {
+                    client_id: client_id.clone(),
+                    epoch: consensus_height.version_number,
+                    height: consensus_height.version_height,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+        let consensus_state =
+            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((consensus_state, res.proof))
+    }
 
     fn build_header(
         &self,
@@ -113,20 +179,85 @@ pub trait Chain {
     ) -> Result<AnyHeader, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        // TODO - do a real chain query
         Ok(CommitmentPrefix::from(
             self.config().store_prefix.as_bytes().to_vec(),
         ))
     }
 
+    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
+        // TODO - do a real chain query
+        Ok(get_compatible_versions())
+    }
+
     fn query_connection(
         &self,
         connection_id: &ConnectionId,
-        height: Height,
-        proof: bool,
+        height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         Ok(self
-            .query(Path::Connections(connection_id.clone()), height, proof)
+            .ics_query(Path::Connections(connection_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| ConnectionEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e)))?)
+            .and_then(|v| {
+                ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+            })?)
+    }
+
+    /// Build the required proofs for connection handshake messages. The proofs are obtained from
+    /// queries at height - 1
+    fn build_connection_proofs(
+        &self,
+        message_type: ConnectionMsgType,
+        connection_id: &ConnectionId,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<Proofs, Error> {
+        // Set the height of the queries at height - 1
+        let query_height = height
+            .decrement()
+            .map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        let connection_proof =
+            CommitmentProof::from(self.proven_connection(&connection_id, query_height)?.1);
+
+        let mut client_proof: Option<CommitmentProof> = None;
+        let mut consensus_proof = None;
+
+        match message_type {
+            ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
+                let (client_state, client_state_proof) =
+                    self.proven_client_state(&client_id, query_height)?;
+
+                client_proof = Some(CommitmentProof::from(client_state_proof));
+
+                let consensus_state_proof = self
+                    .proven_client_consensus(
+                        &client_id,
+                        client_state.latest_height(),
+                        query_height,
+                    )?
+                    .1;
+
+                consensus_proof = Some(
+                    ConsensusProof::new(
+                        CommitmentProof::from(consensus_state_proof),
+                        client_state.latest_height(),
+                    )
+                    .map_err(|e| {
+                        Kind::ConnOpenTry(
+                            connection_id.clone(),
+                            "failed to build consensus proof".to_string(),
+                        )
+                        .context(e)
+                    })?,
+                );
+            }
+            _ => {}
+        }
+
+        Ok(
+            Proofs::new(connection_proof, client_proof, consensus_proof, height)
+                .map_err(|e| Kind::MalformedProof)?,
+        )
     }
 }

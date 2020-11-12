@@ -82,14 +82,8 @@ pub(crate) fn process(
     new_connection_end.set_state(State::TryOpen);
 
     // Pick the version.
-    let local_versions = ctx.get_compatible_versions();
-    let intersection: Vec<String> = msg
-        .counterparty_versions()
-        .iter()
-        .filter(|cv| local_versions.contains(cv))
-        .cloned()
-        .collect();
-    new_connection_end.set_version(ctx.pick_version(intersection));
+    new_connection_end
+        .set_version(ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())?);
 
     output.log("success: connection verification passed");
 

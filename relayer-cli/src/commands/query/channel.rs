@@ -102,7 +102,9 @@ impl Runnable for QueryChannelEndCmd {
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())
-            .and_then(|v| ChannelEnd::decode_vec(&v).map_err(|e| Kind::Query.context(e).into()));
+            .and_then(|v| {
+                ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+            });
 
         match res {
             Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),

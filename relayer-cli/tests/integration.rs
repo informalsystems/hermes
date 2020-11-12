@@ -93,7 +93,8 @@ fn query_channel_id() {
                 Height::from(0_u32),
                 false,
             )
-            .unwrap(),
+            .unwrap()
+            .value,
     )
     .unwrap();
 
@@ -117,7 +118,8 @@ fn query_client_id() {
                 Height::from(0_u32),
                 false,
             )
-            .unwrap(),
+            .unwrap()
+            .value,
     )
     .unwrap();
 
