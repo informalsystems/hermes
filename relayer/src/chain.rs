@@ -86,13 +86,8 @@ pub trait Chain {
     /// TODO - Should this be part of the Chain trait?
     fn rpc_client(&self) -> &Self::RpcClient;
 
-    /// Perform a generic `query`, and return the corresponding response data.
-    // TODO - migrate callers to use ics_query() and then remove this
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
-
     /// Perform a generic ICS `query`, and return the corresponding response data.
-    fn ics_query(&self, data: Path, height: ICSHeight, prove: bool)
-        -> Result<QueryResponse, Error>;
+    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// send a transaction with `msgs` to chain.
     fn send(
@@ -136,7 +131,7 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
         let res = self
-            .ics_query(Path::Connections(connection_id.clone()), height, true)
+            .query(Path::Connections(connection_id.clone()), height, true)
             .map_err(|e| Kind::Query.context(e))?;
         let connection_end =
             ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
@@ -151,7 +146,7 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         let res = self
-            .ics_query(
+            .query(
                 ClientConsensusPath {
                     client_id: client_id.clone(),
                     epoch: consensus_height.version_number,
@@ -191,7 +186,7 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         Ok(self
-            .ics_query(Path::Connections(connection_id.clone()), height, false)
+            .query(Path::Connections(connection_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| {
                 ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))

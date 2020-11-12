@@ -83,7 +83,7 @@ fn query_channel_id() {
     let chain = simd_chain();
     let query = ChannelEnd::decode_vec(
         &chain
-            .ics_query(
+            .query(
                 ChannelEnds(
                     PortId::from_str("firstport").unwrap(),
                     ChannelId::from_str("firstchannel").unwrap(),
@@ -111,7 +111,7 @@ fn query_client_id() {
     let chain = simd_chain();
     let query = DomainTypeClientConnections::decode_vec(
         &chain
-            .ics_query(
+            .query(
                 ClientConnections(ClientId::from_str("clientidone").unwrap()),
                 ibc::Height::new(chain.id().version(), 0),
                 false,

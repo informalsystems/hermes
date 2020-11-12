@@ -79,7 +79,7 @@ impl Runnable for QueryClientStateCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyClientState, Error> = chain
-            .ics_query(ClientState(opts.client_id), height, opts.proof)
+            .query(ClientState(opts.client_id), height, opts.proof)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
@@ -171,7 +171,7 @@ impl Runnable for QueryClientConsensusCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyConsensusState, Error> = chain
-            .ics_query(
+            .query(
                 ClientConsensusState {
                     client_id: opts.client_id,
                     epoch: opts.version_number,
@@ -284,7 +284,7 @@ impl Runnable for QueryClientConnectionsCmd {
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<ConnectionIDs, Error> = chain
-            .ics_query(ClientConnections(opts.client_id), height, false)
+            .query(ClientConnections(opts.client_id), height, false)
             .map_err(|e| Kind::Query.context(e).into())
             .and_then(|v| {
                 ConnectionIDs::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())

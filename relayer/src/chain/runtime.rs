@@ -123,7 +123,7 @@ impl<C: Chain> ChainRuntime<C> {
             return Ok(());
         }
 
-        let response = self.chain.ics_query(path, height, prove);
+        let response = self.chain.query(path, height, prove);
 
         // Verify response proof, if requested.
         if prove {

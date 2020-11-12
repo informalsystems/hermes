@@ -96,7 +96,7 @@ impl Runnable for QueryChannelEndCmd {
         let chain = CosmosSDKChain::from_config(chain_config).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
         let res: Result<ChannelEnd, Error> = chain
-            .ics_query(
+            .query(
                 ChannelEnds(opts.port_id, opts.channel_id),
                 height,
                 opts.proof,

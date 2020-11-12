@@ -190,20 +190,11 @@ impl Chain for CosmosSDKChain {
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
 
-    fn ics_query(
-        &self,
-        data: Path,
-        height: ICSHeight,
-        prove: bool,
-    ) -> Result<QueryResponse, Error> {
+    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
         let height =
             Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-
-        self.query(data, height, prove)
-    }
-
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Error> {
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
         if !data.is_provable() & prove {
             return Err(Kind::Store
@@ -351,7 +342,7 @@ impl Chain for CosmosSDKChain {
         height: ICSHeight,
     ) -> Result<AnyClientState, Error> {
         Ok(self
-            .ics_query(ClientStatePath(client_id.clone()), height, false)
+            .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
@@ -364,7 +355,7 @@ impl Chain for CosmosSDKChain {
         height: ICSHeight,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         let res = self
-            .ics_query(ClientStatePath(client_id.clone()), height, true)
+            .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query.context(e))?;
 
         let state = AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
