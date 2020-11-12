@@ -12,6 +12,7 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
+use ibc::ics02_client::state::ClientState;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -206,7 +207,7 @@ pub fn build_conn_try(
     let new_msg = MsgConnectionOpenTry {
         connection_id: opts.dest_connection_id.clone(),
         client_id: opts.dest_client_id.clone(),
-        client_state: Some(client_state),
+        client_state: Some(client_state.wrap_any()),
         counterparty_chosen_connection_id: src_connection.counterparty().connection_id().cloned(),
         counterparty,
         counterparty_versions,

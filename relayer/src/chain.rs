@@ -88,7 +88,7 @@ pub trait Chain {
     /// Perform a generic ICS `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
-    /// send a transaction with `msgs` to chain.
+    /// Send a transaction with `msgs` to chain.
     fn send(
         &mut self,
         proto_msgs: Vec<Any>,
@@ -98,13 +98,13 @@ pub trait Chain {
     ) -> Result<String, Error>;
 
     // Build states
-    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error>;
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error>;
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;
+    fn build_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error>;
     fn build_header(
         &self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
-    ) -> Result<AnyHeader, Error>;
+    ) -> Result<Self::Header, Error>;
 
     // Downcast methods
     fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header>;
@@ -123,7 +123,7 @@ pub trait Chain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<AnyClientState, Error>;
+    ) -> Result<Self::ClientState, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         // TODO - do a real chain query
@@ -156,7 +156,7 @@ pub trait Chain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
+    ) -> Result<(Self::ClientState, MerkleProof), Error>;
 
     fn proven_connection(
         &self,
@@ -177,23 +177,7 @@ pub trait Chain {
         client_id: &ClientId,
         consensus_height: ICSHeight,
         height: ICSHeight,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        let res = self
-            .query(
-                ClientConsensusPath {
-                    client_id: client_id.clone(),
-                    epoch: consensus_height.version_number,
-                    height: consensus_height.version_height,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query.context(e))?;
-        let consensus_state =
-            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
-
-        Ok((consensus_state, res.proof))
-    }
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
 
     /// Build the required proofs for connection handshake messages. The proofs are obtained from
     /// queries at height - 1

@@ -14,8 +14,11 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::state::ClientState;
+use ibc::ics02_client::state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState;
@@ -59,8 +62,8 @@ pub fn build_create_client(
     let latest_height = src_chain.query_latest_height()?;
     Ok(MsgCreateAnyClient::new(
         dest_client_id,
-        src_chain.build_client_state(latest_height)?,
-        src_chain.build_consensus_state(latest_height)?,
+        src_chain.build_client_state(latest_height)?.wrap_any(),
+        src_chain.build_consensus_state(latest_height)?.wrap_any(),
         signer,
     )
     .map_err(|e| {
@@ -106,7 +109,9 @@ pub fn build_update_client(
 
     let new_msg = MsgUpdateAnyClient {
         client_id: dest_client_id,
-        header: src_chain.build_header(trusted_height, target_height)?,
+        header: src_chain
+            .build_header(trusted_height, target_height)?
+            .wrap_any(),
         signer,
     };
 

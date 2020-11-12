@@ -338,12 +338,12 @@ impl Chain for CosmosSDKChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<AnyClientState, Error> {
+    ) -> Result<Self::ClientState, Error> {
         Ok(self
             .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| {
-                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+                Self::ClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
             })?)
     }
 
@@ -351,17 +351,42 @@ impl Chain for CosmosSDKChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
         let res = self
             .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query.context(e))?;
 
-        let state = AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let state =
+            Self::ClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
         Ok((state, res.proof))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error> {
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        let res = self
+            .query(
+                ClientConsensusPath {
+                    client_id: client_id.clone(),
+                    epoch: consensus_height.version_number,
+                    height: consensus_height.version_height,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state =
+            Self::ConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((consensus_state, res.proof))
+    }
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
         let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
@@ -376,13 +401,12 @@ impl Chain for CosmosSDKChain {
             false,
             false,
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))
-        .map(AnyClientState::Tendermint)?;
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
 
         Ok(client_state)
     }
 
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error> {
+    fn build_consensus_state(&self, height: ICSHeight) -> Result<Self::ConsensusState, Error> {
         // Build the client state.
         let tm_height = height
             .version_height
@@ -394,7 +418,7 @@ impl Chain for CosmosSDKChain {
             .header;
 
         // Build the consensus state.
-        let consensus_state = AnyConsensusState::Tendermint(TMConsensusState::from(latest_header));
+        let consensus_state = TMConsensusState::from(latest_header);
 
         Ok(consensus_state)
     }
@@ -403,7 +427,7 @@ impl Chain for CosmosSDKChain {
         &self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
-    ) -> Result<AnyHeader, Error> {
+    ) -> Result<Self::Header, Error> {
         // Get the light block at target_height from chain.
         let tm_target_height = target_height
             .version_height
@@ -419,12 +443,12 @@ impl Chain for CosmosSDKChain {
         let trusted_light_block = self.query_light_block_at_height(height)?;
 
         // Create the ics07 Header to be included in the MsgUpdateClient.
-        Ok(AnyHeader::Tendermint(TMHeader {
+        Ok(TMHeader {
             signed_header: target_light_block.signed_header,
             validator_set: target_light_block.validators,
             trusted_height,
             trusted_validator_set: trusted_light_block.validators,
-        }))
+        })
     }
 
     fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header> {
