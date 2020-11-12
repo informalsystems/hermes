@@ -7,7 +7,6 @@ use thiserror::Error;
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics03_connection::msgs::ConnectionMsgType,
     ics24_host::identifier::ConnectionId,
     proofs::Proofs,
 };
@@ -24,7 +23,10 @@ use tendermint_rpc::HttpClient;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::error::{Error, Kind};
+use crate::{
+    error::{Error, Kind},
+    tx::connection::ConnectionMsgType,
+};
 // use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::util::block_on;
@@ -104,12 +106,12 @@ pub enum HandleInput {
         reply_to: ReplyTo<AnyConsensusState>,
     },
 
-    BuildConnectionProofs {
+    BuildConnectionProofsAndClientState {
         message_type: ConnectionMsgType,
         connection_id: ConnectionId,
         client_id: ClientId,
         height: Height,
-        reply_to: ReplyTo<Proofs>,
+        reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     },
 
     QueryClientState {
@@ -231,11 +233,11 @@ pub trait ChainHandle: Clone + Send + Sync {
     /// Constructs a consensus state at the given height
     fn build_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
 
-    fn build_connection_proofs(
+    fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
         connection_id: &ConnectionId,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Proofs, Error>;
+    ) -> Result<(Option<AnyClientState>, Proofs), Error>;
 }

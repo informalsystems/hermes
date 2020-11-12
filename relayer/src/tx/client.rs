@@ -56,8 +56,8 @@ pub fn build_create_client(
         )));
     }
 
-    // Get the key and signer from key seed file.
-    let (key, signer) = dst_chain.key_and_signer(signer_seed)?;
+    // Get the signer from key seed file
+    let (_, signer) = dst_chain.key_and_signer(signer_seed)?;
 
     // Build client create message with the data from source chain at latest height.
     let latest_height = src_chain.query_latest_height()?;
@@ -119,8 +119,8 @@ pub fn build_update_client(
         .query_client_state(&dst_client_id, Height::default())?
         .latest_height();
 
-    // Get the key and signer from key seed file.
-    let (key, signer) = dst_chain.key_and_signer(signer_seed)?;
+    // Get the signer from key seed file.
+    let (_, signer) = dst_chain.key_and_signer(signer_seed)?;
 
     let header = src_chain
         .build_header(trusted_height, target_height)?

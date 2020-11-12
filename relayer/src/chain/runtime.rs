@@ -9,7 +9,7 @@ use ibc::{
         header::Header,
         state::{ClientState, ConsensusState},
     },
-    ics03_connection::{connection::ConnectionEnd, msgs::ConnectionMsgType},
+    ics03_connection::connection::ConnectionEnd,
     ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
     ics24_host::identifier::{ChainId, ClientId, ConnectionId},
     ics24_host::Path,
@@ -29,6 +29,7 @@ use crate::{
     light_client::LightBlock,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
     msgs::{Datagram, EncodedTransaction, IBCEvent, Packet},
+    tx::connection::ConnectionMsgType,
     util::block_on,
 };
 
@@ -117,8 +118,8 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::BuildConsensusState { height, reply_to }) => {
                             self.build_consensus_state(height, reply_to)?
                         }
-                        Ok(HandleInput::BuildConnectionProofs { message_type, connection_id, client_id, height, reply_to }) => {
-                            self.build_connection_proofs(message_type, connection_id, client_id, height, reply_to)?
+                        Ok(HandleInput::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
+                            self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
 
                         Ok(HandleInput::QueryLatestHeight { reply_to }) => {
@@ -309,20 +310,26 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
-    fn build_connection_proofs(
+    fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
         connection_id: ConnectionId,
         client_id: ClientId,
         height: Height,
-        reply_to: ReplyTo<Proofs>,
+        reply_to: ReplyTo<(Option<AnyClientState>, Proofs)>,
     ) -> Result<(), Error> {
-        let proofs =
-            self.chain
-                .build_connection_proofs(message_type, &connection_id, &client_id, height);
+        let result = self.chain.build_connection_proofs_and_client_state(
+            message_type,
+            &connection_id,
+            &client_id,
+            height,
+        );
+
+        let result = result
+            .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
 
         reply_to
-            .send(proofs)
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

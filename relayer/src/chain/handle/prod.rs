@@ -4,11 +4,11 @@ use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics03_connection::msgs::ConnectionMsgType,
     ics23_commitment::commitment::CommitmentPrefix,
     ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::{ClientId, ConnectionId},
+    proofs::Proofs,
     Height,
 };
 
@@ -19,9 +19,9 @@ use tendermint_light_client::types::SignedHeader;
 use crate::{
     chain::QueryResponse,
     error::{Error, Kind},
-    // foreign_client::ForeignClient,
     keyring::store::KeyEntry,
     msgs::{EncodedTransaction, Packet},
+    tx::connection::ConnectionMsgType,
 };
 
 use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
@@ -205,19 +205,21 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::BuildConsensusState { height, reply_to })
     }
 
-    fn build_connection_proofs(
+    fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
         connection_id: &ConnectionId,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<ibc::proofs::Proofs, Error> {
-        self.send(|reply_to| HandleInput::BuildConnectionProofs {
-            message_type,
-            connection_id: connection_id.clone(),
-            client_id: client_id.clone(),
-            height,
-            reply_to,
-        })
+    ) -> Result<(Option<AnyClientState>, Proofs), Error> {
+        self.send(
+            |reply_to| HandleInput::BuildConnectionProofsAndClientState {
+                message_type,
+                connection_id: connection_id.clone(),
+                client_id: client_id.clone(),
+                height,
+                reply_to,
+            },
+        )
     }
 }

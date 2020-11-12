@@ -70,6 +70,14 @@ pub enum Kind {
     #[error("Failed to build conn open try {0}: {1}")]
     ConnOpenTry(ConnectionId, String),
 
+    /// Connection open ack failure
+    #[error("Failed to build conn open ack {0}: {1}")]
+    ConnOpenAck(ConnectionId, String),
+
+    /// Connection open confirm failure
+    #[error("Failed to build conn open confirm {0}: {1}")]
+    ConnOpenConfirm(ConnectionId, String),
+
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]
     MessageTransaction(String),
