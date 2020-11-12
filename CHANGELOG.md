@@ -28,7 +28,9 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 ### IMPROVEMENTS
 
-- [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
+- [relayer-cli]
+    - Split tasks spawned by CLI commands into their own modules ([#331])
+    - V0 command implementation ([#346])
 - [modules]
     - Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
     - Align with tendermint-rs in the domain type definition of `block::Id` ([#338])
@@ -41,6 +43,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#338]: https://github.com/informalsystems/ibc-rs/issues/338
 [#347]: https://github.com/informalsystems/ibc-rs/issues/347
+[#346]: https://github.com/informalsystems/ibc-rs/issues/346
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 [changelog]: https://github.com/informalsystems/ibc-rs/tree/master/CHANGELOG.md
 
