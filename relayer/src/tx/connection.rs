@@ -226,7 +226,8 @@ pub fn build_conn_try(
             Kind::ConnOpenTry(
                 opts.src_connection_id.clone(),
                 "missing connection on source chain".to_string(),
-            ).context(e)
+            )
+            .context(e)
         })?;
     // TODO - check that the src connection is consistent with the try options
 
@@ -319,7 +320,8 @@ pub fn build_conn_ack(
             Kind::ConnOpenAck(
                 opts.src_connection_id.clone(),
                 "missing connection on source chain".to_string(),
-            ).context(e)
+            )
+            .context(e)
         })?;
 
     // TODO - check that the src connection is consistent with the ack options
@@ -405,7 +407,8 @@ pub fn build_conn_confirm(
             Kind::ConnOpenAck(
                 opts.src_connection_id.clone(),
                 "missing connection on source chain".to_string(),
-            ).context(e)
+            )
+            .context(e)
         })?;
 
     // TODO - check that the src connection is consistent with the confirm options
