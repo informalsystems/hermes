@@ -29,6 +29,7 @@ use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsgType;
 use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path;
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
@@ -37,10 +38,8 @@ use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics24_host::identifier::ChainId,
+    ics23_commitment::merkle::MerkleProof,
 };
-
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
