@@ -1,12 +1,14 @@
-#![allow(clippy::too_many_arguments)]
-
+use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::tx_msg::Msg;
 
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
 
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 /// Message type for the `MsgChannelOpenInit` message.
@@ -24,7 +26,11 @@ pub struct MsgChannelOpenInit {
 }
 
 impl MsgChannelOpenInit {
-    pub fn new(
+    // TODO: Constructors for domain types are in flux.
+    // Relayer will need this constructor. Validation here should be identical to `try_from` method.
+    // https://github.com/informalsystems/ibc-rs/issues/219
+    #[allow(dead_code, clippy::too_many_arguments)]
+    fn new(
         port_id: String,
         channel_id: String,
         version: String,
@@ -78,96 +84,106 @@ impl Msg for MsgChannelOpenInit {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::ics04_channel::channel::Order;
-    use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-    use std::str::FromStr;
-    use tendermint::account::Id as AccountId;
+impl DomainType<RawMsgChannelOpenInit> for MsgChannelOpenInit {}
 
-    #[test]
-    fn parse_channel_open_init_msg() {
-        let id_hex = "0CDA3F47EF3C4906693B170EF650EB968C5F4B2C";
-        let acc = AccountId::from_str(id_hex).unwrap();
+impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
+    type Error = anomaly::Error<Kind>;
 
-        #[derive(Clone, Debug, PartialEq)]
-        struct OpenInitParams {
-            port_id: String,
-            channel_id: String,
-            version: String,
-            order: i32,
-            connection_hops: Vec<String>,
-            counterparty_port_id: String,
-            counterparty_channel_id: String,
+    fn try_from(raw_msg: RawMsgChannelOpenInit) -> Result<Self, Self::Error> {
+        let signer =
+            string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
+
+        Ok(MsgChannelOpenInit {
+            port_id: raw_msg
+                .port_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel_id: raw_msg
+                .channel_id
+                .parse()
+                .map_err(|e| Kind::IdentifierError.context(e))?,
+            channel: raw_msg
+                .channel
+                .ok_or_else(|| Kind::MissingChannel)?
+                .try_into()?,
+            signer,
+        })
+    }
+}
+
+impl From<MsgChannelOpenInit> for RawMsgChannelOpenInit {
+    fn from(domain_msg: MsgChannelOpenInit) -> Self {
+        RawMsgChannelOpenInit {
+            port_id: domain_msg.port_id.to_string(),
+            channel_id: domain_msg.channel_id.to_string(),
+            channel: Some(domain_msg.channel.into()),
+            signer: account_to_string(domain_msg.signer).unwrap(),
         }
+    }
+}
 
-        let default_params = OpenInitParams {
+#[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::test_utils::get_dummy_bech32_account;
+
+    /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
+    pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
+        RawMsgChannelOpenInit {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
-            version: "1.0".to_string(),
-            order: Order::from_str("ORDERED").unwrap() as i32,
-            connection_hops: vec!["connectionhop".to_string()].into_iter().collect(),
-            counterparty_port_id: "destport".to_string(),
-            counterparty_channel_id: "testdestchannel".to_string(),
-        };
+            channel: Some(get_dummy_raw_channel_end()),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+}
 
+#[cfg(test)]
+mod tests {
+    use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
+    use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+    use std::convert::TryFrom;
+
+    #[test]
+    fn channel_open_init_from_raw() {
         struct Test {
             name: String,
-            params: OpenInitParams,
+            raw: RawMsgChannelOpenInit,
             want_pass: bool,
         }
+
+        let default_raw_msg = get_dummy_raw_msg_chan_open_init();
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                params: default_params.clone(),
-                want_pass: true,
-            },
-            Test {
-                name: "Correct port identifier".to_string(),
-                params: OpenInitParams {
-                    port_id: "p34".to_string(),
-                    ..default_params.clone()
-                },
+                raw: default_raw_msg.clone(),
                 want_pass: true,
             },
             Test {
                 name: "Incorrect port identifier, slash (separator) prohibited".to_string(),
-                params: OpenInitParams {
+                raw: RawMsgChannelOpenInit {
                     port_id: "p34/".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
                 name: "Bad channel, name too short".to_string(),
-                params: OpenInitParams {
+                raw: RawMsgChannelOpenInit {
                     channel_id: "chshort".to_string(),
-                    ..default_params.clone()
+                    ..default_raw_msg.clone()
                 },
                 want_pass: false,
             },
             Test {
-                name: "Bad version".to_string(),
-                params: OpenInitParams {
-                    version: " . ".to_string(),
-                    ..default_params.clone()
-                },
-                want_pass: true, // verified in validate_basic()
-            },
-            Test {
-                name: "Bad order".to_string(),
-                params: OpenInitParams {
-                    order: 99,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Bad connection hops (conn id too short, must be 10 chars)".to_string(),
-                params: OpenInitParams {
-                    connection_hops: vec!["conn124".to_string()].into_iter().collect(),
-                    ..default_params
+                name: "Missing channel".to_string(),
+                raw: RawMsgChannelOpenInit {
+                    channel: None,
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },
@@ -176,27 +192,26 @@ mod tests {
         .collect();
 
         for test in tests {
-            let p = test.params.clone();
-
-            let msg = MsgChannelOpenInit::new(
-                p.port_id,
-                p.channel_id,
-                p.version,
-                p.order,
-                p.connection_hops,
-                p.counterparty_port_id,
-                p.counterparty_channel_id,
-                acc,
-            );
+            let res_msg = MsgChannelOpenInit::try_from(test.raw.clone());
 
             assert_eq!(
                 test.want_pass,
-                msg.is_ok(),
-                "MsgChanOpenInit::new failed for test {}, \nmsg {:?} with error {:?}",
+                res_msg.is_ok(),
+                "MsgChanOpenInit::try_from failed for test {}, \nraw msg {:?} with error {:?}",
                 test.name,
-                test.params.clone(),
-                msg.err(),
+                test.raw,
+                res_msg.err(),
             );
         }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_raw_msg_chan_open_init();
+        let msg = MsgChannelOpenInit::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgChannelOpenInit::from(msg.clone());
+        let msg_back = MsgChannelOpenInit::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }

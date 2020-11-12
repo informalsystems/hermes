@@ -8,7 +8,9 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
-- [modules] Implement flexible connection id selection ([#332])
+- [modules]
+    - Implement flexible connection id selection ([#332])
+    - ICS 4 Domain Types for channel handshakes ([#315])
 - [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
 - [relayer-cli]
     - Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
@@ -19,6 +21,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 - [ibc-proto] Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
+[#315]: https://github.com/informalsystems/ibc-rs/issues/315
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
