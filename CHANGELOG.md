@@ -6,6 +6,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 ### FEATURES
 
+- Update to tendermint-rs version `0.17-RC2` ([#368])
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
@@ -28,8 +29,10 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 [#366]: https://github.com/informalsystems/ibc-rs/issues/366
+[#368]: https://github.com/informalsystems/ibc-rs/issues/368
 [#369]: https://github.com/informalsystems/ibc-rs/pulls/369
 [#389]: https://github.com/informalsystems/ibc-rs/issues/389
+[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS
 

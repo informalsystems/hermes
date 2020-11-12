@@ -2,6 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
+use tendermint::consensus::Params;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::DomainType;
 
@@ -10,7 +11,6 @@ use crate::Height;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics23_commitment::merkle::cosmos_specs;
-use tendermint::consensus::Params;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClientState {
