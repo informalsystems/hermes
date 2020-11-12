@@ -75,7 +75,7 @@ pub enum Kind {
     ConnOpenAck(ConnectionId, String),
 
     /// Connection open confirm failure
-    #[error("Failed to build conn open ack {0}: {1}")]
+    #[error("Failed to build conn open confirm {0}: {1}")]
     ConnOpenConfirm(ConnectionId, String),
 
     /// A message transaction failure

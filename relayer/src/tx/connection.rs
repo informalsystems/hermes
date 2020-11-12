@@ -142,7 +142,7 @@ fn check_destination_connection_state(
 }
 
 /// Retrieves the connection from destination and compares against the expected connection
-/// build from the message type (`msg_type`) and options (`opts`).
+/// built from the message type (`msg_type`) and options (`opts`).
 /// If the expected and the destination connections are compatible, it returns the expected connection
 fn validated_expected_connection(
     dest_chain: &mut CosmosSDKChain,
@@ -203,7 +203,7 @@ fn validated_expected_connection(
     Ok(dest_expected_connection)
 }
 
-/// Attempts to send a MsgConnOpenTry to the dest_chain.
+/// Attempts to build a MsgConnOpenTry.
 pub fn build_conn_try(
     dest_chain: &mut CosmosSDKChain,
     src_chain: &CosmosSDKChain,
@@ -297,7 +297,7 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
 }
 
-/// Attempts to send a MsgConnOpenAck to the dest_chain.
+/// Attempts to build a MsgConnOpenAck.
 pub fn build_conn_ack(
     dest_chain: &mut CosmosSDKChain,
     src_chain: &CosmosSDKChain,
@@ -384,7 +384,7 @@ pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
 }
 
-/// Attempts to send a MsgConnOpenConfirm to the dest_chain.
+/// Attempts to build a MsgConnOpenConfirm.
 pub fn build_conn_confirm(
     dest_chain: &mut CosmosSDKChain,
     src_chain: &CosmosSDKChain,
