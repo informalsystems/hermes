@@ -71,12 +71,12 @@ pub enum HandleInput {
         reply_to: ReplyTo<Packet>,
     },
 
-    AssembleClientState {
+    BuildClientState {
         height: Height,
         reply_to: ReplyTo<AnyClientState>,
     },
 
-    AssembleConsensusState {
+    BuildConsensusState {
         height: Height,
         reply_to: ReplyTo<AnyConsensusState>,
     },

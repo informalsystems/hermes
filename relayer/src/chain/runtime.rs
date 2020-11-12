@@ -90,11 +90,11 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::CreatePacket { event, reply_to }) => {
                             self.create_packet(event, reply_to)?
                         }
-                        Ok(HandleInput::AssembleClientState { height, reply_to }) => {
-                            self.assemble_client_state(height, reply_to)?
+                        Ok(HandleInput::BuildClientState { height, reply_to }) => {
+                            self.build_client_state(height, reply_to)?
                         }
-                        Ok(HandleInput::AssembleConsensusState { height, reply_to }) => {
-                            self.assemble_consensus_state(height, reply_to)?
+                        Ok(HandleInput::BuildConsensusState { height, reply_to }) => {
+                            self.build_consensus_state(height, reply_to)?
                         }
                         Err(e) => todo!(),
                     }
@@ -169,8 +169,8 @@ impl<C: Chain> ChainRuntime<C> {
         todo!()
     }
 
-    /// Given a header originating from this chain, constructs a client state.
-    fn assemble_client_state(
+    /// Constructs a client state for the given height
+    fn build_client_state(
         &self,
         height: Height,
         reply_to: ReplyTo<AnyClientState>,
@@ -187,8 +187,8 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
-    /// Given a header originating from this chain, constructs a consensus state.
-    fn assemble_consensus_state(
+    /// Constructs a consensus state for the given height
+    fn build_consensus_state(
         &self,
         height: Height,
         reply_to: ReplyTo<AnyConsensusState>,
