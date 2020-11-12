@@ -32,7 +32,7 @@ As shown above the tx commands currently require specifying a seed file:
 #### Steps to testing the transactions:
 
 * Start two chains using the `dev-env` script from the [ovrclk/relayer](https://github.com/ovrclk/relayer) (make sure to checkout stargate-4 version)
-*  After you run the script, the Go relayer will create a `data` folder for the chains. Open the key seed file `./data/ibc1/key_seed.json` for chain `ibc-1` and look for the account value
+*  After you run the script, the Go relayer will create a `data` folder for the chains. Copy the key seed file `./data/ibc1/key_seed.json` for chain `ibc-1` to a convenient location.
 
 
         {    

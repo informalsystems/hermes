@@ -12,10 +12,13 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 - [modules]
     - Implement flexible connection id selection ([#332])
     - ICS 4 Domain Types for channel handshakes ([#315])
-- [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+- [relayer] 
+    - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+    - Implement the relayer logic for connection handshake message ([#358], [#359], [#360])
 - [relayer-cli]
     - Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
     - CLI for client update message ([#277])
+    - Implement the relayer CLI for connection handshake message  ([#358], [#359], [#360])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
@@ -27,6 +30,9 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
+[#358]: https://github.com/informalsystems/ibc-rs/issues/358
+[#358]: https://github.com/informalsystems/ibc-rs/issues/359
+[#358]: https://github.com/informalsystems/ibc-rs/issues/360
 [#366]: https://github.com/informalsystems/ibc-rs/issues/366
 [#368]: https://github.com/informalsystems/ibc-rs/issues/368
 [#369]: https://github.com/informalsystems/ibc-rs/pulls/369

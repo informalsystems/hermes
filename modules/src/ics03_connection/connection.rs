@@ -197,7 +197,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum State {
     Init = 1,
     TryOpen = 2,

@@ -18,9 +18,9 @@ pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
 ///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenConfirm {
-    connection_id: ConnectionId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgConnectionOpenConfirm {
@@ -52,6 +52,10 @@ impl Msg for MsgConnectionOpenConfirm {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string()
     }
 }
 

@@ -22,12 +22,12 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
-    connection_id: ConnectionId,
-    counterparty_connection_id: Option<ConnectionId>,
-    client_state: Option<AnyClientState>,
-    proofs: Proofs,
-    version: String,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub counterparty_connection_id: Option<ConnectionId>,
+    pub client_state: Option<AnyClientState>,
+    pub proofs: Proofs,
+    pub version: String,
+    pub signer: AccountId,
 }
 
 impl MsgConnectionOpenAck {
@@ -83,6 +83,10 @@ impl Msg for MsgConnectionOpenAck {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string()
     }
 }
 

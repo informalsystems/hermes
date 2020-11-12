@@ -39,4 +39,12 @@ pub enum TxRawCommands {
     /// The `tx raw conn-try` subcommand
     #[options(help = "tx raw conn-try")]
     ConnTry(connection::TxRawConnTryCmd),
+
+    /// The `tx raw conn-ack` subcommand
+    #[options(help = "tx raw conn-ack")]
+    ConnAck(connection::TxRawConnAckCmd),
+
+    /// The `tx raw conn-confirm` subcommand
+    #[options(help = "tx raw conn-confirm")]
+    ConnConfirm(connection::TxRawConnConfirmCmd),
 }
