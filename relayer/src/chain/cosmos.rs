@@ -239,9 +239,6 @@ impl Chain for CosmosSDKChain {
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
 
-        // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
-        let pub_key_bytes = key.public_key.public_key.to_bytes();
-
         let mut pk_buf = Vec::new();
         prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();
 
