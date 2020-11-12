@@ -2,11 +2,11 @@ use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+use tendermint_proto::DomainType;
 
 use anomaly::fail;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint_proto::DomainType;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChannelEnd {
@@ -50,9 +50,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        // This field is supposed to be opaque to the core IBC protocol. Empty
-        // version is allowed by the specification (cf. ICS 004). No explicit validation necessary.
-        let version = value.version;
+        let version = validate_version(value.version)?;
 
         let mut channel_end = ChannelEnd::new(chan_ordering, remote, connection_hops, version);
         channel_end.set_state(chan_state);
@@ -241,37 +239,55 @@ impl State {
     }
 }
 
+/// Version validation, specific for channel (ICS4) opening handshake protocol.
+/// This field is supposed to be opaque to the core IBC protocol. No explicit validation necessary,
+/// and empty version is currently allowed by the specification (cf. ICS 004, v1).
+pub fn validate_version(version: String) -> Result<String, Error> {
+    Ok(version)
+}
+
+#[cfg(test)]
+pub mod test_util {
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
+    use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
+
+    /// Returns a dummy `RawCounterparty`, for testing only!
+    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
+        RawCounterparty {
+            port_id: "0123456789".into(),
+            channel_id: "0987654321".into(),
+        }
+    }
+
+    /// Returns a dummy `RawChannel`, for testing only!
+    pub fn get_dummy_raw_channel_end() -> RawChannel {
+        RawChannel {
+            state: 0,
+            ordering: 0,
+            counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec![],
+            version: "".to_string(), // The version is not validated.
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::ics04_channel::channel::ChannelEnd;
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-    use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
     use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {
+        let raw_channel_end = get_dummy_raw_channel_end();
+
         let empty_raw_channel_end = RawChannel {
-            state: 0,
-            ordering: 0,
             counterparty: None,
-            connection_hops: vec![],
-            version: "".to_string(),
-        };
-
-        let cparty = RawCounterparty {
-            port_id: "0123456789".into(),
-            channel_id: "0987654321".into(),
-        };
-
-        let raw_channel_end = RawChannel {
-            state: 0,
-            ordering: 0,
-            counterparty: Some(cparty),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            ..raw_channel_end.clone()
         };
 
         struct Test {

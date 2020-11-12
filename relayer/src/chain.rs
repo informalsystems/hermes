@@ -43,6 +43,7 @@ use crate::util::block_on;
 pub(crate) mod cosmos;
 pub use cosmos::CosmosSDKChain;
 pub mod handle;
+pub mod runtime;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
