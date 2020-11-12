@@ -38,6 +38,7 @@ impl Runnable for V0Cmd {
 }
 
 pub fn v0_task(config: Config) -> Result<(), BoxError> {
+    // Load source and destination chains configurations
     let src_chain_config =
         config.chains.get(0).cloned().ok_or_else(|| {
             "Configuration for source chain (position 0 in chains config) not found"
@@ -61,21 +62,26 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         dst_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client for destination chain not found")?,
+            .ok_or_else(|| "Config for client for dest. chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 
+    // Initialize the source and destination light clients
     let (src_light_client, src_supervisor) = TMLightClient::from_config(&src_chain_config, true)?;
     let (dst_light_client, dst_supervisor) = TMLightClient::from_config(&dst_chain_config, true)?;
 
+    // Spawn the source and destination light clients
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
+    // Initialize the source and destination chain runtimes
     let src_chain = ChainRuntime::cosmos_sdk(src_chain_config, src_light_client)?;
     let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config, dst_light_client)?;
 
+    // Spawn the source and destination chain runtimes
     let src_chain_handle = src_chain.handle();
     thread::spawn(move || {
+        // TODO: What should we do on return here? Probably unrecoverable error.
         src_chain.run().unwrap();
     });
 
