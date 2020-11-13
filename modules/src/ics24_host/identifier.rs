@@ -26,7 +26,7 @@ impl ChainId {
     /// let epoch_number = 10;
     /// let c_res = ChainId::new("chainA", epoch_number);
     /// assert!(c_res.is_ok());
-    /// c_res.map(|id| {assert_eq!(ChainId::chain_version(id.to_string()), epoch_number)});
+    /// c_res.map(|id| {assert_eq!(id.version(), epoch_number)});
     /// ```
     pub fn new(chain_name: &str, chain_epoch_number: u64) -> Result<Self, ValidationError> {
         ChainId::from_str(format!("{}-{}", chain_name, chain_epoch_number.to_string()).as_str())

@@ -199,7 +199,10 @@ pub enum StoreConfig {
     #[serde(rename = "disk")]
     Disk { path: PathBuf },
     #[serde(rename = "memory")]
-    Memory { dummy: () },
+    Memory {
+        #[serde(skip)]
+        dummy: (),
+    },
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
