@@ -306,8 +306,8 @@ mod tests {
     #[test]
     fn parse_query_state_parameters() {
         let default_params = QueryClientStateCmd {
-            chain_id: Some("ibc0-1".parse().unwrap()),
-            client_id: Some("ibconeclient".parse().unwrap()),
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            client_id: Some("ibconeclient".to_string().parse().unwrap()),
             height: None,
             proof: None,
         };
@@ -335,7 +335,7 @@ mod tests {
             Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientStateCmd {
-                    chain_id: Some("notibc0oribc1-1".parse().unwrap()),
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -392,8 +392,8 @@ mod tests {
     #[test]
     fn parse_query_client_connections_parameters() {
         let default_params = QueryClientConnectionsCmd {
-            chain_id: Some("ibc0-1".parse().unwrap()),
-            client_id: Some("clientidone".parse().unwrap()),
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
         };
 
@@ -420,7 +420,7 @@ mod tests {
             Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientConnectionsCmd {
-                    chain_id: Some("notibc0oribc1-1".parse().unwrap()),
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,

@@ -102,8 +102,8 @@ mod tests {
     #[test]
     fn parse_connection_query_end_parameters() {
         let default_params = QueryConnectionEndCmd {
-            chain_id: Some("ibc0-1".parse().unwrap()),
-            connection_id: Some("ibconeconnection".parse().unwrap()),
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
             height: None,
             proof: None,
         };
@@ -131,7 +131,7 @@ mod tests {
             Test {
                 name: "Chain not configured".to_string(),
                 params: QueryConnectionEndCmd {
-                    chain_id: Some("notibc0oribc1-1".parse().unwrap()),
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,

@@ -121,9 +121,9 @@ mod tests {
     #[test]
     fn parse_channel_query_end_parameters() {
         let default_params = QueryChannelEndCmd {
-            chain_id: Some("ibc0-1".parse().unwrap()),
-            port_id: Some("transfer".parse().unwrap()),
-            channel_id: Some("testchannel".parse().unwrap()),
+            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            port_id: Some("transfer".to_string().parse().unwrap()),
+            channel_id: Some("testchannel".to_string().parse().unwrap()),
             height: None,
             proof: None,
         };
@@ -151,7 +151,7 @@ mod tests {
             Test {
                 name: "Chain not configured".to_string(),
                 params: QueryChannelEndCmd {
-                    chain_id: Some("notibc0oribc1-1".parse().unwrap()),
+                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
                     ..default_params.clone()
                 },
                 want_pass: false,
