@@ -13,8 +13,7 @@ use tendermint_proto::DomainType;
 const TYPE_MSG_PACKET: &str = "ics04/opaque";
 
 ///
-/// Message definition for the packet wrapper domain type (`OpaquePacket` datagram).
-/// This whole module is WIP: https://github.com/informalsystems/ibc-rs/issues/95.
+/// Message definition for the "packet receiving" datagram.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
@@ -24,16 +23,16 @@ pub struct MsgRecvPacket {
 }
 
 impl MsgRecvPacket {
-    pub fn new(
+    // todo: Constructor not used yet.
+    #[allow(dead_code, unreachable_code, unused_variables)]
+    fn new(
         packet: Packet,
         proof: CommitmentProof,
         proof_height: Height,
         signer: AccountId,
     ) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
-            packet: packet
-                .validate()
-                .map_err(|e| Kind::InvalidPacket.context(e))?,
+            packet: todo!(),
             proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
@@ -74,8 +73,6 @@ impl DomainType<RawMsgRecvPacket> for MsgRecvPacket {}
 impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
     type Error = anomaly::Error<Kind>;
 
-    // This depends on Packet domain type (not implemented yet).
-    #[allow(unreachable_code, unused_variables)]
     fn try_from(raw_msg: RawMsgRecvPacket) -> Result<Self, Self::Error> {
         let signer =
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
@@ -93,7 +90,11 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
         .map_err(|e| Kind::InvalidProof.context(e))?;
 
         Ok(MsgRecvPacket {
-            packet: todo!(),
+            packet: raw_msg
+                .packet
+                .ok_or_else(|| Kind::MissingPacket)?
+                .try_into()
+                .map_err(|e| Kind::InvalidPacket.context(e))?,
             proofs,
             signer,
         })
@@ -103,7 +104,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
 impl From<MsgRecvPacket> for RawMsgRecvPacket {
     fn from(domain_msg: MsgRecvPacket) -> Self {
         RawMsgRecvPacket {
-            packet: None, // TODO: Should be: `Some(domain_msg.packet.into())`.
+            packet: Some(domain_msg.packet.into()),
             proof: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: account_to_string(domain_msg.signer).unwrap(),

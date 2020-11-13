@@ -8,7 +8,7 @@ use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgeme
 use tendermint::account::Id as AccountId;
 use tendermint_proto::DomainType;
 
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 /// Message type for the `MsgAcknowledgement` message.
 const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
@@ -25,7 +25,9 @@ pub struct MsgAcknowledgement {
 }
 
 impl MsgAcknowledgement {
-    pub fn new(
+    // todo: Constructor not used yet.
+    #[allow(dead_code, unreachable_code, unused_variables)]
+    fn new(
         packet: Packet,
         acknowledgement: Vec<u8>,
         proof: CommitmentProof,
@@ -37,9 +39,7 @@ impl MsgAcknowledgement {
         }
 
         Ok(Self {
-            packet: packet
-                .validate()
-                .map_err(|e| Kind::InvalidPacket.context(e))?,
+            packet: todo!(),
             acknowledgement,
             proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
@@ -72,7 +72,6 @@ impl Msg for MsgAcknowledgement {
 
 impl DomainType<RawMsgAcknowledgement> for MsgAcknowledgement {}
 
-#[allow(unreachable_code)]
 impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
     type Error = anomaly::Error<Kind>;
 
@@ -80,11 +79,27 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
         let signer =
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
 
+        let proofs = Proofs::new(
+            raw_msg.proof.into(),
+            None,
+            None,
+            raw_msg
+                .proof_height
+                .ok_or_else(|| Kind::MissingHeight)?
+                .try_into()
+                .map_err(|e| Kind::InvalidProof.context(e))?,
+        )
+        .map_err(|e| Kind::InvalidProof.context(e))?;
+
         Ok(MsgAcknowledgement {
-            packet: Packet,
-            acknowledgement: vec![],
+            packet: raw_msg
+                .packet
+                .ok_or_else(|| Kind::MissingPacket)?
+                .try_into()
+                .map_err(|e| Kind::InvalidPacket.context(e))?,
+            acknowledgement: raw_msg.acknowledgement,
             signer,
-            proofs: todo!(),
+            proofs,
         })
     }
 }
@@ -92,11 +107,11 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
 impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
     fn from(domain_msg: MsgAcknowledgement) -> Self {
         RawMsgAcknowledgement {
-            packet: None,
-            acknowledgement: vec![],
-            proof: vec![],
+            packet: Some(domain_msg.packet.into()),
+            acknowledgement: domain_msg.acknowledgement,
+            proof: domain_msg.proofs.object_proof().clone().into(),
             signer: account_to_string(domain_msg.signer).unwrap(),
-            proof_height: None,
+            proof_height: Some(domain_msg.proofs.height().into()),
         }
     }
 }
