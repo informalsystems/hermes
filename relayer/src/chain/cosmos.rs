@@ -67,7 +67,7 @@ pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     light_client: Option<LightClient>,
-    pub keybase: KeyRing,
+    key_ring: KeyRing,
 }
 
 impl CosmosSDKChain {
@@ -83,10 +83,14 @@ impl CosmosSDKChain {
 
         Ok(Self {
             config,
-            keybase: key_store,
+            key_ring: key_store,
             rpc_client,
             light_client: None,
         })
+    }
+
+    pub fn key_ring(&mut self) -> &mut KeyRing {
+        &mut self.key_ring
     }
 
     /// The unbonding period of this chain
@@ -238,7 +242,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(key.address, signdoc_buf);
+        let signed = self.key_ring.sign(key.address, signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -259,7 +263,7 @@ impl Chain for CosmosSDKChain {
     fn key_and_signer(&mut self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error> {
         // Get the key from key seed file
         let key = self
-            .keybase
+            .key_ring
             .key_from_seed_file(key_file_contents)
             .map_err(|e| Kind::KeyBase.context(e))?;
 

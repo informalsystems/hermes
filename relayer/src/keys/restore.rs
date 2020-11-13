@@ -16,7 +16,7 @@ pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
     let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
 
     let address = chain
-        .keybase
+        .key_ring()
         .add_from_mnemonic(&opts.mnemonic)
         .map_err(|e| error::Kind::KeyBase.context(e))?;
 
