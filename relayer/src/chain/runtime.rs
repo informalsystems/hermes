@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{thread, time::Duration};
 
 use crossbeam_channel as channel;
 use thiserror::Error;
@@ -38,6 +38,11 @@ use super::{
     Chain, CosmosSDKChain, QueryResponse,
 };
 
+pub struct ChainRuntimeThreads {
+    pub light_client: thread::JoinHandle<()>,
+    pub chain_runtime: thread::JoinHandle<()>,
+}
+
 pub struct ChainRuntime<C: Chain> {
     chain: C,
     sender: channel::Sender<HandleInput>,
@@ -49,6 +54,30 @@ impl ChainRuntime<CosmosSDKChain> {
     pub fn cosmos_sdk(config: ChainConfig, light_client: TMLightClient) -> Result<Self, Error> {
         let chain = CosmosSDKChain::from_config(config)?;
         Ok(Self::new(chain, light_client))
+    }
+
+    pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, ChainRuntimeThreads), Error> {
+        // Initialize the light clients
+        let (light_client, supervisor) = TMLightClient::from_config(&config, true)?;
+
+        // Spawn the light clients
+        let light_client_thread = thread::spawn(move || supervisor.run().unwrap());
+
+        // Initialize the source and destination chain runtimes
+        let chain_runtime = ChainRuntime::cosmos_sdk(config, light_client)?;
+
+        // Get a handle to the runtime
+        let handle = chain_runtime.handle();
+
+        // Spawn the runtime
+        let runtime_thread = thread::spawn(move || chain_runtime.run().unwrap());
+
+        let threads = ChainRuntimeThreads {
+            light_client: light_client_thread,
+            chain_runtime: runtime_thread,
+        };
+
+        Ok((handle, threads))
     }
 }
 
@@ -72,6 +101,7 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     pub fn run(mut self) -> Result<(), Error> {
+        println!("IMPORTANT: Runtime is running");
         loop {
             channel::select! {
                 recv(self.receiver) -> event => {
@@ -87,6 +117,10 @@ impl<C: Chain> ChainRuntime<C> {
 
                         Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
                             self.query(path, height, prove, reply_to)?
+                        },
+
+                        Ok(HandleInput::SendTx { proto_msgs, key, memo, timeout_height, reply_to }) => {
+                            self.send_tx(proto_msgs, *key, memo, timeout_height, reply_to)?
                         },
 
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
@@ -138,7 +172,10 @@ impl<C: Chain> ChainRuntime<C> {
                         },
 
                         Ok(HandleInput::QueryConnection { connection_id, height, reply_to }) => {
-                            self.query_connection(connection_id, height, reply_to)?
+                            println!("BEFORE ChainRuntime::query_connection({}, {})", connection_id, height);
+                            let res = self.query_connection(connection_id, height, reply_to)?;
+                            println!("AFTER ChainRuntime::query_connection");
+                            res
                         },
 
                         Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
@@ -188,6 +225,23 @@ impl<C: Chain> ChainRuntime<C> {
 
         reply_to
             .send(response)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn send_tx(
+        &self,
+        proto_msgs: Vec<prost_types::Any>,
+        key: KeyEntry,
+        memo: String,
+        timeout_height: u64,
+        reply_to: ReplyTo<String>,
+    ) -> Result<(), Error> {
+        let result = self.chain.send_tx(proto_msgs, key, memo, timeout_height);
+
+        reply_to
+            .send(result)
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())

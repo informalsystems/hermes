@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use crossbeam_channel as channel;
 
 use ibc::{
@@ -40,15 +42,21 @@ impl ProdChainHandle {
     fn send<F, O>(&self, f: F) -> Result<O, Error>
     where
         F: FnOnce(ReplyTo<O>) -> HandleInput,
+        O: Debug,
     {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
+        println!("BEFORE sending via channel: {:#?}", input);
         self.sender
             .send(input)
             .map_err(|e| Kind::Channel.context(e))?;
+        println!("AFTER sending via channel");
 
-        receiver.recv().map_err(|e| Kind::Channel.context(e))?
+        println!("BEFORE receiving response");
+        let res = receiver.recv().map_err(|e| Kind::Channel.context(e))?;
+        println!("AFTER receiving response: {:#?}", res);
+        res
     }
 }
 
@@ -82,7 +90,13 @@ impl ChainHandle for ProdChainHandle {
         memo: String,
         timeout_height: u64,
     ) -> Result<String, Error> {
-        todo!()
+        self.send(|reply_to| HandleInput::SendTx {
+            proto_msgs,
+            key: Box::new(key),
+            memo,
+            timeout_height,
+            reply_to,
+        })
     }
 
     // fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
@@ -140,11 +154,14 @@ impl ChainHandle for ProdChainHandle {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        self.send(|reply_to| HandleInput::QueryConnection {
+        println!("BEFORE sending QueryConnection");
+        let res = self.send(|reply_to| HandleInput::QueryConnection {
             connection_id: connection_id.clone(),
             height,
             reply_to,
-        })
+        });
+        println!("AFTER sending QueryConnection");
+        res
     }
 
     fn proven_client_state(

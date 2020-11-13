@@ -49,6 +49,7 @@ use crate::util::block_on;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
+#[derive(Clone, Debug, PartialEq)]
 pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: MerkleProof,
@@ -88,8 +89,8 @@ pub trait Chain {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send(
-        &mut self,
+    fn send_tx(
+        &self,
         proto_msgs: Vec<Any>,
         key: KeyEntry,
         memo: String,

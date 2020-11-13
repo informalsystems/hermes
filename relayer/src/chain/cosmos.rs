@@ -167,8 +167,8 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send(
-        &mut self,
+    fn send_tx(
+        &self,
         proto_msgs: Vec<Any>,
         key: KeyEntry,
         memo: String,
@@ -506,7 +506,7 @@ fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorS
 }
 
 /// Uses the GRPC client to retrieve the account sequence
-async fn query_account(chain: &mut CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
+async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
     let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
     let mut client =
         ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)

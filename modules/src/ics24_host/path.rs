@@ -9,6 +9,7 @@ use std::fmt::{Display, Formatter, Result};
 pub const IBC_QUERY_PATH: &str = "store/ibc/key";
 
 /// The Path enum abstracts out the different sub-paths
+#[derive(Clone, Debug)]
 pub enum Path {
     ClientType(ClientId),
     ClientState(ClientId),

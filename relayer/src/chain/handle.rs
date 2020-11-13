@@ -47,6 +47,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 }
 
 /// Inputs that a Handle may send to a Runtime.
+#[derive(Clone, Debug)]
 pub enum HandleInput {
     Terminate {
         reply_to: ReplyTo<()>,
@@ -61,6 +62,14 @@ pub enum HandleInput {
         height: Height,
         prove: bool,
         reply_to: ReplyTo<QueryResponse>,
+    },
+
+    SendTx {
+        proto_msgs: Vec<prost_types::Any>,
+        key: Box<KeyEntry>,
+        memo: String,
+        timeout_height: u64,
+        reply_to: ReplyTo<String>,
     },
 
     // GetHeader {

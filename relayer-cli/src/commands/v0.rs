@@ -1,17 +1,10 @@
-use std::{ops::Deref, thread};
+use std::ops::Deref;
 
 use abscissa_core::{
     application::fatal_error, error::BoxError, tracing::debug, Command, Options, Runnable,
 };
 
-use relayer::{
-    chain::runtime::ChainRuntime,
-    light_client::tendermint::LightClient as TMLightClient,
-    // channel::{Channel, ChannelConfig},
-    // connection::{Connection, ConnectionConfig},
-    // foreign_client::{ForeignClient, ForeignClientConfig},
-    // link::{Link, LinkConfig},
-};
+use relayer::chain::runtime::ChainRuntime;
 
 use ibc::ics24_host::identifier::ClientId;
 use std::str::FromStr;
@@ -66,29 +59,9 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     )
     .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 
-    // Initialize the source and destination light clients
-    let (src_light_client, src_supervisor) = TMLightClient::from_config(&src_chain_config, true)?;
-    let (dst_light_client, dst_supervisor) = TMLightClient::from_config(&dst_chain_config, true)?;
-
-    // Spawn the source and destination light clients
-    thread::spawn(move || src_supervisor.run().unwrap());
-    thread::spawn(move || dst_supervisor.run().unwrap());
-
-    // Initialize the source and destination chain runtimes
-    let src_chain = ChainRuntime::cosmos_sdk(src_chain_config, src_light_client)?;
-    let dst_chain = ChainRuntime::cosmos_sdk(dst_chain_config, dst_light_client)?;
-
-    // Spawn the source and destination chain runtimes
-    let src_chain_handle = src_chain.handle();
-    thread::spawn(move || {
-        // TODO: What should we do on return here? Probably unrecoverable error.
-        src_chain.run().unwrap();
-    });
-
-    let dst_chain_handle = dst_chain.handle();
-    thread::spawn(move || {
-        dst_chain.run().unwrap();
-    });
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain_handle, _) = ChainRuntime::spawn(src_chain_config)?;
+    let (dst_chain_handle, _) = ChainRuntime::spawn(dst_chain_config)?;
 
     // Instantiate the foreign client on the source chain.
     // let client_on_src = ForeignClient::new(

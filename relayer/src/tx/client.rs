@@ -73,22 +73,9 @@ pub fn build_create_client(
 }
 
 pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Initialize the source and destination light clients
-    let (src_light_client, src_supervisor) =
-        TMLightClient::from_config(&opts.src_chain_config, true)?;
-    let (dst_light_client, dst_supervisor) =
-        TMLightClient::from_config(&opts.dst_chain_config, true)?;
-
-    // Spawn the source and destination light clients
-    thread::spawn(move || src_supervisor.run().unwrap());
-    thread::spawn(move || dst_supervisor.run().unwrap());
-
-    // Initialize the source and destination chain runtimes
-    let src_chain_runtime = ChainRuntime::cosmos_sdk(opts.src_chain_config, src_light_client)?;
-    let dst_chain_runtime = ChainRuntime::cosmos_sdk(opts.dst_chain_config, dst_light_client)?;
-
-    let src_chain = src_chain_runtime.handle();
-    let dst_chain = dst_chain_runtime.handle();
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let new_msg = build_create_client(
         dst_chain.clone(),
@@ -136,22 +123,9 @@ pub fn build_update_client(
 }
 
 pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Initialize the source and destination light clients
-    let (src_light_client, src_supervisor) =
-        TMLightClient::from_config(&opts.src_chain_config, true)?;
-    let (dst_light_client, dst_supervisor) =
-        TMLightClient::from_config(&opts.dst_chain_config, true)?;
-
-    // Spawn the source and destination light clients
-    thread::spawn(move || src_supervisor.run().unwrap());
-    thread::spawn(move || dst_supervisor.run().unwrap());
-
-    // Initialize the source and destination chain runtimes
-    let src_chain_runtime = ChainRuntime::cosmos_sdk(opts.src_chain_config, src_light_client)?;
-    let dst_chain_runtime = ChainRuntime::cosmos_sdk(opts.dst_chain_config, dst_light_client)?;
-
-    let src_chain = src_chain_runtime.handle();
-    let dst_chain = dst_chain_runtime.handle();
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let target_height = src_chain.query_latest_height()?;
     let new_msgs = build_update_client(
