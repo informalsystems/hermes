@@ -51,12 +51,10 @@ version = "0.17.0-rc2"
 version = "0.17.0-rc2"
 
 [dependencies.tendermint-testgen]
-#version = "0.17.0-rc2"   # Not published on crates.io (yet), so we use tags instead.
-git = "https://github.com/informalsystems/tendermint-rs"
-tag = "v0.17.0-rc2"
+version = "0.17.0-rc2"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { git = "https://github.com/informalsystems/tendermint-rs", tag = "v0.17.0-rc2" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "0.17.0-rc2" } # Needed for generating (synthetic) light blocks.
