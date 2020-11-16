@@ -24,10 +24,10 @@ pub struct MockClientRecord {
     pub client_type: ClientType,
 
     /// The client state (representing only the latest height at the moment).
-    pub client_state: MockClientState,
+    pub client_state: Option<AnyClientState>,
 
     /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, MockConsensusState>,
+    pub consensus_states: HashMap<Height, AnyConsensusState>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see

@@ -90,7 +90,7 @@ mod tests {
         .with_client_parametrized(
             &client_on_a_for_b,
             client_on_a_for_b_height,
-            Some(ClientType::Tendermint), // The target host chain is (synthetic) TM.
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
             Some(client_on_a_for_b_height),
         );
         let mut ctx_b = MockContext::new(

@@ -6,8 +6,7 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::{Error as ICS2Error, Kind as ICS2ErrorKind};
-use crate::ics02_client::state::ClientState;
+use crate::ics02_client::error::Error as ICS2Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
@@ -18,9 +17,9 @@ use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::dispatch;
 use crate::ics26_routing::msgs::ICS26Envelope;
-use crate::mock::host::{HostBlock, HostType};
-use crate::mock::header::MockHeader;
 use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::mock::header::MockHeader;
+use crate::mock::host::{HostBlock, HostType};
 use crate::Height;
 
 use std::cmp::min;
@@ -144,20 +143,19 @@ impl MockContext {
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
-        let (client_state, consensus_states) = match client_type {
+        let (client_state, consensus_state) = match client_type {
+            // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                MockClientState(MockHeader(client_state_height)),
-                vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
-                    .into_iter()
-                    .collect(),
+                Some(MockClientState(MockHeader(client_state_height)).into()),
+                MockConsensusState(MockHeader(cs_height)).into(),
             ),
+            // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => (
-                MockClientState(MockHeader(client_state_height)),
-                vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
-                    .into_iter()
-                    .collect(),
+                Some(MockClientState(MockHeader(client_state_height)).into()),
+                MockConsensusState(MockHeader(cs_height)).into(),
             ),
         };
+        let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 
         let client_record = MockClientRecord {
             client_type,
@@ -320,14 +318,14 @@ impl ConnectionKeeper for MockContext {
 impl ClientReader for MockContext {
     fn client_type(&self, client_id: &ClientId) -> Option<ClientType> {
         match self.clients.get(client_id) {
-            Some(client_record) => client_record.client_state.client_type().into(),
+            Some(client_record) => client_record.client_type.into(),
             None => None,
         }
     }
 
     fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
         match self.clients.get(client_id) {
-            Some(client_record) => Option::from(AnyClientState::Mock(client_record.client_state)),
+            Some(client_record) => client_record.client_state.clone(),
             None => None,
         }
     }
@@ -335,7 +333,7 @@ impl ClientReader for MockContext {
     fn consensus_state(&self, client_id: &ClientId, height: Height) -> Option<AnyConsensusState> {
         match self.clients.get(client_id) {
             Some(client_record) => match client_record.consensus_states.get(&height) {
-                Some(consensus_state) => Option::from(AnyConsensusState::Mock(*consensus_state)),
+                Some(consensus_state) => Option::from(consensus_state.clone()),
                 None => None,
             },
             None => None,
@@ -364,18 +362,14 @@ impl ClientKeeper for MockContext {
         client_id: ClientId,
         client_state: AnyClientState,
     ) -> Result<(), ICS2Error> {
-        match client_state {
-            AnyClientState::Mock(client_state) => {
-                let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
-                    client_type: ClientType::Mock,
-                    consensus_states: Default::default(),
-                    client_state,
-                });
-                client_record.client_state = client_state;
-                Ok(())
-            }
-            _ => Err(ICS2ErrorKind::InvalidClientStateForStore.into()),
-        }
+        let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+            client_type: client_state.client_type(),
+            consensus_states: Default::default(),
+            client_state: Default::default(),
+        });
+
+        client_record.client_state = Some(client_state);
+        Ok(())
     }
 
     fn store_consensus_state(
@@ -384,20 +378,16 @@ impl ClientKeeper for MockContext {
         height: Height,
         consensus_state: AnyConsensusState,
     ) -> Result<(), ICS2Error> {
-        match consensus_state {
-            AnyConsensusState::Mock(consensus_state) => {
-                let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
-                    client_type: ClientType::Mock,
-                    consensus_states: Default::default(),
-                    client_state: Default::default(),
-                });
-                client_record
-                    .consensus_states
-                    .insert(height, consensus_state);
-                Ok(())
-            }
-            _ => Err(ICS2ErrorKind::InvalidClientStateForStore.into()),
-        }
+        let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
+            client_type: ClientType::Mock,
+            consensus_states: Default::default(),
+            client_state: Default::default(),
+        });
+
+        client_record
+            .consensus_states
+            .insert(height, consensus_state);
+        Ok(())
     }
 }
 

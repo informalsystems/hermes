@@ -20,9 +20,9 @@ use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::{
-    header::MockHeader,
     client_def::MockClient,
-    client_state::{MockConsensusState, MockClientState},
+    client_state::{MockClientState, MockConsensusState},
+    header::MockHeader,
 };
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
