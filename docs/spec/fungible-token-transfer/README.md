@@ -1,29 +1,91 @@
 # TLA+ specification of the IBC Fungible Token Transfer Protocol
 
-A TLA+ specification of the IBC Fungible Token Transfer Protocol ([ICS-020](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer)).
+## The Model
 
-## Modules
+This desribes the TLA+ model of the core logic of [ICS
+20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer).
 
-The specification has the following modules: 
-  - `ICS20Environment.tla` (the main module)
-  - `ICS20Chain.tla`
-  - `ICS20Definitions.tla`
-  - `PacketHandlers.tla`
-  - `FungibleTokenTransferHandlers.tla`
-  - `Bank.tla`
+### Port and Channel Setup & Channel lifecycle management
 
-The module `ICS20Environment.tla` creates instances of 
-`ICS20Chain.tla` and encodes the relayer logic. Currently, we have: 
- - two instances of `ICS20Chain.tla`, specifying the behaviors of two chains, `ChainA` and `ChainB`.
 
-The module `ICS20Chain.tla` captures the chain logic relevant to ICS-020. 
-It extends the modules `PacketHandlers.tla` and `FungibleTokenTransferHandlers.tla`,which contain definition of operators that handle packet 
-datagrams and encode the token transfer application logic, respectively.
-The module `ICS20Definitions.tla` contains definition of operators that are used across all the 
-modules.
-The module `Bank.tla` encodes operators defined by the bank application.
+In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#port--channel-setup) functions has been called
+before. The [channel handshake
+functions]((https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#channel-lifecycle-management))
+are also considered being already executed. Our
+model starts from a state where the channel handshake has completed
+successfully. 
 
-## Constants
+### Packet Relay
+
+The [core callback functions](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#packet-relay)
+`createOutgoingPacket()` and `onRecvPacket` and `onRecvPacket` 
+	`onTimeoutPacket` as well as the auxiliary function`refundTokens`
+	are modeled in
+	[FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla). 
+	
+### Helper modules
+
+In order to completely specify the behavior of fungible token
+transfer, we encoded the required additional functionalities of IBC in
+the following TLA+ modules:
+	
+- [PacketHandlers.tla](PacketHandlers.tla) captures the functions
+specifying packet flow and handling from [ICS
+04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics).
+
+- [Bank.tla](bank.tla) encodes functions defined by the Cosmos bank
+  application. 
+  
+- [ICS20Chain.tla](ICS20Chain.tla): This module captures the relevant
+  Cosmos SDK functionality, that is, the context in which token
+  transfer runs. In the complete TLA+ model it is instantiated twice,
+  once for each chain participating in the token transfer.
+  The transition relation is defined by
+
+```
+Next ==
+    \/ AdvanceChain
+	\/ HandlePacketDatagrams
+	\/ SendPacket
+	\/ AcknowledgePacket
+```
+
+- `AdvanceChain` just increments the height of the chain
+- `HandlePacketDatagrams`: based on the datagram type of the next
+  incoming datagram (created in
+  [ICS20Environment.tla](ICS20Environment.tla); see below), it calls the
+  appropriate datagram handlers from ICS04
+  ([PacketHandlers.tla](PacketHandlers.tla)), which in turn call the
+  ICS 20 module callbacks specified in
+  [FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla).
+  This result in an update of the application state (bank accounts,
+  packet log, provable and private store).
+- `SendPacket` models that a user wants to initiate a transfer
+- `AcknowledgePacket` writes an acknowledgement for a received packet
+  on the packet log.
+
+
+- [ICS20Environment.tla](ICS20Environment.tla) is the main module that
+  brings everything together. It specifies a transitions system
+  consisting of two chains ([ICS20Chain.tla](ICS20Chain.tla)) and a
+  relayer node (modelled here). 
+```
+Next ==
+	\/ ChainAction
+	\/ EnvironmentAction
+	\/ UNCHANGED vars
+```
+
+- `ChainAction` performs an action of one non-deterministically chosen
+  chain.
+  
+- `EnvironmentAction` performs the relayer logic, that is, reads the
+  packet log and creates an appropriate datagram for the destination
+  chain (`CreateDatagrams`).
+  
+## Using the Model
+
+### Constants
 
 The module `ICS20Environment.tla` is parameterized by the constants:
  - `MaxHeight`, a natural number denoting the maximal height of the chains,
@@ -32,11 +94,11 @@ The module `ICS20Environment.tla` is parameterized by the constants:
  - `NativeDenominationChainA`, a string denoting the native denomination of `ChainA`,
  - `NativeDenominationChainB`, a string denoting the native denomination of `ChainB`
 
-## Properties and invariants
+### Properties and invariants
 TODO.
 
 
-## Importing the specification into TLA+ toolbox
+### Importing the specification into TLA+ toolbox
 
 To import the specification in the TLA+ toolbox and run TLC:
   - add a new spec in TLA+ toolbox with the root-module file `ICS20Environment.tla` 
@@ -45,6 +107,6 @@ To import the specification in the TLA+ toolbox and run TLC:
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
   - run TLC on the model
 
-## Checking the invariant `ICS18Inv` with Apalache
+### Checking the invariant `ICS18Inv` with Apalache
 
 TODO.
