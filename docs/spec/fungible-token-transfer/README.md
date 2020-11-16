@@ -2,10 +2,21 @@
 
 ## The Model
 
-This desribes the TLA+ model of the core logic of [ICS
-20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer).
+This desribes the TLA+ model of the core logic of the English
+specification [ICS
+20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer). Mirroring
+the structure of the English specification we start by discussing
+initialization ([Port and Channel Setup & Channel lifecycle management](#port-and-channel-setup-and-channel-lifecycle-management), and then provide the links to the TLA+ modules that
+implement [packet relay](#packet-relay), that is, the core callback functions.
 
-### Port and Channel Setup & Channel lifecycle management
+As the application "fungible token transfer" uses the underlying IBC
+infrastructure, we also modeled it to the extend necessary in [helper modules](#helper-modules)
+
+After that we discuss how to [use the model](#using-the-model), which
+includes links to our TLA+ formalization of [Properties and
+invariants](#properties-and-invariants). 
+
+### Port and Channel Setup and Channel lifecycle management
 
 
 In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#port--channel-setup) functions has been called
@@ -27,27 +38,36 @@ The [core callback functions](https://github.com/cosmos/ics/tree/master/spec/ics
 
 In order to completely specify the behavior of fungible token
 transfer, we encoded the required additional functionalities of IBC in
-the following TLA+ modules:
-	
-- [PacketHandlers.tla](PacketHandlers.tla) captures the functions
-specifying packet flow and handling from [ICS
-04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics).
+the TLA+ modules discussed below. From
+the viewpoint of TLA+, [ICS20Environment.tla](ICS20Environment.tla) is
+the main module that brings together all other modules that are
+discussed here. We will discuss it the last.
 
-- [Bank.tla](bank.tla) encodes functions defined by the Cosmos bank
+	
+#### [PacketHandlers.tla](PacketHandlers.tla) 
+
+This module captures the functions
+specifying packet flow and handling from [ICS
+04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics). 
+
+#### [Bank.tla](bank.tla) 
+The bank module encodes functions defined by the Cosmos bank
   application. 
   
-- [ICS20Chain.tla](ICS20Chain.tla): This module captures the relevant
+#### [ICS20Chain.tla](ICS20Chain.tla)
+
+This module captures the relevant
   Cosmos SDK functionality, that is, the context in which token
   transfer runs. In the complete TLA+ model it is instantiated twice,
   once for each chain participating in the token transfer.
   The transition relation is defined by
 
-```
+```tla
 Next ==
     \/ AdvanceChain
-	\/ HandlePacketDatagrams
-	\/ SendPacket
-	\/ AcknowledgePacket
+    \/ HandlePacketDatagrams
+    \/ SendPacket
+    \/ AcknowledgePacket
 ```
 
 - `AdvanceChain` just increments the height of the chain
@@ -65,15 +85,16 @@ Next ==
   on the packet log.
 
 
-- [ICS20Environment.tla](ICS20Environment.tla) is the main module that
+#### [ICS20Environment.tla](ICS20Environment.tla) 
+This is the main module that
   brings everything together. It specifies a transitions system
   consisting of two chains ([ICS20Chain.tla](ICS20Chain.tla)) and a
   relayer node (modelled here). 
-```
+```tla
 Next ==
-	\/ ChainAction
-	\/ EnvironmentAction
-	\/ UNCHANGED vars
+    \/ ChainAction
+    \/ EnvironmentAction
+    \/ UNCHANGED vars
 ```
 
 - `ChainAction` performs an action of one non-deterministically chosen
