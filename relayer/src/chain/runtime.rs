@@ -1,4 +1,4 @@
-use std::{thread, time::Duration};
+use std::{sync::Arc, thread, time::Duration};
 
 use crossbeam_channel as channel;
 use thiserror::Error;
@@ -25,6 +25,7 @@ use tendermint::account::Id as AccountId;
 use crate::{
     config::ChainConfig,
     error::{Error, Kind},
+    event_monitor::EventMonitor,
     keyring::store::KeyEntry,
     light_client::LightBlock,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
@@ -41,6 +42,7 @@ use super::{
 pub struct ChainRuntimeThreads {
     pub light_client: thread::JoinHandle<()>,
     pub chain_runtime: thread::JoinHandle<()>,
+    pub event_monitor: thread::JoinHandle<()>,
 }
 
 pub struct ChainRuntime<C: Chain> {
@@ -57,14 +59,22 @@ impl ChainRuntime<CosmosSDKChain> {
     }
 
     pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, ChainRuntimeThreads), Error> {
+        let rt = Arc::new(tokio::runtime::Runtime::new().map_err(|e| Kind::Io.context(e))?);
+
         // Initialize the light clients
         let (light_client, supervisor) = TMLightClient::from_config(&config, true)?;
 
         // Spawn the light clients
         let light_client_thread = thread::spawn(move || supervisor.run().unwrap());
 
+        let (event_monitor, event_receiver) =
+            EventMonitor::new(config.id.into(), config.rpc_addr, rt.clone())?;
+
+        // Spawn the event monitor
+        let event_monitor_thread = thread::spawn(move || event_monitor.run().unwrap());
+
         // Initialize the source and destination chain runtimes
-        let chain_runtime = ChainRuntime::cosmos_sdk(config, light_client)?;
+        let chain_runtime = Self::cosmos_sdk(config, light_client)?;
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -75,6 +85,7 @@ impl ChainRuntime<CosmosSDKChain> {
         let threads = ChainRuntimeThreads {
             light_client: light_client_thread,
             chain_runtime: runtime_thread,
+            event_monitor: event_monitor_thread,
         };
 
         Ok((handle, threads))

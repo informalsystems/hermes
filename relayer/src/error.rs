@@ -10,9 +10,13 @@ pub type Error = anomaly::Error<Kind>;
 /// Various kinds of errors that can be raiser by the relayer.
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
+    /// Config I/O error
+    #[error("config I/O error")]
+    ConfigIo,
+
     /// I/O error
     #[error("I/O error")]
-    ConfigIo,
+    Io,
 
     /// Invalid configuration
     #[error("Invalid configuration")]
