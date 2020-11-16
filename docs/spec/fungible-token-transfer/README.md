@@ -3,11 +3,12 @@
 This document describes the TLA+ model of the core logic of the English
 specification [ICS
 20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer). We
-start by discussing [the model of the protocol](#the-model-of-the-protocol).
-After that we discuss how to [use the model](#using-the-model), which
-includes links to our TLA+ formalization of [Properties and
+start by discussing [the model of the
+protocol](#the-model-of-the-protocol).
+ Then this document provides links to our TLA+ formalization of [Properties and
 invariants](#properties-and-invariants) that formalizes what a fungible
 token protocol is supposed to achieve. 
+After that we discuss how to [use the model](#using-the-model).
 
 ## The Model of the Protocol
 
