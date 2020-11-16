@@ -12,13 +12,17 @@ The specification has the following modules:
   - `FungibleTokenTransferHandlers.tla`
   - `Bank.tla`
 
+The modules `PacketHandlers.tla` and `FungibleTokenTransferHandlers.tla`
+capture the main logic of the handlers defined in ICS-020. 
+The remaining modules are needed for context.
+
 The module `ICS20Environment.tla` creates instances of 
 `ICS20Chain.tla` and encodes the relayer logic. Currently, we have: 
  - two instances of `ICS20Chain.tla`, specifying the behaviors of two chains, `ChainA` and `ChainB`.
 
 The module `ICS20Chain.tla` captures the chain logic relevant to ICS-020. 
-It extends the modules `PacketHandlers.tla` and `FungibleTokenTransferHandlers.tla`,which contain definition of operators that handle packet 
-datagrams and encode the token transfer application logic, respectively.
+It extends the modules `PacketHandlers.tla` and `FungibleTokenTransferHandlers.tla`, which contain definition of operators that handle packet 
+datagrams and encode the token transfer application logic, respectively. 
 The module `ICS20Definitions.tla` contains definition of operators that are used across all the 
 modules.
 The module `Bank.tla` encodes operators defined by the bank application.
@@ -33,6 +37,7 @@ The module `ICS20Environment.tla` is parameterized by the constants:
  - `NativeDenominationChainB`, a string denoting the native denomination of `ChainB`
 
 ## Properties and invariants
+
 TODO.
 
 
@@ -45,6 +50,6 @@ To import the specification in the TLA+ toolbox and run TLC:
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
   - run TLC on the model
 
-## Checking the invariant `ICS18Inv` with Apalache
+## Checking the invariants with Apalache
 
 TODO.
