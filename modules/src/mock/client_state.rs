@@ -13,7 +13,7 @@ use crate::ics02_client::error::Kind;
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use crate::mock_client::header::MockHeader;
+use crate::mock::header::MockHeader;
 use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.

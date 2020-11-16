@@ -38,9 +38,6 @@ pub mod macros;
 pub mod proofs;
 pub mod tx_msg;
 
-#[cfg(any(test, feature = "mocks"))]
-pub mod mock_client;
-
 /// Re-export of ICS 002 Height domain type
 pub type Height = crate::ics02_client::height::Height;
 
@@ -51,4 +48,4 @@ mod test;
 mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
-mod mock; // Context mock and the underlying host chain: for testing all handlers.
+mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.

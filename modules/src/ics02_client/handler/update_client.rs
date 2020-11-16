@@ -76,8 +76,8 @@ mod tests {
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock::context::MockContext;
-    use crate::mock_client::header::MockHeader;
-    use crate::mock_client::state::MockClientState;
+    use crate::mock::header::MockHeader;
+    use crate::mock::client_state::MockClientState;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
 

@@ -19,10 +19,10 @@ use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
-use {
-    crate::mock_client::client_def::MockClient,
-    crate::mock_client::header::MockHeader,
-    crate::mock_client::state::{MockClientState, MockConsensusState},
+use crate::mock::{
+    header::MockHeader,
+    client_def::MockClient,
+    client_state::{MockConsensusState, MockClientState},
 };
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";

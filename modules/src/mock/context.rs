@@ -19,8 +19,8 @@ use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::dispatch;
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::mock::host::{HostBlock, HostType};
-use crate::mock_client::header::MockHeader;
-use crate::mock_client::state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::mock::header::MockHeader;
+use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::Height;
 
 use std::cmp::min;

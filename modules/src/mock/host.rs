@@ -4,7 +4,7 @@ use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
-use crate::mock_client::header::MockHeader;
+use crate::mock::header::MockHeader;
 use crate::Height;
 
 use tendermint::chain::Id as TMChainId;
