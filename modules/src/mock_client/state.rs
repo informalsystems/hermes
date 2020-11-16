@@ -22,15 +22,17 @@ use crate::Height;
 pub struct MockClientRecord {
     /// The type of this client.
     pub client_type: ClientType,
+
     /// The client state (representing only the latest height at the moment).
     pub client_state: MockClientState,
+
     /// Mapping of heights to consensus states for this client.
     pub consensus_states: HashMap<Height, MockConsensusState>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
-/// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
+// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockClientState(pub MockHeader);
 
@@ -145,7 +147,7 @@ impl From<MockConsensusState> for AnyConsensusState {
 
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn root(&self) -> &CommitmentRoot {

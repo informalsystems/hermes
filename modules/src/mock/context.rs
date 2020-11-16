@@ -143,12 +143,26 @@ impl MockContext {
         let mut clients = self.clients.clone();
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
+        let client_type = client_type.unwrap_or(ClientType::Mock);
+        let (client_state, consensus_states) = match client_type {
+            ClientType::Mock => (
+                MockClientState(MockHeader(client_state_height)),
+                vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
+                    .into_iter()
+                    .collect(),
+            ),
+            ClientType::Tendermint => (
+                MockClientState(MockHeader(client_state_height)),
+                vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
+                    .into_iter()
+                    .collect(),
+            ),
+        };
+
         let client_record = MockClientRecord {
-            client_type: client_type.unwrap_or(ClientType::Mock),
-            client_state: MockClientState(MockHeader(client_state_height)),
-            consensus_states: vec![(cs_height, MockConsensusState(MockHeader(cs_height)))]
-                .into_iter()
-                .collect(),
+            client_type,
+            client_state,
+            consensus_states,
         };
         clients.insert(client_id.clone(), client_record);
 
@@ -419,7 +433,7 @@ mod tests {
     use crate::Height;
 
     #[test]
-    fn test_mock_context_history_manipulation() {
+    fn test_history_manipulation() {
         pub struct Test {
             name: String,
             ctx: MockContext,
@@ -437,10 +451,28 @@ mod tests {
                 ),
             },
             Test {
+                name: "[Synthetic TM host] Empty history, small pruning window".to_string(),
+                ctx: MockContext::new(
+                    ChainId::new("mocksgaia", cv).unwrap(),
+                    HostType::SyntheticTendermint,
+                    1,
+                    Height::new(cv, 0),
+                ),
+            },
+            Test {
                 name: "Large pruning window".to_string(),
                 ctx: MockContext::new(
                     ChainId::new("mockgaia", cv).unwrap(),
                     HostType::Mock,
+                    30,
+                    Height::new(cv, 2),
+                ),
+            },
+            Test {
+                name: "[Synthetic TM host] Large pruning window".to_string(),
+                ctx: MockContext::new(
+                    ChainId::new("mocksgaia", cv).unwrap(),
+                    HostType::SyntheticTendermint,
                     30,
                     Height::new(cv, 2),
                 ),
@@ -455,6 +487,15 @@ mod tests {
                 ),
             },
             Test {
+                name: "[Synthetic TM host] Small pruning window".to_string(),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::SyntheticTendermint,
+                    3,
+                    Height::new(cv, 30),
+                ),
+            },
+            Test {
                 name: "Small pruning window, small starting height".to_string(),
                 ctx: MockContext::new(
                     ChainId::new("mockgaia", cv).unwrap(),
@@ -464,10 +505,28 @@ mod tests {
                 ),
             },
             Test {
+                name: "[Synthetic TM host] Small pruning window, small starting height".to_string(),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::SyntheticTendermint,
+                    3,
+                    Height::new(cv, 2),
+                ),
+            },
+            Test {
                 name: "Large pruning window, large starting height".to_string(),
                 ctx: MockContext::new(
                     ChainId::new("mockgaia", cv).unwrap(),
                     HostType::Mock,
+                    50,
+                    Height::new(cv, 2000),
+                ),
+            },
+            Test {
+                name: "[Synthetic TM host] Large pruning window, large starting height".to_string(),
+                ctx: MockContext::new(
+                    ChainId::new("mockgaia", cv).unwrap(),
+                    HostType::SyntheticTendermint,
                     50,
                     Height::new(cv, 2000),
                 ),

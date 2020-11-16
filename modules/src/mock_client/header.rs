@@ -48,7 +48,7 @@ impl From<MockHeader> for AnyHeader {
 
 impl Header for MockHeader {
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn height(&self) -> Height {

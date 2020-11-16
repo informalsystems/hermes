@@ -30,12 +30,14 @@ pub fn process(
         signer: _,
     } = msg;
 
+    // Read client type from the host chain store. The client should already exist.
     let client_type = ctx
         .client_type(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
     let client_def = AnyClient::from_client_type(client_type);
 
+    // Read client state from the host chain store.
     let client_state = ctx
         .client_state(&client_id)
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
