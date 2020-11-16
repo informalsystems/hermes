@@ -19,10 +19,10 @@ const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenConfirm {
-    port_id: PortId,
-    channel_id: ChannelId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgChannelOpenConfirm {
@@ -67,7 +67,7 @@ impl Msg for MsgChannelOpenConfirm {
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgChannelOpenAck".to_string()
+        "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

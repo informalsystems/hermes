@@ -19,12 +19,12 @@ const TYPE_MSG_CHANNEL_OPEN_ACK: &str = "channel_open_ack";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenAck {
-    port_id: PortId,
-    channel_id: ChannelId,
-    counterparty_channel_id: ChannelId,
-    counterparty_version: String,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub counterparty_channel_id: ChannelId,
+    pub counterparty_version: String,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgChannelOpenAck {

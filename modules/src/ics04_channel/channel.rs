@@ -31,7 +31,11 @@ impl TryFrom<RawChannel> for ChannelEnd {
         let chan_state = State::from_i32(value.state)?;
 
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
-        let remote = Counterparty::try_from(value.counterparty.ok_or_else(|| Kind::MissingCounterparty)?)?;
+        let remote = Counterparty::try_from(
+            value
+                .counterparty
+                .ok_or_else(|| Kind::MissingCounterparty)?,
+        )?;
 
         // Parse each item in connection_hops into a ConnectionId.
         let connection_hops = value
@@ -43,7 +47,13 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
         let version = validate_version(value.version)?;
 
-        Ok(ChannelEnd::new(chan_state, chan_ordering, remote, connection_hops, version))
+        Ok(ChannelEnd::new(
+            chan_state,
+            chan_ordering,
+            remote,
+            connection_hops,
+            version,
+        ))
     }
 }
 
@@ -51,7 +61,7 @@ impl From<ChannelEnd> for RawChannel {
     fn from(value: ChannelEnd) -> Self {
         RawChannel {
             state: value.state.clone() as i32,
-            ordering: value.ordering.clone() as i32,
+            ordering: value.ordering as i32,
             counterparty: Some(value.counterparty().into()),
             connection_hops: value
                 .connection_hops
@@ -137,7 +147,7 @@ impl Counterparty {
         &self.port_id
     }
 
-    pub fn channel_id(&self) -> Option<&ChannelId>{
+    pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
     }
 
@@ -158,7 +168,9 @@ impl TryFrom<RawCounterparty> for Counterparty {
             .transpose()
             .map_err(|e| Kind::IdentifierError.context(e))?;
         Ok(Counterparty::new(
-            value.port_id.parse()
+            value
+                .port_id
+                .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             channel_id,
         ))

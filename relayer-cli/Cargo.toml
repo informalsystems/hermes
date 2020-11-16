@@ -27,16 +27,24 @@ hex = "0.4"
 
 [dependencies.tendermint-proto]
 version = "0.17.0-rc2"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "master"
 
 [dependencies.tendermint]
 version = "0.17.0-rc2"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "master"
 
 [dependencies.tendermint-rpc]
 version = "0.17.0-rc2"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "master"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
 version = "0.17.0-rc2"
+git = "https://github.com/informalsystems/tendermint-rs"
+branch = "master"
 
 [dependencies.abscissa_core]
 version = "0.5.2"

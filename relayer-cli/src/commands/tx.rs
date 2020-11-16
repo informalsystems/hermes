@@ -3,9 +3,9 @@ use abscissa_core::{Command, Help, Options, Runnable};
 
 use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 
+mod channel;
 mod client;
 mod connection;
-mod channel;
 
 /// `tx` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -53,4 +53,15 @@ pub enum TxRawCommands {
     #[options(help = "tx raw chan-init")]
     ChanInit(channel::TxRawChanInitCmd),
 
+    /// The `tx raw chan-try` subcommand
+    #[options(help = "tx raw chan-try")]
+    ChanTry(channel::TxRawChanTryCmd),
+
+    /// The `tx raw chan-ack` subcommand
+    #[options(help = "tx raw chan-ack")]
+    ChanAck(channel::TxRawChanAckCmd),
+
+    /// The `tx raw chan-confirm` subcommand
+    #[options(help = "tx raw chan-confirm")]
+    ChanConfirm(channel::TxRawChanConfirmCmd),
 }

@@ -19,13 +19,13 @@ const TYPE_MSG_CHANNEL_OPEN_TRY: &str = "channel_open_try";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenTry {
-    port_id: PortId,
-    channel_id: ChannelId, // Labeled `desired_channel_id` in raw types.
-    counterparty_chosen_channel_id: Option<ChannelId>,
-    channel: ChannelEnd,
-    counterparty_version: String,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId, // Labeled `desired_channel_id` in raw types.
+    pub counterparty_chosen_channel_id: Option<ChannelId>,
+    pub channel: ChannelEnd,
+    pub counterparty_version: String,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl Msg for MsgChannelOpenTry {
