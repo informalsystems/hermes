@@ -1,20 +1,24 @@
 # TLA+ specification of the IBC Fungible Token Transfer Protocol
 
-## The Model
-
-This desribes the TLA+ model of the core logic of the English
+This document describes the TLA+ model of the core logic of the English
 specification [ICS
-20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer). Mirroring
-the structure of the English specification we start by discussing
-initialization ([Port and Channel Setup & Channel lifecycle management](#port-and-channel-setup-and-channel-lifecycle-management), and then provide the links to the TLA+ modules that
+20](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer). We
+start by discussing [the model of the protocol](#the-model-of-the-protocol).
+After that we discuss how to [use the model](#using-the-model), which
+includes links to our TLA+ formalization of [Properties and
+invariants](#properties-and-invariants) that formalizes what a fungible
+token protocol is supposed to achieve. 
+
+## The Model of the Protocol
+
+ Mirroring
+the structure of the English specification, we start by discussing
+initialization ([Port and Channel Setup & Channel lifecycle management](#port-and-channel-setup-and-channel-lifecycle-management)), and then provide the links to the TLA+ modules that
 implement [packet relay](#packet-relay), that is, the core callback functions.
 
 As the application "fungible token transfer" uses the underlying IBC
-infrastructure, we also modeled it to the extend necessary in [helper modules](#helper-modules)
-
-After that we discuss how to [use the model](#using-the-model), which
-includes links to our TLA+ formalization of [Properties and
-invariants](#properties-and-invariants). 
+infrastructure, we also modeled it to the extend necessary in [helper
+modules](#helper-modules).
 
 ### Port and Channel Setup and Channel lifecycle management
 
@@ -104,7 +108,62 @@ Next ==
   packet log and creates an appropriate datagram for the destination
   chain (`CreateDatagrams`).
   
+
+### Properties and invariants
+
+The English specification provides informal requirements as "[desired properties](
+https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#desired-properties)".
+
+#### Preservation of fungibility
+
+We understand that for establishing "Preservation of fungibility" it
+is sufficient to establish that if
+some tokens have been transferred from chain A to chain B, and the receiver
+on chain B wants to return them, then the tokens can be returned.
+
+This is implemented in the invariant TODO in the file TODO.
+
+#### Preservation of total supply
+
+We understand "Preservation of total supply" as conjunction of two
+properties
+
+- For each native denomination of a chain: the sum of the amounts in
+  user accounts in this denomination and the amounts in escrow
+  accounts in this denomination is constant.
+  
+- The sum the following amounts is constant:
+    *  in denomination *d* in escrow accounts in the chain in which *d* is native
+	*  in denomination *d* in in-flight packets of transactions
+	*  in prefixed denomination ending with *d* in accounts in which *d* is **not**
+       native
+	*  in prefixed denomination ending with *d* in in-flight packets of transactions
+
+These two properties are implemented in the invariant TODO in the file TODO.
+
+#### No Whitelist
+
+For each possible denomination *d*, every well-formed incoming
+transfer packet in *d* should result in adding the
+specified amount of token's to the receiver's account.
+
+This is implemented in the invariant TODO in the file TODO.
+
+
+#### Symmetric
+
+This is not a temporal property but a property on the local transition
+relation. It is satisfied by construction (of both the code and the
+model).
+
+
+#### No Byzantine Inflation
+
+This should be implied by preservation of total supply.
+
+
 ## Using the Model
+
 
 ### Constants
 
@@ -114,9 +173,6 @@ The module `ICS20Environment.tla` is parameterized by the constants:
  - `MaxBalance`, a natural number denoting the maximal bank account balance,
  - `NativeDenominationChainA`, a string denoting the native denomination of `ChainA`,
  - `NativeDenominationChainB`, a string denoting the native denomination of `ChainB`
-
-### Properties and invariants
-TODO.
 
 
 ### Importing the specification into TLA+ toolbox
