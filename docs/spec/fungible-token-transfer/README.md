@@ -122,7 +122,17 @@ is sufficient to establish that if
 some tokens have been transferred from chain A to chain B, and the receiver
 on chain B wants to return them, then the tokens can be returned.
 
+For this we require the assumption (which is somewhat implicit it
+ its [correctness
+argument](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#correctness)) that the source chain only performs valid transitions.
+
 This is implemented in the invariant TODO in the file TODO.
+
+
+A related property which is not in the ICS English specification is:
+TODO: Formalize" Solo sent 10 josef coins to A, so no transfer that
+wants to send more than 10 Josef coins is not allowed." 
+
 
 #### Preservation of total supply
 
@@ -132,6 +142,9 @@ properties
 - For each native denomination of a chain: the sum of the amounts in
   user accounts in this denomination and the amounts in escrow
   accounts in this denomination is constant.
+  
+The following intuitive property can only be specified and guaranteed
+if all involved chains only perform valid transitions:
   
 - The sum the following amounts is constant:
     *  in denomination *d* in escrow accounts in the chain in which *d* is native
@@ -160,7 +173,15 @@ model).
 
 #### No Byzantine Inflation
 
-This should be implied by preservation of total supply.
+This should be implied by the first property of preservation of total
+supply. This is under the assumption that the property found in ICS 20
+"Fault containment: prevents Byzantine-inflation of tokens originating
+on chain A, as a result of chain B’s Byzantine behaviour (though any
+users who sent tokens to chain B may be at risk)." is purely
+understood in terms on inflation **on chain A**.
+
+We note that chain B can send an unbounded amount of tokens that it
+claims to originate from A to some chain C.
 
 
 ## Using the Model
