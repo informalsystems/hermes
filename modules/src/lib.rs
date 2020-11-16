@@ -44,7 +44,7 @@ pub type Height = crate::ics02_client::height::Height;
 #[cfg(test)]
 mod test;
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]

@@ -10,6 +10,7 @@ use crate::ics02_client::error::Error as ICS2Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
+use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -150,10 +151,18 @@ impl MockContext {
                 MockConsensusState(MockHeader(cs_height)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
-            ClientType::Tendermint => (
-                Some(MockClientState(MockHeader(client_state_height)).into()),
-                MockConsensusState(MockHeader(cs_height)).into(),
-            ),
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    cs_height.version_height,
+                );
+                let consensus_state = AnyConsensusState::from(light_block.clone());
+                let client_state =
+                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+
+                // Return the tuple.
+                (Some(client_state), consensus_state)
+            }
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 

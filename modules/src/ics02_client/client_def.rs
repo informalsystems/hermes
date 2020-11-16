@@ -528,12 +528,13 @@ impl ClientDef for AnyClient {
 mod tests {
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use prost_types::Any;
     use std::convert::TryFrom;
 
     #[test]
     fn any_client_state_serialization() {
-        let tm_client_state = get_dummy_tendermint_client_state();
+        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
 
         let raw: Any = tm_client_state.clone().into();
         let tm_client_state_back = AnyClientState::try_from(raw).unwrap();

@@ -146,7 +146,7 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let tm_header = get_dummy_tendermint_header();
-        let tm_client_state = get_dummy_tendermint_client_state();
+        let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());
 
         let msg = MsgCreateAnyClient::new(
             client_id,

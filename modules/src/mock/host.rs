@@ -52,12 +52,23 @@ impl HostBlock {
                 height,
             ))),
             HostType::SyntheticTendermint => {
-                let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
-                block.signed_header.header.chain_id =
-                    TMChainId::try_from(chain_id.to_string()).unwrap();
-                HostBlock::SyntheticTendermint(Box::new(block))
+                HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
             }
         }
+    }
+
+    pub fn generate_tm_block(chain_id: ChainId, height: u64) -> TMLightBlock {
+        let mut block = TestgenLightBlock::new_default(height).generate().unwrap();
+        block.signed_header.header.chain_id = TMChainId::try_from(chain_id.to_string()).unwrap();
+
+        block
+    }
+}
+
+impl From<TMLightBlock> for AnyConsensusState {
+    fn from(light_block: TMLightBlock) -> Self {
+        let cs = TMConsensusState::from(light_block.signed_header.header);
+        AnyConsensusState::Tendermint(cs)
     }
 }
 
@@ -65,10 +76,7 @@ impl From<HostBlock> for AnyConsensusState {
     fn from(any_block: HostBlock) -> Self {
         match any_block {
             HostBlock::Mock(mock_header) => mock_header.into(),
-            HostBlock::SyntheticTendermint(light_block) => {
-                let cs = TMConsensusState::from(light_block.signed_header.header);
-                AnyConsensusState::Tendermint(cs)
-            }
+            HostBlock::SyntheticTendermint(light_block) => (*light_block).into(),
         }
     }
 }
