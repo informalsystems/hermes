@@ -2,7 +2,7 @@ use crate::ics04_channel::error::{self, Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use anomaly::fail;
 use std::convert::TryFrom;
@@ -17,7 +17,7 @@ pub struct ChannelEnd {
     version: String,
 }
 
-impl DomainType<RawChannel> for ChannelEnd {}
+impl Protobuf<RawChannel> for ChannelEnd {}
 
 impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;

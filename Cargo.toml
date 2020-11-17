@@ -10,3 +10,9 @@ members = [
 exclude = [
     "proto-compiler"
 ]
+
+[patch.crates-io]
+tendermint = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/upgrade-tokio" }
+tendermint-rpc = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/upgrade-tokio" }
+tendermint-proto = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/upgrade-tokio" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/upgrade-tokio" }

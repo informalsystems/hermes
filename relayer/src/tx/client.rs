@@ -7,7 +7,7 @@ use prost_types::Any;
 
 use tendermint::account::Id as AccountId;
 use tendermint_light_client::types::TrustThreshold;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;

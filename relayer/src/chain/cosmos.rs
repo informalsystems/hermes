@@ -14,7 +14,7 @@ use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint_proto::crypto::ProofOps;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast;
 

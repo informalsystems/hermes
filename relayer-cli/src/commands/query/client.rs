@@ -10,7 +10,7 @@ use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;

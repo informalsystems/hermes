@@ -7,7 +7,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -97,7 +97,7 @@ impl Msg for MsgChannelOpenTry {
     }
 }
 
-impl DomainType<RawMsgChannelOpenTry> for MsgChannelOpenTry {}
+impl Protobuf<RawMsgChannelOpenTry> for MsgChannelOpenTry {}
 
 impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
     type Error = anomaly::Error<Kind>;

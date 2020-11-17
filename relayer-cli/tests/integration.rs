@@ -21,7 +21,7 @@ use ibc::ics24_host::Path::{ChannelEnds, ClientConnections};
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{default, ChainConfig, Config};
 use tendermint::net::Address;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {

@@ -73,8 +73,9 @@ impl TryFrom<CommitmentProof> for RawMerkleProof {
     }
 }
 
+// TODO: decent getter or Protobuf trait implementation
 #[derive(Clone, PartialEq, Eq)]
-pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
+pub struct CommitmentPrefix(pub Vec<u8>);
 
 impl CommitmentPrefix {
     pub fn is_empty(&self) -> bool {
