@@ -1,3 +1,7 @@
+use std::sync::Arc;
+
+use tokio::runtime::Runtime as TokioRuntime;
+
 use crate::chain::CosmosSDKChain;
 use crate::config::ChainConfig;
 use crate::error;
@@ -12,8 +16,10 @@ pub struct KeysRestoreOptions {
 }
 
 pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
+    let rt = TokioRuntime::new().unwrap();
+
     // Get the destination chain
-    let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
+    let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config, Arc::new(rt))?;
 
     let address = chain
         .key_ring()

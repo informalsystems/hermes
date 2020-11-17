@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use abscissa_core::{Command, Options, Runnable};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
@@ -79,7 +82,8 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         // TODO - any value in querying with proof from the CLI?

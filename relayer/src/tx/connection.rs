@@ -1,10 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
 use prost_types::Any;
 use serde_json::Value;
+use tokio::runtime::Runtime as TokioRuntime;
 
 use bitcoin::hashes::hex::ToHex;
 
@@ -303,11 +305,13 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
+    let rt = Arc::new(TokioRuntime::new().unwrap());
+
     // Initialize the source and destination chain runtimes
     let src_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client, rt.clone())?;
     let dst_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client, rt)?;
 
     let src_chain = src_chain_runtime.handle();
     let dst_chain = dst_chain_runtime.handle();
@@ -408,11 +412,13 @@ pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
+    let rt = Arc::new(TokioRuntime::new().unwrap());
+
     // Initialize the source and destination chain runtimes
     let src_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client, rt.clone())?;
     let dst_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client, rt)?;
 
     let src_chain = src_chain_runtime.handle();
     let dst_chain = dst_chain_runtime.handle();
@@ -501,11 +507,13 @@ pub fn build_conn_confirm_and_send(opts: ConnectionOpenOptions) -> Result<String
     thread::spawn(move || src_supervisor.run().unwrap());
     thread::spawn(move || dst_supervisor.run().unwrap());
 
+    let rt = Arc::new(TokioRuntime::new().unwrap());
+
     // Initialize the source and destination chain runtimes
     let src_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client, rt.clone())?;
     let dst_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client)?;
+        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client, rt)?;
 
     let src_chain = src_chain_runtime.handle();
     let dst_chain = dst_chain_runtime.handle();

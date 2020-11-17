@@ -1,14 +1,17 @@
-use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
+use std::{
+    convert::{TryFrom, TryInto},
+    sync::Arc,
+};
 
 use anomaly::fail;
+use bitcoin::hashes::hex::ToHex;
 use bytes::Bytes;
+use k256::ecdsa::{SigningKey, VerifyKey};
 use prost::Message;
 use prost_types::Any;
-
-use bitcoin::hashes::hex::ToHex;
-use k256::ecdsa::{SigningKey, VerifyKey};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::DomainType;
@@ -61,17 +64,17 @@ use crate::config::ChainConfig;
 use crate::error::{self, Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient;
-use crate::util::block_on;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     light_client: Option<LightClient>,
     key_ring: KeyRing,
+    rt: Arc<TokioRuntime>,
 }
 
 impl CosmosSDKChain {
-    pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
+    pub fn from_config(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let primary = config
             .primary()
             .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
@@ -82,6 +85,7 @@ impl CosmosSDKChain {
         let key_store = KeyRing::init(StoreBackend::Memory);
 
         Ok(Self {
+            rt,
             config,
             key_ring: key_store,
             rpc_client,
@@ -99,15 +103,20 @@ impl CosmosSDKChain {
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
 
-        let mut client = block_on(
-            ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
-        )
-        .map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .rt
+            .block_on(
+                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
-        let response = block_on(client.params(request)).map_err(|e| Kind::Grpc.context(e))?;
+        let response = self
+            .rt
+            .block_on(client.params(request))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
             .into_inner()
@@ -122,7 +131,9 @@ impl CosmosSDKChain {
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
-        Ok(block_on(self.rpc_client().genesis())
+        Ok(self
+            .rt
+            .block_on(self.rpc_client().genesis())
             .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
     }
@@ -155,7 +166,9 @@ impl Chain for CosmosSDKChain {
                 .into());
         }
 
-        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response =
+            self.rt
+                .block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // Verify response proof, if requested.
         if prove {
@@ -196,8 +209,10 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_response =
-            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response = self
+            .rt
+            .block_on(query_account(self, key.account))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -253,8 +268,10 @@ impl Chain for CosmosSDKChain {
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
-        let response =
-            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+        let response = self
+            .rt
+            .block_on(broadcast_tx_commit(self, txraw_buf))
+            .map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }
@@ -275,7 +292,10 @@ impl Chain for CosmosSDKChain {
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
+        let status = self
+            .rt
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
@@ -487,22 +507,6 @@ async fn broadcast_tx_commit(
         .map_err(|e| Kind::Rpc.context(e))?;
 
     Ok(serde_json::to_string(&response).unwrap())
-}
-
-fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {
-    Ok(block_on(client.commit(height))
-        .map_err(|e| Kind::Rpc.context(e))?
-        .signed_header)
-}
-
-fn fetch_validators(client: &HttpClient, height: Height) -> Result<Vec<Info>, Error> {
-    Ok(block_on(client.validators(height))
-        .map_err(|e| Kind::Rpc.context(e))?
-        .validators)
-}
-
-fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
-    Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
 }
 
 /// Uses the GRPC client to retrieve the account sequence

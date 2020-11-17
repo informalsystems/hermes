@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use abscissa_core::{Command, Options, Runnable};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
@@ -75,7 +78,8 @@ impl Runnable for QueryClientStateCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyClientState, Error> = chain
@@ -167,7 +171,8 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyConsensusState, Error> = chain
@@ -280,7 +285,8 @@ impl Runnable for QueryClientConnectionsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<ConnectionIDs, Error> = chain

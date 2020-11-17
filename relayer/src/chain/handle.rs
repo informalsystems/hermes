@@ -23,13 +23,10 @@ use tendermint_rpc::HttpClient;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::{
-    error::{Error, Kind},
-    tx::connection::ConnectionMsgType,
-};
+use crate::error::{Error, Kind};
+use crate::tx::connection::ConnectionMsgType;
 // use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
-use crate::util::block_on;
 use crate::{config::ChainConfig, keyring::store::KeyEntry};
 
 use super::{Chain, QueryResponse};

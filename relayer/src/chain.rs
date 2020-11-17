@@ -45,7 +45,6 @@ use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 use crate::tx::connection::{ConnectionMsgType, ConnectionOpenInitOptions, ConnectionOpenOptions};
-use crate::util::block_on;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries

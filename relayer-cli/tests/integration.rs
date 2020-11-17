@@ -11,6 +11,9 @@
     unused_qualifications
 )]
 
+use std::str::FromStr;
+use std::sync::Arc;
+
 use ibc::ics02_client::raw::ConnectionIds as DomainTypeClientConnections;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -19,8 +22,6 @@ use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{default, ChainConfig, Config};
 use tendermint::net::Address;
 use tendermint_proto::DomainType;
-
-use std::str::FromStr;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
@@ -44,7 +45,8 @@ fn simd_config() -> Config {
 
 /// Chain created for the informaldev/simd DockerHub image running on localhost.
 fn simd_chain() -> CosmosSDKChain {
-    CosmosSDKChain::from_config(simd_config().chains[0].clone()).unwrap()
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    CosmosSDKChain::from_config(simd_config().chains[0].clone(), Arc::new(rt)).unwrap()
 }
 
 /// Query connection ID. Requires the informaldev/simd Docker image running on localhost.

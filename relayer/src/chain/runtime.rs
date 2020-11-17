@@ -2,6 +2,7 @@ use std::{sync::Arc, thread, time::Duration};
 
 use crossbeam_channel as channel;
 use thiserror::Error;
+use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::{
     ics02_client::{
@@ -31,7 +32,6 @@ use crate::{
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
     msgs::{Datagram, EncodedTransaction, IBCEvent, Packet},
     tx::connection::ConnectionMsgType,
-    util::block_on,
 };
 
 use super::{
@@ -50,16 +50,22 @@ pub struct ChainRuntime<C: Chain> {
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
     light_client: Box<dyn LightClient<C>>,
+    rt: Arc<TokioRuntime>,
 }
 
 impl ChainRuntime<CosmosSDKChain> {
-    pub fn cosmos_sdk(config: ChainConfig, light_client: TMLightClient) -> Result<Self, Error> {
-        let chain = CosmosSDKChain::from_config(config)?;
-        Ok(Self::new(chain, light_client))
+    pub fn cosmos_sdk(
+        config: ChainConfig,
+        light_client: TMLightClient,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<Self, Error> {
+        let chain = CosmosSDKChain::from_config(config, rt.clone())?;
+        Ok(Self::new(chain, light_client, rt))
     }
 
+    // TODO: Make this work for a generic Chain
     pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, ChainRuntimeThreads), Error> {
-        let rt = Arc::new(tokio::runtime::Runtime::new().map_err(|e| Kind::Io.context(e))?);
+        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
 
         // Initialize the light clients
         let (light_client, supervisor) = TMLightClient::from_config(&config, true)?;
@@ -68,7 +74,7 @@ impl ChainRuntime<CosmosSDKChain> {
         let light_client_thread = thread::spawn(move || supervisor.run().unwrap());
 
         let (mut event_monitor, event_receiver) =
-            EventMonitor::new(config.id.clone(), config.rpc_addr.clone(), rt)?;
+            EventMonitor::new(config.id.clone(), config.rpc_addr.clone(), rt.clone())?;
 
         // FIXME: Only subscribe on demand + deal with error
         event_monitor.subscribe().unwrap();
@@ -77,7 +83,7 @@ impl ChainRuntime<CosmosSDKChain> {
         let event_monitor_thread = thread::spawn(move || event_monitor.run());
 
         // Initialize the source and destination chain runtimes
-        let chain_runtime = Self::cosmos_sdk(config, light_client)?;
+        let chain_runtime = Self::cosmos_sdk(config, light_client, rt)?;
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -96,10 +102,15 @@ impl ChainRuntime<CosmosSDKChain> {
 }
 
 impl<C: Chain> ChainRuntime<C> {
-    pub fn new(chain: C, light_client: impl LightClient<C> + 'static) -> Self {
+    pub fn new(
+        chain: C,
+        light_client: impl LightClient<C> + 'static,
+        rt: Arc<TokioRuntime>,
+    ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
         Self {
+            rt,
             chain,
             sender,
             receiver,
