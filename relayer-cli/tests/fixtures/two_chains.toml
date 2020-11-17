@@ -3,7 +3,7 @@ timeout = '10s'
 strategy = 'naive'
 
 [[chains]]
-id = 'ibc0'
+id = 'ibc-0'
 rpc_addr = 'tcp://localhost:26657'
 grpc_addr = 'tcp://localhost:9090'
 account_prefix = 'cosmos'
@@ -31,7 +31,7 @@ trusted_header_hash = '169F8F6318B8FAABDBA128AD1689E238566B69DDBD2B36F1911C0DFCA
 trusted_height = '7806'
 
 [[chains]]
-id = 'ibc1'
+id = 'ibc-1'
 rpc_addr = 'tcp://localhost:26557'
 grpc_addr = 'tcp://localhost:9091'
 account_prefix = 'cosmos'
