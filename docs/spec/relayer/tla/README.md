@@ -80,16 +80,19 @@ modules.
 
 ## Properties and Invariants
 
+### System-level properties
 
-### Connection Handshake
-We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
-> Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
+We specify three kinds of properties for the IBC core protocols:
 
-[ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
+- **IBCSafety**: Bad datagrams are not used to update the chain stores.
 
->  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
+- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
 
-### Channel and Packet
+- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+
+TODO: add links to where they are
+
+### Packet
 
 ICS 04 specifies the following list of  ["Desired
 Properties"](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#desired-properties)
@@ -141,15 +144,24 @@ We thus formalize it in the context of two valid chains.
 
 I guess we can formalize it as constraints about parameters and data when send is called. TODO with Ilina.
 
-### Old text to include later
 
 
-We specify three kinds of properties for the IBC core protocols:
-- **IBCSafety**: Bad datagrams are not used to update the chain stores.
-- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
-- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+### Channel 
 
-## Invariants
+As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management). They are given in TODO under the names TODO
+
+### Connection Handshake
+We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
+> Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
+
+[ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
+
+>  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
+
+
+
+## Invariants TODO: Find a place for this section
+
 To check invariants with [Apalache](https://github.com/informalsystems/apalache/), we introduce a history variable, which keeps track of the state of the connections 
 and channels.
 We define the invariant **IBCInv**, which states that 
