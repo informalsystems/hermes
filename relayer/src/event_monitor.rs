@@ -50,7 +50,7 @@ pub struct EventMonitor {
 
 impl EventMonitor {
     /// Create an event monitor, connect to a node and subscribe to queries.
-    pub async fn new(
+    pub fn new(
         chain_id: chain::Id,
         rpc_addr: net::Address,
         rt: Arc<tokio::runtime::Runtime>,
