@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anomaly::BoxError;
 use crossbeam_channel as channel;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
@@ -49,7 +50,7 @@ pub struct EventMonitor {
 }
 
 impl EventMonitor {
-    /// Create an event monitor, connect to a node and subscribe to queries.
+    /// Create an event monitor, and connect to a node
     pub fn new(
         chain_id: ChainId,
         rpc_addr: net::Address,
@@ -84,7 +85,7 @@ impl EventMonitor {
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    pub fn subscribe(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn subscribe(&mut self) -> Result<(), BoxError> {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
