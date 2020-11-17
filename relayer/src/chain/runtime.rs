@@ -228,7 +228,7 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
-                        Err(e) => todo!(),
+                        Err(e) => todo!(), // TODO: Handle error?
                     }
                 },
             }
@@ -258,6 +258,7 @@ impl<C: Chain> ChainRuntime<C> {
             reply_to
                 .send(Err(Kind::NonProvableData.into()))
                 .map_err(|e| Kind::Channel.context(e))?;
+
             return Ok(());
         }
 
