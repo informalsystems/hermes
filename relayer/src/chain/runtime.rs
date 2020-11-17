@@ -139,7 +139,9 @@ impl<C: Chain> ChainRuntime<C> {
             channel::select! {
                 recv(self.event_receiver) -> event_batch => {
                     if let Ok(event_batch) = event_batch {
-                        self.event_bus.broadcast(Arc::new(event_batch));
+                        self.event_bus
+                            .broadcast(Arc::new(event_batch))
+                            .map_err(|e| Kind::Channel.context(e))?;
                     } else {
                         // TODO: Handle error
                     }
