@@ -26,7 +26,10 @@ use tendermint::account::Id as AccountId;
 use crate::{
     config::ChainConfig,
     error::{Error, Kind},
-    event::monitor::EventMonitor,
+    event::{
+        bus::EventBus,
+        monitor::{EventBatch, EventMonitor},
+    },
     keyring::store::KeyEntry,
     light_client::LightBlock,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
@@ -49,6 +52,8 @@ pub struct ChainRuntime<C: Chain> {
     chain: C,
     sender: channel::Sender<HandleInput>,
     receiver: channel::Receiver<HandleInput>,
+    event_bus: EventBus<Arc<EventBatch>>,
+    event_receiver: channel::Receiver<EventBatch>,
     light_client: Box<dyn LightClient<C>>,
     rt: Arc<TokioRuntime>,
 }
@@ -57,10 +62,11 @@ impl ChainRuntime<CosmosSDKChain> {
     pub fn cosmos_sdk(
         config: ChainConfig,
         light_client: TMLightClient,
+        event_receiver: channel::Receiver<EventBatch>,
         rt: Arc<TokioRuntime>,
     ) -> Result<Self, Error> {
         let chain = CosmosSDKChain::from_config(config, rt.clone())?;
-        Ok(Self::new(chain, light_client, rt))
+        Ok(Self::new(chain, light_client, event_receiver, rt))
     }
 
     // TODO: Make this work for a generic Chain
@@ -83,7 +89,7 @@ impl ChainRuntime<CosmosSDKChain> {
         let event_monitor_thread = thread::spawn(move || event_monitor.run());
 
         // Initialize the source and destination chain runtimes
-        let chain_runtime = Self::cosmos_sdk(config, light_client, rt)?;
+        let chain_runtime = Self::cosmos_sdk(config, light_client, event_receiver, rt)?;
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -105,6 +111,7 @@ impl<C: Chain> ChainRuntime<C> {
     pub fn new(
         chain: C,
         light_client: impl LightClient<C> + 'static,
+        event_receiver: channel::Receiver<EventBatch>,
         rt: Arc<TokioRuntime>,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
@@ -114,6 +121,8 @@ impl<C: Chain> ChainRuntime<C> {
             chain,
             sender,
             receiver,
+            event_bus: EventBus::new(),
+            event_receiver,
             light_client: Box::new(light_client),
         }
     }
@@ -128,6 +137,14 @@ impl<C: Chain> ChainRuntime<C> {
     pub fn run(mut self) -> Result<(), Error> {
         loop {
             channel::select! {
+                recv(self.event_receiver) -> event_batch => {
+                    match event_batch {
+                        Ok(event_batch) => {
+                            self.event_bus.broadcast(Arc::new(event_batch));
+                        },
+                        Err(_) => (), // TODO: Handle error
+                    }
+                },
                 recv(self.receiver) -> event => {
                     match event {
                         Ok(HandleInput::Terminate { reply_to }) => {
@@ -219,8 +236,14 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
-    fn subscribe(&self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
-        todo!()
+    fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
+        let subscription = self.event_bus.subscribe();
+
+        reply_to
+            .send(Ok(subscription))
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
     }
 
     fn query(

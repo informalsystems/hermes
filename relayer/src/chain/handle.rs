@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::{collections::HashMap, str::FromStr};
+use std::{sync::Arc, time::Duration};
 
 use crossbeam_channel as channel;
 use thiserror::Error;
@@ -23,8 +23,11 @@ use tendermint_rpc::HttpClient;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::error::{Error, Kind};
 use crate::tx::connection::ConnectionMsgType;
+use crate::{
+    error::{Error, Kind},
+    event::monitor::EventBatch,
+};
 // use crate::foreign_client::ForeignClient;
 use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
 use crate::{config::ChainConfig, keyring::store::KeyEntry};
@@ -34,7 +37,7 @@ use super::{Chain, QueryResponse};
 mod prod;
 pub use prod::ProdChainHandle;
 
-pub type Subscription = channel::Receiver<(chain::Id, Height, Vec<IBCEvent>)>;
+pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
 pub type ReplyTo<T> = channel::Sender<Result<T, Error>>;
 pub type Reply<T> = channel::Receiver<Result<T, Error>>;

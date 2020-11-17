@@ -295,26 +295,9 @@ pub fn build_conn_try(
 }
 
 pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Error> {
-    // Initialize the source and destination light clients
-    let (src_light_client, src_supervisor) =
-        TMLightClient::from_config(&opts.src_chain_config, true)?;
-    let (dst_light_client, dst_supervisor) =
-        TMLightClient::from_config(&opts.dst_chain_config, true)?;
-
-    // Spawn the source and destination light clients
-    thread::spawn(move || src_supervisor.run().unwrap());
-    thread::spawn(move || dst_supervisor.run().unwrap());
-
-    let rt = Arc::new(TokioRuntime::new().unwrap());
-
     // Initialize the source and destination chain runtimes
-    let src_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client, rt.clone())?;
-    let dst_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client, rt)?;
-
-    let src_chain = src_chain_runtime.handle();
-    let dst_chain = dst_chain_runtime.handle();
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
     let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
@@ -402,26 +385,9 @@ pub fn build_conn_ack(
 }
 
 pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Error> {
-    // Initialize the source and destination light clients
-    let (src_light_client, src_supervisor) =
-        TMLightClient::from_config(&opts.src_chain_config, true)?;
-    let (dst_light_client, dst_supervisor) =
-        TMLightClient::from_config(&opts.dst_chain_config, true)?;
-
-    // Spawn the source and destination light clients
-    thread::spawn(move || src_supervisor.run().unwrap());
-    thread::spawn(move || dst_supervisor.run().unwrap());
-
-    let rt = Arc::new(TokioRuntime::new().unwrap());
-
     // Initialize the source and destination chain runtimes
-    let src_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.src_chain_config.clone(), src_light_client, rt.clone())?;
-    let dst_chain_runtime =
-        ChainRuntime::cosmos_sdk(opts.dst_chain_config.clone(), dst_light_client, rt)?;
-
-    let src_chain = src_chain_runtime.handle();
-    let dst_chain = dst_chain_runtime.handle();
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, &opts)?;
     let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
