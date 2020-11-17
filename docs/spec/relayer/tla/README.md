@@ -89,6 +89,59 @@ We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/i
 
 >  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
 
+### Channel and Packet
+
+ICS 04 specifies the following list of  ["Desired
+Properties"](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#desired-properties)
+
+#### [Efficiency](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#efficiency)
+
+Efficiency seems to be too vague to formalize. In particular the
+formulation ignores relayers that are the active components in packet
+transmission. It is not clear what a suitable way is to formalize it
+  
+#### [Exactly-once delivery](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#exactly-once-delivery)
+
+These properties are also vague as:
+
+* in the absence of a relayer no packets can be delivered
+* ignores timeouts
+* unspecific what "sent" means. We suggest it means that a packet
+      datagram is put wherever (TODO: Ilina please help) rather than
+      executing `SendPacket`
+
+As a result we suggest that the property should be decomposed into to properties:
+
+* (at most once) if a valid chain delivers packet p, it will
+		  not deliver packet p again in the future
+
+* (typical case) If
+  * sender and receiver chain are valid, and
+  * there is a correct relayer, and 
+  * communication is bounded in time, and
+  * the timeoutheights and times are luckily chosen, and 
+  * the receiver chain does not censor the packet, and
+  * ...  
+
+  then the packet will be delivered.
+
+
+The second property ignores that timeouts can happen.
+
+
+#### [Ordering](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#ordering)
+
+- ordered channels: It is not clear what "if packet x is sent before packet y by a channel end on chain A" meant in a context where chain A performs invalid transitions: then a packet with sequence number *i* can be sent after *i+1*. If this happens, the IBC implementation may be broken (depends on the relayer).
+
+We thus formalize it in the context of two valid chains.
+
+- no property defined for unordered.
+
+#### [Permissioning](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#permissioning)
+
+I guess we can formalize it as constraints about parameters and data when send is called. TODO with Ilina.
+
+### Old text to include later
 
 
 We specify three kinds of properties for the IBC core protocols:
