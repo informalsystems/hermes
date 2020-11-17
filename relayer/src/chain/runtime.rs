@@ -115,7 +115,6 @@ impl<C: Chain> ChainRuntime<C> {
     }
 
     pub fn run(mut self) -> Result<(), Error> {
-        println!("IMPORTANT: Runtime is running");
         loop {
             channel::select! {
                 recv(self.receiver) -> event => {
@@ -186,10 +185,7 @@ impl<C: Chain> ChainRuntime<C> {
                         },
 
                         Ok(HandleInput::QueryConnection { connection_id, height, reply_to }) => {
-                            println!("BEFORE ChainRuntime::query_connection({}, {})", connection_id, height);
-                            let res = self.query_connection(connection_id, height, reply_to)?;
-                            println!("AFTER ChainRuntime::query_connection");
-                            res
+                            self.query_connection(connection_id, height, reply_to)?
                         },
 
                         Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
