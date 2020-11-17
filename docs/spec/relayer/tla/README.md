@@ -1,23 +1,72 @@
-# TLA+ specification of the IBC Relayer
+# TLA+ specification of the IBC Core protocols
 
-A TLA+ specification of the ICS18 Relayer algorithm.
+A TLA+ specification of the IBC Core protocols ([ICS02](), [ICS03](), [ICS04](), [ICS18]()).
+In particular, the main module is [IBCCore.tla](IBCCore.tla) and models the 
+system consisting of two chains and two relayers. 
+The model allows to express concurrency aspects of a system with multiple (correct) relayers.
+The specification is written in a modular way, in order to facilitate future 
+formal verification of properties and invariants in an adversarial setting.
 
 ## Modules
 
 The specification has the following modules: 
-  - `ICS18Environment.tla` (the main module)
-  - `Relayer.tla` 
+  - `IBCCore.tla` (the main module)
+  - `ICS18Relayer.tla` 
   - `Chain.tla`
-  - `ClientHandlers.tla`
-  - `ConnectionHandlers.tla`
-  - `ChannelHandlers.tla`
-  - `PacketHandlers.tla`
-  - `RelayerDefinitions.tla`
+  - `ICS02ClientHandlers.tla`
+  - `ICS03ConnectionHandlers.tla`
+  - `ICS04ChannelHandlers.tla`
+  - `ICS04PacketHandlers.tla`
+  - `IBCCoreDefinitions.tla`
 
-The module `ICS18Environment.tla` creates instances of `Relayer.tla` and 
-`Chain.tla`. Currently, we have 
- - two instances of `Relayer.tla`, specifying the behavior of two correct relayers, `Relayer1` and `Relayer2`,
- - two instances of `Chain.tla`, specifying the behaviors of two chains, `ChainA` and `ChainB`.
+### [`ICS18Relayer.tla`](ICS18Relayer.tla)
+A relayer relays datagrams between the two chains. Its transition relation is defined by the formula:
+```tla
+Next ==
+    \/ UpdateClient
+    \/ CreateDatagrams
+    \/ UNCHANGED vars    
+```
+where `UpdateClient` and `CreateDatagrams` are scheduled non-deterministically. 
+`UpdateClient` picks a light client on the relayer for some chain and updates it. `CreateDatagrams` picks a direction (a pair of source and destination chain) and 
+creates client, connection, channel, and packet datagrams (i.e., it captures the 
+logic of [`pendingDatagrams()`](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms#pending-datagrams)).
+
+### [`Chain.tla`](Chain.tla)
+The chain state is represented by a chain store, which is a snapshot of the provable and private stores, to the extent necessary for IBC. Additionally, a chain has dedicated 
+datagram containers for: 
+1. client, connection, and channel datagrams (given by a set of datagrams),
+2. packet datagrams (given by a queue of datagrams that models the order in which the datagrams were submitted by the relayer).
+
+Its transition relation is defined by the formula:
+```tla
+Next ==
+    \/ AdvanceChain 
+    \/ HandleIncomingDatagrams
+    \/ SendPacket
+    \/ AcknowledgePacket
+    \/ UNCHANGED vars
+```
+where:
+- `AdvanceChain`: increments the height of the chain,
+- `HandleIncomingDatagrams`: dispatches the datagrams to the appropriate handlers. 
+This captures the logic of the [routing module](https://github.com/cosmos/ics/tree/master/spec/ics-026-routing-module).
+- `SendPacket`: models user/application-defined calls to send a packet. As this specification does not have a specific application in mind, we abstract away from the packet data, and allow sending packets non-deterministically. 
+The packet commitment is written in the chain store, and the sent packet is logged, 
+which triggers the relayer to create a `PacketRecv` datagram.
+- `AcknowledgePacket`: writes an acknowledgement for a received packet
+  in the chain store and on the packet log, which triggers the relayer to create a `PacketAck` datagram.
+
+### [`ICS02ClientHandlers.tla`](ICS02ClientHandlers.tla), [`ICS03ConnectionHandlers.tla`](ICS03ConnectionHandlers.tla), [`ICS04ChannelHandlers.tla`](ICS04ChannelHandlers.tla), [`ICS04PacketHandlers.tla`](ICS04PacketHandlers.tla)
+These TLA+ modules contain definitions of 
+operators that handle client, connection handshake, channel handshake, and packet 
+datagrams, respectively.
+These operators capture the logic of the handlers defined in [ICS02](), [ICS03](), and 
+[ICS04]().
+
+
+
+
 
 The module `Relayer.tla` contains the specification of the relayer algorithm. 
 The module `Chain.tla` captures the chain logic. 
@@ -29,7 +78,38 @@ datagrams, respectively.
 The module `RelayerDefinitions.tla` contains definition of operators that are used across all the 
 modules.
 
-## Constants
+## Properties and Invariants
+
+
+### Connection Handshake
+We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
+> Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
+
+[ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
+
+>  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
+
+
+
+We specify three kinds of properties for the IBC core protocols:
+- **IBCSafety**: Bad datagrams are not used to update the chain stores.
+- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
+- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+
+## Invariants
+To check invariants with [Apalache](https://github.com/informalsystems/apalache/), we introduce a history variable, which keeps track of the state of the connections 
+and channels.
+We define the invariant **IBCInv**, which states that 
+once a connection or channel end reaches a certain state, 
+it does not go back to the previous state. 
+
+For example, if the connection end on `ChainA` has 
+reached state `OPEN`, it never goes back to the state `UNINIT`.
+
+
+## Using the Model
+
+### Constants
 
 The module `ICS18Environment.tla` is parameterized by the constants:
  - `ClientDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates client datagrams, 
@@ -38,23 +118,6 @@ The module `ICS18Environment.tla` is parameterized by the constants:
  - `MaxHeight`, a natural number denoting the maximal height of the chains,
  - `MaxPacketSeq`, a natural number denoting the maximal packet sequence number,
  - `ChannelOrdering`, a string indicating whether the channels are ordered or unordered 
-
-## Properties
-
-We are interested in verifying three kinds of properties for the relayer algorithm:
-- **ICS18Safety**: Bad datagrams are not used to update the chain stores.
-- **ICS18Validity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
-- **ICS18Delivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
-
-## Invariants
-To check invariants with [Apalache](https://github.com/informalsystems/apalache/), we introduce a history variable, which keeps track of the state of the connections 
-and channels.
-We define the invariant **ICS18Inv**, which states that 
-once a connection or channel end reaches a certain state, 
-it does not go back to the previous state. 
-
-For example, if the connection end on `ChainA` has 
-reached state `OPEN`, it never goes back to the state `UNINIT`.
 
 
 ## Importing the specification into TLA+ toolbox
