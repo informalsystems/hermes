@@ -47,16 +47,11 @@ impl ProdChainHandle {
         let (sender, receiver) = reply_channel();
         let input = f(sender);
 
-        println!("BEFORE sending via channel: {:#?}", input);
         self.sender
             .send(input)
             .map_err(|e| Kind::Channel.context(e))?;
-        println!("AFTER sending via channel");
 
-        println!("BEFORE receiving response");
-        let res = receiver.recv().map_err(|e| Kind::Channel.context(e))?;
-        println!("AFTER receiving response: {:#?}", res);
-        res
+        receiver.recv().map_err(|e| Kind::Channel.context(e))?
     }
 }
 
