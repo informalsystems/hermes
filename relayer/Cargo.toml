@@ -19,7 +19,7 @@ sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.11"
 toml = "0.5"
 tracing = "0.1.13"
-tokio = { version = "0.3", features = ["macros"] }
+tokio = { version = "0.3", features = ["rt", "rt-multi-thread", "time", "stream", "sync"] }
 serde_json = { version = "1" }
 bytes = "0.6.0"
 prost = "0.6.1"
