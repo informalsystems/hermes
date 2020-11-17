@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 
 use abscissa_core::{
     application::fatal_error, error::BoxError, tracing::debug, Command, Options, Runnable,
@@ -10,22 +10,19 @@ use crate::{prelude::*, tasks::event_listener};
 pub struct ListenCmd {}
 
 impl ListenCmd {
-    async fn cmd(&self) -> Result<(), BoxError> {
+    fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config().clone();
 
+        let rt = tokio::runtime::Runtime::new().unwrap();
+
         debug!("launching 'listen' command");
-        event_listener::start(&config, false).await
+        event_listener::start(Arc::new(rt), &config, false)
     }
 }
 
 impl Runnable for ListenCmd {
     fn run(&self) {
-        let rt = tokio::runtime::Runtime::new().unwrap();
-
-        rt.block_on(async move {
-            self.cmd()
-                .await
-                .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e));
-        });
+        self.cmd()
+            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e));
     }
 }

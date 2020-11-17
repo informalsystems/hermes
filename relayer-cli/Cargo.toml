@@ -23,6 +23,7 @@ sled = "0.34.4"
 prost = "0.6.1"
 prost-types = { version = "0.6.1" }
 hex = "0.4"
+crossbeam-channel = "0.5.0"
 
 [dependencies.tendermint-proto]
 version = "0.17.0-rc2"

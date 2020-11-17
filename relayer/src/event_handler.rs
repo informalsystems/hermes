@@ -1,6 +1,6 @@
+use crossbeam_channel as channel;
 use ibc::events::IBCEvent;
 use tendermint::block::Height;
-use tokio::sync::mpsc::Receiver;
 
 use ::tendermint::chain::Id as ChainId;
 use tracing::{debug, info};
@@ -9,28 +9,24 @@ use crate::event_monitor::EventBatch;
 
 /// The Event Handler handles IBC events from the monitors.
 pub struct EventHandler {
-    channel_from_monitors: Receiver<EventBatch>,
+    rx_batch: channel::Receiver<EventBatch>,
     relay: bool,
 }
 
 impl EventHandler {
     /// Constructor for the Event Handler
-    pub fn new(channel_from_monitors: Receiver<EventBatch>, relay: bool) -> Self {
-        Self {
-            channel_from_monitors,
-            relay,
-        }
+    pub fn new(rx_batch: channel::Receiver<EventBatch>, relay: bool) -> Self {
+        Self { rx_batch, relay }
     }
 
     ///Event Handler loop
-    pub async fn run(&mut self) {
+    pub fn run(&mut self) {
         info!("running IBC Event Handler");
 
-        loop {
-            if let Some(batch) = self.channel_from_monitors.recv().await {
-                for event in batch.events {
-                    self.handle(&batch.chain_id, batch.height, event);
-                }
+        while let Ok(batch) = self.rx_batch.recv() {
+            let chain_id = batch.chain_id.into();
+            for event in batch.events {
+                self.handle(&chain_id, batch.height, event);
             }
         }
     }

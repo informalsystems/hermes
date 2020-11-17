@@ -67,11 +67,14 @@ impl ChainRuntime<CosmosSDKChain> {
         // Spawn the light clients
         let light_client_thread = thread::spawn(move || supervisor.run().unwrap());
 
-        let (event_monitor, event_receiver) =
-            EventMonitor::new(config.id.into(), config.rpc_addr, rt.clone())?;
+        let (mut event_monitor, event_receiver) =
+            EventMonitor::new(config.id.clone(), config.rpc_addr.clone(), rt)?;
+
+        // FIXME: Only subscribe on demand + deal with error
+        event_monitor.subscribe().unwrap();
 
         // Spawn the event monitor
-        let event_monitor_thread = thread::spawn(move || event_monitor.run().unwrap());
+        let event_monitor_thread = thread::spawn(move || event_monitor.run());
 
         // Initialize the source and destination chain runtimes
         let chain_runtime = Self::cosmos_sdk(config, light_client)?;

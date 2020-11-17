@@ -4,7 +4,7 @@ use abscissa_core::{application::fatal_error, error::BoxError, Command, Options,
 
 use relayer::config::Config;
 
-use crate::{prelude::*, tasks};
+use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct StartCmd {
