@@ -10,6 +10,7 @@ use crate::Height;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -89,8 +90,19 @@ impl ClientState {
             allow_update_after_misbehaviour,
         })
     }
+
     pub fn latest_height(&self) -> Height {
         self.latest_height
+    }
+
+    pub fn with_header(self, h: Header) -> Self {
+        // TODO: Clarify which fields should update.
+        ClientState {
+            latest_height: self
+                .latest_height
+                .with_version_height(u64::from(h.signed_header.header.height)),
+            ..self
+        }
     }
 }
 

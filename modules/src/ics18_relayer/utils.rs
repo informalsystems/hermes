@@ -66,7 +66,6 @@ mod tests {
     use std::str::FromStr;
 
     #[test]
-    #[ignore]
     /// Serves to test both ICS 26 `dispatch` & `create_client_update_datagram` function.
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.

@@ -345,6 +345,7 @@ impl ClientDef for AnyClient {
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;
 
+    /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
         &self,
         client_state: AnyClientState,

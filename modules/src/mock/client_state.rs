@@ -6,11 +6,10 @@ use tendermint_proto::DomainType;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::error::Kind;
-use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock::header::MockHeader;
@@ -41,25 +40,6 @@ impl DomainType<RawMockClientState> for MockClientState {}
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
         (self.0).0
-    }
-
-    pub fn check_header_and_update_state(
-        &self,
-        header: AnyHeader,
-    ) -> Result<(MockClientState, MockConsensusState), Box<dyn std::error::Error>> {
-        match header {
-            AnyHeader::Mock(mock_header) => {
-                if self.latest_height() >= header.height() {
-                    return Err("header height is lower than client latest".into());
-                }
-
-                Ok((
-                    MockClientState(mock_header),
-                    MockConsensusState(mock_header),
-                ))
-            }
-            _ => Err("bad header type for mock client state".into()),
-        }
     }
 }
 
