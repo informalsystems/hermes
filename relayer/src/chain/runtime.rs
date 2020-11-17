@@ -26,7 +26,7 @@ use tendermint::account::Id as AccountId;
 use crate::{
     config::ChainConfig,
     error::{Error, Kind},
-    event_monitor::EventMonitor,
+    event::monitor::EventMonitor,
     keyring::store::KeyEntry,
     light_client::LightBlock,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},

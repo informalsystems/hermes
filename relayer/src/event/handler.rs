@@ -1,11 +1,10 @@
 use crossbeam_channel as channel;
 use ibc::events::IBCEvent;
 use tendermint::block::Height;
-
-use ::tendermint::chain::Id as ChainId;
+use tendermint::chain::Id as ChainId;
 use tracing::{debug, info};
 
-use crate::event_monitor::EventBatch;
+use crate::event::monitor::EventBatch;
 
 /// The Event Handler handles IBC events from the monitors.
 pub struct EventHandler {

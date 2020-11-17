@@ -6,8 +6,8 @@ use abscissa_core::{error::BoxError, tracing::info};
 use crossbeam_channel as channel;
 
 use relayer::config::ChainConfig;
-use relayer::event_handler::*;
-use relayer::event_monitor::*;
+use relayer::event::handler::*;
+use relayer::event::monitor::*;
 
 use crate::config::Config;
 
