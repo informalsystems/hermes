@@ -49,12 +49,10 @@ use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use crate::light_client::tendermint::LightClient;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
-    light_client: Option<LightClient>,
     key_ring: KeyRing,
     rt: Arc<TokioRuntime>,
 }
@@ -75,7 +73,6 @@ impl CosmosSDKChain {
             config,
             key_ring: key_store,
             rpc_client,
-            light_client: None,
         })
     }
 
@@ -445,28 +442,7 @@ async fn abci_query(
     Ok(response)
 }
 
-/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(
-    chain: &CosmosSDKChain,
-    data: Vec<u8>,
-) -> Result<String, anomaly::Error<Kind>> {
-    let response = chain
-        .rpc_client()
-        .broadcast_tx_sync(data.into())
-        .await
-        .map_err(|e| Kind::Rpc.context(e))?;
-
-    if !response.code.is_ok() {
-        // Fail with response log.
-        println!("Tx Error Response: {:?}", response);
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
-    }
-
-    Ok(serde_json::to_string_pretty(&response).unwrap())
-}
-
 /// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
-/// TODO - move send() to this once RPC tendermint response is fixed
 async fn broadcast_tx_commit(
     chain: &CosmosSDKChain,
     data: Vec<u8>,

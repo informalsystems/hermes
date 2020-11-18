@@ -9,14 +9,10 @@ use bitcoin::{
 
 use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
-use k256::{
-    ecdsa::{signature::Signer, signature::Verifier, Signature, SigningKey, VerifyKey},
-    EncodedPoint, SecretKey,
-};
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
-use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 
 pub type Address = Vec<u8>;

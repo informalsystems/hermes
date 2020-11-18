@@ -6,20 +6,18 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnect
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
-use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-
 use crate::tx::client::build_update_client;
-use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {

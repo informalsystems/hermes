@@ -11,10 +11,7 @@ use tracing::{debug, error, info};
 
 use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
 use tendermint::{block::Height, net, Error as TMError};
-use tendermint_rpc::{
-    query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
-    WebSocketClientDriver,
-};
+use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 
 use crate::error::{Error, Kind};
 

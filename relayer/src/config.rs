@@ -12,7 +12,7 @@ use std::{
 use serde_derive::{Deserialize, Serialize};
 
 use ibc::ics24_host::identifier::ChainId;
-use tendermint::{chain, net, node, Hash};
+use tendermint::{net, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
 use crate::error;

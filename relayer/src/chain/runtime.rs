@@ -31,9 +31,7 @@ use crate::{
         monitor::{EventBatch, EventMonitor},
     },
     keyring::store::KeyEntry,
-    light_client::LightBlock,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
-    msgs::{Datagram, EncodedTransaction, IBCEvent, Packet},
     tx::connection::ConnectionMsgType,
 };
 
@@ -55,6 +53,8 @@ pub struct ChainRuntime<C: Chain> {
     event_bus: EventBus<Arc<EventBatch>>,
     event_receiver: channel::Receiver<EventBatch>,
     light_client: Box<dyn LightClient<C>>,
+
+    #[allow(dead_code)]
     rt: Arc<TokioRuntime>,
 }
 

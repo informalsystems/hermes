@@ -14,7 +14,7 @@ use ibc::ics24_host::identifier::ClientId;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 
-use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 

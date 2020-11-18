@@ -1,14 +1,8 @@
 use std::convert::TryFrom;
 
 use tendermint_light_client::{
-    builder::LightClientBuilder,
-    builder::SupervisorBuilder,
-    light_client, store, supervisor,
-    supervisor::Supervisor,
-    supervisor::{Handle, SupervisorHandle},
-    types::Height as TMHeight,
-    types::LightBlock,
-    types::PeerId,
+    builder::LightClientBuilder, builder::SupervisorBuilder, light_client, store, supervisor,
+    supervisor::Handle, supervisor::Supervisor, types::Height as TMHeight, types::LightBlock,
 };
 use tendermint_rpc as rpc;
 
