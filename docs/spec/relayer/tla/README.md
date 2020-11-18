@@ -82,15 +82,15 @@ modules.
 
 ### System-level properties
 
-We specify three kinds of properties for the IBC core protocols:
+We specify three kinds of properties for the IBC core protocols in the module [IBCCore.tla](IBCCore.tla):
 
-- **IBCSafety**: Bad datagrams are not used to update the chain stores.
+- `IBCSafety`: Bad datagrams are not used to update the chain stores.
 
-- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
+- `IBCValidity`: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
 
-- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+- `IBCDelivery`: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
 
-TODO: add links to where they are
+
 
 ### Packet
 
@@ -109,9 +109,7 @@ These properties are also vague as:
 
 * in the absence of a relayer no packets can be delivered
 * ignores timeouts
-* unspecific what "sent" means. We suggest it means that a packet
-      datagram is put wherever (TODO: Ilina please help) rather than
-      executing `SendPacket`
+* unspecific what "sent" means. We suggest it means that a packet commitment is written in the provable store (in our model `ChainStore`) rather than executing `SendPacket`.
 
 As a result we suggest that the property should be decomposed into to properties:
 
@@ -137,21 +135,34 @@ The second property ignores that timeouts can happen.
 
 - ordered channels: It is not clear what "if packet x is sent before packet y by a channel end on chain A" meant in a context where chain A performs invalid transitions: then a packet with sequence number *i* can be sent after *i+1*. If this happens, the IBC implementation may be broken (depends on the relayer).
 
-We thus formalize it in the context of two valid chains.
+We thus formalize it in the context of two valid chains. TODO: finish
 
 - no property defined for unordered.
 
 #### [Permissioning](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#permissioning)
 
-I guess we can formalize it as constraints about parameters and data when send is called. TODO with Ilina.
+This property is about capabilities. We do not capture capabilities in the TLA+ specification.
 
 
 
 ### Channel 
 
-As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management). They are given in TODO under the names TODO
+As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/blob/master/spec/ics-004-channel-and-packet-semantics/channel-state-machine.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
+
+- `ChannelInitSafety`
+- `ChannelTryOpenSafety`
+- `ChannelOpenSafety`
+- `ChannelCloseSafety`
 
 ### Connection Handshake
+
+Simimlar to Channel handshake we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/blob/master/spec/ics-003-connection-semantics/state.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
+
+- `ConnectionInitSafety`
+- `ConnectionTryOpenSafety`
+- `ConnectionOpenSafety`
+
+
 We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
 > Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
 
@@ -159,25 +170,15 @@ We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/i
 
 >  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
 
+The scenario is not clear, so we did not formalize it.
 
-
-## Invariants TODO: Find a place for this section
-
-To check invariants with [Apalache](https://github.com/informalsystems/apalache/), we introduce a history variable, which keeps track of the state of the connections 
-and channels.
-We define the invariant **IBCInv**, which states that 
-once a connection or channel end reaches a certain state, 
-it does not go back to the previous state. 
-
-For example, if the connection end on `ChainA` has 
-reached state `OPEN`, it never goes back to the state `UNINIT`.
 
 
 ## Using the Model
 
 ### Constants
 
-The module `ICS18Environment.tla` is parameterized by the constants:
+The module `IBCCore.tla` is parameterized by the constants:
  - `ClientDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates client datagrams, 
  - `ConnectionDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates connection datagrams,
  - `ChannelDatagramsRelayer_i`, for `i in {1, 2}`, a Boolean flag defining if `Relayer_i` creates channel datagrams,
@@ -189,22 +190,16 @@ The module `ICS18Environment.tla` is parameterized by the constants:
 ## Importing the specification into TLA+ toolbox
 
 To import the specification in the TLA+ toolbox and run TLC:
-  - add a new spec in TLA+ toolbox with the root-module file `ICS18Environment.tla` 
+  - add a new spec in TLA+ toolbox with the root-module file `IBCCore.tla` 
   - create a model
   - assign a value to the constants
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
-  - add the properties `ICS18Safety` and `ICS18Delivery`
+  - add the properties `IBCSafety` and `IBCDelivery`
   - run TLC on the model
   
 #### Assigning values to the constants in a TLC model
 
-The Boolean flags, defined as constants in the module `ICS18Environment.tla`, allow us to run experiments in different settings. For example, if we set both `ClientDatagramsRelayer_1` and `ClientDatagramsRelayer_2` to `TRUE` in a TLC model, then the two relayers in the system concurrently create datagrams related to client creation and client update, and the model checker will check the temporal properties related to client datagrams. 
+The Boolean flags, defined as constants in the module `IBCCore.tla`, allow us to run experiments in different settings. For example, if we set both `ClientDatagramsRelayer_1` and `ClientDatagramsRelayer_2` to `TRUE` in a TLC model, then the two relayers in the system concurrently create datagrams related to client creation and client update, and the model checker will check the temporal properties related to client datagrams. 
 
 Observe that the setting where, for example,  `ClientDatagramsRelayer_1 = TRUE`, `ConnectionDatagramsRelayer_2 = TRUE`, `ChannelDatagramsRelayer_1 = TRUE`, and the remaining flags are `FALSE`, is equivalent to  a single relayer, as there is no concurrency in the creation of datagrams between the two relayers. 
 
-## Checking the invariant `ICS18Inv` with Apalache
-
-To check the `ICS18Environment.tla` specification with [Apalache](https://github.com/informalsystems/apalache/), we use the file `ICS18Environment_apalache`, where we define the values of the model constants. To run the model checker and check the invariant `ICS18Inv`, we run the command:
-```shell
-apalache check --inv=ICS18Inv ICS18Environment_apalache.tla
-```
