@@ -1,14 +1,15 @@
+use std::convert::{TryFrom, TryInto};
+
+use tendermint::account::Id as AccountId;
+use tendermint_proto::DomainType;
+
+use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
+
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
-
-use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
-
-use std::convert::{TryFrom, TryInto};
 
 /// Message type for the `MsgAcknowledgement` message.
 const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
@@ -113,5 +114,115 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
             signer: account_to_string(domain_msg.signer).unwrap(),
             proof_height: Some(domain_msg.proofs.height().into()),
         }
+    }
+}
+
+#[cfg(test)]
+mod test_util {
+    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+
+    use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+
+    /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
+    /// The `height` parametrizes both the proof height as well as the timeout height.
+    pub fn get_dummy_raw_msg_acknowledgement(height: u64) -> RawMsgAcknowledgement {
+        RawMsgAcknowledgement {
+            packet: Some(get_dummy_raw_packet(height)),
+            acknowledgement: get_dummy_proof(),
+            proof: get_dummy_proof(),
+            proof_height: Some(RawHeight {
+                version_number: 0,
+                version_height: height,
+            }),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::convert::{TryFrom, TryInto};
+
+    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
+
+    use crate::ics04_channel::error::Error;
+    use crate::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
+    use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+
+    #[test]
+    fn msg_recv_packet_try_from_raw() {
+        struct Test {
+            name: String,
+            raw: RawMsgAcknowledgement,
+            want_pass: bool,
+        }
+
+        let height = 50;
+        let default_raw_msg = get_dummy_raw_msg_acknowledgement(height);
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                raw: default_raw_msg.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "Missing packet".to_string(),
+                raw: RawMsgAcknowledgement {
+                    packet: None,
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Missing proof".to_string(),
+                raw: RawMsgAcknowledgement {
+                    proof: vec![],
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Missing proof height".to_string(),
+                raw: RawMsgAcknowledgement {
+                    proof_height: None,
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Missing signer".to_string(),
+                raw: RawMsgAcknowledgement {
+                    signer: "".to_string(),
+                    ..default_raw_msg
+                },
+                want_pass: false,
+            },
+        ];
+
+        for test in tests {
+            let res_msg: Result<MsgAcknowledgement, Error> = test.raw.clone().try_into();
+
+            assert_eq!(
+                res_msg.is_ok(),
+                test.want_pass,
+                "MsgAcknowledgement::try_from failed for test {} \nraw message: {:?} with error: {:?}",
+                test.name,
+                test.raw,
+                res_msg.err()
+            );
+        }
+    }
+
+    #[test]
+    fn to_and_from() {
+        let raw = get_dummy_raw_msg_acknowledgement(15);
+        let msg = MsgAcknowledgement::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgAcknowledgement::from(msg.clone());
+        let msg_back = MsgAcknowledgement::try_from(raw_back.clone()).unwrap();
+        assert_eq!(raw, raw_back);
+        assert_eq!(msg, msg_back);
     }
 }

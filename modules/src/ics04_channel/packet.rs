@@ -1,9 +1,10 @@
+use std::convert::{TryFrom, TryInto};
+
+use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
-
-use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-use std::convert::{TryFrom, TryInto};
 
 /// The sequence number of a packet enforces ordering among packets from the same source.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -82,12 +83,12 @@ impl From<Packet> for RawPacket {
 }
 
 #[cfg(test)]
-mod test_util {
+pub mod test_utils {
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     /// Returns a dummy `RawPacket`, for testing only!
-    pub fn get_dummy_raw_packet(proof_height: u64) -> RawPacket {
+    pub fn get_dummy_raw_packet(timeout_height: u64) -> RawPacket {
         RawPacket {
             sequence: 0,
             source_port: "sourceportid".to_string(),
@@ -95,9 +96,9 @@ mod test_util {
             destination_port: "destinationport".to_string(),
             destination_channel: "dstchannelid".to_string(),
             data: vec![],
-            timeout_height: Some(Height {
+            timeout_height: Some(RawHeight {
                 version_number: 1,
-                version_height: proof_height,
+                version_height: timeout_height,
             }),
             timeout_timestamp: 0,
         }
@@ -106,10 +107,12 @@ mod test_util {
 
 #[cfg(test)]
 mod tests {
-    use crate::ics04_channel::packet::test_util::get_dummy_raw_packet;
-    use crate::ics04_channel::packet::Packet;
-    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use std::convert::TryFrom;
+
+    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+
+    use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
+    use crate::ics04_channel::packet::Packet;
 
     #[test]
     fn packet_try_from_raw() {
@@ -232,7 +235,7 @@ mod tests {
                 },
                 want_pass: false,
             },
-        ].into_iter().collect();
+        ];
 
         for test in tests {
             let res_msg = Packet::try_from(test.raw.clone());
