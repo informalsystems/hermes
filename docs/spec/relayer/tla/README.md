@@ -115,8 +115,9 @@ These properties are also vague as:
 
 As a result we suggest that the property should be decomposed into to properties:
 
-* (at most once) if a valid chain delivers packet p, it will
-		  not deliver packet p again in the future
+* (at most once) For each packer `p`, if a chain performs `RecvPacket(p)` successfully (without abort), it will
+		  not perform `RecvPacket(p)` successfully in the future.  
+      We formalize this in [file]().
 
 * (typical case) If
   * sender and receiver chain are valid, and
