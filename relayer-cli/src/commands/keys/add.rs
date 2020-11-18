@@ -11,9 +11,6 @@ pub struct KeyAddCmd {
     #[options(free, help = "identifier of the chain")]
     chain_id: Option<String>,
 
-    #[options(free, help = "the key name")]
-    name: Option<String>,
-
     #[options(free, help = "the key path and filename")]
     file: Option<String>,
 }
@@ -33,18 +30,13 @@ impl KeyAddCmd {
                 "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
             })?;
 
-        let key_name = self
-            .name
-            .clone()
-            .ok_or_else(|| "missing key name".to_string())?;
-
         let key_filename = self
             .file
             .clone()
             .ok_or_else(|| "missing signer key file".to_string())?;
 
         Ok(KeysAddOptions {
-            name: key_name,
+            name: chain_config.key_name.clone(),
             file: key_filename,
             chain_config: chain_config.clone(),
         })

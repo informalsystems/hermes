@@ -26,7 +26,7 @@ use tendermint::account::Id as AccountId;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
 pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
-pub const KEYSTORE_FILE_EXTENSION: &str = "key";
+pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
 pub type Address = Vec<u8>;
 
