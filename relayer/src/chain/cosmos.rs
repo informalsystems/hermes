@@ -406,21 +406,6 @@ impl Chain for CosmosSDKChain {
             trusted_validator_set: trusted_light_block.validators,
         })
     }
-
-    fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header> {
-        downcast!(header => AnyHeader::Tendermint)
-    }
-
-    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<ClientState> {
-        downcast!(client_state => AnyClientState::Tendermint)
-    }
-
-    fn downcast_consensus_state(
-        &self,
-        consensus_state: AnyConsensusState,
-    ) -> Option<Self::ConsensusState> {
-        downcast!(consensus_state => AnyConsensusState::Tendermint)
-    }
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

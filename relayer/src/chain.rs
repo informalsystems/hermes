@@ -113,14 +113,6 @@ pub trait Chain {
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error>;
 
-    // Downcast methods
-    fn downcast_header(&self, header: AnyHeader) -> Option<Self::Header>;
-    fn downcast_client_state(&self, client_state: AnyClientState) -> Option<Self::ClientState>;
-    fn downcast_consensus_state(
-        &self,
-        consensus_state: AnyConsensusState,
-    ) -> Option<Self::ConsensusState>;
-
     // Queries
 
     /// Query the latest height the chain is at
