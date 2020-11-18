@@ -1,13 +1,12 @@
 use crate::keyring::errors::{Error, Kind};
 use bech32::ToBase32;
-use bitcoin::hashes::hex::ToHex;
-use bitcoin::secp256k1::{All, Message, Secp256k1};
+
+use bitcoin::secp256k1::Secp256k1;
 use bitcoin::{
     network::constants::Network,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-    PrivateKey,
 };
-use bitcoin_wallet::account::MasterAccount;
+
 use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
 use k256::{
@@ -71,10 +70,10 @@ impl KeyRingOperations for KeyRing {
         let key_json: Value =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let signer: AccountId;
+        let _signer: AccountId;
         let key: KeyEntry;
 
-        let mnemonic: String = "".to_string();
+        let _mnemonic: String = "".to_string();
         let mnemonic_value = key_json.get("mnemonic");
         match mnemonic_value {
             Some(m) => {

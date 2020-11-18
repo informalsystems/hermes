@@ -1,10 +1,5 @@
-use anomaly::BoxError;
-use async_trait::async_trait;
-use humantime_serde::re::humantime::Duration;
-use std::{convert::TryFrom, sync::Arc};
-use tokio::task::spawn_blocking;
+use std::convert::TryFrom;
 
-use tendermint::block::Height;
 use tendermint_light_client::{
     builder::LightClientBuilder,
     builder::SupervisorBuilder,
@@ -51,8 +46,8 @@ impl super::LightClient<CosmosSDKChain> for LightClient {
 
     fn get_minimal_set(
         &self,
-        latest_client_state_height: ibc::Height,
-        target_height: ibc::Height,
+        _latest_client_state_height: ibc::Height,
+        _target_height: ibc::Height,
     ) -> Result<Vec<ibc::Height>, error::Error> {
         todo!()
     }
@@ -111,7 +106,7 @@ fn build_instance(
 }
 
 fn build_supervisor(config: &ChainConfig, reset: bool) -> Result<Supervisor, error::Error> {
-    let id = config.id.clone();
+    let _id = config.id.clone();
 
     let options = light_client::Options {
         trust_threshold: config.trust_threshold,

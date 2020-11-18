@@ -8,7 +8,7 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(dead_code, unreachable_code, unused_imports, unused_variables)]
+// #![allow(dead_code, unreachable_code, unused_imports, unused_variables)]
 
 //! IBC Relayer implementation
 

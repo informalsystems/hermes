@@ -1,36 +1,22 @@
-use std::str::FromStr;
-use std::time::Duration;
-use std::{convert::TryInto, thread};
-
-use bitcoin::hashes::hex::ToHex;
 use prost_types::Any;
-
-use tendermint::account::Id as AccountId;
-use tendermint_light_client::types::TrustThreshold;
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::state::ClientState;
 use ibc::ics02_client::state::ConsensusState;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc::ics24_host::Path::ClientConsensusState;
-use ibc::ics24_host::Path::ClientState as ClientStatePath;
+
+use ibc::ics24_host::identifier::ClientId;
+
 use ibc::tx_msg::Msg;
 use ibc::Height;
 
-use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain, CosmosSDKChain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRingOperations};
-use crate::light_client::tendermint::LightClient as TMLightClient;
 
 #[derive(Clone, Debug)]
 pub struct ClientOptions {

@@ -1,8 +1,6 @@
-use std::{collections::HashMap, str::FromStr};
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
 
 use crossbeam_channel as channel;
-use thiserror::Error;
 
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -13,26 +11,19 @@ use ibc::{
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
 use ibc::{
     ics23_commitment::merkle::MerkleProof,
-    ics24_host::{identifier::ChainId, identifier::ClientId, Path, IBC_QUERY_PATH},
+    ics24_host::{identifier::ChainId, identifier::ClientId, Path},
 };
-
-use tendermint::net;
-use tendermint::{abci::Path as ABCIPath, chain};
-use tendermint_rpc::HttpClient;
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
 use crate::tx::connection::ConnectionMsgType;
-use crate::{
-    error::{Error, Kind},
-    event::monitor::EventBatch,
-};
+use crate::{error::Error, event::monitor::EventBatch};
 // use crate::foreign_client::ForeignClient;
-use crate::msgs::{Datagram, EncodedTransaction, IBCEvent, Packet};
-use crate::{config::ChainConfig, keyring::store::KeyEntry};
 
-use super::{Chain, QueryResponse};
+use crate::keyring::store::KeyEntry;
+
+use super::QueryResponse;
 
 mod prod;
 pub use prod::ProdChainHandle;

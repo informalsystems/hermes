@@ -4,47 +4,37 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
-use std::convert::{TryFrom, TryInto};
-use std::time::Duration;
-
-use anomaly::fail;
 use prost_types::Any;
-use serde::{de::DeserializeOwned, Serialize};
 
 use tendermint_proto::Protobuf;
 
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint_light_client::types::TrustThreshold;
+
 use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::header::Header;
-use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+
 use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
-use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc::ics03_connection::connection::ConnectionEnd;
+
 use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::ics24_host::Path;
-use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
+
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::tx_msg::Msg;
+
+use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
-use ibc::{
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-    ics23_commitment::merkle::MerkleProof,
-};
 
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::light_client::LightClient;
-use crate::tx::connection::{ConnectionMsgType, ConnectionOpenInitOptions, ConnectionOpenOptions};
+use crate::keyring::store::KeyEntry;
+
+use crate::tx::connection::ConnectionMsgType;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries

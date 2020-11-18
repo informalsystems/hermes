@@ -5,12 +5,12 @@ use crossbeam_channel as channel;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
 use tokio::stream::StreamExt;
-use tokio::sync::mpsc;
+
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
 use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
-use tendermint::{block::Height, chain, net, Error as TMError};
+use tendermint::{block::Height, net, Error as TMError};
 use tendermint_rpc::{
     query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
     WebSocketClientDriver,

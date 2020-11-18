@@ -6,7 +6,7 @@ use crate::chain::CosmosSDKChain;
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::Error;
-use crate::keyring::store::{KeyRing, KeyRingOperations};
+use crate::keyring::store::KeyRingOperations;
 
 #[derive(Clone, Debug)]
 pub struct KeysRestoreOptions {

@@ -1,7 +1,7 @@
-use std::{sync::Arc, thread, time::Duration};
+use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-use thiserror::Error;
+
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::{
@@ -12,7 +12,7 @@ use ibc::{
     },
     ics03_connection::connection::ConnectionEnd,
     ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-    ics24_host::identifier::{ChainId, ClientId, ConnectionId},
+    ics24_host::identifier::{ClientId, ConnectionId},
     ics24_host::Path,
     proofs::Proofs,
     Height,
@@ -228,7 +228,7 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
-                        Err(e) => todo!(), // TODO: Handle error?
+                        Err(_e) => todo!(), // TODO: Handle error?
                     }
                 },
             }
@@ -316,9 +316,9 @@ impl<C: Chain> ChainRuntime<C> {
 
     fn get_minimal_set(
         &self,
-        from: Height,
-        to: Height,
-        reply_to: ReplyTo<Vec<AnyHeader>>,
+        _from: Height,
+        _to: Height,
+        _reply_to: ReplyTo<Vec<AnyHeader>>,
     ) -> Result<(), Error> {
         todo!()
     }

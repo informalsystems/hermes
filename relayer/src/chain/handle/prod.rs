@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use crossbeam_channel as channel;
 
 use ibc::{
-    events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics23_commitment::commitment::CommitmentPrefix,
@@ -16,13 +15,11 @@ use ibc::{
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
-use tendermint_light_client::types::SignedHeader;
 
 use crate::{
     chain::QueryResponse,
     error::{Error, Kind},
     keyring::store::KeyEntry,
-    msgs::{EncodedTransaction, Packet},
     tx::connection::ConnectionMsgType,
 };
 

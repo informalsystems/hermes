@@ -1,67 +1,53 @@
 use std::str::FromStr;
 use std::time::Duration;
-use std::{
-    convert::{TryFrom, TryInto},
-    sync::Arc,
-};
+use std::{convert::TryFrom, sync::Arc};
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
-use bytes::Bytes;
-use k256::ecdsa::{SigningKey, VerifyKey};
+
 use prost::Message;
 use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::endpoint::abci_query::AbciQuery;
-use tendermint_rpc::endpoint::broadcast;
 
-use tendermint::abci::{Path as TendermintABCIPath, Transaction};
+use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-use tendermint::validator::Info;
-use tendermint::vote::Power;
-use tendermint_light_client::types::{
-    LightBlock as TMLightBlock, SignedHeader, TrustThreshold, ValidatorSet,
-};
+
+use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
 // Support for GRPC
-use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
+
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use tonic::codegen::http::Uri;
 
-use ibc::downcast;
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
+
 use ibc::ics23_commitment::merkle::MerkleProof;
-use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-use ibc::tx_msg::Msg;
+
 use ibc::Height as ICSHeight;
 
 use super::Chain;
 
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
-use crate::error::{self, Error, Kind};
+use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient;
 

@@ -95,7 +95,7 @@ mod tests {
         let n = 10;
         let mut rxs = vec![];
 
-        for i in 0..n {
+        for _i in 0..n {
             rxs.push(bus.subscribe());
         }
 

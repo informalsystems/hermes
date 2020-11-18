@@ -1,37 +1,23 @@
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
-
 use prost_types::Any;
-use serde_json::Value;
-use tokio::runtime::Runtime as TokioRuntime;
 
-use bitcoin::hashes::hex::ToHex;
-
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-use ibc::ics02_client::state::ClientState;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::ics03_connection::version::get_compatible_versions;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
+
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
-use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain, CosmosSDKChain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, Chain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRingOperations};
-use crate::light_client::tendermint::LightClient as TMLightClient;
-use crate::tx::client::{build_update_client, build_update_client_and_send, ClientOptions};
+
+use crate::tx::client::build_update_client;
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 

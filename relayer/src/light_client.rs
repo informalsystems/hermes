@@ -1,13 +1,4 @@
-use std::cmp::Ordering;
-use std::time::{Duration, SystemTime};
-
-use anomaly::fail;
-use tracing::{debug, info, warn};
-
-use tendermint_light_client::supervisor::Handle;
-use tendermint_light_client::types::{LightBlock as TMLightBlock, TrustThreshold};
-
-use crate::chain::{self, Chain};
+use crate::chain::Chain;
 use crate::error;
 
 pub mod tendermint;
