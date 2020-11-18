@@ -152,7 +152,7 @@ mod test {
     use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 
     #[test]
-    fn msg_recv_packet_try_from_raw() {
+    fn msg_acknowledgment_try_from_raw() {
         struct Test {
             name: String,
             raw: RawMsgAcknowledgement,
