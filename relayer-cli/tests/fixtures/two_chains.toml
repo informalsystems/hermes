@@ -9,6 +9,7 @@ grpc_addr = 'tcp://localhost:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
+
 client_ids = [
     'cla1',
     'cla2',

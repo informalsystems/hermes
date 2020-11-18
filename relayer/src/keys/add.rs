@@ -31,7 +31,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
             chain
                 .keybase
                 .add(
-                    opts.name.clone(),
+                    opts.name.as_str(),
                     key_file_contents.as_str(),
                     chain.config().id.clone().as_str(),
                 )

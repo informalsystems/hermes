@@ -301,9 +301,11 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self
-            .keybase
-            .sign(self.config().key_name.clone(), signdoc_buf);
+        let signed = self.keybase.sign(
+            self.config().key_name.clone().as_str(),
+            self.config().id.clone().as_str(),
+            signdoc_buf,
+        );
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
