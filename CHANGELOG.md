@@ -11,7 +11,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
     - Implement flexible connection id selection ([#332])
-    - ICS 4 Domain Types for channel handshakes ([#315])
+    - ICS 4 Domain Types for channel handshakes and packets ([#315], [#95])
 - [relayer] 
     - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
     - Implement the relayer logic for connection handshake message ([#358], [#359], [#360])
@@ -24,6 +24,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
 - [ibc-proto] Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
 
+[#95]: https://github.com/informalsystems/ibc-rs/issues/95
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#315]: https://github.com/informalsystems/ibc-rs/issues/315
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
