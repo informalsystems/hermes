@@ -80,6 +80,75 @@ modules.
 
 ## Properties and Invariants
 
+### System-level properties
+
+We specify three kinds of properties for the IBC core protocols:
+
+- **IBCSafety**: Bad datagrams are not used to update the chain stores.
+
+- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
+
+- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+
+TODO: add links to where they are
+
+### Packet
+
+ICS 04 specifies the following list of  ["Desired
+Properties"](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#desired-properties)
+
+#### [Efficiency](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#efficiency)
+
+Efficiency seems to be too vague to formalize. In particular the
+formulation ignores relayers that are the active components in packet
+transmission. It is not clear what a suitable way is to formalize it
+  
+#### [Exactly-once delivery](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#exactly-once-delivery)
+
+These properties are also vague as:
+
+* in the absence of a relayer no packets can be delivered
+* ignores timeouts
+* unspecific what "sent" means. We suggest it means that a packet
+      datagram is put wherever (TODO: Ilina please help) rather than
+      executing `SendPacket`
+
+As a result we suggest that the property should be decomposed into to properties:
+
+* (at most once) if a valid chain delivers packet p, it will
+		  not deliver packet p again in the future
+
+* (typical case) If
+  * sender and receiver chain are valid, and
+  * there is a correct relayer, and 
+  * communication is bounded in time, and
+  * the timeoutheights and times are luckily chosen, and 
+  * the receiver chain does not censor the packet, and
+  * ...  
+
+  then the packet will be delivered.
+
+
+The second property ignores that timeouts can happen.
+
+
+#### [Ordering](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#ordering)
+
+- ordered channels: It is not clear what "if packet x is sent before packet y by a channel end on chain A" meant in a context where chain A performs invalid transitions: then a packet with sequence number *i* can be sent after *i+1*. If this happens, the IBC implementation may be broken (depends on the relayer).
+
+We thus formalize it in the context of two valid chains.
+
+- no property defined for unordered.
+
+#### [Permissioning](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#permissioning)
+
+I guess we can formalize it as constraints about parameters and data when send is called. TODO with Ilina.
+
+
+
+### Channel 
+
+As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#channel-lifecycle-management). They are given in TODO under the names TODO
 
 ### Connection Handshake
 We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
@@ -91,12 +160,8 @@ We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/i
 
 
 
-We specify three kinds of properties for the IBC core protocols:
-- **IBCSafety**: Bad datagrams are not used to update the chain stores.
-- **IBCValidity**: If `ChainB` receives a datagram from `ChainA`, then the datagram was sent by `ChainA` 
-- **IBCDelivery**: If `ChainA` sends a datagram to `ChainB`, then `ChainB` eventually receives the datagram
+## Invariants TODO: Find a place for this section
 
-## Invariants
 To check invariants with [Apalache](https://github.com/informalsystems/apalache/), we introduce a history variable, which keeps track of the state of the connections 
 and channels.
 We define the invariant **IBCInv**, which states that 
