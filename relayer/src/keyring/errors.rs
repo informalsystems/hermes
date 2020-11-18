@@ -19,6 +19,9 @@ pub enum Kind {
 
     #[error("cannot generate bech32 account")]
     Bech32Account,
+
+    #[error("key store error")]
+    KeyStoreOperation,
 }
 
 impl Kind {

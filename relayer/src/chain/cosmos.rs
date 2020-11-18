@@ -80,7 +80,8 @@ impl CosmosSDKChain {
             HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Memory);
+        let key_store = KeyRing::init(StoreBackend::Test, config.id.as_str())
+            .map_err(|e| Kind::KeyBase.context("error initializing key store"))?;
 
         Ok(Self {
             config,

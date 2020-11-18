@@ -13,7 +13,7 @@ pub struct KeysRestoreOptions {
 
 pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
     // Get the destination chain
-    let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
+    let chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
 
     let address = chain
         .keybase
