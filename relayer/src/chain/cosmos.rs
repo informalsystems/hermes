@@ -11,7 +11,7 @@ use bitcoin::hashes::hex::ToHex;
 use k256::ecdsa::{SigningKey, VerifyKey};
 
 use tendermint_proto::crypto::ProofOps;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast;
 
@@ -238,9 +238,6 @@ impl Chain for CosmosSDKChain {
         // A protobuf serialization of a TxBody
         let mut body_buf = Vec::new();
         prost::Message::encode(&body, &mut body_buf).unwrap();
-
-        // let key = self.keybase.get(signer.clone()).map_err(|e| error::Kind::KeyBase.context(e))?;
-        let pub_key_bytes = key.public_key.public_key.to_bytes();
 
         let mut pk_buf = Vec::new();
         prost::Message::encode(&key.public_key.public_key.to_bytes(), &mut pk_buf).unwrap();

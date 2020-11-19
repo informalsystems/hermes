@@ -7,7 +7,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 use std::convert::{TryFrom, TryInto};
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 /// Message type for `MsgPacket`.
 const TYPE_MSG_PACKET: &str = "ics04/opaque";
@@ -69,7 +69,7 @@ impl Msg for MsgRecvPacket {
     }
 }
 
-impl DomainType<RawMsgRecvPacket> for MsgRecvPacket {}
+impl Protobuf<RawMsgRecvPacket> for MsgRecvPacket {}
 
 impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
     type Error = anomaly::Error<Kind>;

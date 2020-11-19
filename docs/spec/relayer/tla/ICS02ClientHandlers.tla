@@ -50,7 +50,10 @@ HandleClientUpdate(chainID, chain, datagrams) ==
     LET updateClientDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ClientUpdate"
                             /\ dgr.clientID = GetCounterpartyClientID(chainID)
-                            /\ maxClientHeight < dgr.height} IN
+    \* Note: the check maxClientHeight < dgr.height can be commented out in case 
+    \* older headers can be installed for the client
+                            /\ maxClientHeight < dgr.height
+                            } IN
     \* get heights in datagrams with correct counterparty clientID for chainID
     LET updateClientHeights == {dgr.height : dgr \in updateClientDgrs} IN    
 

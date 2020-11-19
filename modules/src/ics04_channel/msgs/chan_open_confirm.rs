@@ -6,7 +6,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
@@ -19,10 +19,10 @@ const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenConfirm {
-    port_id: PortId,
-    channel_id: ChannelId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgChannelOpenConfirm {
@@ -66,12 +66,16 @@ impl Msg for MsgChannelOpenConfirm {
         Ok(())
     }
 
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string()
+    }
+
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
 }
 
-impl DomainType<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {}
+impl Protobuf<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {}
 
 impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
     type Error = anomaly::Error<Kind>;

@@ -1,36 +1,42 @@
 use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
-
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics04_channel::channel::Order;
+use ibc::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use relayer::config::Config;
-use relayer::tx::connection::{
-    build_conn_ack_and_send, build_conn_confirm_and_send, build_conn_init_and_send,
-    build_conn_try_and_send, ConnectionOpenInitOptions, ConnectionOpenOptions,
-};
 
 use crate::error::{Error, Kind};
+use relayer::tx::channel::{
+    build_chan_ack_and_send, build_chan_confirm_and_send, build_chan_init_and_send,
+    build_chan_try_and_send, ChannelOpenInitOptions, ChannelOpenOptions,
+};
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxRawConnInitCmd {
+pub struct TxRawChanInitCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
-    #[options(free, help = "identifier of the source client")]
-    src_client_id: ClientId,
-
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(help = "identifier of the source connection", short = "s")]
-    src_connection_id: Option<ConnectionId>,
+    #[options(free, help = "identifier of the destination port")]
+    dest_port_id: PortId,
+
+    #[options(free, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(free, help = "identifier of the destination channel")]
+    dest_channel_id: ChannelId,
+
+    #[options(help = "identifier of the source channel", short = "s")]
+    src_channel_id: Option<ChannelId>,
+
+    #[options(help = "the channel order", short = "o")]
+    ordering: Order,
 
     #[options(
         help = "json key file for the signer, must include mnemonic",
@@ -39,8 +45,8 @@ pub struct TxRawConnInitCmd {
     seed_file: String,
 }
 
-impl TxRawConnInitCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
+impl TxRawChanInitCmd {
+    fn validate_options(&self, config: &Config) -> Result<ChannelOpenInitOptions, String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -57,13 +63,19 @@ impl TxRawConnInitCmd {
             anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
         })?;
 
-        let opts = ConnectionOpenInitOptions {
+        let opts = ChannelOpenInitOptions {
             dest_chain_config: dest_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
-            dest_client_id: self.dest_client_id.clone(),
-            src_client_id: self.src_client_id.clone(),
+
             dest_connection_id: self.dest_connection_id.clone(),
-            src_connection_id: self.src_connection_id.clone(),
+
+            dest_port_id: self.dest_port_id.clone(),
+            src_port_id: self.src_port_id.clone(),
+
+            dest_channel_id: self.dest_channel_id.clone(),
+            src_channel_id: self.src_channel_id.clone(),
+
+            ordering: self.ordering,
             signer_seed,
         };
 
@@ -71,7 +83,7 @@ impl TxRawConnInitCmd {
     }
 }
 
-impl Runnable for TxRawConnInitCmd {
+impl Runnable for TxRawChanInitCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -85,34 +97,40 @@ impl Runnable for TxRawConnInitCmd {
         status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
-            build_conn_init_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
+            build_chan_init_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn init failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("channel init, result: ", "{:?}", receipt),
+            Err(e) => status_info!("channel init failed, error: ", "{}", e),
         }
     }
 }
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxRawConnTryCmd {
+pub struct TxRawChanTryCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
-    #[options(free, help = "identifier of the source client")]
-    src_client_id: ClientId,
-
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(free, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(free, help = "identifier of the destination port")]
+    dest_port_id: PortId,
+
+    #[options(free, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(free, help = "identifier of the destination channel")]
+    dest_channel_id: ChannelId,
+
+    #[options(free, help = "identifier of the source channel")]
+    src_channel_id: ChannelId,
+
+    #[options(help = "the channel order", short = "o")]
+    ordering: Order,
 
     #[options(
         help = "json key file for the signer, must include mnemonic",
@@ -121,8 +139,8 @@ pub struct TxRawConnTryCmd {
     seed_file: String,
 }
 
-impl TxRawConnTryCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
+impl TxRawChanTryCmd {
+    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -139,13 +157,19 @@ impl TxRawConnTryCmd {
             anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
         })?;
 
-        let opts = ConnectionOpenOptions {
-            src_chain_config: src_chain_config.clone(),
+        let opts = ChannelOpenOptions {
             dest_chain_config: dest_chain_config.clone(),
-            src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
-            src_connection_id: self.src_connection_id.clone(),
+            src_chain_config: src_chain_config.clone(),
+
             dest_connection_id: self.dest_connection_id.clone(),
+
+            dest_port_id: self.dest_port_id.clone(),
+            src_port_id: self.src_port_id.clone(),
+
+            dest_channel_id: self.dest_channel_id.clone(),
+            src_channel_id: self.src_channel_id.clone(),
+
+            ordering: self.ordering,
             signer_seed,
         };
 
@@ -153,7 +177,7 @@ impl TxRawConnTryCmd {
     }
 }
 
-impl Runnable for TxRawConnTryCmd {
+impl Runnable for TxRawChanTryCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -167,34 +191,40 @@ impl Runnable for TxRawConnTryCmd {
         status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
-            build_conn_try_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+            build_chan_try_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn try, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn try failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("channel try, result: ", "{:?}", receipt),
+            Err(e) => status_info!("channel try failed, error: ", "{}", e),
         }
     }
 }
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxRawConnAckCmd {
+pub struct TxRawChanAckCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
-    #[options(free, help = "identifier of the source client")]
-    src_client_id: ClientId,
-
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(free, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(free, help = "identifier of the destination port")]
+    dest_port_id: PortId,
+
+    #[options(free, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(free, help = "identifier of the destination channel")]
+    dest_channel_id: ChannelId,
+
+    #[options(free, help = "identifier of the source channel")]
+    src_channel_id: ChannelId,
+
+    #[options(help = "the channel order", short = "o")]
+    ordering: Order,
 
     #[options(
         help = "json key file for the signer, must include mnemonic",
@@ -203,8 +233,8 @@ pub struct TxRawConnAckCmd {
     seed_file: String,
 }
 
-impl TxRawConnAckCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
+impl TxRawChanAckCmd {
+    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -221,13 +251,19 @@ impl TxRawConnAckCmd {
             anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
         })?;
 
-        let opts = ConnectionOpenOptions {
-            src_chain_config: src_chain_config.clone(),
+        let opts = ChannelOpenOptions {
             dest_chain_config: dest_chain_config.clone(),
-            src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
-            src_connection_id: self.src_connection_id.clone(),
+            src_chain_config: src_chain_config.clone(),
+
             dest_connection_id: self.dest_connection_id.clone(),
+
+            dest_port_id: self.dest_port_id.clone(),
+            src_port_id: self.src_port_id.clone(),
+
+            dest_channel_id: self.dest_channel_id.clone(),
+            src_channel_id: self.src_channel_id.clone(),
+
+            ordering: self.ordering,
             signer_seed,
         };
 
@@ -235,7 +271,7 @@ impl TxRawConnAckCmd {
     }
 }
 
-impl Runnable for TxRawConnAckCmd {
+impl Runnable for TxRawChanAckCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -249,34 +285,40 @@ impl Runnable for TxRawConnAckCmd {
         status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
-            build_conn_ack_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+            build_chan_ack_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn ack, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn ack failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("channel ack, result: ", "{:?}", receipt),
+            Err(e) => status_info!("channel ack failed, error: ", "{}", e),
         }
     }
 }
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxRawConnConfirmCmd {
+pub struct TxRawChanConfirmCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
-    #[options(free, help = "identifier of the source client")]
-    src_client_id: ClientId,
-
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(free, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(free, help = "identifier of the destination port")]
+    dest_port_id: PortId,
+
+    #[options(free, help = "identifier of the source port")]
+    src_port_id: PortId,
+
+    #[options(free, help = "identifier of the destination channel")]
+    dest_channel_id: ChannelId,
+
+    #[options(free, help = "identifier of the source channel")]
+    src_channel_id: ChannelId,
+
+    #[options(help = "the channel order", short = "o")]
+    ordering: Order,
 
     #[options(
         help = "json key file for the signer, must include mnemonic",
@@ -285,8 +327,8 @@ pub struct TxRawConnConfirmCmd {
     seed_file: String,
 }
 
-impl TxRawConnConfirmCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
+impl TxRawChanConfirmCmd {
+    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -303,13 +345,19 @@ impl TxRawConnConfirmCmd {
             anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
         })?;
 
-        let opts = ConnectionOpenOptions {
-            src_chain_config: src_chain_config.clone(),
+        let opts = ChannelOpenOptions {
             dest_chain_config: dest_chain_config.clone(),
-            src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
-            src_connection_id: self.src_connection_id.clone(),
+            src_chain_config: src_chain_config.clone(),
+
             dest_connection_id: self.dest_connection_id.clone(),
+
+            dest_port_id: self.dest_port_id.clone(),
+            src_port_id: self.src_port_id.clone(),
+
+            dest_channel_id: self.dest_channel_id.clone(),
+            src_channel_id: self.src_channel_id.clone(),
+
+            ordering: self.ordering,
             signer_seed,
         };
 
@@ -317,7 +365,7 @@ impl TxRawConnConfirmCmd {
     }
 }
 
-impl Runnable for TxRawConnConfirmCmd {
+impl Runnable for TxRawChanConfirmCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -331,11 +379,11 @@ impl Runnable for TxRawConnConfirmCmd {
         status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
-            build_conn_confirm_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+            build_chan_confirm_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("conn confirm, result: ", "{:?}", receipt),
-            Err(e) => status_info!("conn confirm failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("channel confirm, result: ", "{:?}", receipt),
+            Err(e) => status_info!("channel confirm failed, error: ", "{}", e),
         }
     }
 }

@@ -6,7 +6,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::TryFrom;
 
@@ -70,7 +70,7 @@ impl Msg for MsgAcknowledgement {
     }
 }
 
-impl DomainType<RawMsgAcknowledgement> for MsgAcknowledgement {}
+impl Protobuf<RawMsgAcknowledgement> for MsgAcknowledgement {}
 
 #[allow(unreachable_code)]
 impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
