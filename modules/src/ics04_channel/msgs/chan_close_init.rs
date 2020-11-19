@@ -5,7 +5,7 @@ use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::TryFrom;
 
@@ -64,7 +64,7 @@ impl Msg for MsgChannelCloseInit {
     }
 }
 
-impl DomainType<RawMsgChannelCloseInit> for MsgChannelCloseInit {}
+impl Protobuf<RawMsgChannelCloseInit> for MsgChannelCloseInit {}
 
 impl TryFrom<RawMsgChannelCloseInit> for MsgChannelCloseInit {
     type Error = anomaly::Error<Kind>;

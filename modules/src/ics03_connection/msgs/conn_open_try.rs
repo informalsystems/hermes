@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -107,7 +107,7 @@ impl Msg for MsgConnectionOpenTry {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
+impl Protobuf<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
 
 impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;

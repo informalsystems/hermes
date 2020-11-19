@@ -2,7 +2,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
@@ -35,7 +35,7 @@ pub struct MockClientRecord {
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockClientState(pub MockHeader);
 
-impl DomainType<RawMockClientState> for MockClientState {}
+impl Protobuf<RawMockClientState> for MockClientState {}
 
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
@@ -115,7 +115,7 @@ impl From<MockConsensusState> for MockClientState {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct MockConsensusState(pub MockHeader);
 
-impl DomainType<RawMockConsensusState> for MockConsensusState {}
+impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {
     type Error = Error;

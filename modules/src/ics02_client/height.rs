@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, convert::TryFrom};
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
@@ -87,7 +87,7 @@ impl Ord for Height {
     }
 }
 
-impl DomainType<RawHeight> for Height {}
+impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
     type Error = anomaly::Error<Kind>;

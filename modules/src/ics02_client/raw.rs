@@ -2,7 +2,7 @@ use crate::ics03_connection::error::Kind;
 use crate::ics24_host::identifier::ConnectionId;
 use std::convert::TryFrom;
 use std::str::FromStr;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 //TODO: This might need to be migrated to ibc-proto crate. But ClientConnections (as array of strings)
 // might not be part of an official proto file
@@ -15,7 +15,7 @@ pub struct RawClientConnections {
 #[derive(Clone, Debug)]
 pub struct ConnectionIds(pub Vec<ConnectionId>);
 
-impl DomainType<RawClientConnections> for ConnectionIds {}
+impl Protobuf<RawClientConnections> for ConnectionIds {}
 
 impl TryFrom<RawClientConnections> for ConnectionIds {
     type Error = anomaly::Error<Kind>;

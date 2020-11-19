@@ -5,7 +5,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 
 use tendermint::time::Time;
 use tendermint::Hash;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
@@ -43,7 +43,7 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
     }
 }
 
-impl DomainType<RawConsensusState> for ConsensusState {}
+impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;

@@ -4,7 +4,7 @@ use std::str::FromStr;
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::validate_versions;
@@ -20,7 +20,7 @@ pub struct ConnectionEnd {
     versions: Vec<String>,
 }
 
-impl DomainType<RawConnectionEnd> for ConnectionEnd {}
+impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;

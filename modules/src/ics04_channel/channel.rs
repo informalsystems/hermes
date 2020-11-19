@@ -4,7 +4,7 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use anomaly::fail;
 use std::convert::TryFrom;
@@ -19,7 +19,7 @@ pub struct ChannelEnd {
     version: String,
 }
 
-impl DomainType<RawChannel> for ChannelEnd {}
+impl Protobuf<RawChannel> for ChannelEnd {}
 
 impl TryFrom<RawChannel> for ChannelEnd {
     type Error = anomaly::Error<Kind>;
@@ -156,7 +156,7 @@ impl Counterparty {
     }
 }
 
-impl DomainType<RawCounterparty> for Counterparty {}
+impl Protobuf<RawCounterparty> for Counterparty {}
 
 impl TryFrom<RawCounterparty> for Counterparty {
     type Error = anomaly::Error<Kind>;

@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -90,7 +90,7 @@ impl Msg for MsgConnectionOpenAck {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
+impl Protobuf<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
 
 impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;

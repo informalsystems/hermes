@@ -5,7 +5,7 @@ use anomaly::fail;
 use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 // TODO - tendermint deps should not be here
 //use tendermint::account::Id as AccountId;

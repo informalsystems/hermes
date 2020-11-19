@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -59,7 +59,7 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
+impl Protobuf<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
 
 impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
