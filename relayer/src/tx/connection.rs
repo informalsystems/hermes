@@ -36,7 +36,6 @@ pub struct ConnectionOpenInitOptions {
     pub src_client_id: ClientId,
     pub dest_connection_id: ConnectionId,
     pub src_connection_id: Option<ConnectionId>,
-    pub signer_seed: String,
 }
 
 pub fn build_conn_init(
@@ -56,8 +55,10 @@ pub fn build_conn_init(
         .into());
     }
 
-    // Get the key and signer from key seed file
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    // Get signer
+    let signer = dest_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     let prefix = src_chain.query_commitment_prefix()?;
 
@@ -85,7 +86,10 @@ pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<Stri
     let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     let new_msgs = build_conn_init(dest_chain, src_chain, opts)?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let key = dest_chain
+        .keybase()
+        .get_key()
+        .map_err(|e| Kind::KeyBase.context("failed to retrieve key"))?;
 
     Ok(dest_chain.send(new_msgs, key, "".to_string(), 0)?)
 }
@@ -98,7 +102,6 @@ pub struct ConnectionOpenTryOptions {
     pub src_client_id: ClientId,
     pub dest_connection_id: ConnectionId,
     pub src_connection_id: ConnectionId,
-    pub signer_seed: String,
 }
 
 fn check_connection_state_for_try(
@@ -174,8 +177,10 @@ pub fn build_conn_try(
     //     signer_seed: "".to_string(),
     // })?;
 
-    // Get the key and signer from key seed file
-    let (key, signer) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    // Get signer
+    let signer = dest_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -185,7 +190,6 @@ pub fn build_conn_try(
         src_chain,
         opts.dest_client_id.clone(),
         ics_target_height,
-        &opts.signer_seed,
     )?;
 
     let client_state = src_chain.query_client_state(&opts.src_client_id, ics_target_height)?;
@@ -227,7 +231,10 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenTryOptions) -> Result<String,
     let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     let dest_msgs = build_conn_try(dest_chain, src_chain, &opts)?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let key = dest_chain
+        .keybase()
+        .get_key()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
 }

@@ -104,6 +104,9 @@ pub trait Chain {
     /// Returns the chain's configuration
     fn config(&self) -> &ChainConfig;
 
+    /// Returns the chain's keybase
+    fn keybase(&self) -> &KeyRing;
+
     /// Get a low-level RPC client for this chain
     /// TODO - Should this be part of the Chain trait?
     fn rpc_client(&self) -> &Self::RpcClient;

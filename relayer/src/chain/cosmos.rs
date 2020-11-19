@@ -67,7 +67,7 @@ pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     light_client: Option<LightClient>,
-    pub keybase: KeyRing,
+    keybase: KeyRing,
 }
 
 impl CosmosSDKChain {
@@ -80,7 +80,7 @@ impl CosmosSDKChain {
             HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Test, config.id.as_str())
+        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
             .map_err(|e| Kind::KeyBase.context("error initializing key store"))?;
 
         Ok(Self {
@@ -126,18 +126,18 @@ impl CosmosSDKChain {
             .consensus_params)
     }
 
-    /// Get the key and account Id - temporary solution
-    pub fn key_and_signer(&mut self, signer_file: &str) -> Result<(KeyEntry, AccountId), Error> {
+    /// Get the account for the signer
+    pub fn get_signer(&mut self) -> Result<AccountId, Error> {
         // Get the key from key seed file
         let key = self
-            .keybase
-            .key_from_seed_file(signer_file)
+            .keybase()
+            .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         let signer: AccountId =
             AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
-        Ok((key, signer))
+        Ok(signer)
     }
 
     fn query_light_block_at_height(&self, height: Height) -> Result<LightBlock, Error> {
@@ -301,11 +301,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.keybase.sign(
-            self.config().key_name.clone().as_str(),
-            self.config().id.clone().as_str(),
-            signdoc_buf,
-        );
+        let signed = self.keybase.sign_msg(signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -324,6 +320,10 @@ impl Chain for CosmosSDKChain {
 
     fn config(&self) -> &ChainConfig {
         &self.config
+    }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
     }
 
     fn rpc_client(&self) -> &HttpClient {

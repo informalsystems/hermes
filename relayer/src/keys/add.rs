@@ -18,28 +18,25 @@ pub struct KeysAddOptions {
 
 pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     // Get the destination chain
-    let mut chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
+    let chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
 
-    let key_file_contents = fs::read_to_string(&opts.file)
+    let key_contents = fs::read_to_string(&opts.file)
         .map_err(|e| Kind::KeyBase.context("error reading the key file"))?;
 
     //Check if it's a valid Key seed file
-    let key_entry = chain.keybase.key_from_seed_file(&key_file_contents);
+    let key_entry = chain.keybase().key_from_seed_file(&key_contents);
 
     match key_entry {
         Ok(k) => {
             chain
-                .keybase
-                .add(
-                    opts.name.as_str(),
-                    key_file_contents.as_str(),
-                    chain.config().id.clone().as_str(),
-                )
+                .keybase()
+                .add_key(key_contents.as_str())
                 .map_err(|e| error::Kind::KeyBase.context(e))?;
             Ok(format!(
-                "Added key: {} ({})",
+                "Added key {} ({}) on {} chain",
                 opts.name.as_str(),
-                k.account.as_str()
+                k.account.as_str(),
+                chain.config().id.clone()
             ))
         }
         Err(e) => Err(Kind::KeyBase.context(e).into()),

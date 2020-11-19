@@ -33,14 +33,12 @@ pub struct ClientOptions {
     pub dest_client_id: ClientId,
     pub dest_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub signer_seed: String,
 }
 
 pub fn build_create_client(
     dest_chain: &mut CosmosSDKChain,
     src_chain: &CosmosSDKChain,
     dest_client_id: ClientId,
-    signer_seed: &str,
 ) -> Result<MsgCreateAnyClient, Error> {
     // Verify that the client has not been created already, i.e the destination chain does not
     // have a state for this client.
@@ -52,8 +50,10 @@ pub fn build_create_client(
         )));
     }
 
-    // Get the key and signer from key seed file.
-    let (key, signer) = dest_chain.key_and_signer(signer_seed)?;
+    // Get signer
+    let signer = dest_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build client create message with the data from source chain at latest height.
     let latest_height = src_chain.query_latest_height()?;
@@ -73,13 +73,11 @@ pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error
     let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
     let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
-    let new_msg = build_create_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id,
-        &opts.signer_seed,
-    )?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let new_msg = build_create_client(dest_chain, src_chain, opts.dest_client_id)?;
+    let key = dest_chain
+        .keybase()
+        .get_key()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     Ok(dest_chain.send(
         vec![new_msg.to_any::<RawMsgCreateClient>()],
@@ -94,7 +92,6 @@ pub fn build_update_client(
     src_chain: &CosmosSDKChain,
     dest_client_id: ClientId,
     target_height: Height,
-    signer_seed: &str,
 ) -> Result<Vec<Any>, Error> {
     // Get the latest trusted height from the client state on destination.
     let trusted_height = dest_chain
@@ -102,7 +99,7 @@ pub fn build_update_client(
         .latest_height();
 
     // Get the key and signer from key seed file.
-    let (key, signer) = dest_chain.key_and_signer(signer_seed)?;
+    let signer = dest_chain.get_signer()?;
 
     let new_msg = MsgUpdateAnyClient {
         client_id: dest_client_id,
@@ -119,14 +116,11 @@ pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error
     let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
 
     let target_height = src_chain.query_latest_height()?;
-    let new_msgs = build_update_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id,
-        target_height,
-        &opts.signer_seed,
-    )?;
-    let (key, _) = dest_chain.key_and_signer(&opts.signer_seed)?;
+    let new_msgs = build_update_client(dest_chain, src_chain, opts.dest_client_id, target_height)?;
+    let key = dest_chain
+        .keybase()
+        .get_key()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     Ok(dest_chain.send(new_msgs, key, "".to_string(), 0)?)
 }

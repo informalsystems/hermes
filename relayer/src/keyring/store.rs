@@ -1,3 +1,4 @@
+use crate::config::ChainConfig;
 use crate::keyring::errors::{Error, Kind};
 use bech32::ToBase32;
 use bitcoin::hashes::hex::ToHex;
@@ -16,12 +17,14 @@ use k256::{
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
+use std::convert::AsMut;
 use std::convert::TryFrom;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+
 use tendermint::account::Id as AccountId;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
@@ -31,8 +34,14 @@ pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 pub type Address = Vec<u8>;
 
 pub enum KeyRing {
-    MemoryKeyStore { store: BTreeMap<String, String> },
-    TestKeyStore { store: Box<Path> },
+    MemoryKeyStore {
+        store: BTreeMap<String, String>,
+        chain_config: ChainConfig,
+    },
+    TestKeyStore {
+        store: Box<Path>,
+        chain_config: ChainConfig,
+    },
 }
 
 pub enum StoreBackend {
@@ -41,12 +50,12 @@ pub enum StoreBackend {
 }
 
 pub trait KeyRingOperations: Sized {
-    fn init(backend: StoreBackend, chain_id: &str) -> Result<KeyRing, Error>;
+    fn init(backend: StoreBackend, chain_config: ChainConfig) -> Result<KeyRing, Error>;
     fn key_from_seed_file(&self, key_file_content: &str) -> Result<KeyEntry, Error>;
     fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
-    fn get(&mut self, key_id: &str, chain_id: &str) -> Result<KeyEntry, Error>;
-    fn add(&mut self, key_id: &str, key_content: &str, chain_id: &str) -> Result<(), Error>;
-    fn sign(&mut self, key_id: &str, chain_id: &str, msg: Vec<u8>) -> Vec<u8>;
+    fn get_key(&self) -> Result<KeyEntry, Error>;
+    fn add_key(&self, key_contents: &str) -> Result<(), Error>;
+    fn sign_msg(&mut self, msg: Vec<u8>) -> Vec<u8>;
 }
 
 /// Key entry stores the Private Key and Public Key as well the address
@@ -67,24 +76,29 @@ pub struct KeyEntry {
 
 impl KeyRingOperations for KeyRing {
     /// Initialize a in memory key entry store
-    fn init(backend: StoreBackend, chain_id: &str) -> Result<KeyRing, Error> {
+    fn init(backend: StoreBackend, chain_config: ChainConfig) -> Result<KeyRing, Error> {
         match backend {
             StoreBackend::Memory => {
                 let store: BTreeMap<String, String> = BTreeMap::new();
-                Ok(KeyRing::MemoryKeyStore { store })
+                Ok(KeyRing::MemoryKeyStore {
+                    store,
+                    chain_config,
+                })
             }
             StoreBackend::Test => {
                 // Create keys folder if it does not exist
-                let keys_folder = get_test_backend_folder(chain_id).map_err(|e| {
-                    Kind::KeyStoreOperation
-                        .context(format!("failed to create keys folder: {:?}", e))
-                })?;
+                let keys_folder =
+                    get_test_backend_folder(&mut chain_config.clone()).map_err(|e| {
+                        Kind::KeyStoreOperation
+                            .context(format!("failed to create keys folder: {:?}", e))
+                    })?;
 
                 fs::create_dir_all(keys_folder.clone())
                     .map_err(|e| Kind::KeyStoreOperation.context("error creating keys folder"))?;
 
                 Ok(KeyRing::TestKeyStore {
                     store: Box::<Path>::from(keys_folder),
+                    chain_config,
                 })
             }
         }
@@ -155,13 +169,16 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Return a key entry from a key name
-    fn get(&mut self, key_id: &str, chain_id: &str) -> Result<KeyEntry, Error> {
+    fn get_key(&self) -> Result<KeyEntry, Error> {
         match &self {
-            KeyRing::MemoryKeyStore { store: s } => {
-                if !s.contains_key(key_id) {
+            KeyRing::MemoryKeyStore {
+                store: s,
+                chain_config: c,
+            } => {
+                if !s.contains_key(c.key_name.clone().as_str()) {
                     Err(Kind::InvalidKey.into())
                 } else {
-                    let key_content = s.get(key_id);
+                    let key_content = s.get(c.key_name.as_str());
                     match key_content {
                         Some(k) => {
                             let key_entry = self.key_from_seed_file(k).map_err(|e| {
@@ -173,14 +190,17 @@ impl KeyRingOperations for KeyRing {
                     }
                 }
             }
-            KeyRing::TestKeyStore { store: s } => {
+            KeyRing::TestKeyStore {
+                store: s,
+                chain_config: c,
+            } => {
                 // Fetch key from test folder and return key entry
-                let keys_folder = get_test_backend_folder(chain_id).map_err(|e| {
+                let keys_folder = get_test_backend_folder(c).map_err(|e| {
                     Kind::KeyStoreOperation
                         .context(format!("failed to retrieve keys folder: {:?}", e))
                 })?;
 
-                let mut filename = Path::new(keys_folder.as_os_str()).join(key_id);
+                let mut filename = Path::new(keys_folder.as_os_str()).join(c.key_name.clone());
                 filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
                 if Path::exists(filename.as_path()) {
@@ -205,31 +225,38 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Insert an entry in the key store
-    fn add(&mut self, key_id: &str, key: &str, chain_id: &str) -> Result<(), Error> {
+    fn add_key(&self, key_contents: &str) -> Result<(), Error> {
         match self {
-            KeyRing::MemoryKeyStore { store: s } => match s.get(key_id) {
+            KeyRing::MemoryKeyStore {
+                store: s,
+                chain_config: c,
+            } => match s.get(c.key_name.clone().as_str()) {
                 Some(s) => Err(Kind::ExistingKey
                     .context("key already exists".to_string())
                     .into()),
                 None => {
-                    s.insert(key_id.to_string(), key.to_string());
+                    s.clone()
+                        .insert(c.key_name.clone().to_string(), key_contents.to_string());
                     Ok(())
                 }
             },
-            KeyRing::TestKeyStore { store: s } => {
+            KeyRing::TestKeyStore {
+                store: s,
+                chain_config: c,
+            } => {
                 // Save file to appropriate location in the keys folder
-                let keys_folder = get_test_backend_folder(chain_id).map_err(|e| {
+                let keys_folder = get_test_backend_folder(c).map_err(|e| {
                     Kind::KeyStoreOperation
                         .context(format!("failed to retrieve keys folder: {:?}", e))
                 })?;
 
-                let mut filename = Path::new(keys_folder.as_os_str()).join(key_id);
+                let mut filename = Path::new(keys_folder.as_os_str()).join(c.key_name.clone());
                 filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
                 let mut file = File::create(filename)
                     .map_err(|e| Kind::KeyStoreOperation.context("error creating the key file"))?;
 
-                file.write_all(&key.as_bytes())
+                file.write_all(&key_contents.as_bytes())
                     .map_err(|e| Kind::KeyStoreOperation.context("error writing the key file"))?;
 
                 Ok(())
@@ -238,8 +265,8 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Sign a message
-    fn sign(&mut self, key_id: &str, chain_id: &str, msg: Vec<u8>) -> Vec<u8> {
-        let key = self.get(key_id, chain_id).unwrap();
+    fn sign_msg(&mut self, msg: Vec<u8>) -> Vec<u8> {
+        let key = self.get_key().unwrap();
         let private_key_bytes = key.private_key.private_key.to_bytes();
         let signing_key = SigningKey::new(private_key_bytes.as_slice()).unwrap();
         let signature: Signature = signing_key.sign(&msg);
@@ -264,13 +291,13 @@ fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
     acct.to_vec()
 }
 
-fn get_test_backend_folder(chain_id: &str) -> Result<PathBuf, Error> {
+fn get_test_backend_folder(chain_config: &ChainConfig) -> Result<PathBuf, Error> {
     let home = dirs::home_dir();
     match home {
         Some(h) => {
             let folder = Path::new(h.as_path())
                 .join(KEYSTORE_DEFAULT_FOLDER)
-                .join(chain_id)
+                .join(chain_config.id.as_str())
                 .join(KEYSTORE_TEST_BACKEND);
             Ok(folder)
         }

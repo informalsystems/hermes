@@ -1,4 +1,4 @@
-use crate::chain::CosmosSDKChain;
+use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::Error;
@@ -16,7 +16,7 @@ pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
     let chain = CosmosSDKChain::from_config(opts.clone().chain_config)?;
 
     let address = chain
-        .keybase
+        .keybase()
         .key_from_mnemonic(&opts.mnemonic)
         .map_err(|e| error::Kind::KeyBase.context(e))?;
 
