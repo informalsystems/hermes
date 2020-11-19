@@ -29,8 +29,8 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
        /\ \/ packet.timeoutHeight = 0 
           \/ chain.height < packet.timeoutHeight  
        \* if the "PacketRecv" datagram can be verified 
-       /\ packetDatagram.srcChannelID = channelEnd.channelID
-       /\ packetDatagram.dstChannelID = channelEnd.counterpartyChannelID
+       /\ packet.srcChannelID = channelEnd.counterpartyChannelID
+       /\ packet.dstChannelID = channelEnd.channelID
        /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights           
     THEN \* construct log entry for packet log
          LET logEntry == AsPacketLogEntry(
@@ -43,7 +43,8 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
     
          \* if the channel is unordered and the packet has not been received  
          IF /\ channelEnd.order = "UNORDERED"
-            /\ <<packet.dstChannelID, packet.sequence>> \notin chain.packetReceipt
+            /\ AsPacketReceipt([channelID |-> packet.dstChannelID, sequence |-> packet.sequence])
+                    \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
                     \* record that the packet has been received 
                     !.packetReceipts = chain.packetReceipts 
@@ -86,7 +87,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     LET packetCommitment == AsPacketCommitment(
                              [channelID |-> packet.srcChannelID, 
                               sequence |-> packet.sequence,
-                              timeoutHeihgt |-> packet.timeoutHeight]) IN
+                              timeoutHeight |-> packet.timeoutHeight]) IN
     
     IF \* if the channel and connection ends are open for packet transmission
        /\ channelEnd.state /= "UNINIT"
@@ -96,8 +97,8 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
        \* if the packet committment exists in the chain store
        /\ packetCommitment \in chain.packetCommittments
        \* if the "PacketAck" datagram can be verified 
-       /\ packetDatagram.srcChannelID = GetChannelID(chainID)
-       /\ packetDatagram.dstChannelID = GetCounterpartyChannelID(chainID)
+       /\ packet.srcChannelID = channelEnd.channelID
+       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
        /\ packetDatagram.proofHeight \in chain.counterpartyClientHeights 
     THEN \* if the channel is ordered and the packet sequence is nextAckSeq 
          LET newChainStore == 
@@ -107,12 +108,16 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
                   [chain EXCEPT 
                         !.connectionEnd.channelEnd.nextAckSeq = 
                              chain.connectionEnd.channelEnd.nextAckSeq + 1,
-                        !.packetCommitment = chain.packetCommitment \ {packetCommitment}] 
-             \* otherwise, do not update the chain store  
-             ELSE chain IN
-              
-              
+                        !.packetCommitments = chain.packetCommitments \ {packetCommitment}] 
+             \* if the channel is unordered, remove packet commitment
+             ELSE IF channelEnd.order = "UNORDERED"
+                  THEN [chain EXCEPT 
+                            !.packetCommitments = chain.packetCommitments \ {packetCommitment}] 
+                  \* otherwise, do not update the chain store
+                  ELSE chain IN
+
          [chainStore |-> newChainStore, packetLog |-> log]     
+                 
     \* otherwise, do not update the chain store and the log
     ELSE [chainStore |-> chain, packetLog |-> log] 
     
@@ -199,5 +204,5 @@ LogAcknowledgement(chainID, chain, log, packet) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 30 13:48:09 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Nov 06 20:43:25 CET 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska
