@@ -18,13 +18,13 @@ initialization ([Port and Channel Setup & Channel lifecycle management](#port-an
 implement [packet relay](#packet-relay), that is, the core callback functions.
 
 As the application "fungible token transfer" uses the underlying IBC
-infrastructure, we also modeled it to the extend necessary in [helper
+infrastructure, we also modeled it to the extent necessary in [helper
 modules](#helper-modules).
 
 ### Port and Channel Setup and Channel lifecycle management
 
 
-In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#port--channel-setup) functions has been called
+In the model we assume that the [`setup()`](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#port--channel-setup) function has been called
 before. The [channel handshake
 functions]((https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#channel-lifecycle-management))
 are also considered being already executed. Our
@@ -34,8 +34,8 @@ successfully.
 ### Packet Relay
 
 The [core callback functions](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#packet-relay)
-`createOutgoingPacket()` and `onRecvPacket` and `onRecvPacket` 
-	`onTimeoutPacket` as well as the auxiliary function`refundTokens`
+`createOutgoingPacket()`, `onRecvPacket()`, `onRecvPacket()` and 
+	`onTimeoutPacket()`, as well as the auxiliary function `refundTokens()`
 	are modeled in
 	[FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla). 
 	
@@ -75,18 +75,18 @@ Next ==
     \/ AcknowledgePacket
 ```
 
-- `AdvanceChain` just increments the height of the chain
+- `AdvanceChain`: increments the height of the chain
 - `HandlePacketDatagrams`: based on the datagram type of the next
   incoming datagram (created in
   [ICS20Environment.tla](ICS20Environment.tla); see below), it calls the
-  appropriate datagram handlers from ICS04
+  appropriate datagram handlers from ICS 04
   ([PacketHandlers.tla](PacketHandlers.tla)), which in turn call the
   ICS 20 module callbacks specified in
   [FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla).
   This result in an update of the application state (bank accounts,
   packet log, provable and private store).
-- `SendPacket` models that a user wants to initiate a transfer
-- `AcknowledgePacket` writes an acknowledgement for a received packet
+- `SendPacket`: models that a user wants to initiate a transfer
+- `AcknowledgePacket`: writes an acknowledgement for a received packet
   on the packet log.
 
 
@@ -124,53 +124,39 @@ on chain B wants to return them, then the tokens can be returned.
 
 For this we require the assumption (which is somewhat implicit it
  its [correctness
-argument](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#correctness)) 
-that the source chain only performs valid transitions.
-
-By "have been transferred" we mean that the corresponding transitions
-happened at chain A. (No assumption on chain B).
+argument](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#correctness)) that the source chain only performs valid transitions.
 
 This is implemented in the invariant TODO in the file TODO.
 
-**Additional Invariant**
 
-Under the assumption that chain B performs only valid transitions:
-if at time *t* in total *x* tokens (of a fixed denomination) have been 
-transferred from chain A to chain B in the past, and *y* tokens of 
-the same denomination have been transferred from chain B to chain A
-in the past, at time *t* no
-transfer of more than *x* tokens from chain B to chain A is possible.
+A related property which is not in the ICS English specification is:
+TODO: Formalize" Solo sent 10 josef coins to A, so no transfer that
+wants to send more than 10 Josef coins is not allowed." 
 
-By "have been transferred" we mean that the corresponding transitions
-happened at chain B. (No assumption on chain A)
 
 #### Preservation of total supply
 
 We understand "Preservation of total supply" as conjunction of two
 properties
 
-- **(Local)** On a chain that performs only valid transitions: 
-For each native denomination of a chain: the sum of the amounts in
+- For each native denomination of a chain: the sum of the amounts in
   user accounts in this denomination and the amounts in escrow
   accounts in this denomination is constant.
- (No assumption on other chains)
-
   
 The following intuitive property can only be specified and guaranteed
-if **all** involved chains only perform valid transitions:
+if all involved chains only perform valid transitions:
   
 - The sum the following amounts is constant:
-  * in denomination *d* in escrow accounts in the chain in which *d* is native
-	* in denomination *d* in in-flight packets of transactions
-	* in prefixed denomination ending with *d* in accounts in which *d* is **not**
-    native
-	* in prefixed denomination ending with *d* in in-flight packets of transactions
+    *  in denomination *d* in escrow accounts in the chain in which *d* is native
+	*  in denomination *d* in in-flight packets of transactions
+	*  in prefixed denomination ending with *d* in accounts in which *d* is **not**
+       native
+	*  in prefixed denomination ending with *d* in in-flight packets of transactions
 
 These two properties are implemented in the invariant TODO in the file TODO.
 
 #### No Whitelist
 
-On each chain that performs valid transitions only:
 For each possible denomination *d*, every well-formed incoming
 transfer packet in *d* should result in adding the
 specified amount of token's to the receiver's account.
@@ -182,17 +168,17 @@ This is implemented in the invariant TODO in the file TODO.
 
 This is not a temporal property but a property on the local transition
 relation. It is satisfied by construction (of both the code and the
-model) for chains that only perform valid transitions.
+model).
 
 
 #### No Byzantine Inflation
 
 This should be implied by the first property of preservation of total
-supply. This is under the assumption that the following property found in ICS 20
-is purely understood in terms on inflation **on chain A**:
+supply. This is under the assumption that the property found in ICS 20
 "Fault containment: prevents Byzantine-inflation of tokens originating
-on chain A, as a result of chain B’s Byzantine behaviour (though any
-users who sent tokens to chain B may be at risk)."
+on chain A, as a result of chain B’s Byzantine behavior (though any
+users who sent tokens to chain B may be at risk)." is purely
+understood in terms on inflation **on chain A**.
 
 We note that chain B can send an unbounded amount of tokens that it
 claims to originate from A to some chain C.

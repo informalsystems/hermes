@@ -9,13 +9,13 @@ EXTENDS Integers, FiniteSets, Sequences, Bank, ICS20Definitions
 
 \* create outgoing packet data
 \*      - accounts is the map of bank accounts
-\*      - sender, receiver are chain IDs (used as addresses)
 \*      - escrowAccounts is the map of escrow accounts of the chain that creates the packet
+\*      - sender, receiver are chain IDs (used as addresses)
 CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender, receiver) ==
     \* sending chain is source if the denomination is of length 1  
-    \* or if the denomination is not prefixed by the sender's channel ID  
+    \* or if the denomination is not prefixed by the sender's port and channel ID  
     LET source == \/ Len(denomination) = 1
-                  \/ Head(denomination) /= GetChannelID(sender) IN
+                  \/ SubSeq(denomination, 1, 2) /= <<GetPortID(sender), GetChannelID(sender)>> IN
     
     \* create packet data
     LET data ==
@@ -63,7 +63,7 @@ CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender,
               ] 
 
 \* receive an ICS20 packet
-ICS20OnPacketRecv(chainID, chain, accounts, packet) ==
+OnPacketRecv(chainID, chain, accounts, packet, maxBalance) ==
     \* get packet data and denomination
     LET data == packet.data IN
     LET denomination == data.denomination IN 
@@ -71,11 +71,12 @@ ICS20OnPacketRecv(chainID, chain, accounts, packet) ==
     LET escrowAccounts == chain.escrowAccounts IN
     
     \* receiving chain is source if 
-    \* the denomination is prefixed by srcChannelID
-    LET source == (Head(denomination) = packet.srcChannelID) IN
+    \* the denomination is prefixed by srcPortID and srcChannelID
+    LET source == /\ Len(denomination) > 1
+                  /\ SubSeq(denomination, 1, 2) = <<packet.srcPortID, packet.srcChannelID>> IN
     
-    LET unprefixedDenomination == Tail(denomination) IN
-    LET prefixedDenomination == <<packet.dstChannelID>> \o denomination IN 
+    LET unprefixedDenomination == SubSeq(denomination, 3, Len(denomination)) IN
+    LET prefixedDenomination == <<packet.dstPortID, packet.dstChannelID>> \o denomination IN 
     
     \* get the outcome of TransferCoins from the escrow 
     \* to the receiver account
@@ -91,7 +92,8 @@ ICS20OnPacketRecv(chainID, chain, accounts, packet) ==
     LET mintCoinsOutcome ==
             MintCoins(
                 accounts, data.receiver, 
-                prefixedDenomination, data.amount
+                prefixedDenomination, data.amount,
+                maxBalance
             ) IN             
     
     IF /\ source
@@ -105,12 +107,13 @@ ICS20OnPacketRecv(chainID, chain, accounts, packet) ==
             escrowAccounts |-> transferCoinsOutcome.senderAccounts,
             error |-> FALSE
          ]
-    \* if not source 
+    \* if not source and minting coins is successful 
     \* update bank accounts using the outcome from MintCoins
-    ELSE IF ~source
+    ELSE IF /\ ~source
+            /\ ~mintCoinsOutcome.error
          THEN [ 
                 packetAck |-> TRUE,
-                accounts |-> mintCoinsOutcome,
+                accounts |-> mintCoinsOutcome.accounts,
                 escrowAccounts |-> escrowAccounts,
                 error |-> FALSE
               ]
@@ -123,7 +126,7 @@ ICS20OnPacketRecv(chainID, chain, accounts, packet) ==
               ]    
                 
 \* refund tokens on unsuccessful ack
-RefundTokens(chainID, chain, accounts, packet) ==
+RefundTokens(chainID, chain, accounts, packet, maxBalance) ==
 \* should return a record with escrow, accounts 
     \* get packet data and denomination
     LET data == packet.data IN
@@ -132,9 +135,9 @@ RefundTokens(chainID, chain, accounts, packet) ==
     LET escrowAccounts == chain.escrowAccounts IN
     
     \* chain is source if the denomination is of length 1  
-    \* or if the denomination is not prefixed by srcChannelID  
+    \* or if the denomination is not prefixed by srcPortID and srcChannelID  
     LET source == \/ Len(denomination) = 1
-                  \/ Head(denomination) /= packet.srcChannelID IN
+                  \/ SubSeq(denomination, 1, 2) /= <<packet.srcPortID, packet.srcChannelID>> IN
     
     \* get the outcome of TransferCoins from the escrow 
     \* to the sender account
@@ -150,7 +153,8 @@ RefundTokens(chainID, chain, accounts, packet) ==
     LET mintCoinsOutcome ==
             MintCoins(
                 accounts, data.sender, 
-                denomination, data.amount
+                denomination, data.amount,
+                maxBalance
             ) IN   
             
     IF /\ source
@@ -161,11 +165,12 @@ RefundTokens(chainID, chain, accounts, packet) ==
             accounts |-> transferCoinsOutcome.receiverAccounts, 
             escrowAccounts |-> transferCoinsOutcome.senderAccounts
          ]
-    \* if not source 
+    \* if not source and minting coins is successful 
     \* update bank accounts using the outcome from MintCoins         
-    ELSE IF ~source
+    ELSE IF /\ ~source
+            /\ ~mintCoinsOutcome.error
          THEN [
-                accounts |-> mintCoinsOutcome, 
+                accounts |-> mintCoinsOutcome.accounts, 
                 escrowAccounts |-> escrowAccounts
               ]
          \* otherwise, do not update anything              
@@ -175,16 +180,19 @@ RefundTokens(chainID, chain, accounts, packet) ==
               ]
     
 \* acknowledge an ICS20 packet
-ICS20OnPaketAck(chainID, chain, accounts, packet, ack) ==
+OnPaketAck(chainID, chain, accounts, packet, ack, maxBalance) ==
     IF ~ack
-    THEN RefundTokens(chainID, chain, accounts, packet)
+    THEN RefundTokens(chainID, chain, accounts, packet, maxBalance)
     ELSE [
             accounts |-> accounts,
             escrowAccounts |-> chain.escrowAccounts
          ]
-     
+
+\* timeout an ICS20 packet
+OnTimeoutPacket(chainID, chain, accounts, packet, maxBalance) ==
+    RefundTokens(chainID, chain, accounts, packet, maxBalance) 
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 06 16:46:45 CET 2020 by ilinastoilkovska
+\* Last modified Thu Nov 19 18:54:25 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:02:01 CEST 2020 by ilinastoilkovska

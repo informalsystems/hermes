@@ -24,7 +24,7 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
 (***************************************************************************
  Token transfer operators
  ***************************************************************************)
-\* Create a packet: Abstract away from ports, and timestamp. 
+\* Create a packet: Abstract away from timestamp. 
 \* Assume timeoutHeight is MaxHeight + 1
 CreatePacket(packetData) ==
     AsPacket([
@@ -32,7 +32,9 @@ CreatePacket(packetData) ==
         timeoutHeight |-> MaxHeight + 1,
         data |-> packetData, 
         srcChannelID |-> GetChannelID(ChainID),
-        dstChannelID |-> GetChannelID(GetCounterpartyChainID(ChainID))
+        srcPortID |-> GetPortID(ChainID),
+        dstChannelID |-> GetCounterpartyChannelID(ChainID),
+        dstPortID |-> GetCounterpartyPortID(ChainID)
     ])
 
 \* update packet committments and escrow accounts in the chain store
@@ -49,9 +51,9 @@ TokenTransferUpdate(chainID, packetDatagram, log) ==
     \* get the new updated store, packet log, and accounts
     LET tokenTransferUpdate == 
         IF packetDatagram.type = "PacketRecv"
-        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, log, accounts)
+        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, log, accounts, MaxBalance)
         ELSE IF packetDatagram.type = "PacketAck"
-             THEN HandlePacketAck(chainID, chainStore, packetDatagram, log, accounts)
+             THEN HandlePacketAck(chainID, chainStore, packetDatagram, log, accounts, MaxBalance)
              ELSE [store |-> chainStore, log |-> log, accounts |-> accounts] IN
       
     LET tokenTransferStore == tokenTransferUpdate.store IN
@@ -140,8 +142,8 @@ AcknowledgePacket ==
  ***************************************************************************)
 \* Initial state predicate
 \* Initially
-\*  - the chain store is initialized to some element of the set
-\*    ICS20InitChainStore(ChainID, NativeDenomination) 
+\*  - the chain store is initialized to 
+\*    ICS20InitChainStore(ChainID, <<NativeDenomination>>) 
 \*    (defined in ICS20Definitions.tla)
 \*  - incomingPacketDatagrams is an empty sequence
 \*  - the appPacketSeq is set to 1
@@ -168,5 +170,5 @@ Fairness ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 06 20:27:05 CET 2020 by ilinastoilkovska
+\* Last modified Thu Nov 19 18:16:20 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska
