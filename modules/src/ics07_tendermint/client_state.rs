@@ -4,7 +4,7 @@ use std::time::Duration;
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
 use tendermint::consensus::Params;
 use tendermint_light_client::types::TrustThreshold;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::Height;
 
@@ -28,7 +28,7 @@ pub struct ClientState {
     pub allow_update_after_misbehaviour: bool,
 }
 
-impl DomainType<RawClientState> for ClientState {}
+impl Protobuf<RawClientState> for ClientState {}
 
 impl ClientState {
     #[allow(clippy::too_many_arguments)]

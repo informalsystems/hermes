@@ -33,17 +33,17 @@ regex = "1"
 bech32 = "0.7.2"
 
 [dependencies.tendermint]
-version = "0.17.0-rc2"
+version = "=0.17.0-rc3"
 
 [dependencies.tendermint-rpc]
-version = "0.17.0-rc2"
+version = "=0.17.0-rc3"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.17.0-rc2"
+version = "=0.17.0-rc3"
 
 [dependencies.tendermint-proto]
-version = "0.17.0-rc2"
+version = "=0.17.0-rc3"
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }

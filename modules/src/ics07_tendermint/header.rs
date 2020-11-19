@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
@@ -33,7 +33,7 @@ impl crate::ics02_client::header::Header for Header {
     }
 }
 
-impl DomainType<RawHeader> for Header {}
+impl Protobuf<RawHeader> for Header {}
 
 impl TryFrom<RawHeader> for Header {
     type Error = Error;

@@ -6,7 +6,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::TryFrom;
 
@@ -66,7 +66,7 @@ impl Msg for MsgTimeout {
     }
 }
 
-impl DomainType<RawMsgTimeout> for MsgTimeout {}
+impl Protobuf<RawMsgTimeout> for MsgTimeout {}
 
 #[allow(unreachable_code, unused_variables)]
 impl TryFrom<RawMsgTimeout> for MsgTimeout {
