@@ -39,7 +39,7 @@ pub fn verify_proofs(
             proofs
                 .client_proof()
                 .as_ref()
-                .ok_or_else(|| Kind::NullClientProof)?,
+                .ok_or(Kind::NullClientProof)?,
         )?;
     }
 

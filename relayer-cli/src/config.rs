@@ -18,6 +18,6 @@ pub fn config_path() -> Result<PathBuf, BoxError> {
     assert!(args.next().is_some(), "expected one argument but got zero");
     let args = args.collect::<Vec<_>>();
     let app = EntryPoint::<CliCmd>::parse_args_default(args.as_slice())?;
-    let config_path = app.config.ok_or_else(|| "no config file specified")?;
+    let config_path = app.config.ok_or("no config file specified")?;
     Ok(config_path)
 }

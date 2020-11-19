@@ -149,7 +149,7 @@ impl CosmosSDKChain {
         let proposer = validators
             .iter()
             .find(|v| v.address == signed_header.header.proposer_address)
-            .ok_or_else(|| Kind::EmptyResponseValue)?;
+            .ok_or(Kind::EmptyResponseValue)?;
 
         let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
 
