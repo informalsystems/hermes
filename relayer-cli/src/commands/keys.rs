@@ -14,8 +14,7 @@ pub enum KeysCmd {
     /// The `keys add` subcommand
     #[options(help = "adds a key to a configured chain")]
     Add(add::KeyAddCmd),
-
-    /// The `keys restore` subcommand
-    #[options(help = "restore a key to a configured chain using a mnemonic")]
-    Restore(restore::KeyRestoreCmd),
+    ///// The `keys restore` subcommand
+    // #[options(help = "restore a key to a configured chain using a mnemonic")]
+    // Restore(restore::KeyRestoreCmd),
 }
