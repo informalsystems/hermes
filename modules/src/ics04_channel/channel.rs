@@ -33,7 +33,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
-            .ok_or_else(|| Kind::MissingCounterparty)?
+            .ok_or(Kind::MissingCounterparty)?
             .try_into()?;
 
         // Parse each item in connection_hops into a ConnectionId.

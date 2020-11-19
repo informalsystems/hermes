@@ -39,11 +39,12 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
     let src_chain_config = config
         .chains
         .get(0)
-        .ok_or_else(|| "Configuration for source chain (position 0 in chains config) not found")?;
+        .ok_or("Configuration for source chain (position 0 in chains config) not found")?;
+
     let dst_chain_config = config
         .chains
         .get(1)
-        .ok_or_else(|| "Configuration for dest. chain (position 1 in chains config) not found")?;
+        .ok_or("Configuration for dest. chain (position 1 in chains config) not found")?;
 
     let src_chain = ChainRuntime::new(src_chain_config);
     let dst_chain = ChainRuntime::new(dst_chain_config);
@@ -64,14 +65,14 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         src_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client on source chain not found")?,
+            .ok_or("Config for client on source chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
     let client_dst_id = ClientId::from_str(
         dst_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client for dest. chain not found")?,
+            .ok_or("Config for client for dest. chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 
