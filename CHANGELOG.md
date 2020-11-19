@@ -11,6 +11,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
     - Implement flexible connection id selection ([#332])
+    - Introduce LightBlock support for MockContext ([#389])
     - ICS 4 Domain Types for channel handshakes ([#315])
 - [relayer] 
     - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
@@ -42,7 +43,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#372]: https://github.com/informalsystems/ibc-rs/issues/372
 [#373]: https://github.com/informalsystems/ibc-rs/issues/373
 [#374]: https://github.com/informalsystems/ibc-rs/issues/374
-
+[#389]: https://github.com/informalsystems/ibc-rs/issues/389
 [proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS

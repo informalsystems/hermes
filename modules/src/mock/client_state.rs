@@ -1,4 +1,3 @@
-#![allow(unreachable_code, unused_variables)]
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -7,14 +6,13 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
 use crate::ics02_client::error::Kind;
-use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use crate::mock_client::header::MockHeader;
+use crate::mock::header::MockHeader;
 use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
@@ -23,15 +21,17 @@ use crate::Height;
 pub struct MockClientRecord {
     /// The type of this client.
     pub client_type: ClientType,
+
     /// The client state (representing only the latest height at the moment).
-    pub client_state: MockClientState,
+    pub client_state: Option<AnyClientState>,
+
     /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, MockConsensusState>,
+    pub consensus_states: HashMap<Height, AnyConsensusState>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
-/// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
+// TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockClientState(pub MockHeader);
 
@@ -40,26 +40,6 @@ impl Protobuf<RawMockClientState> for MockClientState {}
 impl MockClientState {
     pub fn latest_height(&self) -> Height {
         (self.0).0
-    }
-
-    pub fn check_header_and_update_state(
-        &self,
-        header: AnyHeader,
-    ) -> Result<(MockClientState, MockConsensusState), Box<dyn std::error::Error>> {
-        match header {
-            #[cfg(test)]
-            AnyHeader::Mock(mock_header) => {
-                if self.latest_height() >= header.height() {
-                    return Err("header height is lower than client latest".into());
-                }
-
-                Ok((
-                    MockClientState(mock_header),
-                    MockConsensusState(mock_header),
-                ))
-            }
-            _ => Err("bad header type for mock client state".into()),
-        }
     }
 }
 
@@ -139,7 +119,6 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
-#[cfg(test)]
 impl From<MockConsensusState> for AnyConsensusState {
     fn from(mcs: MockConsensusState) -> Self {
         Self::Mock(mcs)
@@ -148,7 +127,7 @@ impl From<MockConsensusState> for AnyConsensusState {
 
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn root(&self) -> &CommitmentRoot {

@@ -6,7 +6,7 @@ use serde_derive::{Deserialize, Serialize};
 pub enum ClientType {
     Tendermint = 1,
 
-    #[cfg(test)]
+    #[cfg(any(test, feature = "mocks"))]
     Mock = 9999,
 }
 
@@ -16,7 +16,7 @@ impl ClientType {
         match self {
             Self::Tendermint => "Tendermint",
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             Self::Mock => "mock",
         }
     }
@@ -29,7 +29,7 @@ impl std::str::FromStr for ClientType {
         match s {
             "Tendermint" => Ok(Self::Tendermint),
 
-            #[cfg(test)]
+            #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),
 
             _ => Err(error::Kind::UnknownClientType(s.to_string()).into()),
