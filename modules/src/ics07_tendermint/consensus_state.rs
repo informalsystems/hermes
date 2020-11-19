@@ -9,6 +9,7 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use tendermint::hash::Algorithm;
 
@@ -85,6 +86,12 @@ impl From<tendermint::block::Header> for ConsensusState {
             timestamp: header.time,
             next_validators_hash: header.next_validators_hash,
         }
+    }
+}
+
+impl From<Header> for ConsensusState {
+    fn from(header: Header) -> Self {
+        Self::from(header.signed_header.header)
     }
 }
 

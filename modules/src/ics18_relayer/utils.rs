@@ -5,7 +5,6 @@ use crate::ics02_client::msgs::ClientMsg;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
-use crate::test_utils::get_dummy_account_id;
 
 /// Creates a `ClientMsg::UpdateClient` for a client with id `client_id` running on the `dest`
 /// context, assuming that the latest header on the source context is `src_header`.
@@ -47,7 +46,7 @@ where
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
         header: src_header,
-        signer: get_dummy_account_id(),
+        signer: dest.signer(),
     }))
 }
 
@@ -55,11 +54,15 @@ where
 mod tests {
     use crate::ics18_relayer::context::ICS18Context;
     use crate::ics18_relayer::utils::create_client_update_datagram;
-    use crate::ics24_host::identifier::ClientId;
+    use crate::ics24_host::identifier::{ChainId, ClientId};
     use crate::ics26_routing::msgs::ICS26Envelope;
 
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
+
+    use crate::ics02_client::client_type::ClientType;
+    use crate::ics02_client::header::Header;
     use std::str::FromStr;
 
     #[test]
@@ -77,15 +80,43 @@ mod tests {
         let client_on_b_for_a = ClientId::from_str("ibczeroclient").unwrap();
 
         // Create two mock contexts, one for each chain.
-        let mut ctx_a = MockContext::new(5, chain_a_start_height)
-            .with_client(&client_on_a_for_b, client_on_a_for_b_height);
-        let mut ctx_b = MockContext::new(5, chain_b_start_height)
-            .with_client(&client_on_b_for_a, client_on_b_for_a_height);
+        let mut ctx_a = MockContext::new(
+            ChainId::new("mockgaiaA", 1).unwrap(),
+            HostType::Mock,
+            5,
+            chain_a_start_height,
+        )
+        .with_client_parametrized(
+            &client_on_a_for_b,
+            client_on_a_for_b_height,
+            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(client_on_a_for_b_height),
+        );
+        let mut ctx_b = MockContext::new(
+            ChainId::new("mockgaiaB", 1).unwrap(),
+            HostType::SyntheticTendermint,
+            5,
+            chain_b_start_height,
+        )
+        .with_client_parametrized(
+            &client_on_b_for_a,
+            client_on_b_for_a_height,
+            Some(ClientType::Mock), // The target host chain is mock.
+            Some(client_on_b_for_a_height),
+        );
 
         for _i in 0..num_iterations {
             // Update client on chain B to latest height of A.
             // - create the client update message with the latest header from A
             let a_latest_header = ctx_a.query_latest_header().unwrap();
+            assert_eq!(
+                a_latest_header.client_type(),
+                ClientType::Mock,
+                "Client type verification in header failed for context A (Mock); got {:?} but expected {:?}",
+                a_latest_header.client_type(),
+                ClientType::Mock
+            );
+
             let client_msg_b_res =
                 create_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header);
             assert_eq!(
@@ -108,7 +139,11 @@ mod tests {
             );
 
             // Check if the update succeeded.
-            assert!(dispatch_res_b.is_ok());
+            assert!(
+                dispatch_res_b.is_ok(),
+                "Dispatch failed for host chain b with error: {:?}",
+                dispatch_res_b
+            );
             let client_height_b = ctx_b
                 .query_client_full_state(&client_on_b_for_a)
                 .unwrap()
@@ -118,6 +153,14 @@ mod tests {
             // Update client on chain B to latest height of B.
             // - create the client update message with the latest header from B
             let b_latest_header = ctx_b.query_latest_header().unwrap();
+            assert_eq!(
+                b_latest_header.client_type(),
+                ClientType::Tendermint,
+                "Client type verification in header failed for context B (TM); got {:?} but expected {:?}",
+                b_latest_header.client_type(),
+                ClientType::Tendermint
+            );
+
             let client_msg_a_res =
                 create_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
             assert_eq!(
@@ -140,7 +183,11 @@ mod tests {
             );
 
             // Check if the update succeeded.
-            assert!(dispatch_res_a.is_ok());
+            assert!(
+                dispatch_res_a.is_ok(),
+                "Dispatch failed for host chain a with error: {:?}",
+                dispatch_res_a
+            );
             let client_height_a = ctx_a
                 .query_client_full_state(&client_on_a_for_b)
                 .unwrap()
