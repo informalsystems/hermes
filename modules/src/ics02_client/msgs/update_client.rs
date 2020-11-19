@@ -7,7 +7,7 @@
 use std::convert::TryFrom;
 
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
@@ -62,7 +62,7 @@ impl Msg for MsgUpdateAnyClient {
     }
 }
 
-impl DomainType<RawMsgUpdateClient> for MsgUpdateAnyClient {}
+impl Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient {}
 
 impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;

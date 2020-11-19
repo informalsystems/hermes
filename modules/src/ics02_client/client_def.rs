@@ -1,7 +1,7 @@
 use prost_types::Any;
 use std::convert::TryFrom;
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::downcast;
 use crate::ics02_client::client_type::ClientType;
@@ -119,7 +119,7 @@ impl Header for AnyHeader {
     }
 }
 
-impl DomainType<Any> for AnyHeader {}
+impl Protobuf<Any> for AnyHeader {}
 
 impl TryFrom<Any> for AnyHeader {
     type Error = Error;
@@ -185,7 +185,7 @@ impl AnyClientState {
     }
 }
 
-impl DomainType<Any> for AnyClientState {}
+impl Protobuf<Any> for AnyClientState {}
 
 impl TryFrom<Any> for AnyClientState {
     type Error = Error;
@@ -267,7 +267,7 @@ impl AnyConsensusState {
     }
 }
 
-impl DomainType<Any> for AnyConsensusState {}
+impl Protobuf<Any> for AnyConsensusState {}
 
 impl TryFrom<Any> for AnyConsensusState {
     type Error = Error;

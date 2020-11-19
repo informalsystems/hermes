@@ -1,15 +1,15 @@
 use std::convert::{TryFrom, TryInto};
 
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
+use crate::{Height, proofs::Proofs, tx_msg::Msg};
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 /// Message type for the `MsgAcknowledgement` message.
 const TYPE_MSG_ACKNOWLEDGEMENT: &str = "ics04/opaque";
@@ -71,7 +71,7 @@ impl Msg for MsgAcknowledgement {
     }
 }
 
-impl DomainType<RawMsgAcknowledgement> for MsgAcknowledgement {}
+impl Protobuf<RawMsgAcknowledgement> for MsgAcknowledgement {}
 
 impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
     type Error = anomaly::Error<Kind>;
@@ -148,8 +148,8 @@ mod test {
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
     use crate::ics04_channel::error::Error;
-    use crate::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
     use crate::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+    use crate::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_acknowledgement;
 
     #[test]
     fn msg_acknowledgment_try_from_raw() {

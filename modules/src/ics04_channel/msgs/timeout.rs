@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
@@ -67,7 +67,7 @@ impl Msg for MsgTimeout {
     }
 }
 
-impl DomainType<RawMsgTimeout> for MsgTimeout {}
+impl Protobuf<RawMsgTimeout> for MsgTimeout {}
 
 impl TryFrom<RawMsgTimeout> for MsgTimeout {
     type Error = anomaly::Error<Kind>;

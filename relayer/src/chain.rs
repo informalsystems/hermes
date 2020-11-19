@@ -5,7 +5,7 @@ use anomaly::fail;
 use prost_types::Any;
 use serde::{de::DeserializeOwned, Serialize};
 
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 // TODO - tendermint deps should not be here
 //use tendermint::account::Id as AccountId;
@@ -26,7 +26,7 @@ use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::proofs::{ConsensusProof, Proofs};
@@ -40,7 +40,10 @@ use crate::tx::connection::{ConnectionMsgType, ConnectionOpenInitOptions, Connec
 use crate::util::block_on;
 
 pub(crate) mod cosmos;
+use crate::tx::channel::ChannelMsgType;
 pub use cosmos::CosmosSDKChain;
+use ibc::ics04_channel::channel::ChannelEnd;
+
 pub mod handle;
 pub mod runtime;
 
@@ -149,6 +152,24 @@ pub trait Chain {
         Ok((connection_end, res.proof))
     }
 
+    fn proven_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<(ChannelEnd, MerkleProof), Error> {
+        let res = self
+            .ics_query(
+                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((channel_end, res.proof))
+    }
+
     fn proven_client_consensus(
         &self,
         client_id: &ClientId,
@@ -201,6 +222,22 @@ pub trait Chain {
             .and_then(|v| {
                 ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
             })?)
+    }
+
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<ChannelEnd, Error> {
+        Ok(self
+            .ics_query(
+                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+                height,
+                false,
+            )
+            .map_err(|e| Kind::Query.context(e))
+            .and_then(|v| ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e)))?)
     }
 
     /// Builds the required proofs and the client state for connection handshake messages.
@@ -265,5 +302,34 @@ pub trait Chain {
             Proofs::new(connection_proof, client_proof, consensus_proof, height)
                 .map_err(|_| Kind::MalformedProof)?,
         ))
+    }
+
+    fn module_version(&self, port_id: &PortId) -> String {
+        // TODO - query the chain, currently hardcoded
+        if port_id.as_str() == "transfer" {
+            "ics20-1".to_string()
+        } else {
+            "".to_string()
+        }
+    }
+
+    /// Builds the proof for channel handshake messages.
+    /// The proof must be obtained from queries at height `height - 1`
+    fn build_channel_proofs(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<Proofs, Error> {
+        // Set the height of the queries at height - 1
+        let query_height = height
+            .decrement()
+            .map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        // Collect all proofs as required
+        let channel_proof =
+            CommitmentProof::from(self.proven_channel(port_id, channel_id, query_height)?.1);
+
+        Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
 }

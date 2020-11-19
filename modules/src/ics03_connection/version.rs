@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::{Error, Kind};
 use std::str::FromStr;
@@ -14,7 +14,7 @@ struct Version {
     features: Vec<String>,
 }
 
-impl DomainType<RawVersion> for Version {}
+impl Protobuf<RawVersion> for Version {}
 
 impl TryFrom<RawVersion> for Version {
     type Error = anomaly::Error<Kind>;

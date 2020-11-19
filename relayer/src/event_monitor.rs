@@ -2,7 +2,6 @@ use ibc::events::IBCEvent;
 use tendermint::{chain, net, Error as TMError};
 use tendermint_rpc::{
     query::EventType, query::Query, Subscription, SubscriptionClient, WebSocketClient,
-    WebSocketClientDriver,
 };
 use tokio::stream::StreamExt;
 use tokio::sync::mpsc::Sender;

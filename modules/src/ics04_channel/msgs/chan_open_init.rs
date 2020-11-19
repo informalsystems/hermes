@@ -1,15 +1,14 @@
 use crate::address::{account_to_string, string_to_account};
-use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
 
 /// Message type for the `MsgChannelOpenInit` message.
 const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
@@ -19,49 +18,10 @@ const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenInit {
-    port_id: PortId,
-    channel_id: ChannelId,
-    channel: ChannelEnd,
-    signer: AccountId,
-}
-
-impl MsgChannelOpenInit {
-    // TODO: Constructors for domain types are in flux.
-    // Relayer will need this constructor. Validation here should be identical to `try_from` method.
-    // https://github.com/informalsystems/ibc-rs/issues/219
-    #[allow(dead_code, clippy::too_many_arguments)]
-    fn new(
-        port_id: String,
-        channel_id: String,
-        version: String,
-        order: i32,
-        connection_hops: Vec<String>,
-        counterparty_port_id: String,
-        counterparty_channel_id: String,
-        signer: AccountId,
-    ) -> Result<MsgChannelOpenInit, Error> {
-        let connection_hops: Result<Vec<_>, _> = connection_hops
-            .into_iter()
-            .map(|s| ConnectionId::from_str(s.as_str()))
-            .collect();
-
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel: ChannelEnd::new(
-                Order::from_i32(order)?,
-                Counterparty::new(counterparty_port_id, counterparty_channel_id)
-                    .map_err(|e| Kind::IdentifierError.context(e))?,
-                connection_hops.map_err(|e| Kind::IdentifierError.context(e))?,
-                version,
-            ),
-            signer,
-        })
-    }
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub channel: ChannelEnd,
+    pub signer: AccountId,
 }
 
 impl Msg for MsgChannelOpenInit {
@@ -79,12 +39,16 @@ impl Msg for MsgChannelOpenInit {
         self.channel.validate_basic()
     }
 
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgChannelOpenInit".to_string()
+    }
+
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
 }
 
-impl DomainType<RawMsgChannelOpenInit> for MsgChannelOpenInit {}
+impl Protobuf<RawMsgChannelOpenInit> for MsgChannelOpenInit {}
 
 impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
     type Error = anomaly::Error<Kind>;

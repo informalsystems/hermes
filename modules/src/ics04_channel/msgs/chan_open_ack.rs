@@ -7,7 +7,7 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
@@ -19,12 +19,12 @@ const TYPE_MSG_CHANNEL_OPEN_ACK: &str = "channel_open_ack";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenAck {
-    port_id: PortId,
-    channel_id: ChannelId,
-    counterparty_channel_id: ChannelId,
-    counterparty_version: String,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub counterparty_channel_id: ChannelId,
+    pub counterparty_version: String,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl MsgChannelOpenAck {
@@ -71,13 +71,16 @@ impl Msg for MsgChannelOpenAck {
         // All the validation is performed on creation
         Ok(())
     }
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgChannelOpenAck".to_string()
+    }
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
 }
 
-impl DomainType<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
+impl Protobuf<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
 
 impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
     type Error = anomaly::Error<Kind>;
