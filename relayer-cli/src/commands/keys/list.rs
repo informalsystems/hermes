@@ -4,19 +4,16 @@ use relayer::config::Config;
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use relayer::keys::add::{add_key, KeysAddOptions};
+use relayer::keys::list::{list_keys, KeysListOptions};
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct KeysAddCmd {
+pub struct KeysListCmd {
     #[options(free, help = "identifier of the chain")]
     chain_id: Option<String>,
-
-    #[options(free, help = "the key path and filename")]
-    file: Option<String>,
 }
 
-impl KeysAddCmd {
-    fn validate_options(&self, config: &Config) -> Result<KeysAddOptions, String> {
+impl KeysListCmd {
+    fn validate_options(&self, config: &Config) -> Result<KeysListOptions, String> {
         let chain_id = self
             .chain_id
             .clone()
@@ -30,20 +27,13 @@ impl KeysAddCmd {
                 "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
             })?;
 
-        let key_filename = self
-            .file
-            .clone()
-            .ok_or_else(|| "missing signer key file".to_string())?;
-
-        Ok(KeysAddOptions {
-            name: chain_config.key_name.clone(),
-            file: key_filename,
+        Ok(KeysListOptions {
             chain_config: chain_config.clone(),
         })
     }
 }
 
-impl Runnable for KeysAddCmd {
+impl Runnable for KeysListCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -55,11 +45,11 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res: Result<String, Error> = list_keys(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("key add result: ", "{:?}", r),
-            Err(e) => status_info!("key add failed: ", "{}", e),
+            Ok(r) => status_info!("keys list result: ", "{:?}", r),
+            Err(e) => status_info!("keys list failed: ", "{}", e),
         }
     }
 }
