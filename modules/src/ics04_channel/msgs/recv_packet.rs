@@ -5,11 +5,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
-use crate::{Height, proofs::Proofs, tx_msg::Msg};
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 /// Message type for `MsgPacket`.
 const TYPE_MSG_PACKET: &str = "ics04/opaque";
@@ -144,8 +144,8 @@ mod test {
     use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
     use crate::ics04_channel::error::Error;
-    use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
     use crate::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;
+    use crate::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 
     #[test]
     fn msg_recv_packet_try_from_raw() {
