@@ -1,8 +1,8 @@
-------------------------- MODULE RelayerDefinitions -------------------------
+------------------------ MODULE IBCCoreDefinitions -------------------------
 
 (***************************************************************************
  This module contains definitions of operators that are shared between the 
- different modules
+ different modules.
  ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences
@@ -247,13 +247,16 @@ Max(S) == CHOOSE x \in S: \A y \in S: y <= x
       following values: "UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED".
       
     - order -- a string
-      Stores whether the channel end is ordered or unordered. It has one of the 
-      following values: "UNORDERED", "ORDERED"
+      Stores whether the channel end is ordered or unordered. It has one 
+      of the following values: "UNORDERED", "ORDERED".
         
         * ordered channels have three additional packet sequence fields:
-           nextSendSeq -- stores the sequence number of the next packet that is going to be sent,
-           nextRcvSeq -- stores the sequence number of the next packet that is going to be received,
-           nextAckSeq -- stores the sequence number of the next packet that is going to be acknowledged
+           nextSendSeq -- stores the sequence number of the next packet that 
+           is going to be sent,
+           nextRcvSeq -- stores the sequence number of the next packet that 
+           is going to be received,
+           nextAckSeq -- stores the sequence number of the next packet that 
+           is going to be acknowledged.
       
     - channelID -- a channel identifier
       Stores the channel identifier of this channel end.  
@@ -361,6 +364,21 @@ Packets(maxHeight, maxPacketSeq) ==
 
     - connectionEnd : a connection end record 
       Stores data about the connection with the counterparty chain
+
+    - packetCommitments : a set of packet commitments
+      A packet commitment is added to this set when a chain sends a packet 
+      to the counterparty
+
+    - packetCommitments : a set of packet receipts
+      A packet receipt is added to this set when a chain received a packet 
+      from the counterparty
+
+    - packetAcknowledgements : a set of packet acknowledgements
+      A packet acknowledgement is added to this set when a chain writes an 
+      acknowledgement for a packet it received from the counterparty
+
+    - packetsToAcknowledge : a sequence of packets 
+      
  ***************************************************************************)
 ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==    
     [
@@ -369,8 +387,8 @@ ChainStores(maxHeight, channelOrdering, maxPacketSeq) ==
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq),
         packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
-        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq)),
-        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
+        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq))
     ] <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
@@ -486,8 +504,9 @@ InitChainStore(channelOrdering) ==
      connectionEnd |-> InitConnectionEnd(channelOrdering),
      packetCommitments |-> AsSetPacketCommitment({}),
      packetReceipts |-> AsSetPacketReceipt({}),
-     packetsToAcknowledge |-> AsSeqPacket(<<>>),
-     packetAcknowledgements |-> AsSetPacketAcknowledgement({})] <: ChainStoreType
+     packetAcknowledgements |-> AsSetPacketAcknowledgement({}),
+     packetsToAcknowledge |-> AsSeqPacket(<<>>)
+    ] <: ChainStoreType
         
 
 \* Initial value of history flags         
