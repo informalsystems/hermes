@@ -4,8 +4,8 @@ use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, Com
 use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
-use crate::mock_client::header::MockHeader;
-use crate::mock_client::state::{MockClientState, MockConsensusState};
+use crate::mock::client_state::{MockClientState, MockConsensusState};
+use crate::mock::header::MockHeader;
 use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

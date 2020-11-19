@@ -100,8 +100,11 @@ fn query_channel_id() {
 
     assert_eq!(query.state(), &ChannelState::Init);
     assert_eq!(query.ordering(), &Order::Ordered);
-    assert_eq!(query.counterparty().port_id(), "secondport");
-    assert_eq!(query.counterparty().channel_id(), "secondchannel");
+    assert_eq!(query.counterparty().port_id().as_str(), "secondport");
+    assert_eq!(
+        query.counterparty().channel_id().unwrap().as_str(),
+        "secondchannel"
+    );
     assert_eq!(query.connection_hops()[0].as_str(), "connectionidatob");
     assert_eq!(query.version(), "1.0");
 }

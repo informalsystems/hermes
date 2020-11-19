@@ -86,7 +86,7 @@ mod tests {
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
     use crate::ics24_host::identifier::ClientId;
-    use crate::mock_context::MockContext;
+    use crate::mock::context::MockContext;
     use crate::Height;
 
     #[test]

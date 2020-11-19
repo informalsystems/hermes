@@ -21,19 +21,18 @@ use ibc::ics03_connection::connection::ConnectionEnd;
 
 use ibc::ics03_connection::version::get_compatible_versions;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 
 use ibc::proofs::{ConsensusProof, Proofs};
 
+use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::KeyEntry;
-
 use crate::tx::connection::ConnectionMsgType;
 
 /// Generic query response type
@@ -139,6 +138,22 @@ pub trait Chain {
             })?)
     }
 
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<ChannelEnd, Error> {
+        Ok(self
+            .query(
+                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+                height,
+                false,
+            )
+            .map_err(|e| Kind::Query.context(e))
+            .and_then(|v| ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e)))?)
+    }
+
     // Provable queries
 
     fn proven_client_state(
@@ -167,6 +182,25 @@ pub trait Chain {
         consensus_height: ICSHeight,
         height: ICSHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error>;
+
+    fn proven_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<(ChannelEnd, MerkleProof), Error> {
+        let res = self
+            .query(
+                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((channel_end, res.proof))
+    }
 
     /// Builds the required proofs and the client state for connection handshake messages.
     /// The proofs and client state must be obtained from queries at same height with value
@@ -230,5 +264,35 @@ pub trait Chain {
             Proofs::new(connection_proof, client_proof, consensus_proof, height)
                 .map_err(|_| Kind::MalformedProof)?,
         ))
+    }
+
+    // TODO: Introduce a newtype for the module version string
+    fn module_version(&self, port_id: &PortId) -> String {
+        // TODO - query the chain, currently hardcoded
+        if port_id.as_str() == "transfer" {
+            "ics20-1".to_string()
+        } else {
+            "".to_string()
+        }
+    }
+
+    /// Builds the proof for channel handshake messages.
+    /// The proof must be obtained from queries at height `height - 1`
+    fn build_channel_proofs(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<Proofs, Error> {
+        // Set the height of the queries at height - 1
+        let query_height = height
+            .decrement()
+            .map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        // Collect all proofs as required
+        let channel_proof =
+            CommitmentProof::from(self.proven_channel(port_id, channel_id, query_height)?.1);
+
+        Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
 }

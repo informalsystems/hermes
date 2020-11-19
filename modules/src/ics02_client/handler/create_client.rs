@@ -57,9 +57,9 @@ mod tests {
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ClientId;
-    use crate::mock_client::header::MockHeader;
-    use crate::mock_client::state::{MockClientState, MockConsensusState};
-    use crate::mock_context::MockContext;
+    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::context::MockContext;
+    use crate::mock::header::MockHeader;
     use crate::Height;
 
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;

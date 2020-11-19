@@ -11,6 +11,7 @@ use ibc::ics24_host::Path::ChannelEnds;
 
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
+
 use tendermint_proto::Protobuf;
 
 use crate::error::{Error, Kind};

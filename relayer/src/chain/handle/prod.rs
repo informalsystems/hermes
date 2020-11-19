@@ -5,10 +5,12 @@ use crossbeam_channel as channel;
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
+    ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
     ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
-    ics24_host::identifier::{ClientId, ConnectionId},
+    ics24_host::identifier::ChannelId,
+    ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
     Height,
 };
@@ -99,9 +101,16 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
     }
 
-    fn key_and_signer(&self, key_file_contents: String) -> Result<(KeyEntry, AccountId), Error> {
+    fn key_and_signer(&self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error> {
         self.send(|reply_to| HandleInput::KeyAndSigner {
-            key_file_contents,
+            key_file_contents: key_file_contents.to_string(),
+            reply_to,
+        })
+    }
+
+    fn module_version(&self, port_id: &PortId) -> Result<String, Error> {
+        self.send(|reply_to| HandleInput::ModuleVersion {
+            port_id: port_id.clone(),
             reply_to,
         })
     }
@@ -133,6 +142,13 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    // fn query_channel(
+    //     &self,
+    //     port_id: &PortId,
+    //     channel_id: &ChannelId,
+    //     height: ICSHeight,
+    // ) -> Result<ChannelEnd, Error>;
+
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         self.send(|reply_to| HandleInput::QueryCommitmentPrefix { reply_to })
     }
@@ -146,14 +162,25 @@ impl ChainHandle for ProdChainHandle {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error> {
-        println!("BEFORE sending QueryConnection");
-        let res = self.send(|reply_to| HandleInput::QueryConnection {
+        self.send(|reply_to| HandleInput::QueryConnection {
             connection_id: connection_id.clone(),
             height,
             reply_to,
-        });
-        println!("AFTER sending QueryConnection");
-        res
+        })
+    }
+
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: Height,
+    ) -> Result<ChannelEnd, Error> {
+        self.send(|reply_to| HandleInput::QueryChannel {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            height,
+            reply_to,
+        })
     }
 
     fn proven_client_state(
@@ -230,5 +257,19 @@ impl ChainHandle for ProdChainHandle {
                 reply_to,
             },
         )
+    }
+
+    fn build_channel_proofs(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: Height,
+    ) -> Result<Proofs, Error> {
+        self.send(|reply_to| HandleInput::BuildChannelProofs {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            height,
+            reply_to,
+        })
     }
 }

@@ -51,9 +51,6 @@ pub enum Kind {
     #[error("invalid height result")]
     InvalidHeightResult,
 
-    #[error("cannot store this client state")]
-    InvalidClientStateForStore,
-
     #[error("invalid address")]
     InvalidAddress,
 

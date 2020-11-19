@@ -11,7 +11,10 @@ use ibc::{
         state::{ClientState, ConsensusState},
     },
     ics03_connection::connection::ConnectionEnd,
+    ics04_channel::channel::ChannelEnd,
     ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
+    ics24_host::identifier::ChannelId,
+    ics24_host::identifier::PortId,
     ics24_host::identifier::{ClientId, ConnectionId},
     ics24_host::Path,
     proofs::Proofs,
@@ -185,6 +188,10 @@ impl<C: Chain> ChainRuntime<C> {
                             self.key_and_signer(key_file_contents, reply_to)?
                         }
 
+                        Ok(HandleInput::ModuleVersion { port_id, reply_to }) => {
+                            self.module_version(port_id, reply_to)?
+                        }
+
                         Ok(HandleInput::BuildHeader { trusted_height, target_height, reply_to }) => {
                             self.build_header(trusted_height, target_height, reply_to)?
                         }
@@ -196,6 +203,9 @@ impl<C: Chain> ChainRuntime<C> {
                         }
                         Ok(HandleInput::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
+                        },
+                        Ok(HandleInput::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
+                            self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
                         Ok(HandleInput::QueryLatestHeight { reply_to }) => {
@@ -217,6 +227,10 @@ impl<C: Chain> ChainRuntime<C> {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
+                        Ok(HandleInput::QueryChannel { port_id, channel_id, height, reply_to }) => {
+                            self.query_channel(port_id, channel_id, height, reply_to)?
+                        },
+
                         Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
                             self.proven_client_state(client_id, height, reply_to)?
                         },
@@ -228,6 +242,7 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
+
                         Err(_e) => todo!(), // TODO: Handle error?
                     }
                 },
@@ -340,6 +355,16 @@ impl<C: Chain> ChainRuntime<C> {
 
         reply_to
             .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn module_version(&self, port_id: PortId, reply_to: ReplyTo<String>) -> Result<(), Error> {
+        let result = self.chain.module_version(&port_id);
+
+        reply_to
+            .send(Ok(result))
             .map_err(|e| Kind::Channel.context(e))?;
 
         Ok(())
@@ -488,6 +513,22 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
+    fn query_channel(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        height: Height,
+        reply_to: ReplyTo<ChannelEnd>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_channel(&port_id, &channel_id, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn proven_client_state(
         &self,
         client_id: ClientId,
@@ -532,6 +573,24 @@ impl<C: Chain> ChainRuntime<C> {
             .chain
             .proven_client_consensus(&client_id, consensus_height, height)
             .map(|(cs, mp)| (cs.wrap_any(), mp));
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn build_channel_proofs(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        height: Height,
+        reply_to: ReplyTo<Proofs>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .build_channel_proofs(&port_id, &channel_id, height);
 
         reply_to
             .send(result)

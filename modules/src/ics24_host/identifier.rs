@@ -139,7 +139,7 @@ impl FromStr for ClientId {
 
 impl Default for ClientId {
     fn default() -> Self {
-        "defaultclientid".to_string().parse().unwrap()
+        "defaultClient".to_string().parse().unwrap()
     }
 }
 
@@ -189,7 +189,7 @@ impl FromStr for ConnectionId {
 
 impl Default for ConnectionId {
     fn default() -> Self {
-        "defaultconnectionid".to_string().parse().unwrap()
+        "defaultConnection".to_string().parse().unwrap()
     }
 }
 /// Equality check against string literal (satisfies &ConnectionId == &str).
@@ -236,6 +236,12 @@ impl FromStr for PortId {
     }
 }
 
+impl Default for PortId {
+    fn default() -> Self {
+        "defaultPort".to_string().parse().unwrap()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ChannelId(String);
 
@@ -263,5 +269,11 @@ impl FromStr for ChannelId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_channel_identifier(s).map(|_| Self(s.to_string()))
+    }
+}
+
+impl Default for ChannelId {
+    fn default() -> Self {
+        "defaultChannel".to_string().parse().unwrap()
     }
 }

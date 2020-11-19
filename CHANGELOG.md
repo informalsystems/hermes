@@ -11,14 +11,17 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
     - Implement flexible connection id selection ([#332])
+    - Introduce LightBlock support for MockContext ([#389])
     - ICS 4 Domain Types for channel handshakes ([#315])
 - [relayer] 
     - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
-    - Implement the relayer logic for connection handshake message ([#358], [#359], [#360])
+    - Implement the relayer logic for connection handshake messages ([#358], [#359], [#360])
+    - Implement the relayer logic for channel handshake messages ([#371], [#372], [#373], [#374])
 - [relayer-cli]
     - Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
     - CLI for client update message ([#277])
-    - Implement the relayer CLI for connection handshake message  ([#358], [#359], [#360])
+    - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
+    - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
@@ -36,6 +39,11 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#366]: https://github.com/informalsystems/ibc-rs/issues/366
 [#368]: https://github.com/informalsystems/ibc-rs/issues/368
 [#369]: https://github.com/informalsystems/ibc-rs/pulls/369
+[#371]: https://github.com/informalsystems/ibc-rs/issues/371
+[#372]: https://github.com/informalsystems/ibc-rs/issues/372
+[#373]: https://github.com/informalsystems/ibc-rs/issues/373
+[#374]: https://github.com/informalsystems/ibc-rs/issues/374
+[#389]: https://github.com/informalsystems/ibc-rs/issues/389
 [proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS

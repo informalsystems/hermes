@@ -5,7 +5,8 @@ use crossbeam_channel as channel;
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics24_host::identifier::ConnectionId,
+    ics04_channel::channel::ChannelEnd,
+    ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
@@ -82,6 +83,11 @@ pub enum HandleInput {
         reply_to: ReplyTo<(KeyEntry, AccountId)>,
     },
 
+    ModuleVersion {
+        port_id: PortId,
+        reply_to: ReplyTo<String>,
+    },
+
     QueryLatestHeight {
         reply_to: ReplyTo<Height>,
     },
@@ -134,6 +140,13 @@ pub enum HandleInput {
         reply_to: ReplyTo<ConnectionEnd>,
     },
 
+    QueryChannel {
+        port_id: PortId,
+        channel_id: ChannelId,
+        height: Height,
+        reply_to: ReplyTo<ChannelEnd>,
+    },
+
     ProvenClientState {
         client_id: ClientId,
         height: Height,
@@ -151,6 +164,13 @@ pub enum HandleInput {
         consensus_height: Height,
         height: Height,
         reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
+    },
+
+    BuildChannelProofs {
+        port_id: PortId,
+        channel_id: ChannelId,
+        height: Height,
+        reply_to: ReplyTo<Proofs>,
     },
 }
 
@@ -178,11 +198,13 @@ pub trait ChainHandle: Clone + Send + Sync {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
-    fn key_and_signer(&self, key_file_contents: String) -> Result<(KeyEntry, AccountId), Error>;
+    fn key_and_signer(&self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error>;
 
     // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
 
     // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
+
+    fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error>;
 
@@ -201,6 +223,13 @@ pub trait ChainHandle: Clone + Send + Sync {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: Height,
+    ) -> Result<ChannelEnd, Error>;
 
     fn proven_client_state(
         &self,
@@ -240,4 +269,11 @@ pub trait ChainHandle: Clone + Send + Sync {
         client_id: &ClientId,
         height: Height,
     ) -> Result<(Option<AnyClientState>, Proofs), Error>;
+
+    fn build_channel_proofs(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: Height,
+    ) -> Result<Proofs, Error>;
 }

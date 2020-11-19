@@ -56,7 +56,7 @@ pub fn build_conn_init(
     }
 
     // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
 
     let prefix = src_chain.query_commitment_prefix()?;
 
@@ -84,7 +84,7 @@ pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<Stri
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let new_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
-    let (key, _) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
 
     Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
 }
@@ -234,7 +234,7 @@ pub fn build_conn_try(
     // })?;
 
     // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -244,7 +244,7 @@ pub fn build_conn_try(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        opts.signer_seed.clone(),
+        &opts.signer_seed,
     )?;
 
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -284,7 +284,7 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
+    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
     Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
@@ -332,7 +332,7 @@ pub fn build_conn_ack(
     // })?;
 
     // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -342,7 +342,7 @@ pub fn build_conn_ack(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        opts.signer_seed.clone(),
+        &opts.signer_seed,
     )?;
 
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -374,7 +374,7 @@ pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
+    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
     Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
@@ -413,7 +413,7 @@ pub fn build_conn_confirm(
     // TODO - check that the src connection is consistent with the confirm options
 
     // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(opts.signer_seed.clone())?;
+    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -423,7 +423,7 @@ pub fn build_conn_confirm(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        opts.signer_seed.clone(),
+        &opts.signer_seed,
     )?;
 
     let (_, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -452,7 +452,7 @@ pub fn build_conn_confirm_and_send(opts: ConnectionOpenOptions) -> Result<String
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(opts.signer_seed)?;
+    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
     Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
