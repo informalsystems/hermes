@@ -90,7 +90,7 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(|| Kind::MissingHeight)?
+                .ok_or(Kind::MissingHeight)?
                 .try_into()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
         )

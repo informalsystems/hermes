@@ -67,7 +67,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(|| Kind::MissingHeight)?
+                .ok_or(Kind::MissingHeight)?
                 .try_into()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
         )
@@ -89,10 +89,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty_chosen_channel_id,
-            channel: raw_msg
-                .channel
-                .ok_or_else(|| Kind::MissingChannel)?
-                .try_into()?,
+            channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer,

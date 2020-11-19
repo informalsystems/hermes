@@ -33,7 +33,7 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             value
                 .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?
+                .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
             value.versions,
         )?)
@@ -144,7 +144,7 @@ impl TryFrom<RawCounterparty> for Counterparty {
             connection_id,
             value
                 .prefix
-                .ok_or_else(|| Kind::MissingCounterparty)?
+                .ok_or(Kind::MissingCounterparty)?
                 .key_prefix
                 .into(),
         ))

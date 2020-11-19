@@ -100,7 +100,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?
+            .ok_or(Kind::MissingConsensusHeight)?
             .try_into() // Cast from the raw height type into the domain type.
             .map_err(|e| Kind::InvalidProof.context(e))?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
@@ -108,7 +108,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
+            .ok_or(Kind::MissingProofHeight)?
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 

@@ -66,10 +66,7 @@ impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
                 .channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel: raw_msg
-                .channel
-                .ok_or_else(|| Kind::MissingChannel)?
-                .try_into()?,
+            channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             signer,
         })
     }
