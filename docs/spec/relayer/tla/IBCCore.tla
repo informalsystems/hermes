@@ -1,4 +1,8 @@
--------------------------- MODULE ICS18Environment --------------------------
+------------------------------ MODULE IBCCore ------------------------------
+
+(***************************************************************************
+ This is the main module in the specification of the IBC core protocols. 
+ ***************************************************************************)
 
 EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
 
@@ -28,7 +32,7 @@ VARIABLES chainAstore, \* store of ChainA
           historyChainB, \* history variables for ChainB
           packetLog, \* a set of packets sent by both chains
           appPacketSeqChainA, \* packet sequence number from the application on ChainA
-          appPacketSeqChainB \* packet sequence number from the application on ChainA
+          appPacketSeqChainB \* packet sequence number from the application on ChainB
           
 vars == <<chainAstore, chainBstore, 
           incomingDatagramsChainA, incomingDatagramsChainB,
@@ -52,15 +56,15 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
  ***************************************************************************)
 
 \* We suppose there are two correct relayers in the system, Relayer1 and Relayer2
-\* Relayer1 -- Instance of Relayer.tla
-Relayer1 == INSTANCE Relayer
+\* Relayer1 -- Instance of ICS18Relayer.tla
+Relayer1 == INSTANCE ICS18Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer1,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer1,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer1,
                  relayerHeights <- relayer1Heights
                  
-\* Relayer2 -- Instance of Relayer.tla      
-Relayer2 == INSTANCE Relayer
+\* Relayer2 -- Instance of ICS18Relayer.tla      
+Relayer2 == INSTANCE ICS18Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer2,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer2,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer2,
@@ -116,7 +120,7 @@ ChainAction ==
        /\ UNCHANGED <<closeChannelA, closeChannelB>>
 
 (***************************************************************************
- ICS18Environment actions
+ IBCCore Environment actions
  ***************************************************************************)
 \* Submit datagrams from relayers to chains
 SubmitDatagrams ==
@@ -153,17 +157,10 @@ CloseChannels ==
        /\ UNCHANGED <<historyChainA, historyChainB>>
        /\ UNCHANGED <<packetLog, appPacketSeqChainA, appPacketSeqChainB>>
        /\ UNCHANGED <<incomingPacketDatagramsChainA, incomingPacketDatagramsChainB, outgoingPacketDatagrams>>
-
-\* Faulty relayer action
-FaultyRelayer ==
-\*    TODO  
-    TRUE
     
 EnvironmentAction ==
     \/ SubmitDatagrams
     \/ CloseChannels
-\*    TODO: Uncomment once FaultyRelayer is specified
-\*    \/ FaultyRelayer
         
 (***************************************************************************
  Specification
@@ -337,10 +334,10 @@ ChannelCloseInv ==
     
 
 (***************************************************************************
- Invariant [ICS18Inv]
+ Invariant [IBCInv]
  ***************************************************************************)
-\* ICS18Inv invariant: conjunction of invariants  
-ICS18Inv == 
+\* IBCInv invariant: conjunction of invariants  
+IBCInv == 
     \* at least one relayer creates connection datagrams
     /\ (ConnectionDatagramsRelayer1 \/ ConnectionDatagramsRelayer2)
          => /\ ConnectionInitInv
@@ -365,6 +362,8 @@ ICS18Inv ==
 \*      at chainID
 \*  - then 
 \*    * the height h is NEVER added to the counterparty client heights 
+\* 
+\* Note: this property does not hold when it is allowed to install older headers
 ClientUpdateSafety ==
     [](\A chainID \in ChainIDs : \A h \in Heights : 
        (/\ IsClientUpdateInIncomingDatagrams(chainID, h)
@@ -457,11 +456,11 @@ ChannelCloseSafety ==
               /\ ~IsChannelOpen(GetChainByID(chainID)))) 
 
 (***************************************************************************
- Safety [ICS18Safety]:
+ Safety [IBCSafety]:
     Bad datagrams are not used to update the chain stores 
  ***************************************************************************)
-\* ICS18Safety property: conjunction of safety properties 
-ICS18Safety ==
+\* IBCSafety property: conjunction of safety properties 
+IBCSafety ==
     \* at least one relayer creates client datagrams
     /\ (ClientDatagramsRelayer1 \/ ClientDatagramsRelayer2)
          => ClientUpdateSafety  
@@ -542,7 +541,7 @@ ChanCloseInitDelivery ==
                 /\ IsChannelClosed(GetChainByID(GetCounterpartyChainID(chainID))))))   
  
 (***************************************************************************
- Liveness [ICS18Delivery]: 
+ Liveness [IBCDelivery]: 
     If ChainA sends a datagram to ChainB, then ChainB eventually receives 
     the datagram
                    
@@ -550,8 +549,8 @@ ChanCloseInitDelivery ==
    scanning ChainA's store
  * ChainB receives a datagram iff it acts upon this datagram
  ***************************************************************************)            
-\* ICS18Delivery property: conjunction of delivery properties 
-ICS18Delivery ==
+\* IBCDelivery property: conjunction of delivery properties 
+IBCDelivery ==
     \* at least one relayer creates client datagrams
     /\ (ClientDatagramsRelayer1 \/ ClientDatagramsRelayer2)
          => /\ CreateClientDelivery
