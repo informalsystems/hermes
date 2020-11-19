@@ -7,7 +7,7 @@ use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 use tendermint_proto::Protobuf;
 
 use anomaly::fail;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -31,11 +31,10 @@ impl TryFrom<RawChannel> for ChannelEnd {
         let chan_state = State::from_i32(value.state)?;
 
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
-        let remote = Counterparty::try_from(
-            value
-                .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?,
-        )?;
+        let remote = value
+            .counterparty
+            .ok_or_else(|| Kind::MissingCounterparty)?
+            .try_into()?;
 
         // Parse each item in connection_hops into a ConnectionId.
         let connection_hops = value
