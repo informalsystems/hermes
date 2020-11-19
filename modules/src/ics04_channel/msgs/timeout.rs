@@ -82,7 +82,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(|| Kind::MissingHeight)?
+                .ok_or(Kind::MissingHeight)?
                 .try_into()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
         )
@@ -93,7 +93,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
         Ok(MsgTimeout {
             packet: raw_msg
                 .packet
-                .ok_or_else(|| Kind::MissingPacket)?
+                .ok_or(Kind::MissingPacket)?
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             next_sequence_recv: Sequence::from(raw_msg.next_sequence_recv),

@@ -59,7 +59,7 @@ impl TryFrom<RawPacket> for Packet {
             data: raw_pkt.data,
             timeout_height: raw_pkt
                 .timeout_height
-                .ok_or_else(|| Kind::MissingHeight)?
+                .ok_or(Kind::MissingHeight)?
                 .try_into()
                 .map_err(|e| Kind::InvalidTimeoutHeight.context(e))?,
             timeout_timestamp: raw_pkt.timeout_timestamp,

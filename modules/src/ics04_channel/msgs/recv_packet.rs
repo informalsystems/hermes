@@ -94,7 +94,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
         Ok(MsgRecvPacket {
             packet: raw_msg
                 .packet
-                .ok_or_else(|| Kind::MissingPacket)?
+                .ok_or(Kind::MissingPacket)?
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             proofs,

@@ -86,7 +86,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(|| Kind::MissingHeight)?
+                .ok_or(Kind::MissingHeight)?
                 .try_into()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
         )
@@ -95,7 +95,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
         Ok(MsgAcknowledgement {
             packet: raw_msg
                 .packet
-                .ok_or_else(|| Kind::MissingPacket)?
+                .ok_or(Kind::MissingPacket)?
                 .try_into()
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement: raw_msg.acknowledgement,
