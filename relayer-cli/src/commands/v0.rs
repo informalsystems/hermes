@@ -5,7 +5,7 @@ use abscissa_core::{
 };
 
 use relayer::{
-    chain::handle::ChainRuntime,
+    chain::runtime::ChainRuntime,
     channel::{Channel, ChannelConfig},
     connection::{Connection, ConnectionConfig},
     foreign_client::{ForeignClient, ForeignClientConfig},
@@ -14,6 +14,8 @@ use relayer::{
 
 use crate::config::Config;
 use crate::prelude::*;
+use ibc::ics24_host::identifier::ClientId;
+use std::str::FromStr;
 
 #[derive(Command, Debug, Options)]
 pub struct V0Cmd {}
@@ -33,36 +35,65 @@ impl Runnable for V0Cmd {
     }
 }
 
-pub fn v0_task(_config: Config) -> Result<(), BoxError> {
-    let src_chain = ChainRuntime::new(todo!()); // TODO: Pass chain config
-    let dst_chain = ChainRuntime::new(todo!()); // TODO: Pass chain config
+pub fn v0_task(config: Config) -> Result<(), BoxError> {
+    let src_chain_config = config
+        .chains
+        .get(0)
+        .ok_or("Configuration for source chain (position 0 in chains config) not found")?;
 
-    let src_chain_handle = src_chain.handle();
+    let dst_chain_config = config
+        .chains
+        .get(1)
+        .ok_or("Configuration for dest. chain (position 1 in chains config) not found")?;
+
+    let src_chain = ChainRuntime::new(src_chain_config);
+    let dst_chain = ChainRuntime::new(dst_chain_config);
+
+    let src_chain_handle = src_chain.handle()?;
     thread::spawn(move || {
+        // TODO: What should we do on return here? Probably unrecoverable error.
         src_chain.run().unwrap();
     });
 
-    let dst_chain_handle = dst_chain.handle();
+    let dst_chain_handle = dst_chain.handle()?;
     thread::spawn(move || {
-        // What should we do on return here?
         dst_chain.run().unwrap();
     });
 
-    // Another idea is to encode the semantic depency more explicitely as
-    // foreign_client.new_connect(...).new_channel(...).new_link
-    // I think this is actualy what we want
-    // Think about how that would work with multiple links
+    // Parse & validate client identifiers
+    let client_src_id = ClientId::from_str(
+        src_chain_config
+            .client_ids
+            .get(0)
+            .ok_or("Config for client on source chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
+    let client_dst_id = ClientId::from_str(
+        dst_chain_config
+            .client_ids
+            .get(0)
+            .ok_or("Config for client for dest. chain not found")?,
+    )
+    .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 
-    let foreign_client = ForeignClient::new(
+    // Instantiate the foreign client on the source chain.
+    let client_on_src = ForeignClient::new(
         &src_chain_handle,
         &dst_chain_handle,
-        ForeignClientConfig::new(todo!(), todo!()),
+        ForeignClientConfig::new(client_src_id),
+    )?;
+
+    // Instantiate the foreign client on the destination chain.
+    let client_on_dst = ForeignClient::new(
+        &dst_chain_handle,
+        &src_chain_handle,
+        ForeignClientConfig::new(client_dst_id),
     )?;
 
     let connection = Connection::new(
         &src_chain_handle,
         &dst_chain_handle,
-        &foreign_client, // Create a semantic dependecy
+        &client_on_src, // Semantic dependency.
         ConnectionConfig::new(todo!(), todo!()),
     )
     .unwrap();
@@ -78,8 +109,8 @@ pub fn v0_task(_config: Config) -> Result<(), BoxError> {
     let link = Link::new(
         src_chain_handle,
         dst_chain_handle,
-        foreign_client, // Actual dependecy
-        channel,        // Semantic dependecy
+        client_on_src, // Actual dependecy
+        channel,       // Semantic dependecy
         LinkConfig::new(todo!(), todo!(), todo!()),
     )?;
 

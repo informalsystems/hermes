@@ -26,31 +26,20 @@ prost-types = { version = "0.6.1" }
 hex = "0.4"
 
 [dependencies.tendermint-proto]
-version = "0.17.0-rc1"
-git = "https://github.com/informalsystems/tendermint-rs"
-branch = "greg/research-json"
+version = "=0.17.0-rc3"
 
 [dependencies.tendermint]
-version = "0.17.0-rc1"
-git = "https://github.com/informalsystems/tendermint-rs"
-branch = "greg/research-json"
+version = "=0.17.0-rc3"
 
 [dependencies.tendermint-rpc]
-version = "0.17.0-rc1"
-git = "https://github.com/informalsystems/tendermint-rs"
-branch = "greg/research-json"
+version = "=0.17.0-rc3"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "0.17.0-rc1"
-git = "https://github.com/informalsystems/tendermint-rs"
-branch = "greg/research-json"
+version = "=0.17.0-rc3"
 
 [dependencies.abscissa_core]
 version = "0.5.2"
-# optional: use `gimli` to capture backtraces
-# see https://github.com/rust-lang/backtrace-rs/issues/189
-# features = ["gimli-backtrace"]
 
 [dev-dependencies]
 abscissa_core = { version = "0.5.2", features = ["testing"] }

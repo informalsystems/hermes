@@ -87,12 +87,10 @@ impl KeyRingOperations for KeyRing {
             }
             StoreBackend::Test => {
                 // Create keys folder if it does not exist
-                let keys_folder =
-                    get_test_backend_folder(&mut chain_config.clone()).map_err(|e| {
-                        Kind::KeyStoreOperation
-                            .context(format!("failed to create keys folder: {:?}", e))
-                    })?;
-
+                let keys_folder = get_test_backend_folder(&chain_config).map_err(|e| {
+                    Kind::KeyStoreOperation
+                        .context(format!("failed to create keys folder: {:?}", e))
+                })?;
                 fs::create_dir_all(keys_folder.clone())
                     .map_err(|e| Kind::KeyStoreOperation.context("error creating keys folder"))?;
 
@@ -236,7 +234,7 @@ impl KeyRingOperations for KeyRing {
                     .into()),
                 None => {
                     s.clone()
-                        .insert(c.key_name.clone().to_string(), key_contents.to_string());
+                        .insert(c.key_name.to_string(), key_contents.to_string());
                     Ok(())
                 }
             },

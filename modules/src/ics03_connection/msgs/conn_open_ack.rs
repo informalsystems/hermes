@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -22,12 +22,12 @@ pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenAck {
-    connection_id: ConnectionId,
-    counterparty_connection_id: Option<ConnectionId>,
-    client_state: Option<AnyClientState>,
-    proofs: Proofs,
-    version: String,
-    signer: AccountId,
+    pub connection_id: ConnectionId,
+    pub counterparty_connection_id: Option<ConnectionId>,
+    pub client_state: Option<AnyClientState>,
+    pub proofs: Proofs,
+    pub version: String,
+    pub signer: AccountId,
 }
 
 impl MsgConnectionOpenAck {
@@ -84,9 +84,13 @@ impl Msg for MsgConnectionOpenAck {
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string()
+    }
 }
 
-impl DomainType<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
+impl Protobuf<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {}
 
 impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     type Error = anomaly::Error<Kind>;
@@ -96,7 +100,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?
+            .ok_or(Kind::MissingConsensusHeight)?
             .try_into() // Cast from the raw height type into the domain type.
             .map_err(|e| Kind::InvalidProof.context(e))?;
         let consensus_proof_obj = ConsensusProof::new(msg.proof_consensus.into(), consensus_height)
@@ -104,7 +108,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
+            .ok_or(Kind::MissingProofHeight)?
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 

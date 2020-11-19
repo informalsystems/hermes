@@ -236,26 +236,38 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 (***************************************************************************
  Packet datagrams
  ***************************************************************************)
-\* Compute a packet datagram designated for dstChainID, based on the packetLogEntry
-PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
-    
-    LET srcChannelID == GetChannelID(srcChainID) IN \* "chanAtoB" (if srcChainID = "chainA", dstChainID = "chainB")
-    LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+\* Compute a packet datagram based on the packetLogEntry
+PacketDatagram(packetLogEntry) ==
+    \* get srcChainID and its channel end
+    LET chainID == packetLogEntry.srcChainID IN
+    LET channelEnd == GetChainByID(chainID).connectionEnd.channelEnd IN
+    \* get channelID and counterpartyChannelID
+    LET channelID == channelEnd.channelID IN \* "chanAtoB" (if srcChainID = "chainA")
+    LET counterpartyChannelID == channelEnd.counterpartyChannelID IN \* "chanBtoA" (if srcChainID = "chainA")
     
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
-    LET packetData(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+    \* the srcChannelID of the packet that is received is channelID,
+    \* the dstChannelID of the packet that is received is counterpartyChannelID
+    LET recvPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
-                                 srcChannelID |-> srcChannelID,
-                                 dstChannelID |-> dstChannelID]) IN
+                                 srcChannelID |-> channelID,
+                                 dstChannelID |-> counterpartyChannelID]) IN
+    
+    \* the srcChannelID of the packet that is acknowledged is counterpartyChannelID,
+    \* the dstChannelID of the packet that is acknowledged is channelID
+    LET ackPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
+                                 timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcChannelID |-> counterpartyChannelID,
+                                 dstChannelID |-> channelID]) IN
     
     IF packetLogEntry.type = "PacketSent"
     THEN AsDatagram([type |-> "PacketRecv",
-          packet |-> packetData(packetLogEntry),  
+          packet |-> recvPacket(packetLogEntry),  
           proofHeight |-> srcHeight])
     ELSE IF packetLogEntry.type = "WriteAck"
          THEN AsDatagram([type |-> "PacketAck",
-                  packet |-> packetData(packetLogEntry),
+                  packet |-> ackPacket(packetLogEntry),
                   acknowledgement |-> packetLogEntry.acknowledgement,  
                   proofHeight |-> srcHeight])
          ELSE NullDatagram 
@@ -298,7 +310,7 @@ ComputeDatagrams(srcChainID, dstChainID) ==
  Relayer actions
  ***************************************************************************)   
 \* Update the height of the relayer client for some chainID
-UpdateRelayerClients(chainID) ==
+UpdateRelayerClientHeight(chainID) ==
     LET chainLatestHeight == GetLatestHeight(GetChainByID(chainID)) IN
     /\ relayerHeights[chainID] < chainLatestHeight
     /\ relayerHeights' = [relayerHeights EXCEPT 
@@ -320,15 +332,15 @@ Relay(srcChainID, dstChainID) ==
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
     /\ UNCHANGED <<chainAstore, chainBstore>>
-    /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
+    
 
 \* given an entry from the packet log, create a packet datagram and 
 \* append it to the outgoing packet datagram queue for dstChainID      
 RelayPacketDatagram(packetLogEntry) ==
-    LET srcChainID == packetLogEntry.srcChainID IN
-    LET dstChainID == GetCounterpartyChainID(srcChainID) IN
-    
-    LET packetDatagram == PacketDatagram(srcChainID, dstChainID, packetLogEntry) IN 
+    \* get dstChainID
+    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
+    \* create a packet datagram from packet log entry
+    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
     
     IF packetDatagram /= NullDatagram
     THEN [outgoingPacketDatagrams EXCEPT 
@@ -337,20 +349,27 @@ RelayPacketDatagram(packetLogEntry) ==
     ELSE outgoingPacketDatagrams      
 
 \* update the relayer client heights
-UpdateRelayer ==
-    \E chainID \in ChainIDs : UpdateRelayerClients(chainID)
+UpdateClient ==
+    \E chainID \in ChainIDs : UpdateRelayerClientHeight(chainID)
     
 \* create client, connection, channel datagrams    
 CreateDatagrams ==
-    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : Relay(srcChainID, dstChainID)
+    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : 
+        /\ Relay(srcChainID, dstChainID)
+        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
+              /\ Head(packetLog).srcChainID = srcChainID
+              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
+              /\ packetLog' = Tail(packetLog)
+           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
-\* scan packet log and create packet datagrams    
-ScanPacketLog ==
-    /\ packetLog /= AsPacketLog(<<>>)
-    /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
-    /\ packetLog' = Tail(packetLog)
-    /\ UNCHANGED <<chainAstore, chainBstore>>
-    /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
+
+\* \* scan packet log and create packet datagrams    
+\* ScanPacketLog ==
+\*     /\ packetLog /= AsPacketLog(<<>>)
+\*     /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
+\*     /\ packetLog' = Tail(packetLog)
+\*     /\ UNCHANGED <<chainAstore, chainBstore>>
+\*     /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
     
 
 (***************************************************************************
@@ -371,9 +390,8 @@ Init ==
 \*        - scans the packet log and creates packet datagrams, or
 \*        - does nothing
 Next ==
-    \/ UpdateRelayer
+    \/ UpdateClient
     \/ CreateDatagrams
-    \/ ScanPacketLog
     \/ UNCHANGED vars    
        
 \* Fairness constraints
@@ -393,5 +411,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 17:26:08 CEST 2020 by ilinastoilkovska
+\* Last modified Wed Nov 11 17:26:08 CEST 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -7,7 +7,7 @@
 use std::convert::TryFrom;
 
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
@@ -62,13 +62,13 @@ impl Msg for MsgUpdateAnyClient {
     }
 }
 
-impl DomainType<RawMsgUpdateClient> for MsgUpdateAnyClient {}
+impl Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient {}
 
 impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or_else(|| Kind::InvalidRawHeader)?;
+        let raw_header = raw.header.ok_or(Kind::InvalidRawHeader)?;
         let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
         Ok(MsgUpdateAnyClient {

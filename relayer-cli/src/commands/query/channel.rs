@@ -12,7 +12,7 @@ use crate::error::{Error, Kind};
 use ibc::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
 use tendermint::chain::Id as ChainId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {

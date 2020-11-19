@@ -26,8 +26,4 @@ thiserror = "1.0"
 tonic = "0.3.1"
 
 [dependencies.tendermint-proto]
-version = "0.17.0-rc1"
-git = "https://github.com/informalsystems/tendermint-rs"
-branch = "greg/research-json"
-
-
+version = "=0.17.0-rc3"

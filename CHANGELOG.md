@@ -6,29 +6,51 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 ### FEATURES
 
+- Update to tendermint-rs version `0.17-RC2` ([#368])
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
-- [modules] Implement flexible connection id selection ([#332])
-- [relayer] Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+- [modules]
+    - Implement flexible connection id selection ([#332])
+    - Introduce LightBlock support for MockContext ([#389])
+    - ICS 4 Domain Types for channel handshakes ([#315])
+- [relayer] 
+    - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
+    - Implement the relayer logic for connection handshake messages ([#358], [#359], [#360])
+    - Implement the relayer logic for channel handshake messages ([#371], [#372], [#373], [#374])
 - [relayer-cli]
     - Merge light clients config in relayer config and add commands to add/remove light clients ([#348])
     - CLI for client update message ([#277])
+    - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
+    - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
 - [ibc-proto] Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
 
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
+[#315]: https://github.com/informalsystems/ibc-rs/issues/315
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
+[#358]: https://github.com/informalsystems/ibc-rs/issues/358
+[#358]: https://github.com/informalsystems/ibc-rs/issues/359
+[#358]: https://github.com/informalsystems/ibc-rs/issues/360
 [#366]: https://github.com/informalsystems/ibc-rs/issues/366
+[#368]: https://github.com/informalsystems/ibc-rs/issues/368
 [#369]: https://github.com/informalsystems/ibc-rs/pulls/369
+[#371]: https://github.com/informalsystems/ibc-rs/issues/371
+[#372]: https://github.com/informalsystems/ibc-rs/issues/372
+[#373]: https://github.com/informalsystems/ibc-rs/issues/373
+[#374]: https://github.com/informalsystems/ibc-rs/issues/374
+[#389]: https://github.com/informalsystems/ibc-rs/issues/389
+[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS
 
-- [relayer-cli] Split tasks spawned by CLI commands into their own modules ([#331])
+- [relayer-cli]
+    - Split tasks spawned by CLI commands into their own modules ([#331])
+    - V0 command implementation ([#346])
 - [modules]
     - Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
     - Align with tendermint-rs in the domain type definition of `block::Id` ([#338])
@@ -41,6 +63,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
 [#338]: https://github.com/informalsystems/ibc-rs/issues/338
 [#347]: https://github.com/informalsystems/ibc-rs/issues/347
+[#346]: https://github.com/informalsystems/ibc-rs/issues/346
 [#348]: https://github.com/informalsystems/ibc-rs/pulls/348
 [changelog]: https://github.com/informalsystems/ibc-rs/tree/master/CHANGELOG.md
 

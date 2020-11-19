@@ -1,7 +1,10 @@
+#![allow(dead_code)]
+
 use std::str::FromStr;
 use tendermint::account::Id as AccountId;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
+// Needed in mocks.
 pub fn default_consensus_params() -> consensus::Params {
     consensus::Params {
         block: block::Size {

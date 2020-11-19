@@ -2,15 +2,16 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
+use tendermint::consensus::Params;
 use tendermint_light_client::types::TrustThreshold;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::Height;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
-use tendermint::consensus::Params;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClientState {
@@ -28,7 +29,7 @@ pub struct ClientState {
     pub allow_update_after_misbehaviour: bool,
 }
 
-impl DomainType<RawClientState> for ClientState {}
+impl Protobuf<RawClientState> for ClientState {}
 
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
@@ -89,8 +90,19 @@ impl ClientState {
             allow_update_after_misbehaviour,
         })
     }
+
     pub fn latest_height(&self) -> Height {
         self.latest_height
+    }
+
+    pub fn with_header(self, h: Header) -> Self {
+        // TODO: Clarify which fields should update.
+        ClientState {
+            latest_height: self
+                .latest_height
+                .with_version_height(u64::from(h.signed_header.header.height)),
+            ..self
+        }
     }
 }
 
@@ -327,18 +339,19 @@ mod tests {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::height::Height;
     use crate::ics07_tendermint::client_state::ClientState;
-    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ChainId;
-    use crate::test_utils::default_consensus_params;
-    use std::time::Duration;
 
-    pub fn get_dummy_tendermint_client_state() -> AnyClientState {
-        let tm_header = get_dummy_tendermint_header();
+    use crate::test_utils::default_consensus_params;
+
+    use std::time::Duration;
+    use tendermint::block::Header;
+
+    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
         AnyClientState::Tendermint(
             ClientState::new(
                 tm_header.chain_id.to_string(),

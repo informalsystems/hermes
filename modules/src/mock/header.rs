@@ -1,19 +1,19 @@
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
-use crate::mock_client::state::MockConsensusState;
+use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
 pub struct MockHeader(pub Height);
 
-impl DomainType<RawMockHeader> for MockHeader {}
+impl Protobuf<RawMockHeader> for MockHeader {}
 
 impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
@@ -48,7 +48,7 @@ impl From<MockHeader> for AnyHeader {
 
 impl Header for MockHeader {
     fn client_type(&self) -> ClientType {
-        todo!()
+        ClientType::Mock
     }
 
     fn height(&self) -> Height {

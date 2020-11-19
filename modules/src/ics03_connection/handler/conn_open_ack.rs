@@ -101,8 +101,9 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
-    use crate::ics24_host::identifier::ClientId;
-    use crate::mock_context::MockContext;
+    use crate::ics24_host::identifier::{ChainId, ClientId};
+    use crate::mock::context::MockContext;
+    use crate::mock::host::HostType;
     use crate::Height;
 
     #[test]
@@ -161,6 +162,8 @@ mod tests {
         // Parametrize the (correct) host chain to have a height at least as recent as the
         // the height of the proofs in the Ack msg.
         let correct_context = MockContext::new(
+            ChainId::new("mockgaia", 1).unwrap(),
+            HostType::Mock,
             5,
             Height::new(1, msg_ack.proofs().height().increment().version_height),
         );

@@ -6,8 +6,8 @@ use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 
 use relayer::config::Config;
 use relayer::tx::connection::{
-    build_conn_init_and_send, build_conn_try_and_send, ConnectionOpenInitOptions,
-    ConnectionOpenTryOptions,
+    build_conn_ack_and_send, build_conn_confirm_and_send, build_conn_init_and_send,
+    build_conn_try_and_send, ConnectionOpenInitOptions, ConnectionOpenOptions,
 };
 
 use crate::error::{Error, Kind};
@@ -29,7 +29,7 @@ pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the destination connection")]
     dest_connection_id: ConnectionId,
 
-    #[options(help = "identifier of the source connection", short = "d")]
+    #[options(help = "identifier of the source connection", short = "s")]
     src_connection_id: Option<ConnectionId>,
 }
 
@@ -105,7 +105,7 @@ pub struct TxRawConnTryCmd {
 }
 
 impl TxRawConnTryCmd {
-    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenTryOptions, String> {
+    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -118,7 +118,7 @@ impl TxRawConnTryCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let opts = ConnectionOpenTryOptions {
+        let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
             dest_chain_config: dest_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
@@ -150,6 +150,148 @@ impl Runnable for TxRawConnTryCmd {
         match res {
             Ok(receipt) => status_info!("conn try, result: ", "{:?}", receipt),
             Err(e) => status_info!("conn try failed, error: ", "{}", e),
+        }
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnAckCmd {
+    #[options(free, help = "identifier of the destination chain")]
+    dest_chain_id: String,
+
+    #[options(free, help = "identifier of the source chain")]
+    src_chain_id: String,
+
+    #[options(free, help = "identifier of the destination client")]
+    dest_client_id: ClientId,
+
+    #[options(free, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(free, help = "identifier of the destination connection")]
+    dest_connection_id: ConnectionId,
+
+    #[options(free, help = "identifier of the source connection")]
+    src_connection_id: ConnectionId,
+}
+
+impl TxRawConnAckCmd {
+    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
+        let dest_chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing destination chain configuration".to_string())?;
+
+        let src_chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing src chain configuration".to_string())?;
+
+        let opts = ConnectionOpenOptions {
+            src_chain_config: src_chain_config.clone(),
+            dest_chain_config: dest_chain_config.clone(),
+            src_client_id: self.src_client_id.clone(),
+            dest_client_id: self.dest_client_id.clone(),
+            src_connection_id: self.src_connection_id.clone(),
+            dest_connection_id: self.dest_connection_id.clone(),
+        };
+
+        Ok(opts)
+    }
+}
+
+impl Runnable for TxRawConnAckCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let opts = match self.validate_options(&config) {
+            Err(err) => {
+                status_err!("invalid options: {}", err);
+                return;
+            }
+            Ok(result) => result,
+        };
+        status_info!("Message", "{:?}", opts);
+
+        let res: Result<String, Error> =
+            build_conn_ack_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
+            Ok(receipt) => status_info!("conn ack, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn ack failed, error: ", "{}", e),
+        }
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnConfirmCmd {
+    #[options(free, help = "identifier of the destination chain")]
+    dest_chain_id: String,
+
+    #[options(free, help = "identifier of the source chain")]
+    src_chain_id: String,
+
+    #[options(free, help = "identifier of the destination client")]
+    dest_client_id: ClientId,
+
+    #[options(free, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(free, help = "identifier of the destination connection")]
+    dest_connection_id: ConnectionId,
+
+    #[options(free, help = "identifier of the source connection")]
+    src_connection_id: ConnectionId,
+}
+
+impl TxRawConnConfirmCmd {
+    fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
+        let dest_chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing destination chain configuration".to_string())?;
+
+        let src_chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing src chain configuration".to_string())?;
+
+        let opts = ConnectionOpenOptions {
+            src_chain_config: src_chain_config.clone(),
+            dest_chain_config: dest_chain_config.clone(),
+            src_client_id: self.src_client_id.clone(),
+            dest_client_id: self.dest_client_id.clone(),
+            src_connection_id: self.src_connection_id.clone(),
+            dest_connection_id: self.dest_connection_id.clone(),
+        };
+
+        Ok(opts)
+    }
+}
+
+impl Runnable for TxRawConnConfirmCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let opts = match self.validate_options(&config) {
+            Err(err) => {
+                status_err!("invalid options: {}", err);
+                return;
+            }
+            Ok(result) => result,
+        };
+        status_info!("Message", "{:?}", opts);
+
+        let res: Result<String, Error> =
+            build_conn_confirm_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+
+        match res {
+            Ok(receipt) => status_info!("conn confirm, result: ", "{:?}", receipt),
+            Err(e) => status_info!("conn confirm failed, error: ", "{}", e),
         }
     }
 }
