@@ -170,13 +170,13 @@ impl KeyRingOperations for KeyRing {
     fn get_key(&self) -> Result<KeyEntry, Error> {
         match &self {
             KeyRing::MemoryKeyStore {
-                store: s,
-                chain_config: c,
+                store,
+                chain_config,
             } => {
-                if !s.contains_key(c.key_name.clone().as_str()) {
+                if !store.contains_key(chain_config.key_name.clone().as_str()) {
                     Err(Kind::InvalidKey.into())
                 } else {
-                    let key_content = s.get(c.key_name.as_str());
+                    let key_content = store.get(chain_config.key_name.as_str());
                     match key_content {
                         Some(k) => {
                             let key_entry = self.key_from_seed_file(k).map_err(|e| {
@@ -189,16 +189,17 @@ impl KeyRingOperations for KeyRing {
                 }
             }
             KeyRing::TestKeyStore {
-                store: s,
-                chain_config: c,
+                store,
+                chain_config,
             } => {
                 // Fetch key from test folder and return key entry
-                let keys_folder = get_test_backend_folder(c).map_err(|e| {
+                let keys_folder = get_test_backend_folder(chain_config).map_err(|e| {
                     Kind::KeyStoreOperation
                         .context(format!("failed to retrieve keys folder: {:?}", e))
                 })?;
 
-                let mut filename = Path::new(keys_folder.as_os_str()).join(c.key_name.clone());
+                let mut filename =
+                    Path::new(keys_folder.as_os_str()).join(chain_config.key_name.clone());
                 filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
                 if Path::exists(filename.as_path()) {
@@ -226,29 +227,31 @@ impl KeyRingOperations for KeyRing {
     fn add_key(&self, key_contents: &str) -> Result<(), Error> {
         match self {
             KeyRing::MemoryKeyStore {
-                store: s,
-                chain_config: c,
-            } => match s.get(c.key_name.clone().as_str()) {
+                store,
+                chain_config,
+            } => match store.get(chain_config.key_name.clone().as_str()) {
                 Some(s) => Err(Kind::ExistingKey
                     .context("key already exists".to_string())
                     .into()),
                 None => {
-                    s.clone()
-                        .insert(c.key_name.to_string(), key_contents.to_string());
+                    store
+                        .clone()
+                        .insert(chain_config.key_name.to_string(), key_contents.to_string());
                     Ok(())
                 }
             },
             KeyRing::TestKeyStore {
-                store: s,
-                chain_config: c,
+                store,
+                chain_config,
             } => {
                 // Save file to appropriate location in the keys folder
-                let keys_folder = get_test_backend_folder(c).map_err(|e| {
+                let keys_folder = get_test_backend_folder(chain_config).map_err(|e| {
                     Kind::KeyStoreOperation
                         .context(format!("failed to retrieve keys folder: {:?}", e))
                 })?;
 
-                let mut filename = Path::new(keys_folder.as_os_str()).join(c.key_name.clone());
+                let mut filename =
+                    Path::new(keys_folder.as_os_str()).join(chain_config.key_name.clone());
                 filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
                 let mut file = File::create(filename)
