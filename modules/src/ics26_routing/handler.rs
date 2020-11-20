@@ -75,9 +75,9 @@ mod tests {
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
-    use crate::mock_client::header::MockHeader;
-    use crate::mock_client::state::{MockClientState, MockConsensusState};
-    use crate::mock_context::MockContext;
+    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::context::MockContext;
+    use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
 

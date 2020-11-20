@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -75,7 +75,7 @@ impl Msg for MsgConnectionOpenInit {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
+impl Protobuf<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {}
 
 impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
     type Error = anomaly::Error<Kind>;
@@ -94,7 +94,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty: msg
                 .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?
+                .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer,

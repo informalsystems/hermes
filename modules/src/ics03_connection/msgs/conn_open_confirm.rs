@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use tendermint::account::Id as AccountId;
 
@@ -59,7 +59,7 @@ impl Msg for MsgConnectionOpenConfirm {
     }
 }
 
-impl DomainType<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
+impl Protobuf<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {}
 
 impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     type Error = anomaly::Error<Kind>;
@@ -69,7 +69,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
+            .ok_or(Kind::MissingProofHeight)?
             .try_into() // Cast from the raw height type into the domain type.
             .map_err(|e| Kind::InvalidProof.context(e))?;
         Ok(Self {

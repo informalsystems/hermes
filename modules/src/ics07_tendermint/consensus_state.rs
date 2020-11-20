@@ -5,10 +5,11 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 
 use tendermint::time::Time;
 use tendermint::Hash;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
+use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use tendermint::hash::Algorithm;
 
@@ -43,7 +44,7 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
     }
 }
 
-impl DomainType<RawConsensusState> for ConsensusState {}
+impl Protobuf<RawConsensusState> for ConsensusState {}
 
 impl TryFrom<RawConsensusState> for ConsensusState {
     type Error = Error;
@@ -85,6 +86,12 @@ impl From<tendermint::block::Header> for ConsensusState {
             timestamp: header.time,
             next_validators_hash: header.next_validators_hash,
         }
+    }
+}
+
+impl From<Header> for ConsensusState {
+    fn from(header: Header) -> Self {
+        Self::from(header.signed_header.header)
     }
 }
 

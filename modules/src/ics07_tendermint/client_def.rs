@@ -1,4 +1,5 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics02_client::header::Header as ICS2Header;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
@@ -18,10 +19,21 @@ impl ClientDef for TendermintClient {
 
     fn check_header_and_update_state(
         &self,
-        _client_state: Self::ClientState,
-        _header: Self::Header,
+        client_state: Self::ClientState,
+        header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
-        todo!()
+        if client_state.latest_height() >= header.height() {
+            return Err(
+                "received header height is lower than (or equal to) client latest height".into(),
+            );
+        }
+
+        // TODO: Additional verifications should be implemented here.
+
+        Ok((
+            client_state.with_header(header.clone()),
+            ConsensusState::from(header),
+        ))
     }
 
     fn verify_client_consensus_state(

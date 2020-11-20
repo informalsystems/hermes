@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use std::str::FromStr;
 
 use tendermint::account::Id as AccountId;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
@@ -87,7 +87,7 @@ impl Msg for MsgCreateAnyClient {
     }
 }
 
-impl DomainType<RawMsgCreateClient> for MsgCreateAnyClient {}
+impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
 
 impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
     type Error = Error;
@@ -146,7 +146,7 @@ mod tests {
         let signer = get_dummy_account_id();
 
         let tm_header = get_dummy_tendermint_header();
-        let tm_client_state = get_dummy_tendermint_client_state();
+        let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());
 
         let msg = MsgCreateAnyClient::new(
             client_id,

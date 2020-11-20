@@ -11,7 +11,7 @@ use bitcoin::hashes::hex::ToHex;
 use k256::ecdsa::{SigningKey, VerifyKey};
 
 use tendermint_proto::crypto::ProofOps;
-use tendermint_proto::DomainType;
+use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast;
 
@@ -149,7 +149,7 @@ impl CosmosSDKChain {
         let proposer = validators
             .iter()
             .find(|v| v.address == signed_header.header.proposer_address)
-            .ok_or_else(|| Kind::EmptyResponseValue)?;
+            .ok_or(Kind::EmptyResponseValue)?;
 
         let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
 
