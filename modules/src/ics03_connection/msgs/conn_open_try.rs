@@ -115,7 +115,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(|| Kind::MissingConsensusHeight)?
+            .ok_or(Kind::MissingConsensusHeight)?
             .try_into() // Cast from the raw height type into the domain type.
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -124,7 +124,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
+            .ok_or(Kind::MissingProofHeight)?
             .try_into()
             .map_err(|e| Kind::InvalidProof.context(e))?;
 
@@ -155,7 +155,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             counterparty_chosen_connection_id,
             counterparty: msg
                 .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?
+                .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
             counterparty_versions: validate_versions(msg.counterparty_versions)
                 .map_err(|e| Kind::InvalidVersion.context(e))?,

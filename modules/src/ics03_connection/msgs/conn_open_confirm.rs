@@ -69,7 +69,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(|| Kind::MissingProofHeight)?
+            .ok_or(Kind::MissingProofHeight)?
             .try_into() // Cast from the raw height type into the domain type.
             .map_err(|e| Kind::InvalidProof.context(e))?;
         Ok(Self {

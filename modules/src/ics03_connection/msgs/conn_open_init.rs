@@ -94,7 +94,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .map_err(|e| Kind::IdentifierError.context(e))?,
             counterparty: msg
                 .counterparty
-                .ok_or_else(|| Kind::MissingCounterparty)?
+                .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
             version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
             signer,

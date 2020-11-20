@@ -32,22 +32,24 @@ impl Runnable for V0Cmd {
 
 pub fn v0_task(config: Config) -> Result<(), BoxError> {
     // Load source and destination chains configurations
-    let src_chain_config =
-        config.chains.get(0).cloned().ok_or_else(|| {
-            "Configuration for source chain (position 0 in chains config) not found"
-        })?;
+    let src_chain_config = config
+        .chains
+        .get(0)
+        .cloned()
+        .ok_or("Configuration for source chain (position 0 in chains config) not found")?;
 
-    let dst_chain_config =
-        config.chains.get(1).cloned().ok_or_else(|| {
-            "Configuration for dest. chain (position 1 in chains config) not found"
-        })?;
+    let dst_chain_config = config
+        .chains
+        .get(1)
+        .cloned()
+        .ok_or("Configuration for dest. chain (position 1 in chains config) not found")?;
 
     // Parse & validate client identifiers
     let client_src_id = ClientId::from_str(
         src_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client on source chain not found")?,
+            .ok_or("Config for client on source chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for src chain ({:?})", e))?;
 
@@ -55,7 +57,7 @@ pub fn v0_task(config: Config) -> Result<(), BoxError> {
         dst_chain_config
             .client_ids
             .get(0)
-            .ok_or_else(|| "Config for client for dest. chain not found")?,
+            .ok_or("Config for client for dest. chain not found")?,
     )
     .map_err(|e| format!("Error validating client identifier for dst chain ({:?})", e))?;
 

@@ -29,8 +29,14 @@ pub enum Kind {
     #[error("invalid proof: missing height")]
     MissingHeight,
 
+    #[error("invalid timeout height for the packet")]
+    InvalidTimeoutHeight,
+
     #[error("invalid packet")]
     InvalidPacket,
+
+    #[error("there is no packet in this message")]
+    MissingPacket,
 
     #[error("acknowledgement too long")]
     AcknowledgementTooLong,

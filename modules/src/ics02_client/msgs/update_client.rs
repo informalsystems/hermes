@@ -68,7 +68,7 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or_else(|| Kind::InvalidRawHeader)?;
+        let raw_header = raw.header.ok_or(Kind::InvalidRawHeader)?;
         let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
         Ok(MsgUpdateAnyClient {
