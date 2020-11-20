@@ -1,7 +1,7 @@
------------------------------ MODULE ICS20Chain -----------------------------
+------------------------------- MODULE Chain -------------------------------
 
-EXTENDS Integers, FiniteSets, Sequences, ICS20Definitions, PacketHandlers, 
-        FungibleTokenTransferHandlers
+EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions, 
+        ICS04PacketHandlers, ICS20FungibleTokenTransferHandlers
         
 CONSTANTS MaxHeight, \* maximal chain height
           MaxPacketSeq, \* maximal packet sequence number
@@ -146,7 +146,7 @@ AcknowledgePacket ==
 \* Initially
 \*  - the chain store is initialized to 
 \*    ICS20InitChainStore(ChainID, <<NativeDenomination>>) 
-\*    (defined in ICS20Definitions.tla)
+\*    (defined in IBCTokenTransferDefinitions.tla)
 \*  - incomingPacketDatagrams is an empty sequence
 \*  - the appPacketSeq is set to 1
 Init == 
@@ -172,5 +172,5 @@ Fairness ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 11:38:31 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:25:00 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska

@@ -1,6 +1,6 @@
-------------------- MODULE FungibleTokenTransferHandlers -------------------
+----------------- MODULE ICS20FungibleTokenTransferHandlers ----------------
 
-EXTENDS Integers, FiniteSets, Sequences, Bank, ICS20Definitions
+EXTENDS Integers, FiniteSets, Sequences, Bank, IBCTokenTransferDefinitions
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle 
@@ -189,5 +189,5 @@ OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:05:10 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:24:28 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:02:01 CEST 2020 by ilinastoilkovska

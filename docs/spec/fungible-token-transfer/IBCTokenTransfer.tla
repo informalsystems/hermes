@@ -1,6 +1,6 @@
--------------------------- MODULE ICS20Environment --------------------------
+------------------------- MODULE IBCTokenTransfer -------------------------
 
-EXTENDS Integers, FiniteSets, Sequences, ICS20Definitions
+EXTENDS Integers, FiniteSets, Sequences, IBCTokenTransferDefinitions
 
 CONSTANTS MaxHeight, \* maximal height of all the chains in the system
           MaxPacketSeq, \* maximal packet sequence number
@@ -30,16 +30,16 @@ vars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA,
  ***************************************************************************)
 
 \* We suppose there are two chains that communicate, ChainA and ChainB
-\* ChainA -- Instance of ICS20Chain.tla
-ChainA == INSTANCE ICS20Chain
+\* ChainA -- Instance of Chain.tla
+ChainA == INSTANCE Chain
           WITH ChainID <- "chainA",
                NativeDenomination <- NativeDenominationChainA,
                chainStore <- chainAstore,
                incomingPacketDatagrams <- packetDatagramsChainA,    
                appPacketSeq <- appPacketSeqChainA    
 
-\* ChainB -- Instance of ICS20Chain.tla
-ChainB == INSTANCE ICS20Chain
+\* ChainB -- Instance of Chain.tla
+ChainB == INSTANCE Chain
           WITH ChainID <- "chainB",
                NativeDenomination <- NativeDenominationChainB,
                chainStore <- chainBstore,
@@ -242,5 +242,5 @@ PreservationOfTotalSupply ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:07:19 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:23:23 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

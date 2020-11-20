@@ -1,11 +1,12 @@
---------------------------- MODULE PacketHandlers ---------------------------
+------------------------ MODULE ICS04PacketHandlers ------------------------
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
  packet datagrams
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, ICS20Definitions, FungibleTokenTransferHandlers    
+EXTENDS Integers, FiniteSets, IBCTokenTransferDefinitions, 
+        ICS20FungibleTokenTransferHandlers    
 
 (***************************************************************************
  Packet datagram handlers
@@ -283,5 +284,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 11:55:50 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:24:12 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

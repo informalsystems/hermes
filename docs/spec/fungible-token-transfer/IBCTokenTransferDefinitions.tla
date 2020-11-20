@@ -1,4 +1,4 @@
--------------------------- MODULE ICS20Definitions --------------------------
+-------------------- MODULE IBCTokenTransferDefinitions --------------------
 
 (***************************************************************************
  This module contains definitions of operators that are shared between the 
@@ -398,5 +398,5 @@ ICS20InitChainStore(ChainID, Denomination) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 11:07:17 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:23:08 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska
