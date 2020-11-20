@@ -287,10 +287,7 @@ ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
         packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, maxBalance, 
                                            Seq(ChannelIDs \union PortIDs \union {Denomination}))
                                    \X
-                                   BOOLEAN),
-                                   
-        escrowAccounts : [ChannelIDs \X Seq(ChannelIDs \union PortIDs \union {Denomination})
-                            -> 0..maxBalance]
+                                   BOOLEAN)
     ] 
     
 (******************************** Datagrams ********************************
@@ -365,15 +362,6 @@ GetCounterpartyPortID(chainID) ==
 GetLatestHeight(chain) ==
     AsInt(chain.height) 
 
-\* get the escrow accounts of chain         
-GetEscrowAccounts(chain) ==
-    chain.escrowAccounts    
-
-\* get the account ballance of an escrow account on chain given a denomination         
-GetEscrowAccountBalance(chain, denomination) ==
-    chain.escrowAccounts[denomination]    
-                       
-
 (***************************************************************************
  Initial values of a channel end, chain store, accounts for ICS02
  ***************************************************************************)
@@ -396,8 +384,6 @@ InitUnorderedChannelEnd(ChainID) ==
 \*      - the channelEnd is initialized to InitUnorderedChannelEnd
 \*      - the packet committments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
-\*      - escrowAccounts is a function that initially maps the native  
-\*        denomination to maxBalance and 0, respectively 
 ICS20InitChainStore(ChainID, Denomination) == 
     [
         height |-> 1,
@@ -407,12 +393,10 @@ ICS20InitChainStore(ChainID, Denomination) ==
         packetCommitments |-> AsSetPacketCommitment({}),
         packetReceipts |-> AsSetPacketReceipt({}),
         packetAcknowledgements |-> AsSetPacketAcknowledgement({}),
-        packetsToAcknowledge |-> AsSeqPacketsToAck(<<>>),
-        
-        escrowAccounts |-> [<<chanID, denom>> \in {<<GetChannelID(ChainID), Denomination>>} |-> 0]
+        packetsToAcknowledge |-> AsSeqPacketsToAck(<<>>)        
     ] 
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 21:55:30 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 11:07:17 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska

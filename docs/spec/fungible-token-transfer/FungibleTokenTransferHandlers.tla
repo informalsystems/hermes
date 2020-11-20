@@ -9,7 +9,7 @@ EXTENDS Integers, FiniteSets, Sequences, Bank, ICS20Definitions
 
 \* create outgoing packet data
 \*      - accounts is the map of bank accounts
-\*      - escrowAccounts is the map of escrow accounts of the chain that creates the packet
+\*      - escrowAccounts is the map of escrow accounts
 \*      - sender, receiver are chain IDs (used as addresses)
 CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender, receiver) ==
     \* sending chain is source if the denomination is of length 1  
@@ -28,7 +28,7 @@ CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender,
     
     \* get the outcome of TransferCoins from the sender account to the escrow account
     LET transferCoinsOutcome ==   
-            TransferCoins(accounts, sender, escrowAccounts, GetChannelID(sender), denomination, amount) IN
+            TransferCoins(accounts, sender, escrowAccounts, GetCounterpartyChannelID(sender), denomination, amount) IN
     
     \* get the outcome of BurnCoins applied to the sender account
     LET burnCoinsOutcome ==
@@ -63,12 +63,10 @@ CreateOutgoingPacketData(accounts, escrowAccounts, denomination, amount, sender,
               ] 
 
 \* receive an ICS20 packet
-OnPacketRecv(chainID, chain, accounts, packet, maxBalance) ==
+OnPacketRecv(chain, accounts, escrowAccounts, packet, maxBalance) ==
     \* get packet data and denomination
     LET data == packet.data IN
     LET denomination == data.denomination IN 
-    
-    LET escrowAccounts == chain.escrowAccounts IN
     
     \* receiving chain is source if 
     \* the denomination is prefixed by srcPortID and srcChannelID
@@ -126,13 +124,10 @@ OnPacketRecv(chainID, chain, accounts, packet, maxBalance) ==
               ]    
                 
 \* refund tokens on unsuccessful ack
-RefundTokens(chainID, chain, accounts, packet, maxBalance) ==
-\* should return a record with escrow, accounts 
+RefundTokens(accounts, escrowAccounts, packet, maxBalance) ==
     \* get packet data and denomination
     LET data == packet.data IN
-    LET denomination == data.denomination IN
-    
-    LET escrowAccounts == chain.escrowAccounts IN
+    LET denomination == data.denomination IN    
     
     \* chain is source if the denomination is of length 1  
     \* or if the denomination is not prefixed by srcPortID and srcChannelID  
@@ -180,19 +175,19 @@ RefundTokens(chainID, chain, accounts, packet, maxBalance) ==
               ]
     
 \* acknowledge an ICS20 packet
-OnPaketAck(chainID, chain, accounts, packet, ack, maxBalance) ==
+OnPaketAck(accounts, escrowAccounts, packet, ack, maxBalance) ==
     IF ~ack
-    THEN RefundTokens(chainID, chain, accounts, packet, maxBalance)
+    THEN RefundTokens(accounts, escrowAccounts, packet, maxBalance)
     ELSE [
             accounts |-> accounts,
-            escrowAccounts |-> chain.escrowAccounts
+            escrowAccounts |-> escrowAccounts
          ]
 
 \* timeout an ICS20 packet
-OnTimeoutPacket(chainID, chain, accounts, packet, maxBalance) ==
-    RefundTokens(chainID, chain, accounts, packet, maxBalance) 
+OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) ==
+    RefundTokens(accounts, escrowAccounts, packet, maxBalance) 
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 18:54:25 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:05:10 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:02:01 CEST 2020 by ilinastoilkovska

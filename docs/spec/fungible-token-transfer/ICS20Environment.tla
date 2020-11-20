@@ -15,13 +15,14 @@ VARIABLES chainAstore, \* store of ChainA
           packetLog, \* packet log
           appPacketSeqChainA, \* packet sequence number from the application on ChainA
           appPacketSeqChainB, \* packet sequence number from the application on ChainB
-          accounts \* a map from chainIDs and denominations to account balances
+          accounts, \* a map from chainIDs and denominations to account balances
+          escrowAccounts \* a map from channelIDs and denominations to escrow account balances
 
 chainAvars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA>>
 chainBvars == <<chainBstore, packetDatagramsChainB, appPacketSeqChainB>>
 vars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA,
           chainBstore, packetDatagramsChainB, appPacketSeqChainB,
-          packetLog, accounts>>
+          packetLog, accounts, escrowAccounts>>
           
           
 (***************************************************************************
@@ -74,7 +75,7 @@ UpdateClientHeights(chainID) ==
                                 {chainAstore.height}                          
                           ]
           /\ UNCHANGED chainAstore
-    /\ UNCHANGED <<accounts, appPacketSeqChainA, appPacketSeqChainB>>
+    /\ UNCHANGED <<accounts, escrowAccounts, appPacketSeqChainA, appPacketSeqChainB>>
     /\ UNCHANGED <<packetDatagramsChainA, packetDatagramsChainB, packetLog>>
 
 
@@ -149,7 +150,7 @@ CreateDatagrams ==
         /\ packetLog' = Tail(packetLog)    
         /\ UNCHANGED <<chainAstore, chainBstore>>
         /\ UNCHANGED <<appPacketSeqChainA, appPacketSeqChainB>>
-        /\ UNCHANGED accounts                       
+        /\ UNCHANGED <<accounts, escrowAccounts>>                       
     
 (***************************************************************************
  Component actions
@@ -176,10 +177,16 @@ EnvironmentAction ==
 Init ==
     /\ ChainA!Init
     /\ ChainB!Init
+    \* bank accounts for each chain ID and its native denomination have MaxBalance
     /\ accounts = 
             [<<chainID, nativeDenom>> \in {<<"chainA", <<NativeDenominationChainA>>>>, 
                                            <<"chainB", <<NativeDenominationChainB>>>>} 
                                            |-> MaxBalance]  
+    \* escrow accounts for each channel ID and the chain's native denomination have balance 0                                            
+    /\ escrowAccounts = 
+            [<<counterpartyChannelID, nativeDenom>> \in {<<"chanBtoA", <<NativeDenominationChainA>>>>, 
+                                           <<"chanAtoB", <<NativeDenominationChainB>>>>} 
+                                           |-> 0]
     /\ packetLog = AsPacketLog(<<>>)
     
     
@@ -209,7 +216,6 @@ GetNativeDenomination(chainID) ==
 \* compute sum over accounts that have chainID's native denomination
 SumOverAllAccounts(chainID) ==
     LET nativeDenomination == GetNativeDenomination(chainID) IN
-    LET chain == GetChainByID(chainID) IN
     
     LET counterpartyChainID == GetCounterpartyChainID(chainID) IN
     LET channelID == GetChannelID(chainID) IN
@@ -221,9 +227,9 @@ SumOverAllAccounts(chainID) ==
     IF <<counterpartyChainID, prefixedDenomination>> \in DOMAIN accounts
     THEN accounts[<<chainID, <<nativeDenomination>>>>] +
          accounts[<<counterpartyChainID, prefixedDenomination>>] + 
-         chain.escrowAccounts[<<channelID, <<nativeDenomination>>>>]
+         escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
     ELSE accounts[<<chainID, <<nativeDenomination>>>>] +
-         chain.escrowAccounts[<<channelID, <<nativeDenomination>>>>]
+         escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
 
 (***************************************************************************
  Properties and invariants
@@ -236,5 +242,5 @@ PreservationOfTotalSupply ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 21:56:52 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:07:19 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

@@ -12,7 +12,7 @@ EXTENDS Integers, FiniteSets, ICS20Definitions, FungibleTokenTransferHandlers
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
-HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
+HandlePacketRecv(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet
@@ -29,7 +29,7 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
        /\ packet.dstChannelID = channelEnd.channelID
     THEN \* call application function OnPacketRecv
          LET OnPacketRecvOutcome == 
-                    OnPacketRecv(chainID, chain, accounts, packet, maxBalance) IN
+                    OnPacketRecv(chain, accounts, escrowAccounts, packet, maxBalance) IN
          \* if OnPacketRecv is successful
          IF /\ ~OnPacketRecvOutcome.error
          \* if the packet has not been received  
@@ -47,26 +47,31 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
                     \* should be written
                     !.packetsToAcknowledge = 
                         Append(chain.packetsToAcknowledge, 
-                               <<packet, OnPacketRecvOutcome.packetAck>>),
-                               
-                    \* update escrow accounts 
-                    !.escrowAccounts = 
-                        OnPacketRecvOutcome.escrowAccounts] IN
+                               <<packet, OnPacketRecvOutcome.packetAck>>)
+                  ] IN
               
               \* update the chain store, packet log, and bank accounts
               [store |-> updatedChainStore, 
                 \* TODO: packet receipt on the 
                log |-> log, 
-               accounts |-> OnPacketRecvOutcome.accounts] 
+               accounts |-> OnPacketRecvOutcome.accounts, 
+               escrowAccounts |-> OnPacketRecvOutcome.escrowAccounts] 
     
     \* otherwise, do not update the chain store, the log, the accounts               
-          ELSE [store |-> chain, log |-> log, accounts |-> accounts] 
-    ELSE [store |-> chain, log |-> log, accounts |-> accounts] IN
+          ELSE [store |-> chain, 
+                log |-> log, 
+                accounts |-> accounts, 
+                escrowAccounts |-> escrowAccounts] 
+    ELSE [store |-> chain, 
+          log |-> log, 
+          accounts |-> accounts, 
+          escrowAccounts |-> escrowAccounts] 
+    IN
     
     packetRecvUpdates
 
 \* Handle "PacketAck" datagrams    
-HandlePacketAck(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
+HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet
@@ -81,7 +86,7 @@ HandlePacketAck(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
     
     \* call application function OnPacketAck
     LET OnPacketAckOutcome == 
-            OnPaketAck(chainID, chain, accounts, packet, ack, maxBalance) IN
+            OnPaketAck(accounts, escrowAccounts, packet, ack, maxBalance) IN
     
     IF \* if the channel and connection ends are open for packet transmission
        /\ channelEnd.state = "OPEN"
@@ -93,15 +98,19 @@ HandlePacketAck(chainID, chain, packetDatagram, log, accounts, maxBalance) ==
     THEN LET updatedChainStore == 
                 [chain EXCEPT 
                     !.packetCommitments = 
-                        chain.packetCommitments \ {packetCommitment},
-                    !.escrowAccounts = 
-                        OnPacketAckOutcome.escrowAccounts] IN
+                        chain.packetCommitments \ {packetCommitment}] 
+         IN
 
          [store |-> updatedChainStore, 
           log |-> log, 
-          accounts |-> OnPacketAckOutcome.accounts]     
+          accounts |-> OnPacketAckOutcome.accounts, 
+          escrowAccounts |-> OnPacketAckOutcome.escrowAccounts]     
+          
     \* otherwise, do not update the chain store, log and accounts
-    ELSE [store |-> chain, log |-> log, accounts |-> accounts] 
+    ELSE [store |-> chain, 
+          log |-> log, 
+          accounts |-> accounts, 
+          escrowAccounts |-> escrowAccounts] 
     
     
 \* write packet committments to chain store
@@ -177,7 +186,8 @@ LogAcknowledgement(chainID, chain, log, packetToAck) ==
     ELSE log
     
 \* check if a packet timed out
-TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
+TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts, 
+              packet, proofHeight, maxBalance) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet committment that should be in chain store
@@ -192,6 +202,10 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
                               portID |-> packet.dstPortID,
                               sequence |-> packet.sequence]) IN                              
     
+    \* call application function OnTimeoutPacket
+    LET OnTimeoutPacketOutcome == 
+            OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) IN
+    
     \* if channel end is open
     IF /\ channelEnd.state = "OPEN"
     \* dstChannelID and dstPortID match counterparty channel and port IDs
@@ -205,13 +219,21 @@ TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
     \* counterparty chain has not received the packet   
        /\ packetReceipt \notin counterpartyChain.packetReceipts
     \* remove packet commitment
-    THEN [chain EXCEPT !.packetCommitments = 
-                            chain.packetCommitments \ {packetCommitment}]
-    \* otherwise, do not update the chain store
-    ELSE chain
+    THEN LET updatedChainStore == 
+                [chain EXCEPT !.packetCommitments = 
+                    chain.packetCommitments \ {packetCommitment}] IN
+         [store |-> updatedChainStore,
+          accounts |-> OnTimeoutPacketOutcome.accounts,
+          escrowAccounts |-> OnTimeoutPacketOutcome.escrowAccounts]
+          
+    \* otherwise, do not update the chain store and accounts
+    ELSE [store |-> chain,
+          accounts |-> accounts,
+          escrowAccounts |-> escrowAccounts]
         
 \* check if a packet timed out on close
-TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
+TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts, 
+               packet, proofHeight, maxBalance) ==
     \* get channel end
     LET channelEnd == chain.channelEnd IN
     \* get counterparty channel end
@@ -229,6 +251,10 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
                               portID |-> packet.dstPortID,
                               sequence |-> packet.sequence]) IN
     
+    \* call application function OnTimeoutPacket
+    LET OnTimeoutPacketOutcome == 
+            OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) IN
+    
     \* if dstChannelID and dstPortID match counterparty channel and port IDs
     IF /\ packet.dstChannelID = channelEnd.counterpartyChannelID
        /\ packet.dstPort = channelEnd.counterpartyPortID
@@ -243,13 +269,19 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
     \* counterparty chain has not received the packet   
        /\ packetReceipt \notin counterpartyChain.packetReceipts
     \* remove packet commitment
-    THEN [chain EXCEPT !.packetCommitments = 
-                            chain.packetCommitments \ {packetCommitment}]
-    \* otherwise, do not update the chain store
-    ELSE chain
-    
+    THEN  LET updatedChainStore == 
+                [chain EXCEPT !.packetCommitments = 
+                    chain.packetCommitments \ {packetCommitment}] IN
+         [store |-> updatedChainStore,
+          accounts |-> OnTimeoutPacketOutcome.accounts,
+          escrowAccounts |-> OnTimeoutPacketOutcome.escrowAccounts]
+          
+    \* otherwise, do not update the chain store and accounts
+    ELSE [store |-> chain,
+          accounts |-> accounts,
+          escrowAccounts |-> escrowAccounts]
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 20:51:24 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 11:55:50 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

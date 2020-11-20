@@ -14,11 +14,12 @@ VARIABLES chainStore, \* chain store, containing client heights, a connection en
           incomingPacketDatagrams, \* sequence of incoming packet datagrams
           appPacketSeq, \* packet sequence number from the application on the chain
           packetLog, \* packet log
-          accounts \* a map from chainIDs and denominations to account balances
+          accounts, \* a map from chainIDs and denominations to account balances
+          escrowAccounts \* a map from channelIDs and denominations to escrow account balances
           
 
 vars == <<chainStore, incomingPacketDatagrams, appPacketSeq, 
-          packetLog, accounts>>
+          packetLog, accounts, escrowAccounts>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system 
 
 (***************************************************************************
@@ -36,14 +37,7 @@ CreatePacket(packetData) ==
         dstChannelID |-> GetCounterpartyChannelID(ChainID),
         dstPortID |-> GetCounterpartyPortID(ChainID)
     ])
-
-\* update packet committments and escrow accounts in the chain store
-UpdatePacketCommitmentsAndEscrowAcounts(chain, packet, escrowAccounts) ==
-    \* write packet committment
-    LET writtenCommittmentStore == WritePacketCommitment(chain, packet) IN
-    \* update escrow accounts 
-    [writtenCommittmentStore EXCEPT !.escrowAccounts = escrowAccounts]
-    
+  
 
 \* Update the chain store and packet log with ICS20 packet datagrams 
 TokenTransferUpdate(chainID, packetDatagram, log) ==
@@ -51,10 +45,14 @@ TokenTransferUpdate(chainID, packetDatagram, log) ==
     \* get the new updated store, packet log, and accounts
     LET tokenTransferUpdate == 
         IF packetDatagram.type = "PacketRecv"
-        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, log, accounts, MaxBalance)
+        THEN HandlePacketRecv(chainStore, packetDatagram, log, accounts, escrowAccounts, MaxBalance)
         ELSE IF packetDatagram.type = "PacketAck"
              THEN HandlePacketAck(chainID, chainStore, packetDatagram, log, accounts, MaxBalance)
-             ELSE [store |-> chainStore, log |-> log, accounts |-> accounts] IN
+             ELSE [store |-> chainStore, 
+                   log |-> log, 
+                   accounts |-> accounts, 
+                   escrowAccounts |-> escrowAccounts]
+    IN
       
     LET tokenTransferStore == tokenTransferUpdate.store IN
     
@@ -67,7 +65,8 @@ TokenTransferUpdate(chainID, packetDatagram, log) ==
        
     [store |-> updatedStore, 
      log |-> tokenTransferUpdate.log, 
-     accounts |-> tokenTransferUpdate.accounts]       
+     accounts |-> tokenTransferUpdate.accounts,
+     escrowAccounts |-> tokenTransferUpdate.escrowAccounts]       
 
 (***************************************************************************
  Chain actions
@@ -76,7 +75,8 @@ TokenTransferUpdate(chainID, packetDatagram, log) ==
 AdvanceChain ==
     /\ chainStore.height + 1 \in Heights
     /\ chainStore' = [chainStore EXCEPT !.height = chainStore.height + 1]
-    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq, packetLog, accounts>>
+    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq, packetLog>>
+    /\ UNCHANGED <<accounts, escrowAccounts>>
 
 \* handle the incoming packet datagrams
 HandlePacketDatagrams ==
@@ -86,6 +86,7 @@ HandlePacketDatagrams ==
         /\ chainStore' = tokenTransferUpdate.store 
         /\ packetLog' = tokenTransferUpdate.log
         /\ accounts' = tokenTransferUpdate.accounts
+        /\ escrowAccounts' = tokenTransferUpdate.escrowAccounts
         /\ incomingPacketDatagrams' = Tail(incomingPacketDatagrams)
         /\ UNCHANGED appPacketSeq
         
@@ -96,7 +97,7 @@ SendPacket ==
     \* Create packet data 
     /\ LET createOutgoingPacketOutcome == 
             CreateOutgoingPacketData(accounts, 
-                                     chainStore.escrowAccounts,
+                                     escrowAccounts,
                                      <<NativeDenomination>>,
                                      MaxBalance,
                                      ChainID,
@@ -108,8 +109,7 @@ SendPacket ==
         \/ /\ ~createOutgoingPacketOutcome.error
            /\ LET packet == CreatePacket(createOutgoingPacketOutcome.packetData) IN
                 \* update chain store with packet committment
-                /\ chainStore' = UpdatePacketCommitmentsAndEscrowAcounts(
-                                chainStore, packet, createOutgoingPacketOutcome.escrowAccounts)
+                /\ chainStore' = WritePacketCommitment(chainStore, packet)
                 \* log sent packet
                 /\ packetLog' = Append(packetLog, 
                                   AsPacketLogEntry(
@@ -121,6 +121,8 @@ SendPacket ==
                                   ))
                 \* update bank accounts 
                 /\ accounts' = createOutgoingPacketOutcome.accounts
+                \* update escrow accounts 
+                /\ escrowAccounts' = createOutgoingPacketOutcome.escrowAccounts
                 \* increase application packet sequence
                 /\ appPacketSeq' = appPacketSeq + 1
                 /\ UNCHANGED incomingPacketDatagrams
@@ -134,8 +136,8 @@ AcknowledgePacket ==
     /\ chainStore' = WriteAcknowledgement(chainStore, Head(chainStore.packetsToAcknowledge))
     \* log acknowledgement
     /\ packetLog' = LogAcknowledgement(ChainID, chainStore, packetLog, Head(chainStore.packetsToAcknowledge))
-    /\ UNCHANGED <<incomingPacketDatagrams, accounts>>
-    /\ UNCHANGED <<appPacketSeq>>
+    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq>> 
+    /\ UNCHANGED <<accounts, escrowAccounts>>
 
 (***************************************************************************
  Specification
@@ -170,5 +172,5 @@ Fairness ==
         
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 19 18:16:20 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 11:38:31 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska
