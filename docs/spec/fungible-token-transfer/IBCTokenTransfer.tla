@@ -230,17 +230,50 @@ SumOverAllAccounts(chainID) ==
          escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
     ELSE accounts[<<chainID, <<nativeDenomination>>>>] +
          escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
+         
+\* compute sum over accounts that have chainID's native denomination
+SumOverLocalAccounts(chainID) ==
+    LET nativeDenomination == GetNativeDenomination(chainID) IN
+    LET counterpartyChannelID == GetCounterpartyChannelID(chainID) IN
+        
+    accounts[<<chainID, <<nativeDenomination>>>>] +
+    escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
+
+\* TODO
+SumOverEscrowAccounts(chainID) ==
+    LET nativeDenomination == GetNativeDenomination(chainID) IN
+    
+    LET escrowAccountIDs == {<<channelID, <<nativeDenomination>>>> : channelID \in ChannelIDs} IN
+   
+    TRUE
+
+\* TODO
+SumOverPacketsInFlight(chainID) ==
+    TRUE    
+
+\* TODO
+SumOverBankAccountsWithPrefixedDenoms(chainID) ==
+    TRUE    
 
 (***************************************************************************
  Properties and invariants
  ***************************************************************************)
 
-\* there are MaxAmount coins of each native denomination
-PreservationOfTotalSupply ==
+\* there are MaxAmount coins of the native denomination in bank and escrow accounts 
+\* for a given chain
+PreservationOfTotalSupplyLocal ==
     \A chainID \in ChainIDs :
-         SumOverAllAccounts(chainID) = MaxBalance
+         SumOverLocalAccounts(chainID) = MaxBalance
+
+PreservationOfTotalSupplyGlobal ==
+    \A chainID \in ChainIDs : 
+        SumOverEscrowAccounts(chainID) = 
+            SumOverPacketsInFlight(chainID) + SumOverBankAccountsWithPrefixedDenoms(chainID)
+         
+ICS20Inv ==
+    /\ PreservationOfTotalSupplyLocal
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:23:23 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 18:41:52 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

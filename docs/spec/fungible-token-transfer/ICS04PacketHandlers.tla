@@ -13,7 +13,7 @@ EXTENDS Integers, FiniteSets, IBCTokenTransferDefinitions,
  ***************************************************************************)
 
 \* Handle "PacketRecv" datagrams
-HandlePacketRecv(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
+HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, maxBalance) ==
     \* get chainID's channel end
     LET channelEnd == chain.channelEnd IN
     \* get packet
@@ -36,7 +36,16 @@ HandlePacketRecv(chain, packetDatagram, log, accounts, escrowAccounts, maxBalanc
          \* if the packet has not been received  
             /\ [channelID |-> packet.dstChannelID, sequence |-> packet.sequence] 
                 \notin chain.packetReceipts
-         THEN LET updatedChainStore == [chain EXCEPT
+         THEN \* construct log entry for packet log
+              LET logEntry == AsPacketLogEntry(
+                            [type |-> "PacketRecv",
+                             srcChainID |-> chainID,
+                             sequence |-> packet.sequence,
+                             channelID |-> packet.dstChannelID,
+                             timeoutHeight |-> packet.timeoutHeight 
+                            ]) IN
+         
+              LET updatedChainStore == [chain EXCEPT
                     \* record that the packet has been received 
                     !.packetReceipts = 
                         chain.packetReceipts 
@@ -53,8 +62,7 @@ HandlePacketRecv(chain, packetDatagram, log, accounts, escrowAccounts, maxBalanc
               
               \* update the chain store, packet log, and bank accounts
               [store |-> updatedChainStore, 
-                \* TODO: packet receipt on the 
-               log |-> log, 
+               log |-> Append(log, logEntry), 
                accounts |-> OnPacketRecvOutcome.accounts, 
                escrowAccounts |-> OnPacketRecvOutcome.escrowAccounts] 
     
@@ -284,5 +292,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:24:12 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 16:08:42 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

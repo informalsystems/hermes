@@ -129,11 +129,6 @@ argument](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-
 This is implemented in the invariant TODO in the file TODO.
 
 
-A related property which is not in the ICS English specification is:
-TODO: Formalize" Solo sent 10 josef coins to A, so no transfer that
-wants to send more than 10 Josef coins is not allowed." 
-
-
 #### Preservation of total supply
 
 We understand "Preservation of total supply" as conjunction of two
@@ -146,22 +141,19 @@ properties
 The following intuitive property can only be specified and guaranteed
 if all involved chains only perform valid transitions:
   
-- The sum the following amounts is constant:
-    *  in denomination *d* in escrow accounts in the chain in which *d* is native
-	*  in denomination *d* in in-flight packets of transactions
-	*  in prefixed denomination ending with *d* in accounts in which *d* is **not**
-       native
-	*  in prefixed denomination ending with *d* in in-flight packets of transactions
+- The amount in denomination *d* in escrow accounts in the chain in which *d* is native
+is equal to the sum of:
+	* the amounts in-flight packets in a (prefixed or unprefixed) denomination ending with *d*
+	* the amounts in accounts in a prefixed denomination ending with *d*, in which *d* is 
+**not**  native
 
-These two properties are implemented in the invariant TODO in the file TODO.
+These two properties are implemented in the invariant `ICS20Inv` in the file 
+[IBCTokenTransfer.tla](IBCTokenTransfer.tla).
 
 #### No Whitelist
 
-For each possible denomination *d*, every well-formed incoming
-transfer packet in *d* should result in adding the
-specified amount of token's to the receiver's account.
-
-This is implemented in the invariant TODO in the file TODO.
+This is a design requirement, and not a correctness property that can be expressed 
+in temporal logic.
 
 
 #### Symmetric

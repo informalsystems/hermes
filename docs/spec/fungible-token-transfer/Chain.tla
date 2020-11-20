@@ -45,9 +45,9 @@ TokenTransferUpdate(chainID, packetDatagram, log) ==
     \* get the new updated store, packet log, and accounts
     LET tokenTransferUpdate == 
         IF packetDatagram.type = "PacketRecv"
-        THEN HandlePacketRecv(chainStore, packetDatagram, log, accounts, escrowAccounts, MaxBalance)
+        THEN HandlePacketRecv(chainID, chainStore, packetDatagram, log, accounts, escrowAccounts, MaxBalance)
         ELSE IF packetDatagram.type = "PacketAck"
-             THEN HandlePacketAck(chainID, chainStore, packetDatagram, log, accounts, MaxBalance)
+             THEN HandlePacketAck(chainStore, packetDatagram, log, accounts, escrowAccounts, MaxBalance)
              ELSE [store |-> chainStore, 
                    log |-> log, 
                    accounts |-> accounts, 
@@ -172,5 +172,5 @@ Fairness ==
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:25:00 CET 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 16:09:50 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska
