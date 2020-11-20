@@ -6,7 +6,8 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 ### FEATURES
 
-- Update to tendermint-rs version `0.17-RC2` ([#368])
+- Update Tokio to version 0.3 ([#402])
+- Update to tendermint-rs version `0.17-RC3` ([#403])
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
@@ -45,6 +46,8 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#373]: https://github.com/informalsystems/ibc-rs/issues/373
 [#374]: https://github.com/informalsystems/ibc-rs/issues/374
 [#389]: https://github.com/informalsystems/ibc-rs/issues/389
+[#402]: https://github.com/informalsystems/ibc-rs/issues/402
+[#403]: https://github.com/informalsystems/ibc-rs/issues/403
 [proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS
