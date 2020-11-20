@@ -37,19 +37,19 @@ The [core callback functions](https://github.com/cosmos/ics/tree/master/spec/ics
 `createOutgoingPacket()`, `onRecvPacket()`, `onRecvPacket()` and 
 	`onTimeoutPacket()`, as well as the auxiliary function `refundTokens()`
 	are modeled in
-	[FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla). 
+	[ICS20FungibleTokenTransferHandlers.tla](ICS20FungibleTokenTransferHandlers.tla). 
 	
 ### Helper modules
 
 In order to completely specify the behavior of fungible token
 transfer, we encoded the required additional functionalities of IBC in
 the TLA+ modules discussed below. From
-the viewpoint of TLA+, [ICS20Environment.tla](ICS20Environment.tla) is
+the viewpoint of TLA+, [IBCTokenTransfer.tla](IBCTokenTransfer.tla) is
 the main module that brings together all other modules that are
 discussed here. We will discuss it the last.
 
 	
-#### [PacketHandlers.tla](PacketHandlers.tla) 
+#### [ICS04PacketHandlers.tla](ICS04PacketHandlers.tla) 
 
 This module captures the functions
 specifying packet flow and handling from [ICS
@@ -59,7 +59,7 @@ specifying packet flow and handling from [ICS
 The bank module encodes functions defined by the Cosmos bank
   application. 
   
-#### [ICS20Chain.tla](ICS20Chain.tla)
+#### [Chain.tla](Chain.tla)
 
 This module captures the relevant
   Cosmos SDK functionality, that is, the context in which token
@@ -78,11 +78,11 @@ Next ==
 - `AdvanceChain`: increments the height of the chain
 - `HandlePacketDatagrams`: based on the datagram type of the next
   incoming datagram (created in
-  [ICS20Environment.tla](ICS20Environment.tla); see below), it calls the
+  [IBCTokenTransfer.tla](IBCTokenTransfer.tla); see below), it calls the
   appropriate datagram handlers from ICS 04
-  ([PacketHandlers.tla](PacketHandlers.tla)), which in turn call the
+  ([ICS04PacketHandlers.tla](ICS04PacketHandlers.tla)), which in turn call the
   ICS 20 module callbacks specified in
-  [FungibleTokenTransferHandlers.tla](FungibleTokenTransferHandlers.tla).
+  [ICS20FungibleTokenTransferHandlers.tla](ICS20FungibleTokenTransferHandlers.tla).
   This result in an update of the application state (bank accounts,
   packet log, provable and private store).
 - `SendPacket`: models that a user wants to initiate a transfer
@@ -90,10 +90,10 @@ Next ==
   on the packet log.
 
 
-#### [ICS20Environment.tla](ICS20Environment.tla) 
+#### [IBCTokenTransfer.tla](IBCTokenTransfer.tla) 
 This is the main module that
   brings everything together. It specifies a transitions system
-  consisting of two chains ([ICS20Chain.tla](ICS20Chain.tla)) and a
+  consisting of two chains ([Chain.tla](Chain.tla)) and a
   relayer node (modelled here). 
 ```tla
 Next ==
@@ -189,7 +189,7 @@ claims to originate from A to some chain C.
 
 ### Constants
 
-The module `ICS20Environment.tla` is parameterized by the constants:
+The module `IBCTokenTransfer.tla` is parameterized by the constants:
  - `MaxHeight`, a natural number denoting the maximal height of the chains,
  - `MaxPacketSeq`, a natural number denoting the maximal packet sequence number,
  - `MaxBalance`, a natural number denoting the maximal bank account balance,
@@ -200,7 +200,7 @@ The module `ICS20Environment.tla` is parameterized by the constants:
 ### Importing the specification into TLA+ toolbox
 
 To import the specification in the TLA+ toolbox and run TLC:
-  - add a new spec in TLA+ toolbox with the root-module file `ICS20Environment.tla` 
+  - add a new spec in TLA+ toolbox with the root-module file `IBCTokenTransfer.tla` 
   - create a model
   - assign a value to the constants
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
