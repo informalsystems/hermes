@@ -99,10 +99,10 @@ impl Protobuf<RawHeight> for Height {}
 impl TryFrom<RawHeight> for Height {
     type Error = anomaly::Error<Kind>;
 
-    fn try_from(msg: RawHeight) -> Result<Self, Self::Error> {
+    fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
-            version_number: msg.version_number,
-            version_height: msg.version_height,
+            version_number: raw.version_number,
+            version_height: raw.version_height,
         })
     }
 }

@@ -37,8 +37,8 @@ impl ChannelConfig {
 
 impl Channel {
     pub fn new(
-        src_chain: &dyn ChainHandle,
-        dst_chain: &dyn ChainHandle,
+        src_chain: impl ChainHandle,
+        dst_chain: impl ChainHandle,
         connection: Connection, // Semantic dependency
         config: ChannelConfig,
     ) -> Result<Channel, ChannelError> {

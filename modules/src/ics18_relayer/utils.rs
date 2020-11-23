@@ -81,7 +81,7 @@ mod tests {
 
         // Create two mock contexts, one for each chain.
         let mut ctx_a = MockContext::new(
-            ChainId::new("mockgaiaA", 1).unwrap(),
+            ChainId::new("mockgaiaA".to_string(), 1),
             HostType::Mock,
             5,
             chain_a_start_height,
@@ -93,7 +93,7 @@ mod tests {
             Some(client_on_a_for_b_height),
         );
         let mut ctx_b = MockContext::new(
-            ChainId::new("mockgaiaB", 1).unwrap(),
+            ChainId::new("mockgaiaB".to_string(), 1),
             HostType::SyntheticTendermint,
             5,
             chain_b_start_height,

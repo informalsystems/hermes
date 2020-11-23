@@ -6,12 +6,12 @@ use tendermint::consensus::Params;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::Protobuf;
 
-use crate::Height;
-
+use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ClientState {
@@ -122,6 +122,10 @@ impl crate::ics02_client::state::ClientState for ClientState {
     fn is_frozen(&self) -> bool {
         // If 'frozen_height' is set to a non-zero value, then the client state is frozen.
         !self.frozen_height.is_zero()
+    }
+
+    fn wrap_any(self) -> AnyClientState {
+        AnyClientState::Tendermint(self)
     }
 }
 
@@ -360,7 +364,7 @@ pub mod test_util {
                 Duration::from_secs(128000),
                 Duration::from_millis(3000),
                 Height::new(
-                    ChainId::chain_version(tm_header.chain_id.to_string()),
+                    ChainId::chain_version(tm_header.chain_id.as_str()),
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),

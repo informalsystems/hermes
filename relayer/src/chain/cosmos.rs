@@ -1,77 +1,66 @@
-use anomaly::fail;
-use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 use std::time::Duration;
+use std::{convert::TryFrom, convert::TryInto, sync::Arc};
 
-use bytes::Bytes;
+use anomaly::fail;
+use bitcoin::hashes::hex::ToHex;
+
 use prost::Message;
 use prost_types::Any;
-
-use bitcoin::hashes::hex::ToHex;
-use k256::ecdsa::{SigningKey, VerifyKey};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::Protobuf;
-use tendermint_rpc::endpoint::abci_query::AbciQuery;
-use tendermint_rpc::endpoint::broadcast;
 
-use tendermint::abci::{Path as TendermintABCIPath, Transaction};
+use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-use tendermint::validator::Info;
-use tendermint::vote::Power;
-use tendermint_light_client::types::{LightBlock, SignedHeader, TrustThreshold, ValidatorSet};
+
+use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
-// Support for GRPC
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-
 use ibc_proto::cosmos::base::v1beta1::Coin;
+
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty};
+use ibc::downcast;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics07_tendermint::client_state::ClientState;
-use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc::ics07_tendermint::header::Header as TMHeader;
+
+use ibc::ics23_commitment::merkle::MerkleProof;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-use ibc::tx_msg::Msg;
+
 use ibc::Height as ICSHeight;
 
 use super::Chain;
+
 use crate::chain::QueryResponse;
-use crate::client::tendermint::LightClient;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use crate::util::block_on;
 
 // Support for GRPC
-use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use std::fs;
 use tonic::codegen::http::Uri;
 
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
-    light_client: Option<LightClient>,
+    rt: Arc<TokioRuntime>,
     keybase: KeyRing,
 }
 
 impl CosmosSDKChain {
-    pub fn from_config(config: ChainConfig) -> Result<Self, Error> {
+    pub fn from_config(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let primary = config
             .primary()
             .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
@@ -81,32 +70,35 @@ impl CosmosSDKChain {
 
         // Initialize key store and load key
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
-            .map_err(|e| Kind::KeyBase.context("error initializing key store"))?;
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(Self {
+            rt,
             config,
             keybase: key_store,
             rpc_client,
-            light_client: None,
         })
     }
 
     /// The unbonding period of this chain
-    async fn unbonding_period(&self) -> Result<Duration, Error> {
+    pub fn unbonding_period(&self) -> Result<Duration, Error> {
         // TODO - generalize this
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-        let mut client =
-            ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr)
-                .await
-                .map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = self
+            .rt
+            .block_on(
+                ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
-        let response = client
-            .params(request)
-            .await
+        let response = self
+            .rt
+            .block_on(client.params(request))
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
@@ -115,95 +107,41 @@ impl CosmosSDKChain {
             .ok_or_else(|| Kind::Grpc.context("none staking params".to_string()))?
             .unbonding_time
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
+
         Ok(Duration::from_secs(res.seconds as u64))
     }
 
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
-        Ok(block_on(self.rpc_client().genesis())
+        Ok(self
+            .rt
+            .block_on(self.rpc_client().genesis())
             .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
-    }
-
-    /// Get the account for the signer
-    pub fn get_signer(&mut self) -> Result<AccountId, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
-    }
-
-    fn query_light_block_at_height(&self, height: Height) -> Result<LightBlock, Error> {
-        let client = self.rpc_client();
-
-        let signed_header = fetch_signed_header(client, height)?;
-        assert_eq!(height, signed_header.header.height);
-
-        // Get the validator list.
-        let validators = fetch_validators(client, height)?;
-
-        // Get the proposer.
-        let proposer = validators
-            .iter()
-            .find(|v| v.address == signed_header.header.proposer_address)
-            .ok_or(Kind::EmptyResponseValue)?;
-
-        let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
-
-        // Create the validator set with the proposer from the header.
-        // This is required by IBC on-chain validation.
-        let validator_set = ValidatorSet::new(
-            validators.clone(),
-            Some(*proposer),
-            voting_power.try_into().map_err(|e| Kind::Rpc.context(e))?,
-        );
-
-        // Create the next validator set without the proposer.
-        let next_validator_set = fetch_validator_set(client, height.increment())?;
-
-        let light_block = LightBlock::new(
-            signed_header,
-            validator_set,
-            next_validator_set,
-            self.config()
-                .peers
-                .clone()
-                .ok_or_else(|| Kind::Config.context("no peers configured".to_string()))?
-                .primary,
-        );
-
-        Ok(light_block)
     }
 }
 
 impl Chain for CosmosSDKChain {
-    type LightBlock = LightBlock;
-    type LightClient = LightClient;
+    type Header = TMHeader;
+    type LightBlock = TMLightBlock;
     type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
-    type Error = Error;
 
-    fn ics_query(
-        &self,
-        data: Path,
-        height: ICSHeight,
-        prove: bool,
-    ) -> Result<QueryResponse, Self::Error> {
-        let height =
-            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-        self.query(data, height, prove)
+    fn config(&self) -> &ChainConfig {
+        &self.config
     }
 
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Self::Error> {
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
+
+    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
+        let height =
+            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
 
         if !data.is_provable() & prove {
             return Err(Kind::Store
@@ -211,7 +149,9 @@ impl Chain for CosmosSDKChain {
                 .into());
         }
 
-        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response =
+            self.rt
+                .block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // Verify response proof, if requested.
         if prove {
@@ -223,8 +163,8 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send(
-        &mut self,
+    fn send_tx(
+        &self,
         proto_msgs: Vec<Any>,
         key: KeyEntry,
         memo: String,
@@ -252,8 +192,10 @@ impl Chain for CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_response =
-            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response = self
+            .rt
+            .block_on(query_account(self, key.account))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -309,35 +251,20 @@ impl Chain for CosmosSDKChain {
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
-        let response =
-            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+        let response = self
+            .rt
+            .block_on(broadcast_tx_commit(self, txraw_buf))
+            .map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
     }
 
-    fn config(&self) -> &ChainConfig {
-        &self.config
-    }
-
-    fn keybase(&self) -> &KeyRing {
-        &self.keybase
-    }
-
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
-    }
-
-    fn set_light_client(&mut self, light_client: LightClient) {
-        self.light_client = Some(light_client);
-    }
-
-    fn light_client(&self) -> Option<&LightClient> {
-        self.light_client.as_ref()
-    }
-
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
+        let status = self
+            .rt
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
@@ -349,7 +276,7 @@ impl Chain for CosmosSDKChain {
         }
 
         Ok(ICSHeight {
-            version_number: ChainId::chain_version(status.node_info.network.to_string()),
+            version_number: ChainId::chain_version(status.node_info.network.as_str()),
             version_height: u64::from(status.sync_info.latest_block_height),
         })
     }
@@ -358,36 +285,70 @@ impl Chain for CosmosSDKChain {
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<AnyClientState, Error> {
-        Ok(self
-            .ics_query(ClientStatePath(client_id.clone()), height, false)
+    ) -> Result<Self::ClientState, Error> {
+        let client_state = self
+            .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
-            })?)
+            })?;
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        Ok(client_state)
     }
 
     fn proven_client_state(
         &self,
         client_id: &ClientId,
         height: ICSHeight,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
         let res = self
-            .ics_query(ClientStatePath(client_id.clone()), height, true)
+            .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query.context(e))?;
 
-        let state = AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let client_state =
+            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
-        Ok((state, res.proof))
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+
+        Ok((client_state, res.proof))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<AnyClientState, Error> {
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        let res = self
+            .query(
+                ClientConsensusPath {
+                    client_id: client_id.clone(),
+                    epoch: consensus_height.version_number,
+                    height: consensus_height.version_height,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state =
+            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
+
+        Ok((consensus_state, res.proof))
+    }
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
         let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
             self.config.trust_threshold,
             self.config.trusting_period,
-            block_on(self.unbonding_period())?,
+            self.unbonding_period()?,
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,
             ICSHeight::zero(),
@@ -396,57 +357,84 @@ impl Chain for CosmosSDKChain {
             false,
             false,
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))
-        .map(AnyClientState::Tendermint)?;
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
 
         Ok(client_state)
     }
 
-    fn build_consensus_state(&self, height: ICSHeight) -> Result<AnyConsensusState, Error> {
-        // Build the client state.
-        let tm_height = height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
-        let latest_header = self
-            .query_light_block_at_height(tm_height)?
-            .signed_header
-            .header;
-
-        // Build the consensus state.
-        let consensus_state =
-            AnyConsensusState::Tendermint(TendermintConsensusState::from(latest_header));
-
-        Ok(consensus_state)
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error> {
+        Ok(TMConsensusState::from(light_block.signed_header.header))
     }
 
     fn build_header(
         &self,
-        trusted_height: ICSHeight,
-        target_height: ICSHeight,
-    ) -> Result<AnyHeader, Error> {
-        // Get the light block at target_height from chain.
-        let tm_target_height = target_height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::Query.context(e))?;
-        let target_light_block = self.query_light_block_at_height(tm_target_height)?;
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error> {
+        let trusted_height =
+            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
-        // Get the light block at trusted_height from the chain.
-        let height = trusted_height
-            .version_height
-            .try_into()
-            .map_err(|e| Kind::Query.context(e))?;
-        let trusted_light_block = self.query_light_block_at_height(height)?;
-
-        // Create the ics07 Header to be included in the MsgUpdateClient.
-        Ok(AnyHeader::Tendermint(TendermintHeader {
-            signed_header: target_light_block.signed_header,
-            validator_set: target_light_block.validators,
+        Ok(TMHeader {
             trusted_height,
-            trusted_validator_set: trusted_light_block.validators,
-        }))
+            signed_header: target_light_block.signed_header.clone(),
+            validator_set: fix_validator_set(&target_light_block)?,
+            trusted_validator_set: fix_validator_set(&trusted_light_block)?,
+        })
     }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
+    }
+
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<AccountId, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(signer)
+    }
+
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(key)
+    }
+}
+
+fn fix_validator_set(light_block: &TMLightBlock) -> Result<ValidatorSet, Error> {
+    let validators = light_block.validators.validators();
+    // Get the proposer.
+    let proposer = validators
+        .iter()
+        .find(|v| v.address == light_block.signed_header.header.proposer_address)
+        .ok_or(Kind::EmptyResponseValue)?;
+
+    let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
+
+    // Create the validator set with the proposer from the header.
+    // This is required by IBC on-chain validation.
+    let validator_set = ValidatorSet::new(
+        validators.clone(),
+        Some(*proposer),
+        voting_power
+            .try_into()
+            .map_err(|e| Kind::EmptyResponseValue.context(e))?,
+    );
+    Ok(validator_set)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
@@ -500,28 +488,7 @@ async fn abci_query(
     Ok(response)
 }
 
-/// Perform a `broadcast_tx_sync`, and return the corresponding deserialized response data.
-async fn broadcast_tx_sync(
-    chain: &CosmosSDKChain,
-    data: Vec<u8>,
-) -> Result<String, anomaly::Error<Kind>> {
-    let response = chain
-        .rpc_client()
-        .broadcast_tx_sync(data.into())
-        .await
-        .map_err(|e| Kind::Rpc.context(e))?;
-
-    if !response.code.is_ok() {
-        // Fail with response log.
-        println!("Tx Error Response: {:?}", response);
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
-    }
-
-    Ok(serde_json::to_string_pretty(&response).unwrap())
-}
-
 /// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
-/// TODO - move send() to this once RPC tendermint response is fixed
 async fn broadcast_tx_commit(
     chain: &CosmosSDKChain,
     data: Vec<u8>,
@@ -535,24 +502,8 @@ async fn broadcast_tx_commit(
     Ok(serde_json::to_string(&response).unwrap())
 }
 
-fn fetch_signed_header(client: &HttpClient, height: Height) -> Result<SignedHeader, Error> {
-    Ok(block_on(client.commit(height))
-        .map_err(|e| Kind::Rpc.context(e))?
-        .signed_header)
-}
-
-fn fetch_validators(client: &HttpClient, height: Height) -> Result<Vec<Info>, Error> {
-    Ok(block_on(client.validators(height))
-        .map_err(|e| Kind::Rpc.context(e))?
-        .validators)
-}
-
-fn fetch_validator_set(client: &HttpClient, height: Height) -> Result<ValidatorSet, Error> {
-    Ok(ValidatorSet::new_simple(fetch_validators(client, height)?))
-}
-
 /// Uses the GRPC client to retrieve the account sequence
-async fn query_account(chain: &mut CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
+async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
     let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
     let mut client =
         ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)

@@ -1,18 +1,21 @@
-use crate::prelude::*;
-use std::convert::TryInto;
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::{ChainConfig, Config};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::Path::ChannelEnds;
 
-use crate::error::{Error, Kind};
-use ibc::ics24_host::error::ValidationError;
 use relayer::chain::{Chain, CosmosSDKChain};
-use tendermint::chain::Id as ChainId;
+use relayer::config::{ChainConfig, Config};
+
 use tendermint_proto::Protobuf;
+
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
@@ -94,11 +97,15 @@ impl Runnable for QueryChannelEndCmd {
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
+
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
         let res: Result<ChannelEnd, Error> = chain
             .query(
                 ChannelEnds(opts.port_id, opts.channel_id),
-                opts.height.try_into().unwrap(),
+                height,
                 opts.proof,
             )
             .map_err(|e| Kind::Query.context(e).into())

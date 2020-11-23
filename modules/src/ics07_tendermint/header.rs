@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::{client_def::AnyHeader, client_type::ClientType};
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics24_host::identifier::ChainId;
 use crate::Height;
@@ -27,9 +27,13 @@ impl crate::ics02_client::header::Header for Header {
 
     fn height(&self) -> Height {
         Height::new(
-            ChainId::chain_version(self.signed_header.header.chain_id.to_string()),
+            ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
+    }
+
+    fn wrap_any(self) -> AnyHeader {
+        AnyHeader::Tendermint(self)
     }
 }
 

@@ -2,7 +2,7 @@ use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use thiserror::Error;
 
 use crate::chain::{handle::ChainHandle, Chain};
-use crate::foreign_client::ForeignClient;
+// use crate::foreign_client::ForeignClient;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
@@ -33,8 +33,8 @@ impl ConnectionConfig {
 
 impl Connection {
     pub fn new(
-        _src_chain: &dyn ChainHandle,
-        _dst_chain: &dyn ChainHandle,
+        _src_chain: impl ChainHandle,
+        _dst_chain: impl ChainHandle,
         _foreign_client: &ForeignClient,
         config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {

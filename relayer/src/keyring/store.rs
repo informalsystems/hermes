@@ -1,29 +1,23 @@
 use crate::config::ChainConfig;
 use crate::keyring::errors::{Error, Kind};
 use bech32::ToBase32;
-use bitcoin::hashes::hex::ToHex;
-use bitcoin::secp256k1::{All, Message, Secp256k1};
+
+use bitcoin::secp256k1::Secp256k1;
 use bitcoin::{
     network::constants::Network,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-    PrivateKey,
 };
-use bitcoin_wallet::account::MasterAccount;
+
 use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
-use k256::{
-    ecdsa::{signature::Signer, signature::Verifier, Signature, SigningKey, VerifyKey},
-    EncodedPoint, SecretKey,
-};
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use serde_json::Value;
 use std::collections::BTreeMap;
-use std::convert::AsMut;
 use std::convert::TryFrom;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use tendermint::account::Id as AccountId;
 
@@ -55,7 +49,7 @@ pub trait KeyRingOperations: Sized {
     fn key_from_mnemonic(&self, mnemonic_words: &str) -> Result<KeyEntry, Error>;
     fn get_key(&self) -> Result<KeyEntry, Error>;
     fn add_key(&self, key_contents: &str) -> Result<(), Error>;
-    fn sign_msg(&mut self, msg: Vec<u8>) -> Vec<u8>;
+    fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8>;
 }
 
 /// Key entry stores the Private Key and Public Key as well the address
@@ -92,7 +86,7 @@ impl KeyRingOperations for KeyRing {
                         .context(format!("failed to create keys folder: {:?}", e))
                 })?;
                 fs::create_dir_all(keys_folder.clone())
-                    .map_err(|e| Kind::KeyStoreOperation.context("error creating keys folder"))?;
+                    .map_err(|_| Kind::KeyStoreOperation.context("error creating keys folder"))?;
 
                 Ok(KeyRing::TestKeyStore {
                     store: Box::<Path>::from(keys_folder),
@@ -107,10 +101,10 @@ impl KeyRingOperations for KeyRing {
         let key_json: Value =
             serde_json::from_str(key_file_content).map_err(|e| Kind::InvalidKey.context(e))?;
 
-        let signer: AccountId;
+        let _signer: AccountId;
         let key: KeyEntry;
 
-        let mnemonic: String = "".to_string();
+        let _mnemonic: String = "".to_string();
         let mnemonic_value = key_json.get("mnemonic");
         match mnemonic_value {
             Some(m) => {
@@ -179,7 +173,7 @@ impl KeyRingOperations for KeyRing {
                     let key_content = store.get(chain_config.key_name.as_str());
                     match key_content {
                         Some(k) => {
-                            let key_entry = self.key_from_seed_file(k).map_err(|e| {
+                            let key_entry = self.key_from_seed_file(k).map_err(|_| {
                                 Kind::KeyStoreOperation.context("failed to get key entry")
                             })?;
                             Ok(key_entry)
@@ -189,7 +183,7 @@ impl KeyRingOperations for KeyRing {
                 }
             }
             KeyRing::TestKeyStore {
-                store,
+                store: _store,
                 chain_config,
             } => {
                 // Fetch key from test folder and return key entry
@@ -204,13 +198,13 @@ impl KeyRingOperations for KeyRing {
 
                 if Path::exists(filename.as_path()) {
                     let mut file = File::open(filename)
-                        .map_err(|e| Kind::KeyStoreOperation.context("cannot open key file"))?;
+                        .map_err(|_| Kind::KeyStoreOperation.context("cannot open key file"))?;
                     let mut file_contents = String::new();
                     file.read_to_string(&mut file_contents)
-                        .map_err(|e| Kind::KeyStoreOperation.context("cannot ready key file"))?;
+                        .map_err(|_| Kind::KeyStoreOperation.context("cannot ready key file"))?;
                     let key_entry =
                         self.key_from_seed_file(file_contents.as_str())
-                            .map_err(|e| {
+                            .map_err(|_| {
                                 Kind::KeyStoreOperation.context("error getting key from file")
                             })?;
                     Ok(key_entry)
@@ -230,7 +224,7 @@ impl KeyRingOperations for KeyRing {
                 store,
                 chain_config,
             } => match store.get(chain_config.key_name.clone().as_str()) {
-                Some(s) => Err(Kind::ExistingKey
+                Some(_s) => Err(Kind::ExistingKey
                     .context("key already exists".to_string())
                     .into()),
                 None => {
@@ -241,7 +235,7 @@ impl KeyRingOperations for KeyRing {
                 }
             },
             KeyRing::TestKeyStore {
-                store,
+                store: _store,
                 chain_config,
             } => {
                 // Save file to appropriate location in the keys folder
@@ -255,10 +249,10 @@ impl KeyRingOperations for KeyRing {
                 filename.set_extension(KEYSTORE_FILE_EXTENSION);
 
                 let mut file = File::create(filename)
-                    .map_err(|e| Kind::KeyStoreOperation.context("error creating the key file"))?;
+                    .map_err(|_| Kind::KeyStoreOperation.context("error creating the key file"))?;
 
                 file.write_all(&key_contents.as_bytes())
-                    .map_err(|e| Kind::KeyStoreOperation.context("error writing the key file"))?;
+                    .map_err(|_| Kind::KeyStoreOperation.context("error writing the key file"))?;
 
                 Ok(())
             }
@@ -266,7 +260,7 @@ impl KeyRingOperations for KeyRing {
     }
 
     /// Sign a message
-    fn sign_msg(&mut self, msg: Vec<u8>) -> Vec<u8> {
+    fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8> {
         let key = self.get_key().unwrap();
         let private_key_bytes = key.private_key.private_key.to_bytes();
         let signing_key = SigningKey::new(private_key_bytes.as_slice()).unwrap();

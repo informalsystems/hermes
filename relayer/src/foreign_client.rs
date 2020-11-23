@@ -39,6 +39,7 @@ impl ForeignClientConfig {
     }
 }
 
+#[derive(Clone)]
 pub struct ForeignClient {
     config: ForeignClientConfig,
 }
@@ -50,8 +51,8 @@ impl ForeignClient {
     /// TODO: what are the pre-conditions for success?
     /// Is it enough to have a "live" handle to each of `host` and `target` chains?
     pub fn new(
-        host: &dyn ChainHandle,
-        source: &dyn ChainHandle,
+        host: impl ChainHandle,
+        source: impl ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
         // Query the client state on source chain.
@@ -69,8 +70,8 @@ impl ForeignClient {
 
     /// Creates on the `dst` chain an IBC client which will store headers for `src` chain.
     fn create_client(
-        dst: &dyn ChainHandle, // The chain that will host the client.
-        src: &dyn ChainHandle, // The client will store headers of this chain.
+        dst: impl ChainHandle, // The chain that will host the client.
+        src: impl ChainHandle, // The client will store headers of this chain.
         client_id: &ClientId,
     ) -> Result<(), ForeignClientError> {
         // Fetch latest header of the source chain.
@@ -79,18 +80,25 @@ impl ForeignClient {
         })?;
 
         // Build the client state. The source chain handle will take care of the details.
-        let client_state = src.assemble_client_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreate(format!("failed to assemble client state ({:?})", e))
-        })?;
+        let client_state = src
+            .build_client_state(latest_header.height())
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed to assemble client state ({:?})",
+                    e
+                ))
+            })?;
 
         // Build the consensus state.
         // The source chain handle knows the internals of assembling this message.
-        let consensus_state = src.assemble_consensus_state(&latest_header).map_err(|e| {
-            ForeignClientError::ClientCreate(format!(
-                "failed to assemble client consensus state ({:?})",
-                e
-            ))
-        })?;
+        let consensus_state = src
+            .build_consensus_state(latest_header.height())
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed to assemble client consensus state ({:?})",
+                    e
+                ))
+            })?;
 
         // Extract the signer from the destination chain handle, for example `dst.get_signer()`.
         let signer: AccountId = todo!();
@@ -121,8 +129,8 @@ impl ForeignClient {
 
     pub fn update(
         &mut self,
-        src_chain: &dyn ChainHandle,
-        dst_chain: &dyn ChainHandle,
+        src_chain: impl ChainHandle,
+        dst_chain: impl ChainHandle,
         src_target_height: Height,
     ) -> Result<Height, ForeignClientError> {
         /*

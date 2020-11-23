@@ -13,7 +13,7 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
@@ -22,15 +22,15 @@ pub struct TxCreateClientCmd {
         free,
         help = "identifier of the client to be created on destination chain"
     )]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 }
 
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let opts = match validate_common_options(
-            &self.dest_chain_id,
+            &self.dst_chain_id,
             &self.src_chain_id,
-            &self.dest_client_id,
+            &self.dst_client_id,
         ) {
             Err(err) => {
                 status_err!("invalid options: {}", err);
@@ -53,7 +53,7 @@ impl Runnable for TxCreateClientCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpdateClientCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
@@ -62,22 +62,22 @@ pub struct TxUpdateClientCmd {
         free,
         help = "identifier of the client to be updated on destination chain"
     )]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 }
 
 impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
-        let opts = match validate_common_options(
-            &self.dest_chain_id,
-            &self.src_chain_id,
-            &self.dest_client_id,
-        ) {
+        let opts =
+            validate_common_options(&self.dst_chain_id, &self.src_chain_id, &self.dst_client_id);
+
+        let opts = match opts {
+            Ok(result) => result,
             Err(err) => {
                 status_err!("invalid options: {}", err);
                 return;
             }
-            Ok(result) => result,
         };
+
         status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
@@ -91,14 +91,14 @@ impl Runnable for TxUpdateClientCmd {
 }
 
 fn validate_common_options(
-    dest_chain_id: &str,
+    dst_chain_id: &str,
     src_chain_id: &str,
-    dest_client_id: &ClientId,
+    dst_client_id: &ClientId,
 ) -> Result<ClientOptions, String> {
     let config = app_config();
 
     // Validate parameters
-    let dest_chain_id = dest_chain_id
+    let dst_chain_id = dst_chain_id
         .parse()
         .map_err(|_| "bad destination chain identifier".to_string())?;
 
@@ -107,10 +107,10 @@ fn validate_common_options(
         .map_err(|_| "bad source chain identifier".to_string())?;
 
     // Get the source and destination chain configuration
-    let dest_chain_config = config
+    let dst_chain_config = config
         .chains
         .iter()
-        .find(|c| c.id == dest_chain_id)
+        .find(|c| c.id == dst_chain_id)
         .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
     let src_chain_config = config
@@ -120,8 +120,8 @@ fn validate_common_options(
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
     Ok(ClientOptions {
-        dest_client_id: dest_client_id.clone(),
-        dest_chain_config: dest_chain_config.clone(),
+        dst_client_id: dst_client_id.clone(),
+        dst_chain_config: dst_chain_config.clone(),
         src_chain_config: src_chain_config.clone(),
     })
 }

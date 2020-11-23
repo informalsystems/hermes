@@ -1,66 +1,56 @@
-use std::convert::TryInto;
-use std::str::FromStr;
-use std::time::Duration;
-
-use bitcoin::hashes::hex::ToHex;
 use prost_types::Any;
-
-use tendermint::account::Id as AccountId;
-use tendermint_light_client::types::TrustThreshold;
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
-use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
-use ibc::ics24_host::Path::ClientConsensusState;
-use ibc::ics24_host::Path::ClientState as ClientStatePath;
+use ibc::ics02_client::state::ClientState;
+use ibc::ics02_client::state::ConsensusState;
+
+use ibc::ics24_host::identifier::ClientId;
+
 use ibc::tx_msg::Msg;
 use ibc::Height;
 
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRingOperations};
 
 #[derive(Clone, Debug)]
 pub struct ClientOptions {
-    pub dest_client_id: ClientId,
-    pub dest_chain_config: ChainConfig,
+    pub dst_client_id: ClientId,
+    pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
 }
 
 pub fn build_create_client(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
-    dest_client_id: ClientId,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    dst_client_id: ClientId,
 ) -> Result<MsgCreateAnyClient, Error> {
     // Verify that the client has not been created already, i.e the destination chain does not
     // have a state for this client.
-    let client_state = dest_chain.query_client_state(&dest_client_id, Height::default());
+    let client_state = dst_chain.query_client_state(&dst_client_id, Height::default());
     if client_state.is_ok() {
         return Err(Into::<Error>::into(Kind::CreateClient(
-            dest_client_id,
+            dst_client_id,
             "client already exists".into(),
         )));
     }
 
     // Get signer
-    let signer = dest_chain
+    let signer = dst_chain
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build client create message with the data from source chain at latest height.
     let latest_height = src_chain.query_latest_height()?;
     Ok(MsgCreateAnyClient::new(
-        dest_client_id,
-        src_chain.build_client_state(latest_height)?,
-        src_chain.build_consensus_state(latest_height)?,
+        dst_client_id,
+        src_chain.build_client_state(latest_height)?.wrap_any(),
+        src_chain.build_consensus_state(latest_height)?.wrap_any(),
         signer,
     )
     .map_err(|e| {
@@ -69,17 +59,15 @@ pub fn build_create_client(
 }
 
 pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let new_msg = build_create_client(dest_chain, src_chain, opts.dest_client_id)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.dst_client_id)?;
 
-    Ok(dest_chain.send(
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
+
+    Ok(dst_chain.send_tx(
         vec![new_msg.to_any::<RawMsgCreateClient>()],
         key,
         "".to_string(),
@@ -88,22 +76,24 @@ pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error
 }
 
 pub fn build_update_client(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
-    dest_client_id: ClientId,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    dst_client_id: ClientId,
     target_height: Height,
 ) -> Result<Vec<Any>, Error> {
     // Get the latest trusted height from the client state on destination.
-    let trusted_height = dest_chain
-        .query_client_state(&dest_client_id, Height::default())?
+    let trusted_height = dst_chain
+        .query_client_state(&dst_client_id, Height::default())?
         .latest_height();
 
-    // Get the key and signer from key seed file.
-    let signer = dest_chain.get_signer()?;
+    let header = src_chain
+        .build_header(trusted_height, target_height)?
+        .wrap_any();
 
+    let signer = dst_chain.get_signer()?;
     let new_msg = MsgUpdateAnyClient {
-        client_id: dest_client_id,
-        header: src_chain.build_header(trusted_height, target_height)?,
+        client_id: dst_client_id,
+        header,
         signer,
     };
 
@@ -111,16 +101,19 @@ pub fn build_update_client(
 }
 
 pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let target_height = src_chain.query_latest_height()?;
-    let new_msgs = build_update_client(dest_chain, src_chain, opts.dest_client_id, target_height)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let new_msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain,
+        opts.dst_client_id,
+        target_height,
+    )?;
 
-    Ok(dest_chain.send(new_msgs, key, "".to_string(), 0)?)
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
+
+    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
 }

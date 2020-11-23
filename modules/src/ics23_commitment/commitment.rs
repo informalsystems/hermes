@@ -5,6 +5,8 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::error::{Error, Kind};
 
+use super::merkle::MerkleProof;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
@@ -45,6 +47,13 @@ impl From<CommitmentProof> for Vec<u8> {
     }
 }
 
+impl From<MerkleProof> for CommitmentProof {
+    fn from(proof: MerkleProof) -> Self {
+        let raw_proof: RawMerkleProof = proof.into();
+        raw_proof.into()
+    }
+}
+
 impl From<RawMerkleProof> for CommitmentProof {
     fn from(proof: RawMerkleProof) -> Self {
         let mut buf = Vec::new();
@@ -64,8 +73,9 @@ impl TryFrom<CommitmentProof> for RawMerkleProof {
     }
 }
 
+// TODO: decent getter or Protobuf trait implementation
 #[derive(Clone, PartialEq, Eq)]
-pub struct CommitmentPrefix(pub Vec<u8>); // Todo: decent getter or DomainType trait implementation
+pub struct CommitmentPrefix(pub Vec<u8>);
 
 impl CommitmentPrefix {
     pub fn is_empty(&self) -> bool {

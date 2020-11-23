@@ -14,11 +14,10 @@
     unused_lifetimes,
     unused_qualifications
 )]
-#![allow(dead_code, unreachable_code, unused_variables)]
+#![allow(unused_variables)]
 
 pub mod application;
 pub mod commands;
 pub mod config;
 pub mod error;
 pub mod prelude;
-pub mod tasks;

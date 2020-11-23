@@ -10,9 +10,13 @@ pub type Error = anomaly::Error<Kind>;
 /// Various kinds of errors that can be raiser by the relayer.
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
+    /// Config I/O error
+    #[error("config I/O error")]
+    ConfigIo,
+
     /// I/O error
     #[error("I/O error")]
-    ConfigIo,
+    Io,
 
     /// Invalid configuration
     #[error("Invalid configuration")]
@@ -105,6 +109,23 @@ pub enum Kind {
     /// Keybase related error
     #[error("Keybase error")]
     KeyBase,
+
+    /// ICS 007 error
+    #[error("ICS 007 error")]
+    Ics007,
+
+    /// Invalid chain identifier
+    #[error("invalid chain identifier format: {0}")]
+    ChainIdentifier(String),
+
+    #[error("requested proof for data in the privateStore")]
+    NonProvableData,
+
+    #[error("failed to send or receive through channel")]
+    Channel,
+
+    #[error("the input header is not recognized as a header for this chain")]
+    InvalidInputHeader,
 }
 
 impl Kind {

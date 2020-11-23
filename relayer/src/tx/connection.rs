@@ -1,43 +1,31 @@
-use std::convert::{TryFrom, TryInto};
-use std::str::FromStr;
-use std::thread;
-use std::time::Duration;
-
 use prost_types::Any;
-use serde_json::Value;
 
-use bitcoin::hashes::hex::ToHex;
-
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::ics03_connection::version::get_compatible_versions;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
 use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{handle::ChainHandle, runtime::ChainRuntime};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::{KeyEntry, KeyRingOperations};
-use crate::tx::client::{build_update_client, build_update_client_and_send, ClientOptions};
-use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use crate::tx::client::build_update_client;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenInitOptions {
-    pub dest_chain_config: ChainConfig,
+    pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub dest_client_id: ClientId,
+    pub dst_client_id: ClientId,
     pub src_client_id: ClientId,
-    pub dest_connection_id: ConnectionId,
+    pub dst_connection_id: ConnectionId,
     pub src_connection_id: Option<ConnectionId>,
 }
 
@@ -50,24 +38,24 @@ pub enum ConnectionMsgType {
 }
 
 pub fn build_conn_init(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenInitOptions,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message, i.e. it does not have the connection
-    if dest_chain
-        .query_connection(&opts.dest_connection_id, ICSHeight::default())
+    if dst_chain
+        .query_connection(&opts.dst_connection_id, ICSHeight::default())
         .is_ok()
     {
         return Err(Kind::ConnOpenInit(
-            opts.dest_connection_id.clone(),
+            opts.dst_connection_id.clone(),
             "connection already exist".into(),
         )
         .into());
     }
 
     // Get signer
-    let signer = dest_chain
+    let signer = dst_chain
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
@@ -81,10 +69,10 @@ pub fn build_conn_init(
 
     // Build the domain type message
     let new_msg = MsgConnectionOpenInit {
-        client_id: opts.dest_client_id.clone(),
-        connection_id: opts.dest_connection_id.clone(),
+        client_id: opts.dst_client_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
         counterparty,
-        version: dest_chain.query_compatible_versions()?[0].clone(),
+        version: dst_chain.query_compatible_versions()?[0].clone(),
         signer,
     };
 
@@ -92,26 +80,23 @@ pub fn build_conn_init(
 }
 
 pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.clone().src_chain_config)?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let new_msgs = build_conn_init(dest_chain, src_chain, opts)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context("failed to retrieve key"))?;
+    let new_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dest_chain.send(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
 }
 
 #[derive(Clone, Debug)]
 pub struct ConnectionOpenOptions {
-    pub dest_chain_config: ChainConfig,
+    pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub dest_client_id: ClientId,
+    pub dst_client_id: ClientId,
     pub src_client_id: ClientId,
-    pub dest_connection_id: ConnectionId,
+    pub dst_connection_id: ConnectionId,
     pub src_connection_id: ConnectionId,
 }
 
@@ -148,8 +133,8 @@ fn check_destination_connection_state(
 /// built from the message type (`msg_type`) and options (`opts`).
 /// If the expected and the destination connections are compatible, it returns the expected connection
 fn validated_expected_connection(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     msg_type: ConnectionMsgType,
     opts: &ConnectionOpenOptions,
 ) -> Result<ConnectionEnd, Error> {
@@ -167,28 +152,28 @@ fn validated_expected_connection(
         ConnectionMsgType::OpenConfirm => State::TryOpen,
     };
 
-    let dest_expected_connection = ConnectionEnd::new(
+    let dst_expected_connection = ConnectionEnd::new(
         highest_state,
-        opts.dest_client_id.clone(),
+        opts.dst_client_id.clone(),
         counterparty,
         src_chain.query_compatible_versions()?,
     )
     .unwrap();
 
     // Retrieve existing connection if any
-    let dest_connection =
-        dest_chain.query_connection(&opts.dest_connection_id.clone(), ICSHeight::default());
+    let dst_connection =
+        dst_chain.query_connection(&opts.dst_connection_id.clone(), ICSHeight::default());
 
     // Check if a connection is expected to exist on destination chain
     if msg_type == ConnectionMsgType::OpenTry {
         // TODO - check typed Err, or make query_connection return Option<ConnectionEnd>
         // It is ok if there is no connection for Try Tx
-        if dest_connection.is_err() {
-            return Ok(dest_expected_connection);
+        if dst_connection.is_err() {
+            return Ok(dst_expected_connection);
         }
     } else {
         // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
-        if dest_connection.is_err() {
+        if dst_connection.is_err() {
             return Err(Kind::ConnOpenTry(
                 opts.src_connection_id.clone(),
                 "missing connection on source chain".to_string(),
@@ -198,30 +183,33 @@ fn validated_expected_connection(
     }
 
     check_destination_connection_state(
-        opts.dest_connection_id.clone(),
-        dest_connection?,
-        dest_expected_connection.clone(),
+        opts.dst_connection_id.clone(),
+        dst_connection?,
+        dst_expected_connection.clone(),
     )?;
 
-    Ok(dest_expected_connection)
+    Ok(dst_expected_connection)
 }
 
 /// Attempts to build a MsgConnOpenTry.
 pub fn build_conn_try(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenOptions,
 ) -> Result<Vec<Any>, Error> {
-    let dest_expected_connection =
-        validated_expected_connection(dest_chain, src_chain, ConnectionMsgType::OpenTry, opts)
-            .map_err(|e| {
-                Kind::ConnOpenTry(
-                    opts.src_connection_id.clone(),
-                    "try options inconsistent with existing connection on destination chain"
-                        .to_string(),
-                )
-                .context(e)
-            })?;
+    let dst_expected_connection = validated_expected_connection(
+        dst_chain.clone(),
+        src_chain.clone(),
+        ConnectionMsgType::OpenTry,
+        opts,
+    )
+    .map_err(|e| {
+        Kind::ConnOpenTry(
+            opts.src_connection_id.clone(),
+            "try options inconsistent with existing connection on destination chain".to_string(),
+        )
+        .context(e)
+    })?;
 
     let src_connection = src_chain
         .query_connection(&opts.src_connection_id.clone(), ICSHeight::default())
@@ -232,21 +220,22 @@ pub fn build_conn_try(
             )
             .context(e)
         })?;
+
     // TODO - check that the src connection is consistent with the try options
 
     // TODO - Build add send the message(s) for updating client on source (when we don't need the key seed anymore)
     // TODO - add check if it is required
-    // let signer = dest_chain
+    // let signer = dst_chain
     //     .get_signer()
     //     .map_err(|e| Kind::KeyBase.context(e))?;
     // build_update_client_and_send(ClientOptions {
-    //     dest_client_id: opts.src_client_id.clone(),
-    //     dest_chain_config: src_chain.config().clone(),
-    //     src_chain_config: dest_chain.config().clone(),
+    //     dst_client_id: opts.src_client_id.clone(),
+    //     dst_chain_config: src_chain.config().clone(),
+    //     src_chain_config: dst_chain.config().clone(),
     // })?;
 
     // Get signer
-    let signer = dest_chain
+    let signer = dst_chain
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
@@ -254,9 +243,9 @@ pub fn build_conn_try(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id.clone(),
+        dst_chain,
+        src_chain.clone(),
+        opts.dst_client_id.clone(),
         ics_target_height,
     )?;
 
@@ -274,11 +263,11 @@ pub fn build_conn_try(
     };
 
     let new_msg = MsgConnectionOpenTry {
-        connection_id: opts.dest_connection_id.clone(),
-        client_id: opts.dest_client_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
+        client_id: opts.dst_client_id.clone(),
         client_state,
         counterparty_chosen_connection_id: src_connection.counterparty().connection_id().cloned(),
-        counterparty: dest_expected_connection.counterparty(),
+        counterparty: dst_expected_connection.counterparty(),
         counterparty_versions,
         proofs,
         signer,
@@ -292,35 +281,35 @@ pub fn build_conn_try(
 }
 
 pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.src_chain_config.clone())?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination chain runtimes
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let dest_msgs = build_conn_try(dest_chain, src_chain, &opts)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
 
 /// Attempts to build a MsgConnOpenAck.
 pub fn build_conn_ack(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenOptions,
 ) -> Result<Vec<Any>, Error> {
-    let _expected_dest_connection =
-        validated_expected_connection(dest_chain, src_chain, ConnectionMsgType::OpenAck, opts)
-            .map_err(|e| {
-                Kind::ConnOpenAck(
-                    opts.src_connection_id.clone(),
-                    "ack options inconsistent with existing connection on destination chain"
-                        .to_string(),
-                )
-                .context(e)
-            })?;
+    let _expected_dst_connection = validated_expected_connection(
+        dst_chain.clone(),
+        src_chain.clone(),
+        ConnectionMsgType::OpenAck,
+        opts,
+    )
+    .map_err(|e| {
+        Kind::ConnOpenAck(
+            opts.src_connection_id.clone(),
+            "ack options inconsistent with existing connection on destination chain".to_string(),
+        )
+        .context(e)
+    })?;
 
     let src_connection = src_chain
         .query_connection(&opts.src_connection_id.clone(), ICSHeight::default())
@@ -336,17 +325,17 @@ pub fn build_conn_ack(
 
     // TODO - Build add **send** the message(s) for updating client on source (when we don't need the key seed anymore)
     // TODO - add check if it is required
-    // let signer = dest_chain
+    // let signer = dst_chain
     //     .get_signer()
     //     .map_err(|e| Kind::KeyBase.context(e))?;
     // build_update_client_and_send(ClientOptions {
-    //     dest_client_id: opts.src_client_id.clone(),
-    //     dest_chain_config: src_chain.config().clone(),
-    //     src_chain_config: dest_chain.config().clone(),
+    //     dst_client_id: opts.src_client_id.clone(),
+    //     dst_chain_config: src_chain.config().clone(),
+    //     src_chain_config: dst_chain.config().clone(),
     // })?;
 
     // Get signer
-    let signer = dest_chain
+    let signer = dst_chain
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
@@ -354,9 +343,9 @@ pub fn build_conn_ack(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id.clone(),
+        dst_chain,
+        src_chain.clone(),
+        opts.dst_client_id.clone(),
         ics_target_height,
     )?;
 
@@ -368,7 +357,7 @@ pub fn build_conn_ack(
     )?;
 
     let new_msg = MsgConnectionOpenAck {
-        connection_id: opts.dest_connection_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
         counterparty_connection_id: Option::from(opts.src_connection_id.clone()),
         client_state,
         proofs,
@@ -384,35 +373,36 @@ pub fn build_conn_ack(
 }
 
 pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.src_chain_config.clone())?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination chain runtimes
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let dest_msgs = build_conn_ack(dest_chain, src_chain, &opts)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, &opts)?;
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
 pub fn build_conn_confirm(
-    dest_chain: &mut CosmosSDKChain,
-    src_chain: &CosmosSDKChain,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ConnectionOpenOptions,
 ) -> Result<Vec<Any>, Error> {
-    let _expected_dest_connection =
-        validated_expected_connection(dest_chain, src_chain, ConnectionMsgType::OpenAck, opts)
-            .map_err(|e| {
-                Kind::ConnOpenConfirm(
-                    opts.src_connection_id.clone(),
-                    "confirm options inconsistent with existing connection on destination chain"
-                        .to_string(),
-                )
-                .context(e)
-            })?;
+    let _expected_dst_connection = validated_expected_connection(
+        dst_chain.clone(),
+        src_chain.clone(),
+        ConnectionMsgType::OpenAck,
+        opts,
+    )
+    .map_err(|e| {
+        Kind::ConnOpenConfirm(
+            opts.src_connection_id.clone(),
+            "confirm options inconsistent with existing connection on destination chain"
+                .to_string(),
+        )
+        .context(e)
+    })?;
 
     let _src_connection = src_chain
         .query_connection(&opts.src_connection_id.clone(), ICSHeight::default())
@@ -427,7 +417,7 @@ pub fn build_conn_confirm(
     // TODO - check that the src connection is consistent with the confirm options
 
     // Get signer
-    let signer = dest_chain
+    let signer = dst_chain
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
@@ -435,9 +425,9 @@ pub fn build_conn_confirm(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dest_chain,
-        src_chain,
-        opts.dest_client_id.clone(),
+        dst_chain,
+        src_chain.clone(),
+        opts.dst_client_id.clone(),
         ics_target_height,
     )?;
 
@@ -449,7 +439,7 @@ pub fn build_conn_confirm(
     )?;
 
     let new_msg = MsgConnectionOpenConfirm {
-        connection_id: opts.dest_connection_id.clone(),
+        connection_id: opts.dst_connection_id.clone(),
         proofs,
         signer,
     };
@@ -462,15 +452,12 @@ pub fn build_conn_confirm(
 }
 
 pub fn build_conn_confirm_and_send(opts: ConnectionOpenOptions) -> Result<String, Error> {
-    // Get the source and destination chains.
-    let src_chain = &CosmosSDKChain::from_config(opts.src_chain_config.clone())?;
-    let dest_chain = &mut CosmosSDKChain::from_config(opts.clone().dest_chain_config)?;
+    // Initialize the source and destination runtimes and light clients
+    let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
+    let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let dest_msgs = build_conn_confirm(dest_chain, src_chain, &opts)?;
-    let key = dest_chain
-        .keybase()
-        .get_key()
-        .map_err(|e| Kind::KeyBase.context(e))?;
+    let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
+    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dest_chain.send(dest_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
 }
