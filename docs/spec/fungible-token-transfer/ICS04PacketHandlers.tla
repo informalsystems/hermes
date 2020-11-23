@@ -204,6 +204,7 @@ TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts,
     LET packetCommitment == AsPacketCommitment(
                              [channelID |-> packet.srcChannelID, 
                               portID |-> packet.srcPortID,
+                              data |-> packet.data,
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
     \* get packet receipt that should be absent in counterparty chain store
@@ -253,6 +254,7 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
     LET packetCommitment == AsPacketCommitment(
                              [channelID |-> packet.srcChannelID, 
                               portID |-> packet.srcPortID,
+                              data |-> packet.data,
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
      \* get packet receipt that should be absent in counterparty chain store
@@ -293,5 +295,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 23 13:07:31 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 17:22:59 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska
