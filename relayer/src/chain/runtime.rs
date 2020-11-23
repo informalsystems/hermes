@@ -377,15 +377,18 @@ impl<C: Chain> ChainRuntime<C> {
         reply_to: ReplyTo<AnyHeader>,
     ) -> Result<(), Error> {
         let header = {
+            // Get the light block at trusted_height from the chain.
+            // TODO - it is possible that trusted_height is smaller than the current latest trusted
+            // height and this results in error here.
+            // Note: This happens if there are multiple on-chain clients at different latest heights
+            let trusted_light_block = self.light_client.verify_to_target(trusted_height)?;
+
             // Get the light block at target_height from chain.
             let target_light_block = self.light_client.verify_to_target(target_height)?;
 
-            // Get the light block at trusted_height from the chain.
-            let trusted_light_block = self.light_client.verify_to_target(trusted_height)?;
-
             let header = self
                 .chain
-                .build_header(target_light_block, trusted_light_block)?;
+                .build_header(trusted_light_block, target_light_block)?;
 
             Ok(header.wrap_any())
         };

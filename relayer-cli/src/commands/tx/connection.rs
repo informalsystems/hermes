@@ -83,12 +83,8 @@ impl Runnable for TxRawConnInitCmd {
             Ok(result) => result,
         };
 
-        // status_info!("Message", "{:#?}", opts);
-
-        println!("BEFORE build_conn_init_and_send");
         let res: Result<String, Error> =
             build_conn_init_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
-        println!("AFTER build_conn_init_and_send");
 
         match res {
             Ok(receipt) => status_info!("conn init, result: ", "{:?}", receipt),

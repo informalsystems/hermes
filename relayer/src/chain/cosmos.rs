@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::time::Duration;
-use std::{convert::TryFrom, sync::Arc};
+use std::{convert::TryFrom, convert::TryInto, sync::Arc};
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
@@ -17,7 +17,7 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
 
-use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
@@ -30,6 +30,8 @@ use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use tonic::codegen::http::Uri;
 
+use ibc::downcast;
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
@@ -300,12 +302,15 @@ impl Chain for CosmosSDKChain {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error> {
-        Ok(self
+        let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query.context(e))
             .and_then(|v| {
-                Self::ClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
-            })?)
+                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+            })?;
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        Ok(client_state)
     }
 
     fn proven_client_state(
@@ -317,10 +322,13 @@ impl Chain for CosmosSDKChain {
             .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query.context(e))?;
 
-        let state =
-            Self::ClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let client_state =
+            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
-        Ok((state, res.proof))
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+
+        Ok((client_state, res.proof))
     }
 
     fn proven_client_consensus(
@@ -342,7 +350,10 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::Query.context(e))?;
 
         let consensus_state =
-            Self::ConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
 
         Ok((consensus_state, res.proof))
     }
@@ -384,11 +395,33 @@ impl Chain for CosmosSDKChain {
 
         Ok(TMHeader {
             trusted_height,
-            signed_header: target_light_block.signed_header,
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
+            signed_header: target_light_block.signed_header.clone(),
+            validator_set: fix_validator_set(&target_light_block)?,
+            trusted_validator_set: fix_validator_set(&trusted_light_block)?,
         })
     }
+}
+
+fn fix_validator_set(light_block: &TMLightBlock) -> Result<ValidatorSet, Error> {
+    let validators = light_block.validators.validators();
+    // Get the proposer.
+    let proposer = validators
+        .iter()
+        .find(|v| v.address == light_block.signed_header.header.proposer_address)
+        .ok_or(Kind::EmptyResponseValue)?;
+
+    let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
+
+    // Create the validator set with the proposer from the header.
+    // This is required by IBC on-chain validation.
+    let validator_set = ValidatorSet::new(
+        validators.clone(),
+        Some(*proposer),
+        voting_power
+            .try_into()
+            .map_err(|e| Kind::EmptyResponseValue.context(e))?,
+    );
+    Ok(validator_set)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
