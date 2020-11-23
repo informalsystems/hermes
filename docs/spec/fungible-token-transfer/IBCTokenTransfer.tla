@@ -208,72 +208,157 @@ Spec == Init /\ [][Next]_vars /\ Fairness
  Helper operators used in properties and invariants
  ***************************************************************************)     
 
+RECURSIVE Sum(_)
+
+Sum(S) ==
+  IF S = AsSetInt({})
+  THEN 0
+  ELSE LET x == CHOOSE y \in S: TRUE IN
+    x + Sum(S \ {x})
+
 GetNativeDenomination(chainID) ==
     IF chainID = "chainA"
     THEN NativeDenominationChainA
     ELSE NativeDenominationChainB
+    
+PrefixedDenoms(nativeDenomination) ==
+    {<<portID, channelID, nativeDenomination>> : portID \in PortIDs, channelID \in ChannelIDs}    
+    
+EscrowAccountsDomain ==
+    {<<GetCounterpartyChannelID(chainID), <<GetNativeDenomination(chainID)>>>> : 
+            chainID \in ChainIDs}    
+    
+Denominations ==
+    {<<NativeDenominationChainA>>, <<NativeDenominationChainB>>}
+    \union
+    PrefixedDenoms(NativeDenominationChainA) 
+    \union 
+    PrefixedDenoms(NativeDenominationChainB)
+    
+\* a packet is in flight if a packet commitment exists, but a 
+\* corresponding packet receipt is not on the counterparty chain    
+GetAmountsInFlight(chainID, nativeDenom) ==
 
-\* compute sum over accounts that have chainID's native denomination
-SumOverAllAccounts(chainID) ==
-    LET nativeDenomination == GetNativeDenomination(chainID) IN
-    
+    \* get packet commitments of chainID and packet receipts of its counterparty
+    LET packetCommittments == GetChainByID(chainID).packetCommitments IN
     LET counterpartyChainID == GetCounterpartyChainID(chainID) IN
-    LET channelID == GetChannelID(chainID) IN
-    LET counterpartyPortID == GetCounterpartyPortID(chainID) IN
-    LET counterpartyChannelID == GetCounterpartyChannelID(chainID) IN
+    LET counterpartyPacketReceipts == GetChainByID(counterpartyChainID).packetReceipts IN
     
-    LET prefixedDenomination == <<counterpartyPortID, counterpartyChannelID, nativeDenomination>> IN
-    
-    IF <<counterpartyChainID, prefixedDenomination>> \in DOMAIN accounts
-    THEN accounts[<<chainID, <<nativeDenomination>>>>] +
-         accounts[<<counterpartyChainID, prefixedDenomination>>] + 
-         escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
-    ELSE accounts[<<chainID, <<nativeDenomination>>>>] +
-         escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
+    \* create expected packet receipt for a given packet commitment
+    LET packetReceipt(packetCommitment) == 
+        [channelID |-> GetCounterpartyChannelID(chainID),
+         portID |-> GetCounterpartyPortID(chainID),
+         sequence |-> packetCommitment.sequence] IN 
          
+    \* get packet commitments for packets in flight
+    LET inFlight == {pc \in packetCommittments : 
+            packetReceipt(pc) \notin counterpartyPacketReceipts} IN
+    
+    \* get packet data for packets in flight
+    LET inFlightData == {pc.data : pc \in inFlight} IN
+    
+    \* get packet data for packets in flight that have a prefixed denomination,
+    \* where the last field is the native denomination of chainID
+    LET inFlightDataOfDenomination == {d \in inFlightData : 
+            d.denomination[Len(d.denomination)] = nativeDenom} IN
+          
+    \* compute set of amounts of the packets in flight that have 
+    \* the desired denomination          
+    {d.amount : d \in inFlightDataOfDenomination}
+    
 \* compute sum over accounts that have chainID's native denomination
 SumOverLocalAccounts(chainID) ==
+    \* get the native denomination of chainID
     LET nativeDenomination == GetNativeDenomination(chainID) IN
+    \* get counterparty channel ID 
     LET counterpartyChannelID == GetCounterpartyChannelID(chainID) IN
         
+    \* compute the sum over bank accounts and escrow accounts with 
+    \* native denomination
     accounts[<<chainID, <<nativeDenomination>>>>] +
     escrowAccounts[<<counterpartyChannelID, <<nativeDenomination>>>>]
 
-\* TODO
+\* compute the sum over the amounts in escrow accounts
 SumOverEscrowAccounts(chainID) ==
+    \* get the native denomination of chainID
     LET nativeDenomination == GetNativeDenomination(chainID) IN
     
+    \* get the escrow account IDs for the native denomination
     LET escrowAccountIDs == {<<channelID, <<nativeDenomination>>>> : channelID \in ChannelIDs} IN
-   
-    TRUE
+    \* get the amounts in escrow accounts for the native denomination    
+    LET escrowAccountAmounts == {escrowAccounts[accountID] : 
+            accountID \in (escrowAccountIDs \intersect DOMAIN escrowAccounts)} IN
+    
+    \* compute the sum over the amounts in escrow accounts
+    Sum(escrowAccountAmounts)
 
-\* TODO
+\* compute the sum over the amounts of packets in flight
 SumOverPacketsInFlight(chainID) ==
-    TRUE    
+    \* get the native denomination of chainID
+    LET nativeDenomination == GetNativeDenomination(chainID) IN
 
-\* TODO
+    \* get the set of amounts of packets in flight for each chain
+    LET amountsInFlight == UNION {GetAmountsInFlight(chID, nativeDenomination) : chID \in ChainIDs} IN
+    
+    \* compute the sum over the amounts of packets in flight
+    Sum(amountsInFlight)
+
+\* compute the sum over the amounts in bank accounts for prefixed denomination
 SumOverBankAccountsWithPrefixedDenoms(chainID) ==
-    TRUE    
+    \* get the native denomination of chainID
+    LET nativeDenomination == GetNativeDenomination(chainID) IN
+    
+    \* compute the set of prefixed denominations
+    LET prefixedDenominations == {pd \in PrefixedDenoms(nativeDenomination) : 
+            /\ Len(pd) > 1
+            /\ pd[Len(pd)] = nativeDenomination} IN
+
+    \* get the bank account IDs for the prefixed denominations 
+    LET accountIDs == {<<chID, prefixedDenomination>> : 
+            chID \in ChainIDs, prefixedDenomination \in prefixedDenominations} IN 
+               
+    \* get the amounts in bank accounts for the prefixed denominations    
+    LET accountAmounts == {accounts[accountID] : 
+            accountID \in (accountIDs \intersect DOMAIN accounts)} IN
+    
+    \* compute the sum over the amounts in bank accounts
+    Sum(accountAmounts)           
 
 (***************************************************************************
  Properties and invariants
  ***************************************************************************)
 
-\* there are MaxAmount coins of the native denomination in bank and escrow accounts 
+\* there are MaxBalance coins of the native denomination in bank and escrow accounts 
 \* for a given chain
 PreservationOfTotalSupplyLocal ==
     \A chainID \in ChainIDs :
          SumOverLocalAccounts(chainID) = MaxBalance
 
+\* The amount in nativeDenomination in escrow accounts 
+\* is equal to the sum of:
+\*    * the amounts in-flight packets in a (prefixed or unprefixed) denomination ending 
+\*      nativeDenomination, and
+\*    * the amounts in accounts in a prefixed denomination ending, 
+\*      nativeDenomination, in which it is not native
 PreservationOfTotalSupplyGlobal ==
     \A chainID \in ChainIDs : 
         SumOverEscrowAccounts(chainID) = 
             SumOverPacketsInFlight(chainID) + SumOverBankAccountsWithPrefixedDenoms(chainID)
+
+\* a violation of this property is an execution where fungibility is preserved
+NonPreservationOfFungibility ==
+    \A accountID \in EscrowAccountsDomain :
+        [](escrowAccounts[accountID] > 0 
+            => [](escrowAccounts[accountID] > 0))
          
 ICS20Inv ==
     /\ PreservationOfTotalSupplyLocal
+    /\ PreservationOfTotalSupplyGlobal
+    
+ICS20Prop == 
+    NonPreservationOfFungibility    
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 18:41:52 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 16:41:48 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

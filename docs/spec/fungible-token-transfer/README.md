@@ -126,7 +126,7 @@ For this we require the assumption (which is somewhat implicit it
  its [correctness
 argument](https://github.com/cosmos/ics/tree/master/spec/ics-020-fungible-token-transfer#correctness)) that the source chain only performs valid transitions.
 
-This is implemented in the invariant TODO in the file TODO.
+This is implemented in the property `ICS20Prop` in the file [IBCTokenTransfer.tla](IBCTokenTransfer.tla).
 
 
 #### Preservation of total supply

@@ -140,6 +140,7 @@ WritePacketCommitment(chain, packet) ==
                     \union 
                     {[channelID |-> packet.srcChannelID,
                       portID |-> packet.srcPortID,
+                      data |-> packet.data,
                       sequence |-> packet.sequence,
                       timeoutHeight |-> packet.timeoutHeight]}
          ]
@@ -292,5 +293,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 16:08:42 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 13:07:31 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

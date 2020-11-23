@@ -21,6 +21,15 @@ ChannelEndType ==
         counterpartyPortID |-> STRING,
         version |-> STRING
     ]
+    
+\* ICS20 packet data type    
+FungibleTokenPacketDataType ==
+    [
+        denomination : STRING,
+        amount : Int,
+        sender : STRING,
+        receiver : STRING
+    ] 
 
 \* packet commitment type
 PacketCommitmentType == 
@@ -28,6 +37,7 @@ PacketCommitmentType ==
         channelID |-> STRING, 
         portID |-> STRING,
         sequence |-> Int, 
+        data |-> FungibleTokenPacketDataType,
         timeoutHeight |-> Int
     ]
    
@@ -46,16 +56,7 @@ PacketAcknowledgementType ==
         portID |-> STRING, 
         sequence |-> Int,
         acknowledgement |-> BOOLEAN
-    ]
-
-\* ICS20 packet data type    
-FungibleTokenPacketDataType ==
-    [
-        denomination : STRING,
-        amount : Int,
-        sender : STRING,
-        receiver : STRING
-    ]    
+    ]   
 
 \* packet type
 PacketType ==
@@ -195,30 +196,7 @@ ChannelEnds ==
         counterpartyPortID : PortIDs \union {nullPortID},
         version : {"ics20-1"}
     ] 
-    
-(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
- Sets of packet commitments, packet receipts, packet acknowledgements.
- ***************************************************************************)
-PacketCommitments(maxHeight, maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq, 
-        timeoutHeight : 1..maxHeight
-    ] <: {PacketCommitmentType} 
-    
-PacketReceipts(maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq
-    ] <: {PacketReceiptType}
-    
-PacketAcknowledgements(maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq,
-        acknowledgement : BOOLEAN
-    ] <: {PacketAcknowledgementType}
-    
+
 (************************* FungibleTokenPacketData *************************
  A set of records defining ICS20 packet data.
  
@@ -232,7 +210,34 @@ FungibleTokenPacketData(maxBalance, Denominations) ==
         sender : ChainIDs,
         receiver : ChainIDs
     ]
-
+    
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
+ Sets of packet commitments, packet receipts, packet acknowledgements.
+ ***************************************************************************)
+PacketCommitments(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
+    [
+        channelID : ChannelIDs,
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq,
+        data : FungibleTokenPacketData(maxBalance, Denominations),
+        timeoutHeight : 1..maxHeight
+    ] <: {PacketCommitmentType} 
+    
+PacketReceipts(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq
+    ] <: {PacketReceiptType}
+    
+PacketAcknowledgements(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq,
+        acknowledgement : BOOLEAN
+    ] <: {PacketAcknowledgementType}
+    
 (********************************* Packets *********************************
  A set of packets.
  ***************************************************************************)
@@ -281,7 +286,8 @@ ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
         clientHeight : 1..maxHeight,
         channelEnd : ChannelEnds,
         
-        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
+        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq, maxBalance, 
+                                           Seq(ChannelIDs \union PortIDs \union {Denomination}))),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
         packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
         packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, maxBalance, 
@@ -398,5 +404,5 @@ ICS20InitChainStore(ChainID, Denomination) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 12:23:08 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 13:06:12 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska
