@@ -1,10 +1,15 @@
+use std::sync::Arc;
+
 use abscissa_core::{Command, Options, Runnable};
+use tokio::runtime::Runtime as TokioRuntime;
+
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::{ChainId as ICSChainId, ConnectionId};
+use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::ConnectionId;
+
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
-use tendermint::chain::Id as ChainId;
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -40,6 +45,7 @@ impl QueryConnectionEndCmd {
             .chain_id
             .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
+
         let chain_config = config
             .chains
             .iter()
@@ -76,11 +82,9 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let chain = CosmosSDKChain::from_config(chain_config).unwrap();
-        let height = ibc::Height::new(
-            ICSChainId::chain_version(chain.id().to_string()),
-            opts.height,
-        );
+        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let height = ibc::Height::new(chain.id().version(), opts.height);
 
         // TODO - any value in querying with proof from the CLI?
         let res: Result<ConnectionEnd, Error> = chain

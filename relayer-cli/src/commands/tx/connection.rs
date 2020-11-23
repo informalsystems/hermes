@@ -15,19 +15,19 @@ use crate::error::{Error, Kind};
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnInitCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
     #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 
     #[options(free, help = "identifier of the source client")]
     src_client_id: ClientId,
 
     #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+    dst_connection_id: ConnectionId,
 
     #[options(help = "identifier of the source connection", short = "s")]
     src_connection_id: Option<ConnectionId>,
@@ -41,10 +41,10 @@ pub struct TxRawConnInitCmd {
 
 impl TxRawConnInitCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenInitOptions, String> {
-        let dest_chain_config = config
+        let dst_chain_config = config
             .chains
             .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let src_chain_config = config
@@ -58,11 +58,11 @@ impl TxRawConnInitCmd {
         })?;
 
         let opts = ConnectionOpenInitOptions {
-            dest_chain_config: dest_chain_config.clone(),
+            dst_chain_config: dst_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
-            dest_client_id: self.dest_client_id.clone(),
+            dst_client_id: self.dst_client_id.clone(),
             src_client_id: self.src_client_id.clone(),
-            dest_connection_id: self.dest_connection_id.clone(),
+            dst_connection_id: self.dst_connection_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
             signer_seed,
         };
@@ -82,7 +82,6 @@ impl Runnable for TxRawConnInitCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
 
         let res: Result<String, Error> =
             build_conn_init_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
@@ -97,19 +96,19 @@ impl Runnable for TxRawConnInitCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnTryCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
     #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 
     #[options(free, help = "identifier of the source client")]
     src_client_id: ClientId,
 
     #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+    dst_connection_id: ConnectionId,
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
@@ -123,10 +122,10 @@ pub struct TxRawConnTryCmd {
 
 impl TxRawConnTryCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
-        let dest_chain_config = config
+        let dst_chain_config = config
             .chains
             .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let src_chain_config = config
@@ -141,11 +140,11 @@ impl TxRawConnTryCmd {
 
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
-            dest_chain_config: dest_chain_config.clone(),
+            dst_chain_config: dst_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
+            dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
-            dest_connection_id: self.dest_connection_id.clone(),
+            dst_connection_id: self.dst_connection_id.clone(),
             signer_seed,
         };
 
@@ -179,19 +178,19 @@ impl Runnable for TxRawConnTryCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnAckCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
     #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 
     #[options(free, help = "identifier of the source client")]
     src_client_id: ClientId,
 
     #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+    dst_connection_id: ConnectionId,
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
@@ -205,10 +204,10 @@ pub struct TxRawConnAckCmd {
 
 impl TxRawConnAckCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
-        let dest_chain_config = config
+        let dst_chain_config = config
             .chains
             .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let src_chain_config = config
@@ -223,11 +222,11 @@ impl TxRawConnAckCmd {
 
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
-            dest_chain_config: dest_chain_config.clone(),
+            dst_chain_config: dst_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
+            dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
-            dest_connection_id: self.dest_connection_id.clone(),
+            dst_connection_id: self.dst_connection_id.clone(),
             signer_seed,
         };
 
@@ -261,19 +260,19 @@ impl Runnable for TxRawConnAckCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawConnConfirmCmd {
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dst_chain_id: String,
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
 
     #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
+    dst_client_id: ClientId,
 
     #[options(free, help = "identifier of the source client")]
     src_client_id: ClientId,
 
     #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+    dst_connection_id: ConnectionId,
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
@@ -287,10 +286,10 @@ pub struct TxRawConnConfirmCmd {
 
 impl TxRawConnConfirmCmd {
     fn validate_options(&self, config: &Config) -> Result<ConnectionOpenOptions, String> {
-        let dest_chain_config = config
+        let dst_chain_config = config
             .chains
             .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let src_chain_config = config
@@ -305,11 +304,11 @@ impl TxRawConnConfirmCmd {
 
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
-            dest_chain_config: dest_chain_config.clone(),
+            dst_chain_config: dst_chain_config.clone(),
             src_client_id: self.src_client_id.clone(),
-            dest_client_id: self.dest_client_id.clone(),
+            dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
-            dest_connection_id: self.dest_connection_id.clone(),
+            dst_connection_id: self.dst_connection_id.clone(),
             signer_seed,
         };
 

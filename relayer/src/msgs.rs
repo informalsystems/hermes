@@ -35,6 +35,7 @@ impl Transaction {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct EncodedTransaction {}
 
 pub struct SignedTransaction {}

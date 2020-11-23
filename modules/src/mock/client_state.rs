@@ -84,6 +84,10 @@ impl ClientState for MockClientState {
         // TODO
         false
     }
+
+    fn wrap_any(self) -> AnyClientState {
+        AnyClientState::Mock(self)
+    }
 }
 
 impl From<MockConsensusState> for MockClientState {
@@ -136,5 +140,9 @@ impl ConsensusState for MockConsensusState {
 
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         todo!()
+    }
+
+    fn wrap_any(self) -> AnyConsensusState {
+        AnyConsensusState::Mock(self)
     }
 }

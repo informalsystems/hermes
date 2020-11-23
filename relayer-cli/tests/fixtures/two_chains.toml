@@ -30,6 +30,9 @@ address = 'tcp://localhost:26657'
 trusted_header_hash = '169F8F6318B8FAABDBA128AD1689E238566B69DDBD2B36F1911C0DFCA73FD401'
 trusted_height = '7806'
 
+[chains.peers.light_clients.store]
+type = 'memory'
+
 [[chains]]
 id = 'ibc1'
 rpc_addr = 'tcp://localhost:26557'
@@ -55,3 +58,5 @@ address = 'tcp://localhost:26557'
 trusted_header_hash = 'CC291E79B2E2068984EB13BBF420B4F4AE95357E25B9BA0A30CA26FF27AF3C75'
 trusted_height = '7741'
 
+[chains.peers.light_clients.store]
+type = 'memory'

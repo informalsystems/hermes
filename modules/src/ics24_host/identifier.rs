@@ -1,73 +1,109 @@
-use serde_derive::{Deserialize, Serialize};
 use std::str::FromStr;
+
+use serde::{Deserialize, Serialize};
 
 use super::error::ValidationError;
 use super::validate::*;
-use crate::ics24_host::error::ValidationKind;
 
 /// This type is subject to future changes.
+///
 /// TODO: ChainId validation is not standardized yet.
-/// `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
-/// https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
+///       `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
+///       See: https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283.
+///
 /// Also, contrast with tendermint-rs `ChainId` type.
-#[derive(Clone, Debug)]
-pub struct ChainId(String);
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(from = "tendermint::chain::Id", into = "tendermint::chain::Id")]
+pub struct ChainId {
+    id: String,
+    version: u64,
+}
 
 impl ChainId {
-    /// Creates a new ChainId() given a chain name and an epoch number. May fail by returning an
-    /// error if the epoch is 0.
-    /// The returned chainID will have the format: `{chain name}-{epoch number}`.
+    /// Creates a new `ChainId` given a chain name and an epoch number.
+    ///
+    /// The returned `ChainId` will have the format: `{chain name}-{epoch number}`.
     /// ```
     /// use ibc::ics24_host::identifier::ChainId;
-    /// assert!(ChainId::new("chainA", 0).is_err());
-    /// assert!(ChainId::new("chainA", 1).is_ok());
+    ///
     /// let epoch_number = 10;
-    /// let c_res = ChainId::new("chainA", epoch_number);
-    /// assert!(c_res.is_ok());
-    /// c_res.map(|id| {assert_eq!(ChainId::chain_version(id.to_string()), epoch_number)});
+    /// let id = ChainId::new("chainA".to_string(), epoch_number);
+    /// assert_eq!(id.version(), epoch_number);
     /// ```
-    pub fn new(chain_name: &str, chain_epoch_number: u64) -> Result<Self, ValidationError> {
-        ChainId::from_str(format!("{}-{}", chain_name, chain_epoch_number.to_string()).as_str())
+    pub fn new(name: String, version: u64) -> Self {
+        Self {
+            id: format!("{}-{}", name, version),
+            version,
+        }
+    }
+
+    /// Get a reference to the underlying string.
+    pub fn as_str(&self) -> &str {
+        &self.id
+    }
+
+    // TODO: this should probably be named epoch_number.
+    /// Extract the version from this chain identifier.
+    pub fn version(&self) -> u64 {
+        self.version
+    }
+
+    /// Extract the version from the given chain identifier.
+    pub fn chain_version(chain_id: &str) -> u64 {
+        if !ChainId::is_epoch_format(chain_id) {
+            return 0;
+        }
+
+        let split: Vec<_> = chain_id.split('-').collect();
+        split[1].parse().unwrap_or(0)
     }
 
     /// is_epoch_format() checks if a chain_id is in the format required for parsing epochs
     /// The chainID must be in the form: `{chainID}-{version}`
     /// ```
     /// use ibc::ics24_host::identifier::ChainId;
-    /// assert_eq!(ChainId::is_epoch_format("chainA-0".to_string()), false);
-    /// assert_eq!(ChainId::is_epoch_format("chainA".to_string()), false);
-    /// assert_eq!(ChainId::is_epoch_format("chainA-1".to_string()), true);
+    /// assert_eq!(ChainId::is_epoch_format("chainA-0"), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA"), false);
+    /// assert_eq!(ChainId::is_epoch_format("chainA-1"), true);
     /// ```
-    pub fn is_epoch_format(chain_id: String) -> bool {
-        use regex::Regex;
-        let re = Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
-        re.is_match(chain_id.as_str())
-    }
-
-    // todo: this should probably be named epoch_number.
-    pub fn chain_version(chain_id: String) -> u64 {
-        if !Self::is_epoch_format(chain_id.clone()) {
-            return 0;
-        }
-        let split: Vec<_> = chain_id.split('-').collect();
-        split[1].parse().unwrap_or(0)
+    pub fn is_epoch_format(chain_id: &str) -> bool {
+        let re = regex::Regex::new(r"^.+[^-]-{1}[1-9][0-9]*$").unwrap();
+        re.is_match(chain_id)
     }
 }
 
 impl FromStr for ChainId {
     type Err = ValidationError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match Self::is_epoch_format(s.to_string()) {
-            true => Ok(Self(s.to_string())),
-            false => Err(ValidationKind::chain_id_invalid_format(s.into()).into()),
-        }
+    fn from_str(id: &str) -> Result<Self, Self::Err> {
+        let version = if Self::is_epoch_format(id) {
+            Self::chain_version(id)
+        } else {
+            0
+        };
+
+        Ok(Self {
+            id: id.to_string(),
+            version,
+        })
     }
 }
 
 impl std::fmt::Display for ChainId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.0)
+        write!(f, "{}", self.id)
+    }
+}
+
+impl From<ChainId> for tendermint::chain::Id {
+    fn from(id: ChainId) -> Self {
+        tendermint::chain::Id::from_str(id.as_str()).unwrap()
+    }
+}
+
+impl From<tendermint::chain::Id> for ChainId {
+    fn from(id: tendermint::chain::Id) -> Self {
+        ChainId::from_str(id.as_str()).unwrap()
     }
 }
 

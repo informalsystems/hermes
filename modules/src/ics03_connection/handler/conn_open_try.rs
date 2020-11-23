@@ -124,7 +124,7 @@ mod tests {
 
         let host_chain_height = Height::new(1, 35);
         let context = MockContext::new(
-            ChainId::new("mockgaia", 1).unwrap(),
+            ChainId::new("mockgaia".to_string(), 1),
             HostType::Mock,
             5,
             host_chain_height,

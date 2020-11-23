@@ -11,6 +11,9 @@
     unused_qualifications
 )]
 
+use std::str::FromStr;
+use std::sync::Arc;
+
 use ibc::ics02_client::raw::ConnectionIds as DomainTypeClientConnections;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -20,15 +23,11 @@ use relayer::config::{default, ChainConfig, Config};
 use tendermint::net::Address;
 use tendermint_proto::Protobuf;
 
-use std::convert::TryInto;
-use std::str::FromStr;
-use tendermint::block::Height;
-
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
     let mut config = Config::default();
     config.chains = vec![ChainConfig {
-        id: "ibc-test".try_into().unwrap(),
+        id: "ibc-test".parse().unwrap(),
         rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
         grpc_addr: "tcp://localhost:9090".parse().unwrap(),
         account_prefix: "cosmos".to_string(),
@@ -46,7 +45,8 @@ fn simd_config() -> Config {
 
 /// Chain created for the informaldev/simd DockerHub image running on localhost.
 fn simd_chain() -> CosmosSDKChain {
-    CosmosSDKChain::from_config(simd_config().chains[0].clone()).unwrap()
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    CosmosSDKChain::from_config(simd_config().chains[0].clone(), Arc::new(rt)).unwrap()
 }
 
 /// Query connection ID. Requires the informaldev/simd Docker image running on localhost.
@@ -90,7 +90,7 @@ fn query_channel_id() {
                     PortId::from_str("firstport").unwrap(),
                     ChannelId::from_str("firstchannel").unwrap(),
                 ),
-                Height::from(0_u32),
+                ibc::Height::new(chain.id().version(), 0),
                 false,
             )
             .unwrap()
@@ -118,7 +118,7 @@ fn query_client_id() {
         &chain
             .query(
                 ClientConnections(ClientId::from_str("clientidone").unwrap()),
-                Height::from(0_u32),
+                ibc::Height::new(chain.id().version(), 0),
                 false,
             )
             .unwrap()

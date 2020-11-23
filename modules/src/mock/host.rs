@@ -38,7 +38,7 @@ impl HostBlock {
         match self {
             HostBlock::Mock(header) => header.height(),
             HostBlock::SyntheticTendermint(light_block) => Height::new(
-                ChainId::chain_version(light_block.signed_header.header.chain_id.to_string()),
+                ChainId::chain_version(light_block.signed_header.header.chain_id.as_str()),
                 light_block.signed_header.header.height.value(),
             ),
         }
@@ -47,10 +47,7 @@ impl HostBlock {
     /// Generates a new block at `height` for the given chain identifier and chain type.
     pub fn generate_block(chain_id: ChainId, chain_type: HostType, height: u64) -> HostBlock {
         match chain_type {
-            HostType::Mock => HostBlock::Mock(MockHeader(Height::new(
-                ChainId::chain_version(chain_id.to_string()),
-                height,
-            ))),
+            HostType::Mock => HostBlock::Mock(MockHeader(Height::new(chain_id.version(), height))),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))
             }

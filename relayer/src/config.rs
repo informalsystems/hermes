@@ -2,6 +2,7 @@
 //! to support ADR validation..should move to relayer/src soon
 
 use std::{
+    fs,
     fs::File,
     io::Write,
     path::{Path, PathBuf},
@@ -10,7 +11,8 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
-use tendermint::{chain, net, node, Hash};
+use ibc::ics24_host::identifier::ChainId;
+use tendermint::{net, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
 use crate::error;
@@ -80,7 +82,7 @@ impl Default for GlobalConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ChainConfig {
-    pub id: chain::Id,
+    pub id: ChainId,
     #[serde(default = "default::rpc_addr")]
     pub rpc_addr: net::Address,
     pub grpc_addr: String,
@@ -111,6 +113,18 @@ impl ChainConfig {
     pub fn light_client(&self, id: PeerId) -> Option<&LightClientConfig> {
         let peers = self.peers.as_ref()?;
         peers.light_client(id)
+    }
+
+    pub fn witnesses(&self) -> Option<Vec<&LightClientConfig>> {
+        let peers = self.peers.as_ref()?;
+
+        Some(
+            peers
+                .light_clients
+                .iter()
+                .filter(|p| p.peer_id != peers.primary)
+                .collect(),
+        )
     }
 }
 
@@ -172,8 +186,23 @@ impl PeersConfig {
 pub struct LightClientConfig {
     pub peer_id: PeerId,
     pub address: net::Address,
+    #[serde(default = "default::timeout", with = "humantime_serde")]
+    pub timeout: Duration,
     pub trusted_header_hash: Hash,
     pub trusted_height: Height,
+    pub store: StoreConfig,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type")]
+pub enum StoreConfig {
+    #[serde(rename = "disk")]
+    Disk { path: PathBuf },
+    #[serde(rename = "memory")]
+    Memory {
+        #[serde(skip)]
+        dummy: (),
+    },
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
@@ -189,7 +218,13 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
 
 /// Serialize the given `Config` as TOML to the given config file.
 pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
-    let mut file = File::create(path).map_err(|e| error::Kind::Config.context(e))?;
+    let mut file = if path.as_ref().exists() {
+        fs::OpenOptions::new().write(true).open(path)
+    } else {
+        File::create(path)
+    }
+    .map_err(|e| error::Kind::Config.context(e))?;
+
     store_writer(config, &mut file)
 }
 

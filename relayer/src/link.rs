@@ -1,26 +1,30 @@
 use std::ops::Range;
 
-use crate::chain::handle::{ChainHandle, ChainHandleError};
+use itertools::Itertools;
+use retry::{delay::Fixed, retry};
+use thiserror::Error;
+
+use ibc::{
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
+    Height,
+};
+use tendermint::Signature;
+
+use crate::chain::handle::ChainHandle;
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::channel::{Channel, ChannelError};
 use crate::connection::ConnectionError;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::msgs::{ClientUpdate, Datagram, Packet, Transaction};
-use ibc::{
-    ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId},
-    Height,
-};
-use retry::{delay::Fixed, retry, Error as RetryError};
-use tendermint::Signature;
-use thiserror::Error;
+use crate::util::iter::SplitResults;
+
+// TODO: move to config
+const MAX_RETRIES: usize = 10_usize;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
     #[error("Failed")]
     Failed,
-
-    #[error("Chain handle error")]
-    ChainError(#[from] ChainHandleError),
 
     #[error("Foreign client error")]
     ForeignClientError(#[from] ForeignClientError),
@@ -31,8 +35,11 @@ pub enum LinkError {
     #[error("ChannelError:")]
     ChannelError(#[from] ChannelError),
 
-    #[error("RetryExhausted:")]
-    RetryError(#[from] RetryError<ChainHandleError>),
+    #[error("ChainError:")]
+    ChainError(#[from] crate::error::Error),
+
+    #[error("exhausted max number of retries:")]
+    RetryError,
 }
 
 pub enum Order {
@@ -98,27 +105,22 @@ impl Link {
         let signature = todo!();
 
         // XXX: What about Packet Acks for ordered channels
-        for (target_height, events) in subscription.iter() {
-            let packets: Result<Vec<_>, _> = events
+        for (chain_id, target_height, events) in subscription.iter() {
+            let (datagrams, errors) = events
                 .into_iter()
                 .map(|event| self.src_chain.create_packet(event))
-                .collect();
+                .map_results(Datagram::Packet)
+                .split_results();
 
-            let committed_packets = packets?;
+            // TODO: Report the errors?
 
-            let datagrams = committed_packets
-                .into_iter()
-                .map(Datagram::Packet)
-                .collect::<Vec<_>>();
-
-            let max_retries = 10_usize; // XXX: move to config
-            let mut tries = 0..max_retries;
+            let mut tries = 0..MAX_RETRIES;
 
             let result = retry(Fixed::from_millis(100), || {
                 if let Some(attempt) = tries.next() {
                     self.step(target_height, datagrams.clone(), signature)
                 } else {
-                    Err(ChainHandleError::Failed)
+                    Err(LinkError::RetryError)
                 }
             });
 
@@ -142,8 +144,8 @@ impl Link {
         target_height: Height,
         mut datagrams: Vec<Datagram>,
         signature: Signature,
-    ) -> Result<(), ChainHandleError> {
-        let height = self.dst_chain.get_height(&self.foreign_client)?;
+    ) -> Result<(), LinkError> {
+        let height = self.dst_chain.query_latest_height(&self.foreign_client)?;
         // XXX: Check that height > target_height, no client update needed
         let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
 

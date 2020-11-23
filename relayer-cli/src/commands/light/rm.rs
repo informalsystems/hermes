@@ -4,8 +4,8 @@ use crate::prelude::*;
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 
+use ibc::ics24_host::identifier::ChainId;
 use relayer::config::Config;
-use tendermint::chain::Id as ChainId;
 use tendermint_light_client::types::PeerId;
 
 #[derive(Command, Debug, Options)]
