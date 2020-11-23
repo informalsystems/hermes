@@ -80,13 +80,7 @@ pub trait Chain {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error>;
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 

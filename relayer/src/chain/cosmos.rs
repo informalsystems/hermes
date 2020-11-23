@@ -163,18 +163,16 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
         // Create TxBody
         let body = TxBody {
             messages: proto_msgs.to_vec(),
-            memo,
-            timeout_height,
+            memo: "".to_string(),
+            timeout_height: 0_u64,
             extension_options: Vec::<Any>::new(),
             non_critical_extension_options: Vec::<Any>::new(),
         };

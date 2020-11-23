@@ -65,14 +65,7 @@ pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error
 
     let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.dst_client_id)?;
 
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
-
-    Ok(dst_chain.send_tx(
-        vec![new_msg.to_any::<RawMsgCreateClient>()],
-        key,
-        "".to_string(),
-        0,
-    )?)
+    Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
 
 pub fn build_update_client(
@@ -113,7 +106,5 @@ pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error
         target_height,
     )?;
 
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
-
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }

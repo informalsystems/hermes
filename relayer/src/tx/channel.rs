@@ -91,9 +91,8 @@ pub fn build_chan_init_and_send(opts: &ChannelOpenInitOptions) -> Result<String,
     let (dst_chain, _) = ChainRuntime::spawn(opts.clone().dst_chain_config)?;
 
     let new_msgs = build_chan_init(dst_chain.clone(), src_chain, opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }
 
 #[derive(Clone, Debug)]
@@ -292,9 +291,8 @@ pub fn build_chan_try_and_send(opts: &ChannelOpenOptions) -> Result<String, Erro
     let (dst_chain, _) = ChainRuntime::spawn(opts.clone().dst_chain_config)?;
 
     let new_msgs = build_chan_try(dst_chain.clone(), src_chain, opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }
 
 pub fn build_chan_ack(
@@ -377,9 +375,8 @@ pub fn build_chan_ack_and_send(opts: &ChannelOpenOptions) -> Result<String, Erro
     let (dst_chain, _) = ChainRuntime::spawn(opts.clone().dst_chain_config)?;
 
     let new_msgs = build_chan_ack(dst_chain.clone(), src_chain, opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }
 
 pub fn build_chan_confirm(
@@ -460,7 +457,6 @@ pub fn build_chan_confirm_and_send(opts: &ChannelOpenOptions) -> Result<String, 
     let (dst_chain, _) = ChainRuntime::spawn(opts.clone().dst_chain_config)?;
 
     let new_msgs = build_chan_confirm(dst_chain.clone(), src_chain, opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }

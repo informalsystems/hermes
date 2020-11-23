@@ -164,8 +164,8 @@ impl<C: Chain> ChainRuntime<C> {
                             self.query(path, height, prove, reply_to)?
                         },
 
-                        Ok(HandleInput::SendTx { proto_msgs, key, memo, timeout_height, reply_to }) => {
-                            self.send_tx(proto_msgs, *key, memo, timeout_height, reply_to)?
+                        Ok(HandleInput::SendTx { proto_msgs, reply_to }) => {
+                            self.send_tx(proto_msgs, reply_to)?
                         },
 
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
@@ -298,12 +298,9 @@ impl<C: Chain> ChainRuntime<C> {
     fn send_tx(
         &self,
         proto_msgs: Vec<prost_types::Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
         reply_to: ReplyTo<String>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_tx(proto_msgs, key, memo, timeout_height);
+        let result = self.chain.send_tx(proto_msgs);
 
         reply_to
             .send(result)

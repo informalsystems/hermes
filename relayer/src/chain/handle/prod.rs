@@ -77,18 +77,9 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<prost_types::Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error> {
         self.send(|reply_to| HandleInput::SendTx {
             proto_msgs,
-            key: Box::new(key),
-            memo,
-            timeout_height,
             reply_to,
         })
     }

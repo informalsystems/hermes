@@ -84,10 +84,9 @@ pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<Stri
     let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let new_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
+    let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 #[derive(Clone, Debug)]
@@ -286,9 +285,8 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -378,9 +376,8 @@ pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, &opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -457,7 +454,6 @@ pub fn build_conn_confirm_and_send(opts: ConnectionOpenOptions) -> Result<String
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
-    let key = dst_chain.get_key().map_err(|e| Kind::KeyBase.context(e))?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
