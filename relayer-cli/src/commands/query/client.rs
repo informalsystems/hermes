@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
@@ -78,7 +78,7 @@ impl Runnable for QueryClientStateCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -171,7 +171,7 @@ impl Runnable for QueryClientConsensusCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -285,7 +285,7 @@ impl Runnable for QueryClientConnectionsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(TokioRuntime::new().unwrap());
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 

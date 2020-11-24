@@ -18,6 +18,10 @@ pub enum Kind {
     #[error("I/O error")]
     Io,
 
+    /// Poisoned mutex
+    #[error("poisoned mutex")]
+    PoisonedMutex,
+
     /// Invalid configuration
     #[error("Invalid configuration")]
     Config,

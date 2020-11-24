@@ -21,7 +21,7 @@ impl StartCmd {
 
 impl Runnable for StartCmd {
     fn run(&self) {
-        let rt = tokio::runtime::Runtime::new().unwrap();
+        let mut rt = tokio::runtime::Runtime::new().unwrap();
 
         rt.block_on(async move {
             self.cmd()
