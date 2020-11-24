@@ -5,8 +5,11 @@ pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
-    #[error("cannot retrieve key for address")]
+    #[error("invalid key")]
     InvalidKey,
+
+    #[error("key already exists")]
+    ExistingKey,
 
     #[error("invalid mnemonic")]
     InvalidMnemonic,
@@ -16,6 +19,9 @@ pub enum Kind {
 
     #[error("cannot generate bech32 account")]
     Bech32Account,
+
+    #[error("key store error")]
+    KeyStoreOperation,
 }
 
 impl Kind {

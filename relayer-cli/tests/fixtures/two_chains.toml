@@ -3,12 +3,13 @@ timeout = '10s'
 strategy = 'naive'
 
 [[chains]]
-id = 'ibc0'
+id = 'ibc-0'
 rpc_addr = 'tcp://localhost:26657'
 grpc_addr = 'tcp://localhost:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
+
 client_ids = [
     'cla1',
     'cla2',
@@ -34,7 +35,7 @@ trusted_height = '7806'
 type = 'memory'
 
 [[chains]]
-id = 'ibc1'
+id = 'ibc-1'
 rpc_addr = 'tcp://localhost:26557'
 grpc_addr = 'tcp://localhost:9091'
 account_prefix = 'cosmos'

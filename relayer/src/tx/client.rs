@@ -23,14 +23,12 @@ pub struct ClientOptions {
     pub dst_client_id: ClientId,
     pub dst_chain_config: ChainConfig,
     pub src_chain_config: ChainConfig,
-    pub signer_seed: String,
 }
 
 pub fn build_create_client(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     dst_client_id: ClientId,
-    signer_seed: &str,
 ) -> Result<MsgCreateAnyClient, Error> {
     // Verify that the client has not been created already, i.e the destination chain does not
     // have a state for this client.
@@ -42,8 +40,10 @@ pub fn build_create_client(
         )));
     }
 
-    // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(signer_seed)?;
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build client create message with the data from source chain at latest height.
     let latest_height = src_chain.query_latest_height()?;
@@ -63,21 +63,9 @@ pub fn build_create_client_and_send(opts: ClientOptions) -> Result<String, Error
     let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let new_msg = build_create_client(
-        dst_chain.clone(),
-        src_chain,
-        opts.dst_client_id,
-        &opts.signer_seed,
-    )?;
+    let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.dst_client_id)?;
 
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
-
-    Ok(dst_chain.send_tx(
-        vec![new_msg.to_any::<RawMsgCreateClient>()],
-        key,
-        "".to_string(),
-        0,
-    )?)
+    Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
 
 pub fn build_update_client(
@@ -85,20 +73,17 @@ pub fn build_update_client(
     src_chain: impl ChainHandle,
     dst_client_id: ClientId,
     target_height: Height,
-    signer_seed: &str,
 ) -> Result<Vec<Any>, Error> {
     // Get the latest trusted height from the client state on destination.
     let trusted_height = dst_chain
         .query_client_state(&dst_client_id, Height::default())?
         .latest_height();
 
-    // Get the signer from key seed file.
-    let (_, signer) = dst_chain.key_and_signer(signer_seed)?;
-
     let header = src_chain
         .build_header(trusted_height, target_height)?
         .wrap_any();
 
+    let signer = dst_chain.get_signer()?;
     let new_msg = MsgUpdateAnyClient {
         client_id: dst_client_id,
         header,
@@ -119,10 +104,7 @@ pub fn build_update_client_and_send(opts: ClientOptions) -> Result<String, Error
         src_chain,
         opts.dst_client_id,
         target_height,
-        &opts.signer_seed,
     )?;
 
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
-
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(new_msgs)?)
 }

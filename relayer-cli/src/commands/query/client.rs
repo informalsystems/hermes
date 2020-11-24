@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn parse_query_state_parameters() {
         let default_params = QueryClientStateCmd {
-            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            chain_id: Some("ibc-0".to_string().parse().unwrap()),
             client_id: Some("ibconeclient".to_string().parse().unwrap()),
             height: None,
             proof: None,
@@ -398,7 +398,7 @@ mod tests {
     #[test]
     fn parse_query_client_connections_parameters() {
         let default_params = QueryClientConnectionsCmd {
-            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            chain_id: Some("ibc-0".to_string().parse().unwrap()),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
         };

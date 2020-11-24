@@ -23,12 +23,6 @@ pub struct TxCreateClientCmd {
         help = "identifier of the client to be created on destination chain"
     )]
     dst_client_id: ClientId,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl Runnable for TxCreateClientCmd {
@@ -37,7 +31,6 @@ impl Runnable for TxCreateClientCmd {
             &self.dst_chain_id,
             &self.src_chain_id,
             &self.dst_client_id,
-            &self.seed_file,
         ) {
             Err(err) => {
                 status_err!("invalid options: {}", err);
@@ -70,22 +63,12 @@ pub struct TxUpdateClientCmd {
         help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
-        let opts = validate_common_options(
-            &self.dst_chain_id,
-            &self.src_chain_id,
-            &self.dst_client_id,
-            &self.seed_file,
-        );
+        let opts =
+            validate_common_options(&self.dst_chain_id, &self.src_chain_id, &self.dst_client_id);
 
         let opts = match opts {
             Ok(result) => result,
@@ -111,7 +94,6 @@ fn validate_common_options(
     dst_chain_id: &str,
     src_chain_id: &str,
     dst_client_id: &ClientId,
-    seed_file: &str,
 ) -> Result<ClientOptions, String> {
     let config = app_config();
 
@@ -137,14 +119,9 @@ fn validate_common_options(
         .find(|c| c.id == src_chain_id)
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
-    let signer_seed = std::fs::read_to_string(seed_file).map_err(|e| {
-        anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
-    })?;
-
     Ok(ClientOptions {
         dst_client_id: dst_client_id.clone(),
         dst_chain_config: dst_chain_config.clone(),
         src_chain_config: src_chain_config.clone(),
-        signer_seed,
     })
 }

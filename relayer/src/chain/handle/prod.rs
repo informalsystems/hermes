@@ -77,18 +77,9 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<prost_types::Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error> {
         self.send(|reply_to| HandleInput::SendTx {
             proto_msgs,
-            key: Box::new(key),
-            memo,
-            timeout_height,
             reply_to,
         })
     }
@@ -101,11 +92,12 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::GetMinimalSet { from, to, reply_to })
     }
 
-    fn key_and_signer(&self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error> {
-        self.send(|reply_to| HandleInput::KeyAndSigner {
-            key_file_contents: key_file_contents.to_string(),
-            reply_to,
-        })
+    fn get_signer(&self) -> Result<AccountId, Error> {
+        self.send(|reply_to| HandleInput::Signer { reply_to })
+    }
+
+    fn get_key(&self) -> Result<KeyEntry, Error> {
+        self.send(|reply_to| HandleInput::Key { reply_to })
     }
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error> {

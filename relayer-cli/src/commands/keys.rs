@@ -1,6 +1,8 @@
 //! `keys` subcommand
 use abscissa_core::{Command, Help, Options, Runnable};
 
+mod add;
+mod list;
 mod restore;
 
 /// `keys` subcommand
@@ -10,7 +12,14 @@ pub enum KeysCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `keys restore` subcommand
-    #[options(help = "keys restore")]
-    Restore(restore::KeyRestoreCmd),
+    /// The `keys add` subcommand
+    #[options(help = "adds a key to a configured chain")]
+    Add(add::KeysAddCmd),
+
+    /// The `keys list` subcommand
+    #[options(help = "list keys configured on a chain")]
+    List(list::KeysListCmd),
+    ///// The `keys restore` subcommand
+    // #[options(help = "restore a key to a configured chain using a mnemonic")]
+    // Restore(restore::KeyRestoreCmd),
 }

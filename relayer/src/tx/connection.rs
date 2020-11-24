@@ -27,7 +27,6 @@ pub struct ConnectionOpenInitOptions {
     pub src_client_id: ClientId,
     pub dst_connection_id: ConnectionId,
     pub src_connection_id: Option<ConnectionId>,
-    pub signer_seed: String,
 }
 
 /// Enumeration of proof carrying ICS3 message, helper for relayer.
@@ -55,8 +54,10 @@ pub fn build_conn_init(
         .into());
     }
 
-    // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     let prefix = src_chain.query_commitment_prefix()?;
 
@@ -83,10 +84,9 @@ pub fn build_conn_init_and_send(opts: &ConnectionOpenInitOptions) -> Result<Stri
     let (src_chain, _) = ChainRuntime::spawn(opts.src_chain_config.clone())?;
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
-    let new_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
+    let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
 
-    Ok(dst_chain.send_tx(new_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 #[derive(Clone, Debug)]
@@ -97,7 +97,6 @@ pub struct ConnectionOpenOptions {
     pub src_client_id: ClientId,
     pub dst_connection_id: ConnectionId,
     pub src_connection_id: ConnectionId,
-    pub signer_seed: String,
 }
 
 fn check_destination_connection_state(
@@ -225,16 +224,19 @@ pub fn build_conn_try(
 
     // TODO - Build add send the message(s) for updating client on source (when we don't need the key seed anymore)
     // TODO - add check if it is required
-    // let (key, signer) = src_chain.key_and_signer(&opts.signer_seed)?;
+    // let signer = dst_chain
+    //     .get_signer()
+    //     .map_err(|e| Kind::KeyBase.context(e))?;
     // build_update_client_and_send(ClientOptions {
     //     dst_client_id: opts.src_client_id.clone(),
     //     dst_chain_config: src_chain.config().clone(),
     //     src_chain_config: dst_chain.config().clone(),
-    //     signer_seed: "".to_string(),
     // })?;
 
-    // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -244,7 +246,6 @@ pub fn build_conn_try(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        &opts.signer_seed,
     )?;
 
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -284,9 +285,8 @@ pub fn build_conn_try_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -323,16 +323,19 @@ pub fn build_conn_ack(
 
     // TODO - Build add **send** the message(s) for updating client on source (when we don't need the key seed anymore)
     // TODO - add check if it is required
-    // let (key, signer) = src_chain.key_and_signer(&opts.src_signer_seed)?;
+    // let signer = dst_chain
+    //     .get_signer()
+    //     .map_err(|e| Kind::KeyBase.context(e))?;
     // build_update_client_and_send(ClientOptions {
     //     dst_client_id: opts.src_client_id.clone(),
     //     dst_chain_config: src_chain.config().clone(),
     //     src_chain_config: dst_chain.config().clone(),
-    //     signer_seed: "".to_string(),
     // })?;
 
-    // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -342,7 +345,6 @@ pub fn build_conn_ack(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        &opts.signer_seed,
     )?;
 
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -374,9 +376,8 @@ pub fn build_conn_ack_and_send(opts: ConnectionOpenOptions) -> Result<String, Er
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -412,8 +413,10 @@ pub fn build_conn_confirm(
 
     // TODO - check that the src connection is consistent with the confirm options
 
-    // Get the signer from key seed file
-    let (_, signer) = dst_chain.key_and_signer(&opts.signer_seed.clone())?;
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -423,7 +426,6 @@ pub fn build_conn_confirm(
         src_chain.clone(),
         opts.dst_client_id.clone(),
         ics_target_height,
-        &opts.signer_seed,
     )?;
 
     let (_, proofs) = src_chain.build_connection_proofs_and_client_state(
@@ -452,7 +454,6 @@ pub fn build_conn_confirm_and_send(opts: ConnectionOpenOptions) -> Result<String
     let (dst_chain, _) = ChainRuntime::spawn(opts.dst_chain_config.clone())?;
 
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
-    let (key, _) = dst_chain.key_and_signer(&opts.signer_seed)?;
 
-    Ok(dst_chain.send_tx(dst_msgs, key, "".to_string(), 0)?)
+    Ok(dst_chain.send_tx(dst_msgs)?)
 }

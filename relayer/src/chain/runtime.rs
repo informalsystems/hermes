@@ -164,8 +164,8 @@ impl<C: Chain> ChainRuntime<C> {
                             self.query(path, height, prove, reply_to)?
                         },
 
-                        Ok(HandleInput::SendTx { proto_msgs, key, memo, timeout_height, reply_to }) => {
-                            self.send_tx(proto_msgs, *key, memo, timeout_height, reply_to)?
+                        Ok(HandleInput::SendTx { proto_msgs, reply_to }) => {
+                            self.send_tx(proto_msgs, reply_to)?
                         },
 
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
@@ -184,8 +184,12 @@ impl<C: Chain> ChainRuntime<C> {
                         //     self.create_packet(event, reply_to)?
                         // }
 
-                        Ok(HandleInput::KeyAndSigner { key_file_contents, reply_to }) => {
-                            self.key_and_signer(key_file_contents, reply_to)?
+                        Ok(HandleInput::Signer { reply_to }) => {
+                            self.get_signer(reply_to)?
+                        }
+
+                        Ok(HandleInput::Key { reply_to }) => {
+                            self.get_key(reply_to)?
                         }
 
                         Ok(HandleInput::ModuleVersion { port_id, reply_to }) => {
@@ -294,12 +298,9 @@ impl<C: Chain> ChainRuntime<C> {
     fn send_tx(
         &self,
         proto_msgs: Vec<prost_types::Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
         reply_to: ReplyTo<String>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_tx(proto_msgs, key, memo, timeout_height);
+        let result = self.chain.send_tx(proto_msgs);
 
         reply_to
             .send(result)
@@ -346,12 +347,18 @@ impl<C: Chain> ChainRuntime<C> {
     //     todo!()
     // }
 
-    fn key_and_signer(
-        &mut self,
-        key_file_contents: String,
-        reply_to: ReplyTo<(KeyEntry, AccountId)>,
-    ) -> Result<(), Error> {
-        let result = self.chain.key_and_signer(&key_file_contents);
+    fn get_signer(&mut self, reply_to: ReplyTo<AccountId>) -> Result<(), Error> {
+        let result = self.chain.get_signer();
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn get_key(&mut self, reply_to: ReplyTo<KeyEntry>) -> Result<(), Error> {
+        let result = self.chain.get_key();
 
         reply_to
             .send(result)

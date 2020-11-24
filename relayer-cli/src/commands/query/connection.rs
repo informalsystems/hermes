@@ -106,7 +106,7 @@ mod tests {
     #[test]
     fn parse_connection_query_end_parameters() {
         let default_params = QueryConnectionEndCmd {
-            chain_id: Some("ibc0".to_string().parse().unwrap()),
+            chain_id: Some("ibc-0".to_string().parse().unwrap()),
             connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
             height: None,
             proof: None,

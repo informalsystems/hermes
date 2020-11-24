@@ -21,14 +21,10 @@ use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
-// Support for GRPC
-
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
 
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -52,11 +48,15 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use tonic::codegen::http::Uri;
+
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
-    key_ring: KeyRing,
     rt: Arc<TokioRuntime>,
+    keybase: KeyRing,
 }
 
 impl CosmosSDKChain {
@@ -68,18 +68,16 @@ impl CosmosSDKChain {
         let rpc_client =
             HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
-        let key_store = KeyRing::init(StoreBackend::Memory);
+        // Initialize key store and load key
+        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(Self {
             rt,
             config,
-            key_ring: key_store,
+            keybase: key_store,
             rpc_client,
         })
-    }
-
-    pub fn key_ring(&mut self) -> &mut KeyRing {
-        &mut self.key_ring
     }
 
     /// The unbonding period of this chain
@@ -165,18 +163,16 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
         // Create TxBody
         let body = TxBody {
             messages: proto_msgs.to_vec(),
-            memo,
-            timeout_height,
+            memo: "".to_string(),
+            timeout_height: 0_u64,
             extension_options: Vec::<Any>::new(),
             non_critical_extension_options: Vec::<Any>::new(),
         };
@@ -242,7 +238,7 @@ impl Chain for CosmosSDKChain {
         prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
         // Sign doc and broadcast
-        let signed = self.key_ring.sign(key.address, signdoc_buf);
+        let signed = self.keybase.sign_msg(signdoc_buf);
 
         let tx_raw = TxRaw {
             body_bytes: body_buf,
@@ -259,20 +255,6 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
-    }
-
-    /// Get the key and account Id - temporary solution
-    fn key_and_signer(&mut self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error> {
-        // Get the key from key seed file
-        let key = self
-            .key_ring
-            .key_from_seed_file(key_file_contents)
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok((key, signer))
     }
 
     /// Query the latest height the chain is at via a RPC query
@@ -399,6 +381,35 @@ impl Chain for CosmosSDKChain {
             validator_set: fix_validator_set(&target_light_block)?,
             trusted_validator_set: fix_validator_set(&trusted_light_block)?,
         })
+    }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
+    }
+
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<AccountId, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(signer)
+    }
+
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(key)
     }
 }
 

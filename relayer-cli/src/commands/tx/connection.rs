@@ -31,12 +31,6 @@ pub struct TxRawConnInitCmd {
 
     #[options(help = "identifier of the source connection", short = "s")]
     src_connection_id: Option<ConnectionId>,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl TxRawConnInitCmd {
@@ -53,10 +47,6 @@ impl TxRawConnInitCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let signer_seed = std::fs::read_to_string(&self.seed_file).map_err(|e| {
-            anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
-        })?;
-
         let opts = ConnectionOpenInitOptions {
             dst_chain_config: dst_chain_config.clone(),
             src_chain_config: src_chain_config.clone(),
@@ -64,7 +54,6 @@ impl TxRawConnInitCmd {
             src_client_id: self.src_client_id.clone(),
             dst_connection_id: self.dst_connection_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
-            signer_seed,
         };
 
         Ok(opts)
@@ -112,12 +101,6 @@ pub struct TxRawConnTryCmd {
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl TxRawConnTryCmd {
@@ -134,10 +117,6 @@ impl TxRawConnTryCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let signer_seed = std::fs::read_to_string(&self.seed_file).map_err(|e| {
-            anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
-        })?;
-
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
             dst_chain_config: dst_chain_config.clone(),
@@ -145,7 +124,6 @@ impl TxRawConnTryCmd {
             dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
             dst_connection_id: self.dst_connection_id.clone(),
-            signer_seed,
         };
 
         Ok(opts)
@@ -194,12 +172,6 @@ pub struct TxRawConnAckCmd {
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl TxRawConnAckCmd {
@@ -216,10 +188,6 @@ impl TxRawConnAckCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let signer_seed = std::fs::read_to_string(&self.seed_file).map_err(|e| {
-            anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
-        })?;
-
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
             dst_chain_config: dst_chain_config.clone(),
@@ -227,7 +195,6 @@ impl TxRawConnAckCmd {
             dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
             dst_connection_id: self.dst_connection_id.clone(),
-            signer_seed,
         };
 
         Ok(opts)
@@ -276,12 +243,6 @@ pub struct TxRawConnConfirmCmd {
 
     #[options(free, help = "identifier of the source connection")]
     src_connection_id: ConnectionId,
-
-    #[options(
-        help = "json key file for the signer, must include mnemonic",
-        short = "k"
-    )]
-    seed_file: String,
 }
 
 impl TxRawConnConfirmCmd {
@@ -298,10 +259,6 @@ impl TxRawConnConfirmCmd {
             .find(|c| c.id == self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
-        let signer_seed = std::fs::read_to_string(&self.seed_file).map_err(|e| {
-            anomaly::Context::new("invalid signer seed file", Some(e.into())).to_string()
-        })?;
-
         let opts = ConnectionOpenOptions {
             src_chain_config: src_chain_config.clone(),
             dst_chain_config: dst_chain_config.clone(),
@@ -309,7 +266,6 @@ impl TxRawConnConfirmCmd {
             dst_client_id: self.dst_client_id.clone(),
             src_connection_id: self.src_connection_id.clone(),
             dst_connection_id: self.dst_connection_id.clone(),
-            signer_seed,
         };
 
         Ok(opts)

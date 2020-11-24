@@ -32,7 +32,7 @@ use ibc::Height as ICSHeight;
 
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::keyring::store::KeyEntry;
+use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::tx::connection::ConnectionMsgType;
 
 /// Generic query response type
@@ -69,6 +69,9 @@ pub trait Chain {
     /// Returns the chain's configuration
     fn config(&self) -> &ChainConfig;
 
+    /// Returns the chain's keybase
+    fn keybase(&self) -> &KeyRing;
+
     /// Get a low-level RPC client for this chain
     /// TODO - Should this be part of the Chain trait?
     fn rpc_client(&self) -> &Self::RpcClient;
@@ -77,16 +80,11 @@ pub trait Chain {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error>;
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error>;
 
-    /// Get the key and account Id - temporary solution
-    fn key_and_signer(&mut self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error>;
+    fn get_signer(&mut self) -> Result<AccountId, Error>;
+
+    fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
     // Build states
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error>;

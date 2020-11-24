@@ -58,9 +58,6 @@ pub enum HandleInput {
 
     SendTx {
         proto_msgs: Vec<prost_types::Any>,
-        key: Box<KeyEntry>,
-        memo: String,
-        timeout_height: u64,
         reply_to: ReplyTo<String>,
     },
 
@@ -78,9 +75,12 @@ pub enum HandleInput {
     //     transaction: EncodedTransaction,
     //     reply_to: ReplyTo<()>,
     // },
-    KeyAndSigner {
-        key_file_contents: String,
-        reply_to: ReplyTo<(KeyEntry, AccountId)>,
+    Signer {
+        reply_to: ReplyTo<AccountId>,
+    },
+
+    Key {
+        reply_to: ReplyTo<KeyEntry>,
     },
 
     ModuleVersion {
@@ -182,13 +182,7 @@ pub trait ChainHandle: Clone + Send + Sync {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(
-        &self,
-        proto_msgs: Vec<prost_types::Any>,
-        key: KeyEntry,
-        memo: String,
-        timeout_height: u64,
-    ) -> Result<String, Error>;
+    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error>;
 
     // Inclusion proofs
     // It might be good to include an inclusion proof method which abstracts over the light client
@@ -198,7 +192,9 @@ pub trait ChainHandle: Clone + Send + Sync {
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
-    fn key_and_signer(&self, key_file_contents: &str) -> Result<(KeyEntry, AccountId), Error>;
+    fn get_signer(&self) -> Result<AccountId, Error>;
+
+    fn get_key(&self) -> Result<KeyEntry, Error>;
 
     // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
 
