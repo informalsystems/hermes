@@ -31,3 +31,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [002](./adr-002-ibc-relayer.md) | IBC Relayer in Rust | Accepted |
 | [003](./adr-003-handler-implementation.md) | IBC handlers (protocol) implementation | Accepted |
 | [004](./adr-004-relayer-domain-decomposition.md) | Relayer domain decomposition | Accepted |
+| [005](./adr-005-relayer-v0-concurrency.md) | Relayer v0 concurrency model | Accepted |
