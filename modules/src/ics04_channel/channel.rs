@@ -126,6 +126,11 @@ impl ChannelEnd {
         }
         self.counterparty().validate_basic()
     }
+
+    /// Helper function to compare the state of this end with another state.
+    pub fn state_matches(&self, other: &State) -> bool {
+        self.state.eq(other)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -236,18 +241,16 @@ impl FromStr for Order {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum State {
-    Uninitialized = 0,
-    Init,
-    TryOpen,
-    Open,
-    Closed,
+    Init = 1,
+    TryOpen = 2,
+    Open = 3,
+    Closed = 4,
 }
 
 impl State {
     /// Yields the state as a string
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -258,7 +261,6 @@ impl State {
     // Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
-            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
@@ -291,7 +293,7 @@ pub mod test_util {
     /// Returns a dummy `RawChannel`, for testing only!
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
-            state: 0,
+            state: 1,
             ordering: 0,
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![],

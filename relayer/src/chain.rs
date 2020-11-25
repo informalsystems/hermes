@@ -31,9 +31,9 @@ use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
 use crate::config::ChainConfig;
+use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::tx::connection::ConnectionMsgType;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries

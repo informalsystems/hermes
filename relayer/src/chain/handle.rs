@@ -18,7 +18,7 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::tx::connection::ConnectionMsgType;
+use crate::connection::ConnectionMsgType;
 use crate::{error::Error, event::monitor::EventBatch};
 // use crate::foreign_client::ForeignClient;
 

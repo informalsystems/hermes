@@ -153,10 +153,8 @@ impl Chain for CosmosSDKChain {
             self.rt
                 .block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
-        // Verify response proof, if requested.
-        if prove {
-            dbg!("Todo: implement proof verification."); // Todo: Verify proof
-        }
+        // TODO - Verify response proof, if requested.
+        if prove {}
 
         Ok(response)
     }
