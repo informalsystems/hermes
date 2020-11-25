@@ -11,8 +11,8 @@
     unused_qualifications
 )]
 
-use std::str::FromStr;
 use std::sync::Arc;
+use std::{str::FromStr, sync::Mutex};
 
 use ibc::ics02_client::raw::ConnectionIds as DomainTypeClientConnections;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
@@ -45,8 +45,8 @@ fn simd_config() -> Config {
 
 /// Chain created for the informaldev/simd DockerHub image running on localhost.
 fn simd_chain() -> CosmosSDKChain {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    CosmosSDKChain::from_config(simd_config().chains[0].clone(), Arc::new(rt)).unwrap()
+    let rt = Arc::new(Mutex::new(tokio::runtime::Runtime::new().unwrap()));
+    CosmosSDKChain::from_config(simd_config().chains[0].clone(), rt).unwrap()
 }
 
 /// Query connection ID. Requires the informaldev/simd Docker image running on localhost.

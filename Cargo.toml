@@ -10,18 +10,3 @@ members = [
 exclude = [
     "proto-compiler"
 ]
-
-[patch.crates-io]
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-dev" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-dev" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-dev" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/prost-dev" }
-
-bytes = { git = "https://github.com/tokio-rs/bytes", tag = "v0.6.0" }
-
-tonic = { git = "https://github.com/romac/tonic", branch = "romac/hyper-0.14-dev" }
-
-prost        = { git = "https://github.com/danburkert/prost", branch = "master" }
-prost-types  = { git = "https://github.com/danburkert/prost", branch = "master" }
-prost-build  = { git = "https://github.com/danburkert/prost", branch = "master" }
-prost-derive = { git = "https://github.com/danburkert/prost", branch = "master" }
