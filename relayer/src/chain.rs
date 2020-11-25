@@ -15,8 +15,6 @@ use tendermint_proto::Protobuf;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
-use tendermint_rpc::Client as RpcClient;
-
 use ibc::ics02_client::header::Header;
 
 use ibc::ics02_client::state::{ClientState, ConsensusState};
@@ -61,9 +59,6 @@ pub trait Chain {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
-    /// Type of RPC requester (wrapper around low-level RPC client) for this chain
-    type RpcClient: RpcClient + Send + Sync;
-
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId {
         &self.config().id
@@ -74,10 +69,6 @@ pub trait Chain {
 
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
-
-    /// Get a low-level RPC client for this chain
-    /// TODO - Should this be part of the Chain trait?
-    fn rpc_client(&self) -> &Self::RpcClient;
 
     /// Perform a generic ICS `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;

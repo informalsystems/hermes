@@ -2,7 +2,6 @@
 
 use prost_types::Any;
 use tendermint::account::Id;
-use tendermint_rpc::HttpClient;
 use tendermint_testgen::light_block::TMLightBlock;
 
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
@@ -46,17 +45,12 @@ impl Chain for MockChain {
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
-    type RpcClient = HttpClient;
 
     fn config(&self) -> &ChainConfig {
         unimplemented!()
     }
 
     fn keybase(&self) -> &KeyRing {
-        unimplemented!()
-    }
-
-    fn rpc_client(&self) -> &Self::RpcClient {
         unimplemented!()
     }
 

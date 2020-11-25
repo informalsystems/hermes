@@ -111,6 +111,10 @@ impl CosmosSDKChain {
         Ok(Duration::from_secs(res.seconds as u64))
     }
 
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
+
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
@@ -125,16 +129,12 @@ impl CosmosSDKChain {
 impl Chain for CosmosSDKChain {
     type Header = TMHeader;
     type LightBlock = TMLightBlock;
-    type RpcClient = HttpClient;
     type ConsensusState = ConsensusState;
+
     type ClientState = ClientState;
 
     fn config(&self) -> &ChainConfig {
         &self.config
-    }
-
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
