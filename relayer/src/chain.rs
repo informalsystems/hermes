@@ -4,6 +4,9 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
+#[cfg(test)]
+mod mock;
+
 use prost_types::Any;
 
 use tendermint_proto::Protobuf;
