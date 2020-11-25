@@ -16,9 +16,9 @@ use ibc::mock::host::HostType;
 use ibc::Height;
 
 use crate::chain::{Chain, QueryResponse};
-use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::keyring::store::{KeyEntry, KeyRing};
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
@@ -46,7 +46,7 @@ impl Chain for MockChain {
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
 
-    fn config(&self) -> &ChainConfig {
+    fn id(&self) -> &ChainId {
         unimplemented!()
     }
 
@@ -98,6 +98,10 @@ impl Chain for MockChain {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Self::ClientState, Error> {
+        unimplemented!()
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         unimplemented!()
     }
 

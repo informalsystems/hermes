@@ -33,6 +33,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
@@ -115,6 +116,10 @@ impl CosmosSDKChain {
         &self.rpc_client
     }
 
+    pub fn config(&self) -> &ChainConfig {
+        &self.config
+    }
+
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
@@ -130,11 +135,10 @@ impl Chain for CosmosSDKChain {
     type Header = TMHeader;
     type LightBlock = TMLightBlock;
     type ConsensusState = ConsensusState;
-
     type ClientState = ClientState;
 
-    fn config(&self) -> &ChainConfig {
-        &self.config
+    fn id(&self) -> &ChainId {
+        &self.config().id
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -293,6 +297,13 @@ impl Chain for CosmosSDKChain {
         let client_state = downcast!(client_state => AnyClientState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
         Ok(client_state)
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        // TODO - do a real chain query
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
     }
 
     fn proven_client_state(

@@ -31,7 +31,6 @@ use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
-use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::tx::connection::ConnectionMsgType;
@@ -60,12 +59,7 @@ pub trait Chain {
     type ClientState: ClientState;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId {
-        &self.config().id
-    }
-
-    /// Returns the chain's configuration
-    fn config(&self) -> &ChainConfig;
+    fn id(&self) -> &ChainId;
 
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
@@ -105,12 +99,7 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        // TODO - do a real chain query
-        Ok(CommitmentPrefix::from(
-            self.config().store_prefix.as_bytes().to_vec(),
-        ))
-    }
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
     fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
         // TODO - do a real chain query
