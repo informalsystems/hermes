@@ -33,7 +33,10 @@ pub struct ForeignClientConfig {
 
 impl ForeignClientConfig {
     pub fn new(chain: &ChainId, id: &ClientId) -> ForeignClientConfig {
-        Self { chain: chain.clone(), id: id.clone() }
+        Self {
+            chain: chain.clone(),
+            id: id.clone(),
+        }
     }
 
     pub fn chain_id(&self) -> &ChainId {
@@ -61,18 +64,17 @@ impl ForeignClient {
         source: impl ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
-        let done = '\u{1F378}';
+        let done = '\u{1F36D}';
 
         // Query the client state on source chain.
         let client_state = host.query_client_state(&config.id, Height::default());
         if client_state.is_err() {
-            build_create_client_and_send(source, host, &config)
-                .map_err(|e| {
-                    ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
-                })?;
+            build_create_client_and_send(source, host, &config).map_err(|e| {
+                ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
+            })?;
         }
         println!(
-            "{} Client on {:?} is created {:?}\n",
+            "{}  Client on {:?} is created {:?}\n",
             done, config.chain, config.id
         );
         Ok(ForeignClient { config })

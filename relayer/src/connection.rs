@@ -19,9 +19,10 @@ use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
 use crate::chain::handle::ChainHandle;
+use crate::config;
 use crate::error::{Error, Kind};
 use crate::foreign_client::{build_update_client, ForeignClient};
-use crate::config;
+use crate::relay::MAX_ITER;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
@@ -75,38 +76,40 @@ pub struct ConnectionConfig {
 
 impl ConnectionConfig {
     pub fn new(conn: &config::Connection) -> Result<ConnectionConfig, String> {
-
-        let src_conn_endpoint = conn.src.clone()
+        let src_conn_endpoint = conn
+            .src
+            .clone()
             .ok_or("Connection source endpoint not specified")?;
-        let dst_conn_endpoint = conn.dest.clone()
+        let dst_conn_endpoint = conn
+            .dest
+            .clone()
             .ok_or("Connection destination endpoint not specified")?;
 
-
         let src_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(src_conn_endpoint
-                .chain_id.as_str())
+            chain_id: ChainId::from_str(src_conn_endpoint.chain_id.as_str())
                 .map_err(|e| format!("Invalid chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(src_conn_endpoint
-                .connection_id
-                .ok_or("Connection id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid connection id ({:?})", e))?,
-            client_id: ClientId::from_str(src_conn_endpoint
-                .client_id.as_str())
+            connection_id: ConnectionId::from_str(
+                src_conn_endpoint
+                    .connection_id
+                    .ok_or("Connection id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid connection id ({:?})", e))?,
+            client_id: ClientId::from_str(src_conn_endpoint.client_id.as_str())
                 .map_err(|e| format!("Invalid client id ({:?})", e))?,
         };
 
         let dst_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(dst_conn_endpoint
-                .chain_id.as_str())
+            chain_id: ChainId::from_str(dst_conn_endpoint.chain_id.as_str())
                 .map_err(|e| format!("Invalid counterparty chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(dst_conn_endpoint
-                .connection_id
-                .ok_or("Counterparty connection id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid counterparty connection id ({:?})", e))?,
-            client_id: ClientId::from_str(dst_conn_endpoint
-                .client_id.as_str())
+            connection_id: ConnectionId::from_str(
+                dst_conn_endpoint
+                    .connection_id
+                    .ok_or("Counterparty connection id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid counterparty connection id ({:?})", e))?,
+            client_id: ClientId::from_str(dst_conn_endpoint.client_id.as_str())
                 .map_err(|e| format!("Invalid counterparty client id ({:?})", e))?,
         };
 
@@ -114,6 +117,23 @@ impl ConnectionConfig {
             src_config,
             dst_config,
         })
+    }
+}
+
+// temp fix for queries
+fn get_connection(
+    chain: impl ChainHandle,
+    id: &ConnectionId,
+) -> Result<Option<ConnectionEnd>, ConnectionError> {
+    match chain.query_connection(id, Height::zero()) {
+        Err(e) => match e.kind() {
+            Kind::EmptyResponseValue => Ok(None),
+            _ => Err(ConnectionError::Failed(format!(
+                "error retrieving connection {:?}",
+                e
+            ))),
+        },
+        Ok(conn) => Ok(Some(conn)),
     }
 }
 
@@ -128,7 +148,7 @@ impl Connection {
         _dst_client: ForeignClient,
         config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {
-        let done = '\u{1F378}'; // surprise emoji
+        let done = '\u{1F942}'; // surprise emoji
 
         let flipped = ConnectionConfig {
             src_config: config.dst_config.clone(),
@@ -136,37 +156,44 @@ impl Connection {
         };
 
         let mut counter = 0;
-        while counter < 10 {
+        while counter < MAX_ITER {
             counter += 1;
             let now = SystemTime::now();
 
-            let src_connection = src_chain
-                .query_connection(&config.src_config.connection_id.clone(), Height::default());
-            let dst_connection = dst_chain
-                .query_connection(&config.dst_config.connection_id.clone(), Height::default());
+            // Continue loop if query error
+            let src_connection =
+                get_connection(src_chain.clone(), &config.src_config.connection_id);
+            if src_connection.is_err() {
+                continue;
+            }
+            let dst_connection =
+                get_connection(dst_chain.clone(), &config.dst_config.connection_id);
+            if dst_connection.is_err() {
+                continue;
+            }
 
-            match (src_connection, dst_connection) {
-                (Err(_), Err(_)) => {
+            match (src_connection?, dst_connection?) {
+                (None, None) => {
                     // Init to src
                     match build_conn_init(src_chain.clone(), dst_chain.clone(), &flipped) {
                         Err(e) => println!("{:?} Failed ConnInit {:?}", e, flipped.dst_config),
                         Ok(src_msgs) => {
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ConnInit {:?}", done, flipped.dst_config);
+                            println!("{}  ConnInit {:?}", done, flipped.dst_config);
                         }
                     }
                 }
-                (Ok(src_connection), Err(_)) => {
+                (Some(src_connection), None) => {
                     assert!(src_connection.state_matches(&State::Init));
                     match build_conn_try(dst_chain.clone(), src_chain.clone(), &config) {
                         Err(e) => println!("{:?} Failed ConnTry {:?}", e, config.dst_config),
                         Ok(dst_msgs) => {
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ConnTry {:?}", done, config.dst_config);
+                            println!("{}  ConnTry {:?}", done, config.dst_config);
                         }
                     }
                 }
-                (Err(_), Ok(dst_connection)) => {
+                (None, Some(dst_connection)) => {
                     assert!(dst_connection.state_matches(&State::Init));
                     match build_conn_try(src_chain.clone(), dst_chain.clone(), &flipped) {
                         Err(e) => {
@@ -174,19 +201,21 @@ impl Connection {
                         }
                         Ok(src_msgs) => {
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ConnTry {:?}", done, flipped);
+                            println!("{}  ConnTry {:?}", done, flipped);
                         }
                     }
                 }
-                (Ok(src_connection), Ok(dst_connection)) => {
+                (Some(src_connection), Some(dst_connection)) => {
                     match (src_connection.state(), dst_connection.state()) {
                         (&State::Init, &State::Init) => {
                             // Try to dest
                             match build_conn_try(dst_chain.clone(), src_chain.clone(), &config) {
-                                Err(e) => println!("{:?} Failed ConnTry {:?}", e, config.dst_config),
+                                Err(e) => {
+                                    println!("{:?} Failed ConnTry {:?}", e, config.dst_config)
+                                }
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnTry {:?}", done, config.dst_config);
+                                    println!("{}  ConnTry {:?}", done, config.dst_config);
                                 }
                             }
                         }
@@ -196,7 +225,7 @@ impl Connection {
                                 Err(e) => println!("{:?} Failed ConnAck {:?}", e, config),
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnAck {:?}", done, config);
+                                    println!("{}  ConnAck {:?}", done, config);
                                 }
                             }
                         }
@@ -206,36 +235,38 @@ impl Connection {
                                 Err(e) => println!("{:?} Failed ConnAck {:?}", e, flipped),
                                 Ok(src_msgs) => {
                                     src_chain.send_tx(src_msgs).unwrap();
-                                    println!("{} ConnAck {:?}", done, flipped);
+                                    println!("{}  ConnAck {:?}", done, flipped);
                                 }
                             }
                         }
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
-                            match build_conn_confirm(dst_chain.clone(), src_chain.clone(), &config) {
+                            match build_conn_confirm(dst_chain.clone(), src_chain.clone(), &config)
+                            {
                                 Err(e) => println!("{:?} Failed ConnConfirm {:?}", e, config),
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnConfirm {:?}", done, config);
+                                    println!("{}  ConnConfirm {:?}", done, config);
                                 }
                             }
                         }
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
-                            match build_conn_confirm(src_chain.clone(), dst_chain.clone(), &flipped) {
+                            match build_conn_confirm(src_chain.clone(), dst_chain.clone(), &flipped)
+                            {
                                 Err(e) => println!("{:?} ConnConfirm {:?}", e, flipped),
                                 Ok(src_msgs) => {
                                     src_chain.send_tx(src_msgs).unwrap();
-                                    println!("{} ConnConfirm {:?}", done, flipped);
+                                    println!("{}  ConnConfirm {:?}", done, flipped);
                                 }
                             }
                         }
                         (&State::Open, &State::Open) => {
                             println!(
-                                "{} {} {} ====> Connection handshake finished for [{:#?}]",
+                                "{}  {}  {}  Connection handshake finished for [{:#?}]",
                                 done, done, done, config
                             );
-                            break;
+                            return Ok(Connection { config });
                         }
                         _ => {}
                     }
@@ -244,7 +275,10 @@ impl Connection {
             println!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
 
-        Ok(Connection { config })
+        Err(ConnectionError::Failed(format!(
+            "Failed to finish connection handshake in {:?} iterations",
+            MAX_ITER
+        )))
     }
 }
 

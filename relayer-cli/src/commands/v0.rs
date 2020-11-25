@@ -33,23 +33,26 @@ impl Runnable for V0Cmd {
 pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     // Relay for a single channel, first on the first connection in configuration
     // TODO - change the config to use typed Ids and same with ConnectionConfig, ClientConfig, ChannelConfig, etc
-    let conn = &config.connections.clone()
+    let conn = &config
+        .connections
+        .clone()
         .ok_or("No connections configured")?[0];
 
-    let path = &conn.paths.clone()
-        .ok_or("No paths configured")?[0];
+    let path = &conn.paths.clone().ok_or("No paths configured")?[0];
 
     let connection = ConnectionConfig::new(&conn.clone())?;
     let channel = ChannelConfig::new(&connection, &path)?;
 
     let src_chain_config = config
-        .chains.clone()
+        .chains
+        .clone()
         .into_iter()
         .find(|c| c.id == connection.src_config.chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
-    let dst_chain_config =  config
-        .chains.clone()
+    let dst_chain_config = config
+        .chains
+        .clone()
         .into_iter()
         .find(|c| c.id == connection.dst_config.chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
@@ -57,5 +60,10 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     let (src_chain_handle, _) = ChainRuntime::spawn(src_chain_config)?;
     let (dst_chain_handle, _) = ChainRuntime::spawn(dst_chain_config)?;
 
-    Ok(channel_relay(src_chain_handle, dst_chain_handle, connection, channel)?)
+    Ok(channel_relay(
+        src_chain_handle,
+        dst_chain_handle,
+        connection,
+        channel,
+    )?)
 }

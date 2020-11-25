@@ -128,12 +128,8 @@ pub trait Chain {
         connection_id: &ConnectionId,
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
-        Ok(self
-            .query(Path::Connections(connection_id.clone()), height, false)
-            .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| {
-                ConnectionEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
-            })?)
+        let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
+        Ok(ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
     }
 
     fn query_channel(
@@ -142,14 +138,12 @@ pub trait Chain {
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<ChannelEnd, Error> {
-        Ok(self
-            .query(
-                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
-                height,
-                false,
-            )
-            .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| ChannelEnd::decode_vec(&v.value).map_err(|e| Kind::Query.context(e)))?)
+        let res = self.query(
+            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            height,
+            false,
+        )?;
+        Ok(ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
     }
 
     // Provable queries

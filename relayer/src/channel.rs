@@ -20,14 +20,15 @@ use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::config::RelayPath;
+use crate::connection::{Connection, ConnectionConfig};
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
-use crate::connection::{ConnectionConfig, Connection};
+use crate::relay::MAX_ITER;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
     #[error("failed")]
-    Failed,
+    Failed(String),
 }
 
 #[derive(Clone, Debug)]
@@ -91,37 +92,44 @@ pub struct Channel {
 
 impl ChannelConfig {
     pub fn new(conn: &ConnectionConfig, path: &RelayPath) -> Result<ChannelConfig, String> {
-
         let src_config = ChannelConfigSide {
             chain_id: conn.src_config.chain_id().clone(),
             connection_id: conn.src_config.connection_id().clone(),
             client_id: conn.src_config.client_id().clone(),
-            port_id: PortId::from_str(path
-                .src_port.clone()
-                .ok_or("Port id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid port id ({:?})", e))?,
-            channel_id: ChannelId::from_str(path
-                .src_channel.clone()
-                .ok_or("Channel id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid channel id ({:?})", e))?,
+            port_id: PortId::from_str(
+                path.src_port
+                    .clone()
+                    .ok_or("Port id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid port id ({:?})", e))?,
+            channel_id: ChannelId::from_str(
+                path.src_channel
+                    .clone()
+                    .ok_or("Channel id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid channel id ({:?})", e))?,
         };
 
         let dst_config = ChannelConfigSide {
             chain_id: conn.dst_config.chain_id().clone(),
             connection_id: conn.dst_config.connection_id().clone(),
             client_id: conn.dst_config.client_id().clone(),
-            port_id: PortId::from_str(path
-                .dest_port.clone()
-                .ok_or("Counterparty port id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid counterparty port id ({:?})", e))?,
-            channel_id: ChannelId::from_str(path
-                .dest_channel.clone()
-                .ok_or("Counterparty channel id not specified")?
-                .as_str())
-                .map_err(|e| format!("Invalid counterparty channel id ({:?})", e))?,
+            port_id: PortId::from_str(
+                path.dest_port
+                    .clone()
+                    .ok_or("Counterparty port id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid counterparty port id ({:?})", e))?,
+            channel_id: ChannelId::from_str(
+                path.dest_channel
+                    .clone()
+                    .ok_or("Counterparty channel id not specified")?
+                    .as_str(),
+            )
+            .map_err(|e| format!("Invalid counterparty channel id ({:?})", e))?,
         };
 
         Ok(ChannelConfig {
@@ -132,6 +140,27 @@ impl ChannelConfig {
     }
 }
 
+// temp fix for queries
+fn get_channel(
+    chain: impl ChainHandle,
+    port: &PortId,
+    id: &ChannelId,
+) -> Result<Option<ChannelEnd>, ChannelError> {
+    match chain.query_channel(port, id, Height::zero()) {
+        Err(e) => {
+            //println!("error {:?}", e);
+            match e.kind() {
+                Kind::EmptyResponseValue => Ok(None),
+                _ => Err(ChannelError::Failed(format!(
+                    "error retrieving channel {:?}",
+                    e
+                ))),
+            }
+        }
+        Ok(chan) => Ok(Some(chan)),
+    }
+}
+
 impl Channel {
     pub fn new(
         src_chain: impl ChainHandle,
@@ -139,7 +168,7 @@ impl Channel {
         _connection: Connection,
         config: ChannelConfig,
     ) -> Result<Channel, ChannelError> {
-        let done = '\u{1F378}';
+        let done = '\u{1F973}';
 
         let flipped = ChannelConfig {
             ordering: config.ordering,
@@ -149,47 +178,53 @@ impl Channel {
 
         let mut counter = 0;
 
-        while counter < 10 {
+        while counter < MAX_ITER {
             counter += 1;
             let now = SystemTime::now();
 
-            // Retrieve existing channel if any
-            let src_channel = src_chain.query_channel(
-                &config.src_config.port_id.clone(),
-                &config.src_config.channel_id.clone(),
-                Height::default(),
+            // Continue loop if query error
+            let src_channel = get_channel(
+                src_chain.clone(),
+                &config.src_config.port_id,
+                &config.src_config.channel_id,
             );
-            let dst_channel = dst_chain.query_channel(
-                &config.dst_config.port_id.clone(),
-                &config.dst_config.channel_id.clone(),
-                Height::default(),
+            if src_channel.is_err() {
+                continue;
+            }
+            let dst_channel = get_channel(
+                dst_chain.clone(),
+                &config.dst_config.port_id,
+                &config.dst_config.channel_id,
             );
+            if dst_channel.is_err() {
+                continue;
+            }
 
-            match (src_channel, dst_channel) {
-                (Err(_), Err(_)) => {
+            match (src_channel?, dst_channel?) {
+                (None, None) => {
                     // Init
                     let src_msgs =
                         build_chan_init(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
                     src_chain.send_tx(src_msgs).unwrap();
-                    println!("{} ChanInit {:?}", done, flipped);
+                    println!("{}  ChanInit {:?}", done, flipped);
                 }
-                (Ok(src_channel), Err(_)) => {
+                (Some(src_channel), None) => {
                     // Try to dest
                     assert!(src_channel.state_matches(&State::Init));
                     let dst_msgs =
                         build_chan_try(dst_chain.clone(), src_chain.clone(), &config).unwrap();
                     dst_chain.send_tx(dst_msgs).unwrap();
-                    println!("{} ChanTry {:?}", done, config);
+                    println!("{}  ChanTry {:?}", done, config);
                 }
-                (Err(_), Ok(dst_channel)) => {
+                (None, Some(dst_channel)) => {
                     // Try to src
                     assert!(dst_channel.state_matches(&State::Init));
                     let src_msgs =
                         build_chan_try(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
                     src_chain.send_tx(src_msgs).unwrap();
-                    println!("{} ChanTry {:?}", done, flipped);
+                    println!("{}  ChanTry {:?}", done, flipped);
                 }
-                (Ok(src_channel), Ok(dst_channel)) => {
+                (Some(src_channel), Some(dst_channel)) => {
                     match (src_channel.state(), dst_channel.state()) {
                         (&State::Init, &State::Init) => {
                             // Try to dest
@@ -197,7 +232,7 @@ impl Channel {
                                 build_chan_try(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanTry {:?}", done, config);
+                            println!("{}  ChanTry {:?}", done, config);
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
@@ -205,7 +240,7 @@ impl Channel {
                                 build_chan_ack(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanAck {:?}", done, config);
+                            println!("{}  ChanAck {:?}", done, config);
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
                             // Ack to src
@@ -213,7 +248,7 @@ impl Channel {
                                 build_chan_ack(src_chain.clone(), dst_chain.clone(), &flipped)
                                     .unwrap();
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ChanAck {:?}", done, flipped);
+                            println!("{}  ChanAck {:?}", done, flipped);
                         }
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
@@ -221,7 +256,7 @@ impl Channel {
                                 build_chan_confirm(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanConfirm {:?}", done, config);
+                            println!("{}  ChanConfirm {:?}", done, config);
                         }
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
@@ -229,11 +264,11 @@ impl Channel {
                                 build_chan_confirm(src_chain.clone(), dst_chain.clone(), &flipped)
                                     .unwrap();
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ChanConfirm {:?}", done, flipped);
+                            println!("{}  ChanConfirm {:?}", done, flipped);
                         }
                         (&State::Open, &State::Open) => {
                             println!(
-                                "{} {} {} ====> Channel handshake finished for {:#?}",
+                                "{}  {}  {}  Channel handshake finished for {:#?}",
                                 done, done, done, config
                             );
                             return Ok(Channel { config });
@@ -245,7 +280,10 @@ impl Channel {
             println!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
 
-        Err(ChannelError::Failed)
+        Err(ChannelError::Failed(format!(
+            "Failed to finish channel handshake in {:?} iterations",
+            MAX_ITER
+        )))
     }
 }
 

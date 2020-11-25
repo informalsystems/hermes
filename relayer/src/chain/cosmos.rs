@@ -440,7 +440,7 @@ async fn abci_query(
     data: String,
     height: Height,
     prove: bool,
-) -> Result<QueryResponse, anomaly::Error<Kind>> {
+) -> Result<QueryResponse, Error> {
     let height = if height.value() == 0 {
         None
     } else {
