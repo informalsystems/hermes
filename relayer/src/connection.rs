@@ -1,6 +1,6 @@
 use prost_types::Any;
 use std::str::FromStr;
-use std::{thread, time, time::SystemTime};
+use std::time::SystemTime;
 use thiserror::Error;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
@@ -136,12 +136,10 @@ impl Connection {
         };
 
         let mut counter = 0;
-        let now = SystemTime::now();
         while counter < 10 {
-            thread::sleep(time::Duration::from_millis(2000));
-            println!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
-
             counter += 1;
+            let now = SystemTime::now();
+
             let src_connection = src_chain
                 .query_connection(&config.src_config.connection_id.clone(), Height::default());
             let dst_connection = dst_chain
@@ -151,20 +149,20 @@ impl Connection {
                 (Err(_), Err(_)) => {
                     // Init to src
                     match build_conn_init(src_chain.clone(), dst_chain.clone(), &flipped) {
-                        Err(e) => println!("{:?} Failed ConnInit {:?}\n", e, flipped.dst_config),
+                        Err(e) => println!("{:?} Failed ConnInit {:?}", e, flipped.dst_config),
                         Ok(src_msgs) => {
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ConnInit {:?}\n", done, flipped.dst_config);
+                            println!("{} ConnInit {:?}", done, flipped.dst_config);
                         }
                     }
                 }
                 (Ok(src_connection), Err(_)) => {
                     assert!(src_connection.state_matches(&State::Init));
                     match build_conn_try(dst_chain.clone(), src_chain.clone(), &config) {
-                        Err(e) => println!("{:?} Failed ConnTry {:?}\n", e, config.dst_config),
+                        Err(e) => println!("{:?} Failed ConnTry {:?}", e, config.dst_config),
                         Ok(dst_msgs) => {
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ConnTry {:?}\n", done, config.dst_config);
+                            println!("{} ConnTry {:?}", done, config.dst_config);
                         }
                     }
                 }
@@ -172,11 +170,11 @@ impl Connection {
                     assert!(dst_connection.state_matches(&State::Init));
                     match build_conn_try(src_chain.clone(), dst_chain.clone(), &flipped) {
                         Err(e) => {
-                            println!("{:?} Failed ConnTry {:?}\n", e, flipped)
+                            println!("{:?} Failed ConnTry {:?}", e, flipped)
                         }
                         Ok(src_msgs) => {
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ConnTry {:?}\n", done, flipped);
+                            println!("{} ConnTry {:?}", done, flipped);
                         }
                     }
                 }
@@ -185,56 +183,56 @@ impl Connection {
                         (&State::Init, &State::Init) => {
                             // Try to dest
                             match build_conn_try(dst_chain.clone(), src_chain.clone(), &config) {
-                                Err(e) => println!("{:?} Failed ConnTry {:?}\n", e, config.dst_config),
+                                Err(e) => println!("{:?} Failed ConnTry {:?}", e, config.dst_config),
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnTry {:?}\n", done, config.dst_config);
+                                    println!("{} ConnTry {:?}", done, config.dst_config);
                                 }
                             }
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
                             match build_conn_ack(dst_chain.clone(), src_chain.clone(), &config) {
-                                Err(e) => println!("{:?} Failed ConnAck {:?}\n", e, config),
+                                Err(e) => println!("{:?} Failed ConnAck {:?}", e, config),
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnAck {:?}\n", done, config);
+                                    println!("{} ConnAck {:?}", done, config);
                                 }
                             }
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
                             // Ack to src
                             match build_conn_ack(src_chain.clone(), dst_chain.clone(), &flipped) {
-                                Err(e) => println!("{:?} Failed ConnAck {:?}\n", e, flipped),
+                                Err(e) => println!("{:?} Failed ConnAck {:?}", e, flipped),
                                 Ok(src_msgs) => {
                                     src_chain.send_tx(src_msgs).unwrap();
-                                    println!("{} ConnAck {:?}\n", done, flipped);
+                                    println!("{} ConnAck {:?}", done, flipped);
                                 }
                             }
                         }
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
                             match build_conn_confirm(dst_chain.clone(), src_chain.clone(), &config) {
-                                Err(e) => println!("{:?} Failed ConnConfirm {:?}\n", e, config),
+                                Err(e) => println!("{:?} Failed ConnConfirm {:?}", e, config),
                                 Ok(dst_msgs) => {
                                     dst_chain.send_tx(dst_msgs).unwrap();
-                                    println!("{} ConnConfirm {:?}\n", done, config);
+                                    println!("{} ConnConfirm {:?}", done, config);
                                 }
                             }
                         }
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
                             match build_conn_confirm(src_chain.clone(), dst_chain.clone(), &flipped) {
-                                Err(e) => println!("{:?} ConnConfirm {:?}\n", e, flipped),
+                                Err(e) => println!("{:?} ConnConfirm {:?}", e, flipped),
                                 Ok(src_msgs) => {
                                     src_chain.send_tx(src_msgs).unwrap();
-                                    println!("{} ConnConfirm {:?}\n", done, flipped);
+                                    println!("{} ConnConfirm {:?}", done, flipped);
                                 }
                             }
                         }
                         (&State::Open, &State::Open) => {
                             println!(
-                                "{} {} {} ====> Connection handshake finished for [{:#?}]\n",
+                                "{} {} {} ====> Connection handshake finished for [{:#?}]",
                                 done, done, done, config
                             );
                             break;
@@ -243,6 +241,7 @@ impl Connection {
                     }
                 }
             }
+            println!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
 
         Ok(Connection { config })

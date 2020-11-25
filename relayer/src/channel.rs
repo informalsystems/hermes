@@ -1,6 +1,5 @@
 use std::str::FromStr;
 use std::time::SystemTime;
-use std::{thread, time};
 
 use prost_types::Any;
 use thiserror::Error;
@@ -148,13 +147,11 @@ impl Channel {
             dst_config: config.src_config.clone(),
         };
 
-        let now = SystemTime::now();
         let mut counter = 0;
 
         while counter < 10 {
-            thread::sleep(time::Duration::from_millis(2000));
-            println!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
             counter += 1;
+            let now = SystemTime::now();
 
             // Retrieve existing channel if any
             let src_channel = src_chain.query_channel(
@@ -174,7 +171,7 @@ impl Channel {
                     let src_msgs =
                         build_chan_init(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
                     src_chain.send_tx(src_msgs).unwrap();
-                    println!("{} ChanInit {:?}\n", done, flipped);
+                    println!("{} ChanInit {:?}", done, flipped);
                 }
                 (Ok(src_channel), Err(_)) => {
                     // Try to dest
@@ -182,7 +179,7 @@ impl Channel {
                     let dst_msgs =
                         build_chan_try(dst_chain.clone(), src_chain.clone(), &config).unwrap();
                     dst_chain.send_tx(dst_msgs).unwrap();
-                    println!("{} ChanTry {:?}\n", done, config);
+                    println!("{} ChanTry {:?}", done, config);
                 }
                 (Err(_), Ok(dst_channel)) => {
                     // Try to src
@@ -190,7 +187,7 @@ impl Channel {
                     let src_msgs =
                         build_chan_try(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
                     src_chain.send_tx(src_msgs).unwrap();
-                    println!("{} ChanTry {:?}\n", done, flipped);
+                    println!("{} ChanTry {:?}", done, flipped);
                 }
                 (Ok(src_channel), Ok(dst_channel)) => {
                     match (src_channel.state(), dst_channel.state()) {
@@ -200,7 +197,7 @@ impl Channel {
                                 build_chan_try(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanTry {:?}\n", done, config);
+                            println!("{} ChanTry {:?}", done, config);
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
@@ -208,7 +205,7 @@ impl Channel {
                                 build_chan_ack(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanAck {:?}\n", done, config);
+                            println!("{} ChanAck {:?}", done, config);
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
                             // Ack to src
@@ -216,7 +213,7 @@ impl Channel {
                                 build_chan_ack(src_chain.clone(), dst_chain.clone(), &flipped)
                                     .unwrap();
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ChanAck {:?}\n", done, flipped);
+                            println!("{} ChanAck {:?}", done, flipped);
                         }
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
@@ -224,7 +221,7 @@ impl Channel {
                                 build_chan_confirm(dst_chain.clone(), src_chain.clone(), &config)
                                     .unwrap();
                             dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{} ChanConfirm {:?}\n", done, config);
+                            println!("{} ChanConfirm {:?}", done, config);
                         }
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
@@ -232,21 +229,23 @@ impl Channel {
                                 build_chan_confirm(src_chain.clone(), dst_chain.clone(), &flipped)
                                     .unwrap();
                             src_chain.send_tx(src_msgs).unwrap();
-                            println!("{} ChanConfirm {:?}\n", done, flipped);
+                            println!("{} ChanConfirm {:?}", done, flipped);
                         }
                         (&State::Open, &State::Open) => {
                             println!(
-                                "{} {} {} ====> Channel handshake finished for {:#?}\n",
+                                "{} {} {} ====> Channel handshake finished for {:#?}",
                                 done, done, done, config
                             );
-                            break;
+                            return Ok(Channel { config });
                         }
                         _ => {} // TODO channel close
                     }
                 }
             }
+            println!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
-        Ok(Channel { config })
+
+        Err(ChannelError::Failed)
     }
 }
 
