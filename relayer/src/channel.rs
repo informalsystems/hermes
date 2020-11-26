@@ -107,7 +107,7 @@ impl ChannelConfig {
         ChannelConfig {
             ordering: self.ordering,
             a_config: self.b_config.clone(),
-            b_config: self.a_config.clone()
+            b_config: self.a_config.clone(),
         }
     }
 }
@@ -276,7 +276,9 @@ impl Channel {
                                 a_chain.clone(),
                                 &config,
                             ) {
-                                Err(e) => println!("{:?} Failed ChanConfirm {:?}", e, config.b_end()),
+                                Err(e) => {
+                                    println!("{:?} Failed ChanConfirm {:?}", e, config.b_end())
+                                }
                                 Ok(_) => println!("{}  ChanConfirm {:?}", done, config.b_end()),
                             }
                         }

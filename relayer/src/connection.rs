@@ -94,7 +94,7 @@ impl ConnectionConfig {
     pub fn flipped(&self) -> ConnectionConfig {
         ConnectionConfig {
             a_config: self.b_config.clone(),
-            b_config: self.a_config.clone()
+            b_config: self.a_config.clone(),
         }
     }
 }
@@ -244,7 +244,9 @@ impl Connection {
                                 a_chain.clone(),
                                 &config,
                             ) {
-                                Err(e) => println!("{:?} Failed ConnConfirm {:?}", e, config.b_end()),
+                                Err(e) => {
+                                    println!("{:?} Failed ConnConfirm {:?}", e, config.b_end())
+                                }
                                 Ok(_) => println!("{}  ConnConfirm {:?}", done, config.b_end()),
                             }
                         }
