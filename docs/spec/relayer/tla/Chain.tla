@@ -7,6 +7,7 @@ EXTENDS Integers, FiniteSets, IBCCoreDefinitions,
 CONSTANTS MaxHeight, \* maximal chain height
           ChainID, \* chain identifier
           ChannelOrdering, \* indicate whether the channels are ordered or unordered  
+          MaxVersion, \* maximal connection / channel version (we assume versions are integers)
           MaxPacketSeq \* maximal packet sequence number
 
 VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
@@ -165,6 +166,7 @@ SendPacket ==
                                                 srcChainID |-> ChainID,  
                                                 sequence |-> packet.sequence ,
                                                 timeoutHeight |-> packet.timeoutHeight]))
+\*                                                todo
         \* increase application packet sequence
         /\ appPacketSeq' = appPacketSeq + 1
         /\ UNCHANGED <<incomingDatagrams, incomingPacketDatagrams, history>>
@@ -211,11 +213,12 @@ HandleIncomingDatagrams ==
  ***************************************************************************)
 \* Initial state predicate
 \* Initially
-\*  - each chain is initialized to InitChain (defined in RelayerDefinitions.tla)
+\*  - each chain is initialized to some element of the set
+\*    InitChainStores (defined in RelayerDefinitions.tla)
 \*  - pendingDatagrams for each chain is empty
 \*  - the packetSeq is set to 1
 Init == 
-    /\ chainStore = InitChainStore(ChannelOrdering)
+    /\ chainStore \in InitChainStore(MaxVersion, ChannelOrdering)
     /\ incomingDatagrams = AsSetDatagrams({})
     /\ incomingPacketDatagrams = AsSeqDatagrams(<<>>)
     /\ history = InitHistory
@@ -244,8 +247,8 @@ Fairness ==
 \* Type invariant   
 \* ChainStores and Datagrams are defined in RelayerDefinitions.tla        
 TypeOK ==    
-    /\ chainStore \in ChainStores(MaxHeight, ChannelOrdering, MaxPacketSeq)
-    /\ incomingDatagrams \in SUBSET Datagrams(MaxHeight, MaxPacketSeq)
+    /\ chainStore \in ChainStores(MaxHeight, ChannelOrdering, MaxPacketSeq, MaxVersion)
+    /\ incomingDatagrams \in SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)
     /\ history \in Histories
     /\ appPacketSeq \in 1..MaxPacketSeq
     /\ packetLog \in SUBSET Packets(MaxHeight, MaxPacketSeq)
@@ -260,5 +263,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 30 13:47:16 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Nov 26 16:50:35 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

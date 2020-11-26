@@ -4,10 +4,11 @@
  This is the main module in the specification of the IBC core protocols. 
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
+EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
 
 CONSTANTS MaxHeight, \* maximal height of all the chains in the system
-          MaxPacketSeq, \* maximal packet sequence number (will be used later)
+          MaxVersion, \* maximal connection / channel version (we assume versions are integers) 
+          MaxPacketSeq, \* maximal packet sequence number
           ClientDatagramsRelayer1, \* toggle generation of client datagrams for Relayer1 
           ClientDatagramsRelayer2, \* toggle generation of client datagrams for Relayer2
           ConnectionDatagramsRelayer1, \* toggle generation of connection datagrams for Relayer1
@@ -16,21 +17,21 @@ CONSTANTS MaxHeight, \* maximal height of all the chains in the system
           ChannelDatagramsRelayer2, \* toggle generation of channel datagrams for Relayer2
           ChannelOrdering \* indicate whether the channels are ordered or unordered
 
-VARIABLES chainAstore, \* store of ChainA
-          chainBstore, \* store of ChainB
-          incomingDatagramsChainA, \* set of datagrams incoming to ChainA
-          incomingDatagramsChainB, \* set of datagrams incoming to ChainB
+VARIABLES chainAstore, \* chain store of ChainA
+          chainBstore, \* chain store of ChainB
+          incomingDatagramsChainA, \* set of (client, connection, channel) datagrams incoming to ChainA
+          incomingDatagramsChainB, \* set of (client, connection, channel) datagrams incoming to ChainB
           incomingPacketDatagramsChainA, \* sequence of packet datagrams incoming to ChainA
           incomingPacketDatagramsChainB, \* sequence of packet datagrams incoming to ChainB
           relayer1Heights, \* the client heights of Relayer1
           relayer2Heights, \* the client heights of Relayer2
-          outgoingDatagrams, \* sets of datagrams outgoing of the relayers
+          outgoingDatagrams, \* sets of (client, connection, channel) datagrams outgoing of the relayers
           outgoingPacketDatagrams, \* sequences of packet datagrams outgoing of the relayers
           closeChannelA, \* flag that triggers closing of the channel end at ChainA
           closeChannelB, \* flag that triggers closing of the channel end at ChainB
           historyChainA, \* history variables for ChainA
           historyChainB, \* history variables for ChainB
-          packetLog, \* a set of packets sent by both chains
+          packetLog, \* packet log 
           appPacketSeqChainA, \* packet sequence number from the application on ChainA
           appPacketSeqChainB \* packet sequence number from the application on ChainB
           
@@ -332,7 +333,12 @@ ChannelCloseInv ==
                                     /\ ~IsChannelTryOpen(GetChainByID("chainB"))
                                     /\ ~IsChannelOpen(GetChainByID("chainB")))
     
-
+(***************************************************************************
+ Invariants: packets
+ ***************************************************************************) 
+AtMostOnceDelivery ==
+    \* elements in chainAstore.packetReceipts are unique
+    TRUE
 (***************************************************************************
  Invariant [IBCInv]
  ***************************************************************************)
@@ -349,6 +355,9 @@ IBCInv ==
             /\ ChannelTryOpenInv
             /\ ChannelOpenInv    
             /\ ChannelCloseInv  
+    \* packet invariants
+    /\ (ChannelDatagramsRelayer1 \/ ChannelDatagramsRelayer2)
+         => AtMostOnceDelivery
     
 
 (***************************************************************************
@@ -565,5 +574,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Fri Sep 18 18:56:16 CEST 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 17:54:42 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

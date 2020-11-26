@@ -1,11 +1,11 @@
---------------------------- MODULE PacketHandlers ---------------------------
+------------------------ MODULE ICS04PacketHandlers ------------------------
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
  packet datagrams
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, RelayerDefinitions    
+EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions    
 
 (***************************************************************************
  Packet datagram handlers
@@ -47,11 +47,11 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
                     \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
                     \* record that the packet has been received 
-                    !.packetReceipts = chain.packetReceipts 
-                                       \union 
-                                       {AsPacketReceipt(
-                                        [channelID |-> packet.dstChannelID, 
-                                         sequence |-> packet.sequence])},
+                    !.packetReceipts = Append(chain.packetReceipts, 
+                                              AsPacketReceipt(
+                                                [channelID |-> packet.dstChannelID, 
+                                                 sequence |-> packet.sequence]
+                                      )),
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
                                       
@@ -201,8 +201,90 @@ LogAcknowledgement(chainID, chain, log, packet) ==
     \* do not add anything to the log
     ELSE log
     
+
+\* check if a packet timed out
+TimeoutPacket(chain, counterpartyChain, packet, proofHeight) ==
+    \* get channel end
+    LET channelEnd == chain.connectionEnd.channelEnd IN
+    \* get packet committment that should be in chain store
+    LET packetCommitment == AsPacketCommitment(
+                             [channelID |-> packet.srcChannelID, 
+                              portID |-> packet.srcPortID,
+                              data |-> packet.data,
+                              sequence |-> packet.sequence,
+                              timeoutHeight |-> packet.timeoutHeight]) IN
+    \* get packet receipt that should be absent in counterparty chain store
+    LET packetReceipt == AsPacketReceipt(
+                             [channelID |-> packet.dstChannelID,
+                              portID |-> packet.dstPortID,
+                              sequence |-> packet.sequence]) IN                              
+    
+    \* if channel end is open
+    IF /\ channelEnd.state = "OPEN"
+    \* dstChannelID and dstPortID match counterparty channel and port IDs
+       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
+       /\ packet.dstPortID = channelEnd.counterpartyPortID
+    \* packet has timed out
+       /\ packet.timeoutHeight > 0
+       /\ proofHeight >= packet.timeoutHeight
+    \* chain has sent the packet 
+       /\ packetCommitment \in chain.packetCommitments
+    \* counterparty chain has not received the packet   
+       /\ packetReceipt \notin counterpartyChain.packetReceipts
+    \* remove packet commitment
+    THEN LET updatedChainStore == 
+                [chain EXCEPT !.packetCommitments = 
+                    chain.packetCommitments \ {packetCommitment}] IN
+         updatedChainStore
+          
+    \* otherwise, do not update the chain store 
+    ELSE chain
+        
+\* check if a packet timed out on close
+TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
+    \* get channel end
+    LET channelEnd == chain.channelEnd IN
+    \* get counterparty channel end
+    LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
+    
+    \* get packet committment that should be in chain store
+    LET packetCommitment == AsPacketCommitment(
+                             [channelID |-> packet.srcChannelID, 
+                              portID |-> packet.srcPortID,
+                              data |-> packet.data,
+                              sequence |-> packet.sequence,
+                              timeoutHeight |-> packet.timeoutHeight]) IN
+     \* get packet receipt that should be absent in counterparty chain store
+    LET packetReceipt == AsPacketReceipt(
+                             [channelID |-> packet.dstChannelID,
+                              portID |-> packet.dstPortID,
+                              sequence |-> packet.sequence]) IN
+    
+ 
+    \* if dstChannelID and dstPortID match counterparty channel and port IDs
+    IF /\ packet.dstChannelID = channelEnd.counterpartyChannelID
+       /\ packet.dstPort = channelEnd.counterpartyPortID
+    \* chain has sent the packet  
+       /\ packetCommitment \in chain.packetCommitments
+    \* counterparty channel end is closed and its fields are as expected   
+       /\ counterpartyChannelEnd.state = "CLOSED"
+       /\ counterpartyChannelEnd.order = "UNORDERED"
+       /\ counterpartyChannelEnd.counterpartyChannelID = packet.srcChannelID
+       /\ counterpartyChannelEnd.counterpartyPortID = packet.srcPortID
+       /\ counterpartyChannelEnd.version = channelEnd.version
+    \* counterparty chain has not received the packet   
+       /\ packetReceipt \notin counterpartyChain.packetReceipts
+    \* remove packet commitment
+    THEN  LET updatedChainStore == 
+                [chain EXCEPT !.packetCommitments = 
+                    chain.packetCommitments \ {packetCommitment}] IN
+         updatedChainStore
+         
+    \* otherwise, do not update the chain store 
+    ELSE chain
+
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 06 20:43:25 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 17:34:35 CET 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

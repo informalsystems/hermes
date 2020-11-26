@@ -1,11 +1,11 @@
------------------------------- MODULE Relayer ------------------------------
+--------------------------- MODULE ICS18Relayer ----------------------------
 
 (***************************************************************************
  This module contains the specification of a relayer, which is an off-chain 
  process running a relayer algorithm 
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, Sequences, RelayerDefinitions
+EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
 
 CONSTANTS GenerateClientDatagrams, \* toggle generation of client datagrams
           GenerateConnectionDatagrams, \* toggle generation of connection datagrams
@@ -16,6 +16,7 @@ ASSUME /\ GenerateClientDatagrams \in BOOLEAN
        /\ GenerateChannelDatagrams \in BOOLEAN 
 
 CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
+          MaxVersion, \* maximal connection / channel version (we assume versions are integers)
           MaxPacketSeq  \* maximal packet sequence number
           
 VARIABLES chainAstore, \* store of ChainA
@@ -71,19 +72,19 @@ ClientDatagrams(srcChainID, dstChainID, relayer) ==
     LET dstDatagrams == 
         IF srcClientHeight = AsInt(nullHeight)
         THEN \* the src client does not exist on dstChainID 
-             {AsDatagram(
-                [type |-> "CreateClient", 
-                 height |-> srcChainHeight,
-                 clientID |-> srcClientID]
-             )}
+             {AsDatagram([
+                type |-> "ClientCreate", 
+                height |-> srcChainHeight,
+                clientID |-> srcClientID
+             ])}
         ELSE \* the src client exists on dstChainID
             IF srcClientHeight < srcChainHeight
             THEN \* the height of the src client on dstChainID is smaller than the height of the src chain
-                 {AsDatagram(
-                   [type |-> "ClientUpdate",
-                    height |-> srcChainHeight,
-                    clientID |-> srcClientID]
-                 )}
+                 {AsDatagram([
+                   type |-> "ClientUpdate",
+                   height |-> srcChainHeight,
+                   clientID |-> srcClientID
+                 ])}
             ELSE emptySetDatagrams IN                   
                     
     [datagrams|-> dstDatagrams, relayerUpdate |-> updatedRelayer]    
@@ -110,41 +111,43 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
 
     LET dstDatagrams ==
         IF dstConnectionEnd.state = "UNINIT" /\ srcConnectionEnd.state = "UNINIT" THEN 
-            {AsDatagram(
-                [type |-> "ConnOpenInit", 
-                 connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 clientID |-> GetCounterpartyClientID(dstChainID), \* "clA"
-                 counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
-                 counterpartyClientID |-> GetCounterpartyClientID(srcChainID)] \* "clB" 
-            )}
+            {AsDatagram([
+                type |-> "ConnOpenInit", 
+                connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                clientID |-> GetCounterpartyClientID(dstChainID), \* "clA"
+                counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
+                counterpartyClientID |-> GetCounterpartyClientID(srcChainID) \* "clB" 
+            ])}
     
-    ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
+        ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
                                                    \/ dstConnectionEnd.state = "INIT" THEN 
-            {AsDatagram(
-                [type |-> "ConnOpenTry",
-                 connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-                 clientID |-> srcConnectionEnd.counterpartyClientID, \* "clA"
-                 counterpartyConnectionID |-> srcConnectionID, \* "connAtoB"
-                 counterpartyClientID |-> srcConnectionEnd.clientID, \* "clB" 
-                 proofHeight |-> srcHeight,
-                 consensusHeight |-> srcClientHeight]
-            )}
+            {AsDatagram([
+                type |-> "ConnOpenTry",
+                desiredConnectionID |-> srcConnectionEnd.counterpartyConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                counterpartyConnectionID |-> srcConnectionEnd.connectionID, \* "connAtoB"
+                clientID |-> srcConnectionEnd.counterpartyClientID, \* "clA"
+                counterpartyClientID |-> srcConnectionEnd.clientID, \* "clB" 
+                versions |-> srcConnectionEnd.versions,
+                proofHeight |-> srcHeight,
+                consensusHeight |-> srcClientHeight
+            ])}
          
         ELSE IF srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
                                                       \/ dstConnectionEnd.state = "TRYOPEN" THEN
-            {AsDatagram(
-                [type |-> "ConnOpenAck",
-                 connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 proofHeight |-> srcHeight,
-                 consensusHeight |-> srcClientHeight]
-            )}
+            {AsDatagram([
+                type |-> "ConnOpenAck",
+                connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                versions |-> srcConnectionEnd.versions,
+                proofHeight |-> srcHeight,
+                consensusHeight |-> srcClientHeight
+            ])}
          
         ELSE IF srcConnectionEnd.state = "OPEN" /\ dstConnectionEnd.state = "TRYOPEN" THEN
-            {AsDatagram(
-                [type |-> "ConnOpenConfirm",
-                 connectionID |-> dstConnectionEnd.connectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 proofHeight |-> srcHeight]
-            )} 
+            {AsDatagram([
+                type |-> "ConnOpenConfirm",
+                connectionID |-> dstConnectionEnd.connectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                proofHeight |-> srcHeight
+            ])} 
         ELSE emptySetDatagrams IN
 
     dstDatagrams
@@ -170,64 +173,51 @@ ChannelDatagrams(srcChainID, dstChainID) ==
 
     LET dstDatagrams ==
         IF dstChannelEnd.state = "UNINIT" /\ srcChannelEnd.state = "UNINIT" THEN 
-            {AsDatagram(
-                [type |-> "ChanOpenInit", 
-                 channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 counterpartyChannelID |-> srcChannelID] \* "chanAtoB" 
-            )}
+            {AsDatagram([
+                type |-> "ChanOpenInit", 
+                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                counterpartyChannelID |-> srcChannelID \* "chanAtoB" 
+            ])}
     
         ELSE IF srcChannelEnd.state = "INIT" /\ \/ dstChannelEnd.state = "UNINIT"
                                                 \/ dstChannelEnd.state = "INIT" THEN 
-            {AsDatagram(
-                [type |-> "ChanOpenTry",
-                 channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-                 counterpartyChannelID |-> srcChannelID, \* "chanAtoB"
-                 proofHeight |-> srcHeight]
-            )} 
+            {AsDatagram([
+                type |-> "ChanOpenTry",
+                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                counterpartyChannelID |-> srcChannelID, \* "chanAtoB"
+                proofHeight |-> srcHeight
+            ])} 
          
         ELSE IF srcChannelEnd.state = "TRYOPEN" /\ \/ dstChannelEnd.state = "INIT"
                                                    \/ dstChannelEnd.state = "TRYOPEN" THEN
-            {AsDatagram(
-                [type |-> "ChanOpenAck",
-                 channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 proofHeight |-> srcHeight]
-            )} 
+            {AsDatagram([
+                type |-> "ChanOpenAck",
+                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                proofHeight |-> srcHeight
+            ])} 
          
         ELSE IF srcChannelEnd.state = "OPEN" /\ dstChannelEnd.state = "TRYOPEN" THEN
-            {AsDatagram(
-                [type |-> "ChanOpenConfirm",
-                 channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
-                 proofHeight |-> srcHeight]
-            )} 
+            {AsDatagram([
+                type |-> "ChanOpenConfirm",
+                channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                proofHeight |-> srcHeight
+            ])} 
     
         \* channel closing datagrams creation only for open channels
         ELSE IF dstChannelEnd.state = "OPEN" /\ GetCloseChannelFlag(dstChannelID) THEN
-            {AsDatagram(
-                [type |-> "ChanCloseInit", 
-                 channelID |-> dstChannelEnd.channelID] \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-            )}
+            {AsDatagram([
+                type |-> "ChanCloseInit", 
+                channelID |-> dstChannelEnd.channelID \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+            ])}
            
         ELSE IF /\ srcChannelEnd.state = "CLOSED" 
                 /\ dstChannelEnd.state /= "CLOSED" 
                 /\ dstChannelEnd.state /= "UNINIT" THEN 
-            {AsDatagram(
-                [type |-> "ChanCloseConfirm", 
-                 channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-                 proofHeight |-> srcHeight]
-            )}
-    
-    (** channel closing datagrams creation for channels which are still in handshake: 
-        the propery ChanOpenInitDelivery is violated
-              
-    ELSE IF dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" /\ GetCloseChannelFlag(dstChannelID) THEN
-         {[type |-> "ChanCloseInit", 
-           channelID |-> dstChannelEnd.channelID]} \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-           
-    ELSE IF srcChannelEnd.state = "CLOSED" /\ dstChannelEnd.state /= "CLOSED" /\ dstChannelEnd.state /= "UNINIT" THEN 
-         {[type |-> "ChanCloseConfirm", 
-           channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
-           proofHeight |-> srcHeight]}
-    **)
+            {AsDatagram([
+                type |-> "ChanCloseConfirm", 
+                channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                proofHeight |-> srcHeight
+            ])}
            
         ELSE emptySetDatagrams IN
 
@@ -238,14 +228,14 @@ ChannelDatagrams(srcChainID, dstChainID) ==
  ***************************************************************************)
 \* Compute a packet datagram based on the packetLogEntry
 PacketDatagram(packetLogEntry) ==
-    \* get srcChainID and its channel end
+    \* get chainID and its channel end
     LET chainID == packetLogEntry.srcChainID IN
     LET channelEnd == GetChainByID(chainID).connectionEnd.channelEnd IN
     \* get channelID and counterpartyChannelID
     LET channelID == channelEnd.channelID IN \* "chanAtoB" (if srcChainID = "chainA")
     LET counterpartyChannelID == channelEnd.counterpartyChannelID IN \* "chanBtoA" (if srcChainID = "chainA")
     
-    LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
+    LET srcHeight == GetLatestHeight(GetChainByID(chainID)) IN
     
     \* the srcChannelID of the packet that is received is channelID,
     \* the dstChannelID of the packet that is received is counterpartyChannelID
@@ -397,7 +387,7 @@ Next ==
 \* Fairness constraints
 Fairness ==
     /\ \A chainID \in ChainIDs : 
-            WF_vars(UpdateRelayerClients(chainID))
+            WF_vars(UpdateRelayerClientHeight(chainID))
     /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs : 
             WF_vars(Relay(srcChainID, dstChainID))
                
@@ -407,9 +397,9 @@ Fairness ==
 \* Type invariant
 TypeOK ==
     /\ relayerHeights \in [ChainIDs -> Heights \union {nullHeight}]
-    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq)]
+    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)]
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Nov 11 17:26:08 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Nov 26 17:47:30 CET 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

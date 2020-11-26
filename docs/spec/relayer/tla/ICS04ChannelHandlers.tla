@@ -1,11 +1,11 @@
--------------------------- MODULE ChannelHandlers --------------------------
+------------------------ MODULE ICS04ChannelHandlers -----------------------
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
  channel datagrams
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, RelayerDefinitions         
+EXTENDS Integers, FiniteSets, IBCCoreDefinitions         
 
 (***************************************************************************
  Channel datagram handlers
@@ -239,5 +239,5 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Sep 10 15:43:25 CEST 2020 by ilinastoilkovska
+\* Last modified Fri Nov 20 12:15:33 CET 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska
