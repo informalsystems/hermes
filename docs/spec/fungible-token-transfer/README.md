@@ -197,7 +197,3 @@ To import the specification in the TLA+ toolbox and run TLC:
   - assign a value to the constants
   - choose "Temporal formula" as the behavior spec, and use the formula `Spec`
   - run TLC on the model
-
-### Checking the invariant with Apalache
-
-TODO.

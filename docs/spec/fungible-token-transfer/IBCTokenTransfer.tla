@@ -328,8 +328,9 @@ SumOverBankAccountsWithPrefixedDenoms(chainID) ==
  Properties and invariants
  ***************************************************************************)
 
-\* there are MaxBalance coins of the native denomination in bank and escrow accounts 
+\* There are MaxBalance coins of the native denomination in bank and escrow accounts 
 \* for a given chain
+\* Note: this property still holds if the counterparty chain is malicious 
 PreservationOfTotalSupplyLocal ==
     \A chainID \in ChainIDs :
          SumOverLocalAccounts(chainID) = MaxBalance
@@ -337,15 +338,19 @@ PreservationOfTotalSupplyLocal ==
 \* The amount in nativeDenomination in escrow accounts 
 \* is equal to the sum of:
 \*    * the amounts in-flight packets in a (prefixed or unprefixed) denomination ending 
-\*      nativeDenomination, and
-\*    * the amounts in accounts in a prefixed denomination ending, 
+\*      in nativeDenomination, and
+\*    * the amounts in accounts in a prefixed denomination ending in 
 \*      nativeDenomination, in which it is not native
+\* Note: this property is satisfied only if both chains are correct
 PreservationOfTotalSupplyGlobal ==
     \A chainID \in ChainIDs : 
         SumOverEscrowAccounts(chainID) = 
             SumOverPacketsInFlight(chainID) + SumOverBankAccountsWithPrefixedDenoms(chainID)
 
-\* a violation of this property is an execution where fungibility is preserved
+\* A violation of this property is an execution where fungibility is preserved, 
+\* where a return payment is effectuated 
+\* Note: this property should also be violated if the counterparty chain is malicious 
+\* and effectuates a return payment
 NonPreservationOfFungibility ==
     \A accountID \in EscrowAccountsDomain :
         [](escrowAccounts[accountID] > 0 
