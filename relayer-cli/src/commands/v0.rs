@@ -47,14 +47,14 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
         .chains
         .clone()
         .into_iter()
-        .find(|c| c.id == connection.a_config.chain_id().clone())
+        .find(|c| c.id == connection.src().chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
     let dst_chain_config = config
         .chains
         .clone()
         .into_iter()
-        .find(|c| c.id == connection.b_config.chain_id().clone())
+        .find(|c| c.id == connection.dst().chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
     let (src_chain_handle, _) = ChainRuntime::spawn(src_chain_config)?;

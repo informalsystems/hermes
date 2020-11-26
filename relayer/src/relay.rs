@@ -17,14 +17,14 @@ pub fn channel_relay(
     let client_on_a = ForeignClient::new(
         a_chain_handle.clone(),
         b_chain_handle.clone(),
-        ForeignClientConfig::new(conn_cfg.a_config.chain_id(), conn_cfg.a_config.client_id()),
+        ForeignClientConfig::new(conn_cfg.a_end().chain_id(), conn_cfg.a_end().client_id()),
     )?;
 
     // Instantiate the foreign client on the destination chain.
     let client_on_b = ForeignClient::new(
         b_chain_handle.clone(),
         a_chain_handle.clone(),
-        ForeignClientConfig::new(conn_cfg.b_config.chain_id(), conn_cfg.b_config.client_id()),
+        ForeignClientConfig::new(conn_cfg.b_end().chain_id(), conn_cfg.b_end().client_id()),
     )?;
 
     // Setup the connection between the two chains
