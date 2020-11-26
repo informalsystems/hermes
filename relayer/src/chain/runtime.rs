@@ -61,7 +61,7 @@ pub struct ChainRuntime<C: Chain> {
     light_client: Box<dyn LightClient<C>>,
 
     #[allow(dead_code)]
-    rt: Arc<Mutex<TokioRuntime>>,
+    rt: Arc<Mutex<TokioRuntime>>, // Making this future-proof, so we keep the runtime around.
 }
 
 impl ChainRuntime<CosmosSDKChain> {
@@ -96,7 +96,7 @@ impl ChainRuntime<CosmosSDKChain> {
         // Spawn the event monitor
         let event_monitor_thread = thread::spawn(move || event_monitor.run());
 
-        // Initialize the source and destination chain runtimes
+        // Initialize the chain runtime
         let chain_runtime = Self::cosmos_sdk(config, light_client, event_receiver, rt)?;
 
         // Get a handle to the runtime

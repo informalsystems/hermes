@@ -64,12 +64,8 @@ pub struct CosmosSDKChain {
 
 impl CosmosSDKChain {
     pub fn from_config(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
-        let primary = config
-            .primary()
-            .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
-
         let rpc_client =
-            HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
         // Initialize key store and load key
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
