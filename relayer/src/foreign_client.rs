@@ -54,22 +54,22 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client. Blocks until the client is created on `host` chain (or
-    /// panics???).
-    /// Post-condition: chain `host` will host an IBC client for chain `source`.
+    /// Creates a new foreign client. Blocks until the client is created on `dst_chain` or
+    /// an error occurs.
+    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `host` and `target` chains?
+    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
     pub fn new(
-        host: impl ChainHandle,
-        source: impl ChainHandle,
+        dst_chain: impl ChainHandle,
+        src_chain: impl ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
         let done = '\u{1F36D}';
 
         // Query the client state on source chain.
-        let client_state = host.query_client_state(&config.id, Height::default());
+        let client_state = dst_chain.query_client_state(&config.id, Height::default());
         if client_state.is_err() {
-            build_create_client_and_send(source, host, &config).map_err(|e| {
+            build_create_client_and_send(dst_chain, src_chain, &config).map_err(|e| {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
@@ -163,8 +163,8 @@ pub fn build_create_client(
 }
 
 pub fn build_create_client_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ForeignClientConfig,
 ) -> Result<String, Error> {
     let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.client_id())?;
@@ -198,8 +198,8 @@ pub fn build_update_client(
 }
 
 pub fn build_update_client_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ForeignClientConfig,
 ) -> Result<String, Error> {
     let new_msgs = build_update_client(

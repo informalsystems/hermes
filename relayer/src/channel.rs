@@ -79,10 +79,11 @@ impl ChannelConfigSide {
 }
 
 #[derive(Clone, Debug)]
+
 pub struct ChannelConfig {
     pub ordering: Order,
-    pub src_config: ChannelConfigSide,
-    pub dst_config: ChannelConfigSide,
+    pub a_config: ChannelConfigSide,
+    pub b_config: ChannelConfigSide,
 }
 
 #[derive(Clone, Debug)]
@@ -92,19 +93,14 @@ pub struct Channel {
 
 impl ChannelConfig {
     pub fn new(conn: &ConnectionConfig, path: &RelayPath) -> Result<ChannelConfig, String> {
-        let src_config = ChannelConfigSide {
-            chain_id: conn.src_config.chain_id().clone(),
-            connection_id: conn.src_config.connection_id().clone(),
-            client_id: conn.src_config.client_id().clone(),
-            port_id: PortId::from_str(
-                path.src_port
-                    .clone()
-                    .ok_or("Port id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid port id ({:?})", e))?,
+        let a_config = ChannelConfigSide {
+            chain_id: conn.a_config.chain_id().clone(),
+            connection_id: conn.a_config.connection_id().clone(),
+            client_id: conn.a_config.client_id().clone(),
+            port_id: PortId::from_str(path.a_port.clone().ok_or("Port id not specified")?.as_str())
+                .map_err(|e| format!("Invalid port id ({:?})", e))?,
             channel_id: ChannelId::from_str(
-                path.src_channel
+                path.a_channel
                     .clone()
                     .ok_or("Channel id not specified")?
                     .as_str(),
@@ -112,19 +108,19 @@ impl ChannelConfig {
             .map_err(|e| format!("Invalid channel id ({:?})", e))?,
         };
 
-        let dst_config = ChannelConfigSide {
-            chain_id: conn.dst_config.chain_id().clone(),
-            connection_id: conn.dst_config.connection_id().clone(),
-            client_id: conn.dst_config.client_id().clone(),
+        let b_config = ChannelConfigSide {
+            chain_id: conn.b_config.chain_id().clone(),
+            connection_id: conn.b_config.connection_id().clone(),
+            client_id: conn.b_config.client_id().clone(),
             port_id: PortId::from_str(
-                path.dest_port
+                path.b_port
                     .clone()
                     .ok_or("Counterparty port id not specified")?
                     .as_str(),
             )
             .map_err(|e| format!("Invalid counterparty port id ({:?})", e))?,
             channel_id: ChannelId::from_str(
-                path.dest_channel
+                path.b_channel
                     .clone()
                     .ok_or("Counterparty channel id not specified")?
                     .as_str(),
@@ -134,8 +130,8 @@ impl ChannelConfig {
 
         Ok(ChannelConfig {
             ordering: Default::default(), // TODO - add to config
-            src_config,
-            dst_config,
+            a_config,
+            b_config,
         })
     }
 }
@@ -147,24 +143,21 @@ fn get_channel(
     id: &ChannelId,
 ) -> Result<Option<ChannelEnd>, ChannelError> {
     match chain.query_channel(port, id, Height::zero()) {
-        Err(e) => {
-            //println!("error {:?}", e);
-            match e.kind() {
-                Kind::EmptyResponseValue => Ok(None),
-                _ => Err(ChannelError::Failed(format!(
-                    "error retrieving channel {:?}",
-                    e
-                ))),
-            }
-        }
+        Err(e) => match e.kind() {
+            Kind::EmptyResponseValue => Ok(None),
+            _ => Err(ChannelError::Failed(format!(
+                "error retrieving channel {:?}",
+                e
+            ))),
+        },
         Ok(chan) => Ok(Some(chan)),
     }
 }
 
 impl Channel {
     pub fn new(
-        src_chain: impl ChainHandle,
-        dst_chain: impl ChainHandle,
+        a_chain: impl ChainHandle,
+        b_chain: impl ChainHandle,
         _connection: Connection,
         config: ChannelConfig,
     ) -> Result<Channel, ChannelError> {
@@ -172,8 +165,8 @@ impl Channel {
 
         let flipped = ChannelConfig {
             ordering: config.ordering,
-            src_config: config.dst_config.clone(),
-            dst_config: config.src_config.clone(),
+            a_config: config.b_config.clone(),
+            b_config: config.a_config.clone(),
         };
 
         let mut counter = 0;
@@ -183,88 +176,98 @@ impl Channel {
             let now = SystemTime::now();
 
             // Continue loop if query error
-            let src_channel = get_channel(
-                src_chain.clone(),
-                &config.src_config.port_id,
-                &config.src_config.channel_id,
+            let a_channel = get_channel(
+                a_chain.clone(),
+                &config.a_config.port_id,
+                &config.a_config.channel_id,
             );
-            if src_channel.is_err() {
+            if a_channel.is_err() {
                 continue;
             }
-            let dst_channel = get_channel(
-                dst_chain.clone(),
-                &config.dst_config.port_id,
-                &config.dst_config.channel_id,
+            let b_channel = get_channel(
+                b_chain.clone(),
+                &config.b_config.port_id,
+                &config.b_config.channel_id,
             );
-            if dst_channel.is_err() {
+            if b_channel.is_err() {
                 continue;
             }
 
-            match (src_channel?, dst_channel?) {
+            match (a_channel?, b_channel?) {
                 (None, None) => {
-                    // Init
-                    let src_msgs =
-                        build_chan_init(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
-                    src_chain.send_tx(src_msgs).unwrap();
-                    println!("{}  ChanInit {:?}", done, flipped);
+                    // Init to src
+                    match build_chan_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
+                        Err(e) => println!("{:?} Failed ChanInit {:?}", e, flipped.b_config),
+                        Ok(_) => println!("{}  ChanInit {:?}", done, flipped.b_config),
+                    }
                 }
-                (Some(src_channel), None) => {
+                (Some(a_channel), None) => {
                     // Try to dest
-                    assert!(src_channel.state_matches(&State::Init));
-                    let dst_msgs =
-                        build_chan_try(dst_chain.clone(), src_chain.clone(), &config).unwrap();
-                    dst_chain.send_tx(dst_msgs).unwrap();
-                    println!("{}  ChanTry {:?}", done, config);
+                    assert!(a_channel.state_matches(&State::Init));
+                    match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config) {
+                        Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_config),
+                        Ok(_) => println!("{}  ChanTry {:?}", done, config.b_config),
+                    }
                 }
-                (None, Some(dst_channel)) => {
+                (None, Some(b_channel)) => {
                     // Try to src
-                    assert!(dst_channel.state_matches(&State::Init));
-                    let src_msgs =
-                        build_chan_try(src_chain.clone(), dst_chain.clone(), &flipped).unwrap();
-                    src_chain.send_tx(src_msgs).unwrap();
-                    println!("{}  ChanTry {:?}", done, flipped);
+                    assert!(b_channel.state_matches(&State::Init));
+                    match build_chan_try_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
+                        Err(e) => println!("{:?} Failed ChanTry {:?}", e, flipped),
+                        Ok(_) => println!("{}  ChanTry {:?}", done, flipped),
+                    }
                 }
-                (Some(src_channel), Some(dst_channel)) => {
-                    match (src_channel.state(), dst_channel.state()) {
+                (Some(a_channel), Some(b_channel)) => {
+                    match (a_channel.state(), b_channel.state()) {
                         (&State::Init, &State::Init) => {
                             // Try to dest
-                            let dst_msgs =
-                                build_chan_try(dst_chain.clone(), src_chain.clone(), &config)
-                                    .unwrap();
-                            dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{}  ChanTry {:?}", done, config);
+                            // Try to dest
+                            match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config)
+                            {
+                                Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_config),
+                                Ok(_) => println!("{}  ChanTry {:?}", done, config.b_config),
+                            }
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
-                            let dst_msgs =
-                                build_chan_ack(dst_chain.clone(), src_chain.clone(), &config)
-                                    .unwrap();
-                            dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{}  ChanAck {:?}", done, config);
+                            match build_chan_ack_and_send(b_chain.clone(), a_chain.clone(), &config)
+                            {
+                                Err(e) => println!("{:?} Failed ChanAck {:?}", e, config),
+                                Ok(_) => println!("{}  ChanAck {:?}", done, config),
+                            }
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
                             // Ack to src
-                            let src_msgs =
-                                build_chan_ack(src_chain.clone(), dst_chain.clone(), &flipped)
-                                    .unwrap();
-                            src_chain.send_tx(src_msgs).unwrap();
-                            println!("{}  ChanAck {:?}", done, flipped);
+                            match build_chan_ack_and_send(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                &flipped,
+                            ) {
+                                Err(e) => println!("{:?} Failed ChanAck {:?}", e, flipped),
+                                Ok(_) => println!("{}  ChanAck {:?}", done, flipped),
+                            }
                         }
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
-                            let dst_msgs =
-                                build_chan_confirm(dst_chain.clone(), src_chain.clone(), &config)
-                                    .unwrap();
-                            dst_chain.send_tx(dst_msgs).unwrap();
-                            println!("{}  ChanConfirm {:?}", done, config);
+                            match build_chan_confirm_and_send(
+                                b_chain.clone(),
+                                a_chain.clone(),
+                                &config,
+                            ) {
+                                Err(e) => println!("{:?} Failed ChanConfirm {:?}", e, config),
+                                Ok(_) => println!("{}  ChanConfirm {:?}", done, config),
+                            }
                         }
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
-                            let src_msgs =
-                                build_chan_confirm(src_chain.clone(), dst_chain.clone(), &flipped)
-                                    .unwrap();
-                            src_chain.send_tx(src_msgs).unwrap();
-                            println!("{}  ChanConfirm {:?}", done, flipped);
+                            match build_chan_confirm_and_send(
+                                a_chain.clone(),
+                                b_chain.clone(),
+                                &flipped,
+                            ) {
+                                Err(e) => println!("{:?} ChanConfirm {:?}", e, flipped),
+                                Ok(_) => println!("{}  ChanConfirm {:?}", done, flipped),
+                            }
                         }
                         (&State::Open, &State::Open) => {
                             println!(
@@ -303,14 +306,14 @@ pub fn build_chan_init(
     // Check that the destination chain will accept the message, i.e. it does not have the channel
     if dst_chain
         .query_channel(
-            opts.dst_config.port_id(),
-            opts.dst_config.channel_id(),
+            opts.b_config.port_id(),
+            opts.b_config.channel_id(),
             Height::default(),
         )
         .is_ok()
     {
         return Err(Kind::ChanOpenInit(
-            opts.dst_config.channel_id().clone(),
+            opts.b_config.channel_id().clone(),
             "channel already exist".into(),
         )
         .into());
@@ -321,22 +324,22 @@ pub fn build_chan_init(
         .map_err(|e| Kind::KeyBase.context(e))?;
 
     let counterparty = Counterparty::new(
-        opts.src_config.port_id().clone(),
-        Some(opts.src_config.channel_id().clone()),
+        opts.a_config.port_id().clone(),
+        Some(opts.a_config.channel_id().clone()),
     );
 
     let channel = ChannelEnd::new(
         State::Init,
         opts.ordering,
         counterparty,
-        vec![opts.dst_config.connection_id().clone()],
-        dst_chain.module_version(&opts.dst_config.port_id())?,
+        vec![opts.b_config.connection_id().clone()],
+        dst_chain.module_version(&opts.b_config.port_id())?,
     );
 
     // Build the domain type message
     let new_msg = MsgChannelOpenInit {
-        port_id: opts.dst_config.port_id().clone(),
-        channel_id: opts.dst_config.channel_id().clone(),
+        port_id: opts.b_config.port_id().clone(),
+        channel_id: opts.b_config.channel_id().clone(),
         channel,
         signer,
     };
@@ -345,8 +348,8 @@ pub fn build_chan_init(
 }
 
 pub fn build_chan_init_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
     let dst_msgs = build_chan_init(dst_chain.clone(), src_chain, &opts)?;
@@ -392,8 +395,8 @@ fn validated_expected_channel(
 ) -> Result<ChannelEnd, Error> {
     // If there is a channel present on the destination chain, it should look like this:
     let counterparty = Counterparty::new(
-        opts.src_config.port_id().clone(),
-        Option::from(opts.src_config.channel_id().clone()),
+        opts.a_config.port_id().clone(),
+        Option::from(opts.a_config.channel_id().clone()),
     );
 
     // The highest expected state, depends on the message type:
@@ -407,14 +410,14 @@ fn validated_expected_channel(
         highest_state,
         opts.ordering,
         counterparty,
-        vec![opts.dst_config.connection_id().clone()],
-        dst_chain.module_version(&opts.dst_config.port_id())?,
+        vec![opts.b_config.connection_id().clone()],
+        dst_chain.module_version(&opts.b_config.port_id())?,
     );
 
     // Retrieve existing channel if any
     let dest_channel = dst_chain.query_channel(
-        &opts.dst_config.port_id(),
-        &opts.dst_config.channel_id(),
+        &opts.b_config.port_id(),
+        &opts.b_config.channel_id(),
         Height::default(),
     );
 
@@ -429,7 +432,7 @@ fn validated_expected_channel(
         // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dest_channel.is_err() {
             return Err(Kind::ChanOpenTry(
-                opts.src_config.channel_id().clone(),
+                opts.a_config.channel_id().clone(),
                 "missing channel on source chain".to_string(),
             )
             .into());
@@ -437,7 +440,7 @@ fn validated_expected_channel(
     }
 
     check_destination_channel_state(
-        opts.dst_config.channel_id().clone(),
+        opts.b_config.channel_id().clone(),
         dest_channel?,
         dest_expected_channel.clone(),
     )?;
@@ -459,7 +462,7 @@ pub fn build_chan_try(
     )
     .map_err(|e| {
         Kind::ChanOpenTry(
-            opts.src_config.channel_id().clone(),
+            opts.a_config.channel_id().clone(),
             "try options inconsistent with existing channel on destination chain".to_string(),
         )
         .context(e)
@@ -467,13 +470,13 @@ pub fn build_chan_try(
 
     let src_channel = src_chain
         .query_channel(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             Height::default(),
         )
         .map_err(|e| {
             Kind::ChanOpenTry(
-                opts.dst_config.channel_id().clone(),
+                opts.b_config.channel_id().clone(),
                 "channel does not exist on source".into(),
             )
             .context(e)
@@ -481,7 +484,7 @@ pub fn build_chan_try(
 
     // Retrieve the connection
     let dest_connection =
-        dst_chain.query_connection(&opts.dst_config.connection_id().clone(), Height::default())?;
+        dst_chain.query_connection(&opts.b_config.connection_id().clone(), Height::default())?;
 
     let ics_target_height = src_chain.query_latest_height()?;
 
@@ -494,16 +497,16 @@ pub fn build_chan_try(
     )?;
 
     let counterparty = Counterparty::new(
-        opts.src_config.port_id().clone(),
-        Some(opts.src_config.channel_id().clone()),
+        opts.a_config.port_id().clone(),
+        Some(opts.a_config.channel_id().clone()),
     );
 
     let channel = ChannelEnd::new(
         State::Init,
         opts.ordering,
         counterparty,
-        vec![opts.dst_config.connection_id().clone()],
-        dst_chain.module_version(&opts.dst_config.port_id())?,
+        vec![opts.b_config.connection_id().clone()],
+        dst_chain.module_version(&opts.b_config.port_id())?,
     );
 
     // Get signer
@@ -513,14 +516,14 @@ pub fn build_chan_try(
 
     // Build the domain type message
     let new_msg = MsgChannelOpenTry {
-        port_id: opts.dst_config.port_id().clone(),
-        channel_id: opts.dst_config.channel_id().clone(),
+        port_id: opts.b_config.port_id().clone(),
+        channel_id: opts.b_config.channel_id().clone(),
         counterparty_chosen_channel_id: src_channel.counterparty().channel_id,
         channel,
-        counterparty_version: src_chain.module_version(&opts.src_config.port_id())?,
+        counterparty_version: src_chain.module_version(&opts.a_config.port_id())?,
         proofs: src_chain.build_channel_proofs(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             ics_target_height,
         )?,
         signer,
@@ -534,8 +537,8 @@ pub fn build_chan_try(
 }
 
 pub fn build_chan_try_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
     let dst_msgs = build_chan_try(dst_chain.clone(), src_chain, &opts)?;
@@ -556,7 +559,7 @@ pub fn build_chan_ack(
     )
     .map_err(|e| {
         Kind::ChanOpenAck(
-            opts.src_config.channel_id().clone(),
+            opts.a_config.channel_id().clone(),
             "ack options inconsistent with existing channel on destination chain".to_string(),
         )
         .context(e)
@@ -564,13 +567,13 @@ pub fn build_chan_ack(
 
     let _src_channel = src_chain
         .query_channel(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             Height::default(),
         )
         .map_err(|e| {
             Kind::ChanOpenAck(
-                opts.dst_config.channel_id().clone(),
+                opts.b_config.channel_id().clone(),
                 "channel does not exist on source".into(),
             )
             .context(e)
@@ -578,7 +581,7 @@ pub fn build_chan_ack(
 
     // Retrieve the connection
     let dest_connection =
-        dst_chain.query_connection(&opts.dst_config.connection_id().clone(), Height::default())?;
+        dst_chain.query_connection(&opts.b_config.connection_id().clone(), Height::default())?;
 
     let ics_target_height = src_chain.query_latest_height()?;
 
@@ -597,13 +600,13 @@ pub fn build_chan_ack(
 
     // Build the domain type message
     let new_msg = MsgChannelOpenAck {
-        port_id: opts.dst_config.port_id().clone(),
-        channel_id: opts.dst_config.channel_id().clone(),
-        counterparty_channel_id: opts.src_config.channel_id().clone(),
-        counterparty_version: src_chain.module_version(&opts.dst_config.port_id())?,
+        port_id: opts.b_config.port_id().clone(),
+        channel_id: opts.b_config.channel_id().clone(),
+        counterparty_channel_id: opts.a_config.channel_id().clone(),
+        counterparty_version: src_chain.module_version(&opts.b_config.port_id())?,
         proofs: src_chain.build_channel_proofs(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             ics_target_height,
         )?,
         signer,
@@ -617,8 +620,8 @@ pub fn build_chan_ack(
 }
 
 pub fn build_chan_ack_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
     let dst_msgs = build_chan_ack(dst_chain.clone(), src_chain, &opts)?;
@@ -639,7 +642,7 @@ pub fn build_chan_confirm(
     )
     .map_err(|e| {
         Kind::ChanOpenConfirm(
-            opts.src_config.channel_id().clone(),
+            opts.a_config.channel_id().clone(),
             "confirm options inconsistent with existing channel on destination chain".to_string(),
         )
         .context(e)
@@ -647,13 +650,13 @@ pub fn build_chan_confirm(
 
     let _src_channel = src_chain
         .query_channel(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             Height::default(),
         )
         .map_err(|e| {
             Kind::ChanOpenConfirm(
-                opts.dst_config.channel_id().clone(),
+                opts.b_config.channel_id().clone(),
                 "channel does not exist on source".into(),
             )
             .context(e)
@@ -661,7 +664,7 @@ pub fn build_chan_confirm(
 
     // Retrieve the connection
     let dest_connection =
-        dst_chain.query_connection(&opts.dst_config.connection_id().clone(), Height::default())?;
+        dst_chain.query_connection(&opts.b_config.connection_id().clone(), Height::default())?;
 
     let ics_target_height = src_chain.query_latest_height()?;
 
@@ -680,11 +683,11 @@ pub fn build_chan_confirm(
 
     // Build the domain type message
     let new_msg = MsgChannelOpenConfirm {
-        port_id: opts.dst_config.port_id().clone(),
-        channel_id: opts.dst_config.channel_id().clone(),
+        port_id: opts.b_config.port_id().clone(),
+        channel_id: opts.b_config.channel_id().clone(),
         proofs: src_chain.build_channel_proofs(
-            &opts.src_config.port_id(),
-            &opts.src_config.channel_id(),
+            &opts.a_config.port_id(),
+            &opts.a_config.channel_id(),
             ics_target_height,
         )?,
         signer,
@@ -698,8 +701,8 @@ pub fn build_chan_confirm(
 }
 
 pub fn build_chan_confirm_and_send(
-    src_chain: impl ChainHandle,
     dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
     let dst_msgs = build_chan_confirm(dst_chain.clone(), src_chain, &opts)?;

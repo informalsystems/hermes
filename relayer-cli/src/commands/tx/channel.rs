@@ -68,14 +68,14 @@ macro_rules! chan_open_cmd {
 
                 let opts = ChannelConfig {
                     ordering: self.ordering,
-                    src_config: ChannelConfigSide::new(
+                    a_config: ChannelConfigSide::new(
                         &src_chain_config.id,
                         &ConnectionId::default(),
                         &ClientId::default(),
                         &self.src_port_id,
                         &self.src_channel_id,
                     ),
-                    dst_config: ChannelConfigSide::new(
+                    b_config: ChannelConfigSide::new(
                         &dst_chain_config.id,
                         &self.dst_connection_id,
                         &ClientId::default(),

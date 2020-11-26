@@ -8,47 +8,41 @@ use crate::foreign_client::{ForeignClient, ForeignClientConfig};
 pub(crate) const MAX_ITER: u32 = 10;
 
 pub fn channel_relay(
-    src_chain_handle: impl ChainHandle,
-    dst_chain_handle: impl ChainHandle,
+    a_chain_handle: impl ChainHandle,
+    b_chain_handle: impl ChainHandle,
     conn_cfg: ConnectionConfig,
     chan_cfg: ChannelConfig,
 ) -> Result<(), BoxError> {
     // Instantiate the foreign client on the source chain.
-    let client_on_src = ForeignClient::new(
-        src_chain_handle.clone(),
-        dst_chain_handle.clone(),
-        ForeignClientConfig::new(
-            conn_cfg.src_config.chain_id(),
-            conn_cfg.src_config.client_id(),
-        ),
+    let client_on_a = ForeignClient::new(
+        a_chain_handle.clone(),
+        b_chain_handle.clone(),
+        ForeignClientConfig::new(conn_cfg.a_config.chain_id(), conn_cfg.a_config.client_id()),
     )?;
 
     // Instantiate the foreign client on the destination chain.
-    let client_on_dst = ForeignClient::new(
-        dst_chain_handle.clone(),
-        src_chain_handle.clone(),
-        ForeignClientConfig::new(
-            conn_cfg.dst_config.chain_id(),
-            conn_cfg.dst_config.client_id(),
-        ),
+    let client_on_b = ForeignClient::new(
+        b_chain_handle.clone(),
+        a_chain_handle.clone(),
+        ForeignClientConfig::new(conn_cfg.b_config.chain_id(), conn_cfg.b_config.client_id()),
     )?;
 
     // Setup the connection between the two chains
     let connection = Connection::new(
-        src_chain_handle.clone(),
-        dst_chain_handle.clone(),
-        client_on_src,
-        client_on_dst,
+        a_chain_handle.clone(),
+        b_chain_handle.clone(),
+        client_on_a,
+        client_on_b,
         conn_cfg,
     )?;
 
     // Setup the channel over the connection
-    let _channel = Channel::new(src_chain_handle, dst_chain_handle, connection, chan_cfg)?;
+    let _channel = Channel::new(a_chain_handle, b_chain_handle, connection, chan_cfg)?;
 
     // TODO: Re-enable `link` module in `relayer/src/lib.rs`
     // let link = Link::new(
-    //     src_chain_handle,
-    //     dst_chain_handle,
+    //     a_chain_handle,
+    //     b_chain_handle,
     //     client_on_src, // Actual dependecy
     //     channel,       // Semantic dependecy
     //     LinkConfig::new(todo!(), todo!(), todo!()),
