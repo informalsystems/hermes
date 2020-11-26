@@ -287,7 +287,7 @@ fn get_address(pk: ExtendedPubKey) -> Vec<u8> {
 }
 
 fn get_test_backend_folder(chain_config: &ChainConfig) -> Result<PathBuf, Error> {
-    let home = dirs::home_dir();
+    let home = dirs_next::home_dir();
     match home {
         Some(h) => {
             let folder = Path::new(h.as_path())
