@@ -1,4 +1,4 @@
--------------------------- MODULE ICS20Definitions --------------------------
+-------------------- MODULE IBCTokenTransferDefinitions --------------------
 
 (***************************************************************************
  This module contains definitions of operators that are shared between the 
@@ -17,32 +17,11 @@ ChannelEndType ==
         state |-> STRING, 
         order |-> STRING, 
         channelID |-> STRING, 
-        counterpartyChannelID |-> STRING
+        counterpartyChannelID |-> STRING,
+        counterpartyPortID |-> STRING,
+        version |-> STRING
     ]
-
-\* packet commitment type
-PacketCommitmentType == 
-    [
-        channelID |-> STRING, 
-        sequence |-> Int, 
-        timeoutHeight |-> Int
-    ]
-   
-\* packet receipt type
-PacketReceiptType ==
-    [
-        channelID |-> STRING, 
-        sequence |-> Int 
-    ]    
-
-\* packet acknowledgement type
-PacketAcknowledgementType ==
-    [
-        channelID |-> STRING, 
-        sequence |-> Int,
-        acknowledgement |-> BOOLEAN
-    ]
-
+    
 \* ICS20 packet data type    
 FungibleTokenPacketDataType ==
     [
@@ -50,7 +29,34 @@ FungibleTokenPacketDataType ==
         amount : Int,
         sender : STRING,
         receiver : STRING
+    ] 
+
+\* packet commitment type
+PacketCommitmentType == 
+    [
+        channelID |-> STRING, 
+        portID |-> STRING,
+        sequence |-> Int, 
+        data |-> FungibleTokenPacketDataType,
+        timeoutHeight |-> Int
+    ]
+   
+\* packet receipt type
+PacketReceiptType ==
+    [
+        channelID |-> STRING, 
+        portID |-> STRING,
+        sequence |-> Int 
     ]    
+
+\* packet acknowledgement type
+PacketAcknowledgementType ==
+    [
+        channelID |-> STRING,
+        portID |-> STRING, 
+        sequence |-> Int,
+        acknowledgement |-> BOOLEAN
+    ]   
 
 \* packet type
 PacketType ==
@@ -59,19 +65,27 @@ PacketType ==
         timeoutHeight |-> Int, 
         data |-> FungibleTokenPacketDataType,
         srcChainID |-> STRING,
-        dstChainID |-> STRING
+        srcPortID |-> STRING,
+        dstChainID |-> STRING,
+        dstPortID |-> STRING
     ]
+
+\* account ID type 
+AccountIDType ==
+    <<STRING, Seq(STRING)>>
 
 
 \* chain store type 
 ChainStoreType ==  
     [
         height |-> Int,
+        counterpartyClientHeights |-> {Int},
         channelEnd |-> ChannelEndType,
         packetCommitments |-> {PacketCommitmentType},
-        packetsToAcknowledge |-> Seq(PacketType),
         packetReceipts |-> {PacketReceiptType},
-        packetAcknowledgements |-> {PacketAcknowledgementType}
+        packetAcknowledgements |-> {PacketAcknowledgementType},
+        packetsToAcknowledge |-> Seq(PacketType),
+        escrowAccounts |-> [AccountIDType -> Int]
     ] 
 
 \* client datagram type
@@ -139,11 +153,15 @@ AsSeqPacketsToAck(pa) == pa <: PacketsToAckType
 (********************** Common operator definitions ***********************)
 ChainIDs == {"chainA", "chainB"}
 ChannelIDs == {"chanAtoB", "chanBtoA"}
+PortIDs == {"portA", "portB"}
 ChannelStates == {"UNINIT", "INIT", "TRYOPEN", "OPEN", "CLOSED"}
 
 nullHeight == 0
 nullChannelID == "none"
+nullPortID == "none"
 nullEscrowAddress == "none"
+
+Max(S) == CHOOSE x \in S: \A y \in S: y <= x 
 
 (******************************* ChannelEnds *******************************
     A set of channel end records. 
@@ -164,6 +182,9 @@ nullEscrowAddress == "none"
     
     - counterpartyChannelID -- a channel identifier
       Stores the channel identifier of the counterparty channel end. 
+      
+    - version -- a string
+      The version is "ics20-1" for fungible token transfer
  ***************************************************************************)       
     
 ChannelEnds ==
@@ -171,36 +192,15 @@ ChannelEnds ==
         state : ChannelStates,
         order : {"UNORDERED"}, 
         channelID : ChannelIDs \union {nullChannelID},
-        counterpartyChannelID : ChannelIDs \union {nullChannelID}
+        counterpartyChannelID : ChannelIDs \union {nullChannelID},
+        counterpartyPortID : PortIDs \union {nullPortID},
+        version : {"ics20-1"}
     ] 
-    
-(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
- Sets of packet commitments, packet receipts, packet acknowledgements.
- ***************************************************************************)
-PacketCommitments(maxHeight, maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq, 
-        timeoutHeight : 1..maxHeight
-    ] <: {PacketCommitmentType} 
-    
-PacketReceipts(maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq
-    ] <: {PacketReceiptType}
-    
-PacketAcknowledgements(maxPacketSeq) ==
-    [
-        channelID : ChannelIDs, 
-        sequence : 1..maxPacketSeq,
-        acknowledgement : BOOLEAN
-    ] <: {PacketAcknowledgementType}
-    
+
 (************************* FungibleTokenPacketData *************************
  A set of records defining ICS20 packet data.
  
- Denominations are defined as Seq(ChannelIDs \cup {Denomination}), 
+ Denominations are defined as Seq(ChannelIDs \union PortIDs \union {Denomination}), 
  where Denomination is a native denomination.
  ***************************************************************************)    
 FungibleTokenPacketData(maxBalance, Denominations) ==
@@ -210,7 +210,34 @@ FungibleTokenPacketData(maxBalance, Denominations) ==
         sender : ChainIDs,
         receiver : ChainIDs
     ]
-
+    
+(******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
+ Sets of packet commitments, packet receipts, packet acknowledgements.
+ ***************************************************************************)
+PacketCommitments(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
+    [
+        channelID : ChannelIDs,
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq,
+        data : FungibleTokenPacketData(maxBalance, Denominations),
+        timeoutHeight : 1..maxHeight
+    ] <: {PacketCommitmentType} 
+    
+PacketReceipts(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq
+    ] <: {PacketReceiptType}
+    
+PacketAcknowledgements(maxPacketSeq) ==
+    [
+        channelID : ChannelIDs, 
+        portID : PortIDs, 
+        sequence : 1..maxPacketSeq,
+        acknowledgement : BOOLEAN
+    ] <: {PacketAcknowledgementType}
+    
 (********************************* Packets *********************************
  A set of packets.
  ***************************************************************************)
@@ -220,7 +247,9 @@ Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
         timeoutHeight : 1..maxHeight,
         data : FungibleTokenPacketData(maxBalance, Denominations),
         srcChannelID : ChannelIDs,
-        dstChannelID : ChannelIDs
+        srcPortID : PortIDs,
+        dstChannelID : ChannelIDs,
+        dstPortID : PortIDs
     ] <: {PacketType} 
 
 
@@ -233,32 +262,53 @@ Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
     
     - channelEnd : a channel end.
     
+    - packetCommitments : a set of packet commitments
+      A packet commitment is added to this set when a chain sends a packet 
+      to the counterparty
+
+    - packetAcknowledgements : a set of packet acknowledgements
+      A packet acknowledgement is added to this set when a chain writes an 
+      acknowledgement for a packet it received from the counterparty
+
+    - packetsToAcknowledge : a sequence of pairs <<packet, ack>>
+      A pair <<packet, ack>>, where ack is a Boolean value, is added 
+      to this sequence when a chain successfully receives a PacketRecv 
+      datagram      
+    
+    A chain store is the combination of the provable and private stores.
+    We do not keep track of packet receipts in the specification of ICS20, 
+    these are specified in the IBC Core specification.
       
  ***************************************************************************)
 ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==    
     [
         height : 1..maxHeight,
+        clientHeight : 1..maxHeight,
         channelEnd : ChannelEnds,
         
-        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
+        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq, maxBalance, 
+                                           Seq(ChannelIDs \union PortIDs \union {Denomination}))),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
+        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
         packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, maxBalance, 
-                                           Seq(ChannelIDs \cup {Denomination}))
+                                           Seq(ChannelIDs \union PortIDs \union {Denomination}))
                                    \X
-                                   BOOLEAN),
-        packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq))
+                                   BOOLEAN)
     ] 
     
 (******************************** Datagrams ********************************
  A set of datagrams.
+ For ICS20, we need only packet datagrams
  ***************************************************************************)
 Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
     [type : {"PacketRecv"}, 
-     packet : Packets(maxHeight, maxPacketSeq, maxBalance, Seq(ChannelIDs \cup {Denomination})), 
+     packet : Packets(maxHeight, maxPacketSeq, maxBalance, 
+                      Seq(ChannelIDs \union PortIDs \union {Denomination})), 
      proofHeight : 1..maxHeight]
     \union 
     [type : {"PacketAck"}, 
-     packet : Packets(maxHeight, maxPacketSeq, maxBalance, Seq(ChannelIDs \cup {Denomination})), 
+     packet : Packets(maxHeight, maxPacketSeq, maxBalance, 
+                      Seq(ChannelIDs \union PortIDs \union {Denomination})), 
      acknowledgement : BOOLEAN, 
      proofHeight : 1..maxHeight]
     <: {DatagramType}
@@ -275,8 +325,14 @@ NullDatagram ==
 \* get the ID of chainID's counterparty chain    
 GetCounterpartyChainID(chainID) ==
     IF chainID = "chainA" THEN AsID("chainB") ELSE AsID("chainA")     
+      
+\* get the maximal height of the client for chainID's counterparty chain    
+GetMaxCounterpartyClientHeight(chain) ==
+    IF chain.counterpartyClientHeights /= AsSetInt({})
+    THEN AsInt(Max(chain.counterpartyClientHeights))
+    ELSE AsInt(nullHeight)    
 
-\* get the channel ID of the channel end at the connection end of chainID
+\* get the channel ID of the channel end at chainID
 GetChannelID(chainID) ==
     IF chainID = "chainA"
     THEN AsID("chanAtoB")
@@ -291,19 +347,26 @@ GetCounterpartyChannelID(chainID) ==
     ELSE IF chainID = "chainB"
          THEN AsID("chanAtoB")
          ELSE AsID(nullChannelID) 
+     
+\* get the port ID at chainID
+GetPortID(chainID) ==
+    IF chainID = "chainA"
+    THEN AsID("portA")
+    ELSE IF chainID = "chainB"
+         THEN AsID("portB")
+         ELSE AsID(nullPortID)      
+   
+\* get the port ID at chainID's counterparty chain
+GetCounterpartyPortID(chainID) ==
+    IF chainID = "chainA"
+    THEN AsID("portB")
+    ELSE IF chainID = "chainB"
+         THEN AsID("portA")
+         ELSE AsID(nullPortID) 
 
 \* get the latest height of chain
 GetLatestHeight(chain) ==
     AsInt(chain.height) 
-
-\* get the escrow accounts of chain         
-GetEscrowAccounts(chain) ==
-    chain.escrowAccounts    
-
-\* get the account ballance of an escrow account on chain given a denomination         
-GetEscrowAccountBalance(chain, denomination) ==
-    chain.escrowAccounts[denomination]    
-                       
 
 (***************************************************************************
  Initial values of a channel end, chain store, accounts for ICS02
@@ -311,35 +374,35 @@ GetEscrowAccountBalance(chain, denomination) ==
 \* Initial value of a channel end:
 \*      - state is "OPEN" (we assume channel handshake has successfully finished)
 \*      - order is "UNORDERED" (requirement of ICS20)
-\*      - channelID, counterpartyChannelID are uninitialized
+\*      - channelID, counterpartyChannelID 
 InitUnorderedChannelEnd(ChainID) ==
     [state |-> "OPEN",
      order |-> "UNORDERED",
      channelID |-> GetChannelID(ChainID),
-     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID)] 
+     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID),
+     counterpartyPortID |-> GetCounterpartyPortID(ChainID),
+     version |-> "ics20-1"] 
+  
 
 \* A set of initial values of the chain store for ICS20: 
 \*      - height is initialized to 1
+\*      - counterpartyClientHeights is the set of installed client heights 
 \*      - the channelEnd is initialized to InitUnorderedChannelEnd
-\*      - the channelEscrowAddress is initialized to some address in EscrowAddresses
-\*      - the packet committments, receipts, acknowledgements, and packets to acknowledge 
-\*        are empty
-\*      - the bank accouts and escrow accounts are functions that initially 
-\*        map the native denomination to maxBalance and 0, respectively 
+\*      - the packet committments, receipts, acknowledgements, and packets  
+\*        to acknowledge are empty
 ICS20InitChainStore(ChainID, Denomination) == 
     [
         height |-> 1,
+        counterpartyClientHeights |-> AsSetInt({}), 
         channelEnd |-> InitUnorderedChannelEnd(ChainID),
         
         packetCommitments |-> AsSetPacketCommitment({}),
         packetReceipts |-> AsSetPacketReceipt({}),
-        packetsToAcknowledge |-> AsSeqPacketsToAck(<<>>),
         packetAcknowledgements |-> AsSetPacketAcknowledgement({}),
-        
-        escrowAccounts |-> [<<chanID, denom>> \in {<<GetChannelID(ChainID), Denomination>>} |-> 0]
+        packetsToAcknowledge |-> AsSeqPacketsToAck(<<>>)        
     ] 
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 06 15:57:22 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 23 13:06:12 CET 2020 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska
