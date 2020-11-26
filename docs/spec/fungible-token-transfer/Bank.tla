@@ -8,13 +8,15 @@ SubtractCoins(accounts, accountID, amount) ==
 
 \* add coins to account
 AddCoins(accounts, accountID, amount) ==
+    LET newDomain == (DOMAIN accounts) \union {accountID} IN
+     
     \* if an account with accountID exists
     IF accountID \in DOMAIN accounts
     \* add amount to account
     THEN [accounts EXCEPT ![accountID] = accounts[accountID] + amount]
     \* otherwise create a new account with balance equal to amount 
     \* and add it to the map
-    ELSE [accID \in DOMAIN accounts \union {accountID} |-> 
+    ELSE [accID \in newDomain |-> 
             IF accID = accountID
             THEN amount
             ELSE accounts[accID]   
@@ -76,14 +78,28 @@ BurnCoins(accounts, address, denomination, amount) ==
     
 
 \* Mint new coins of denomination to account with the given address
-\* TODO: when can an error happen here?
-MintCoins(accounts, address, denomination, amount) ==
+MintCoins(accounts, address, denomination, amount, maxBalance) ==
     LET accountID == <<address, denomination>> IN
-    
-    AddCoins(accounts, accountID, amount)
+
+    \* if the new balance does not exceed maxBalance
+    IF \/ /\ accountID \notin DOMAIN accounts
+          /\ amount <= maxBalance 
+       \/ /\ accountID \in DOMAIN accounts
+          /\ accounts[accountID] + amount <= maxBalance
+    \* add coins to accountID   
+    THEN [
+            accounts |-> AddCoins(accounts, accountID, amount), 
+            error |-> FALSE
+         ]
+    \* otherwise report an error         
+    ELSE [
+            accounts |-> accounts,
+            error |-> TRUE
+         ]
+
     
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 05 19:47:41 CET 2020 by ilinastoilkovska
+\* Last modified Thu Nov 19 18:54:36 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 28 19:49:56 CET 2020 by ilinastoilkovska

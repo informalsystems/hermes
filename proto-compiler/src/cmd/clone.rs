@@ -18,7 +18,7 @@ pub struct CloneCmd {
 
     /// where to checkout the repository
     #[argh(option, short = 'o')]
-    path: PathBuf,
+    out: PathBuf,
 }
 
 impl CloneCmd {
@@ -32,13 +32,13 @@ impl CloneCmd {
     pub fn run(&self) {
         self.validate();
 
-        let repo = if self.path.exists() {
+        let repo = if self.out.exists() {
             println!(
                 "[info ] Found Cosmos SDK source at '{}'",
-                self.path.display()
+                self.out.display()
             );
 
-            Repository::open(&self.path).unwrap_or_else(|e| {
+            Repository::open(&self.out).unwrap_or_else(|e| {
                 println!("[error] Failed to open repository: {}", e);
                 process::exit(1)
             })
@@ -47,12 +47,12 @@ impl CloneCmd {
 
             let url = "https://github.com/cosmos/cosmos-sdk";
 
-            let repo = Repository::clone(url, &self.path).unwrap_or_else(|e| {
+            let repo = Repository::clone(url, &self.out).unwrap_or_else(|e| {
                 println!("[error] Failed to clone the repository: {}", e);
                 process::exit(1)
             });
 
-            println!("[info ] Cloned at '{}'", self.path.display());
+            println!("[info ] Cloned at '{}'", self.out.display());
 
             repo
         };

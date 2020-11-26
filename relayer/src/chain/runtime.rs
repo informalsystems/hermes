@@ -1,4 +1,7 @@
-use std::{sync::Arc, thread};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
 
 use crossbeam_channel as channel;
 
@@ -58,7 +61,7 @@ pub struct ChainRuntime<C: Chain> {
     light_client: Box<dyn LightClient<C>>,
 
     #[allow(dead_code)]
-    rt: Arc<TokioRuntime>,
+    rt: Arc<Mutex<TokioRuntime>>,
 }
 
 impl ChainRuntime<CosmosSDKChain> {
@@ -66,7 +69,7 @@ impl ChainRuntime<CosmosSDKChain> {
         config: ChainConfig,
         light_client: TMLightClient,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<TokioRuntime>,
+        rt: Arc<Mutex<TokioRuntime>>,
     ) -> Result<Self, Error> {
         let chain = CosmosSDKChain::from_config(config, rt.clone())?;
         Ok(Self::new(chain, light_client, event_receiver, rt))
@@ -74,7 +77,9 @@ impl ChainRuntime<CosmosSDKChain> {
 
     // TODO: Make this work for a generic Chain
     pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, Threads), Error> {
-        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
+        let rt = Arc::new(Mutex::new(
+            TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
+        ));
 
         // Initialize the light clients
         let (light_client, supervisor) = TMLightClient::from_config(&config, true)?;
@@ -115,7 +120,7 @@ impl<C: Chain> ChainRuntime<C> {
         chain: C,
         light_client: impl LightClient<C> + 'static,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<TokioRuntime>,
+        rt: Arc<Mutex<TokioRuntime>>,
     ) -> Self {
         let (sender, receiver) = channel::unbounded::<HandleInput>();
 
