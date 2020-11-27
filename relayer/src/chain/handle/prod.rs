@@ -20,9 +20,9 @@ use tendermint::account::Id as AccountId;
 
 use crate::{
     chain::QueryResponse,
+    connection::ConnectionMsgType,
     error::{Error, Kind},
     keyring::store::KeyEntry,
-    tx::connection::ConnectionMsgType,
 };
 
 use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};

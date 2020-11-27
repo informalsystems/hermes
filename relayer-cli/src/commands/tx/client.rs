@@ -2,13 +2,14 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics24_host::identifier::ClientId;
 
-use relayer::tx::client::{
-    build_create_client_and_send, build_update_client_and_send, ClientOptions,
-};
-
 use crate::application::app_config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use relayer::chain::runtime::ChainRuntime;
+use relayer::config::ChainConfig;
+use relayer::foreign_client::{
+    build_create_client_and_send, build_update_client_and_send, ForeignClientConfig,
+};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -27,21 +28,31 @@ pub struct TxCreateClientCmd {
 
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
-        let opts = match validate_common_options(
+        let (dst_chain_config, src_chain_config, opts) = match validate_common_options(
             &self.dst_chain_id,
             &self.src_chain_id,
             &self.dst_client_id,
         ) {
+            Ok(result) => result,
             Err(err) => {
                 status_err!("invalid options: {}", err);
                 return;
             }
-            Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
 
-        let res: Result<String, Error> =
-            build_create_client_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+        status_info!(
+            "Message CreateClient",
+            "id: {:?}, for chain: {:?}, on chain: {:?}",
+            opts.client_id(),
+            src_chain_config.id,
+            opts.chain_id()
+        );
+
+        let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
+
+        let res: Result<String, Error> = build_create_client_and_send(dst_chain, src_chain, &opts)
+            .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
@@ -70,7 +81,7 @@ impl Runnable for TxUpdateClientCmd {
         let opts =
             validate_common_options(&self.dst_chain_id, &self.src_chain_id, &self.dst_client_id);
 
-        let opts = match opts {
+        let (dst_chain_config, src_chain_config, opts) = match opts {
             Ok(result) => result,
             Err(err) => {
                 status_err!("invalid options: {}", err);
@@ -78,13 +89,22 @@ impl Runnable for TxUpdateClientCmd {
             }
         };
 
-        status_info!("Message", "{:?}", opts);
+        status_info!(
+            "Message UpdateClient",
+            "id: {:?}, for chain: {:?}, on chain: {:?}",
+            opts.client_id(),
+            src_chain_config.id,
+            opts.chain_id()
+        );
 
-        let res: Result<String, Error> =
-            build_update_client_and_send(opts).map_err(|e| Kind::Tx.context(e).into());
+        let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
+
+        let res: Result<String, Error> = build_update_client_and_send(dst_chain, src_chain, &opts)
+            .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
+            Ok(receipt) => status_ok!("Success client updated: {:?}", receipt),
             Err(e) => status_err!("client update failed: {}", e),
         }
     }
@@ -94,7 +114,7 @@ fn validate_common_options(
     dst_chain_id: &str,
     src_chain_id: &str,
     dst_client_id: &ClientId,
-) -> Result<ClientOptions, String> {
+) -> Result<(ChainConfig, ChainConfig, ForeignClientConfig), String> {
     let config = app_config();
 
     // Validate parameters
@@ -119,9 +139,9 @@ fn validate_common_options(
         .find(|c| c.id == src_chain_id)
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
-    Ok(ClientOptions {
-        dst_client_id: dst_client_id.clone(),
-        dst_chain_config: dst_chain_config.clone(),
-        src_chain_config: src_chain_config.clone(),
-    })
+    Ok((
+        dst_chain_config.clone(),
+        src_chain_config.clone(),
+        ForeignClientConfig::new(&dst_chain_config.id, &dst_client_id),
+    ))
 }

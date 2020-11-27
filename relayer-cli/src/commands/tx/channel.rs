@@ -2,344 +2,113 @@ use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
 use ibc::ics04_channel::channel::Order;
-use ibc::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-
-use relayer::config::Config;
+use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 
 use crate::error::{Error, Kind};
-use relayer::tx::channel::{
+use relayer::channel::{
     build_chan_ack_and_send, build_chan_confirm_and_send, build_chan_init_and_send,
-    build_chan_try_and_send, ChannelOpenInitOptions, ChannelOpenOptions,
+    build_chan_try_and_send,
 };
 
-#[derive(Clone, Command, Debug, Options)]
-pub struct TxRawChanInitCmd {
-    #[options(free, help = "identifier of the destination chain")]
-    dst_chain_id: String,
+use relayer::chain::runtime::ChainRuntime;
+use relayer::channel::{ChannelConfig, ChannelConfigSide};
 
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
+macro_rules! chan_open_cmd {
+    ($chan_open_cmd:ident, $dbg_string:literal, $func:ident) => {
+        #[derive(Clone, Command, Debug, Options)]
+        pub struct $chan_open_cmd {
+            #[options(free, help = "identifier of the destination chain")]
+            dst_chain_id: String,
 
-    #[options(free, help = "identifier of the destination connection")]
-    dst_connection_id: ConnectionId,
+            #[options(free, help = "identifier of the source chain")]
+            src_chain_id: String,
 
-    #[options(free, help = "identifier of the destination port")]
-    dst_port_id: PortId,
+            #[options(free, help = "identifier of the destination connection")]
+            dst_connection_id: ConnectionId,
 
-    #[options(free, help = "identifier of the source port")]
-    src_port_id: PortId,
+            #[options(free, help = "identifier of the destination port")]
+            dst_port_id: PortId,
 
-    #[options(free, help = "identifier of the destination channel")]
-    dst_channel_id: ChannelId,
+            #[options(free, help = "identifier of the source port")]
+            src_port_id: PortId,
 
-    #[options(help = "identifier of the source channel", short = "s")]
-    src_channel_id: Option<ChannelId>,
+            #[options(free, help = "identifier of the destination channel")]
+            dst_channel_id: ChannelId,
 
-    #[options(help = "the channel order", short = "o")]
-    ordering: Order,
-}
+            #[options(free, help = "identifier of the source channel")]
+            src_channel_id: ChannelId,
 
-impl TxRawChanInitCmd {
-    fn validate_options(&self, config: &Config) -> Result<ChannelOpenInitOptions, String> {
-        let dst_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
-
-        let opts = ChannelOpenInitOptions {
-            dst_chain_config: dst_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-
-            dst_connection_id: self.dst_connection_id.clone(),
-
-            dst_port_id: self.dst_port_id.clone(),
-            src_port_id: self.src_port_id.clone(),
-
-            dst_channel_id: self.dst_channel_id.clone(),
-            src_channel_id: self.src_channel_id.clone(),
-
-            ordering: self.ordering,
-        };
-
-        Ok(opts)
-    }
-}
-
-impl Runnable for TxRawChanInitCmd {
-    fn run(&self) {
-        let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-            Ok(result) => result,
-        };
-        status_info!("Message", "{:?}", opts);
-
-        let res: Result<String, Error> =
-            build_chan_init_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
-
-        match res {
-            Ok(receipt) => status_info!("channel init, result: ", "{:?}", receipt),
-            Err(e) => status_info!("channel init failed, error: ", "{}", e),
+            #[options(help = "the channel order", short = "o")]
+            ordering: Order,
         }
-    }
-}
 
-#[derive(Clone, Command, Debug, Options)]
-pub struct TxRawChanTryCmd {
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+        impl Runnable for $chan_open_cmd {
+            fn run(&self) {
+                let config = app_config();
 
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
+                let src_config = config
+                    .chains
+                    .iter()
+                    .find(|c| c.id == self.src_chain_id.parse().unwrap())
+                    .ok_or_else(|| "missing src chain configuration".to_string());
 
-    #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+                let dst_config = config
+                    .chains
+                    .iter()
+                    .find(|c| c.id == self.dst_chain_id.parse().unwrap())
+                    .ok_or_else(|| "missing src chain configuration".to_string());
 
-    #[options(free, help = "identifier of the destination port")]
-    dest_port_id: PortId,
+                let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
+                    (Ok(s), Ok(d)) => (s, d),
+                    (_, _) => {
+                        status_err!("invalid options");
+                        return;
+                    }
+                };
 
-    #[options(free, help = "identifier of the source port")]
-    src_port_id: PortId,
+                let opts = ChannelConfig {
+                    ordering: self.ordering,
+                    a_config: ChannelConfigSide::new(
+                        &src_chain_config.id,
+                        &ConnectionId::default(),
+                        &ClientId::default(),
+                        &self.src_port_id,
+                        &self.src_channel_id,
+                    ),
+                    b_config: ChannelConfigSide::new(
+                        &dst_chain_config.id,
+                        &self.dst_connection_id,
+                        &ClientId::default(),
+                        &self.dst_port_id,
+                        &self.dst_channel_id,
+                    ),
+                };
 
-    #[options(free, help = "identifier of the destination channel")]
-    dest_channel_id: ChannelId,
+                status_info!("Message ", "{}: {:#?}", $dbg_string, opts);
 
-    #[options(free, help = "identifier of the source channel")]
-    src_channel_id: ChannelId,
+                let (src_chain, _) = ChainRuntime::spawn(src_chain_config.clone()).unwrap();
+                let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config.clone()).unwrap();
 
-    #[options(help = "the channel order", short = "o")]
-    ordering: Order,
-}
+                let res: Result<String, Error> =
+                    $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
-impl TxRawChanTryCmd {
-    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
-        let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
-
-        let opts = ChannelOpenOptions {
-            dst_chain_config: dest_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-
-            dst_connection_id: self.dest_connection_id.clone(),
-
-            dst_port_id: self.dest_port_id.clone(),
-            src_port_id: self.src_port_id.clone(),
-
-            dst_channel_id: self.dest_channel_id.clone(),
-            src_channel_id: self.src_channel_id.clone(),
-
-            ordering: self.ordering,
-        };
-
-        Ok(opts)
-    }
-}
-
-impl Runnable for TxRawChanTryCmd {
-    fn run(&self) {
-        let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                match res {
+                    Ok(receipt) => status_ok!("Result: ", "{:?} - {:?}", $dbg_string, receipt),
+                    Err(e) => status_err!("Failed with Error: {:?} - {:?}", $dbg_string, e),
+                }
             }
-            Ok(result) => result,
-        };
-        status_info!("Message", "{:?}", opts);
-
-        let res: Result<String, Error> =
-            build_chan_try_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
-
-        match res {
-            Ok(receipt) => status_info!("channel try, result: ", "{:?}", receipt),
-            Err(e) => status_info!("channel try failed, error: ", "{}", e),
         }
-    }
+    };
 }
 
-#[derive(Clone, Command, Debug, Options)]
-pub struct TxRawChanAckCmd {
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+chan_open_cmd!(TxRawChanInitCmd, "ChanOpenInit", build_chan_init_and_send);
 
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
+chan_open_cmd!(TxRawChanTryCmd, "ChanOpenTry", build_chan_try_and_send);
 
-    #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
+chan_open_cmd!(TxRawChanAckCmd, "ChanOpenAck", build_chan_ack_and_send);
 
-    #[options(free, help = "identifier of the destination port")]
-    dest_port_id: PortId,
-
-    #[options(free, help = "identifier of the source port")]
-    src_port_id: PortId,
-
-    #[options(free, help = "identifier of the destination channel")]
-    dest_channel_id: ChannelId,
-
-    #[options(free, help = "identifier of the source channel")]
-    src_channel_id: ChannelId,
-
-    #[options(help = "the channel order", short = "o")]
-    ordering: Order,
-}
-
-impl TxRawChanAckCmd {
-    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
-        let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
-
-        let opts = ChannelOpenOptions {
-            dst_chain_config: dest_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-
-            dst_connection_id: self.dest_connection_id.clone(),
-
-            dst_port_id: self.dest_port_id.clone(),
-            src_port_id: self.src_port_id.clone(),
-
-            dst_channel_id: self.dest_channel_id.clone(),
-            src_channel_id: self.src_channel_id.clone(),
-
-            ordering: self.ordering,
-        };
-
-        Ok(opts)
-    }
-}
-
-impl Runnable for TxRawChanAckCmd {
-    fn run(&self) {
-        let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-            Ok(result) => result,
-        };
-        status_info!("Message", "{:?}", opts);
-
-        let res: Result<String, Error> =
-            build_chan_ack_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
-
-        match res {
-            Ok(receipt) => status_info!("channel ack, result: ", "{:?}", receipt),
-            Err(e) => status_info!("channel ack failed, error: ", "{}", e),
-        }
-    }
-}
-
-#[derive(Clone, Command, Debug, Options)]
-pub struct TxRawChanConfirmCmd {
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
-
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
-
-    #[options(free, help = "identifier of the destination connection")]
-    dest_connection_id: ConnectionId,
-
-    #[options(free, help = "identifier of the destination port")]
-    dest_port_id: PortId,
-
-    #[options(free, help = "identifier of the source port")]
-    src_port_id: PortId,
-
-    #[options(free, help = "identifier of the destination channel")]
-    dest_channel_id: ChannelId,
-
-    #[options(free, help = "identifier of the source channel")]
-    src_channel_id: ChannelId,
-
-    #[options(help = "the channel order", short = "o")]
-    ordering: Order,
-}
-
-impl TxRawChanConfirmCmd {
-    fn validate_options(&self, config: &Config) -> Result<ChannelOpenOptions, String> {
-        let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
-
-        let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing src chain configuration".to_string())?;
-
-        let opts = ChannelOpenOptions {
-            dst_chain_config: dest_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-
-            dst_connection_id: self.dest_connection_id.clone(),
-
-            dst_port_id: self.dest_port_id.clone(),
-            src_port_id: self.src_port_id.clone(),
-
-            dst_channel_id: self.dest_channel_id.clone(),
-            src_channel_id: self.src_channel_id.clone(),
-
-            ordering: self.ordering,
-        };
-
-        Ok(opts)
-    }
-}
-
-impl Runnable for TxRawChanConfirmCmd {
-    fn run(&self) {
-        let config = app_config();
-
-        let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
-            Ok(result) => result,
-        };
-        status_info!("Message", "{:?}", opts);
-
-        let res: Result<String, Error> =
-            build_chan_confirm_and_send(&opts).map_err(|e| Kind::Tx.context(e).into());
-
-        match res {
-            Ok(receipt) => status_info!("channel confirm, result: ", "{:?}", receipt),
-            Err(e) => status_info!("channel confirm failed, error: ", "{}", e),
-        }
-    }
-}
+chan_open_cmd!(
+    TxRawChanConfirmCmd,
+    "ChanOpenConfirm",
+    build_chan_confirm_and_send
+);
