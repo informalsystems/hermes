@@ -3,6 +3,9 @@ use crate::error;
 
 pub mod tendermint;
 
+#[cfg(test)]
+pub mod mock;
+
 /// Defines a light block from the point of view of the relayer.
 pub trait LightBlock<C: Chain>: Send + Sync {
     fn signed_header(&self) -> &C::Header;

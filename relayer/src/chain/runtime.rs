@@ -42,9 +42,9 @@ use super::{
 };
 
 pub struct Threads {
-    pub light_client: thread::JoinHandle<()>,
+    pub light_client: Option<thread::JoinHandle<()>>,
     pub chain_runtime: thread::JoinHandle<()>,
-    pub event_monitor: thread::JoinHandle<()>,
+    pub event_monitor: Option<thread::JoinHandle<()>>,
 }
 
 pub struct ChainRuntime<C: Chain> {
@@ -88,10 +88,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             None => None,
         };
 
-        // TODO: figure out how to deal with a missing light client thread & event monitor
-        assert!(light_client_thread.is_some());
-        assert!(event_monitor_thread.is_some());
-
         // Instantiate the runtime
         let chain_runtime = Self::instantiate(chain, light_client_handler, event_receiver, rt);
 
@@ -102,9 +98,9 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let runtime_thread = thread::spawn(move || chain_runtime.run().unwrap());
 
         let threads = Threads {
-            light_client: light_client_thread.unwrap(),
+            light_client: light_client_thread,
             chain_runtime: runtime_thread,
-            event_monitor: event_monitor_thread.unwrap(),
+            event_monitor: event_monitor_thread,
         };
 
         Ok((handle, threads))

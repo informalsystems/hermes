@@ -1,13 +1,17 @@
-#![allow(dead_code, unused_variables)]
+use std::sync::{Arc, Mutex};
 
+use crossbeam_channel as channel;
 use prost_types::Any;
 use tendermint::account::Id;
+use tendermint_light_client::supervisor::Supervisor;
 use tendermint_testgen::light_block::TMLightBlock;
+use tokio::runtime::Runtime;
 
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path;
@@ -20,57 +24,51 @@ use crate::config::ChainConfig;
 use crate::error::Error;
 use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::light_client::LightClient;
-use crossbeam_channel::Receiver;
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use std::sync::{Arc, Mutex};
-use tendermint_light_client::supervisor::Supervisor;
-use tokio::runtime::Runtime;
+use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
 pub struct MockChain {
     pub context: MockContext,
+    pub config: ChainConfig,
 }
 
-impl MockChain {
-    pub fn new() -> MockChain {
-        let chain_version = 1;
-        MockChain {
-            context: MockContext::new(
-                ChainId::new("mockgaia".to_string(), chain_version),
-                HostType::SyntheticTendermint,
-                50,
-                Height::new(chain_version, 20),
-            ),
-        }
-    }
-}
-
+#[allow(unused_variables)]
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
 
-    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
-        unimplemented!()
+    fn bootstrap(config: ChainConfig, _rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
+        Ok(MockChain {
+            config: config.clone(),
+            context: MockContext::new(
+                config.id.clone(),
+                HostType::SyntheticTendermint,
+                50,
+                Height::new(config.id.version(), 20),
+            ),
+        })
     }
 
     #[allow(clippy::type_complexity)]
     fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error> {
-        unimplemented!()
+        let light_client = MockLightClient::new();
+
+        Ok((Box::new(light_client), None))
     }
 
     fn init_event_monitor(
         &self,
         rt: Arc<Mutex<Runtime>>,
-    ) -> Result<(Option<EventMonitor>, Receiver<EventBatch>), Error> {
-        unimplemented!()
+    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error> {
+        let (_, rx) = channel::unbounded();
+        Ok((None, rx))
     }
 
     fn id(&self) -> &ChainId {
-        unimplemented!()
+        &self.config.id
     }
 
     fn keybase(&self) -> &KeyRing {
@@ -146,5 +144,29 @@ impl Chain for MockChain {
     }
 }
 
-// Integration tests with the modules
-mod test {}
+// For integration tests with the modules
+#[cfg(test)]
+pub mod test_utils {
+    use std::str::FromStr;
+
+    use ibc::ics24_host::identifier::ChainId;
+
+    use crate::config::ChainConfig;
+
+    pub fn get_basic_chain_config(id: &str) -> ChainConfig {
+        ChainConfig {
+            id: ChainId::from_str(id).unwrap(),
+            rpc_addr: "35.192.61.41:26656".parse().unwrap(),
+            grpc_addr: "".to_string(),
+            account_prefix: "".to_string(),
+            key_name: "".to_string(),
+            store_prefix: "".to_string(),
+            client_ids: vec![],
+            gas: 0,
+            clock_drift: Default::default(),
+            trusting_period: Default::default(),
+            trust_threshold: Default::default(),
+            peers: None,
+        }
+    }
+}

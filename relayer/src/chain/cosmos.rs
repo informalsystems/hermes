@@ -68,6 +68,7 @@ pub struct CosmosSDKChain {
 }
 
 impl CosmosSDKChain {
+    // TODO: This will be deprecated in favor of `Chain::bootstrap` method (see below)
     pub fn from_config(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
         let rpc_client =
             HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
