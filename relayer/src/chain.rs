@@ -4,8 +4,12 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
-#[cfg(test)]
-mod mock;
+// #[cfg(test)]
+// mod mock;
+
+use crossbeam_channel as channel;
+use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use prost_types::Any;
 
@@ -14,6 +18,7 @@ use tendermint_proto::Protobuf;
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
+use tendermint_light_client::supervisor::Supervisor;
 
 use ibc::ics02_client::header::Header;
 
@@ -31,8 +36,11 @@ use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
+use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::light_client::LightClient;
 use crate::tx::connection::ConnectionMsgType;
 
 /// Generic query response type
@@ -45,7 +53,7 @@ pub struct QueryResponse {
 }
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain {
+pub trait Chain: Sized {
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync;
 
@@ -57,6 +65,20 @@ pub trait Chain {
 
     /// Type of the client state for this chain
     type ClientState: ClientState;
+
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error>;
+
+    #[allow(clippy::type_complexity)]
+    /// Returns the light client (if any) associated with this chain.
+    /// This is primarily a helper method to be used by the runtime.
+    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error>;
+
+    /// Returns the event monitor (if any) associated with this chain.
+    /// This is primarily a helper method to be used by the runtime.
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;

@@ -27,8 +27,6 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-// use crate::foreign_client::ForeignClient;
-
 use crate::{
     config::ChainConfig,
     error::{Error, Kind},
@@ -65,16 +63,6 @@ pub struct ChainRuntime<C: Chain> {
 }
 
 impl ChainRuntime<CosmosSDKChain> {
-    pub fn cosmos_sdk(
-        config: ChainConfig,
-        light_client: TMLightClient,
-        event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<Mutex<TokioRuntime>>,
-    ) -> Result<Self, Error> {
-        let chain = CosmosSDKChain::from_config(config, rt.clone())?;
-        Ok(Self::new(chain, light_client, event_receiver, rt))
-    }
-
     // TODO: Make this work for a generic Chain
     pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, Threads), Error> {
         let rt = Arc::new(Mutex::new(
@@ -97,7 +85,8 @@ impl ChainRuntime<CosmosSDKChain> {
         let event_monitor_thread = thread::spawn(move || event_monitor.run());
 
         // Initialize the chain runtime
-        let chain_runtime = Self::cosmos_sdk(config, light_client, event_receiver, rt)?;
+        let chain = CosmosSDKChain::from_config(config, rt.clone())?;
+        let chain_runtime = Self::new(chain, Box::new(light_client), event_receiver, rt);
 
         // Get a handle to the runtime
         let handle = chain_runtime.handle();
@@ -115,10 +104,59 @@ impl ChainRuntime<CosmosSDKChain> {
     }
 }
 
-impl<C: Chain> ChainRuntime<C> {
+impl<C: Chain + Send + 'static> ChainRuntime<C> {
+    pub fn initialize(config: ChainConfig) -> Result<(impl ChainHandle, Threads), Error> {
+        let rt = Arc::new(Mutex::new(
+            TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
+        ));
+
+        // Similar to `from_config`... TODO
+        let chain = C::bootstrap(config, rt.clone())?;
+
+        let (light_client_handler, supervisor_option) = chain.init_light_client()?;
+
+        // If there is a light client supervisor, spawn it.
+        let light_client_thread = match supervisor_option {
+            Some(supervisor) => Some(thread::spawn(move || supervisor.run().unwrap())),
+            None => None,
+        };
+
+        let (event_monitor_option, event_receiver) = chain.init_event_monitor(rt.clone())?;
+
+        let event_monitor_thread = match event_monitor_option {
+            // Spawn the event monitor
+            Some(mut event_monitor) => {
+                event_monitor.subscribe().unwrap();
+                Some(thread::spawn(move || event_monitor.run()))
+            }
+            None => None,
+        };
+
+        // TODO: figure out how to deal with a missing light client thread & event monitor
+        assert!(light_client_thread.is_some());
+        assert!(event_monitor_thread.is_some());
+
+        // Instantiate the runtime
+        let chain_runtime = Self::new(chain, light_client_handler, event_receiver, rt);
+
+        // Get a handle to the runtime
+        let handle = chain_runtime.handle();
+
+        // Spawn the runtime
+        let runtime_thread = thread::spawn(move || chain_runtime.run().unwrap());
+
+        let threads = Threads {
+            light_client: light_client_thread.unwrap(),
+            chain_runtime: runtime_thread,
+            event_monitor: event_monitor_thread.unwrap(),
+        };
+
+        Ok((handle, threads))
+    }
+
     pub fn new(
         chain: C,
-        light_client: impl LightClient<C> + 'static,
+        light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
         rt: Arc<Mutex<TokioRuntime>>,
     ) -> Self {
@@ -131,7 +169,7 @@ impl<C: Chain> ChainRuntime<C> {
             receiver,
             event_bus: EventBus::new(),
             event_receiver,
-            light_client: Box::new(light_client),
+            light_client,
         }
     }
 

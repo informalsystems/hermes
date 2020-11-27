@@ -7,6 +7,7 @@ use std::time::Duration;
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 
+use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -19,6 +20,7 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
 
+use tendermint_light_client::supervisor::Supervisor;
 use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
@@ -49,7 +51,10 @@ use super::Chain;
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::light_client::tendermint::LightClient as TMLightClient;
+use crate::light_client::LightClient;
 
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
@@ -136,6 +141,29 @@ impl Chain for CosmosSDKChain {
     type LightBlock = TMLightBlock;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
+
+    // TODO remove from_config or rename this method to from_config
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
+        Self::from_config(config, rt)
+    }
+
+    // TODO use a simpler approach to create the light client
+    #[allow(clippy::type_complexity)]
+    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error> {
+        let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
+
+        Ok((Box::new(lc), Some(supervisor)))
+    }
+
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error> {
+        let (event_monitor, event_receiver) =
+            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+
+        Ok((Some(event_monitor), event_receiver))
+    }
 
     fn id(&self) -> &ChainId {
         &self.config().id
