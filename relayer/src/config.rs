@@ -130,8 +130,8 @@ impl ChainConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Connection {
-    pub src: Option<ConnectionEnd>,    // use any source
-    pub dest: Option<ConnectionEnd>,   // use any destination
+    pub a_end: Option<ConnectionEnd>,  // use any source
+    pub b_end: Option<ConnectionEnd>,  // use any destination
     pub paths: Option<Vec<RelayPath>>, // use any port, direction bidirectional
 }
 
@@ -158,10 +158,10 @@ impl Default for Direction {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
-    pub src_port: Option<String>,     // default from any source port
-    pub dest_port: Option<String>,    // default from any dest port
-    pub src_channel: Option<String>,  // default from any source port
-    pub dest_channel: Option<String>, // default from any dest port
+    pub a_port: Option<String>,    // default from any source port
+    pub b_port: Option<String>,    // default from any dest port
+    pub a_channel: Option<String>, // default from any source port
+    pub b_channel: Option<String>, // default from any dest port
     #[serde(default)]
     pub direction: Direction, // default bidirectional
 }

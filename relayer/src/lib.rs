@@ -14,16 +14,16 @@
 
 pub mod auth;
 pub mod chain;
-// pub mod channel;
+pub mod channel;
 pub mod config;
-pub mod event;
-// pub mod connection;
+pub mod connection;
 pub mod error;
-// pub mod foreign_client;
+pub mod event;
+pub mod foreign_client;
 pub mod keyring;
 pub mod keys;
 pub mod light_client;
 // pub mod link;
 pub mod msgs;
-pub mod tx;
+pub mod relay;
 pub mod util;

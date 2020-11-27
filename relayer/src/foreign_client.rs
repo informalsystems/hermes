@@ -1,19 +1,20 @@
 use prost_types::Any;
-use tendermint::account::Id as AccountId;
-use tendermint::{block::signed_header::SignedHeader, Hash};
 use thiserror::Error;
 
-use ibc::{
-    ics02_client::client_def::AnyConsensusState,
-    ics02_client::header::Header,
-    ics07_tendermint::consensus_state::ConsensusState,
-    ics23_commitment::commitment::CommitmentProof,
-    ics24_host::identifier::{ChainId, ClientId},
-    ics24_host::Path::ClientState as ClientStatePath,
-    Height,
-};
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-use crate::{chain::handle::ChainHandle, msgs::Datagram};
+use ibc::ics02_client::header::Header;
+use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::state::ClientState;
+use ibc::ics02_client::state::ConsensusState;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::tx_msg::Msg;
+use ibc::Height;
+
+use crate::chain::handle::ChainHandle;
+use crate::error::{Error, Kind};
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -24,14 +25,22 @@ pub enum ForeignClientError {
     ClientUpdate(String),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ForeignClientConfig {
+    chain: ChainId,
     id: ClientId,
 }
 
 impl ForeignClientConfig {
-    pub fn new(client_id: ClientId) -> ForeignClientConfig {
-        Self { id: client_id }
+    pub fn new(chain: &ChainId, id: &ClientId) -> ForeignClientConfig {
+        Self {
+            chain: chain.clone(),
+            id: id.clone(),
+        }
+    }
+
+    pub fn chain_id(&self) -> &ChainId {
+        &self.chain
     }
 
     pub fn client_id(&self) -> &ClientId {
@@ -45,92 +54,36 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client. Blocks until the client is created on `host` chain (or
-    /// panics???).
-    /// Post-condition: chain `host` will host an IBC client for chain `source`.
+    /// Creates a new foreign client. Blocks until the client is created on `dst_chain` or
+    /// an error occurs.
+    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `host` and `target` chains?
+    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
     pub fn new(
-        host: impl ChainHandle,
-        source: impl ChainHandle,
+        dst_chain: impl ChainHandle,
+        src_chain: impl ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
+        let done = '\u{1F36D}';
+
         // Query the client state on source chain.
-        let response = host.query(ClientStatePath(config.clone().id), Height::zero(), false);
-
-        // The chain may already host a client with this id.
-        if response.is_ok() {
-            Ok(ForeignClient { config }) // Nothing left to do.
-        } else {
-            // Create a new client on the host chain.
-            Self::create_client(host, source, config.client_id())?;
-            Ok(ForeignClient { config })
+        let client_state = dst_chain.query_client_state(&config.id, Height::default());
+        if client_state.is_err() {
+            build_create_client_and_send(dst_chain, src_chain, &config).map_err(|e| {
+                ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
+            })?;
         }
-    }
-
-    /// Creates on the `dst` chain an IBC client which will store headers for `src` chain.
-    fn create_client(
-        dst: impl ChainHandle, // The chain that will host the client.
-        src: impl ChainHandle, // The client will store headers of this chain.
-        client_id: &ClientId,
-    ) -> Result<(), ForeignClientError> {
-        // Fetch latest header of the source chain.
-        let latest_header = src.get_header(Height::zero()).map_err(|e| {
-            ForeignClientError::ClientCreate(format!("failed to fetch latest header ({:?})", e))
-        })?;
-
-        // Build the client state. The source chain handle will take care of the details.
-        let client_state = src
-            .build_client_state(latest_header.height())
-            .map_err(|e| {
-                ForeignClientError::ClientCreate(format!(
-                    "failed to assemble client state ({:?})",
-                    e
-                ))
-            })?;
-
-        // Build the consensus state.
-        // The source chain handle knows the internals of assembling this message.
-        let consensus_state = src
-            .build_consensus_state(latest_header.height())
-            .map_err(|e| {
-                ForeignClientError::ClientCreate(format!(
-                    "failed to assemble client consensus state ({:?})",
-                    e
-                ))
-            })?;
-
-        // Extract the signer from the destination chain handle, for example `dst.get_signer()`.
-        let signer: AccountId = todo!();
-
-        // Build the domain type message.
-        let create_client_msg = unimplemented!();
-        // TODO Make the create message public.
-        // MsgCreateAnyClient::new(client_id.clone(), client_state, consensus_state, signer)
-        //     .map_err(|e| {
-        //         ForeignClientError::ClientCreate(format!(
-        //             "failed to assemble the create client message ({:?})",
-        //             e
-        //         ))
-        //     })?;
-
-        // Create a proto any message.
-        let proto_msgs = vec![Any {
-            // TODO - add get_url_type() to prepend proper string to get_type()
-            type_url: "/ibc.client.MsgCreateClient".to_ascii_lowercase(),
-            value: vec![], //new_msg.get_sign_bytes(),
-        }];
-
-        // TODO: Bridge from Any message into EncodedTransaction.
-        // dst.submit(&proto_msgs)?
-
-        Ok(())
+        println!(
+            "{}  Client on {:?} is created {:?}\n",
+            done, config.chain, config.id
+        );
+        Ok(ForeignClient { config })
     }
 
     pub fn update(
         &mut self,
-        src_chain: impl ChainHandle,
-        dst_chain: impl ChainHandle,
+        _src_chain: impl ChainHandle,
+        _dst_chain: impl ChainHandle,
         src_target_height: Height,
     ) -> Result<Height, ForeignClientError> {
         /*
@@ -176,15 +129,85 @@ impl ForeignClient {
     }
 }
 
-fn verify_consensus_state_inclusion(
-    _consensus_state: &ConsensusState,
-    _membership_proof: &CommitmentProof,
-    _hash: &Hash,
-) -> bool {
-    true
+pub fn build_create_client(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    dst_client_id: &ClientId,
+) -> Result<MsgCreateAnyClient, Error> {
+    // Verify that the client has not been created already, i.e the destination chain does not
+    // have a state for this client.
+    let client_state = dst_chain.query_client_state(&dst_client_id, Height::default());
+    if client_state.is_ok() {
+        return Err(Into::<Error>::into(Kind::CreateClient(
+            dst_client_id.clone(),
+            "client already exists".into(),
+        )));
+    }
+
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    // Build client create message with the data from source chain at latest height.
+    let latest_height = src_chain.query_latest_height()?;
+    Ok(MsgCreateAnyClient::new(
+        dst_client_id.clone(),
+        src_chain.build_client_state(latest_height)?.wrap_any(),
+        src_chain.build_consensus_state(latest_height)?.wrap_any(),
+        signer,
+    )
+    .map_err(|e| {
+        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
+    })?)
 }
 
-// XXX: It's probably the link that can produce this
-fn create_client_update_datagram(_header: Vec<SignedHeader>) -> Datagram {
-    Datagram::NoOp()
+pub fn build_create_client_and_send(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    opts: &ForeignClientConfig,
+) -> Result<String, Error> {
+    let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.client_id())?;
+
+    Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
+}
+
+pub fn build_update_client(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    dst_client_id: &ClientId,
+    target_height: Height,
+) -> Result<Vec<Any>, Error> {
+    // Get the latest trusted height from the client state on destination.
+    let trusted_height = dst_chain
+        .query_client_state(&dst_client_id, Height::default())?
+        .latest_height();
+
+    let header = src_chain
+        .build_header(trusted_height, target_height)?
+        .wrap_any();
+
+    let signer = dst_chain.get_signer()?;
+    let new_msg = MsgUpdateAnyClient {
+        client_id: dst_client_id.clone(),
+        header,
+        signer,
+    };
+
+    Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
+}
+
+pub fn build_update_client_and_send(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    opts: &ForeignClientConfig,
+) -> Result<String, Error> {
+    let new_msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        opts.client_id(),
+        src_chain.query_latest_height()?,
+    )?;
+
+    Ok(dst_chain.send_tx(new_msgs)?)
 }

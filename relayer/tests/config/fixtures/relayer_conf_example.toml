@@ -38,30 +38,30 @@ numerator = '1'
 denominator = '3'
 
 [[connections]]
-[connections.src]
+[connections.a_end]
 chain_id = 'chain_A'
 client_id = 'clB1'
 connection_id = 'connAtoB'
 
-[connections.dest]
+[connections.b_end]
 chain_id = 'chain_B'
 client_id = 'clA1'
 connection_id = 'connBtoA'
 
 [[connections.paths]]
-src_port = 'portA1'
-dest_port = 'portB1'
+a_port = 'transfer'
+b_port = 'transfer'
 direction = 'unidirectional'
 
 [[connections.paths]]
-src_port = 'portA2'
-dest_port = 'portB2'
+a_port = 'transfer'
+b_port = 'transfer'
 direction = 'bidirectional'
 
 [[connections.paths]]
-src_port = 'portA3'
-dest_port = 'portB3'
-src_channel = 'chan3onA'
-dest_channel = 'chan3onB'
+a_port = 'transfer'
+b_port = 'transfer'
+a_channel = 'chan3onA'
+b_channel = 'chan3onB'
 direction = 'bidirectional'
 

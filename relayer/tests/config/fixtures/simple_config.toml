@@ -40,12 +40,12 @@ strategy = "naive"
 
 [[connections]]
 
-[connections.src]
+[connections.a_end]
   chain_id = "ibc1"
   client_id = "ibconeclient"
   connection_id = "ibconeconnection"
 
-[connections.dest]
+[connections.b_end]
   chain_id = "ibc0"
   client_id = "ibczeroclientt"
   connection_id = "ibczeroconnection"

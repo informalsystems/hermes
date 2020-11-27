@@ -156,10 +156,8 @@ impl Chain for CosmosSDKChain {
         let response =
             self.block_on(abci_query(&self, path, data.to_string(), height, prove))??;
 
-        // Verify response proof, if requested.
-        if prove {
-            dbg!("Todo: implement proof verification."); // Todo: Verify proof
-        }
+        // TODO - Verify response proof, if requested.
+        if prove {}
 
         Ok(response)
     }
@@ -442,7 +440,7 @@ async fn abci_query(
     data: String,
     height: Height,
     prove: bool,
-) -> Result<QueryResponse, anomaly::Error<Kind>> {
+) -> Result<QueryResponse, Error> {
     let height = if height.value() == 0 {
         None
     } else {

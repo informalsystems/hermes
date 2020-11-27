@@ -31,6 +31,7 @@ use tendermint::account::Id as AccountId;
 
 use crate::{
     config::ChainConfig,
+    connection::ConnectionMsgType,
     error::{Error, Kind},
     event::{
         bus::EventBus,
@@ -38,7 +39,6 @@ use crate::{
     },
     keyring::store::KeyEntry,
     light_client::{tendermint::LightClient as TMLightClient, LightClient},
-    tx::connection::ConnectionMsgType,
 };
 
 use super::{
