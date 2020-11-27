@@ -73,7 +73,7 @@ macro_rules! conn_open_cmd {
                     ),
                 };
 
-                status_info!("Message $dbg_string", "{:#?}", opts);
+                status_info!("Message ", "{}: {:#?}", $dbg_string, opts);
 
                 let (src_chain, _) = ChainRuntime::spawn(src_chain_config.clone()).unwrap();
                 let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config.clone()).unwrap();
@@ -82,8 +82,8 @@ macro_rules! conn_open_cmd {
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => status_info!("$dbg_string, result: ", "{:?}", receipt),
-                    Err(e) => status_info!("$dbg_string failed, error: ", "{}", e),
+                    Ok(receipt) => status_ok!("Result: ", "{:?} - {:?}", $dbg_string, receipt),
+                    Err(e) => status_err!("Failed with Error: {:?} - {:?}", $dbg_string, e),
                 }
             }
         }

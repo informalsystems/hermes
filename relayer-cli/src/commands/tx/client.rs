@@ -104,7 +104,7 @@ impl Runnable for TxUpdateClientCmd {
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client updated: {:?}", receipt),
+            Ok(receipt) => status_ok!("Success client updated: {:?}", receipt),
             Err(e) => status_err!("client update failed: {}", e),
         }
     }

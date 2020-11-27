@@ -134,7 +134,7 @@ impl ConnectionConfig {
                     .as_str(),
             )
             .map_err(|e| format!("Invalid counterparty connection id ({:?})", e))?,
-            client_id: ClientId::from_str(a_conn_endpoint.client_id.as_str())
+            client_id: ClientId::from_str(b_conn_endpoint.client_id.as_str())
                 .map_err(|e| format!("Invalid counterparty client id ({:?})", e))?,
         };
 
