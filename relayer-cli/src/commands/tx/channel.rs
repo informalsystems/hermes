@@ -11,6 +11,7 @@ use relayer::channel::{
 };
 
 use relayer::chain::runtime::ChainRuntime;
+use relayer::chain::CosmosSDKChain;
 use relayer::channel::{ChannelConfig, ChannelConfigSide};
 
 macro_rules! chan_open_cmd {
@@ -86,8 +87,10 @@ macro_rules! chan_open_cmd {
 
                 status_info!("Message ", "{}: {:#?}", $dbg_string, opts);
 
-                let (src_chain, _) = ChainRuntime::spawn(src_chain_config.clone()).unwrap();
-                let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config.clone()).unwrap();
+                let (src_chain, _) =
+                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
+                let (dst_chain, _) =
+                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
 
                 let res: Result<String, Error> =
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());

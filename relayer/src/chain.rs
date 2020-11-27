@@ -4,8 +4,8 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
-// #[cfg(test)]
-// mod mock;
+#[cfg(test)]
+mod mock;
 
 use crossbeam_channel as channel;
 use std::sync::{Arc, Mutex};

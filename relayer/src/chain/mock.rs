@@ -16,9 +16,16 @@ use ibc::mock::host::HostType;
 use ibc::Height;
 
 use crate::chain::{Chain, QueryResponse};
+use crate::config::ChainConfig;
 use crate::error::Error;
+use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::light_client::LightClient;
+use crossbeam_channel::Receiver;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
+use std::sync::{Arc, Mutex};
+use tendermint_light_client::supervisor::Supervisor;
+use tokio::runtime::Runtime;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
@@ -45,6 +52,22 @@ impl Chain for MockChain {
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
+
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
+        unimplemented!()
+    }
+
+    #[allow(clippy::type_complexity)]
+    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error> {
+        unimplemented!()
+    }
+
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<Runtime>>,
+    ) -> Result<(Option<EventMonitor>, Receiver<EventBatch>), Error> {
+        unimplemented!()
+    }
 
     fn id(&self) -> &ChainId {
         unimplemented!()
