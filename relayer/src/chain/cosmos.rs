@@ -51,7 +51,12 @@ use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 
 // Support for GRPC
+use crate::util::block_on;
+use ibc::events::IBCEvent;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 use tonic::codegen::http::Uri;
 
 pub struct CosmosSDKChain {
@@ -123,6 +128,26 @@ impl CosmosSDKChain {
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
         Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
+    }
+
+    pub fn query_txs(&self, ics_height: ICSHeight) -> Result<Vec<IBCEvent>, Error> {
+        let height = Height::try_from(ics_height.version_height)
+            .map_err(|e| Kind::InvalidHeight.context(e))?;
+        let block_results =
+            block_on(self.rpc_client.block_results(height)).map_err(|e| Kind::Rpc.context(e))?;
+        let raw_events = block_results.clone().txs_results;
+        println!("block_results: {:?}", block_results);
+
+        match raw_events {
+            None => Ok(vec![]),
+            Some(txs) => {
+                let events: Vec<IBCEvent> = vec![];
+                for tx in txs.iter() {
+                    println!("events: {:?}", tx.events);
+                }
+                Ok(events)
+            }
+        }
     }
 }
 
@@ -408,6 +433,62 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(key)
+    }
+    /// Queries the packet commitment hashes associated with a channel.
+    /// TODO - move the chain trait
+    /// Note: the result Vec<PacketAckCommitment> has an awkward name but fixed in a future IBC proto variant
+    /// It will move to Vec<PacketState>
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, ICSHeight), Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.packet_commitments(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let pc = response.commitments;
+
+        let height = response
+            .height
+            .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
+            .try_into()
+            .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+        Ok((pc, height))
+    }
+
+    /// Queries the packet commitment hashes associated with a channel.
+    /// TODO - move the chain trait
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.unreceived_packets(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(response.sequences)
     }
 }
 

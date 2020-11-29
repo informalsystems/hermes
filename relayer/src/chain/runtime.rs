@@ -45,6 +45,9 @@ use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
     Chain, CosmosSDKChain, QueryResponse,
 };
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 
 pub struct Threads {
     pub light_client: thread::JoinHandle<()>,
@@ -252,6 +255,13 @@ impl<C: Chain> ChainRuntime<C> {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
 
+                        Ok(HandleInput::QueryPacketCommitments { request, reply_to }) => {
+                            self.query_packet_commitments(request, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryUnreceivedPackets { request, reply_to }) => {
+                            self.query_unreceived_packets(request, reply_to)?
+                        },
                         Err(_e) => todo!(), // TODO: Handle error?
                     }
                 },
@@ -606,6 +616,34 @@ impl<C: Chain> ChainRuntime<C> {
         let result = self
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_commitments(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_unreceived_packets(request);
 
         reply_to
             .send(result)

@@ -12,22 +12,21 @@ use tendermint_proto::Protobuf;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::header::Header;
-
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
-
 use ibc::ics03_connection::version::get_compatible_versions;
+use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
-
 use ibc::proofs::{ConsensusProof, Proofs};
-
-use ibc::ics04_channel::channel::ChannelEnd;
-use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
 use crate::config::ChainConfig;
@@ -42,6 +41,15 @@ pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: MerkleProof,
     pub height: Height,
+}
+
+/// Packet query options
+#[derive(Debug)]
+pub struct QueryPacketOptions {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub height: u64,
+    pub prove: bool,
 }
 
 /// Defines a blockchain as understood by the relayer
@@ -287,4 +295,38 @@ pub trait Chain {
 
         Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
+
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        prove: bool,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        let res = self
+            .query(
+                Path::Commitments {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                },
+                height,
+                prove,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+        //let packet_commitment = QueryPacketCommitmentResponse::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        Ok((res.value, res.proof))
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, ICSHeight), Error>;
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
 }

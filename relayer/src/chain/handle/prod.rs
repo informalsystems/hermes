@@ -26,6 +26,9 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -263,5 +266,19 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+        self.send(|reply_to| HandleInput::QueryPacketCommitments { request, reply_to })
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| HandleInput::QueryUnreceivedPackets { request, reply_to })
     }
 }

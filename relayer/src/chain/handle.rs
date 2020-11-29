@@ -27,6 +27,9 @@ use crate::keyring::store::KeyEntry;
 use super::QueryResponse;
 
 mod prod;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -172,6 +175,16 @@ pub enum HandleInput {
         height: Height,
         reply_to: ReplyTo<Proofs>,
     },
+
+    QueryPacketCommitments {
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
+    },
+
+    QueryUnreceivedPackets {
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync {
@@ -272,4 +285,14 @@ pub trait ChainHandle: Clone + Send + Sync {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error>;
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error>;
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
 }

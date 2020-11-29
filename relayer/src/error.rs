@@ -102,6 +102,10 @@ pub enum Kind {
     #[error("Failed to build channel open confirm {0}: {1}")]
     ChanOpenConfirm(ChannelId, String),
 
+    /// Packet recv  failure
+    #[error("Failed to build packet recv {0}: {1}")]
+    PacketRecv(ChannelId, String),
+
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]
     MessageTransaction(String),
