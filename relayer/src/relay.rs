@@ -4,6 +4,7 @@ use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelConfig};
 use crate::connection::{Connection, ConnectionConfig};
 use crate::foreign_client::{ForeignClient, ForeignClientConfig};
+use crate::link::Link;
 
 pub(crate) const MAX_ITER: u32 = 10;
 
@@ -37,18 +38,16 @@ pub fn channel_relay(
     )?;
 
     // Setup the channel over the connection
-    let _channel = Channel::new(a_chain_handle, b_chain_handle, connection, chan_cfg)?;
+    let channel = Channel::new(
+        a_chain_handle.clone(),
+        b_chain_handle.clone(),
+        connection,
+        chan_cfg,
+    )?;
 
-    // TODO: Re-enable `link` module in `relayer/src/lib.rs`
-    // let link = Link::new(
-    //     a_chain_handle,
-    //     b_chain_handle,
-    //     client_on_src, // Actual dependecy
-    //     channel,       // Semantic dependecy
-    //     LinkConfig::new(todo!(), todo!(), todo!()),
-    // )?;
+    let link = Link::new(channel);
 
-    // link.run()?;
+    link.run(a_chain_handle, b_chain_handle)?;
 
     Ok(())
 }

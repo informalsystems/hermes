@@ -26,6 +26,8 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
+use crate::chain::handle::QueryPacketDataRequest;
+use ibc::ics04_channel::packet::Packet;
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -268,6 +270,22 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        self.send(|reply_to| HandleInput::ProvenPacketCommitment {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+            height,
+            reply_to,
+        })
+    }
+
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -280,5 +298,9 @@ impl ChainHandle for ProdChainHandle {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
         self.send(|reply_to| HandleInput::QueryUnreceivedPackets { request, reply_to })
+    }
+
+    fn query_txs(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
+        self.send(|reply_to| HandleInput::QueryPacketData { request, reply_to })
     }
 }

@@ -24,7 +24,7 @@ impl From<Sequence> for u64 {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Packet {
-    sequence: Sequence,
+    pub sequence: Sequence,
     source_port: PortId,
     source_channel: ChannelId,
     destination_port: PortId,

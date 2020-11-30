@@ -20,8 +20,8 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 
 use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
-use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
+use tendermint_rpc::{Client, Order};
 
 use ibc_proto::cosmos::base::v1beta1::Coin;
 
@@ -51,8 +51,7 @@ use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 
 // Support for GRPC
-use crate::util::block_on;
-use ibc::events::IBCEvent;
+use crate::chain::handle::QueryPacketDataRequest;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
@@ -128,26 +127,6 @@ impl CosmosSDKChain {
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
         Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
-    }
-
-    pub fn query_txs(&self, ics_height: ICSHeight) -> Result<Vec<IBCEvent>, Error> {
-        let height = Height::try_from(ics_height.version_height)
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
-        let block_results =
-            block_on(self.rpc_client.block_results(height)).map_err(|e| Kind::Rpc.context(e))?;
-        let raw_events = block_results.clone().txs_results;
-        println!("block_results: {:?}", block_results);
-
-        match raw_events {
-            None => Ok(vec![]),
-            Some(txs) => {
-                let events: Vec<IBCEvent> = vec![];
-                for tx in txs.iter() {
-                    println!("events: {:?}", tx.events);
-                }
-                Ok(events)
-            }
-        }
     }
 }
 
@@ -237,7 +216,7 @@ impl Chain for CosmosSDKChain {
 
         let fee = Some(Fee {
             amount: vec![coin],
-            gas_limit: 150000,
+            gas_limit: 300000,
             payer: "".to_string(),
             granter: "".to_string(),
         });
@@ -490,6 +469,99 @@ impl Chain for CosmosSDKChain {
 
         Ok(response.sequences)
     }
+
+    fn query_packet_data(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
+        let mut result: Vec<Packet> = vec![];
+        for seq in request.sequences.iter() {
+            let query = tendermint_rpc::query::Query::eq(
+                "send_packet.packet_src_channel",
+                request.channel_id.clone(),
+            )
+            .and_eq("send_packet.packet_sequence", seq.to_string());
+            let response = self
+                .block_on(
+                    self.rpc_client
+                        .tx_search(query, false, 1, 1, Order::Ascending),
+                )
+                .unwrap()
+                .unwrap(); // todo
+
+            let mut packets = packet_from_tx_search_response(request.clone(), response.clone())?;
+            result.append(&mut packets);
+        }
+        Ok(result)
+    }
+}
+
+use ibc::ics04_channel::packet::Packet;
+use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+use subtle_encoding::base64;
+
+fn packet_from_tx_search_response(
+    request: QueryPacketDataRequest,
+    response: tendermint_rpc::endpoint::tx_search::Response,
+) -> Result<Vec<Packet>, Error> {
+    let mut packets: Vec<Packet> = vec![];
+    for r in response.txs.iter() {
+        let mut packet = RawPacket {
+            sequence: 0,
+            source_port: "".to_string(),
+            source_channel: "".to_string(),
+            destination_port: "".to_string(),
+            destination_channel: "".to_string(),
+            data: vec![],
+            timeout_height: None,
+            timeout_timestamp: 0,
+        };
+        let events: Vec<tendermint::abci::Event> = r.clone().tx_result.events;
+        for e in events.iter() {
+            if e.type_str == *"send_packet" {
+                for a in e.attributes.iter() {
+                    let key =
+                        String::from_utf8(base64::decode(a.key.to_string().as_bytes()).unwrap())
+                            .unwrap();
+                    let value =
+                        String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
+                            .unwrap();
+                    match key.as_str() {
+                        "packet_src_channel" => {
+                            let src_channel = value.to_string();
+                            if src_channel != request.channel_id {
+                                println!(
+                                    "src ch {:?} req ch {:?}",
+                                    src_channel, request.channel_id
+                                );
+                                break;
+                            }
+                            packet.source_channel = src_channel;
+                        }
+                        "packet_src_port" => {
+                            let src_port = value.to_string();
+                            if src_port != request.port_id {
+                                break;
+                            }
+                            packet.source_port = src_port;
+                        }
+                        "packet_dst_channel" => packet.destination_channel = value,
+                        "packet_dst_port" => packet.destination_port = value,
+                        "packet_data" => packet.data = Vec::from(value.as_bytes()),
+                        "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap(),
+                        "packet_timeout_height" => {
+                            let to: Vec<&str> = value.split('-').collect();
+                            packet.timeout_height =
+                                Some(ibc_proto::ibc::core::client::v1::Height {
+                                    version_number: to[0].parse::<u64>().unwrap(),
+                                    version_height: to[1].parse::<u64>().unwrap(),
+                                });
+                        }
+                        _ => {}
+                    };
+                }
+                packets.append(&mut vec![packet.clone().try_into().unwrap()]);
+            }
+        }
+    }
+    Ok(packets)
 }
 
 fn fix_validator_set(light_block: &TMLightBlock) -> Result<ValidatorSet, Error> {

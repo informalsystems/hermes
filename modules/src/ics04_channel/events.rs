@@ -1,10 +1,11 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -171,13 +172,14 @@ pub struct SendPacket {
     pub packet_dst_port: PortId,
     pub packet_dst_channel: ChannelId,
     pub packet_sequence: u64,
-    pub packet_timeout_height: u64,
+    pub packet_timeout_height: Height,
     pub packet_timeout_stamp: u64,
 }
 
 impl TryFrom<RawObject> for SendPacket {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height_str: String = attribute!(obj, "send_packet.packet_timeout_height");
         Ok(SendPacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "send_packet.packet_src_port"),
@@ -185,7 +187,7 @@ impl TryFrom<RawObject> for SendPacket {
             packet_dst_port: attribute!(obj, "send_packet.packet_dst_port"),
             packet_dst_channel: attribute!(obj, "send_packet.packet_dst_channel"),
             packet_sequence: attribute!(obj, "send_packet.packet_sequence"),
-            packet_timeout_height: attribute!(obj, "send_packet.packet_timeout_height"),
+            packet_timeout_height: height_str.try_into()?,
             packet_timeout_stamp: attribute!(obj, "send_packet.packet_timeout_timestamp"),
         })
     }
@@ -205,9 +207,8 @@ pub struct ReceivePacket {
     pub packet_dst_port: PortId,
     pub packet_dst_channel: ChannelId,
     pub packet_sequence: u64,
-    pub packet_timeout_height: u64,
+    pub packet_timeout_height: String,
     pub packet_timeout_stamp: u64,
-    pub packet_ack: String,
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
@@ -220,9 +221,8 @@ impl TryFrom<RawObject> for ReceivePacket {
             packet_dst_port: attribute!(obj, "recv_packet.packet_dst_port"),
             packet_dst_channel: attribute!(obj, "recv_packet.packet_dst_channel"),
             packet_sequence: attribute!(obj, "recv_packet.packet_sequence"),
-            packet_timeout_height: attribute!(obj, "recv_packet.packet_timeout_height"),
+            packet_timeout_height: attribute!(obj, "recv_packet.packet_timeout_timestamp"),
             packet_timeout_stamp: attribute!(obj, "recv_packet.packet_timeout_timestamp"),
-            packet_ack: attribute!(obj, "recv_packet.packet_ack"),
         })
     }
 }

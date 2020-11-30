@@ -12,7 +12,7 @@ use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
 /// Message type for `MsgPacket`.
-const TYPE_MSG_PACKET: &str = "ics04/opaque";
+const TYPE_MSG_PACKET: &str = "recv_packet";
 
 ///
 /// Message definition for the "packet receiving" datagram.
@@ -25,16 +25,15 @@ pub struct MsgRecvPacket {
 }
 
 impl MsgRecvPacket {
-    // todo: Constructor not used yet.
     #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
+    pub fn new(
         packet: Packet,
         proof: CommitmentProof,
         proof_height: Height,
         signer: AccountId,
     ) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
-            packet: todo!(),
+            packet,
             proofs: Proofs::new(proof, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
@@ -63,6 +62,10 @@ impl Msg for MsgRecvPacket {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
+    }
+
+    fn type_url(&self) -> String {
+        "/ibc.core.channel.v1.MsgRecvPacket".to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

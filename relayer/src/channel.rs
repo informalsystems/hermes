@@ -79,7 +79,6 @@ impl ChannelConfigSide {
 }
 
 #[derive(Clone, Debug)]
-
 pub struct ChannelConfig {
     pub ordering: Order,
     pub a_config: ChannelConfigSide,
@@ -114,7 +113,7 @@ impl ChannelConfig {
 
 #[derive(Clone, Debug)]
 pub struct Channel {
-    config: ChannelConfig,
+    pub config: ChannelConfig,
 }
 
 impl ChannelConfig {

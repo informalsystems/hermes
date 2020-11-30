@@ -29,10 +29,12 @@ use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
 
+use crate::chain::handle::QueryPacketDataRequest;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::keyring::store::{KeyEntry, KeyRing};
+use ibc::ics04_channel::packet::Packet;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -49,7 +51,6 @@ pub struct QueryPacketOptions {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub height: u64,
-    pub prove: bool,
 }
 
 /// Defines a blockchain as understood by the relayer
@@ -301,7 +302,6 @@ pub trait Chain {
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: u64,
-        prove: bool,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         let res = self
@@ -312,10 +312,9 @@ pub trait Chain {
                     sequence,
                 },
                 height,
-                prove,
+                true,
             )
             .map_err(|e| Kind::Query.context(e))?;
-        //let packet_commitment = QueryPacketCommitmentResponse::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
         Ok((res.value, res.proof))
     }
@@ -329,4 +328,6 @@ pub trait Chain {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
+
+    fn query_packet_data(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error>;
 }

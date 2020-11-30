@@ -27,6 +27,7 @@ use crate::keyring::store::KeyEntry;
 use super::QueryResponse;
 
 mod prod;
+use ibc::ics04_channel::packet::Packet;
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -176,6 +177,14 @@ pub enum HandleInput {
         reply_to: ReplyTo<Proofs>,
     },
 
+    ProvenPacketCommitment {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    },
+
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
         reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
@@ -184,6 +193,11 @@ pub enum HandleInput {
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
         reply_to: ReplyTo<Vec<u64>>,
+    },
+
+    QueryPacketData {
+        request: QueryPacketDataRequest,
+        reply_to: ReplyTo<Vec<Packet>>,
     },
 }
 
@@ -286,6 +300,14 @@ pub trait ChainHandle: Clone + Send + Sync {
         height: Height,
     ) -> Result<Proofs, Error>;
 
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error>;
+
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -295,4 +317,13 @@ pub trait ChainHandle: Clone + Send + Sync {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
+
+    fn query_txs(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error>;
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryPacketDataRequest {
+    pub channel_id: String,
+    pub port_id: String,
+    pub sequences: Vec<u64>,
 }

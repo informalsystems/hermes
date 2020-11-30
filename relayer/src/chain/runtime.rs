@@ -45,6 +45,8 @@ use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
     Chain, CosmosSDKChain, QueryResponse,
 };
+use crate::chain::handle::QueryPacketDataRequest;
+use ibc::ics04_channel::packet::Packet;
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -255,6 +257,10 @@ impl<C: Chain> ChainRuntime<C> {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
 
+                        Ok(HandleInput::ProvenPacketCommitment { port_id, channel_id, sequence, height, reply_to }) => {
+                            self.proven_packet_commitment(port_id, channel_id, sequence, height, reply_to)?
+                        },
+
                         Ok(HandleInput::QueryPacketCommitments { request, reply_to }) => {
                             self.query_packet_commitments(request, reply_to)?
                         },
@@ -262,6 +268,11 @@ impl<C: Chain> ChainRuntime<C> {
                         Ok(HandleInput::QueryUnreceivedPackets { request, reply_to }) => {
                             self.query_unreceived_packets(request, reply_to)?
                         },
+
+                        Ok(HandleInput::QueryPacketData { request, reply_to }) => {
+                            self.query_packet_data(request, reply_to)?
+                        },
+
                         Err(_e) => todo!(), // TODO: Handle error?
                     }
                 },
@@ -624,6 +635,25 @@ impl<C: Chain> ChainRuntime<C> {
         Ok(())
     }
 
+    fn proven_packet_commitment(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .proven_packet_commitment(&port_id, &channel_id, sequence, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -644,6 +674,20 @@ impl<C: Chain> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_data(
+        &self,
+        request: QueryPacketDataRequest,
+        reply_to: ReplyTo<Vec<Packet>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_data(request);
 
         reply_to
             .send(result)

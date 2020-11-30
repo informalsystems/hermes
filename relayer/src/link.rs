@@ -7,21 +7,24 @@ use ibc::{
     Height,
 };
 
-use crate::chain::handle::ChainHandle;
+use crate::chain::handle::{ChainHandle, QueryPacketDataRequest};
 use crate::chain::Chain;
-use crate::channel::{Channel, ChannelError};
+use crate::channel::{Channel, ChannelError, ChannelConfigSide};
 use crate::connection::ConnectionError;
 
 use ibc::ics04_channel::channel::State;
 use prost_types::Any;
 
 use ibc_proto::ibc::core::channel::v1::{
-    QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    Packet, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
+use ibc::events::IBCEvent;
+use ibc::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc::ics23_commitment::commitment::CommitmentProof;
 
 // TODO: move to config
 const MAX_RETRIES: usize = 10_usize;
@@ -53,94 +56,123 @@ impl Link {
         Link { channel }
     }
 
-    pub fn relay(
+    pub fn run(
         &self,
-        _dst_chain: impl ChainHandle,
-        _src_chain: impl ChainHandle,
+        a_chain: impl ChainHandle,
+        b_chain: impl ChainHandle,
     ) -> Result<(), LinkError> {
-        // XXX: subscriptions are per channel
-        // Subscriptions have to buffer events as packets can be sent before channels are
-        // established
-        // Can subscriptions operate as queues?
-        //let subscription = src_chain.subscribe(dst_chain.id())?;
-
-        //for (chain_id, target_height, events) in subscription.iter() {
-        // let (datagrams, errors) = events
-        //     .into_iter()
-        //     .map(|event| src_chain.create_packet(event))
-        //     .map_results(Datagram::Packet)
-        //     .split_results();
-
-        // let mut tries = 0..MAX_RETRIES;
-        //
-        // let result = retry(Fixed::from_millis(100), || {
-        //     if let Some(attempt) = tries.next() {
-        //         self.step(target_height, datagrams.clone(), signature)
-        //     } else {
-        //         Err(LinkError::RetryError)
-        //     }
-        // });
-
-        // match result {
-        //     Ok(_) => {
-        //         println!("Submission successful");
-        //         Ok(())
-        //     }
-        //     Err(problem) => {
-        //         println!("Submission failed attempt with {:?}", problem);
-        //         Err(LinkError::Failed)
-        //     }
-        // }?;
-        // }
-
+        println!("relaying packets");
+        let a_subscription = &a_chain.subscribe(a_chain.id())?;
+        //let b_subscription = &b_chain.subscribe(b_chain.id())?;
+        loop {
+            let a_batch = a_subscription.recv().unwrap();
+            //let b_batch = b_subscription.recv().unwrap();
+            for event in a_batch.events.iter() {
+                let msgs = handle_event(b_chain.clone(), a_chain.clone(), event, &self.channel.config.b_config)?;
+                b_chain.send_tx(msgs)?;
+            }
+            // for event in b_batch.events.iter() {
+            //     let msgs = handle_event(a_chain.clone(), b_chain.clone(), event, &self.channel.config.a_config)?;
+            //     a_chain.send_tx(msgs)?;
+            // }
+        }
         Ok(())
     }
+}
 
-    // fn step(
-    //     &self,
-    //     target_height: Height,
-    //     mut datagrams: Vec<Datagram>,
-    //     signature: Signature,
-    // ) -> Result<(), LinkError> {
-    //     let height = self.dst_chain.query_latest_height(&self.foreign_client)?;
-    //     // XXX: Check that height > target_height, no client update needed
-    //     let signed_headers = self.src_chain.get_minimal_set(height, target_height)?;
-    //
-    //     let client_update = ClientUpdate::new(signed_headers);
-    //
-    //     datagrams.push(Datagram::ClientUpdate(client_update));
-    //
-    //     // We are missing fields here like gas and account
-    //     let transaction = Transaction::new(datagrams);
-    //     let signed_transaction = transaction.sign(signature);
-    //     let encoded_transaction = signed_transaction.encode();
-    //
-    //     // Submission failure cases
-    //     // - The full node can fail
-    //     //  + TODO: The link will fail, and signale recreation with a different full node
-    //     // - The transaction can be rejected because the client is not up to date
-    //     //  + Retry this loop
-    //     self.dst_chain.submit(encoded_transaction)?;
-    //
-    //     Ok(())
-    // }
+fn handle_event(dst_chain: impl ChainHandle, src_chain: impl ChainHandle, event: &IBCEvent, dst_config: &ChannelConfigSide
+) -> Result<Vec<Any>, Error> {
+    println!("Event from {:?} {:#?}", src_chain.id(), event);
+    let mut msgs = vec![];
+    if let IBCEvent::SendPacketChannel(send_packet_ev) = event {
+        let event_height = Height::new(
+            ChainId::chain_version(
+                src_chain.id().to_string().as_str(),
+            ),
+            u64::from(send_packet_ev.height),
+        );
+        let query_height = event_height.increment();
+
+        let mut packet_msgs = build_packet_recv_msgs(
+            dst_chain.clone(),
+            src_chain.clone(),
+            &send_packet_ev.packet_src_channel,
+            &send_packet_ev.packet_src_port,
+            query_height,
+            &[send_packet_ev.packet_sequence],
+        )
+            .unwrap();
+        // TODO - collect all messages at same event height and only do the
+        // client update once
+        // Note - currently there is a problem with the transaction fee that is statically
+        // fixed at 300000...it should be determined based on the Tx size
+        if !packet_msgs.is_empty() {
+            let mut client_msgs = build_update_client(
+                dst_chain,
+                src_chain,
+                dst_config.client_id(),
+                query_height,
+            )?;
+            msgs.append(&mut client_msgs);
+            msgs.append(&mut packet_msgs);
+            println!("sending {:?} messages", msgs.len());
+        }
+    }
+    Ok(msgs)
 }
 
 pub enum PacketMsgType {
     PacketRecv,
 }
 
+use ibc::ics24_host::identifier::ChainId;
+use ibc::tx_msg::Msg;
+use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+
 fn build_packet_recv_msgs(
-    _dst_chain: impl ChainHandle,
-    _src_chain: impl ChainHandle,
-    _height: Height,
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    src_channel_id: &ChannelId,
+    src_port: &PortId,
+    src_height: Height,
     sequences: &[u64],
 ) -> Result<Vec<Any>, Error> {
-    let _packet_send_query =
-        "send_packet.packet_src_channel=%s&send_packet.packet_sequence=%d".to_string();
-    //let _events = src_chain.query_txs(height)?;
-    for _seq in sequences.iter() {}
-    Ok(vec![])
+    // Set the height of the queries at height - 1
+    let query_height = src_height
+        .decrement()
+        .map_err(|e| Kind::InvalidHeight.context(e))?;
+
+    let mut msgs = vec![];
+    let events = src_chain.query_txs(QueryPacketDataRequest {
+        port_id: src_port.to_string(),
+        channel_id: src_channel_id.to_string(),
+        sequences: Vec::from(sequences),
+    })?;
+
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    for packet in events.iter() {
+        let res = src_chain.proven_packet_commitment(
+            src_port,
+            src_channel_id,
+            u64::from(packet.sequence),
+            query_height,
+        );
+        let msg = MsgRecvPacket::new(
+            packet.clone(),
+            CommitmentProof::from(res.unwrap().1),
+            src_height,
+            signer,
+        )
+        .unwrap();
+
+        let mut new_msgs = vec![msg.to_any::<RawMsgRecvPacket>()];
+        msgs.append(&mut new_msgs);
+    }
+    Ok(msgs)
 }
 
 #[derive(Clone, Debug)]
@@ -230,6 +262,8 @@ pub fn build_packet_recv(
     let mut packet_msgs = build_packet_recv_msgs(
         dst_chain.clone(),
         src_chain.clone(),
+        &opts.src_channel_id,
+        &opts.src_port_id,
         query_height,
         &packets_to_send,
     )?;
