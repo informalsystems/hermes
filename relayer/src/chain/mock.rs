@@ -1,4 +1,6 @@
+use std::ops::Add;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
@@ -7,6 +9,8 @@ use tendermint_light_client::supervisor::Supervisor;
 use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
+use ibc::downcast;
+use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
@@ -17,14 +21,16 @@ use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
+use ibc::test_utils::{default_consensus_params, get_dummy_account_id};
 use ibc::Height;
 
 use crate::chain::{Chain, QueryResponse};
 use crate::config::ChainConfig;
-use crate::error::Error;
+use crate::error::{Error, Kind};
 use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use ibc_proto::cosmos::tx::v1beta1::{TxBody, TxRaw};
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
@@ -80,11 +86,28 @@ impl Chain for MockChain {
     }
 
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+        let body = TxBody {
+            messages: proto_msgs.to_vec(),
+            memo: "".to_string(),
+            timeout_height: 0,
+            extension_options: Vec::<Any>::new(),
+            non_critical_extension_options: Vec::<Any>::new(),
+        };
+        let mut body_buf = Vec::new();
+        prost::Message::encode(&body, &mut body_buf).unwrap();
+
+        let tx_raw = TxRaw {
+            body_bytes: body_buf,
+            auth_info_bytes: vec![],
+            signatures: vec![],
+        };
+
+        // Call into ICS26 `deliver_tx`.
         unimplemented!()
     }
 
     fn get_signer(&mut self) -> Result<Id, Error> {
-        unimplemented!()
+        Ok(get_dummy_account_id())
     }
 
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
@@ -92,14 +115,29 @@ impl Chain for MockChain {
     }
 
     fn build_client_state(&self, height: Height) -> Result<Self::ClientState, Error> {
-        unimplemented!()
+        let client_state = Self::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.config.trusting_period.add(Duration::from_secs(1000)),
+            Duration::from_millis(3000),
+            height,
+            Height::zero(),
+            default_consensus_params(),
+            "upgrade/upgradedClient".to_string(),
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
+
+        Ok(client_state)
     }
 
     fn build_consensus_state(
         &self,
         light_block: Self::LightBlock,
     ) -> Result<Self::ConsensusState, Error> {
-        unimplemented!()
+        Ok(Self::ConsensusState::from(light_block.signed_header.header))
     }
 
     fn build_header(
@@ -119,7 +157,13 @@ impl Chain for MockChain {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Self::ClientState, Error> {
-        unimplemented!()
+        let any_state = self
+            .context
+            .query_client_full_state(client_id)
+            .ok_or(Kind::EmptyResponseValue)?;
+        let client_state = downcast!(any_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        Ok(client_state)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -148,6 +192,7 @@ impl Chain for MockChain {
 #[cfg(test)]
 pub mod test_utils {
     use std::str::FromStr;
+    use std::time::Duration;
 
     use ibc::ics24_host::identifier::ChainId;
 
@@ -163,8 +208,8 @@ pub mod test_utils {
             store_prefix: "".to_string(),
             client_ids: vec![],
             gas: 0,
-            clock_drift: Default::default(),
-            trusting_period: Default::default(),
+            clock_drift: Duration::from_secs(5),
+            trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),
             peers: None,
         }

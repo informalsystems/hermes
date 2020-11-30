@@ -224,7 +224,7 @@ mod test {
     use crate::foreign_client::{build_create_client_and_send, ForeignClientConfig};
 
     #[test]
-    #[ignore] // implementation is WIP
+    #[ignore] // WIP
     fn test_build_create_client_and_send() {
         let client_id = ClientId::from_str("client_on_a_forb").unwrap();
         let a_cfg = get_basic_chain_config("chain_a");
@@ -235,6 +235,10 @@ mod test {
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
         let res = build_create_client_and_send(a_chain, b_chain, &opts);
-        assert!(res.is_err())
+        assert!(
+            res.is_ok(),
+            "build_create_client_and_send failed with error {:?}",
+            res
+        );
     }
 }

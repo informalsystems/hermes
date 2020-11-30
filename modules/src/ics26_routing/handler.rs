@@ -1,3 +1,5 @@
+use ibc_proto::cosmos::tx::v1beta1::TxRaw;
+
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
@@ -5,13 +7,11 @@ use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
-use ibc_proto::cosmos::tx::v1beta1::Tx;
 
-// TODO: Implement this (the tx type is probably wrong also). Rough sketch:
-// 1. deserialize & validate each message in the tx
-// 2. invoke dispatch(ctx, ms)
-// 3. if all message in the tx pass through correctly, then apply the side-effects to the context
-pub fn deliver_tx<Ctx>(_ctx: &mut Ctx, _tx: Tx) -> Result<(), Error>
+/// Mimics the DeliverTx ABCI interface.
+/// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
+#[allow(unused_variables)]
+pub fn deliver_tx<Ctx>(ctx: &mut Ctx, tx: TxRaw) -> Result<(), Error>
 where
     Ctx: ICS26Context,
 {
