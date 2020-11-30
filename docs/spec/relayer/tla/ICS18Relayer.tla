@@ -242,6 +242,11 @@ PacketDatagram(packetLogEntry) ==
     \* get chainID and its channel end
     LET chainID == packetLogEntry.srcChainID IN
     LET channelEnd == GetChainByID(chainID).connectionEnd.channelEnd IN
+    
+    \* get portID and counterpartyPortID
+    LET portID == channelEnd.portID IN \* "portA" (if srcChainID = "chainA")
+    LET counterpartyPortID == channelEnd.counterpartyPortID IN \* "portB" (if srcChainID = "chainA")
+    
     \* get channelID and counterpartyChannelID
     LET channelID == channelEnd.channelID IN \* "chanAtoB" (if srcChainID = "chainA")
     LET counterpartyChannelID == channelEnd.counterpartyChannelID IN \* "chanBtoA" (if srcChainID = "chainA")
@@ -252,14 +257,18 @@ PacketDatagram(packetLogEntry) ==
     \* the dstChannelID of the packet that is received is counterpartyChannelID
     LET recvPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcPortID |-> portID,
                                  srcChannelID |-> channelID,
+                                 dstPortID |-> counterpartyPortID,
                                  dstChannelID |-> counterpartyChannelID]) IN
     
     \* the srcChannelID of the packet that is acknowledged is counterpartyChannelID,
     \* the dstChannelID of the packet that is acknowledged is channelID
     LET ackPacket(logEntry) == AsPacket([sequence |-> logEntry.sequence, 
                                  timeoutHeight |-> logEntry.timeoutHeight,
+                                 srcPortID |-> counterpartyPortID,
                                  srcChannelID |-> counterpartyChannelID,
+                                 dstPortID |-> portID,
                                  dstChannelID |-> channelID]) IN
     
     IF packetLogEntry.type = "PacketSent"
@@ -412,5 +421,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 12:19:04 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 16:41:03 CET 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

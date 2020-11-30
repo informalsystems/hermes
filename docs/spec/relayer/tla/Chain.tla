@@ -156,17 +156,18 @@ SendPacket ==
     /\ LET packet == AsPacket([
         sequence |-> appPacketSeq,
         timeoutHeight |-> MaxHeight + 1,
-        srcChannelID |-> GetChannelID(ChainID),
-        dstChannelID |-> GetChannelID(GetCounterpartyChainID(ChainID))]) IN
+        srcPortID |-> chainStore.connectionEnd.channelEnd.portID,
+        srcChannelID |-> chainStore.connectionEnd.channelEnd.channelID,
+        dstPortID |-> chainStore.connectionEnd.channelEnd.counterpartyPortID,
+        dstChannelID |-> chainStore.connectionEnd.channelEnd.counterpartyChannelID]) IN
         \* update chain store with packet committment
         /\ chainStore' = WritePacketCommitment(chainStore, packet)
         \* log sent packet
-        /\ packetLog' = Append(packetLog, AsPacketLogEntry(
-                                               [type |-> "PacketSent", 
+        /\ packetLog' = Append(packetLog, AsPacketLogEntry([
+                                                type |-> "PacketSent", 
                                                 srcChainID |-> ChainID,  
-                                                sequence |-> packet.sequence ,
+                                                sequence |-> packet.sequence,
                                                 timeoutHeight |-> packet.timeoutHeight]))
-\*                                                todo
         \* increase application packet sequence
         /\ appPacketSeq' = appPacketSeq + 1
         /\ UNCHANGED <<incomingDatagrams, incomingPacketDatagrams, history>>
@@ -263,5 +264,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 26 16:50:35 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 16:50:09 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
