@@ -164,6 +164,9 @@ ChannelDatagrams(srcChainID, dstChainID) ==
     LET srcChannelEnd == GetChannelEnd(srcChain) IN
     LET dstChannelEnd == GetChannelEnd(dstChain) IN
     
+    LET srcPortID == GetPortID(srcChainID) IN
+    LET dstPortID == GetPortID(dstChainID) IN
+    
     LET srcChannelID == GetChannelID(srcChainID) IN
     LET dstChannelID == GetChannelID(dstChainID) IN
 
@@ -175,7 +178,9 @@ ChannelDatagrams(srcChainID, dstChainID) ==
         IF dstChannelEnd.state = "UNINIT" /\ srcChannelEnd.state = "UNINIT" THEN 
             {AsDatagram([
                 type |-> "ChanOpenInit", 
-                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                portID |-> dstPortID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelID, \* "chanBtoA" 
+                counterpartyPortID |-> srcPortID, \* "portA"
                 counterpartyChannelID |-> srcChannelID \* "chanAtoB" 
             ])}
     
@@ -183,7 +188,9 @@ ChannelDatagrams(srcChainID, dstChainID) ==
                                                 \/ dstChannelEnd.state = "INIT" THEN 
             {AsDatagram([
                 type |-> "ChanOpenTry",
-                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                portID |-> dstPortID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelID, \* "chanBtoA"   
+                counterpartyPortID |-> srcPortID, \* "portA"
                 counterpartyChannelID |-> srcChannelID, \* "chanAtoB"
                 proofHeight |-> srcHeight
             ])} 
@@ -192,14 +199,16 @@ ChannelDatagrams(srcChainID, dstChainID) ==
                                                    \/ dstChannelEnd.state = "TRYOPEN" THEN
             {AsDatagram([
                 type |-> "ChanOpenAck",
-                channelID |-> dstChannelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                portID |-> dstChannelEnd.portID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelEnd.channelID, \* "chanBtoA"
                 proofHeight |-> srcHeight
             ])} 
          
         ELSE IF srcChannelEnd.state = "OPEN" /\ dstChannelEnd.state = "TRYOPEN" THEN
             {AsDatagram([
                 type |-> "ChanOpenConfirm",
-                channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
+                portID |-> dstChannelEnd.portID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelEnd.channelID, \* "chanBtoA"
                 proofHeight |-> srcHeight
             ])} 
     
@@ -207,7 +216,8 @@ ChannelDatagrams(srcChainID, dstChainID) ==
         ELSE IF dstChannelEnd.state = "OPEN" /\ GetCloseChannelFlag(dstChannelID) THEN
             {AsDatagram([
                 type |-> "ChanCloseInit", 
-                channelID |-> dstChannelEnd.channelID \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                portID |-> dstChannelEnd.portID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelEnd.channelID \* "chanBtoA"   
             ])}
            
         ELSE IF /\ srcChannelEnd.state = "CLOSED" 
@@ -215,7 +225,8 @@ ChannelDatagrams(srcChainID, dstChainID) ==
                 /\ dstChannelEnd.state /= "UNINIT" THEN 
             {AsDatagram([
                 type |-> "ChanCloseConfirm", 
-                channelID |-> dstChannelEnd.channelID, \* "chanBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
+                portID |-> dstChannelEnd.portID, \* "portB" (if srcChainID = "chainA", dstChainID = "chainB")
+                channelID |-> dstChannelEnd.channelID, \* "chanBtoA"   
                 proofHeight |-> srcHeight
             ])}
            
@@ -401,5 +412,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 26 17:47:30 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 12:19:04 CET 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

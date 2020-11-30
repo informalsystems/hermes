@@ -270,11 +270,14 @@ Min(S) == CHOOSE x \in S: \A y \in S: y >= x
            nextAckSeq -- stores the sequence number of the next packet that 
            is going to be acknowledged.
     
+    - portID -- a port identifier
+      Stores the port identifier of this channel end.  
+    
     - channelID -- a channel identifier
       Stores the channel identifier of this channel end.  
     
     - counterpartyPortID -- a port identifier
-      Stores the counterparty port identifier of this channel end.   
+      Stores the port identifier of the counterparty channel end.   
     
     - counterpartyChannelID -- a channel identifier
       Stores the channel identifier of the counterparty channel end. 
@@ -287,6 +290,7 @@ ChannelEnds(channelOrdering, maxPacketSeq, maxVersion) ==
          [
              state : ChannelStates,
              order : {"UNORDERED"}, 
+             portID : PortIDs \union {nullPortID},
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyPortID : PortIDs \union {nullPortID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
@@ -298,6 +302,7 @@ ChannelEnds(channelOrdering, maxPacketSeq, maxVersion) ==
              nextSendSeq : 0..maxPacketSeq,
              nextRcvSeq : 0..maxPacketSeq,
              nextAckSeq : 0..maxPacketSeq, 
+             portID : PortIDs \union {nullPortID},
              channelID : ChannelIDs \union {nullChannelID},
              counterpartyPortID : PortIDs \union {nullPortID},
              counterpartyChannelID : ChannelIDs \union {nullChannelID}
@@ -438,8 +443,7 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
         counterpartyConnectionID : ConnectionIDs, 
         clientID : ClientIDs, 
         counterpartyClientID : ClientIDs
-    ] \union
-    [
+    ] \union [
         type : {"ConnOpenTry"}, 
         desiredConnectionID : ConnectionIDs, 
         counterpartyConnectionID : ConnectionIDs, 
@@ -459,26 +463,34 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
         proofHeight : 1..maxHeight
     ] \union [
         type : {"ChanOpenInit"}, 
-        channelID : ChannelIDs, 
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        counterpartyPortID : PortIDs, 
         counterpartyChannelID : ChannelIDs
     ] \union [
         type : {"ChanOpenTry"}, 
+        portID : PortIDs,
         channelID : ChannelIDs, 
+        counterpartyPortID : PortIDs,
         counterpartyChannelID : ChannelIDs, 
         proofHeight : 1..maxHeight
     ] \union [
         type : {"ChanOpenAck"}, 
+        portID : PortIDs,
         channelID : ChannelIDs, 
         proofHeight : 1..maxHeight
     ] \union [
         type : {"ChanOpenConfirm"}, 
+        portID : PortIDs,
         channelID : ChannelIDs, 
         proofHeight : 1..maxHeight
     ] \union [
         type : {"ChanCloseInit"}, 
+        portID : PortIDs,
         channelID : ChannelIDs
     ] \union [
-        type : {"ChanCloseConfirm"}, 
+        type : {"ChanCloseConfirm"},
+        portID : PortIDs, 
         channelID : ChannelIDs, 
         proofHeight : 1..maxHeight
     ] \union [
@@ -522,6 +534,7 @@ InitUnorderedChannelEnd ==
     [
         state |-> "UNINIT",
         order |-> "UNORDERED",
+        portID |-> nullPortID,
         channelID |-> nullChannelID,
         counterpartyPortID |-> nullPortID,
         counterpartyChannelID |-> nullChannelID
@@ -539,6 +552,7 @@ InitOrderedChannelEnd ==
         nextSendSeq |-> 0,
         nextRcvSeq |-> 0,
         nextAckSeq |-> 0,
+        portID |-> nullPortID,
         channelID |-> nullChannelID,
         counterpartyPortID |-> nullPortID,
         counterpartyChannelID |-> nullChannelID
@@ -707,6 +721,22 @@ GetCounterpartyChannelID(chainID) ==
     ELSE IF chainID = "chainB"
          THEN AsID("chanAtoB")
          ELSE AsID(nullChannelID) 
+         
+\* get the port ID at chainID
+GetPortID(chainID) ==
+    IF chainID = "chainA"
+    THEN AsID("portA")
+    ELSE IF chainID = "chainB"
+         THEN AsID("portB")
+         ELSE AsID(nullPortID)      
+   
+\* get the port ID at chainID's counterparty chain
+GetCounterpartyPortID(chainID) ==
+    IF chainID = "chainA"
+    THEN AsID("portB")
+    ELSE IF chainID = "chainB"
+         THEN AsID("portA")
+         ELSE AsID(nullPortID) 
                    
 \* get the channel end at the connection end of chainID          
 GetChannelEnd(chain) ==
@@ -734,5 +764,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 26 17:44:34 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 13:47:29 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

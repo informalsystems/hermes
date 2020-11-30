@@ -85,17 +85,19 @@ HandleConnOpenTry(chainID, chain, datagrams) ==
               ]) IN
                 
               connOpenTryChain
-         \* otherwise, do not update the chain store
-         ELSE chain
+
     \* otherwise, do not update the chain store
+         ELSE chain
     ELSE chain
 
 \* Handle "ConnOpenAck" datagrams
 HandleConnOpenAck(chainID, chain, datagrams) ==
+    \* get existing connection end
+    LET connectionEnd == chain.connectionEnd IN
     \* get "ConnOpenAck" datagrams, with a valid connection ID and valid height
     LET connOpenAckDgrs == {dgr \in datagrams : 
                             /\ dgr.type = "ConnOpenAck"
-                            /\ dgr.connectionID = GetConnectionID(chainID)
+                            /\ dgr.connectionID = connectionEnd.connectionID
                             /\ dgr.consensusHeight <= chain.height
                             /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
@@ -104,57 +106,58 @@ HandleConnOpenAck(chainID, chain, datagrams) ==
     THEN LET connOpenAckDgr == CHOOSE dgr \in connOpenAckDgrs : TRUE IN
          \* if the connection end on the chain is in "INIT" and the version set 
          \* from the datagram is a subset of the supported versions in the connection end 
-         IF \/ /\ chain.connectionEnd.state = "INIT"
-               /\ connOpenAckDgr.versions \subseteq chain.connectionEnd.versions
+         IF \/ /\ connectionEnd.state = "INIT"
+               /\ connOpenAckDgr.versions \subseteq connectionEnd.versions
          \* or the connection end is in "TRYOPEN" and the version set
          \* from the datagram is equal to the version set in the connection end 
-            \/ /\ chain.connectionEnd.state = "TRYOPEN"
-               /\ connOpenAckDgr.versions = chain.connectionEnd.versions
+            \/ /\ connectionEnd.state = "TRYOPEN"
+               /\ connOpenAckDgr.versions = connectionEnd.versions
          \* update the connection end       
-         THEN 
-              LET connOpenAckConnectionEnd == AsConnectionEnd([ 
-                  chain.connectionEnd EXCEPT !.state = "OPEN", 
-                                             !.versions = connOpenAckDgr.versions
+         THEN LET connOpenAckConnectionEnd == AsConnectionEnd([ 
+                    connectionEnd EXCEPT !.state = "OPEN", 
+                                         !.versions = connOpenAckDgr.versions
               ]) IN
               LET connOpenAckChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = connOpenAckConnectionEnd
               ]) IN
               
               connOpenAckChain
-         \* otherwise, do not update the chain store
-         ELSE chain
+
     \* otherwise, do not update the chain store
+         ELSE chain
     ELSE chain
 
     
 
 \* Handle "ConnOpenConfirm" datagrams
 HandleConnOpenConfirm(chainID, chain, datagrams) ==
+    \* get existing connection end
+    LET connectionEnd == chain.connectionEnd IN
     \* get "ConnOpenConfirm" datagrams, with a valid connection ID and valid height
     LET connOpenConfirmDgrs == {dgr \in datagrams : 
                                 /\ dgr.type = "ConnOpenConfirm"
-                                /\ dgr.connectionID = GetConnectionID(chainID)
+                                /\ dgr.connectionID = connectionEnd.connectionID
                                 /\ dgr.proofHeight \in chain.counterpartyClientHeights} IN
     
     IF connOpenConfirmDgrs /= AsSetDatagrams({})
     \* if there are valid "connOpenConfirmDgrs" datagrams, update the connection end 
-    THEN IF chain.connectionEnd.state = "TRYOPEN"
+    THEN IF connectionEnd.state = "TRYOPEN"
          \* if the connection end on the chain is in "TRYOPEN", update the connection end       
          THEN LET connOpenConfirmDgr == CHOOSE dgr \in connOpenConfirmDgrs : TRUE IN
               LET connOpenConfirmConnectionEnd == AsConnectionEnd([ 
-                  chain.connectionEnd EXCEPT !.state = "OPEN"
+                  connectionEnd EXCEPT !.state = "OPEN"
               ]) IN
               LET connOpenConfirmChain == AsChainStore([
                   chain EXCEPT !.connectionEnd = connOpenConfirmConnectionEnd
               ]) IN
               
               connOpenConfirmChain
-         \* otherwise, do not update the chain store
-         ELSE chain
+
     \* otherwise, do not update the chain store
+         ELSE chain
     ELSE chain
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 26 17:44:01 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 13:56:55 CET 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:09:26 CEST 2020 by ilinastoilkovska
