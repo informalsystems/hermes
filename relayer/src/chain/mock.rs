@@ -1,3 +1,5 @@
+#![allow(unused_imports, dead_code)]
+
 use std::ops::Add;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -31,12 +33,24 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 use ibc_proto::cosmos::tx::v1beta1::{TxBody, TxRaw};
+use std::thread;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
 pub struct MockChain {
-    pub context: MockContext,
-    pub config: ChainConfig,
+    config: ChainConfig,
+    to_executor: channel::Sender<u32>,
+}
+
+/// The executor of the mock chain: simulates a chain that produces blocks regularly and
+/// consume IBC transactions that the relayer sends.
+pub struct MockChainExecutor {
+    context: MockContext,
+    from_relayer: channel::Receiver<u32>,
+}
+
+impl MockChainExecutor {
+    pub fn run(&mut self) {}
 }
 
 #[allow(unused_variables)]
@@ -47,15 +61,26 @@ impl Chain for MockChain {
     type ClientState = TendermintClientState;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
-        Ok(MockChain {
+        let (sender, reciver) = channel::unbounded();
+
+        let chain = MockChain {
             config: config.clone(),
+            to_executor: sender,
+        };
+
+        let mut chain_exec = MockChainExecutor {
+            from_relayer: reciver,
             context: MockContext::new(
                 config.id.clone(),
                 HostType::SyntheticTendermint,
                 50,
                 Height::new(config.id.version(), 20),
             ),
-        })
+        };
+
+        thread::spawn(move || chain_exec.run());
+
+        Ok(chain)
     }
 
     #[allow(clippy::type_complexity)]
@@ -149,7 +174,8 @@ impl Chain for MockChain {
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        Ok(self.context.query_latest_height())
+        // Ok(self.context.query_latest_height())
+        unimplemented!()
     }
 
     fn query_client_state(
@@ -157,13 +183,14 @@ impl Chain for MockChain {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Self::ClientState, Error> {
-        let any_state = self
-            .context
-            .query_client_full_state(client_id)
-            .ok_or(Kind::EmptyResponseValue)?;
-        let client_state = downcast!(any_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
-        Ok(client_state)
+        // let any_state = self
+        //     .context
+        //     .query_client_full_state(client_id)
+        //     .ok_or(Kind::EmptyResponseValue)?;
+        // let client_state = downcast!(any_state => AnyClientState::Tendermint)
+        //     .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        // Ok(client_state)
+        unimplemented!()
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -198,6 +225,7 @@ pub mod test_utils {
 
     use crate::config::ChainConfig;
 
+    /// Returns a very minimal chain configuration, to be used in initializing `MockChain`s.
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),

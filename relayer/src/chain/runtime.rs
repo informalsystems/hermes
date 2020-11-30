@@ -66,7 +66,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
             TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
         ));
 
-        // Similar to `from_config`... TODO
+        // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
         let (light_client_handler, supervisor_option) = chain.init_light_client()?;

@@ -138,8 +138,8 @@ impl CosmosSDKChain {
 }
 
 impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
     type LightBlock = TMLightBlock;
+    type Header = TMHeader;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
 
@@ -168,6 +168,10 @@ impl Chain for CosmosSDKChain {
 
     fn id(&self) -> &ChainId {
         &self.config().id
+    }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -285,6 +289,74 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<AccountId, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(signer)
+    }
+
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(key)
+    }
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        // Build the client state.
+        let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.unbonding_period()?,
+            Duration::from_millis(3000), // TODO - get it from src config when avail
+            height,
+            ICSHeight::zero(),
+            self.query_consensus_params()?,
+            "upgrade/upgradedClient".to_string(),
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
+
+        Ok(client_state)
+    }
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error> {
+        Ok(TMConsensusState::from(light_block.signed_header.header))
+    }
+
+    fn build_header(
+        &self,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error> {
+        let trusted_height =
+            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
+
+        Ok(TMHeader {
+            trusted_height,
+            signed_header: target_light_block.signed_header.clone(),
+            validator_set: fix_validator_set(&target_light_block)?,
+            trusted_validator_set: fix_validator_set(&trusted_light_block)?,
+        })
+    }
+
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
         let status = self
@@ -372,78 +444,6 @@ impl Chain for CosmosSDKChain {
             .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
 
         Ok((consensus_state, res.proof))
-    }
-
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
-        // Build the client state.
-        let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
-            self.config.trust_threshold,
-            self.config.trusting_period,
-            self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
-            height,
-            ICSHeight::zero(),
-            self.query_consensus_params()?,
-            "upgrade/upgradedClient".to_string(),
-            false,
-            false,
-        )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
-
-        Ok(client_state)
-    }
-
-    fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error> {
-        Ok(TMConsensusState::from(light_block.signed_header.header))
-    }
-
-    fn build_header(
-        &self,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
-
-        Ok(TMHeader {
-            trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: fix_validator_set(&target_light_block)?,
-            trusted_validator_set: fix_validator_set(&trusted_light_block)?,
-        })
-    }
-
-    fn keybase(&self) -> &KeyRing {
-        &self.keybase
-    }
-
-    /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
-    }
-
-    /// Get the signing key
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(key)
     }
 }
 
