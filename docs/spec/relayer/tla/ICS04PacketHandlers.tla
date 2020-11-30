@@ -51,12 +51,14 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
                 sequence |-> packet.sequence
                ]) \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
-                    \* record that the packet has been received 
-                    !.packetReceipts = Append(chain.packetReceipts, 
-                                              AsPacketReceipt(
-                                                [channelID |-> packet.dstChannelID, 
-                                                 sequence |-> packet.sequence]
-                                      )),
+                    \* record that the packet has been received
+                    \* TODO: sequence or set? 
+                    !.packetReceipts = 
+                        chain.packetReceipts 
+                        \union 
+                        {AsPacketReceipt([channelID |-> packet.dstChannelID,
+                                          portID |-> packet.dstPortID, 
+                                          sequence |-> packet.sequence])},
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
                                       
@@ -286,7 +288,7 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
     \* get channel end
     LET channelEnd == connectionEnd.channelEnd IN
     \* get counterparty channel end
-    LET counterpartyChannelEnd == counterpartyChain.channelEnd IN
+    LET counterpartyChannelEnd == counterpartyChain.connectionEnd.channelEnd IN
     
     \* get packet committment that should be in chain store
     LET packetCommitment == AsPacketCommitment(
@@ -296,8 +298,8 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
                               timeoutHeight |-> packet.timeoutHeight]) IN
      \* get packet receipt that should be absent in counterparty chain store
     LET packetReceipt == AsPacketReceipt(
-                             [channelID |-> packet.dstChannelID,
-                              portID |-> packet.dstPortID,
+                             [portID |-> packet.dstPortID,
+                              channelID |-> packet.dstChannelID,
                               sequence |-> packet.sequence]) IN
     
  
@@ -340,5 +342,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 17:34:02 CET 2020 by ilinastoilkovska
+\* Last modified Mon Nov 30 17:41:08 CET 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska
