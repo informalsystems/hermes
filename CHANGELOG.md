@@ -24,6 +24,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
     - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
     - Implement commands to add and list keys for a chain ([#363])
     - Allow overriding peer_id, height and hash in light add command ([#428])
+    - Add `--all` option to `light rm` command to remove all peers for a given chain ([#431])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
@@ -50,6 +51,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 [#389]: https://github.com/informalsystems/ibc-rs/issues/389
 [#403]: https://github.com/informalsystems/ibc-rs/issues/403
 [#428]: https://github.com/informalsystems/ibc-rs/issues/428
+[#431]: https://github.com/informalsystems/ibc-rs/issues/431
 [proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ### IMPROVEMENTS
