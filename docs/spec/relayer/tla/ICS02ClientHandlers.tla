@@ -1,21 +1,16 @@
--------------------------- MODULE ClientHandlers ---------------------------
+----------------------- MODULE ICS02ClientHandlers -------------------------
 
 (***************************************************************************
  This module contains definitions of operators that are used to handle
  client datagrams
  ***************************************************************************)
 
-EXTENDS Integers, FiniteSets, RelayerDefinitions
+EXTENDS Integers, FiniteSets, IBCCoreDefinitions
 
 (***************************************************************************
  Client datagram handlers
  ***************************************************************************)
    
-\* client heights: 
-\* good version: add all client heights from datagrams to counterpartyClientHeights
-\* bad version: add only Max of client heights from datagrams to counterpartyClientHeights
-\*              if Max > Max(counterpartyClientHeights)
-    
 \* Handle "CreateClient" datagrams
 HandleCreateClient(chainID, chain, datagrams) == 
     \* get "CreateClient" datagrams with valid clientID
@@ -76,5 +71,5 @@ HandleClientUpdate(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Sep 10 15:43:27 CEST 2020 by ilinastoilkovska
+\* Last modified Thu Nov 26 17:40:19 CET 2020 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska
