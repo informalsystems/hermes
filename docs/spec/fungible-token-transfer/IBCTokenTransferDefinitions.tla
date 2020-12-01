@@ -191,9 +191,10 @@ ChannelEnds ==
     [
         state : ChannelStates,
         order : {"UNORDERED"}, 
+        portID : PortIDs \union {nullPortID},
         channelID : ChannelIDs \union {nullChannelID},
-        counterpartyChannelID : ChannelIDs \union {nullChannelID},
         counterpartyPortID : PortIDs \union {nullPortID},
+        counterpartyChannelID : ChannelIDs \union {nullChannelID},
         version : {"ics20-1"}
     ] 
 
@@ -246,10 +247,10 @@ Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
         sequence : 1..maxPacketSeq,
         timeoutHeight : 1..maxHeight,
         data : FungibleTokenPacketData(maxBalance, Denominations),
-        srcChannelID : ChannelIDs,
         srcPortID : PortIDs,
-        dstChannelID : ChannelIDs,
-        dstPortID : PortIDs
+        srcChannelID : ChannelIDs,
+        dstPortID : PortIDs,
+        dstChannelID : ChannelIDs
     ] <: {PacketType} 
 
 
@@ -378,9 +379,10 @@ GetLatestHeight(chain) ==
 InitUnorderedChannelEnd(ChainID) ==
     [state |-> "OPEN",
      order |-> "UNORDERED",
+     portID |-> GetPortID(ChainID),
      channelID |-> GetChannelID(ChainID),
-     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID),
      counterpartyPortID |-> GetCounterpartyPortID(ChainID),
+     counterpartyChannelID |-> GetCounterpartyChannelID(ChainID),
      version |-> "ics20-1"] 
   
 
