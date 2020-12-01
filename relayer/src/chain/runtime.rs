@@ -75,9 +75,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         // Start the event monitor
         let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
-        // Instantiate the runtime
-
-        // Spawn the runtime
+        // Instantiate the & spawn the runtime
         let (handle, runtime_thread) = Self::init(chain, light_client_handler, event_receiver, rt);
 
         let threads = Threads {

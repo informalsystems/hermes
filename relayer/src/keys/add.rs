@@ -20,7 +20,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain
-    let chain = CosmosSDKChain::from_config(opts.clone().chain_config, Arc::new(Mutex::new(rt)))?;
+    let chain = CosmosSDKChain::bootstrap(opts.clone().chain_config, Arc::new(Mutex::new(rt)))?;
 
     let key_contents = fs::read_to_string(&opts.file)
         .map_err(|_| Kind::KeyBase.context("error reading the key file"))?;

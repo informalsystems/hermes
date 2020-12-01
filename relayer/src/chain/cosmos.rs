@@ -70,23 +70,6 @@ pub struct CosmosSDKChain {
 }
 
 impl CosmosSDKChain {
-    // TODO: This will be deprecated in favor of `Chain::bootstrap` method (see below)
-    pub fn from_config(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
-        let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
-
-        // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(Self {
-            rt,
-            config,
-            keybase: key_store,
-            rpc_client,
-        })
-    }
-
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         // TODO - generalize this
@@ -145,9 +128,20 @@ impl Chain for CosmosSDKChain {
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
 
-    // TODO remove from_config or rename this method to from_config
     fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
-        Self::from_config(config, rt)
+        let rpc_client =
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+
+        // Initialize key store and load key
+        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(Self {
+            rt,
+            config,
+            keybase: key_store,
+            rpc_client,
+        })
     }
 
     // TODO use a simpler approach to create the light client

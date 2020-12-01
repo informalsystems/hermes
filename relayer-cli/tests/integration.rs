@@ -46,7 +46,7 @@ fn simd_config() -> Config {
 /// Chain created for the informaldev/simd DockerHub image running on localhost.
 fn simd_chain() -> CosmosSDKChain {
     let rt = Arc::new(Mutex::new(tokio::runtime::Runtime::new().unwrap()));
-    CosmosSDKChain::from_config(simd_config().chains[0].clone(), rt).unwrap()
+    CosmosSDKChain::bootstrap(simd_config().chains[0].clone(), rt).unwrap()
 }
 
 /// Query connection ID. Requires the informaldev/simd Docker image running on localhost.

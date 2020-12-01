@@ -68,17 +68,16 @@ pub trait Chain: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
+    /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error>;
 
     #[allow(clippy::type_complexity)]
-    /// Returns the light client (if any) associated with this chain.
-    /// This is primarily a helper method to be used by the runtime.
+    /// Initializes and returns the light client (if any) associated with this chain.
     fn init_light_client(
         &self,
     ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error>;
 
-    /// Returns the event monitor (if any) associated with this chain.
-    /// This is primarily a helper method to be used by the runtime.
+    /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
         &self,
         rt: Arc<Mutex<TokioRuntime>>,
