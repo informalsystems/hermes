@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  ibc0:
+    container_name: gaia_ibc_0
+    image: "informal/gaia:stargate-4"
+    ports:
+      - "26656-26657:26656-26657"
+    environment:
+      - CHAIN_ID=ibc0
+      - MONIKER=node01
+      - HOME_DIR=/gaia/ibc0
+      - LOG=${LOG:-ibc0.log}
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.2
+
+networks:
+  localnet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        -
+          subnet: 192.168.10.0/16
