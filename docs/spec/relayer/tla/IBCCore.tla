@@ -334,12 +334,6 @@ ChannelCloseInv ==
                                     /\ ~IsChannelOpen(GetChainByID("chainB")))
     
 (***************************************************************************
- Invariants: packets
- ***************************************************************************) 
-AtMostOnceDelivery ==
-    \* elements in chainAstore.packetReceipts are unique
-    TRUE
-(***************************************************************************
  Invariant [IBCInv]
  ***************************************************************************)
 \* IBCInv invariant: conjunction of invariants  
@@ -355,9 +349,6 @@ IBCInv ==
             /\ ChannelTryOpenInv
             /\ ChannelOpenInv    
             /\ ChannelCloseInv  
-    \* packet invariants
-    /\ (ChannelDatagramsRelayer1 \/ ChannelDatagramsRelayer2)
-         => AtMostOnceDelivery
     
 
 (***************************************************************************
@@ -574,5 +565,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 23 17:54:42 CET 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 10:32:04 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

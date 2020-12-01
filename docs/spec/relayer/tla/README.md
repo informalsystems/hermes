@@ -101,7 +101,7 @@ Properties"](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-
 
 Efficiency seems to be too vague to formalize. In particular the
 formulation ignores relayers that are the active components in packet
-transmission. It is not clear what a suitable way is to formalize it
+transmission. It is not clear what a suitable way is to formalize it.
   
 #### [Exactly-once delivery](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#exactly-once-delivery)
 
@@ -115,13 +115,13 @@ As a result we suggest that the property should be decomposed into to properties
 
 * (at most once) For each packer `p`, if a chain performs `RecvPacket(p)` successfully (without abort), it will
 		  not perform `RecvPacket(p)` successfully in the future.  
-      We formalize this in [file]().
+      
 
 * (typical case) If
   * sender and receiver chain are valid, and
   * there is a correct relayer, and 
   * communication is bounded in time, and
-  * the timeoutheights and times are luckily chosen, and 
+  * the `timeoutHeights` and times are luckily chosen, and 
   * the receiver chain does not censor the packet, and
   * ...  
 
@@ -130,12 +130,18 @@ As a result we suggest that the property should be decomposed into to properties
 
 The second property ignores that timeouts can happen.
 
+If this is the confirmed intended behavior, these properties can be expressed
+and verified 
+by a slight modification of the specification, in particular, the way in which 
+the packet receipts are stored in the chain store (in a set vs. in a sequence).
 
 #### [Ordering](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#ordering)
 
 - ordered channels: It is not clear what "if packet x is sent before packet y by a channel end on chain A" meant in a context where chain A performs invalid transitions: then a packet with sequence number *i* can be sent after *i+1*. If this happens, the IBC implementation may be broken (depends on the relayer).
 
-We thus formalize it in the context of two valid chains. TODO: finish
+In the context of two valid chains, this property can be 
+expressed and verified by adding a history 
+variable on the receiving side, which is modified by transitions of the receiving chain. 
 
 - no property defined for unordered.
 

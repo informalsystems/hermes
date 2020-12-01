@@ -286,25 +286,25 @@ PacketDatagram(packetLogEntry) ==
  Compute client, connection, channel datagrams (from srcChainID to dstChainID)
  ***************************************************************************)
 \* Currently supporting:
-\*  -  ICS 002: Client updates
-\*  -  ICS 003: Connection handshake
-\*  -  ICS 004: Channel handshake
+\*  -  ICS 02: Client updates
+\*  -  ICS 03: Connection handshake
+\*  -  ICS 04: Channel handshake 
 ComputeDatagrams(srcChainID, dstChainID) ==
-    \* ICS 002 : Clients
+    \* ICS 02 : Clients
     \* - Determine if light clients needs to be updated 
     LET clientDatagrams == 
         IF GenerateClientDatagrams 
         THEN ClientDatagrams(srcChainID, dstChainID, relayerHeights) 
         ELSE [datagrams |-> AsSetDatagrams({}), relayerUpdate |-> relayerHeights] IN
     
-    \* ICS3 : Connections
+    \* ICS 03 : Connections
     \* - Determine if any connection handshakes are in progress
     LET connectionDatagrams == 
         IF GenerateConnectionDatagrams
         THEN ConnectionDatagrams(srcChainID, dstChainID)
         ELSE AsSetDatagrams({}) IN
     
-    \* ICS4 : Channels & Packets
+    \* ICS 04 : Channels & Packets
     \* - Determine if any channel handshakes are in progress
     LET channelDatagrams == 
         IF GenerateChannelDatagrams 
@@ -362,25 +362,17 @@ RelayPacketDatagram(packetLogEntry) ==
 UpdateClient ==
     \E chainID \in ChainIDs : UpdateRelayerClientHeight(chainID)
     
-\* create client, connection, channel datagrams    
+\* create client, connection, channel, packet datagrams    
 CreateDatagrams ==
     \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : 
+        \* client, connection, channel datagrams
         /\ Relay(srcChainID, dstChainID)
         /\ \/ /\ packetLog /= AsPacketLog(<<>>)
               /\ Head(packetLog).srcChainID = srcChainID
+              \* packet datagrams   
               /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
               /\ packetLog' = Tail(packetLog)
            \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
-
-
-\* \* scan packet log and create packet datagrams    
-\* ScanPacketLog ==
-\*     /\ packetLog /= AsPacketLog(<<>>)
-\*     /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
-\*     /\ packetLog' = Tail(packetLog)
-\*     /\ UNCHANGED <<chainAstore, chainBstore>>
-\*     /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
-    
 
 (***************************************************************************
  Specification
@@ -388,6 +380,7 @@ CreateDatagrams ==
 \* Initial state predicate
 \*    Initially:
 \*        - the relayer heights are uninitialized (i.e., their height is nullHeight)
+\*        - there are no datagrams
 Init == 
     /\ relayerHeights = [chainID \in ChainIDs |-> AsInt(nullHeight)]
     /\ outgoingDatagrams = [chainID \in ChainIDs |-> AsSetDatagrams({})]
@@ -396,8 +389,7 @@ Init ==
 \* Next state action
 \*    The relayer either:
 \*        - updates its clients, or
-\*        - creates datagrams, 
-\*        - scans the packet log and creates packet datagrams, or
+\*        - creates datagrams, or 
 \*        - does nothing
 Next ==
     \/ UpdateClient
@@ -418,8 +410,9 @@ Fairness ==
 TypeOK ==
     /\ relayerHeights \in [ChainIDs -> Heights \union {nullHeight}]
     /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)]
+    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(MaxHeight, MaxPacketSeq, MaxVersion))]
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 16:41:03 CET 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 10:50:40 CET 2020 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

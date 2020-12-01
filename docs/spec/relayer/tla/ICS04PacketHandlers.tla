@@ -52,7 +52,6 @@ HandlePacketRecv(chainID, chain, packetDatagram, log) ==
                ]) \notin chain.packetReceipts
          THEN LET newChainStore == [chain EXCEPT
                     \* record that the packet has been received
-                    \* TODO: sequence or set? 
                     !.packetReceipts = 
                         chain.packetReceipts 
                         \union 
@@ -342,5 +341,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 17:41:08 CET 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 10:31:13 CET 2020 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

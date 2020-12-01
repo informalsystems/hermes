@@ -403,7 +403,7 @@ Packets(maxHeight, maxPacketSeq) ==
       A packet commitment is added to this set when a chain sends a packet 
       to the counterparty
 
-    - packetReceipt : a set of packet receipts
+    - packetReceipts : a set of packet receipts
       A packet receipt is added to this set when a chain received a packet 
       from the counterparty
 
@@ -420,7 +420,7 @@ ChainStores(maxHeight, channelOrdering, maxPacketSeq, maxVersion) ==
         counterpartyClientHeights : SUBSET(1..maxHeight),
         connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq, maxVersion),
         packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
-        packetReceipts : Seq(PacketReceipts(maxPacketSeq)), \* TODO: necessary to be a seq?
+        packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)), 
         packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
         packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq))
     ] <: {ChainStoreType}
@@ -507,6 +507,33 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
     
 NullDatagram == 
     [type |-> "null"] <: DatagramType    
+    
+(**************************** PacketLogEntries *****************************
+ A set of packet log entries.
+ ***************************************************************************)
+PacketLogEntries(maxHeight, maxPacketSeq) == 
+    [
+        type : {"PacketSent"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        timeoutHeight : 1..maxHeight
+    ] \union [
+        type : {"PacketRecv"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : 1..maxHeight
+    ] \union [
+        type : {"WriteAck"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : 1..maxHeight,
+        acknowledgement : BOOLEAN
+    ]
+    <: {PacketLogEntryType}
 
 NullPacketLogEntry ==
     [type |-> "null"] <: PacketLogEntryType
@@ -596,7 +623,7 @@ InitChainStore(maxVersion, channelOrdering) ==
         connectionEnd : InitConnectionEnds(maxVersion, channelOrdering),
         
         packetCommitments : {AsSetPacketCommitment({})},
-        packetReceipts : {AsSeqPacketReceipt(<<>>)},
+        packetReceipts : {AsSetPacketReceipt({})}, 
         packetAcknowledgements : {AsSetPacketAcknowledgement({})},
         packetsToAcknowledge : {AsSeqPacket(<<>>)}
         
@@ -764,5 +791,5 @@ IsChannelClosed(chain) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 13:47:29 CET 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 10:41:22 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
