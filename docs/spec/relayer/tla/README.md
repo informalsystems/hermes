@@ -1,6 +1,6 @@
 # TLA+ specification of the IBC Core protocols
 
-A TLA+ specification of the IBC Core protocols ([ICS02](), [ICS03](), [ICS04](), [ICS18]()).
+A TLA+ specification of the IBC Core protocols ([ICS02](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-002-client-semantics), [ICS03](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics), [ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics), [ICS18](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms)).
 In particular, the main module is [IBCCore.tla](IBCCore.tla) and models the 
 system consisting of two chains and two relayers. 
 The model allows to express concurrency aspects of a system with multiple (correct) relayers.
@@ -61,8 +61,8 @@ which triggers the relayer to create a `PacketRecv` datagram.
 These TLA+ modules contain definitions of 
 operators that handle client, connection handshake, channel handshake, and packet 
 datagrams, respectively.
-These operators capture the logic of the handlers defined in [ICS02](), [ICS03](), and 
-[ICS04]().
+These operators capture the logic of the handlers defined in [ICS02](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-002-client-semantics), [ICS03](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics), and 
+[ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics).
 
 
 
@@ -92,18 +92,18 @@ We specify three kinds of properties for the IBC core protocols in the module [I
 
 
 
-### Packet
+### Packets
 
-ICS 04 specifies the following list of  ["Desired
-Properties"](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#desired-properties)
+[ICS04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics) specifies the following list of  ["Desired
+Properties"](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics#desired-properties)
 
-#### [Efficiency](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#efficiency)
+#### [Efficiency](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics#efficiency)
 
 Efficiency seems to be too vague to formalize. In particular the
 formulation ignores relayers that are the active components in packet
 transmission. It is not clear what a suitable way is to formalize it.
   
-#### [Exactly-once delivery](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#exactly-once-delivery)
+#### [Exactly-once delivery](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics#exactly-once-delivery)
 
 These properties are also vague as:
 
@@ -135,7 +135,7 @@ and verified
 by a slight modification of the specification, in particular, the way in which 
 the packet receipts are stored in the chain store (in a set vs. in a sequence).
 
-#### [Ordering](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#ordering)
+#### [Ordering](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics#ordering)
 
 - ordered channels: It is not clear what "if packet x is sent before packet y by a channel end on chain A" meant in a context where chain A performs invalid transitions: then a packet with sequence number *i* can be sent after *i+1*. If this happens, the IBC implementation may be broken (depends on the relayer).
 
@@ -145,7 +145,7 @@ variable on the receiving side, which is modified by transitions of the receivin
 
 - no property defined for unordered.
 
-#### [Permissioning](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics#permissioning)
+#### [Permissioning](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics#permissioning)
 
 This property is about capabilities. We do not capture capabilities in the TLA+ specification.
 
@@ -153,7 +153,7 @@ This property is about capabilities. We do not capture capabilities in the TLA+ 
 
 ### Channel 
 
-As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/master/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/blob/master/spec/ics-004-channel-and-packet-semantics/channel-state-machine.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
+As there are no explicit properties regarding channels given in [ICS 04](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics) in textual form, we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-004-channel-and-packet-semantics/channel-state-machine.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
 
 - `ChannelInitSafety`
 - `ChannelTryOpenSafety`
@@ -162,14 +162,14 @@ As there are no explicit properties regarding channels given in [ICS 04](https:/
 
 ### Connection Handshake
 
-Simimlar to Channel handshake we have formalized that the channel handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/blob/master/spec/ics-003-connection-semantics/state.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
+Similar to Channel handshake, we have formalized that the connection handshake does not deviate from the channel lifecycle provided as a [figure](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics/state.png). They are given in [IBCCore.tla](IBCCore.tla) under the names
 
 - `ConnectionInitSafety`
 - `ConnectionTryOpenSafety`
 - `ConnectionOpenSafety`
 
 
-We formalize [these properties](https://github.com/cosmos/ics/tree/master/spec/ics-003-connection-semantics#properties--invariants) as follows:
+We formalize [these properties](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics#properties--invariants) as follows:
 > Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
 
 [ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
