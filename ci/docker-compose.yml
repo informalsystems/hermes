@@ -2,18 +2,37 @@ version: '3'
 
 services:
   ibc0:
-    container_name: gaia_ibc_0
+    container_name: ibc0
     image: "informal/gaia:stargate-4"
     ports:
-      - "26656-26657:26656-26657"
+      - "26656:26656"
+      - "26657:26657"
     environment:
       - CHAIN_ID=ibc0
       - MONIKER=node01
       - HOME_DIR=/gaia/ibc0
-      - LOG=${LOG:-ibc0.log}
+      - RPC_PORT=26657
+      - P2P_PORT=26656
+      - GRPC_PORT=9090
     networks:
       localnet:
         ipv4_address: 192.168.10.2
+  ibc1:
+    container_name: ibc1
+    image: "informal/gaia:stargate-4"
+    ports:
+      - "26556:26556"
+      - "26557:26557"
+    environment:
+      - CHAIN_ID=ibc1
+      - MONIKER=node01
+      - HOME_DIR=/gaia/ibc1
+      - RPC_PORT=26557
+      - P2P_PORT=26556
+      - GRPC_PORT=9091
+    networks:
+      localnet:
+        ipv4_address: 192.168.10.3
 
 networks:
   localnet:

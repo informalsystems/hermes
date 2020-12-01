@@ -55,3 +55,14 @@ echo "Collect genesis txs and output a genesis.json file"
 echo "-------------------------------------------------------------------------------------------------------------------"
 gaiad collect-gentxs --home $HOME_DIR
 echo "Done!"
+
+echo "-------------------------------------------------------------------------------------------------------------------"
+echo "Start the node"
+echo "-------------------------------------------------------------------------------------------------------------------"
+gaiad start \
+      --home $HOME_DIR \
+      --address tcp://0.0.0.0:$RPC_PORT \
+      --p2p.laddr tcp://0.0.0.0:$P2P_PORT \
+      --grpc.address="0.0.0.0:$GRPC_PORT" \
+      --pruning=nothing
+
