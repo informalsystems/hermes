@@ -18,16 +18,16 @@ use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct AddCmd {
-    /// RPC network address
+    /// RPC network address (required)
     #[options(free)]
     address: Option<net::Address>,
 
-    /// identifier of the chain
+    /// identifier of the chain (required)
     #[options(short = "c")]
     chain_id: Option<ChainId>,
 
-    /// Path to light client store for this peer
-    store_path: Option<PathBuf>,
+    /// path to light client store for this peer (required)
+    store: Option<PathBuf>,
 
     /// whether this is the primary peer
     primary: bool,
@@ -37,6 +37,38 @@ pub struct AddCmd {
 
     /// skip confirmation
     yes: bool,
+
+    /// override peer id (optional)
+    #[options(no_short)]
+    peer_id: Option<PeerId>,
+
+    /// override height (optional)
+    #[options(no_short)]
+    height: Option<Height>,
+
+    /// override hash (optional)
+    #[options(no_short)]
+    hash: Option<Hash>,
+}
+
+impl AddCmd {
+    fn cmd(&self) -> Result<(), BoxError> {
+        let config = (*app_config()).clone();
+        let options = AddOptions::from_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
+
+        options
+            .validate()
+            .map_err(|e| format!("invalid options: {}", e))?;
+
+        add(config, options)
+    }
+}
+
+impl Runnable for AddCmd {
+    fn run(&self) {
+        self.cmd()
+            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -47,11 +79,20 @@ struct AddOptions {
     /// RPC network address
     address: net::Address,
 
-    /// Path to light client store for this peer
-    store_path: PathBuf,
-
     /// whether this is the primary peer or not
     primary: bool,
+
+    /// path to light client store for this peer
+    store: PathBuf,
+
+    /// override peer id
+    override_peer_id: Option<PeerId>,
+
+    /// override height
+    override_height: Option<Height>,
+
+    /// override hash
+    override_hash: Option<Hash>,
 
     /// allow overriding an existing peer
     force: bool,
@@ -64,34 +105,28 @@ impl AddOptions {
     fn from_cmd(cmd: &AddCmd) -> Result<AddOptions, BoxError> {
         let chain_id = cmd.chain_id.clone().ok_or("missing chain identifier")?;
         let address = cmd.address.clone().ok_or("missing RPC network address")?;
-        let store_path = cmd.store_path.clone().ok_or("missing store path")?;
-        let primary = cmd.primary;
-        let force = cmd.force;
-        let yes = cmd.yes;
+        let store_path = cmd.store.clone().ok_or("missing store path")?;
 
         Ok(AddOptions {
             chain_id,
             address,
-            store_path,
-            primary,
-            force,
-            yes,
+            store: store_path,
+            override_peer_id: cmd.peer_id,
+            override_height: cmd.height,
+            override_hash: cmd.hash,
+            primary: cmd.primary,
+            force: cmd.force,
+            yes: cmd.yes,
         })
     }
 
     fn validate(&self) -> Result<(), BoxError> {
-        if !self.store_path.exists() {
-            return Err(
-                format!("Store path '{}' does not exists", self.store_path.display()).into(),
-            );
+        if !self.store.exists() {
+            return Err(format!("Store path '{}' does not exists", self.store.display()).into());
         }
 
-        if !self.store_path.is_dir() {
-            return Err(format!(
-                "Store path '{}' is not a directory",
-                self.store_path.display()
-            )
-            .into());
+        if !self.store.is_dir() {
+            return Err(format!("Store path '{}' is not a directory", self.store.display()).into());
         }
 
         Ok(())
@@ -103,8 +138,8 @@ pub struct NodeStatus {
     chain_id: ChainId,
     address: net::Address,
     peer_id: PeerId,
-    latest_hash: Hash,
-    latest_height: Height,
+    hash: Hash,
+    height: Height,
 }
 
 impl fmt::Display for NodeStatus {
@@ -112,10 +147,70 @@ impl fmt::Display for NodeStatus {
         writeln!(f, "  chain id: {}", self.chain_id)?;
         writeln!(f, "  address:  {}", self.address)?;
         writeln!(f, "  peer id:  {}", self.peer_id)?;
-        writeln!(f, "  height:   {}", self.latest_height)?;
-        writeln!(f, "  hash:     {}", self.latest_hash)?;
+        writeln!(f, "  height:   {}", self.height)?;
+        writeln!(f, "  hash:     {}", self.hash)?;
 
         Ok(())
+    }
+}
+
+fn add(mut config: Config, options: AddOptions) -> Result<(), BoxError> {
+    // Fetch the status from the node
+    let mut status = fetch_status(options.chain_id.clone(), options.address.clone())?;
+
+    // Override the fetched status with command line arguments, if given
+    override_status(&mut status, &options);
+
+    // Ask the user for confirmation if --yes was not supplied
+    if !(options.yes || confirm(&status, options.primary)?) {
+        return Ok(());
+    }
+
+    // Update the in-memory configuration
+    let new_primary = update_config(options, status.clone(), &mut config)?;
+
+    // Write the updated configuration to disk
+    let config_path = crate::config::config_path()?;
+    relayer::config::store(&config, config_path)?;
+
+    status_ok!(
+        "Success",
+        "Added light client:\n{}  primary:  {}",
+        status,
+        status.peer_id == new_primary,
+    );
+
+    Ok(())
+}
+
+fn fetch_status(chain_id: ChainId, address: net::Address) -> Result<NodeStatus, BoxError> {
+    let rpc_client = HttpClient::new(address.clone())?;
+    let response = block_on(rpc_client.status())?;
+
+    let peer_id = response.node_info.id;
+    let height = response.sync_info.latest_block_height;
+    let hash = response.sync_info.latest_block_hash;
+
+    Ok(NodeStatus {
+        chain_id,
+        address,
+        peer_id,
+        hash,
+        height,
+    })
+}
+
+fn override_status(status: &mut NodeStatus, options: &AddOptions) {
+    if let Some(peer_id) = options.override_peer_id {
+        status.peer_id = peer_id;
+    }
+
+    if let Some(height) = options.override_height {
+        status.height = height;
+    }
+
+    if let Some(hash) = options.override_hash {
+        status.hash = hash;
     }
 }
 
@@ -136,45 +231,6 @@ fn confirm(status: &NodeStatus, primary: bool) -> Result<bool, BoxError> {
             _ => continue,
         }
     }
-}
-
-fn add(mut config: Config, options: AddOptions) -> Result<(), BoxError> {
-    let status = fetch_status(options.chain_id.clone(), options.address.clone())?;
-
-    if !(options.yes || confirm(&status, options.primary)?) {
-        return Ok(());
-    }
-
-    let new_primary = update_config(options, status.clone(), &mut config)?;
-
-    let config_path = crate::config::config_path()?;
-    relayer::config::store(&config, config_path)?;
-
-    status_ok!(
-        "Success",
-        "Added light client:\n{}  primary:  {}",
-        status,
-        status.peer_id == new_primary,
-    );
-
-    Ok(())
-}
-
-fn fetch_status(chain_id: ChainId, address: net::Address) -> Result<NodeStatus, BoxError> {
-    let rpc_client = HttpClient::new(address.clone())?;
-    let response = block_on(rpc_client.status())?;
-
-    let peer_id = response.node_info.id;
-    let latest_height = response.sync_info.latest_block_height;
-    let latest_hash = response.sync_info.latest_block_hash;
-
-    Ok(NodeStatus {
-        chain_id,
-        address,
-        peer_id,
-        latest_hash,
-        latest_height,
-    })
 }
 
 fn update_config(
@@ -209,10 +265,10 @@ fn update_config(
         peer_id: status.peer_id,
         address: status.address.clone(),
         timeout: config::default::timeout(),
-        trusted_header_hash: status.latest_hash,
-        trusted_height: status.latest_height,
+        trusted_header_hash: status.hash,
+        trusted_height: status.height,
         store: StoreConfig::Disk {
-            path: options.store_path.join(status.peer_id.to_string()),
+            path: options.store.join(status.peer_id.to_string()),
         },
     };
 
@@ -230,24 +286,4 @@ fn update_config(
     }
 
     Ok(peers_config.primary)
-}
-
-impl AddCmd {
-    fn cmd(&self) -> Result<(), BoxError> {
-        let config = (*app_config()).clone();
-        let options = AddOptions::from_cmd(self).map_err(|e| format!("invalid options: {}", e))?;
-
-        options
-            .validate()
-            .map_err(|e| format!("invalid options: {}", e))?;
-
-        add(config, options)
-    }
-}
-
-impl Runnable for AddCmd {
-    fn run(&self) {
-        self.cmd()
-            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
-    }
 }
