@@ -30,7 +30,7 @@ Next ==
 where `UpdateClient` and `CreateDatagrams` are scheduled non-deterministically. 
 `UpdateClient` picks a light client on the relayer for some chain and updates it. `CreateDatagrams` picks a direction (a pair of source and destination chain) and 
 creates client, connection, channel, and packet datagrams (i.e., it captures the 
-logic of [`pendingDatagrams()`](https://github.com/cosmos/ics/tree/master/spec/ics-018-relayer-algorithms#pending-datagrams)).
+logic of [`pendingDatagrams()`](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-018-relayer-algorithms#pending-datagrams)).
 
 ### [`Chain.tla`](Chain.tla)
 The chain state is represented by a chain store, which is a snapshot of the provable and private stores, to the extent necessary for IBC. Additionally, a chain has dedicated 
@@ -50,7 +50,7 @@ Next ==
 where:
 - `AdvanceChain`: increments the height of the chain,
 - `HandleIncomingDatagrams`: dispatches the datagrams to the appropriate handlers. 
-This captures the logic of the [routing module](https://github.com/cosmos/ics/tree/master/spec/ics-026-routing-module).
+This captures the logic of the [routing module](https://github.com/cosmos/ics/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-026-routing-module).
 - `SendPacket`: models user/application-defined calls to send a packet. As this specification does not have a specific application in mind, we abstract away from the packet data, and allow sending packets non-deterministically. 
 The packet commitment is written in the chain store, and the sent packet is logged, 
 which triggers the relayer to create a `PacketRecv` datagram.
@@ -122,8 +122,7 @@ As a result we suggest that the property should be decomposed into to properties
   * there is a correct relayer, and 
   * communication is bounded in time, and
   * the `timeoutHeights` and times are luckily chosen, and 
-  * the receiver chain does not censor the packet, and
-  * ...  
+  * the receiver chain does not censor the packet
 
   then the packet will be delivered.
 
