@@ -47,7 +47,7 @@ ChainB == INSTANCE Chain
                appPacketSeq <- appPacketSeqChainB
 
  (***************************************************************************
- ICS02Environment operators
+ Environment operators
  ***************************************************************************)
 
 \* get chain store by ID
@@ -86,7 +86,7 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
     LET dstChannelID == GetChannelID(dstChainID) IN \* "chanBtoA" (if dstChainID = "chainB")
     
     LET srcPortID == GetPortID(srcChainID) IN \* "portA" (if srcChainID = "chainA")
-    LET dstPortID == GetPortID(dstChainID) IN \* "portb" (if dstChainID = "chainB")
+    LET dstPortID == GetPortID(dstChainID) IN \* "portB" (if dstChainID = "chainB")
     
     LET srcHeight == GetLatestHeight(GetChainByID(srcChainID)) IN
     
@@ -120,7 +120,7 @@ PacketDatagram(srcChainID, dstChainID, packetLogEntry) ==
          ELSE NullDatagram 
  
 (***************************************************************************
- ICS02Environment actions
+ Environment actions
  ***************************************************************************)
  \* update the client height of some chain
  UpdateClients ==
