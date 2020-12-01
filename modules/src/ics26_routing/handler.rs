@@ -1,4 +1,4 @@
-use ibc_proto::cosmos::tx::v1beta1::TxRaw;
+use prost_types::Any;
 
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
@@ -8,10 +8,11 @@ use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
 
-/// Mimics the DeliverTx ABCI interface.
+/// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
+/// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 #[allow(unused_variables)]
-pub fn deliver_tx<Ctx>(ctx: &mut Ctx, tx: TxRaw) -> Result<(), Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<(), Error>
 where
     Ctx: ICS26Context,
 {

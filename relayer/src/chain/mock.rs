@@ -29,11 +29,11 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
-use ibc_proto::cosmos::tx::v1beta1::{TxBody, TxRaw};
 use std::thread;
 
 /// The representation of a mocked chain as the relayer sees it.
-/// The relayer runtime and the light client will engage with the MockChain to query/send tx.
+/// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
+/// primary interface for doing so is captured by `ICS18Context` which this struct implements.
 pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
@@ -94,24 +94,11 @@ impl Chain for MockChain {
     }
 
     fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error> {
-        let body = TxBody {
-            messages: proto_msgs.to_vec(),
-            memo: "".to_string(),
-            timeout_height: 0,
-            extension_options: Vec::<Any>::new(),
-            non_critical_extension_options: Vec::<Any>::new(),
-        };
-        let mut body_buf = Vec::new();
-        prost::Message::encode(&body, &mut body_buf).unwrap();
-
-        let tx_raw = TxRaw {
-            body_bytes: body_buf,
-            auth_info_bytes: vec![],
-            signatures: vec![],
-        };
-
-        // Call into ICS26 `deliver_tx`.
-        unimplemented!()
+        // Use the ICS18Context interface to submit the set of messages.
+        self.context
+            .send(proto_msgs)
+            .map(|_| "OK".to_string()) // TODO: establish success return codes.
+            .map_err(|e| Kind::Rpc.context(e).into())
     }
 
     fn get_signer(&mut self) -> Result<Id, Error> {
