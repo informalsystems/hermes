@@ -8,7 +8,10 @@ pub mod runtime;
 pub mod mock;
 
 use crossbeam_channel as channel;
-use std::sync::{Arc, Mutex};
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use prost_types::Any;
@@ -18,7 +21,6 @@ use tendermint_proto::Protobuf;
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-use tendermint_light_client::supervisor::Supervisor;
 
 use ibc::ics02_client::header::Header;
 
@@ -39,7 +41,7 @@ use ibc::Height as ICSHeight;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventBatch, EventMonitor};
+use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
@@ -71,14 +73,22 @@ pub trait Chain: Sized {
     #[allow(clippy::type_complexity)]
     /// Returns the light client (if any) associated with this chain.
     /// This is primarily a helper method to be used by the runtime.
-    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error>;
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error>;
 
     /// Returns the event monitor (if any) associated with this chain.
     /// This is primarily a helper method to be used by the runtime.
     fn init_event_monitor(
         &self,
         rt: Arc<Mutex<TokioRuntime>>,
-    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error>;
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    >;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;
@@ -90,7 +100,7 @@ pub trait Chain: Sized {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error>;
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 

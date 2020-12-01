@@ -1,5 +1,3 @@
-#![allow(unused_imports, dead_code)]
-
 use std::ops::Add;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -7,7 +5,6 @@ use std::time::Duration;
 use crossbeam_channel as channel;
 use prost_types::Any;
 use tendermint::account::Id;
-use tendermint_light_client::supervisor::Supervisor;
 use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
@@ -29,7 +26,7 @@ use ibc::Height;
 use crate::chain::{Chain, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use crate::event::monitor::{EventBatch, EventMonitor};
+use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 use ibc_proto::cosmos::tx::v1beta1::{TxBody, TxRaw};
@@ -39,18 +36,7 @@ use std::thread;
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx.
 pub struct MockChain {
     config: ChainConfig,
-    to_executor: channel::Sender<u32>,
-}
-
-/// The executor of the mock chain: simulates a chain that produces blocks regularly and
-/// consume IBC transactions that the relayer sends.
-pub struct MockChainExecutor {
     context: MockContext,
-    from_relayer: channel::Receiver<u32>,
-}
-
-impl MockChainExecutor {
-    pub fn run(&mut self) {}
 }
 
 #[allow(unused_variables)]
@@ -61,30 +47,21 @@ impl Chain for MockChain {
     type ClientState = TendermintClientState;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
-        let (sender, reciver) = channel::unbounded();
-
-        let chain = MockChain {
+        Ok(MockChain {
             config: config.clone(),
-            to_executor: sender,
-        };
-
-        let mut chain_exec = MockChainExecutor {
-            from_relayer: reciver,
             context: MockContext::new(
                 config.id.clone(),
                 HostType::SyntheticTendermint,
                 50,
                 Height::new(config.id.version(), 20),
             ),
-        };
-
-        thread::spawn(move || chain_exec.run());
-
-        Ok(chain)
+        })
     }
 
     #[allow(clippy::type_complexity)]
-    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error> {
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
         let light_client = MockLightClient::new();
 
         Ok((Box::new(light_client), None))
@@ -93,9 +70,15 @@ impl Chain for MockChain {
     fn init_event_monitor(
         &self,
         rt: Arc<Mutex<Runtime>>,
-    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error> {
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    > {
         let (_, rx) = channel::unbounded();
-        Ok((None, rx))
+        Ok((rx, None))
     }
 
     fn id(&self) -> &ChainId {
@@ -110,7 +93,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error> {
         let body = TxBody {
             messages: proto_msgs.to_vec(),
             memo: "".to_string(),
@@ -174,8 +157,7 @@ impl Chain for MockChain {
     }
 
     fn query_latest_height(&self) -> Result<Height, Error> {
-        // Ok(self.context.query_latest_height())
-        unimplemented!()
+        Ok(self.context.query_latest_height())
     }
 
     fn query_client_state(
@@ -183,14 +165,13 @@ impl Chain for MockChain {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Self::ClientState, Error> {
-        // let any_state = self
-        //     .context
-        //     .query_client_full_state(client_id)
-        //     .ok_or(Kind::EmptyResponseValue)?;
-        // let client_state = downcast!(any_state => AnyClientState::Tendermint)
-        //     .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
-        // Ok(client_state)
-        unimplemented!()
+        let any_state = self
+            .context
+            .query_client_full_state(client_id)
+            .ok_or(Kind::EmptyResponseValue)?;
+        let client_state = downcast!(any_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        Ok(client_state)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {

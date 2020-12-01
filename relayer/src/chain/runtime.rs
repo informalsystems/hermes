@@ -69,33 +69,16 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
 
-        let (light_client_handler, supervisor_option) = chain.init_light_client()?;
+        // Start the light client
+        let (light_client_handler, light_client_thread) = chain.init_light_client()?;
 
-        // If there is a light client supervisor, spawn it.
-        let light_client_thread = match supervisor_option {
-            Some(supervisor) => Some(thread::spawn(move || supervisor.run().unwrap())),
-            None => None,
-        };
-
-        let (event_monitor_option, event_receiver) = chain.init_event_monitor(rt.clone())?;
-
-        let event_monitor_thread = match event_monitor_option {
-            // Spawn the event monitor
-            Some(mut event_monitor) => {
-                event_monitor.subscribe().unwrap();
-                Some(thread::spawn(move || event_monitor.run()))
-            }
-            None => None,
-        };
+        // Start the event monitor
+        let (event_receiver, event_monitor_thread) = chain.init_event_monitor(rt.clone())?;
 
         // Instantiate the runtime
-        let chain_runtime = Self::instantiate(chain, light_client_handler, event_receiver, rt);
-
-        // Get a handle to the runtime
-        let handle = chain_runtime.handle();
 
         // Spawn the runtime
-        let runtime_thread = thread::spawn(move || chain_runtime.run().unwrap());
+        let (handle, runtime_thread) = Self::init(chain, light_client_handler, event_receiver, rt);
 
         let threads = Threads {
             light_client: light_client_thread,
@@ -106,7 +89,26 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok((handle, threads))
     }
 
-    fn instantiate(
+    /// Initializes a runtime for a given chain, and spawns the associated thread
+    fn init(
+        chain: C,
+        light_client: Box<dyn LightClient<C>>,
+        event_receiver: channel::Receiver<EventBatch>,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> (impl ChainHandle, thread::JoinHandle<()>) {
+        let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
+
+        // Get a handle to the runtime
+        let handle = chain_runtime.handle();
+
+        // Spawn the runtime & return
+        let thread = thread::spawn(move || chain_runtime.run().unwrap());
+
+        (handle, thread)
+    }
+
+    /// Basic constructor
+    fn new(
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
@@ -291,7 +293,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     }
 
     fn send_tx(
-        &self,
+        &mut self,
         proto_msgs: Vec<prost_types::Any>,
         reply_to: ReplyTo<String>,
     ) -> Result<(), Error> {

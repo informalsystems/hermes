@@ -1,8 +1,11 @@
-use std::convert::{TryFrom, TryInto};
-use std::future::Future;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::{
+    convert::{TryFrom, TryInto},
+    future::Future,
+    str::FromStr,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
@@ -20,7 +23,6 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
 
-use tendermint_light_client::supervisor::Supervisor;
 use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
@@ -150,20 +152,33 @@ impl Chain for CosmosSDKChain {
 
     // TODO use a simpler approach to create the light client
     #[allow(clippy::type_complexity)]
-    fn init_light_client(&self) -> Result<(Box<dyn LightClient<Self>>, Option<Supervisor>), Error> {
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
         let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
 
-        Ok((Box::new(lc), Some(supervisor)))
+        let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
+
+        Ok((Box::new(lc), Some(supervisor_thread)))
     }
 
     fn init_event_monitor(
         &self,
         rt: Arc<Mutex<TokioRuntime>>,
-    ) -> Result<(Option<EventMonitor>, channel::Receiver<EventBatch>), Error> {
-        let (event_monitor, event_receiver) =
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    > {
+        let (mut event_monitor, event_receiver) =
             EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
 
-        Ok((Some(event_monitor), event_receiver))
+        event_monitor.subscribe().unwrap();
+        let monitor_thread = thread::spawn(move || event_monitor.run());
+
+        Ok((event_receiver, Some(monitor_thread)))
     }
 
     fn id(&self) -> &ChainId {
@@ -197,7 +212,7 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error> {
         let key = self
             .keybase()
             .get_key()
