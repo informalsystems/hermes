@@ -21,7 +21,7 @@ mocks = [ "tendermint-testgen" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.4.0", path = "../proto" }
+ibc-proto = { version = "0.5.0", path = "../proto" }
 
 anomaly = "0.2.0"
 chrono = "0.4"
