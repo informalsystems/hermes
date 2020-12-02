@@ -32,9 +32,6 @@ ENV GAIA /gaia
 # Install ca-certificates
 RUN apk add --update ca-certificates
 
-# Add dependenncies
-RUN apk add --no-cache tree
-
 RUN addgroup gaia && \
     adduser -S -G gaia gaia -h "$GAIA"
 
@@ -44,10 +41,9 @@ WORKDIR $GAIA
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
-COPY --from=build-env /go/bin/gaiad /usr/bin/tree
 
 # Copy bootstrap script
-COPY bootstrap_gaia.sh .
+COPY ci/bootstrap_gaia.sh .
 
 # Set root to change permission
 USER root
