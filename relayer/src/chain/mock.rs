@@ -33,13 +33,13 @@ use std::thread;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
-/// primary interface for doing so is captured by `ICS18Context` which this struct implements.
+/// primary interface for doing so is captured by `ICS18Context` which this struct can access via
+/// the `context` field.
 pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
 
-#[allow(unused_variables)]
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -69,7 +69,7 @@ impl Chain for MockChain {
 
     fn init_event_monitor(
         &self,
-        rt: Arc<Mutex<Runtime>>,
+        _rt: Arc<Mutex<Runtime>>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,
@@ -89,7 +89,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query(&self, data: Path, height: Height, prove: bool) -> Result<QueryResponse, Error> {
+    fn query(&self, _data: Path, _height: Height, _prove: bool) -> Result<QueryResponse, Error> {
         unimplemented!()
     }
 
@@ -137,8 +137,8 @@ impl Chain for MockChain {
 
     fn build_header(
         &self,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
+        _trusted_light_block: Self::LightBlock,
+        _target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
         unimplemented!()
     }
@@ -150,8 +150,9 @@ impl Chain for MockChain {
     fn query_client_state(
         &self,
         client_id: &ClientId,
-        height: Height,
+        _height: Height,
     ) -> Result<Self::ClientState, Error> {
+        // TODO: unclear what are the scenarios where we need to take height into account.
         let any_state = self
             .context
             .query_client_full_state(client_id)
@@ -167,17 +168,17 @@ impl Chain for MockChain {
 
     fn proven_client_state(
         &self,
-        client_id: &ClientId,
-        height: Height,
+        _client_id: &ClientId,
+        _height: Height,
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         unimplemented!()
     }
 
     fn proven_client_consensus(
         &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _height: Height,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
