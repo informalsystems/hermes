@@ -30,6 +30,7 @@ echo "--------------------------------------------------------------------------
 echo "Adding use key"
 echo "-------------------------------------------------------------------------------------------------------------------"
 gaiad keys add user --keyring-backend="test" --home $HOME_DIR --output json > "$HOME_DIR/key_seed.json"
+cp "$HOME_DIR/key_seed.json" /data/key_seed_$CHAIN_ID.json
 cat "$HOME_DIR/key_seed.json"
 
 echo "-------------------------------------------------------------------------------------------------------------------"

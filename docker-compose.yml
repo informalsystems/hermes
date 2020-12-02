@@ -3,7 +3,11 @@ version: '3'
 services:
   ibc0:
     container_name: ibc0
-    image: "informal/gaia:stargate-4"
+    build:
+      context: .
+      dockerfile: ci/gaia.Dockerfile
+      args:
+        release: stargate-4
     ports:
       - "26656:26656"
       - "26657:26657"
@@ -14,12 +18,18 @@ services:
       - RPC_PORT=26657
       - P2P_PORT=26656
       - GRPC_PORT=9090
+    volumes:
+      - chain-data:/data
     networks:
       relaynet:
         ipv4_address: 192.168.10.2
   ibc1:
     container_name: ibc1
-    image: "informal/gaia:stargate-4"
+    build:
+      context: .
+      dockerfile: ci/gaia.Dockerfile
+      args:
+        release: stargate-4
     ports:
       - "26556:26556"
       - "26557:26557"
@@ -30,6 +40,8 @@ services:
       - RPC_PORT=26557
       - P2P_PORT=26556
       - GRPC_PORT=9091
+    volumes:
+      - chain-data:/data
     networks:
       relaynet:
         ipv4_address: 192.168.10.3
@@ -38,11 +50,15 @@ services:
       - ibc0
       - ibc1
     container_name: relayer
-    image: "informal/relayer"
+    build:
+      context: .
+      dockerfile: ci/relayer.Dockerfile
     environment:
       - CHAIN_A=ibc0
       - CHAIN_B=ibc1
       - CONFIG=simple_config.toml
+    volumes:
+    - chain-data:/data
 
 networks:
   relaynet:
@@ -52,3 +68,6 @@ networks:
       config:
         -
           subnet: 192.168.10.0/16
+
+volumes:
+  chain-data:
