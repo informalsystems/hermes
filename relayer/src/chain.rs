@@ -88,8 +88,8 @@ pub trait Chain {
     /// Perform a generic ICS `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
-    /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error>;
+    /// Sends one or more transactions with `msgs` to chain.
+    fn send_msgs(&self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 

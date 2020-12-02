@@ -174,12 +174,14 @@ pub struct SendPacket {
     pub packet_sequence: u64,
     pub packet_timeout_height: Height,
     pub packet_timeout_stamp: u64,
+    pub packet_data: Vec<u8>,
 }
 
 impl TryFrom<RawObject> for SendPacket {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height_str: String = attribute!(obj, "send_packet.packet_timeout_height");
+        let data_str: String = attribute!(obj, "send_packet.packet_data");
         Ok(SendPacket {
             height: obj.height,
             packet_src_port: attribute!(obj, "send_packet.packet_src_port"),
@@ -189,6 +191,7 @@ impl TryFrom<RawObject> for SendPacket {
             packet_sequence: attribute!(obj, "send_packet.packet_sequence"),
             packet_timeout_height: height_str.try_into()?,
             packet_timeout_stamp: attribute!(obj, "send_packet.packet_timeout_timestamp"),
+            packet_data: Vec::from(data_str.as_str().as_bytes()),
         })
     }
 }

@@ -15,6 +15,7 @@ use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
+use tracing::debug;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -166,10 +167,10 @@ pub fn build_create_client_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ForeignClientConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.client_id())?;
 
-    Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
+    Ok(dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
 
 pub fn build_update_client(
@@ -194,6 +195,7 @@ pub fn build_update_client(
         signer,
     };
 
+    debug!("MsgUpdateAnyClient {:#?}", new_msg);
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
 
@@ -201,7 +203,7 @@ pub fn build_update_client_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ForeignClientConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let new_msgs = build_update_client(
         dst_chain.clone(),
         src_chain.clone(),
@@ -209,5 +211,5 @@ pub fn build_update_client_and_send(
         src_chain.query_latest_height()?,
     )?;
 
-    Ok(dst_chain.send_tx(new_msgs)?)
+    Ok(dst_chain.send_msgs(new_msgs)?)
 }

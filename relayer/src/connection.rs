@@ -336,9 +336,9 @@ pub fn build_conn_init_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ConnectionConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
-    Ok(dst_chain.send_tx(dst_msgs)?)
+    Ok(dst_chain.send_msgs(dst_msgs)?)
 }
 
 fn check_destination_connection_state(
@@ -473,7 +473,7 @@ pub fn build_conn_try(
         &opts.src().client_id(),
         src_client_target_height,
     )?;
-    src_chain.send_tx(client_msgs)?;
+    src_chain.send_msgs(client_msgs)?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -525,9 +525,9 @@ pub fn build_conn_try_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ConnectionConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_tx(dst_msgs)?)
+    Ok(dst_chain.send_msgs(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -573,7 +573,7 @@ pub fn build_conn_ack(
         &opts.src().client_id(),
         src_client_target_height,
     )?;
-    src_chain.send_tx(client_msgs)?;
+    src_chain.send_msgs(client_msgs)?;
 
     // Build message(s) for updating client on destination
     let ics_target_height = src_chain.query_latest_height()?;
@@ -617,9 +617,9 @@ pub fn build_conn_ack_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ConnectionConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, opts)?;
-    Ok(dst_chain.send_tx(dst_msgs)?)
+    Ok(dst_chain.send_msgs(dst_msgs)?)
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -694,7 +694,7 @@ pub fn build_conn_confirm_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &ConnectionConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_tx(dst_msgs)?)
+    Ok(dst_chain.send_msgs(dst_msgs)?)
 }

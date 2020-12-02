@@ -89,7 +89,7 @@ macro_rules! chan_open_cmd {
                 let (src_chain, _) = ChainRuntime::spawn(src_chain_config.clone()).unwrap();
                 let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config.clone()).unwrap();
 
-                let res: Result<String, Error> =
+                let res: Result<Vec<String>, Error> =
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {

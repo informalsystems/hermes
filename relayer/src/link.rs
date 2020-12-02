@@ -1,6 +1,7 @@
 #![allow(dead_code, unreachable_code, unused_imports, unused_variables)]
 
 use thiserror::Error;
+use tracing::{debug, error, info};
 
 use ibc::{
     ics24_host::identifier::{ChannelId, ClientId, PortId},
@@ -9,14 +10,14 @@ use ibc::{
 
 use crate::chain::handle::{ChainHandle, QueryPacketDataRequest};
 use crate::chain::Chain;
-use crate::channel::{Channel, ChannelError, ChannelConfigSide};
+use crate::channel::{Channel, ChannelConfigSide, ChannelError};
 use crate::connection::ConnectionError;
 
 use ibc::ics04_channel::channel::State;
 use prost_types::Any;
 
 use ibc_proto::ibc::core::channel::v1::{
-    Packet, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 
 use crate::config::ChainConfig;
@@ -24,6 +25,7 @@ use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
 use ibc::events::IBCEvent;
 use ibc::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc::ics04_channel::packet::Packet;
 use ibc::ics23_commitment::commitment::CommitmentProof;
 
 // TODO: move to config
@@ -61,73 +63,137 @@ impl Link {
         a_chain: impl ChainHandle,
         b_chain: impl ChainHandle,
     ) -> Result<(), LinkError> {
-        println!("relaying packets");
+        info!("relaying packets");
         let a_subscription = &a_chain.subscribe(a_chain.id())?;
-        //let b_subscription = &b_chain.subscribe(b_chain.id())?;
+        let _b_subscription = &b_chain.subscribe(b_chain.id())?;
         loop {
-            let a_batch = a_subscription.recv().unwrap();
-            //let b_batch = b_subscription.recv().unwrap();
-            for event in a_batch.events.iter() {
-                let msgs = handle_event(b_chain.clone(), a_chain.clone(), event, &self.channel.config.b_config)?;
-                b_chain.send_tx(msgs)?;
+            let mut prev_height = Height::zero();
+            let mut prev_msgs = vec![];
+            for a_batch in a_subscription.try_iter().collect::<Vec<_>>().iter() {
+                for event in a_batch.events.iter() {
+                    // TODO add height to IBC enum event
+                    let (mut packet_msgs, event_height) =
+                        handle_event(b_chain.clone(), a_chain.clone(), event)?;
+                    if prev_height == Height::zero() {
+                        prev_height = event_height;
+                    }
+                    if event_height > prev_height {
+                        if prev_msgs.is_empty() {
+                            continue;
+                        }
+                        let mut msgs_to_send = build_update_client(
+                            b_chain.clone(),
+                            a_chain.clone(),
+                            self.channel.config.b_config.client_id(),
+                            prev_height.increment(),
+                        )?;
+                        msgs_to_send.append(&mut prev_msgs);
+                        debug!("sending {:#?} messages", msgs_to_send.len());
+                        let res = b_chain.send_msgs(msgs_to_send)?;
+                        debug!("result {:?}", res);
+                        prev_height = event_height;
+                    }
+                    prev_msgs.append(&mut packet_msgs);
+                }
             }
+            if !prev_msgs.is_empty() {
+                let mut msgs_to_send = build_update_client(
+                    b_chain.clone(),
+                    a_chain.clone(),
+                    self.channel.config.b_config.client_id(),
+                    prev_height.increment(),
+                )?;
+                msgs_to_send.append(&mut prev_msgs);
+                debug!("sending {:#?} messages", msgs_to_send.len());
+                let res = b_chain.send_msgs(msgs_to_send)?;
+                debug!("result {:?}", res);
+            }
+            // let b_batch = b_subscription.recv().unwrap();
             // for event in b_batch.events.iter() {
             //     let msgs = handle_event(a_chain.clone(), b_chain.clone(), event, &self.channel.config.a_config)?;
-            //     a_chain.send_tx(msgs)?;
+            //     if !msgs.is_empty() {
+            //         debug!("sending {:?} messages", msgs.len());
+            //         a_chain.send_msgs(msgs)?;
+            //     }
             // }
         }
         Ok(())
     }
 }
 
-fn handle_event(dst_chain: impl ChainHandle, src_chain: impl ChainHandle, event: &IBCEvent, dst_config: &ChannelConfigSide
-) -> Result<Vec<Any>, Error> {
-    println!("Event from {:?} {:#?}", src_chain.id(), event);
-    let mut msgs = vec![];
-    if let IBCEvent::SendPacketChannel(send_packet_ev) = event {
-        let event_height = Height::new(
-            ChainId::chain_version(
-                src_chain.id().to_string().as_str(),
-            ),
-            u64::from(send_packet_ev.height),
-        );
-        let query_height = event_height.increment();
-
-        let mut packet_msgs = build_packet_recv_msgs(
-            dst_chain.clone(),
-            src_chain.clone(),
-            &send_packet_ev.packet_src_channel,
-            &send_packet_ev.packet_src_port,
-            query_height,
-            &[send_packet_ev.packet_sequence],
-        )
-            .unwrap();
-        // TODO - collect all messages at same event height and only do the
-        // client update once
-        // Note - currently there is a problem with the transaction fee that is statically
-        // fixed at 300000...it should be determined based on the Tx size
-        if !packet_msgs.is_empty() {
-            let mut client_msgs = build_update_client(
+fn handle_event(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    event: &IBCEvent,
+) -> Result<(Vec<Any>, Height), Error> {
+    debug!("received event {:#?}", event);
+    match event {
+        IBCEvent::SendPacketChannel(send_packet_ev) => {
+            let (msg, height) = build_packet_recv_msg_from_send_event(
                 dst_chain,
                 src_chain,
-                dst_config.client_id(),
-                query_height,
-            )?;
-            msgs.append(&mut client_msgs);
-            msgs.append(&mut packet_msgs);
-            println!("sending {:?} messages", msgs.len());
+                send_packet_ev,
+            )
+            .unwrap();
+            Ok((vec![msg.to_any::<RawMsgRecvPacket>()], height))
         }
+        _ => Ok((vec![], Height::zero())),
     }
-    Ok(msgs)
 }
 
 pub enum PacketMsgType {
     PacketRecv,
 }
 
+use ibc::ics04_channel::events::SendPacket;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::tx_msg::Msg;
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+
+fn build_packet_recv_msg_from_send_event(
+    dst_chain: impl ChainHandle,
+    src_chain: impl ChainHandle,
+    event: &SendPacket,
+) -> Result<(MsgRecvPacket, Height), Error> {
+    let packet = Packet {
+        sequence: event.packet_sequence.into(),
+        source_port: event.clone().packet_src_port,
+        source_channel: event.clone().packet_src_channel,
+        destination_port: event.clone().packet_dst_port,
+        destination_channel: event.clone().packet_dst_channel,
+        data: event.clone().packet_data,
+        timeout_height: event.clone().packet_timeout_height,
+        timeout_timestamp: event.clone().packet_timeout_stamp,
+    };
+
+    // TODO - change event types to return ICS height
+    let event_height = Height::new(
+        ChainId::chain_version(src_chain.id().to_string().as_str()),
+        u64::from(event.height),
+    );
+
+    // Get signer
+    let signer = dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    let res = src_chain.proven_packet_commitment(
+        &event.packet_src_port,
+        &event.packet_src_channel,
+        event.packet_sequence,
+        event_height,
+    );
+    let msg = MsgRecvPacket::new(
+        packet,
+        CommitmentProof::from(res.unwrap().1),
+        event_height.increment(),
+        signer,
+    )
+    .unwrap();
+
+    debug!("MsgRecvPacket {:#?}", msg);
+    Ok((msg, event_height))
+}
 
 fn build_packet_recv_msgs(
     dst_chain: impl ChainHandle,
@@ -149,6 +215,12 @@ fn build_packet_recv_msgs(
         sequences: Vec::from(sequences),
     })?;
 
+    let mut pk_sequences = vec![];
+    for pc in events.iter() {
+        pk_sequences.append(&mut vec![pc.sequence]);
+    }
+    debug!("received from query_txs {:?}", pk_sequences);
+
     // Get signer
     let signer = dst_chain
         .get_signer()
@@ -169,6 +241,7 @@ fn build_packet_recv_msgs(
         )
         .unwrap();
 
+        debug!("MsgRecvPacket {:#?}", msg);
         let mut new_msgs = vec![msg.to_any::<RawMsgRecvPacket>()];
         msgs.append(&mut new_msgs);
     }
@@ -244,6 +317,10 @@ pub fn build_packet_recv(
     for pc in packet_commitments.iter() {
         src_sequences.append(&mut vec![pc.sequence]);
     }
+    debug!(
+        "packets that still have commitments on source {:?}",
+        src_sequences
+    );
 
     let request = QueryUnreceivedPacketsRequest {
         port_id: src_channel.counterparty().port_id.to_string(),
@@ -253,7 +330,10 @@ pub fn build_packet_recv(
 
     let packets_to_send = dst_chain.query_unreceived_packets(request)?;
 
-    println!("packets_to_send {:?}", packets_to_send);
+    debug!(
+        "packets_to_send out of the ones with commitments on source {:?}",
+        packets_to_send
+    );
 
     if packets_to_send.is_empty() {
         return Ok(vec![]);
@@ -286,11 +366,11 @@ pub fn build_packet_recv_and_send(
     dst_chain: impl ChainHandle,
     src_chain: impl ChainHandle,
     opts: &PacketOptions,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let dst_msgs = build_packet_recv(dst_chain.clone(), src_chain, &opts)?;
     if dst_msgs.is_empty() {
-        Ok("No sent packets on source chain".to_string())
+        Ok(vec!["No sent packets on source chain".to_string()])
     } else {
-        Ok(dst_chain.send_tx(dst_msgs)?)
+        Ok(dst_chain.send_msgs(dst_msgs)?)
     }
 }

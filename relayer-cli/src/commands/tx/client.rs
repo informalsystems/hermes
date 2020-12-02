@@ -51,8 +51,9 @@ impl Runnable for TxCreateClientCmd {
         let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
 
-        let res: Result<String, Error> = build_create_client_and_send(dst_chain, src_chain, &opts)
-            .map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<String>, Error> =
+            build_create_client_and_send(dst_chain, src_chain, &opts)
+                .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
@@ -100,11 +101,12 @@ impl Runnable for TxUpdateClientCmd {
         let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
 
-        let res: Result<String, Error> = build_update_client_and_send(dst_chain, src_chain, &opts)
-            .map_err(|e| Kind::Tx.context(e).into());
+        let res: Result<Vec<String>, Error> =
+            build_update_client_and_send(dst_chain, src_chain, &opts)
+                .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success client updated: {:?}", receipt),
+            Ok(receipt) => status_ok!("Success client updated: {:?}", &receipt[0]),
             Err(e) => status_err!("client update failed: {}", e),
         }
     }

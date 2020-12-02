@@ -60,9 +60,9 @@ pub enum HandleInput {
         reply_to: ReplyTo<QueryResponse>,
     },
 
-    SendTx {
+    SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Vec<String>>,
     },
 
     // GetHeader {
@@ -209,7 +209,7 @@ pub trait ChainHandle: Clone + Send + Sync {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error>;
 
     // Inclusion proofs
     // It might be good to include an inclusion proof method which abstracts over the light client

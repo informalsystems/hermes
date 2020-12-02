@@ -58,6 +58,11 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use tonic::codegen::http::Uri;
 
+// TODO size this properly
+const DEFAULT_MAX_GAS: u64 = 300000;
+const DEFAULT_MAX_TX_NUM: usize = 4;
+const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
+
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
@@ -128,46 +133,7 @@ impl CosmosSDKChain {
     fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
         Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
     }
-}
 
-impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
-    type LightBlock = TMLightBlock;
-    type RpcClient = HttpClient;
-    type ConsensusState = ConsensusState;
-    type ClientState = ClientState;
-
-    fn config(&self) -> &ChainConfig {
-        &self.config
-    }
-
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
-    }
-
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
-
-        let height =
-            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-
-        if !data.is_provable() & prove {
-            return Err(Kind::Store
-                .context("requested proof for a path in the privateStore")
-                .into());
-        }
-
-        let response =
-            self.block_on(abci_query(&self, path, data.to_string(), height, prove))??;
-
-        // TODO - Verify response proof, if requested.
-        if prove {}
-
-        Ok(response)
-    }
-
-    /// Send a transaction that includes the specified messages
-    /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
         let key = self
             .keybase()
@@ -216,7 +182,7 @@ impl Chain for CosmosSDKChain {
 
         let fee = Some(Fee {
             amount: vec![coin],
-            gas_limit: 300000,
+            gas_limit: self.gas(),
             payer: "".to_string(),
             granter: "".to_string(),
         });
@@ -258,6 +224,86 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::Rpc.context(e))?;
 
         Ok(response)
+    }
+
+    fn gas(&self) -> u64 {
+        self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
+    }
+
+    fn max_tx_num(&self) -> usize {
+        self.config.max_tx_num.unwrap_or(DEFAULT_MAX_TX_NUM)
+    }
+
+    fn max_tx_size(&self) -> usize {
+        self.config.max_tx_num.unwrap_or(DEFAULT_MAX_TX_SIZE)
+    }
+}
+
+impl Chain for CosmosSDKChain {
+    type Header = TMHeader;
+    type LightBlock = TMLightBlock;
+    type RpcClient = HttpClient;
+    type ConsensusState = ConsensusState;
+    type ClientState = ClientState;
+
+    fn config(&self) -> &ChainConfig {
+        &self.config
+    }
+
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
+
+    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
+        let height =
+            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        if !data.is_provable() & prove {
+            return Err(Kind::Store
+                .context("requested proof for a path in the privateStore")
+                .into());
+        }
+
+        let response =
+            self.block_on(abci_query(&self, path, data.to_string(), height, prove))??;
+
+        // TODO - Verify response proof, if requested.
+        if prove {}
+
+        Ok(response)
+    }
+
+    /// Send one or more transactions that include all the specified messages
+    fn send_msgs(&self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
+        if proto_msgs.is_empty() {
+            return Ok(vec!["No messages to send".to_string()]);
+        }
+        let mut res = vec![];
+
+        let mut n = 0;
+        let mut size = 0;
+        let mut msg_batch = vec![];
+        for msg in proto_msgs.iter() {
+            msg_batch.append(&mut vec![msg.clone()]);
+            let mut buf = Vec::new();
+            prost::Message::encode(msg, &mut buf).unwrap();
+            n += 1;
+            size += buf.len();
+            if n >= self.max_tx_num() || size >= self.max_tx_size() {
+                let result = self.send_tx(msg_batch)?;
+                res.append(&mut vec![result]);
+                n = 0;
+                size = 0;
+                msg_batch = vec![];
+            }
+        }
+        if !msg_batch.is_empty() {
+            let result = self.send_tx(msg_batch)?;
+            res.append(&mut vec![result]);
+        }
+        Ok(res)
     }
 
     /// Query the latest height the chain is at via a RPC query
@@ -470,6 +516,13 @@ impl Chain for CosmosSDKChain {
         Ok(response.sequences)
     }
 
+    /// Queries the packet data for all packets with sequences included in the request.
+    /// Note - there is no way to format the query such that it asks for Tx-es with either
+    /// sequence (the query conditions can only be AND-ed)
+    /// There is a possibility to include "<=" and ">=" conditions but it doesn't work with
+    /// string attributes (sequence is emmitted as a string).
+    /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
+    /// for all packets could be performed but it would return all packets ever sent.
     fn query_packet_data(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
         let mut result: Vec<Packet> = vec![];
         for seq in request.sequences.iter() {
@@ -477,6 +530,7 @@ impl Chain for CosmosSDKChain {
                 "send_packet.packet_src_channel",
                 request.channel_id.clone(),
             )
+            .and_eq("send_packet.packet_src_port", request.port_id.clone())
             .and_eq("send_packet.packet_sequence", seq.to_string());
             let response = self
                 .block_on(
@@ -495,14 +549,21 @@ impl Chain for CosmosSDKChain {
 
 use ibc::ics04_channel::packet::Packet;
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+use std::collections::HashSet;
 use subtle_encoding::base64;
 
+// Extract the packets from the query_tx RPC response. The response includes the full set of events
+// from the Tx-es where there is at least one request query match.
+// For example, the query request asks for the Tx for packet with sequence 3, and both 3 and 4 were
+// committed in one Tx. In this case the response includes the events for 3 and 4.
 fn packet_from_tx_search_response(
     request: QueryPacketDataRequest,
     response: tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Vec<Packet>, Error> {
     let mut packets: Vec<Packet> = vec![];
+    let mut seqs: HashSet<u64> = request.sequences.iter().cloned().collect();
     for r in response.txs.iter() {
+        let events: Vec<tendermint::abci::Event> = r.clone().tx_result.events;
         let mut packet = RawPacket {
             sequence: 0,
             source_port: "".to_string(),
@@ -513,7 +574,6 @@ fn packet_from_tx_search_response(
             timeout_height: None,
             timeout_timestamp: 0,
         };
-        let events: Vec<tendermint::abci::Event> = r.clone().tx_result.events;
         for e in events.iter() {
             if e.type_str == *"send_packet" {
                 for a in e.attributes.iter() {
@@ -524,28 +584,12 @@ fn packet_from_tx_search_response(
                         String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
                             .unwrap();
                     match key.as_str() {
-                        "packet_src_channel" => {
-                            let src_channel = value.to_string();
-                            if src_channel != request.channel_id {
-                                println!(
-                                    "src ch {:?} req ch {:?}",
-                                    src_channel, request.channel_id
-                                );
-                                break;
-                            }
-                            packet.source_channel = src_channel;
-                        }
-                        "packet_src_port" => {
-                            let src_port = value.to_string();
-                            if src_port != request.port_id {
-                                break;
-                            }
-                            packet.source_port = src_port;
-                        }
+                        "packet_src_channel" => packet.source_channel = value,
+                        "packet_src_port" => packet.source_port = value,
+                        "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap(),
                         "packet_dst_channel" => packet.destination_channel = value,
                         "packet_dst_port" => packet.destination_port = value,
                         "packet_data" => packet.data = Vec::from(value.as_bytes()),
-                        "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap(),
                         "packet_timeout_height" => {
                             let to: Vec<&str> = value.split('-').collect();
                             packet.timeout_height =
@@ -557,7 +601,13 @@ fn packet_from_tx_search_response(
                         _ => {}
                     };
                 }
-                packets.append(&mut vec![packet.clone().try_into().unwrap()]);
+                if request.port_id == packet.source_port
+                    && request.channel_id == packet.source_channel
+                    && seqs.contains(&packet.sequence)
+                {
+                    packets.append(&mut vec![packet.clone().try_into().unwrap()]);
+                    seqs.remove(&packet.sequence);
+                }
             }
         }
     }
