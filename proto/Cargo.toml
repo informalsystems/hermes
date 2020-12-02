@@ -14,6 +14,10 @@ description = """
     ibc-proto is a the Rust implementation of the Cosmos SDK proto structs.
     """
 
+[lib]
+name = "ibc_proto"
+path = "src/lib.rs"
+
 [package.metadata.docs.rs]
 all-features = true
 
