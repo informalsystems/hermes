@@ -11,8 +11,7 @@ use tendermint_proto::Protobuf;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-/// Message type for the `MsgChannelOpenTry` message.
-const TYPE_MSG_CHANNEL_OPEN_TRY: &str = "channel_open_try";
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 
 ///
 /// Message definition for the second step in the channel open handshake (`ChanOpenTry` datagram).
@@ -35,16 +34,12 @@ impl Msg for MsgChannelOpenTry {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_OPEN_TRY.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         self.channel.validate_basic()
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgChannelOpenTry".to_string()
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
