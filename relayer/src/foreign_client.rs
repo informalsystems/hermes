@@ -221,10 +221,11 @@ mod test {
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
-    use crate::foreign_client::{build_create_client_and_send, ForeignClientConfig};
+    use crate::foreign_client::{
+        build_create_client_and_send, build_update_client_and_send, ForeignClientConfig,
+    };
 
     #[test]
-    #[ignore] // WIP
     fn test_build_create_client_and_send() {
         let client_id = ClientId::from_str("client_on_a_forb").unwrap();
         let a_cfg = get_basic_chain_config("chain_a");
@@ -239,6 +240,23 @@ mod test {
             res.is_ok(),
             "build_create_client_and_send failed with error {:?}",
             res
+        );
+    }
+
+    #[test]
+    fn test_build_update_client_and_send() {
+        let client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let a_cfg = get_basic_chain_config("chain_a");
+        let b_cfg = get_basic_chain_config("chain_b");
+        let opts = ForeignClientConfig::new(&a_cfg.id, &client_id);
+
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+
+        let res = build_update_client_and_send(a_chain, b_chain, &opts);
+        assert!(
+            res.is_err(),
+            "build_update_client_and_send was supposed to fail (no client existed)"
         );
     }
 }
