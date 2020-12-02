@@ -9,16 +9,6 @@ RUN cargo --version
 # Set working dir
 WORKDIR /repo
 
-# Logic to cache cargo dependecies across builds
-COPY Cargo.lock .
-COPY Cargo.toml .
-COPY modules/Cargo.toml /repo/modules/Cargo.toml
-COPY proto/Cargo.toml /repo/proto/Cargo.toml
-COPY relayer/Cargo.toml /repo/relayer/Cargo.toml
-COPY relayer-cli/Cargo.toml /repo/relayer-cli/Cargo.toml
-RUN mkdir .cargo
-RUN cargo vendor > .cargo/config
-
 # Copy project files
 COPY . .
 
@@ -36,8 +26,6 @@ COPY --from=build-env /repo/target/debug/rrly /usr/bin/rrly
 ENV RELAYER /relayer
 
 WORKDIR $RELAYER
-
-COPY /repo/vendor /vendor
 
 # Copy configuration file
 COPY ci/simple_config.toml .
