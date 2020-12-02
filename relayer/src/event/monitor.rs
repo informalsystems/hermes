@@ -135,7 +135,7 @@ impl EventMonitor {
         debug!("Gracefully shutting down previous client");
 
         if let Err(e) = websocket_client.close() {
-            error!("Previous websocket client closing failure {:?}", e);
+            error!("Previous websocket client closing failure {}", e);
         }
 
         self.rt
