@@ -13,7 +13,7 @@ RUN git clone https://github.com/cosmos/gaia /go/src/github.com/cosmos/gaia
 # Set working directory for the build
 WORKDIR /go/src/github.com/cosmos/gaia
 
-# Checkout branch (TODO make this a parameter)
+# Checkout branch
 RUN git checkout $release
 
 # Install minimum necessary dependencies, build Cosmos SDK, remove packages
@@ -42,6 +42,8 @@ COPY ci/bootstrap_gaia.sh .
 
 # Make it executable
 RUN chmod +x bootstrap_gaia.sh
+
+EXPOSE 26657 26656 9090
 
 # Entrypoint
 ENTRYPOINT ["/bin/sh", "-c", "/gaia/bootstrap_gaia.sh"]

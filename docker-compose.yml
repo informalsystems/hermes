@@ -14,15 +14,14 @@ services:
     environment:
       - CHAIN_ID=ibc0
       - MONIKER=node01
-      - HOME_DIR=/gaia/ibc0
       - RPC_PORT=26657
       - P2P_PORT=26656
       - GRPC_PORT=9090
     volumes:
       - chain-data:/data
     networks:
-      relaynet:
-        ipv4_address: 192.168.10.2
+      - relaynet
+#        ipv4_address: 192.168.10.2
   ibc1:
     container_name: ibc1
     build:
@@ -36,15 +35,14 @@ services:
     environment:
       - CHAIN_ID=ibc1
       - MONIKER=node01
-      - HOME_DIR=/gaia/ibc1
       - RPC_PORT=26557
       - P2P_PORT=26556
       - GRPC_PORT=9091
     volumes:
       - chain-data:/data
     networks:
-      relaynet:
-        ipv4_address: 192.168.10.3
+      - relaynet
+#        ipv4_address: 192.168.10.3
   relayer:
     depends_on:
       - ibc0
@@ -57,8 +55,11 @@ services:
       - CHAIN_A=ibc0
       - CHAIN_B=ibc1
       - CONFIG=simple_config.toml
+      - RELAYER_DIR=/relayer
     volumes:
-    - chain-data:/data
+      - chain-data:/data
+    networks:
+      - relaynet
 
 networks:
   relaynet:
