@@ -227,18 +227,44 @@ mod test {
 
     #[test]
     fn test_build_create_client_and_send() {
-        let client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
-        let opts = ForeignClientConfig::new(&a_cfg.id, &client_id);
+        let a_opts = ForeignClientConfig::new(&a_cfg.id, &a_client_id);
+        let b_opts = ForeignClientConfig::new(&b_cfg.id, &b_client_id);
 
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
-        let res = build_create_client_and_send(&a_chain, &b_chain, &opts);
+        // Create the client on chain a
+        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
         assert!(
             res.is_ok(),
-            "build_create_client_and_send failed with error {:?}",
+            "build_create_client_and_send failed (chain a) with error {:?}",
+            res
+        );
+
+        // Double client creations should be forbidden.
+        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
+        assert!(
+            res.is_err(),
+            "build_create_client_and_send double client creation should have failed!",
+        );
+
+        // Create the client on chain b
+        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        assert!(
+            res.is_ok(),
+            "build_create_client_and_send failed (chain b) with error {:?}",
+            res
+        );
+
+        // Test double creation for chain b
+        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        assert!(
+            res.is_err(),
+            "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
     }
