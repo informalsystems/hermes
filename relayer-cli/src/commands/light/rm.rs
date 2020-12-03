@@ -25,6 +25,9 @@ pub struct RmCmd {
     /// remove all peers, implies --force
     #[options(no_short)]
     all: bool,
+
+    /// skip confirmation
+    yes: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -40,6 +43,9 @@ struct RmOptions {
 
     /// force removal of primary peer
     force: bool,
+
+    /// skip confirmation
+    yes: bool,
 }
 
 impl RmOptions {
@@ -55,6 +61,7 @@ impl RmOptions {
             chain_id,
             peer_ids,
             all: cmd.all,
+            yes: cmd.yes,
             force: cmd.force,
         })
     }
@@ -83,7 +90,7 @@ impl RmCmd {
             .as_mut()
             .ok_or_else(|| format!("no peers configured for chain: {}", options.chain_id))?;
 
-        if options.all && confirm(&options.chain_id)? {
+        if options.all && (options.yes || confirm(&options.chain_id)?) {
             let removed_peers = get_all_peer_ids(&peers_config);
             chain_config.peers = None;
             status_ok!("Removed", "light client peers {:?}", removed_peers);
