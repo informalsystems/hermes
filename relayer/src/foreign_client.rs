@@ -69,7 +69,7 @@ impl ForeignClient {
         // Query the client state on source chain.
         let client_state = dst_chain.query_client_state(&config.id, Height::default());
         if client_state.is_err() {
-            build_create_client_and_send(dst_chain, src_chain, &config).map_err(|e| {
+            build_create_client_and_send(&dst_chain, &src_chain, &config).map_err(|e| {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
@@ -130,8 +130,8 @@ impl ForeignClient {
 }
 
 pub fn build_create_client(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: &impl ChainHandle,
+    src_chain: &impl ChainHandle,
     dst_client_id: &ClientId,
 ) -> Result<MsgCreateAnyClient, Error> {
     // Verify that the client has not been created already, i.e the destination chain does not
@@ -163,11 +163,11 @@ pub fn build_create_client(
 }
 
 pub fn build_create_client_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: &impl ChainHandle,
+    src_chain: &impl ChainHandle,
     opts: &ForeignClientConfig,
 ) -> Result<String, Error> {
-    let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.client_id())?;
+    let new_msg = build_create_client(dst_chain, src_chain, opts.client_id())?;
 
     Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
@@ -235,7 +235,7 @@ mod test {
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
-        let res = build_create_client_and_send(a_chain, b_chain, &opts);
+        let res = build_create_client_and_send(&a_chain, &b_chain, &opts);
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed with error {:?}",

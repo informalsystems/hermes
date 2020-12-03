@@ -52,7 +52,7 @@ impl Runnable for TxCreateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res: Result<String, Error> = build_create_client_and_send(dst_chain, src_chain, &opts)
+        let res: Result<String, Error> = build_create_client_and_send(&dst_chain, &src_chain, &opts)
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
