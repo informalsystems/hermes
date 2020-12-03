@@ -88,9 +88,9 @@ impl Link {
                             prev_height.increment(),
                         )?;
                         msgs_to_send.append(&mut prev_msgs);
-                        debug!("sending {:#?} messages", msgs_to_send.len());
+                        info!("sending {:#?} messages", msgs_to_send.len());
                         let res = b_chain.send_msgs(msgs_to_send)?;
-                        debug!("result {:?}", res);
+                        info!("result {:?}", res);
                         prev_height = event_height;
                     }
                     prev_msgs.append(&mut packet_msgs);
@@ -104,15 +104,15 @@ impl Link {
                     prev_height.increment(),
                 )?;
                 msgs_to_send.append(&mut prev_msgs);
-                debug!("sending {:#?} messages", msgs_to_send.len());
+                info!("sending {:#?} messages", msgs_to_send.len());
                 let res = b_chain.send_msgs(msgs_to_send)?;
-                debug!("result {:?}", res);
+                info!("result {:?}", res);
             }
             // let b_batch = b_subscription.recv().unwrap();
             // for event in b_batch.events.iter() {
             //     let msgs = handle_event(a_chain.clone(), b_chain.clone(), event, &self.channel.config.a_config)?;
             //     if !msgs.is_empty() {
-            //         debug!("sending {:?} messages", msgs.len());
+            //         info!("sending {:?} messages", msgs.len());
             //         a_chain.send_msgs(msgs)?;
             //     }
             // }
@@ -126,9 +126,9 @@ fn handle_event(
     src_chain: impl ChainHandle,
     event: &IBCEvent,
 ) -> Result<(Vec<Any>, Height), Error> {
-    debug!("received event {:#?}", event);
     match event {
         IBCEvent::SendPacketChannel(send_packet_ev) => {
+            info!("received event {:#?}", event);
             let (msg, height) = build_packet_recv_msg_from_send_event(
                 dst_chain,
                 src_chain,
@@ -191,7 +191,6 @@ fn build_packet_recv_msg_from_send_event(
     )
     .unwrap();
 
-    debug!("MsgRecvPacket {:#?}", msg);
     Ok((msg, event_height))
 }
 
@@ -219,7 +218,7 @@ fn build_packet_recv_msgs(
     for pc in events.iter() {
         pk_sequences.append(&mut vec![pc.sequence]);
     }
-    debug!("received from query_txs {:?}", pk_sequences);
+    info!("received from query_txs {:?}", pk_sequences);
 
     // Get signer
     let signer = dst_chain
@@ -241,7 +240,7 @@ fn build_packet_recv_msgs(
         )
         .unwrap();
 
-        debug!("MsgRecvPacket {:#?}", msg);
+        info!("MsgRecvPacket {:#?}", msg);
         let mut new_msgs = vec![msg.to_any::<RawMsgRecvPacket>()];
         msgs.append(&mut new_msgs);
     }
@@ -317,7 +316,7 @@ pub fn build_packet_recv(
     for pc in packet_commitments.iter() {
         src_sequences.append(&mut vec![pc.sequence]);
     }
-    debug!(
+    info!(
         "packets that still have commitments on source {:?}",
         src_sequences
     );
@@ -330,7 +329,7 @@ pub fn build_packet_recv(
 
     let packets_to_send = dst_chain.query_unreceived_packets(request)?;
 
-    debug!(
+    info!(
         "packets_to_send out of the ones with commitments on source {:?}",
         packets_to_send
     );

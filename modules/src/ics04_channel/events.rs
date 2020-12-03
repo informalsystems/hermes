@@ -224,7 +224,7 @@ impl TryFrom<RawObject> for ReceivePacket {
             packet_dst_port: attribute!(obj, "recv_packet.packet_dst_port"),
             packet_dst_channel: attribute!(obj, "recv_packet.packet_dst_channel"),
             packet_sequence: attribute!(obj, "recv_packet.packet_sequence"),
-            packet_timeout_height: attribute!(obj, "recv_packet.packet_timeout_timestamp"),
+            packet_timeout_height: attribute!(obj, "recv_packet.packet_timeout_height"),
             packet_timeout_stamp: attribute!(obj, "recv_packet.packet_timeout_timestamp"),
         })
     }
