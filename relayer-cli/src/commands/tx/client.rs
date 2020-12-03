@@ -6,6 +6,7 @@ use crate::application::app_config;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 use relayer::chain::runtime::ChainRuntime;
+use relayer::chain::CosmosSDKChain;
 use relayer::config::ChainConfig;
 use relayer::foreign_client::{
     build_create_client_and_send, build_update_client_and_send, ForeignClientConfig,
@@ -48,8 +49,8 @@ impl Runnable for TxCreateClientCmd {
             opts.chain_id()
         );
 
-        let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
+        let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
         let res: Result<Vec<String>, Error> =
             build_create_client_and_send(dst_chain, src_chain, &opts)
@@ -98,8 +99,8 @@ impl Runnable for TxUpdateClientCmd {
             opts.chain_id()
         );
 
-        let (src_chain, _) = ChainRuntime::spawn(src_chain_config).unwrap();
-        let (dst_chain, _) = ChainRuntime::spawn(dst_chain_config).unwrap();
+        let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
+        let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
         let res: Result<Vec<String>, Error> =
             build_update_client_and_send(dst_chain, src_chain, &opts)

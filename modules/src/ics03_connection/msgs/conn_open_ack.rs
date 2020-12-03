@@ -16,8 +16,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
 use crate::Height;
 
-/// Message type for the `MsgConnectionOpenAck` message.
-pub const TYPE_MSG_CONNECTION_OPEN_ACK: &str = "connection_open_ack";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -73,20 +72,16 @@ impl Msg for MsgConnectionOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_ACK.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         Ok(())
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
-    fn type_url(&self) -> String {
-        "/ibc.core.connection.v1.MsgConnectionOpenAck".to_string()
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

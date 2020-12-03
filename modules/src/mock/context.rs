@@ -1,7 +1,12 @@
 //! Implementation of a global context mock. Used in testing handlers of all IBC modules.
 
-// TODO: remove this clippy exception (some code is not covered in `mocks` feature).
-#![allow(dead_code)]
+use std::cmp::min;
+use std::collections::HashMap;
+use std::error::Error;
+use std::str::FromStr;
+
+use prost_types::Any;
+use tendermint::account::Id;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
@@ -16,18 +21,12 @@ use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use crate::ics26_routing::context::ICS26Context;
-use crate::ics26_routing::handler::dispatch;
+use crate::ics26_routing::handler::{deliver, dispatch};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
 use crate::Height;
-
-use std::cmp::min;
-use std::collections::HashMap;
-use std::error::Error;
-use std::str::FromStr;
-use tendermint::account::Id;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Clone, Debug)]
@@ -225,8 +224,9 @@ impl MockContext {
     }
 
     /// A datagram passes from the relayer to the IBC module (on host chain).
+    /// Alternative method to `ICS18Context::send` that does not exercise any serialization.
     /// Used in testing the ICS18 algorithms, hence this may return a ICS18Error.
-    fn recv(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
+    pub fn deliver(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
         // Create a new block.
         self.advance_host_chain_height();
@@ -415,8 +415,10 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
-        self.recv(msg)
+    fn send(&mut self, msgs: Vec<Any>) -> Result<(), ICS18Error> {
+        deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?; // Forward call to ICS26 delivery method
+        self.advance_host_chain_height(); // Advance chain height
+        Ok(())
     }
 
     fn signer(&self) -> Id {

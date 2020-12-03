@@ -1,15 +1,16 @@
+use prost_types::Any;
+use tendermint::account::Id as AccountId;
+
 use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
-use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::Height;
-
-use tendermint::account::Id as AccountId;
 
 /// Trait capturing all dependencies (i.e., the context) which algorithms in ICS18 require to
 /// relay packets between chains. This trait comprises the dependencies towards a single chain.
 /// Most of the functions in this represent wrappers over the ABCI interface.
-/// TODO -- eventually this trait should mirror the `Chain` trait.
+/// This trait mimics the `Chain` trait, but at a lower level of abstraction (no networking, header
+/// types, light client, RPC client, etc.)
 pub trait ICS18Context {
     /// Returns the latest height of the chain.
     fn query_latest_height(&self) -> Height;
@@ -22,8 +23,8 @@ pub trait ICS18Context {
     fn query_latest_header(&self) -> Option<AnyHeader>;
 
     /// Interface that the relayer uses to submit a datagram to this chain.
-    /// Wraps around the `/broadcast_tx_async` ABCI endpoint.
-    fn send(&mut self, msg: ICS26Envelope) -> Result<(), Error>;
+    /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.
+    fn send(&mut self, msgs: Vec<Any>) -> Result<(), Error>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
     fn signer(&self) -> AccountId;

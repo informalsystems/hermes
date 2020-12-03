@@ -83,7 +83,7 @@ impl Runnable for QueryConnectionEndCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         // TODO - any value in querying with proof from the CLI?

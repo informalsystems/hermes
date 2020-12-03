@@ -1,12 +1,17 @@
-use std::convert::{TryFrom, TryInto};
-use std::future::Future;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+
+use std::{
+    convert::TryFrom,
+    future::Future,
+    str::FromStr,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 
+use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -34,6 +39,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
@@ -47,7 +53,10 @@ use super::Chain;
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::light_client::tendermint::LightClient as TMLightClient;
+use crate::light_client::LightClient;
 
 // Support for GRPC
 use crate::chain::handle::QueryPacketDataRequest;
@@ -70,26 +79,6 @@ pub struct CosmosSDKChain {
 }
 
 impl CosmosSDKChain {
-    pub fn from_config(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
-        let primary = config
-            .primary()
-            .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
-
-        let rpc_client =
-            HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
-
-        // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(Self {
-            rt,
-            config,
-            keybase: key_store,
-            rpc_client,
-        })
-    }
-
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         // TODO - generalize this
@@ -117,6 +106,14 @@ impl CosmosSDKChain {
             .ok_or_else(|| Kind::Grpc.context("none unbonding time".to_string()))?;
 
         Ok(Duration::from_secs(res.seconds as u64))
+    }
+
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
+
+    pub fn config(&self) -> &ChainConfig {
+        &self.config
     }
 
     /// Query the consensus parameters via an RPC query
@@ -239,18 +236,64 @@ impl CosmosSDKChain {
 }
 
 impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
     type LightBlock = TMLightBlock;
-    type RpcClient = HttpClient;
+    type Header = TMHeader;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
 
-    fn config(&self) -> &ChainConfig {
-        &self.config
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
+        let rpc_client =
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+
+        // Initialize key store and load key
+        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(Self {
+            rt,
+            config,
+            keybase: key_store,
+            rpc_client,
+        })
     }
 
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
+    // TODO use a simpler approach to create the light client
+    #[allow(clippy::type_complexity)]
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
+        let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
+
+        let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
+
+        Ok((Box::new(lc), Some(supervisor_thread)))
+    }
+
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    > {
+        let (mut event_monitor, event_receiver) =
+            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+
+        event_monitor.subscribe().unwrap();
+        let monitor_thread = thread::spawn(move || event_monitor.run());
+
+        Ok((event_receiver, Some(monitor_thread)))
+    }
+
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -275,7 +318,7 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send one or more transactions that include all the specified messages
-    fn send_msgs(&self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
         if proto_msgs.is_empty() {
             return Ok(vec!["No messages to send".to_string()]);
         }
@@ -340,6 +383,13 @@ impl Chain for CosmosSDKChain {
         let client_state = downcast!(client_state => AnyClientState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
         Ok(client_state)
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        // TODO - do a real chain query
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
     }
 
     fn proven_client_state(
@@ -428,10 +478,6 @@ impl Chain for CosmosSDKChain {
             validator_set: target_light_block.validators,
             trusted_validator_set: trusted_light_block.validators,
         })
-    }
-
-    fn keybase(&self) -> &KeyRing {
-        &self.keybase
     }
 
     /// Get the account for the signer
@@ -550,6 +596,7 @@ use ibc::ics04_channel::packet::Packet;
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 use std::collections::HashSet;
 use subtle_encoding::base64;
+use std::convert::TryInto;
 
 // Extract the packets from the query_tx RPC response. The response includes the full set of events
 // from the Tx-es where there is at least one request query match.

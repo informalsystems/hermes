@@ -10,8 +10,7 @@ use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
-/// Message type for the `MsgChannelOpenInit` message.
-const TYPE_MSG_CHANNEL_OPEN_INIT: &str = "channel_open_init";
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 
 ///
 /// Message definition for the first step in the channel open handshake (`ChanOpenInit` datagram).
@@ -31,16 +30,12 @@ impl Msg for MsgChannelOpenInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_OPEN_INIT.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         self.channel.validate_basic()
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgChannelOpenInit".to_string()
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

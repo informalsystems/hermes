@@ -45,7 +45,7 @@ pub type Height = crate::ics02_client::height::Height;
 mod test;
 
 #[cfg(any(test, feature = "mocks"))]
-mod test_utils;
+pub mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
-mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.
+pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.

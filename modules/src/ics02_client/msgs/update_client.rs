@@ -17,7 +17,7 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
-const TYPE_MSG_UPDATE_CLIENT: &str = "update_client";
+pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
@@ -44,21 +44,17 @@ impl Msg for MsgUpdateAnyClient {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_UPDATE_CLIENT.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // Nothing to validate since all fields are validated on creation.
         Ok(())
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
-    fn type_url(&self) -> String {
-        "/ibc.core.client.v1.MsgUpdateClient".to_string()
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

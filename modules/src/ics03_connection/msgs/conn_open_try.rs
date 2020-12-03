@@ -17,8 +17,7 @@ use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
 use crate::Height;
 
-/// Message type for the `MsgConnectionOpenTry` message.
-pub const TYPE_MSG_CONNECTION_OPEN_TRY: &str = "connection_open_try";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 
 ///
 /// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
@@ -88,22 +87,18 @@ impl Msg for MsgConnectionOpenTry {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_TRY.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         self.counterparty
             .validate_basic()
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
-    fn type_url(&self) -> String {
-        "/ibc.core.connection.v1.MsgConnectionOpenTry".to_string()
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

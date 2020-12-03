@@ -12,8 +12,8 @@ use crate::ics03_connection::version::validate_version;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::tx_msg::Msg;
 
-/// Message type for the `MsgConnectionOpenInit` message.
-pub const TYPE_MSG_CONNECTION_OPEN_INIT: &str = "connection_open_init";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
+
 ///
 /// Message definition `MsgConnectionOpenInit`  (i.e., the `ConnOpenInit` datagram).
 ///
@@ -55,10 +55,6 @@ impl Msg for MsgConnectionOpenInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_INIT.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // All the validation is performed on creation
         self.counterparty
@@ -66,12 +62,12 @@ impl Msg for MsgConnectionOpenInit {
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
-    fn type_url(&self) -> String {
-        "/ibc.core.connection.v1.MsgConnectionOpenInit".to_string()
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

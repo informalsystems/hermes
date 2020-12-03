@@ -10,8 +10,7 @@ use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
-/// Message type for the `MsgChannelOpenConfirm` message.
-const TYPE_MSG_CHANNEL_OPEN_CONFIRM: &str = "channel_open_confirm";
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
 ///
 /// Message definition for the fourth step in the channel open handshake (`ChanOpenConfirm`
@@ -56,10 +55,6 @@ impl Msg for MsgChannelOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_OPEN_CONFIRM.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // Nothing to validate
         // All the validation is performed on creation
@@ -67,7 +62,7 @@ impl Msg for MsgChannelOpenConfirm {
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgChannelOpenConfirm".to_string()
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

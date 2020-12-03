@@ -11,6 +11,7 @@ use relayer::relay::channel_relay;
 
 use crate::config::Config;
 use crate::prelude::*;
+use relayer::chain::CosmosSDKChain;
 
 #[derive(Command, Debug, Options)]
 pub struct V0Cmd {}
@@ -57,8 +58,8 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
         .find(|c| c.id == connection.dst().chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
-    let (src_chain_handle, _) = ChainRuntime::spawn(src_chain_config)?;
-    let (dst_chain_handle, _) = ChainRuntime::spawn(dst_chain_config)?;
+    let (src_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)?;
+    let (dst_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)?;
 
     Ok(channel_relay(
         src_chain_handle,

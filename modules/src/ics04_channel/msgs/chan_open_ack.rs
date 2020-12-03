@@ -11,8 +11,7 @@ use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
-/// Message type for the `MsgChannelOpenAck` message.
-const TYPE_MSG_CHANNEL_OPEN_ACK: &str = "channel_open_ack";
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenAck";
 
 ///
 /// Message definition for the third step in the channel open handshake (`ChanOpenAck` datagram).
@@ -62,17 +61,14 @@ impl Msg for MsgChannelOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_OPEN_ACK.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
     }
+
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgChannelOpenAck".to_string()
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

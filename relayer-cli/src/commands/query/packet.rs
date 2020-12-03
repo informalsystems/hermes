@@ -67,7 +67,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
             port_id: opts.port_id.to_string(),
@@ -146,7 +146,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitments ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.proven_packet_commitment(
             &opts.port_id,
@@ -233,8 +233,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let src_chain = CosmosSDKChain::from_config(src_chain_config, rt.clone()).unwrap();
-        let dst_chain = CosmosSDKChain::from_config(dst_chain_config, rt).unwrap();
+        let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
+        let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
         let channel = src_chain

@@ -79,7 +79,7 @@ impl Runnable for QueryClientStateCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyClientState, Error> = chain
@@ -172,7 +172,7 @@ impl Runnable for QueryClientConsensusCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<AnyConsensusState, Error> = chain
@@ -286,7 +286,7 @@ impl Runnable for QueryClientConnectionsCmd {
         status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
-        let chain = CosmosSDKChain::from_config(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
         let res: Result<ConnectionIDs, Error> = chain
