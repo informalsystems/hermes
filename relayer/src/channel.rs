@@ -514,8 +514,8 @@ pub fn build_chan_try(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -611,8 +611,8 @@ pub fn build_chan_ack(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -694,8 +694,8 @@ pub fn build_chan_confirm(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &dest_connection.client_id(),
         ics_target_height,
     )?;
