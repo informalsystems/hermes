@@ -1,9 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
 
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -12,6 +9,8 @@ use ibc::ics02_client::state::ConsensusState;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
@@ -218,6 +217,7 @@ mod test {
 
     use ibc::ics24_host::identifier::ClientId;
 
+    use crate::chain::handle::ChainHandle;
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -271,10 +271,12 @@ mod test {
 
     #[test]
     fn test_build_update_client_and_send() {
-        let client_id = ClientId::from_str("client_on_a_forb").unwrap();
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
-        let a_opts = ForeignClientConfig::new(&a_cfg.id, &client_id);
+        let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let a_opts = ForeignClientConfig::new(&a_cfg.id, &a_client_id);
+        let b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
+        let b_opts = ForeignClientConfig::new(&b_cfg.id, &b_client_id);
 
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
@@ -286,6 +288,9 @@ mod test {
             "build_update_client_and_send was supposed to fail (no client existed)"
         );
 
+        // Remember b's height.
+        let b_height_start = b_chain.query_latest_height().unwrap();
+
         // Create a client on chain a
         let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
         assert!(
@@ -294,10 +299,42 @@ mod test {
             res
         );
 
+        // This should fail because the client on chain a already has the latest headers. Chain b,
+        // the source chain for the client on a, is at the same height where it was when the client
+        // was created, so an update should fail here.
         let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+
         assert!(
             res.is_err(),
-            "build_update_client_and_send failed with error: {:?}",
+            "build_update_client_and_send was supposed to fail",
+        );
+        let b_height_last = b_chain.query_latest_height().unwrap();
+        assert_eq!(b_height_last, b_height_start);
+
+        // Create a client on chain b
+        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        assert!(
+            res.is_ok(),
+            "build_create_client_and_send failed (chain b) with error {:?}",
+            res
+        );
+        // Chain b should have advanced
+        let b_height_last = b_chain.query_latest_height().unwrap();
+        assert_eq!(b_height_last, b_height_start.increment());
+
+        // Now we can update the client on chain a.
+        let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+        assert!(
+            res.is_ok(),
+            "build_update_client_and_send failed (chain a) with error: {:?}",
+            res
+        );
+
+        // And also update the client on chain b.
+        let res = build_update_client_and_send(&b_chain, &a_chain, &b_opts);
+        assert!(
+            res.is_ok(),
+            "build_update_client_and_send failed (chain b) with error: {:?}",
             res
         );
     }

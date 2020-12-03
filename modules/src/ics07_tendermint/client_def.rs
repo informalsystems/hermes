@@ -24,7 +24,8 @@ impl ClientDef for TendermintClient {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         if client_state.latest_height() >= header.height() {
             return Err(
-                "received header height is lower than (or equal to) client latest height".into(),
+                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                    header.height(), client_state.latest_height).into(),
             );
         }
 
