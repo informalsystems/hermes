@@ -134,11 +134,9 @@ impl EventMonitor {
         // Shut down previous client
         debug!("Gracefully shutting down previous client");
 
-        self.rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(websocket_client.close())
-            .map_err(|e| format!("Failed to close previous WebSocket client: {}", e))?;
+        if let Err(e) = websocket_client.close() {
+            error!("Previous websocket client closing failure {}", e);
+        }
 
         self.rt
             .lock()

@@ -1,5 +1,5 @@
 use std::{
-    convert::{TryFrom, TryInto},
+    convert::TryFrom,
     future::Future,
     str::FromStr,
     sync::{Arc, Mutex},
@@ -23,7 +23,7 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
 
-use tendermint_light_client::types::{LightBlock as TMLightBlock, ValidatorSet};
+use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_rpc::Client;
 use tendermint_rpc::HttpClient;
 
@@ -361,8 +361,8 @@ impl Chain for CosmosSDKChain {
         Ok(TMHeader {
             trusted_height,
             signed_header: target_light_block.signed_header.clone(),
-            validator_set: fix_validator_set(&target_light_block)?,
-            trusted_validator_set: fix_validator_set(&trusted_light_block)?,
+            validator_set: target_light_block.validators,
+            trusted_validator_set: trusted_light_block.validators,
         })
     }
 
@@ -454,28 +454,6 @@ impl Chain for CosmosSDKChain {
 
         Ok((consensus_state, res.proof))
     }
-}
-
-fn fix_validator_set(light_block: &TMLightBlock) -> Result<ValidatorSet, Error> {
-    let validators = light_block.validators.validators();
-    // Get the proposer.
-    let proposer = validators
-        .iter()
-        .find(|v| v.address == light_block.signed_header.header.proposer_address)
-        .ok_or(Kind::EmptyResponseValue)?;
-
-    let voting_power: u64 = validators.iter().map(|v| v.voting_power.value()).sum();
-
-    // Create the validator set with the proposer from the header.
-    // This is required by IBC on-chain validation.
-    let validator_set = ValidatorSet::new(
-        validators.clone(),
-        Some(*proposer),
-        voting_power
-            .try_into()
-            .map_err(|e| Kind::EmptyResponseValue.context(e))?,
-    );
-    Ok(validator_set)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

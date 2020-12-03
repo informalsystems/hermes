@@ -7,6 +7,7 @@ EXTENDS Integers, FiniteSets, IBCCoreDefinitions,
 CONSTANTS MaxHeight, \* maximal chain height
           ChainID, \* chain identifier
           ChannelOrdering, \* indicate whether the channels are ordered or unordered  
+          MaxVersion, \* maximal connection / channel version (we assume versions are integers)
           MaxPacketSeq \* maximal packet sequence number
 
 VARIABLES chainStore, \* chain store, containing client heights, a connection end, a channel end 
@@ -155,15 +156,17 @@ SendPacket ==
     /\ LET packet == AsPacket([
         sequence |-> appPacketSeq,
         timeoutHeight |-> MaxHeight + 1,
-        srcChannelID |-> GetChannelID(ChainID),
-        dstChannelID |-> GetChannelID(GetCounterpartyChainID(ChainID))]) IN
+        srcPortID |-> chainStore.connectionEnd.channelEnd.portID,
+        srcChannelID |-> chainStore.connectionEnd.channelEnd.channelID,
+        dstPortID |-> chainStore.connectionEnd.channelEnd.counterpartyPortID,
+        dstChannelID |-> chainStore.connectionEnd.channelEnd.counterpartyChannelID]) IN
         \* update chain store with packet committment
         /\ chainStore' = WritePacketCommitment(chainStore, packet)
         \* log sent packet
-        /\ packetLog' = Append(packetLog, AsPacketLogEntry(
-                                               [type |-> "PacketSent", 
+        /\ packetLog' = Append(packetLog, AsPacketLogEntry([
+                                                type |-> "PacketSent", 
                                                 srcChainID |-> ChainID,  
-                                                sequence |-> packet.sequence ,
+                                                sequence |-> packet.sequence,
                                                 timeoutHeight |-> packet.timeoutHeight]))
         \* increase application packet sequence
         /\ appPacketSeq' = appPacketSeq + 1
@@ -211,11 +214,12 @@ HandleIncomingDatagrams ==
  ***************************************************************************)
 \* Initial state predicate
 \* Initially
-\*  - each chain is initialized to InitChain (defined in RelayerDefinitions.tla)
+\*  - each chain is initialized to some element of the set
+\*    InitChainStores (defined in IBCCoreDefinitions.tla)
 \*  - pendingDatagrams for each chain is empty
 \*  - the packetSeq is set to 1
 Init == 
-    /\ chainStore = InitChainStore(ChannelOrdering)
+    /\ chainStore \in InitChainStore(MaxVersion, ChannelOrdering)
     /\ incomingDatagrams = AsSetDatagrams({})
     /\ incomingPacketDatagrams = AsSeqDatagrams(<<>>)
     /\ history = InitHistory
@@ -242,13 +246,14 @@ Fairness ==
  Invariants
  ***************************************************************************)
 \* Type invariant   
-\* ChainStores and Datagrams are defined in RelayerDefinitions.tla        
+\* ChainStores, Datagrams, PacketLogEntries are defined in IBCCoreDefinitions.tla        
 TypeOK ==    
-    /\ chainStore \in ChainStores(MaxHeight, ChannelOrdering, MaxPacketSeq)
-    /\ incomingDatagrams \in SUBSET Datagrams(MaxHeight, MaxPacketSeq)
+    /\ chainStore \in ChainStores(MaxHeight, ChannelOrdering, MaxPacketSeq, MaxVersion)
+    /\ incomingDatagrams \in SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)
+    /\ incomingPacketDatagrams \in Seq(Datagrams(MaxHeight, MaxPacketSeq, MaxVersion))
     /\ history \in Histories
     /\ appPacketSeq \in 1..MaxPacketSeq
-    /\ packetLog \in SUBSET Packets(MaxHeight, MaxPacketSeq)
+    /\ packetLog \in Seq(PacketLogEntries(MaxHeight, MaxPacketSeq))
     
 (***************************************************************************
  Properties
@@ -260,5 +265,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Sep 30 13:47:16 CEST 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 10:40:51 CET 2020 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

@@ -2,18 +2,28 @@
 
 ## Unreleased Changes
 
-Special thanks to external contributors for this release: @CharlyCst ([#347]).
+
+## v0.0.5
+*December 2, 2020*
+
+This release focuses on implementing relayer and relayer-cli functionality towards a full v0 implementation.
+We now have the full-stack implementation for supporting client creation & updates, as well as connection- and channel handshakes.
+We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and added ICS 020 spec. 
+
+Special thanks to external contributors for this release: @CharlyCst ([#347], [#419]).
 
 ### FEATURES
 
 - Update to tendermint-rs version `0.17-RC3` ([#403])
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
-- [relayer] Integrate relayer spike into relayer crate ([#335])
 - [modules]
     - Implement flexible connection id selection ([#332])
     - ICS 4 Domain Types for channel handshakes and packets ([#315], [#95])
     - Introduce LightBlock support for MockContext ([#389])
-- [relayer] 
+- [relayer]
+    - Retrieve account sequence information from a chain using a GRPC client (#337)
+    - Implementation of chain runtime for v0 ([#330])
+    - Integrate relayer spike into relayer crate ([#335])
     - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
     - Implement the relayer logic for connection handshake messages ([#358], [#359], [#360])
     - Implement the relayer logic for channel handshake messages ([#371], [#372], [#373], [#374])
@@ -22,54 +32,72 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
     - CLI for client update message ([#277])
     - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
     - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
+    - Added basic client, connection, and channel lifecyle in relayer v0 ([#376], [#377], [#378])
     - Implement commands to add and list keys for a chain ([#363])
+    - Allow overriding of peer_id, height and hash in light add command ([#428])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
-- [ibc-proto] Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
-
-[#95]: https://github.com/informalsystems/ibc-rs/issues/95
-[#274]: https://github.com/informalsystems/ibc-rs/issues/274
-[#315]: https://github.com/informalsystems/ibc-rs/issues/315
-[#332]: https://github.com/informalsystems/ibc-rs/issues/332
-[#335]: https://github.com/informalsystems/ibc-rs/pulls/335
-[#336]: https://github.com/informalsystems/ibc-rs/issues/336
-[#348]: https://github.com/informalsystems/ibc-rs/pulls/348
-[#358]: https://github.com/informalsystems/ibc-rs/issues/358
-[#358]: https://github.com/informalsystems/ibc-rs/issues/359
-[#358]: https://github.com/informalsystems/ibc-rs/issues/360
-[#363]: https://github.com/informalsystems/ibc-rs/issues/363
-[#366]: https://github.com/informalsystems/ibc-rs/issues/366
-[#368]: https://github.com/informalsystems/ibc-rs/issues/368
-[#369]: https://github.com/informalsystems/ibc-rs/pulls/369
-[#371]: https://github.com/informalsystems/ibc-rs/issues/371
-[#372]: https://github.com/informalsystems/ibc-rs/issues/372
-[#373]: https://github.com/informalsystems/ibc-rs/issues/373
-[#374]: https://github.com/informalsystems/ibc-rs/issues/374
-[#389]: https://github.com/informalsystems/ibc-rs/issues/389
-[#403]: https://github.com/informalsystems/ibc-rs/issues/403
-[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
+    - Fix `--out` command line parameter (instead of `--path`) ([#419])
+- [spec/relayer]
+    - ICS 020 spec in TLA+ ([#386])
+    - Prepare IBC Core TLA+ specs ([#404])
 
 ### IMPROVEMENTS
 
+- [relayer]
+    - Pin chain runtime against Tokio 0.2 by downgrading for 0.3 to avoid dependency hell ([#415], follow up to [#402])
 - [relayer-cli]
     - Split tasks spawned by CLI commands into their own modules ([#331])
     - V0 command implementation ([#346])
 - [modules]
+    - Split `msgs.rs` of ICS002 in separate modules ([#367])
+    - Fixed inconsistent versioning for ICS003 and ICS004 ([#97])
+    - Fixed `get_sign_bytes` method for messages ([#98])
     - Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
     - Align with tendermint-rs in the domain type definition of `block::Id` ([#338])
 
+
+[#95]: https://github.com/informalsystems/ibc-rs/issues/95
+[#97]: https://github.com/informalsystems/ibc-rs/issues/97
+[#98]: https://github.com/informalsystems/ibc-rs/issues/98
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
 [#277]: https://github.com/informalsystems/ibc-rs/issues/277
-[#331]: https://github.com/informalsystems/ibc-rs/pulls/331
+[#315]: https://github.com/informalsystems/ibc-rs/issues/315
+[#330]: https://github.com/informalsystems/ibc-rs/issues/330
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
-[#335]: https://github.com/informalsystems/ibc-rs/pulls/335
+[#335]: https://github.com/informalsystems/ibc-rs/pull/335
 [#336]: https://github.com/informalsystems/ibc-rs/issues/336
+[#337]: https://github.com/informalsystems/ibc-rs/issues/337
 [#338]: https://github.com/informalsystems/ibc-rs/issues/338
-[#347]: https://github.com/informalsystems/ibc-rs/issues/347
 [#346]: https://github.com/informalsystems/ibc-rs/issues/346
-[#348]: https://github.com/informalsystems/ibc-rs/pulls/348
+[#347]: https://github.com/informalsystems/ibc-rs/issues/347
+[#348]: https://github.com/informalsystems/ibc-rs/pull/348
+[#358]: https://github.com/informalsystems/ibc-rs/issues/358
+[#359]: https://github.com/informalsystems/ibc-rs/issues/359
+[#360]: https://github.com/informalsystems/ibc-rs/issues/360
+[#363]: https://github.com/informalsystems/ibc-rs/issues/363
+[#366]: https://github.com/informalsystems/ibc-rs/issues/366
+[#367]: https://github.com/informalsystems/ibc-rs/issues/367
+[#368]: https://github.com/informalsystems/ibc-rs/issues/368
+[#369]: https://github.com/informalsystems/ibc-rs/pull/369
+[#371]: https://github.com/informalsystems/ibc-rs/issues/371
+[#372]: https://github.com/informalsystems/ibc-rs/issues/372
+[#373]: https://github.com/informalsystems/ibc-rs/issues/373
+[#374]: https://github.com/informalsystems/ibc-rs/issues/374
+[#376]: https://github.com/informalsystems/ibc-rs/issues/376
+[#377]: https://github.com/informalsystems/ibc-rs/issues/377
+[#378]: https://github.com/informalsystems/ibc-rs/issues/378
+[#386]: https://github.com/informalsystems/ibc-rs/issues/386
+[#389]: https://github.com/informalsystems/ibc-rs/issues/389
+[#402]: https://github.com/informalsystems/ibc-rs/issues/402
+[#403]: https://github.com/informalsystems/ibc-rs/issues/403
+[#404]: https://github.com/informalsystems/ibc-rs/issues/404
+[#419]: https://github.com/informalsystems/ibc-rs/issues/419
+[#415]: https://github.com/informalsystems/ibc-rs/issues/415
+[#428]: https://github.com/informalsystems/ibc-rs/issues/428
 [changelog]: https://github.com/informalsystems/ibc-rs/tree/master/CHANGELOG.md
+[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
 
 ## v0.0.4
 *October 19, 2020*

@@ -28,14 +28,15 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
 \* Create a packet: Abstract away from timestamp. 
 \* Assume timeoutHeight is MaxHeight + 1
 CreatePacket(packetData) ==
+    LET channelEnd == chainStore.channelEnd IN
     AsPacket([
         sequence |-> appPacketSeq,
         timeoutHeight |-> MaxHeight + 1,
         data |-> packetData, 
-        srcChannelID |-> GetChannelID(ChainID),
-        srcPortID |-> GetPortID(ChainID),
-        dstChannelID |-> GetCounterpartyChannelID(ChainID),
-        dstPortID |-> GetCounterpartyPortID(ChainID)
+        srcPortID |-> channelEnd.portID,
+        srcChannelID |-> channelEnd.channelID,
+        dstPortID |-> channelEnd.counterpartyPortID,
+        dstChannelID |-> channelEnd.counterpartyChannelID
     ])
   
 
