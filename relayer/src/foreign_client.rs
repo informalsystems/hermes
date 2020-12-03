@@ -173,8 +173,8 @@ pub fn build_create_client_and_send(
 }
 
 pub fn build_update_client(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: &impl ChainHandle,
+    src_chain: &impl ChainHandle,
     dst_client_id: &ClientId,
     target_height: Height,
 ) -> Result<Vec<Any>, Error> {
@@ -198,13 +198,13 @@ pub fn build_update_client(
 }
 
 pub fn build_update_client_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: &impl ChainHandle,
+    src_chain: &impl ChainHandle,
     opts: &ForeignClientConfig,
 ) -> Result<String, Error> {
     let new_msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        dst_chain,
+        src_chain,
         opts.client_id(),
         src_chain.query_latest_height()?,
     )?;
@@ -245,7 +245,7 @@ mod test {
             res
         );
 
-        // Double client creations should be forbidden.
+        // Double client creation should be forbidden.
         let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
         assert!(
             res.is_err(),
@@ -274,15 +274,31 @@ mod test {
         let client_id = ClientId::from_str("client_on_a_forb").unwrap();
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
-        let opts = ForeignClientConfig::new(&a_cfg.id, &client_id);
+        let a_opts = ForeignClientConfig::new(&a_cfg.id, &client_id);
 
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
-        let res = build_update_client_and_send(a_chain, b_chain, &opts);
+        // This action should fail because no client exists (yet)
+        let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail (no client existed)"
+        );
+
+        // Create a client on chain a
+        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
+        assert!(
+            res.is_ok(),
+            "build_create_client_and_send failed (chain a) with error {:?}",
+            res
+        );
+
+        let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+        assert!(
+            res.is_err(),
+            "build_update_client_and_send failed with error: {:?}",
+            res
         );
     }
 }
