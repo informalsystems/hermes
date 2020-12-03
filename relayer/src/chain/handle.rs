@@ -184,21 +184,11 @@ pub trait ChainHandle: Clone + Send + Sync {
     /// Send a transaction with `msgs` to chain.
     fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error>;
 
-    // Inclusion proofs
-    // It might be good to include an inclusion proof method which abstracts over the light client
-    // to prove that a piece of data is stored on the chain
-
-    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error>;
-
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
     fn get_signer(&self) -> Result<AccountId, Error>;
 
     fn get_key(&self) -> Result<KeyEntry, Error>;
-
-    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error>;
-
-    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error>;
 
     fn module_version(&self, port_id: &PortId) -> Result<String, Error>;
 
