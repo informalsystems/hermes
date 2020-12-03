@@ -7,7 +7,10 @@ use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Height {
+    /// Previously known as "epoch", and will be renamed to "revision" soon
     pub version_number: u64,
+
+    /// The height of a block
     pub version_height: u64,
 }
 

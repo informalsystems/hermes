@@ -1,21 +1,51 @@
+use prost_types::Any;
+use tendermint_proto::Protobuf;
+
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
+use crate::ics02_client::msgs::create_client;
+use crate::ics02_client::msgs::update_client;
+use crate::ics02_client::msgs::ClientMsg;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
-use ibc_proto::cosmos::tx::v1beta1::Tx;
 
-// TODO: Implement this (the tx type is probably wrong also). Rough sketch:
-// 1. deserialize & validate each message in the tx
-// 2. invoke dispatch(ctx, ms)
-// 3. if all message in the tx pass through correctly, then apply the side-effects to the context
-pub fn deliver_tx<Ctx>(_ctx: &mut Ctx, _tx: Tx) -> Result<(), Error>
+/// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
+/// info or signature checks here.
+/// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<(), Error>
 where
     Ctx: ICS26Context,
 {
-    unimplemented!()
+    // Create a clone, which will store each intermediary stage of applying txs.
+    let mut ctx_interim = ctx.clone();
+
+    for any_msg in messages {
+        // Decode the proto message into a domain message, creating an ICS26 envelope.
+        let envelope = match any_msg.type_url.as_str() {
+            // ICS2 messages
+            create_client::TYPE_URL => {
+                // Pop out the message and then wrap it in the corresponding type
+                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&*any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(ICS2Msg(ClientMsg::CreateClient(domain_msg)))
+            }
+            update_client::TYPE_URL => {
+                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&*any_msg.value)
+                    .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
+                Ok(ICS2Msg(ClientMsg::UpdateClient(domain_msg)))
+            }
+            // TODO: ICS3 messages
+            _ => Err(Kind::UnknownMessageTypeURL(any_msg.type_url)),
+        }?;
+        dispatch(&mut ctx_interim, envelope)?;
+    }
+
+    // No error has surfaced, so we now apply the changes permanently to the original context.
+    *ctx = ctx_interim;
+    Ok(())
 }
 
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.

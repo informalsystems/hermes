@@ -11,9 +11,6 @@ use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
-/// Message type for the `MsgTimeout` message.
-const TYPE_MSG_TIMEOUT: &str = "ics04/timeout";
-
 ///
 /// Message definition for packet timeout domain type.
 ///
@@ -50,10 +47,6 @@ impl Msg for MsgTimeout {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn get_type(&self) -> String {
-        TYPE_MSG_TIMEOUT.to_string()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {

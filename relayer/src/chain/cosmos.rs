@@ -1,12 +1,16 @@
-use std::convert::TryFrom;
-use std::future::Future;
-use std::str::FromStr;
-use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::{
+    convert::TryFrom,
+    future::Future,
+    str::FromStr,
+    sync::{Arc, Mutex},
+    thread,
+    time::Duration,
+};
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 
+use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
@@ -35,6 +39,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
+use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
@@ -48,7 +53,10 @@ use super::Chain;
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
+use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
+use crate::light_client::tendermint::LightClient as TMLightClient;
+use crate::light_client::LightClient;
 
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
@@ -62,26 +70,6 @@ pub struct CosmosSDKChain {
 }
 
 impl CosmosSDKChain {
-    pub fn from_config(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
-        let primary = config
-            .primary()
-            .ok_or_else(|| Kind::LightClient.context("no primary peer specified"))?;
-
-        let rpc_client =
-            HttpClient::new(primary.address.clone()).map_err(|e| Kind::Rpc.context(e))?;
-
-        // Initialize key store and load key
-        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(Self {
-            rt,
-            config,
-            keybase: key_store,
-            rpc_client,
-        })
-    }
-
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         // TODO - generalize this
@@ -111,6 +99,14 @@ impl CosmosSDKChain {
         Ok(Duration::from_secs(res.seconds as u64))
     }
 
+    fn rpc_client(&self) -> &HttpClient {
+        &self.rpc_client
+    }
+
+    pub fn config(&self) -> &ChainConfig {
+        &self.config
+    }
+
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
@@ -127,18 +123,64 @@ impl CosmosSDKChain {
 }
 
 impl Chain for CosmosSDKChain {
-    type Header = TMHeader;
     type LightBlock = TMLightBlock;
-    type RpcClient = HttpClient;
+    type Header = TMHeader;
     type ConsensusState = ConsensusState;
     type ClientState = ClientState;
 
-    fn config(&self) -> &ChainConfig {
-        &self.config
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
+        let rpc_client =
+            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+
+        // Initialize key store and load key
+        let key_store = KeyRing::init(StoreBackend::Test, config.clone())
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(Self {
+            rt,
+            config,
+            keybase: key_store,
+            rpc_client,
+        })
     }
 
-    fn rpc_client(&self) -> &HttpClient {
-        &self.rpc_client
+    // TODO use a simpler approach to create the light client
+    #[allow(clippy::type_complexity)]
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
+        let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
+
+        let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
+
+        Ok((Box::new(lc), Some(supervisor_thread)))
+    }
+
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    > {
+        let (mut event_monitor, event_receiver) =
+            EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
+
+        event_monitor.subscribe().unwrap();
+        let monitor_thread = thread::spawn(move || event_monitor.run());
+
+        Ok((event_receiver, Some(monitor_thread)))
+    }
+
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
+
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
@@ -164,7 +206,7 @@ impl Chain for CosmosSDKChain {
 
     /// Send a transaction that includes the specified messages
     /// TODO - split the messages in multiple Tx-es such that they don't exceed some max size
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error> {
         let key = self
             .keybase()
             .get_key()
@@ -256,86 +298,29 @@ impl Chain for CosmosSDKChain {
         Ok(response)
     }
 
-    /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = self
-            .block_on(self.rpc_client().status())?
-            .map_err(|e| Kind::Rpc.context(e))?;
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<AccountId, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
-        if status.sync_info.catching_up {
-            fail!(
-                Kind::LightClient,
-                "node at {} running chain {} not caught up",
-                self.config().rpc_addr,
-                self.config().id,
-            );
-        }
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
 
-        Ok(ICSHeight {
-            version_number: ChainId::chain_version(status.node_info.network.as_str()),
-            version_height: u64::from(status.sync_info.latest_block_height),
-        })
+        Ok(signer)
     }
 
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<Self::ClientState, Error> {
-        let client_state = self
-            .query(ClientStatePath(client_id.clone()), height, false)
-            .map_err(|e| Kind::Query.context(e))
-            .and_then(|v| {
-                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
-            })?;
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
-        Ok(client_state)
-    }
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
 
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
-        let res = self
-            .query(ClientStatePath(client_id.clone()), height, true)
-            .map_err(|e| Kind::Query.context(e))?;
-
-        let client_state =
-            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
-
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
-
-        Ok((client_state, res.proof))
-    }
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: ICSHeight,
-        height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
-        let res = self
-            .query(
-                ClientConsensusPath {
-                    client_id: client_id.clone(),
-                    epoch: consensus_height.version_number,
-                    height: consensus_height.version_height,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query.context(e))?;
-
-        let consensus_state =
-            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
-
-        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
-
-        Ok((consensus_state, res.proof))
+        Ok(key)
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
@@ -381,33 +366,93 @@ impl Chain for CosmosSDKChain {
         })
     }
 
-    fn keybase(&self) -> &KeyRing {
-        &self.keybase
+    /// Query the latest height the chain is at via a RPC query
+    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+        let status = self
+            .block_on(self.rpc_client().status())?
+            .map_err(|e| Kind::Rpc.context(e))?;
+
+        if status.sync_info.catching_up {
+            fail!(
+                Kind::LightClient,
+                "node at {} running chain {} not caught up",
+                self.config().rpc_addr,
+                self.config().id,
+            );
+        }
+
+        Ok(ICSHeight {
+            version_number: ChainId::chain_version(status.node_info.network.as_str()),
+            version_height: u64::from(status.sync_info.latest_block_height),
+        })
     }
 
-    /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<Self::ClientState, Error> {
+        let client_state = self
+            .query(ClientStatePath(client_id.clone()), height, false)
+            .map_err(|e| Kind::Query.context(e))
+            .and_then(|v| {
+                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+            })?;
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        Ok(client_state)
     }
 
-    /// Get the signing key
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        // TODO - do a real chain query
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
+    }
 
-        Ok(key)
+    fn proven_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        let res = self
+            .query(ClientStatePath(client_id.clone()), height, true)
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let client_state =
+            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        let client_state = downcast!(client_state => AnyClientState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+
+        Ok((client_state, res.proof))
+    }
+
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        let res = self
+            .query(
+                ClientConsensusPath {
+                    client_id: client_id.clone(),
+                    epoch: consensus_height.version_number,
+                    height: consensus_height.version_height,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state =
+            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+
+        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
+
+        Ok((consensus_state, res.proof))
     }
 }
 

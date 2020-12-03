@@ -9,9 +9,6 @@ use tendermint_proto::Protobuf;
 
 use std::convert::TryFrom;
 
-/// Message type for the `MsgChannelCloseInit` message.
-const TYPE_MSG_CHANNEL_CLOSE_INIT: &str = "channel_close_init";
-
 ///
 /// Message definition for the first step in the channel close handshake (`ChanCloseInit` datagram).
 ///
@@ -47,10 +44,6 @@ impl Msg for MsgChannelCloseInit {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_CLOSE_INIT.to_string()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {

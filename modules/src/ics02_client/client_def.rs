@@ -9,7 +9,6 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics07_tendermint as tendermint;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -93,7 +92,7 @@ pub trait ClientDef: Clone {
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
-    Tendermint(tendermint::header::Header),
+    Tendermint(TendermintHeader),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
@@ -258,7 +257,7 @@ impl ClientState for AnyClientState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum AnyConsensusState {
-    Tendermint(crate::ics07_tendermint::consensus_state::ConsensusState),
+    Tendermint(TendermintConsensusState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),

@@ -19,7 +19,7 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
-const TYPE_MSG_CREATE_CLIENT: &str = "create_client";
+pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -69,17 +69,13 @@ impl Msg for MsgCreateAnyClient {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CREATE_CLIENT.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
         // Nothing to validate since all fields are validated on creation.
         Ok(())
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.client.v1.MsgCreateClient".to_string()
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

@@ -2,6 +2,13 @@
 
 ## Unreleased Changes
 
+### FEATURES
+
+### IMPROVEMENTS
+
+- Mock chain (implementing IBC handlers) and integration against CLI ([#158])
+
+[#158]: https://github.com/informalsystems/ibc-rs/issues/158
 
 ## v0.0.5
 *December 2, 2020*

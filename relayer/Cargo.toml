@@ -54,3 +54,5 @@ version = "=0.17.0-rc3"
 
 [dev-dependencies]
 serial_test = "0.5.0"
+ibc = { path = "../modules", features = [ "mocks" ] }
+tendermint-testgen = { version = "0.17.0-rc3" }

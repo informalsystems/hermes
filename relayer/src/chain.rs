@@ -4,6 +4,16 @@ pub use cosmos::CosmosSDKChain;
 pub mod handle;
 pub mod runtime;
 
+#[cfg(test)]
+pub mod mock;
+
+use crossbeam_channel as channel;
+use std::{
+    sync::{Arc, Mutex},
+    thread,
+};
+use tokio::runtime::Runtime as TokioRuntime;
+
 use prost_types::Any;
 
 use tendermint_proto::Protobuf;
@@ -11,8 +21,6 @@ use tendermint_proto::Protobuf;
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
-
-use tendermint_rpc::Client as RpcClient;
 
 use ibc::ics02_client::header::Header;
 
@@ -33,7 +41,9 @@ use ibc::Height as ICSHeight;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
+use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
+use crate::light_client::LightClient;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -45,7 +55,7 @@ pub struct QueryResponse {
 }
 
 /// Defines a blockchain as understood by the relayer
-pub trait Chain {
+pub trait Chain: Sized {
     /// Type of light blocks for this chain
     type LightBlock: Send + Sync;
 
@@ -58,29 +68,38 @@ pub trait Chain {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
-    /// Type of RPC requester (wrapper around low-level RPC client) for this chain
-    type RpcClient: RpcClient + Send + Sync;
+    /// Constructs the chain
+    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error>;
+
+    #[allow(clippy::type_complexity)]
+    /// Initializes and returns the light client (if any) associated with this chain.
+    fn init_light_client(
+        &self,
+    ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error>;
+
+    /// Initializes and returns the event monitor (if any) associated with this chain.
+    fn init_event_monitor(
+        &self,
+        rt: Arc<Mutex<TokioRuntime>>,
+    ) -> Result<
+        (
+            channel::Receiver<EventBatch>,
+            Option<thread::JoinHandle<()>>,
+        ),
+        Error,
+    >;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId {
-        &self.config().id
-    }
-
-    /// Returns the chain's configuration
-    fn config(&self) -> &ChainConfig;
+    fn id(&self) -> &ChainId;
 
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
-
-    /// Get a low-level RPC client for this chain
-    /// TODO - Should this be part of the Chain trait?
-    fn rpc_client(&self) -> &Self::RpcClient;
 
     /// Perform a generic ICS `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error>;
+    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 
@@ -111,12 +130,7 @@ pub trait Chain {
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        // TODO - do a real chain query
-        Ok(CommitmentPrefix::from(
-            self.config().store_prefix.as_bytes().to_vec(),
-        ))
-    }
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
     fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
         // TODO - do a real chain query

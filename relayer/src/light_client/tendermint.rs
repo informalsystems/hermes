@@ -100,8 +100,6 @@ fn build_instance(
 }
 
 fn build_supervisor(config: &ChainConfig, reset: bool) -> Result<Supervisor, error::Error> {
-    let _id = config.id.clone();
-
     let options = light_client::Options {
         trust_threshold: config.trust_threshold,
         trusting_period: config.trusting_period,

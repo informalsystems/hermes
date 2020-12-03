@@ -10,9 +10,6 @@ use tendermint_proto::Protobuf;
 
 use std::convert::{TryFrom, TryInto};
 
-/// Message type for the `MsgChannelCloseConfirm` message.
-const TYPE_MSG_CHANNEL_CLOSE_CONFIRM: &str = "channel_close_confirm";
-
 ///
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
 /// datagram).
@@ -54,10 +51,6 @@ impl Msg for MsgChannelCloseConfirm {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn get_type(&self) -> String {
-        TYPE_MSG_CHANNEL_CLOSE_CONFIRM.to_string()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {

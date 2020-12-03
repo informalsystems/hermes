@@ -10,8 +10,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics24_host::identifier::ConnectionId;
 use crate::{proofs::Proofs, tx_msg::Msg};
 
-/// Message type for the `MsgConnectionOpenConfirm` message.
-pub const TYPE_MSG_CONNECTION_OPEN_CONFIRM: &str = "connection_open_confirm";
+pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenConfirm";
 
 ///
 /// Message definition for `MsgConnectionOpenConfirm` (i.e., `ConnOpenConfirm` datagram).
@@ -42,20 +41,16 @@ impl Msg for MsgConnectionOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_type(&self) -> String {
-        TYPE_MSG_CONNECTION_OPEN_CONFIRM.to_string()
-    }
-
     fn validate_basic(&self) -> Result<(), Error> {
         Ok(())
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
-    fn type_url(&self) -> String {
-        "/ibc.core.connection.v1.MsgConnectionOpenConfirm".to_string()
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

@@ -51,10 +51,10 @@ version = "=0.17.0-rc3"
 version = "=0.17.0-rc3"
 
 [dependencies.tendermint-testgen]
-version = "0.17.0-rc2"
+version = "0.17.0-rc3"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "0.17.0-rc2" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "0.17.0-rc3" } # Needed for generating (synthetic) light blocks.

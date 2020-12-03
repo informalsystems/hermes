@@ -11,9 +11,6 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
-/// Message type for `MsgPacket`.
-const TYPE_MSG_PACKET: &str = "ics04/opaque";
-
 ///
 /// Message definition for the "packet receiving" datagram.
 ///
@@ -53,10 +50,6 @@ impl Msg for MsgRecvPacket {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn get_type(&self) -> String {
-        TYPE_MSG_PACKET.to_string()
     }
 
     fn validate_basic(&self) -> Result<(), Self::ValidationError> {
