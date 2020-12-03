@@ -23,7 +23,6 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
     - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
     - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
     - Implement commands to add and list keys for a chain ([#363])
-    - Mock chain (implementing IBC handlers) and integration against CLI ([#158])
 - [proto-compiler]
     - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
@@ -31,7 +30,6 @@ Special thanks to external contributors for this release: @CharlyCst ([#347]).
 
 [#95]: https://github.com/informalsystems/ibc-rs/issues/95
 [#274]: https://github.com/informalsystems/ibc-rs/issues/274
-[#158]: https://github.com/informalsystems/ibc-rs/issues/158
 [#315]: https://github.com/informalsystems/ibc-rs/issues/315
 [#332]: https://github.com/informalsystems/ibc-rs/issues/332
 [#335]: https://github.com/informalsystems/ibc-rs/pulls/335
