@@ -25,8 +25,10 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, 
        \* if the packet has not passed the timeout height
        /\ \/ packet.timeoutHeight = 0 
           \/ chain.height < packet.timeoutHeight  
-       \* if the "PacketRecv" datagram can be verified 
+       \* if the "PacketRecv" datagram has valid port and channel IDs 
+       /\ packet.srcPortID = channelEnd.counterpartyPortID
        /\ packet.srcChannelID = channelEnd.counterpartyChannelID
+       /\ packet.dstPortID = channelEnd.portID
        /\ packet.dstChannelID = channelEnd.channelID
     THEN \* call application function OnPacketRecv
          LET OnPacketRecvOutcome == 
@@ -34,13 +36,17 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, accounts, escrowAccounts, 
          \* if OnPacketRecv is successful
          IF /\ ~OnPacketRecvOutcome.error
          \* if the packet has not been received  
-            /\ [channelID |-> packet.dstChannelID, sequence |-> packet.sequence] 
-                \notin chain.packetReceipts
+            /\ AsPacketReceipt([
+                portID |-> packet.dstPortID, 
+                channelID |-> packet.dstChannelID, 
+                sequence |-> packet.sequence
+               ]) \notin chain.packetReceipts
          THEN \* construct log entry for packet log
               LET logEntry == AsPacketLogEntry(
                             [type |-> "PacketRecv",
                              srcChainID |-> chainID,
                              sequence |-> packet.sequence,
+                             portID |-> packet.dstPortID,
                              channelID |-> packet.dstChannelID,
                              timeoutHeight |-> packet.timeoutHeight 
                             ]) IN
@@ -89,7 +95,8 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
     LET ack == packetDatagram.acknowledgement IN
     \* get packet committment that should be in chain store
     LET packetCommitment == AsPacketCommitment(
-                             [channelID |-> packet.srcChannelID, 
+                             [portID |-> packet.srcPortID, 
+                              channelID |-> packet.srcChannelID, 
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
     
@@ -101,9 +108,12 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
        /\ channelEnd.state = "OPEN"
        \* if the packet commitment exists in the chain store
        /\ packetCommitment \in chain.packetCommitments
-       \* if the "PacketAck" datagram can be verified 
+       \* if the "PacketAck" datagram has valid port and channel IDs 
+       /\ packet.srcPortID = channelEnd.portID
        /\ packet.srcChannelID = channelEnd.channelID
+       /\ packet.dstPortID = channelEnd.counterpartyPortID
        /\ packet.dstChannelID = channelEnd.counterpartyChannelID
+    \* remove packet commitment
     THEN LET updatedChainStore == 
                 [chain EXCEPT 
                     !.packetCommitments = 
@@ -131,6 +141,11 @@ WritePacketCommitment(chain, packet) ==
 
     IF \* channel end is neither null nor closed
        /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
+       \* if the packet has valid port and channel IDs
+       /\ packet.srcPortID = channelEnd.portID
+       /\ packet.srcChannelID = channelEnd.channelID
+       /\ packet.dstPortID = channelEnd.counterpartyPortID
+       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
        \* timeout height has not passed
        /\ \/ packet.timeoutHeight = 0 
           \/ latestClientHeight < packet.timeoutHeight
@@ -138,8 +153,8 @@ WritePacketCommitment(chain, packet) ==
                 !.packetCommitments =  
                     chain.packetCommitments 
                     \union 
-                    {[channelID |-> packet.srcChannelID,
-                      portID |-> packet.srcPortID,
+                    {[portID |-> packet.srcPortID,
+                      channelID |-> packet.srcChannelID,
                       data |-> packet.data,
                       sequence |-> packet.sequence,
                       timeoutHeight |-> packet.timeoutHeight]}
@@ -153,16 +168,17 @@ WriteAcknowledgement(chain, packetToAck) ==
     LET packet == packetToAck[1] IN
     LET ack == packetToAck[2] IN
 
-    \* if the acknowledgement for the packet has not been written
-    IF packet \notin chain.packetAcknowledgements
-    THEN \* write the acknowledgement to the chain store and remove 
-         \* the packet from the set of packets to acknowledge
-         LET packetAcknowledgement == 
-                AsPacketAcknowledgement(
-                    [channelID |-> packet.dstChannelID,
-                     portID |-> packet.dstChannelID,
+    \* create a packet acknowledgement for this packet
+    LET packetAcknowledgement == AsPacketAcknowledgement(
+                    [portID |-> packet.dstPortID,
+                     channelID |-> packet.dstChannelID,
                      sequence |-> packet.sequence,
                      acknowledgement |-> ack]) IN
+
+    \* if the acknowledgement for the packet has not been written
+    IF packetAcknowledgement \notin chain.packetAcknowledgements
+    THEN \* write the acknowledgement to the chain store and remove 
+         \* the packet from the set of packets to acknowledge
          [chain EXCEPT !.packetAcknowledgements = 
                             chain.packetAcknowledgements
                             \union 
@@ -188,6 +204,8 @@ LogAcknowledgement(chainID, chain, log, packetToAck) ==
                     [type |-> "WriteAck",
                      srcChainID |-> chainID,
                      sequence |-> packet.sequence,
+                     portID |-> packet.dstPortID,
+                     channelID |-> packet.dstChannelID,
                      timeoutHeight |-> packet.timeoutHeight,
                      acknowledgement |-> ack,
                      data |-> packet.data]) IN
@@ -202,15 +220,15 @@ TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts,
     LET channelEnd == chain.channelEnd IN
     \* get packet committment that should be in chain store
     LET packetCommitment == AsPacketCommitment(
-                             [channelID |-> packet.srcChannelID, 
-                              portID |-> packet.srcPortID,
+                             [portID |-> packet.srcPortID,
+                              channelID |-> packet.srcChannelID, 
                               data |-> packet.data,
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
     \* get packet receipt that should be absent in counterparty chain store
     LET packetReceipt == AsPacketReceipt(
-                             [channelID |-> packet.dstChannelID,
-                              portID |-> packet.dstPortID,
+                             [portID |-> packet.dstPortID,
+                              channelID |-> packet.dstChannelID,
                               sequence |-> packet.sequence]) IN                              
     
     \* call application function OnTimeoutPacket
@@ -219,9 +237,12 @@ TimeoutPacket(chain, counterpartyChain, accounts, escrowAccounts,
     
     \* if channel end is open
     IF /\ channelEnd.state = "OPEN"
+    \* srcChannelID and srcPortID match channel and port IDs
+       /\ packet.srcPortID = channelEnd.portID
+       /\ packet.srcChannelID = channelEnd.channelID
     \* dstChannelID and dstPortID match counterparty channel and port IDs
-       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
        /\ packet.dstPortID = channelEnd.counterpartyPortID
+       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
     \* packet has timed out
        /\ packet.timeoutHeight > 0
        /\ proofHeight >= packet.timeoutHeight
@@ -252,29 +273,34 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
     
     \* get packet committment that should be in chain store
     LET packetCommitment == AsPacketCommitment(
-                             [channelID |-> packet.srcChannelID, 
-                              portID |-> packet.srcPortID,
+                             [portID |-> packet.srcPortID,
+                              channelID |-> packet.srcChannelID, 
                               data |-> packet.data,
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
      \* get packet receipt that should be absent in counterparty chain store
     LET packetReceipt == AsPacketReceipt(
-                             [channelID |-> packet.dstChannelID,
-                              portID |-> packet.dstPortID,
+                             [portID |-> packet.dstPortID,
+                              channelID |-> packet.dstChannelID,
                               sequence |-> packet.sequence]) IN
     
     \* call application function OnTimeoutPacket
     LET OnTimeoutPacketOutcome == 
             OnTimeoutPacket(accounts, escrowAccounts, packet, maxBalance) IN
     
+    \* if srcChannelID and srcPortID match channel and port IDs
+    IF /\ packet.srcPortID = channelEnd.portID
+       /\ packet.srcChannelID = channelEnd.channelID
     \* if dstChannelID and dstPortID match counterparty channel and port IDs
-    IF /\ packet.dstChannelID = channelEnd.counterpartyChannelID
        /\ packet.dstPort = channelEnd.counterpartyPortID
+       /\ packet.dstChannelID = channelEnd.counterpartyChannelID
     \* chain has sent the packet  
        /\ packetCommitment \in chain.packetCommitments
     \* counterparty channel end is closed and its fields are as expected   
        /\ counterpartyChannelEnd.state = "CLOSED"
        /\ counterpartyChannelEnd.order = "UNORDERED"
+       /\ counterpartyChannelEnd.portID = packet.dstPortID  
+       /\ counterpartyChannelEnd.channelID = packet.dstChannelID
        /\ counterpartyChannelEnd.counterpartyChannelID = packet.srcChannelID
        /\ counterpartyChannelEnd.counterpartyPortID = packet.srcPortID
        /\ counterpartyChannelEnd.version = channelEnd.version
@@ -295,5 +321,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 23 17:22:59 CET 2020 by ilinastoilkovska
+\* Last modified Tue Dec 01 16:59:04 CET 2020 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska
