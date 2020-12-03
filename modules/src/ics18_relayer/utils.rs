@@ -130,7 +130,7 @@ mod tests {
 
             // - send the message to B. We bypass ICS18 interface and call directly into
             // MockContext `recv` method (to avoid additional serialization steps).
-            let dispatch_res_b = ctx_b.recv(ICS26Envelope::ICS2Msg(client_msg_b));
+            let dispatch_res_b = ctx_b.deliver(ICS26Envelope::ICS2Msg(client_msg_b));
             let validation_res = ctx_b.validate();
             assert!(
                 validation_res.is_ok(),
@@ -174,7 +174,7 @@ mod tests {
             let client_msg_a = client_msg_a_res.unwrap();
 
             // - send the message to A
-            let dispatch_res_a = ctx_a.recv(ICS26Envelope::ICS2Msg(client_msg_a));
+            let dispatch_res_a = ctx_a.deliver(ICS26Envelope::ICS2Msg(client_msg_a));
             let validation_res = ctx_a.validate();
             assert!(
                 validation_res.is_ok(),

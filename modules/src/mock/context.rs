@@ -226,7 +226,7 @@ impl MockContext {
     /// A datagram passes from the relayer to the IBC module (on host chain).
     /// Alternative method to `ICS18Context::send` that does not exercise any serialization.
     /// Used in testing the ICS18 algorithms, hence this may return a ICS18Error.
-    pub fn recv(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
+    pub fn deliver(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
         dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
         // Create a new block.
         self.advance_host_chain_height();

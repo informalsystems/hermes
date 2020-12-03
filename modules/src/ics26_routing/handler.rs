@@ -19,6 +19,9 @@ pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<(), Error>
 where
     Ctx: ICS26Context,
 {
+    // Create a clone, which will store each intermediary stage of applying txs.
+    let mut ctx_interim = ctx.clone();
+
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
         let envelope = match any_msg.type_url.as_str() {
@@ -37,8 +40,11 @@ where
             // TODO: ICS3 messages
             _ => Err(Kind::UnknownMessageTypeURL(any_msg.type_url)),
         }?;
-        dispatch(ctx, envelope)?;
+        dispatch(&mut ctx_interim, envelope)?;
     }
+
+    // No error has surfaced, so we now apply the changes permanently to the original context.
+    *ctx = ctx_interim;
     Ok(())
 }
 
