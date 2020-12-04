@@ -7,8 +7,11 @@
 ### IMPROVEMENTS
 
 - Mock chain (implementing IBC handlers) and integration against CLI ([#158])
+- Relayer tests for client update (ping pong) against MockChain ([#381])
+
 
 [#158]: https://github.com/informalsystems/ibc-rs/issues/158
+[#381]: https://github.com/informalsystems/ibc-rs/issues/381
 
 ## v0.0.5
 *December 2, 2020*
