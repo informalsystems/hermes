@@ -3,6 +3,8 @@ version: '3'
 services:
   ibc0:
     container_name: ibc0
+    logging:
+      driver: none
     build:
       context: .
       dockerfile: ci/gaia.Dockerfile
@@ -20,10 +22,12 @@ services:
     volumes:
       - chain-data:/data
     networks:
-      - relaynet
-#        ipv4_address: 192.168.10.2
+      relaynet:
+        ipv4_address: 192.168.10.2
   ibc1:
     container_name: ibc1
+    logging:
+      driver: none
     build:
       context: .
       dockerfile: ci/gaia.Dockerfile
@@ -41,25 +45,31 @@ services:
     volumes:
       - chain-data:/data
     networks:
-      - relaynet
-#        ipv4_address: 192.168.10.3
+      relaynet:
+        ipv4_address: 192.168.10.3
   relayer:
     depends_on:
       - ibc0
       - ibc1
     container_name: relayer
+    stdin_open: true
+    tty: true
+    command: ["-c", "/relayer/setup_relayer.sh"]
     build:
       context: .
       dockerfile: ci/relayer.Dockerfile
     environment:
       - CHAIN_A=ibc0
+      - CHAIN_A_HOME=/data/ibc0
       - CHAIN_B=ibc1
+      - CHAIN_B_HOME=/data/ibc1
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
     volumes:
       - chain-data:/data
     networks:
-      - relaynet
+      relaynet:
+        ipv4_address: 192.168.10.4
 
 networks:
   relaynet:

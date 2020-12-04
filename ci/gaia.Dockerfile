@@ -32,6 +32,9 @@ ENV GAIA /gaia
 # Install ca-certificates
 RUN apk add --update ca-certificates
 
+# Add jq for debugging
+RUN apk add --no-cache jq curl
+
 WORKDIR $GAIA
 
 # Copy over binaries from the build-env

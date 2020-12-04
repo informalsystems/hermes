@@ -23,9 +23,8 @@ FROM rust:slim
 # Copy relayer executable
 COPY --from=build-env /repo/target/debug/rrly /usr/bin/rrly
 
-ENV RELAYER /relayer
-
-WORKDIR $RELAYER
+# Relayer folder
+WORKDIR /relayer
 
 # Copy configuration file
 COPY ci/simple_config.toml .
@@ -36,5 +35,4 @@ COPY ci/setup_relayer.sh .
 # Make it executable
 RUN chmod +x setup_relayer.sh
 
-# Entrypoint
-ENTRYPOINT ["/bin/sh", "-c", "/relayer/setup_relayer.sh"]
+ENTRYPOINT ["/bin/sh"]
