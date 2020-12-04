@@ -222,6 +222,7 @@ mod test {
     use std::str::FromStr;
 
     use ibc::ics24_host::identifier::ClientId;
+    use ibc::Height;
 
     use crate::chain::handle::ChainHandle;
     use crate::chain::mock::test_utils::get_basic_chain_config;
@@ -382,7 +383,7 @@ mod test {
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
         // Instantiate the foreign clients on the two chains.
-        let client_on_a = ForeignClient::new(&a_chain, &b_chain, a_opts.clone());
+        let client_on_a = ForeignClient::new(&a_chain, &b_chain, a_opts);
         assert!(
             client_on_a.is_ok(),
             "Client creation (on chain a) failed with error: {:?}",
@@ -396,12 +397,19 @@ mod test {
             client_on_b
         );
 
-        // Now that the clients exists, an error should be signaled if we try to create again.
-        let client_on_a = ForeignClient::new(&a_chain, &b_chain, a_opts);
+        // Now that the clients exists, we should be able to query its state
+        let b_client_state = b_chain.query_client_state(&b_client_id, Height::default());
         assert!(
-            client_on_a.is_ok(),
-            "Client creation (on chain a) failed with error: {:?}",
-            client_on_a
+            b_client_state.is_ok(),
+            "Client query (on chain b) failed with error: {:?}",
+            b_client_state
+        );
+
+        let a_client_state = a_chain.query_client_state(&a_client_id, Height::default());
+        assert!(
+            a_client_state.is_ok(),
+            "Client query (on chain a) failed with error: {:?}",
+            a_client_state
         );
     }
 }
