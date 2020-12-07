@@ -24,6 +24,5 @@ pub mod keyring;
 pub mod keys;
 pub mod light_client;
 pub mod link;
-pub mod msgs;
 pub mod relay;
 pub mod util;

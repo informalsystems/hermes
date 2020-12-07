@@ -27,7 +27,7 @@ use crate::keyring::store::KeyEntry;
 use super::QueryResponse;
 
 mod prod;
-use ibc::ics04_channel::packet::Packet;
+use ibc::events::{IBCEvent, IBCEventType};
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -195,9 +195,9 @@ pub enum HandleInput {
         reply_to: ReplyTo<Vec<u64>>,
     },
 
-    QueryPacketData {
-        request: QueryPacketDataRequest,
-        reply_to: ReplyTo<Vec<Packet>>,
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
     },
 }
 
@@ -318,12 +318,14 @@ pub trait ChainHandle: Clone + Send + Sync {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error>;
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }
 
 #[derive(Clone, Debug)]
-pub struct QueryPacketDataRequest {
+pub struct QueryPacketEventDataRequest {
+    pub event_id: IBCEventType,
     pub channel_id: String,
     pub port_id: String,
     pub sequences: Vec<u64>,
+    pub height: Height,
 }

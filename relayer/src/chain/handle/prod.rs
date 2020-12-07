@@ -26,8 +26,8 @@ use crate::{
 };
 
 use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
-use crate::chain::handle::QueryPacketDataRequest;
-use ibc::ics04_channel::packet::Packet;
+use crate::chain::handle::QueryPacketEventDataRequest;
+use ibc::events::IBCEvent;
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -300,7 +300,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| HandleInput::QueryUnreceivedPackets { request, reply_to })
     }
 
-    fn query_txs(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
-        self.send(|reply_to| HandleInput::QueryPacketData { request, reply_to })
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        self.send(|reply_to| HandleInput::QueryPacketEventData { request, reply_to })
     }
 }

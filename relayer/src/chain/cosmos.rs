@@ -1,4 +1,3 @@
-
 use std::{
     convert::TryFrom,
     future::Future,
@@ -59,7 +58,7 @@ use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
 // Support for GRPC
-use crate::chain::handle::QueryPacketDataRequest;
+use crate::chain::handle::QueryPacketEventDataRequest;
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
@@ -68,7 +67,7 @@ use tonic::codegen::http::Uri;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
-const DEFAULT_MAX_TX_NUM: usize = 4;
+const DEFAULT_MAX_TX_NUM: usize = 3;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 
 pub struct CosmosSDKChain {
@@ -534,6 +533,7 @@ impl Chain for CosmosSDKChain {
             .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
             .try_into()
             .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+
         Ok((pc, height))
     }
 
@@ -568,96 +568,136 @@ impl Chain for CosmosSDKChain {
     /// string attributes (sequence is emmitted as a string).
     /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
     /// for all packets could be performed but it would return all packets ever sent.
-    fn query_packet_data(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
-        let mut result: Vec<Packet> = vec![];
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        let mut result: Vec<IBCEvent> = vec![];
         for seq in request.sequences.iter() {
-            let query = tendermint_rpc::query::Query::eq(
-                "send_packet.packet_src_channel",
-                request.channel_id.clone(),
-            )
-            .and_eq("send_packet.packet_src_port", request.port_id.clone())
-            .and_eq("send_packet.packet_sequence", seq.to_string());
+            // query all Tx-es that include events related to packet with given port, channel and sequence
             let response = self
-                .block_on(
-                    self.rpc_client
-                        .tx_search(query, false, 1, 1, Order::Ascending),
-                )
+                .block_on(self.rpc_client.tx_search(
+                    packet_query(&request, seq)?,
+                    false,
+                    1,
+                    1,
+                    Order::Ascending,
+                ))
                 .unwrap()
                 .unwrap(); // todo
 
-            let mut packets = packet_from_tx_search_response(request.clone(), response.clone())?;
-            result.append(&mut packets);
+            let mut events = packet_from_tx_search_response(&request, seq, &response)?
+                .map_or(vec![], |v| vec![v]);
+            result.append(&mut events);
         }
         Ok(result)
     }
 }
 
-use ibc::ics04_channel::packet::Packet;
-use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-use std::collections::HashSet;
-use subtle_encoding::base64;
-use std::convert::TryInto;
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Query, Error> {
+    Ok(tendermint_rpc::query::Query::eq(
+        format!("{}.packet_src_channel", request.event_id.as_str()),
+        request.channel_id.clone(),
+    )
+    .and_eq(
+        format!("{}.packet_src_port", request.event_id.as_str()),
+        request.port_id.clone(),
+    )
+    .and_eq(
+        format!("{}.packet_sequence", request.event_id.as_str()),
+        seq.to_string(),
+    ))
+}
 
-// Extract the packets from the query_tx RPC response. The response includes the full set of events
+use ibc::events::{IBCEvent, IBCEventType};
+use ibc::ics04_channel::events::{PacketEnvelope, SendPacket};
+use std::convert::TryInto;
+use subtle_encoding::base64;
+use tendermint_rpc::query::Query;
+
+// Extract the packet events from the query_tx RPC response. The response includes the full set of events
 // from the Tx-es where there is at least one request query match.
 // For example, the query request asks for the Tx for packet with sequence 3, and both 3 and 4 were
 // committed in one Tx. In this case the response includes the events for 3 and 4.
 fn packet_from_tx_search_response(
-    request: QueryPacketDataRequest,
-    response: tendermint_rpc::endpoint::tx_search::Response,
-) -> Result<Vec<Packet>, Error> {
-    let mut packets: Vec<Packet> = vec![];
-    let mut seqs: HashSet<u64> = request.sequences.iter().cloned().collect();
+    request: &QueryPacketEventDataRequest,
+    seq: &u64,
+    response: &tendermint_rpc::endpoint::tx_search::Response,
+) -> Result<Option<IBCEvent>, Error> {
     for r in response.txs.iter() {
-        let events: Vec<tendermint::abci::Event> = r.clone().tx_result.events;
-        let mut packet = RawPacket {
-            sequence: 0,
-            source_port: "".to_string(),
-            source_channel: "".to_string(),
-            destination_port: "".to_string(),
-            destination_channel: "".to_string(),
-            data: vec![],
-            timeout_height: None,
-            timeout_timestamp: 0,
+        let height = r.height;
+        if height.value() > request.height.version_height {
+            continue;
+        }
+        let mut envelope = PacketEnvelope {
+            height: r.height,
+            packet_src_port: Default::default(),
+            packet_src_channel: Default::default(),
+            packet_dst_port: Default::default(),
+            packet_dst_channel: Default::default(),
+            packet_sequence: 0,
+            packet_timeout_height: Default::default(),
+            packet_timeout_stamp: 0, // todo - decoding
         };
-        for e in events.iter() {
-            if e.type_str == *"send_packet" {
-                for a in e.attributes.iter() {
-                    let key =
-                        String::from_utf8(base64::decode(a.key.to_string().as_bytes()).unwrap())
-                            .unwrap();
-                    let value =
-                        String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
-                            .unwrap();
-                    match key.as_str() {
-                        "packet_src_channel" => packet.source_channel = value,
-                        "packet_src_port" => packet.source_port = value,
-                        "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap(),
-                        "packet_dst_channel" => packet.destination_channel = value,
-                        "packet_dst_port" => packet.destination_port = value,
-                        "packet_data" => packet.data = Vec::from(value.as_bytes()),
-                        "packet_timeout_height" => {
-                            let to: Vec<&str> = value.split('-').collect();
-                            packet.timeout_height =
-                                Some(ibc_proto::ibc::core::client::v1::Height {
-                                    version_number: to[0].parse::<u64>().unwrap(),
-                                    version_height: to[1].parse::<u64>().unwrap(),
-                                });
+        for e in r.clone().tx_result.events.iter() {
+            if e.type_str != request.event_id.as_str() {
+                continue;
+            }
+            for a in e.attributes.iter() {
+                let key = String::from_utf8(base64::decode(a.key.to_string().as_bytes()).unwrap())
+                    .unwrap();
+                let value =
+                    String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
+                        .unwrap();
+                match key.as_str() {
+                    "packet_src_port" => envelope.packet_src_port = value.parse().unwrap(),
+                    "packet_src_channel" => envelope.packet_src_channel = value.parse().unwrap(),
+                    "packet_dst_port" => envelope.packet_dst_port = value.parse().unwrap(),
+                    "packet_dst_channel" => envelope.packet_dst_channel = value.parse().unwrap(),
+                    "packet_sequence" => envelope.packet_sequence = value.parse::<u64>().unwrap(),
+                    "packet_timeout_height" => {
+                        let to: Vec<&str> = value.split('-').collect();
+                        envelope.packet_timeout_height = ibc_proto::ibc::core::client::v1::Height {
+                            version_number: to[0].parse::<u64>().unwrap(),
+                            version_height: to[1].parse::<u64>().unwrap(),
                         }
-                        _ => {}
-                    };
+                        .try_into()
+                        .unwrap();
+                    }
+                    _ => {}
+                };
+            }
+
+            if envelope.packet_src_port.as_str() != request.port_id.as_str()
+                || envelope.packet_src_channel.as_str() != request.channel_id.as_str()
+                || envelope.packet_sequence != *seq
+            {
+                continue;
+            }
+            match request.event_id {
+                IBCEventType::SendPacket => {
+                    let mut data = vec![];
+                    for a in e.attributes.iter() {
+                        let key = String::from_utf8(
+                            base64::decode(a.key.to_string().as_bytes()).unwrap(),
+                        )
+                        .unwrap();
+                        let value = String::from_utf8(
+                            base64::decode(a.value.to_string().as_bytes()).unwrap(),
+                        )
+                        .unwrap();
+                        match key.as_str() {
+                            "packet_data" => data = Vec::from(value.as_bytes()),
+                            _ => continue,
+                        };
+                    }
+                    return Ok(Some(IBCEvent::SendPacketChannel(SendPacket {
+                        envelope,
+                        data,
+                    })));
                 }
-                if request.port_id == packet.source_port
-                    && request.channel_id == packet.source_channel
-                    && seqs.contains(&packet.sequence)
-                {
-                    packets.append(&mut vec![packet.clone().try_into().unwrap()]);
-                    seqs.remove(&packet.sequence);
-                }
+                _ => continue,
             }
         }
     }
-    Ok(packets)
+    Ok(None)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

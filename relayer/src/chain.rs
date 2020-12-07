@@ -38,14 +38,14 @@ use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
 
-use crate::chain::handle::QueryPacketDataRequest;
+use crate::chain::handle::QueryPacketEventDataRequest;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
-use ibc::ics04_channel::packet::Packet;
 use crate::light_client::LightClient;
+use ibc::events::IBCEvent;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -319,6 +319,7 @@ pub trait Chain: Sized {
         sequence: u64,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        println!("proven_packet_commitment for {:?} {:?}", height, sequence);
         let res = self
             .query(
                 Path::Commitments {
@@ -344,5 +345,5 @@ pub trait Chain: Sized {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_packet_data(&self, request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error>;
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }

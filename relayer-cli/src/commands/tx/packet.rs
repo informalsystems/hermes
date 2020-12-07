@@ -6,8 +6,8 @@ use relayer::config::Config;
 use crate::error::{Error, Kind};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use relayer::chain::runtime::ChainRuntime;
-use relayer::link::{build_packet_recv_and_send, PacketOptions};
 use relayer::chain::CosmosSDKChain;
+use relayer::link::{build_and_send_recv_packet_messages, PacketOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawPacketRecvCmd {
@@ -66,11 +66,13 @@ impl Runnable for TxRawPacketRecvCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(opts.src_chain_config.clone()).unwrap();
-        let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
+        let (src_chain, _) =
+            ChainRuntime::<CosmosSDKChain>::spawn(opts.src_chain_config.clone()).unwrap();
+        let (dst_chain, _) =
+            ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
 
         let res: Result<Vec<String>, Error> =
-            build_packet_recv_and_send(dst_chain, src_chain, &opts)
+            build_and_send_recv_packet_messages(&dst_chain, &src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {

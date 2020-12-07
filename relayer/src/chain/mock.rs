@@ -23,16 +23,18 @@ use ibc::mock::host::HostType;
 use ibc::test_utils::{default_consensus_params, get_dummy_account_id};
 use ibc::Height;
 
+use crate::chain::handle::QueryPacketEventDataRequest;
 use crate::chain::{Chain, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use ibc::events::IBCEvent;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 use std::thread;
-use ibc::ics04_channel::packet::Packet;
-use ibc_proto::ibc::core::channel::v1::{QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest, PacketAckCommitment};
-use crate::chain::handle::QueryPacketDataRequest;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -98,7 +100,8 @@ impl Chain for MockChain {
 
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        Ok(vec![self.context
+        Ok(vec![self
+            .context
             .send(proto_msgs)
             .map(|_| "OK".to_string()) // TODO: establish success return codes.
             .map_err(|e| Kind::Rpc.context(e))?])
@@ -186,15 +189,21 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_packet_commitments(&self, _request: QueryPacketCommitmentsRequest) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+    fn query_packet_commitments(
+        &self,
+        _request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
         unimplemented!()
     }
 
-    fn query_unreceived_packets(&self, _request: QueryUnreceivedPacketsRequest) -> Result<Vec<u64>, Error> {
+    fn query_unreceived_packets(
+        &self,
+        _request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
         unimplemented!()
     }
 
-    fn query_packet_data(&self, _request: QueryPacketDataRequest) -> Result<Vec<Packet>, Error> {
+    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
         unimplemented!()
     }
 }

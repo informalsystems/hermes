@@ -165,7 +165,7 @@ impl From<CloseConfirm> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct SendPacket {
+pub struct PacketEnvelope {
     pub height: block::Height,
     pub packet_src_port: PortId,
     pub packet_src_channel: ChannelId,
@@ -174,15 +174,13 @@ pub struct SendPacket {
     pub packet_sequence: u64,
     pub packet_timeout_height: Height,
     pub packet_timeout_stamp: u64,
-    pub packet_data: Vec<u8>,
 }
 
-impl TryFrom<RawObject> for SendPacket {
+impl TryFrom<RawObject> for PacketEnvelope {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height_str: String = attribute!(obj, "send_packet.packet_timeout_height");
-        let data_str: String = attribute!(obj, "send_packet.packet_data");
-        Ok(SendPacket {
+        Ok(PacketEnvelope {
             height: obj.height,
             packet_src_port: attribute!(obj, "send_packet.packet_src_port"),
             packet_src_channel: attribute!(obj, "send_packet.packet_src_channel"),
@@ -191,7 +189,23 @@ impl TryFrom<RawObject> for SendPacket {
             packet_sequence: attribute!(obj, "send_packet.packet_sequence"),
             packet_timeout_height: height_str.try_into()?,
             packet_timeout_stamp: attribute!(obj, "send_packet.packet_timeout_timestamp"),
-            packet_data: Vec::from(data_str.as_str().as_bytes()),
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SendPacket {
+    pub envelope: PacketEnvelope,
+    pub data: Vec<u8>,
+}
+
+impl TryFrom<RawObject> for SendPacket {
+    type Error = BoxError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let data_str: String = attribute!(obj, "send_packet.packet_data");
+        Ok(SendPacket {
+            envelope: PacketEnvelope::try_from(obj)?,
+            data: Vec::from(data_str.as_str().as_bytes()),
         })
     }
 }

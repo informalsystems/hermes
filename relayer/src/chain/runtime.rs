@@ -40,8 +40,8 @@ use super::{
     handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
     Chain, QueryResponse,
 };
-use crate::chain::handle::QueryPacketDataRequest;
-use ibc::ics04_channel::packet::Packet;
+use crate::chain::handle::QueryPacketEventDataRequest;
+use ibc::events::IBCEvent;
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -259,8 +259,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query_unreceived_packets(request, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryPacketData { request, reply_to }) => {
-                            self.query_packet_data(request, reply_to)?
+                        Ok(HandleInput::QueryPacketEventData { request, reply_to }) => {
+                            self.query_txs(request, reply_to)?
                         },
 
                         Err(_e) => todo!(), // TODO: Handle error?
@@ -672,12 +672,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn query_packet_data(
+    fn query_txs(
         &self,
-        request: QueryPacketDataRequest,
-        reply_to: ReplyTo<Vec<Packet>>,
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_packet_data(request);
+        let result = self.chain.query_txs(request);
 
         reply_to
             .send(result)
