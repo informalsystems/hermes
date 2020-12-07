@@ -10,9 +10,6 @@ services:
       dockerfile: ci/gaia.Dockerfile
       args:
         release: stargate-4
-    ports:
-      - "26656:26656"
-      - "26657:26657"
     environment:
       - CHAIN_ID=ibc0
       - MONIKER=node01
@@ -33,15 +30,12 @@ services:
       dockerfile: ci/gaia.Dockerfile
       args:
         release: stargate-4
-    ports:
-      - "26556:26556"
-      - "26557:26557"
     environment:
       - CHAIN_ID=ibc1
       - MONIKER=node01
       - RPC_PORT=26557
       - P2P_PORT=26556
-      - GRPC_PORT=9091
+      - GRPC_PORT=9090
     volumes:
       - chain-data:/data
     networks:

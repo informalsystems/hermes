@@ -31,7 +31,7 @@ echo "Replace addresses and ports in the config file"
 echo "-------------------------------------------------------------------------------------------------------------------"
 sed -i 's#"tcp://127.0.0.1:26657"#"tcp://'"$CHAIN_ID"':'"$RPC_PORT"'"#g' "$home"/config/config.toml
 sed -i 's#"tcp://0.0.0.0:26656"#"tcp://'"$CHAIN_ID"':'"$P2P_PORT"'"#g' "$home"/config/config.toml
-sed -i 's/grpc_laddr = ""/grpc_laddr = "'"$CHAIN_ID"':'"$GRPC_PORT"'"/g' /tmp/chain/config/config.toml
+#sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_ID"':'"$GRPC_PORT"'"#g' "$home"/config/config.toml
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator key"
