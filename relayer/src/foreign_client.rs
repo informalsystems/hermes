@@ -52,26 +52,30 @@ impl ForeignClientConfig {
 
 #[derive(Clone, Debug)]
 pub struct ForeignClient {
+    /// The configuration of this client
     config: ForeignClientConfig,
+
+    // A handle to the chain hosting this client
+    // host_chain: dyn ChainHandle,
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client. Blocks until the client is created on `dst_chain` or
+    /// Creates a new foreign client on `host_chain`. Blocks until the client is created, or
     /// an error occurs.
-    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
+    /// Post-condition: `host_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
+    /// Is it enough to have a "live" handle to each of `host_chain` and `src_chain` chains?
     pub fn new(
-        dst_chain: &impl ChainHandle,
+        host_chain: &impl ChainHandle,
         src_chain: &impl ChainHandle,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
         let done = '\u{1F36D}';
 
         // Query the client state on source chain.
-        let client_state = dst_chain.query_client_state(&config.id, Height::default());
+        let client_state = host_chain.query_client_state(&config.id, Height::default());
         if client_state.is_err() {
-            build_create_client_and_send(dst_chain, src_chain, &config).map_err(|e| {
+            build_create_client_and_send(host_chain, src_chain, &config).map_err(|e| {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
@@ -79,7 +83,11 @@ impl ForeignClient {
             "{}  Client on {:?} is created {:?}\n",
             done, config.chain, config.id
         );
-        Ok(ForeignClient { config })
+
+        Ok(ForeignClient {
+            config,
+            // host_chain: host_chain.clone()
+        })
     }
 
     pub fn update(
