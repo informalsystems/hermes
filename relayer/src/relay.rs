@@ -15,15 +15,15 @@ pub fn channel_relay(
 ) -> Result<(), BoxError> {
     // Instantiate the foreign client on the source chain.
     let client_on_a = ForeignClient::new(
-        a_chain_handle.clone(),
-        b_chain_handle.clone(),
+        &a_chain_handle,
+        &b_chain_handle,
         ForeignClientConfig::new(conn_cfg.a_end().chain_id(), conn_cfg.a_end().client_id()),
     )?;
 
     // Instantiate the foreign client on the destination chain.
     let client_on_b = ForeignClient::new(
-        b_chain_handle.clone(),
-        a_chain_handle.clone(),
+        &b_chain_handle,
+        &a_chain_handle,
         ForeignClientConfig::new(conn_cfg.b_end().chain_id(), conn_cfg.b_end().client_id()),
     )?;
 

@@ -41,21 +41,21 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
 
     let path = &conn.paths.clone().ok_or("No paths configured")?[0];
 
-    let connection = ConnectionConfig::new(&conn.clone())?;
-    let channel = ChannelConfig::new(&connection, &path)?;
+    let connection_cfg = ConnectionConfig::new(&conn.clone())?;
+    let channel_cfg = ChannelConfig::new(&connection_cfg, &path)?;
 
     let src_chain_config = config
         .chains
         .clone()
         .into_iter()
-        .find(|c| c.id == connection.src().chain_id().clone())
+        .find(|c| c.id == connection_cfg.src().chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
     let dst_chain_config = config
         .chains
         .clone()
         .into_iter()
-        .find(|c| c.id == connection.dst().chain_id().clone())
+        .find(|c| c.id == connection_cfg.dst().chain_id().clone())
         .ok_or("Configuration for source chain not found")?;
 
     let (src_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)?;
@@ -64,7 +64,7 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     Ok(channel_relay(
         src_chain_handle,
         dst_chain_handle,
-        connection,
-        channel,
+        connection_cfg,
+        channel_cfg,
     )?)
 }
