@@ -28,14 +28,10 @@ pub fn channel_relay(
     )?;
 
     // Setup the connection between the two chains
-    let connection = Connection::new(
-        client_on_a,
-        client_on_b,
-        conn_cfg,
-    )?;
+    let connection = Connection::new(client_on_a, client_on_b, conn_cfg)?;
 
     // Setup the channel over the connection
-    let _channel = Channel::new( connection, chan_cfg)?;
+    let _channel = Channel::new(connection, chan_cfg)?;
 
     // TODO: Re-enable `link` module in `relayer/src/lib.rs`
     // let link = Link::new(

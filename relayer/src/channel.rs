@@ -181,10 +181,7 @@ fn get_channel(
 }
 
 impl Channel {
-    pub fn new(
-        connection: Connection,
-        config: ChannelConfig,
-    ) -> Result<Channel, ChannelError> {
+    pub fn new(connection: Connection, config: ChannelConfig) -> Result<Channel, ChannelError> {
         let done = '\u{1F973}';
 
         let flipped = config.flipped();

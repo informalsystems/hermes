@@ -57,7 +57,6 @@ pub struct ForeignClient {
 
     /// A handle to the chain hosting this client
     host_chain: Box<dyn ChainHandle>,
-
     // A handle to the chain hosting this client
     // src_chain: Box<dyn ChainHandle>,
 }
@@ -93,15 +92,17 @@ impl ForeignClient {
         })
     }
 
+    fn create(&self) {
+        let done = '\u{1F36D}';
+
+    }
+
     /// Returns a handle to the chain hosting this client.
     pub fn host_chain(&self) -> Box<dyn ChainHandle> {
         self.host_chain.clone()
     }
 
-    pub fn update(
-        &mut self,
-        src_target_height: Height,
-    ) -> Result<Height, ForeignClientError> {
+    pub fn update(&mut self, src_target_height: Height) -> Result<Height, ForeignClientError> {
         /*
         return Ok(src_target_height);
         let (src_consensus_state, dst_membership_proof) =
@@ -178,7 +179,7 @@ fn build_create_client(
     })?)
 }
 
-pub fn build_create_client_and_send(
+fn build_create_client_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ForeignClientConfig,

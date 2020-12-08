@@ -172,7 +172,7 @@ impl Connection {
         let c = Connection {
             config,
             a_client,
-            b_client
+            b_client,
         };
         c.handshake()?;
 
@@ -239,17 +239,27 @@ impl Connection {
                     match (a_connection.state(), b_connection.state()) {
                         (&State::Init, &State::Init) => {
                             // Try to dest
-                            match build_conn_try_and_send(b_chain.clone(), a_chain.clone(), &self.config)
-                            {
-                                Err(e) => println!("{:?} Failed ConnTry {:?}", e, self.config.b_end()),
+                            match build_conn_try_and_send(
+                                b_chain.clone(),
+                                a_chain.clone(),
+                                &self.config,
+                            ) {
+                                Err(e) => {
+                                    println!("{:?} Failed ConnTry {:?}", e, self.config.b_end())
+                                }
                                 Ok(_) => println!("{}  ConnTry {:?}", done, self.config.b_end()),
                             }
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
-                            match build_conn_ack_and_send(b_chain.clone(), a_chain.clone(), &self.config)
-                            {
-                                Err(e) => println!("{:?} Failed ConnAck {:?}", e, self.config.b_end()),
+                            match build_conn_ack_and_send(
+                                b_chain.clone(),
+                                a_chain.clone(),
+                                &self.config,
+                            ) {
+                                Err(e) => {
+                                    println!("{:?} Failed ConnAck {:?}", e, self.config.b_end())
+                                }
                                 Ok(_) => println!("{}  ConnAck {:?}", done, self.config.b_end()),
                             }
                         }
@@ -260,7 +270,9 @@ impl Connection {
                                 b_chain.clone(),
                                 &flipped,
                             ) {
-                                Err(e) => println!("{:?} Failed ConnAck {:?}", e, self.config.a_end()),
+                                Err(e) => {
+                                    println!("{:?} Failed ConnAck {:?}", e, self.config.a_end())
+                                }
                                 Ok(_) => println!("{}  ConnAck {:?}", done, self.config.a_end()),
                             }
                         }
@@ -274,7 +286,9 @@ impl Connection {
                                 Err(e) => {
                                     println!("{:?} Failed ConnConfirm {:?}", e, self.config.b_end())
                                 }
-                                Ok(_) => println!("{}  ConnConfirm {:?}", done, self.config.b_end()),
+                                Ok(_) => {
+                                    println!("{}  ConnConfirm {:?}", done, self.config.b_end())
+                                }
                             }
                         }
                         (&State::TryOpen, &State::Open) => {
@@ -285,7 +299,9 @@ impl Connection {
                                 &flipped,
                             ) {
                                 Err(e) => println!("{:?} ConnConfirm {:?}", e, self.config.a_end()),
-                                Ok(_) => println!("{}  ConnConfirm {:?}", done, self.config.a_end()),
+                                Ok(_) => {
+                                    println!("{}  ConnConfirm {:?}", done, self.config.a_end())
+                                }
                             }
                         }
                         (&State::Open, &State::Open) => {
@@ -725,7 +741,6 @@ pub fn build_conn_confirm_and_send(
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
-
 
 // #[cfg(test)]
 // mod tests {
