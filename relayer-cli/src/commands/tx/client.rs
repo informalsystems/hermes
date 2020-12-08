@@ -53,7 +53,7 @@ impl Runnable for TxCreateClientCmd {
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
         let res: Result<String, Error> =
-            build_create_client_and_send(&dst_chain, &src_chain, &opts)
+            build_create_client_and_send(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
@@ -103,7 +103,7 @@ impl Runnable for TxUpdateClientCmd {
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
         let res: Result<String, Error> =
-            build_update_client_and_send(&dst_chain, &src_chain, &opts)
+            build_update_client_and_send(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {

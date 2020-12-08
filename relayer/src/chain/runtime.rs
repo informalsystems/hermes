@@ -61,7 +61,7 @@ pub struct ChainRuntime<C: Chain> {
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
-    pub fn spawn(config: ChainConfig) -> Result<(impl ChainHandle, Threads), Error> {
+    pub fn spawn(config: ChainConfig) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
         let rt = Arc::new(Mutex::new(
             TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
         ));
@@ -93,7 +93,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
         rt: Arc<Mutex<TokioRuntime>>,
-    ) -> (impl ChainHandle, thread::JoinHandle<()>) {
+    ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
 
         // Get a handle to the runtime
@@ -125,11 +125,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         }
     }
 
-    pub fn handle(&self) -> impl ChainHandle {
+    #[allow(unused_variables)]
+    pub fn handle(&self) -> Box<dyn ChainHandle> {
         let chain_id = self.chain.id().clone();
         let sender = self.sender.clone();
 
-        ProdChainHandle::new(chain_id, sender)
+        Box::new(ProdChainHandle::new(chain_id, sender))
     }
 
     fn run(mut self) -> Result<(), Error> {

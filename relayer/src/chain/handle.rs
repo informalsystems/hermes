@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crossbeam_channel as channel;
 
+use dyn_clone::DynClone;
+
 use ibc::{
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
@@ -174,7 +176,7 @@ pub enum HandleInput {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync {
+pub trait ChainHandle: DynClone + Send + Sync {
     fn id(&self) -> ChainId;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;

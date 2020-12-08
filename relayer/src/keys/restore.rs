@@ -1,4 +1,4 @@
-use crate::chain::{handle::ChainHandle, runtime::ChainRuntime, CosmosSDKChain};
+use crate::chain::{runtime::ChainRuntime, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error;
 use crate::error::Error;
