@@ -19,6 +19,11 @@ We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and a
 
 Special thanks to external contributors for this release: @CharlyCst ([#347], [#419]).
 
+- [relayer-cli]
+  - Add `--all` option to `light rm` command to remove all peers for a given chain ([#431])
+
+[#431]: https://github.com/informalsystems/ibc-rs/issues/431
+
 ### FEATURES
 
 - Update to tendermint-rs version `0.17-RC3` ([#403])
