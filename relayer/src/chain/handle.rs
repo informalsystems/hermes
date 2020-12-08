@@ -30,6 +30,7 @@ use super::QueryResponse;
 
 mod prod;
 pub use prod::ProdChainHandle;
+use std::fmt::Debug;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -176,7 +177,10 @@ pub enum HandleInput {
     },
 }
 
-pub trait ChainHandle: DynClone + Send + Sync {
+// Make `clone` accessible to a ChainHandle object
+dyn_clone::clone_trait_object!(ChainHandle);
+
+pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;

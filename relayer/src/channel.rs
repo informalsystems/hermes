@@ -24,7 +24,6 @@ use crate::connection::{Connection, ConnectionConfig};
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
 use crate::relay::MAX_ITER;
-use dyn_clone::clone_box;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
@@ -183,9 +182,7 @@ fn get_channel(
 
 impl Channel {
     pub fn new(
-        a_chain: Box<dyn ChainHandle>,
-        b_chain: Box<dyn ChainHandle>,
-        _connection: Connection,
+        connection: Connection,
         config: ChannelConfig,
     ) -> Result<Channel, ChannelError> {
         let done = '\u{1F973}';
@@ -194,13 +191,16 @@ impl Channel {
 
         let mut counter = 0;
 
+        let a_chain = connection.chain_a();
+        let b_chain = connection.chain_b();
+
         while counter < MAX_ITER {
             counter += 1;
             let now = SystemTime::now();
 
             // Continue loop if query error
             let a_channel = get_channel(
-                clone_box(&*a_chain),
+                a_chain.clone(),
                 &config.a_end().port_id,
                 &config.a_end().channel_id,
             );
@@ -208,7 +208,7 @@ impl Channel {
                 continue;
             }
             let b_channel = get_channel(
-                clone_box(&*b_chain),
+                b_chain.clone(),
                 &config.b_end().port_id,
                 &config.b_end().channel_id,
             );
@@ -219,7 +219,7 @@ impl Channel {
             match (a_channel?, b_channel?) {
                 (None, None) => {
                     // Init to src
-                    match build_chan_init_and_send(clone_box(&*a_chain), clone_box(&*b_chain), &flipped) {
+                    match build_chan_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => println!("{:?} Failed ChanInit {:?}", e, config.a_end()),
                         Ok(_) => println!("{}  ChanInit {:?}", done, config.a_end()),
                     }
@@ -227,7 +227,7 @@ impl Channel {
                 (Some(a_channel), None) => {
                     // Try to dest
                     assert!(a_channel.state_matches(&State::Init));
-                    match build_chan_try_and_send(clone_box(&*b_chain), clone_box(&*a_chain), &config) {
+                    match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config) {
                         Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_end()),
                         Ok(_) => println!("{}  ChanTry {:?}", done, config.b_end()),
                     }
@@ -235,7 +235,7 @@ impl Channel {
                 (None, Some(b_channel)) => {
                     // Try to src
                     assert!(b_channel.state_matches(&State::Init));
-                    match build_chan_try_and_send(clone_box(&*a_chain), clone_box(&*b_chain), &flipped) {
+                    match build_chan_try_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.a_end()),
                         Ok(_) => println!("{}  ChanTry {:?}", done, config.a_end()),
                     }
@@ -245,7 +245,7 @@ impl Channel {
                         (&State::Init, &State::Init) => {
                             // Try to dest
                             // Try to dest
-                            match build_chan_try_and_send(clone_box(&*b_chain), clone_box(&*a_chain), &config)
+                            match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config)
                             {
                                 Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_end()),
                                 Ok(_) => println!("{}  ChanTry {:?}", done, config.b_end()),
@@ -253,7 +253,7 @@ impl Channel {
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
-                            match build_chan_ack_and_send(clone_box(&*b_chain), clone_box(&*a_chain), &config)
+                            match build_chan_ack_and_send(b_chain.clone(), a_chain.clone(), &config)
                             {
                                 Err(e) => println!("{:?} Failed ChanAck {:?}", e, config.b_end()),
                                 Ok(_) => println!("{}  ChanAck {:?}", done, config.b_end()),
@@ -262,8 +262,8 @@ impl Channel {
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
                             // Ack to src
                             match build_chan_ack_and_send(
-                                clone_box(&*a_chain),
-                                clone_box(&*b_chain),
+                                a_chain.clone(),
+                                b_chain.clone(),
                                 &flipped,
                             ) {
                                 Err(e) => println!("{:?} Failed ChanAck {:?}", e, config.a_end()),
@@ -273,8 +273,8 @@ impl Channel {
                         (&State::Open, &State::TryOpen) => {
                             // Confirm to dest
                             match build_chan_confirm_and_send(
-                                clone_box(&*b_chain),
-                                clone_box(&*a_chain),
+                                b_chain.clone(),
+                                a_chain.clone(),
                                 &config,
                             ) {
                                 Err(e) => {
@@ -286,8 +286,8 @@ impl Channel {
                         (&State::TryOpen, &State::Open) => {
                             // Confirm to src
                             match build_chan_confirm_and_send(
-                                clone_box(&*a_chain),
-                                clone_box(&*b_chain),
+                                a_chain.clone(),
+                                b_chain.clone(),
                                 &flipped,
                             ) {
                                 Err(e) => println!("{:?} ChanConfirm {:?}", e, flipped),
@@ -377,7 +377,7 @@ pub fn build_chan_init_and_send(
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
-    let dst_msgs = build_chan_init(clone_box(&*dst_chain), src_chain, &opts)?;
+    let dst_msgs = build_chan_init(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
@@ -480,8 +480,8 @@ pub fn build_chan_try(
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message, i.e. it does not have the channel
     let _dest_expected_channel = validated_expected_channel(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         ChannelMsgType::OpenTry,
         opts,
     )
@@ -515,8 +515,8 @@ pub fn build_chan_try(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -566,7 +566,7 @@ pub fn build_chan_try_and_send(
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
-    let dst_msgs = build_chan_try(clone_box(&*dst_chain), src_chain, &opts)?;
+    let dst_msgs = build_chan_try(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
@@ -577,8 +577,8 @@ pub fn build_chan_ack(
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message
     let _dest_expected_channel = validated_expected_channel(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         ChannelMsgType::OpenAck,
         opts,
     )
@@ -612,8 +612,8 @@ pub fn build_chan_ack(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -649,7 +649,7 @@ pub fn build_chan_ack_and_send(
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
-    let dst_msgs = build_chan_ack(clone_box(&*dst_chain), src_chain, &opts)?;
+    let dst_msgs = build_chan_ack(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
 
@@ -660,8 +660,8 @@ pub fn build_chan_confirm(
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message
     let _dest_expected_channel = validated_expected_channel(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         ChannelMsgType::OpenConfirm,
         opts,
     )
@@ -695,8 +695,8 @@ pub fn build_chan_confirm(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        clone_box(&*dst_chain),
-        clone_box(&*src_chain),
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -730,6 +730,6 @@ pub fn build_chan_confirm_and_send(
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<String, Error> {
-    let dst_msgs = build_chan_confirm(clone_box(&*dst_chain), src_chain, &opts)?;
+    let dst_msgs = build_chan_confirm(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
