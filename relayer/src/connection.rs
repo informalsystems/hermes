@@ -179,14 +179,14 @@ impl Connection {
         Ok(c)
     }
 
-    /// Returns the "a" side of a the connection.
+    /// Returns the "a" side of the connection.
     pub fn chain_a(&self) -> Box<dyn ChainHandle> {
-        self.a_client.host_chain()
+        self.a_client.dst_chain()
     }
 
-    /// Returns the "b" side of a the connection.
+    /// Returns the "b" side of the connection.
     pub fn chain_b(&self) -> Box<dyn ChainHandle> {
-        self.b_client.host_chain()
+        self.b_client.dst_chain()
     }
 
     /// Executes a connection handshake for this connection object

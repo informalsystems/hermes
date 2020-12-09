@@ -54,7 +54,7 @@ impl Runnable for TxCreateClientCmd {
 
         match res {
             Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
-            Err(e) => status_err!("client create failed: {}", e),
+            Err(e) => status_err!("client create failed: {:?}", e),
         }
     }
 }
