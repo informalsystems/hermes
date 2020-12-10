@@ -7,14 +7,19 @@ use crossbeam_channel as channel;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
         state::{ClientState, ConsensusState},
     },
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
@@ -27,6 +32,11 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use super::{
+    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
+    Chain, QueryResponse,
+};
+
 use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -34,11 +44,6 @@ use crate::{
     event::{bus::EventBus, monitor::EventBatch},
     keyring::store::KeyEntry,
     light_client::LightClient,
-};
-
-use super::{
-    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
-    Chain, QueryResponse,
 };
 
 pub struct Threads {
@@ -159,8 +164,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.query(path, height, prove, reply_to)?
                         },
 
-                        Ok(HandleInput::SendTx { proto_msgs, reply_to }) => {
-                            self.send_tx(proto_msgs, reply_to)?
+                        Ok(HandleInput::SendMsgs { proto_msgs, reply_to }) => {
+                            self.send_msgs(proto_msgs, reply_to)?
                         },
 
                         Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
@@ -242,6 +247,22 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
 
+                        Ok(HandleInput::ProvenPacketCommitment { port_id, channel_id, sequence, height, reply_to }) => {
+                            self.proven_packet_commitment(port_id, channel_id, sequence, height, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryPacketCommitments { request, reply_to }) => {
+                            self.query_packet_commitments(request, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryUnreceivedPackets { request, reply_to }) => {
+                            self.query_unreceived_packets(request, reply_to)?
+                        },
+
+                        Ok(HandleInput::QueryPacketEventData { request, reply_to }) => {
+                            self.query_txs(request, reply_to)?
+                        },
+
                         Err(_e) => todo!(), // TODO: Handle error?
                     }
                 },
@@ -290,12 +311,12 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn send_tx(
+    fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Vec<String>>,
     ) -> Result<(), Error> {
-        let result = self.chain.send_tx(proto_msgs);
+        let result = self.chain.send_msgs(proto_msgs);
 
         reply_to
             .send(result)
@@ -596,6 +617,67 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         let result = self
             .chain
             .build_channel_proofs(&port_id, &channel_id, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn proven_packet_commitment(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result = self
+            .chain
+            .proven_packet_commitment(&port_id, &channel_id, sequence, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_commitments(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_unreceived_packets(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_txs(
+        &self,
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_txs(request);
 
         reply_to
             .send(result)

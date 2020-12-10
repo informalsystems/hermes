@@ -202,7 +202,6 @@ impl EventMonitor {
                             height,
                             events,
                         };
-
                         self.tx_batch.send(batch)?;
                     }
                 }

@@ -2,10 +2,15 @@ use std::fmt::Debug;
 
 use crossbeam_channel as channel;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
     ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
@@ -18,14 +23,14 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
+
 use crate::{
     chain::QueryResponse,
     connection::ConnectionMsgType,
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
-
-use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -77,8 +82,8 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error> {
-        self.send(|reply_to| HandleInput::SendTx {
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error> {
+        self.send(|reply_to| HandleInput::SendMsgs {
             proto_msgs,
             reply_to,
         })
@@ -263,5 +268,39 @@ impl ChainHandle for ProdChainHandle {
             height,
             reply_to,
         })
+    }
+
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        self.send(|reply_to| HandleInput::ProvenPacketCommitment {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+            height,
+            reply_to,
+        })
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+        self.send(|reply_to| HandleInput::QueryPacketCommitments { request, reply_to })
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| HandleInput::QueryUnreceivedPackets { request, reply_to })
+    }
+
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        self.send(|reply_to| HandleInput::QueryPacketEventData { request, reply_to })
     }
 }

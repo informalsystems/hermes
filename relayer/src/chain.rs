@@ -22,20 +22,20 @@ use tendermint_proto::Protobuf;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
-use ibc::ics02_client::header::Header;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 
+use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
-
 use ibc::ics03_connection::version::get_compatible_versions;
+use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
+use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
-
 use ibc::proofs::{ConsensusProof, Proofs};
-
-use ibc::ics04_channel::channel::ChannelEnd;
-use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::Height as ICSHeight;
 
 use crate::config::ChainConfig;
@@ -44,6 +44,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+use ibc::events::IBCEvent;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -52,6 +53,14 @@ pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: MerkleProof,
     pub height: Height,
+}
+
+/// Packet query options
+#[derive(Debug)]
+pub struct QueryPacketOptions {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub height: u64,
 }
 
 /// Defines a blockchain as understood by the relayer
@@ -98,8 +107,8 @@ pub trait Chain: Sized {
     /// Perform a generic ICS `query`, and return the corresponding response data.
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
-    /// Send a transaction with `msgs` to chain.
-    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error>;
+    /// Sends one or more transactions with `msgs` to chain.
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 
@@ -301,4 +310,38 @@ pub trait Chain: Sized {
 
         Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
+
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        let res = self
+            .query(
+                Path::Commitments {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        Ok((res.value, res.proof))
+    }
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, ICSHeight), Error>;
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }

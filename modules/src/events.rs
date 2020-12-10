@@ -3,6 +3,7 @@ use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::ics20_fungible_token_transfer::events as TransferEvents;
+use crate::Height as ICSHeight;
 
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
 
@@ -13,6 +14,22 @@ use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 
 use tracing::warn;
+
+/// Events types
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum IBCEventType {
+    SendPacket,
+    RecvPacket,
+}
+
+impl IBCEventType {
+    pub fn as_str(&self) -> &'static str {
+        match *self {
+            IBCEventType::SendPacket => "send_packet",
+            _ => "unhandled",
+        }
+    }
+}
 
 /// Events created by the IBC component of a chain, destined for a relayer.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -49,6 +66,27 @@ pub enum IBCEvent {
 impl IBCEvent {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
+    }
+    pub fn height(&self) -> Height {
+        match self {
+            IBCEvent::NewBlock(bl) => bl.height,
+            IBCEvent::UpdateClient(uc) => uc.height,
+            IBCEvent::SendPacketChannel(ev) => ev.envelope.height,
+            IBCEvent::ReceivePacketChannel(ev) => ev.height,
+            _ => {
+                unimplemented!()
+            }
+        }
+    }
+    pub fn set_height(&mut self, height: ICSHeight) {
+        match self {
+            IBCEvent::SendPacketChannel(ev) => {
+                ev.envelope.height = Height::try_from(height.version_height).unwrap()
+            }
+            _ => {
+                unimplemented!()
+            }
+        }
     }
 }
 

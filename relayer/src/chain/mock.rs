@@ -1,15 +1,23 @@
 use std::ops::Add;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint::account::Id;
-use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
+use tendermint::account::Id;
+use tendermint_testgen::light_block::TMLightBlock;
+
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::downcast;
+use ibc::events::IBCEvent;
 use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
@@ -29,7 +37,6 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
-use std::thread;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -93,12 +100,13 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn send_tx(&mut self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        self.context
+        Ok(vec![self
+            .context
             .send(proto_msgs)
             .map(|_| "OK".to_string()) // TODO: establish success return codes.
-            .map_err(|e| Kind::Rpc.context(e).into())
+            .map_err(|e| Kind::Rpc.context(e))?])
     }
 
     fn get_signer(&mut self) -> Result<Id, Error> {
@@ -190,6 +198,24 @@ impl Chain for MockChain {
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
+
+    fn query_packet_commitments(
+        &self,
+        _request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+        unimplemented!()
+    }
+
+    fn query_unreceived_packets(
+        &self,
+        _request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        unimplemented!()
+    }
 }
 
 // For integration tests with the modules
@@ -212,7 +238,9 @@ pub mod test_utils {
             key_name: "".to_string(),
             store_prefix: "".to_string(),
             client_ids: vec![],
-            gas: 0,
+            gas: None,
+            max_msg_num: None,
+            max_tx_size: None,
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days
             trust_threshold: Default::default(),

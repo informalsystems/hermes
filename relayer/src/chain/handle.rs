@@ -2,10 +2,15 @@ use std::sync::Arc;
 
 use crossbeam_channel as channel;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
@@ -18,15 +23,14 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::connection::ConnectionMsgType;
-use crate::{error::Error, event::monitor::EventBatch};
-// use crate::foreign_client::ForeignClient;
-
-use crate::keyring::store::KeyEntry;
-
 use super::QueryResponse;
 
+use crate::connection::ConnectionMsgType;
+use crate::keyring::store::KeyEntry;
+use crate::{error::Error, event::monitor::EventBatch};
+
 mod prod;
+
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -56,9 +60,9 @@ pub enum HandleInput {
         reply_to: ReplyTo<QueryResponse>,
     },
 
-    SendTx {
+    SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<String>,
+        reply_to: ReplyTo<Vec<String>>,
     },
 
     // GetHeader {
@@ -172,6 +176,29 @@ pub enum HandleInput {
         height: Height,
         reply_to: ReplyTo<Proofs>,
     },
+
+    ProvenPacketCommitment {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    },
+
+    QueryPacketCommitments {
+        request: QueryPacketCommitmentsRequest,
+        reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
+    },
+
+    QueryUnreceivedPackets {
+        request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    },
+
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Send + Sync {
@@ -182,7 +209,7 @@ pub trait ChainHandle: Clone + Send + Sync {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_tx(&self, proto_msgs: Vec<prost_types::Any>) -> Result<String, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error>;
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
@@ -262,4 +289,24 @@ pub trait ChainHandle: Clone + Send + Sync {
         channel_id: &ChannelId,
         height: Height,
     ) -> Result<Proofs, Error>;
+
+    fn proven_packet_commitment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error>;
+
+    fn query_packet_commitments(
+        &self,
+        request: QueryPacketCommitmentsRequest,
+    ) -> Result<(Vec<PacketAckCommitment>, Height), Error>;
+
+    fn query_unreceived_packets(
+        &self,
+        request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }

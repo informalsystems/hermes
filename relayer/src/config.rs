@@ -90,8 +90,9 @@ pub struct ChainConfig {
     pub key_name: String,
     pub store_prefix: String,
     pub client_ids: Vec<String>,
-    #[serde(default = "default::gas")]
-    pub gas: u64,
+    pub gas: Option<u64>,
+    pub max_msg_num: Option<usize>,
+    pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]

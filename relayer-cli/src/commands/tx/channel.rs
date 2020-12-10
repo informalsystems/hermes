@@ -92,7 +92,7 @@ macro_rules! chan_open_cmd {
                 let (dst_chain, _) =
                     ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
 
-                let res: Result<String, Error> =
+                let res: Result<Vec<String>, Error> =
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {

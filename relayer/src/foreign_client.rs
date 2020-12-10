@@ -1,5 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
+use tracing::info;
 
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -75,7 +76,7 @@ impl ForeignClient {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
-        println!(
+        info!(
             "{}  Client on {:?} is created {:?}\n",
             done, config.chain, config.id
         );
@@ -168,10 +169,10 @@ pub fn build_create_client_and_send(
     dst_chain: &impl ChainHandle,
     src_chain: &impl ChainHandle,
     opts: &ForeignClientConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let new_msg = build_create_client(dst_chain, src_chain, opts.client_id())?;
 
-    Ok(dst_chain.send_tx(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
+    Ok(dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
 
 pub fn build_update_client(
@@ -203,7 +204,7 @@ pub fn build_update_client_and_send(
     dst_chain: &impl ChainHandle,
     src_chain: &impl ChainHandle,
     opts: &ForeignClientConfig,
-) -> Result<String, Error> {
+) -> Result<Vec<String>, Error> {
     let new_msgs = build_update_client(
         dst_chain,
         src_chain,
@@ -211,7 +212,7 @@ pub fn build_update_client_and_send(
         src_chain.query_latest_height()?,
     )?;
 
-    Ok(dst_chain.send_tx(new_msgs)?)
+    Ok(dst_chain.send_msgs(new_msgs)?)
 }
 
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests
