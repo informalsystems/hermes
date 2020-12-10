@@ -58,8 +58,8 @@ fn send_update_client_and_msgs(
     if !msgs.is_empty() {
         let update_height = height.increment();
         let mut msgs_to_send = build_update_client(
-            dst_chain.clone(),
-            src_chain.clone(),
+            dst_chain,
+            src_chain,
             client_id,
             update_height,
         )?;
@@ -388,8 +388,8 @@ pub fn build_and_send_recv_packet_messages(
     }
 
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        dst_chain,
+        src_chain,
         &opts.dst_client_id.clone(),
         height,
     )?;

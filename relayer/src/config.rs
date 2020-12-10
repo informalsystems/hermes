@@ -220,7 +220,7 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
 /// Serialize the given `Config` as TOML to the given config file.
 pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
     let mut file = if path.as_ref().exists() {
-        fs::OpenOptions::new().write(true).open(path)
+        fs::OpenOptions::new().write(true).truncate(true).open(path)
     } else {
         File::create(path)
     }

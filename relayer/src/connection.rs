@@ -469,8 +469,8 @@ pub fn build_conn_try(
     // TODO - add check if it is required
     let src_client_target_height = dst_chain.query_latest_height()?;
     let client_msgs = build_update_client(
-        src_chain.clone(),
-        dst_chain.clone(),
+        &src_chain,
+        &dst_chain,
         &opts.src().client_id(),
         src_client_target_height,
     )?;
@@ -480,8 +480,8 @@ pub fn build_conn_try(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &opts.dst().client_id(),
         ics_target_height,
     )?;
@@ -569,8 +569,8 @@ pub fn build_conn_ack(
     // TODO - add check if it is required
     let src_client_target_height = dst_chain.query_latest_height()?;
     let client_msgs = build_update_client(
-        src_chain.clone(),
-        dst_chain.clone(),
+        &src_chain,
+        &dst_chain,
         &opts.src().client_id(),
         src_client_target_height,
     )?;
@@ -580,8 +580,8 @@ pub fn build_conn_ack(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &opts.dst().client_id(),
         ics_target_height,
     )?;
@@ -660,8 +660,8 @@ pub fn build_conn_confirm(
     let ics_target_height = src_chain.query_latest_height()?;
 
     let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
+        &dst_chain,
+        &src_chain,
         &opts.dst().client_id(),
         ics_target_height,
     )?;
