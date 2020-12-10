@@ -3,6 +3,7 @@ use std::time::SystemTime;
 
 use prost_types::Any;
 use thiserror::Error;
+use tracing::info;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
@@ -218,24 +219,24 @@ impl Channel {
                 (None, None) => {
                     // Init to src
                     match build_chan_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => println!("{:?} Failed ChanInit {:?}", e, config.a_end()),
-                        Ok(_) => println!("{}  ChanInit {:?}", done, config.a_end()),
+                        Err(e) => info!("{:?} Failed ChanInit {:?}", e, config.a_end()),
+                        Ok(_) => info!("{}  ChanInit {:?}", done, config.a_end()),
                     }
                 }
                 (Some(a_channel), None) => {
                     // Try to dest
                     assert!(a_channel.state_matches(&State::Init));
                     match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config) {
-                        Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_end()),
-                        Ok(_) => println!("{}  ChanTry {:?}", done, config.b_end()),
+                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.b_end()),
+                        Ok(_) => info!("{}  ChanTry {:?}", done, config.b_end()),
                     }
                 }
                 (None, Some(b_channel)) => {
                     // Try to src
                     assert!(b_channel.state_matches(&State::Init));
                     match build_chan_try_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.a_end()),
-                        Ok(_) => println!("{}  ChanTry {:?}", done, config.a_end()),
+                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.a_end()),
+                        Ok(_) => info!("{}  ChanTry {:?}", done, config.a_end()),
                     }
                 }
                 (Some(a_channel), Some(b_channel)) => {
@@ -245,16 +246,16 @@ impl Channel {
                             // Try to dest
                             match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config)
                             {
-                                Err(e) => println!("{:?} Failed ChanTry {:?}", e, config.b_end()),
-                                Ok(_) => println!("{}  ChanTry {:?}", done, config.b_end()),
+                                Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.b_end()),
+                                Ok(_) => info!("{}  ChanTry {:?}", done, config.b_end()),
                             }
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
                             match build_chan_ack_and_send(b_chain.clone(), a_chain.clone(), &config)
                             {
-                                Err(e) => println!("{:?} Failed ChanAck {:?}", e, config.b_end()),
-                                Ok(_) => println!("{}  ChanAck {:?}", done, config.b_end()),
+                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, config.b_end()),
+                                Ok(_) => info!("{}  ChanAck {:?}", done, config.b_end()),
                             }
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
@@ -264,8 +265,8 @@ impl Channel {
                                 b_chain.clone(),
                                 &flipped,
                             ) {
-                                Err(e) => println!("{:?} Failed ChanAck {:?}", e, config.a_end()),
-                                Ok(_) => println!("{}  ChanAck {:?}", done, config.a_end()),
+                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, config.a_end()),
+                                Ok(_) => info!("{}  ChanAck {:?}", done, config.a_end()),
                             }
                         }
                         (&State::Open, &State::TryOpen) => {
@@ -276,9 +277,9 @@ impl Channel {
                                 &config,
                             ) {
                                 Err(e) => {
-                                    println!("{:?} Failed ChanConfirm {:?}", e, config.b_end())
+                                    info!("{:?} Failed ChanConfirm {:?}", e, config.b_end())
                                 }
-                                Ok(_) => println!("{}  ChanConfirm {:?}", done, config.b_end()),
+                                Ok(_) => info!("{}  ChanConfirm {:?}", done, config.b_end()),
                             }
                         }
                         (&State::TryOpen, &State::Open) => {
@@ -288,12 +289,12 @@ impl Channel {
                                 b_chain.clone(),
                                 &flipped,
                             ) {
-                                Err(e) => println!("{:?} ChanConfirm {:?}", e, flipped),
-                                Ok(_) => println!("{}  ChanConfirm {:?}", done, flipped),
+                                Err(e) => info!("{:?} ChanConfirm {:?}", e, flipped),
+                                Ok(_) => info!("{}  ChanConfirm {:?}", done, flipped),
                             }
                         }
                         (&State::Open, &State::Open) => {
-                            println!(
+                            info!(
                                 "{}  {}  {}  Channel handshake finished for {:#?}",
                                 done, done, done, config
                             );
@@ -303,7 +304,7 @@ impl Channel {
                     }
                 }
             }
-            println!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
+            info!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
 
         Err(ChannelError::Failed(format!(

@@ -6,6 +6,8 @@ use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
 use tendermint_proto::Protobuf;
 
+use crate::events::IBCEventType;
+use crate::ics02_client::height::Height;
 use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -268,6 +270,17 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+}
+
+/// Used for queries and not yet standardized in channel's query.proto
+// todo -move to channel.rs?
+#[derive(Clone, Debug)]
+pub struct QueryPacketEventDataRequest {
+    pub event_id: IBCEventType,
+    pub channel_id: String,
+    pub port_id: String,
+    pub sequences: Vec<u64>,
+    pub height: Height,
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.

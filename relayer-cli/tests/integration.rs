@@ -35,7 +35,7 @@ fn simd_config() -> Config {
         store_prefix: "ibc".to_string(),
         client_ids: vec!["ethbridge".to_string()],
         gas: Some(200000),
-        max_tx_num: None,
+        max_msg_num: None,
         max_tx_size: None,
         trust_threshold: Default::default(),
         trusting_period: default::trusting_period(),

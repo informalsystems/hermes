@@ -2,10 +2,15 @@ use std::fmt::Debug;
 
 use crossbeam_channel as channel;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
     ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
@@ -18,18 +23,13 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
+
 use crate::{
     chain::QueryResponse,
     connection::ConnectionMsgType,
     error::{Error, Kind},
     keyring::store::KeyEntry,
-};
-
-use super::{reply_channel, ChainHandle, HandleInput, ReplyTo, Subscription};
-use crate::chain::handle::QueryPacketEventDataRequest;
-use ibc::events::IBCEvent;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 
 #[derive(Debug, Clone)]

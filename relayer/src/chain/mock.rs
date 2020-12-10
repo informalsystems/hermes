@@ -1,15 +1,23 @@
 use std::ops::Add;
 use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tendermint::account::Id;
-use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
+use tendermint::account::Id;
+use tendermint_testgen::light_block::TMLightBlock;
+
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::downcast;
+use ibc::events::IBCEvent;
 use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
@@ -23,18 +31,12 @@ use ibc::mock::host::HostType;
 use ibc::test_utils::{default_consensus_params, get_dummy_account_id};
 use ibc::Height;
 
-use crate::chain::handle::QueryPacketEventDataRequest;
 use crate::chain::{Chain, QueryResponse};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
-use ibc::events::IBCEvent;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
-};
-use std::thread;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -229,7 +231,7 @@ pub mod test_utils {
             store_prefix: "".to_string(),
             client_ids: vec![],
             gas: None,
-            max_tx_num: None,
+            max_msg_num: None,
             max_tx_size: None,
             clock_drift: Duration::from_secs(5),
             trusting_period: Duration::from_secs(14 * 24 * 60 * 60), // 14 days

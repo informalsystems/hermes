@@ -2,10 +2,15 @@ use std::sync::Arc;
 
 use crossbeam_channel as channel;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
@@ -18,19 +23,14 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use crate::connection::ConnectionMsgType;
-use crate::{error::Error, event::monitor::EventBatch};
-// use crate::foreign_client::ForeignClient;
-
-use crate::keyring::store::KeyEntry;
-
 use super::QueryResponse;
 
+use crate::connection::ConnectionMsgType;
+use crate::keyring::store::KeyEntry;
+use crate::{error::Error, event::monitor::EventBatch};
+
 mod prod;
-use ibc::events::{IBCEvent, IBCEventType};
-use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
-};
+
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -319,13 +319,4 @@ pub trait ChainHandle: Clone + Send + Sync {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
-}
-
-#[derive(Clone, Debug)]
-pub struct QueryPacketEventDataRequest {
-    pub event_id: IBCEventType,
-    pub channel_id: String,
-    pub port_id: String,
-    pub sequences: Vec<u64>,
-    pub height: Height,
 }

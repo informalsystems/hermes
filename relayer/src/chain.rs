@@ -30,7 +30,7 @@ use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics03_connection::version::get_compatible_versions;
-use ibc::ics04_channel::channel::ChannelEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof};
 use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
@@ -38,7 +38,6 @@ use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
 
-use crate::chain::handle::QueryPacketEventDataRequest;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::error::{Error, Kind};
@@ -319,7 +318,6 @@ pub trait Chain: Sized {
         sequence: u64,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        println!("proven_packet_commitment for {:?} {:?}", height, sequence);
         let res = self
             .query(
                 Path::Commitments {

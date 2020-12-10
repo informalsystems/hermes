@@ -1,11 +1,14 @@
 use std::{
     convert::TryFrom,
+    convert::TryInto,
     future::Future,
     str::FromStr,
     sync::{Arc, Mutex},
     thread,
     time::Duration,
 };
+
+use subtle_encoding::base64;
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
@@ -14,9 +17,12 @@ use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
+use tonic::codegen::http::Uri;
 
 use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::Protobuf;
+
+use tendermint_rpc::query::Query;
 
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
@@ -30,12 +36,19 @@ use ibc_proto::cosmos::base::v1beta1::Coin;
 
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
 
 use ibc::downcast;
+use ibc::events::{IBCEvent, IBCEventType};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
+use ibc::ics04_channel::events::{PacketEnvelope, SendPacket};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use ibc::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
@@ -57,17 +70,9 @@ use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 
-// Support for GRPC
-use crate::chain::handle::QueryPacketEventDataRequest;
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
-};
-use tonic::codegen::http::Uri;
-
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
-const DEFAULT_MAX_TX_NUM: usize = 3;
+const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 
 pub struct CosmosSDKChain {
@@ -225,19 +230,19 @@ impl CosmosSDKChain {
         self.config.gas.unwrap_or(DEFAULT_MAX_GAS)
     }
 
-    fn max_tx_num(&self) -> usize {
-        self.config.max_tx_num.unwrap_or(DEFAULT_MAX_TX_NUM)
+    fn max_msg_num(&self) -> usize {
+        self.config.max_msg_num.unwrap_or(DEFAULT_MAX_MSG_NUM)
     }
 
     fn max_tx_size(&self) -> usize {
-        self.config.max_tx_num.unwrap_or(DEFAULT_MAX_TX_SIZE)
+        self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
     }
 }
 
 impl Chain for CosmosSDKChain {
     type LightBlock = TMLightBlock;
     type Header = TMHeader;
-    type ConsensusState = ConsensusState;
+    type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
@@ -332,7 +337,7 @@ impl Chain for CosmosSDKChain {
             prost::Message::encode(msg, &mut buf).unwrap();
             n += 1;
             size += buf.len();
-            if n >= self.max_tx_num() || size >= self.max_tx_size() {
+            if n >= self.max_msg_num() || size >= self.max_tx_size() {
                 let result = self.send_tx(msg_batch)?;
                 res.append(&mut vec![result]);
                 n = 0;
@@ -605,12 +610,6 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Quer
         seq.to_string(),
     ))
 }
-
-use ibc::events::{IBCEvent, IBCEventType};
-use ibc::ics04_channel::events::{PacketEnvelope, SendPacket};
-use std::convert::TryInto;
-use subtle_encoding::base64;
-use tendermint_rpc::query::Query;
 
 // Extract the packet events from the query_tx RPC response. The response includes the full set of events
 // from the Tx-es where there is at least one request query match.

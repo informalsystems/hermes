@@ -7,14 +7,19 @@ use crossbeam_channel as channel;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc_proto::ibc::core::channel::v1::{
+    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+};
+
 use ibc::{
+    events::IBCEvent,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
         state::{ClientState, ConsensusState},
     },
     ics03_connection::connection::ConnectionEnd,
-    ics04_channel::channel::ChannelEnd,
+    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
@@ -27,6 +32,11 @@ use ibc::{
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use super::{
+    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
+    Chain, QueryResponse,
+};
+
 use crate::{
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -34,16 +44,6 @@ use crate::{
     event::{bus::EventBus, monitor::EventBatch},
     keyring::store::KeyEntry,
     light_client::LightClient,
-};
-
-use super::{
-    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
-    Chain, QueryResponse,
-};
-use crate::chain::handle::QueryPacketEventDataRequest;
-use ibc::events::IBCEvent;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 
 pub struct Threads {

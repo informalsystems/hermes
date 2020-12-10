@@ -9,7 +9,7 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc::{
     downcast,
     events::{IBCEvent, IBCEventType},
-    ics04_channel::channel::State,
+    ics04_channel::channel::{QueryPacketEventDataRequest, State},
     ics04_channel::events::SendPacket,
     ics04_channel::msgs::recv_packet::MsgRecvPacket,
     ics04_channel::packet::Packet,
@@ -19,7 +19,7 @@ use ibc::{
     Height,
 };
 
-use crate::chain::handle::{ChainHandle, QueryPacketEventDataRequest, Subscription};
+use crate::chain::handle::{ChainHandle, Subscription};
 use crate::channel::{Channel, ChannelError};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionError;
@@ -45,7 +45,7 @@ pub enum LinkError {
 }
 
 pub struct Link {
-    channel: Channel,
+    pub channel: Channel,
 }
 
 fn send_update_client_and_msgs(
@@ -56,16 +56,17 @@ fn send_update_client_and_msgs(
     client_id: &ClientId,
 ) -> Result<(), Error> {
     if !msgs.is_empty() {
+        let update_height = height.increment();
         let mut msgs_to_send = build_update_client(
             dst_chain.clone(),
             src_chain.clone(),
             client_id,
-            height.increment(),
+            update_height,
         )?;
         msgs_to_send.append(msgs);
         info!("sending {:#?} messages", msgs_to_send.len());
         let res = dst_chain.send_msgs(msgs_to_send)?;
-        info!("result {:?}", res);
+        info!("result {:#?}", res);
     }
     Ok(())
 }
@@ -75,7 +76,38 @@ impl Link {
         Link { channel }
     }
 
-    fn relay_from_events_received(
+    pub fn client_of_chain(&self, chain_id: ChainId) -> Option<&ClientId> {
+        if chain_id == self.channel.config.a_config.chain_id().clone() {
+            Some(&self.channel.config.a_config.client_id())
+        } else if chain_id == self.channel.config.b_config.chain_id().clone() {
+            Some(&self.channel.config.b_config.client_id())
+        } else {
+            None
+        }
+    }
+
+    // Determines if the event received from the chain `from_chain` is relevant and
+    // should be processed.
+    // Only events for a port/channel matching one of the channel ends should be processed.
+    fn must_process_event(&self, from_chain: &impl ChainHandle, event: &IBCEvent) -> bool {
+        match event {
+            IBCEvent::SendPacketChannel(send_packet_ev) => {
+                self.channel.config.a_config.chain_id().clone() == from_chain.id()
+                    && self.channel.config.a_config.channel_id().clone()
+                        == send_packet_ev.envelope.packet_src_channel
+                    && self.channel.config.a_config.port_id().clone()
+                        == send_packet_ev.envelope.packet_src_port
+                    || self.channel.config.b_config.chain_id().clone() == from_chain.id()
+                        && self.channel.config.b_config.channel_id().clone()
+                            == send_packet_ev.envelope.packet_src_channel
+                        && self.channel.config.b_config.port_id().clone()
+                            == send_packet_ev.envelope.packet_src_port
+            }
+            _ => false,
+        }
+    }
+
+    fn relay_from_events(
         &self,
         src_chain: &impl ChainHandle,
         dst_chain: &impl ChainHandle,
@@ -86,14 +118,18 @@ impl Link {
 
         // Iterate through the IBC Events, build the message for each and collect all at same height.
         // Send a multi message transaction with these, prepending the client update
-        for a_batch in src_subscription.try_iter().collect::<Vec<_>>().iter() {
-            for event in a_batch.events.iter() {
+        for batch in src_subscription.try_iter().collect::<Vec<_>>().iter() {
+            for event in batch.events.iter() {
+                if !self.must_process_event(src_chain, event) {
+                    continue;
+                }
+                let packet_msg = handle_packet_event(dst_chain, src_chain, event)?;
+
                 // TODO add ICS height to IBC event
                 let event_height = Height {
                     version_height: u64::from(event.height()),
                     version_number: ChainId::chain_version(src_chain.id().to_string().as_str()),
                 };
-                let packet_msg = handle_event(dst_chain, src_chain, event.clone())?;
                 if prev_height == Height::zero() {
                     prev_height = event_height;
                 }
@@ -103,7 +139,7 @@ impl Link {
                         src_chain,
                         &mut prev_msgs,
                         &prev_height,
-                        self.channel.config.b_config.client_id(),
+                        self.client_of_chain(dst_chain.id()).unwrap(),
                     )?;
                     prev_height = event_height;
                 }
@@ -118,7 +154,7 @@ impl Link {
             src_chain,
             &mut prev_msgs,
             &prev_height,
-            self.channel.config.b_config.client_id(),
+            self.client_of_chain(dst_chain.id()).unwrap(),
         )?)
     }
 
@@ -127,21 +163,21 @@ impl Link {
         a_chain: impl ChainHandle,
         b_chain: impl ChainHandle,
     ) -> Result<(), LinkError> {
-        info!("relaying packets");
+        info!("relaying packets for link {:#?}", self.channel.config);
 
         let a_subscription = &a_chain.subscribe(a_chain.id())?;
         let b_subscription = &b_chain.subscribe(b_chain.id())?;
         loop {
-            self.relay_from_events_received(&a_chain, &b_chain, a_subscription)?;
-            self.relay_from_events_received(&b_chain, &a_chain, b_subscription)?;
+            self.relay_from_events(&a_chain, &b_chain, a_subscription)?;
+            self.relay_from_events(&b_chain, &a_chain, b_subscription)?;
         }
     }
 }
 
-fn handle_event(
+fn handle_packet_event(
     dst_chain: &impl ChainHandle,
     src_chain: &impl ChainHandle,
-    event: IBCEvent,
+    event: &IBCEvent,
 ) -> Result<Option<Any>, Error> {
     match event {
         IBCEvent::SendPacketChannel(send_packet_ev) => {
@@ -181,19 +217,28 @@ fn build_packet_recv_msg_from_send_event(
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
-    let res = src_chain.proven_packet_commitment(
-        &event.envelope.packet_src_port,
-        &event.envelope.packet_src_channel,
-        event.envelope.packet_sequence,
-        event_height,
-    );
+    let (_, proof) = src_chain
+        .proven_packet_commitment(
+            &event.envelope.packet_src_port,
+            &event.envelope.packet_src_channel,
+            event.envelope.packet_sequence,
+            event_height,
+        )
+        .map_err(|e| Kind::MalformedProof.context(e))?;
+
     let msg = MsgRecvPacket::new(
-        packet,
-        CommitmentProof::from(res.unwrap().1),
+        packet.clone(),
+        CommitmentProof::from(proof),
         event_height.increment(),
         signer,
     )
-    .unwrap();
+    .map_err(|e| {
+        Kind::PacketRecv(
+            packet.source_channel,
+            "error while building the recv_packet".to_string(),
+        )
+        .context(e)
+    })?;
 
     Ok(msg)
 }
@@ -234,7 +279,7 @@ fn build_packet_recv_msgs(
     let mut msgs = vec![];
     for event in events.iter_mut() {
         event.set_height(query_height);
-        if let Some(new_msg) = handle_event(dst_chain, src_chain, event.clone())? {
+        if let Some(new_msg) = handle_packet_event(dst_chain, src_chain, event)? {
             msgs.append(&mut vec![new_msg]);
         }
     }

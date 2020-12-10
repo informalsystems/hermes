@@ -76,7 +76,7 @@ impl Runnable for TxRawPacketRecvCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("packet recv, result: ", "{:?}", &receipt[0]),
+            Ok(receipt) => status_info!("packet recv, result: ", "{:#?}", receipt),
             Err(e) => status_info!("packet recv failed, error: ", "{}", e),
         }
     }

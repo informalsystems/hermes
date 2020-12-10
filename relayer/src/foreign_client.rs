@@ -1,5 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
+use tracing::info;
 
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
@@ -15,7 +16,6 @@ use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
-use tracing::debug;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -74,7 +74,7 @@ impl ForeignClient {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
-        println!(
+        info!(
             "{}  Client on {:?} is created {:?}\n",
             done, config.chain, config.id
         );
@@ -195,7 +195,6 @@ pub fn build_update_client(
         signer,
     };
 
-    debug!("MsgUpdateAnyClient {:#?}", new_msg);
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
 
