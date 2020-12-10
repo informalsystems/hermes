@@ -741,20 +741,3 @@ pub fn build_conn_confirm_and_send(
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
     Ok(dst_chain.send_tx(dst_msgs)?)
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use crate::connection::Connection;
-//
-//
-//     #[test]
-//     #[ignore]
-//     /// These may not compile!
-//     fn potentially_improved_tests() {
-//         let connection = Connection::new(
-//             client_on_a,
-//             client_on_b,
-//             conn_cfg,
-//         );
-//     }
-// }
