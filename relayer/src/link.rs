@@ -57,12 +57,7 @@ fn send_update_client_and_msgs(
 ) -> Result<(), Error> {
     if !msgs.is_empty() {
         let update_height = height.increment();
-        let mut msgs_to_send = build_update_client(
-            dst_chain,
-            src_chain,
-            client_id,
-            update_height,
-        )?;
+        let mut msgs_to_send = build_update_client(dst_chain, src_chain, client_id, update_height)?;
         msgs_to_send.append(msgs);
         info!("sending {:#?} messages", msgs_to_send.len());
         let res = dst_chain.send_msgs(msgs_to_send)?;
@@ -387,12 +382,7 @@ pub fn build_and_send_recv_packet_messages(
         return Ok(vec!["No sent packets on source chain".to_string()]);
     }
 
-    let mut msgs = build_update_client(
-        dst_chain,
-        src_chain,
-        &opts.dst_client_id.clone(),
-        height,
-    )?;
+    let mut msgs = build_update_client(dst_chain, src_chain, &opts.dst_client_id.clone(), height)?;
 
     let mut packet_msgs = build_packet_recv_msgs(
         dst_chain,
