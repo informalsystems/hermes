@@ -131,7 +131,7 @@ impl ForeignClient {
         self.src_chain.clone()
     }
 
-    /// Creates the message for updating this client with the latest header of its source chain.
+    /// Creates a message for updating this client with the latest header of its source chain.
     pub fn prepare_update(&self) -> Result<Vec<Any>, ForeignClientError> {
         let target_height = self.src_chain.query_latest_height().map_err(|e| {
             ForeignClientError::ClientUpdate(format!("error querying latest height {:?}", e))
@@ -170,7 +170,8 @@ impl ForeignClient {
 }
 
 /// Lower-level interface for preparing a message to create a client.
-/// # Note
+///
+/// ## Note
 /// Methods in `ForeignClient` (see `new`) should be preferred over this.
 pub fn build_create_client(
     dst_chain: Box<dyn ChainHandle>,
@@ -206,7 +207,8 @@ pub fn build_create_client(
 }
 
 /// Lower-level interface for creating a client.
-/// # Note
+///
+/// ## Note
 /// Methods in `ForeignClient` (see `new`) should be preferred over this.
 pub fn build_create_client_and_send(
     dst_chain: Box<dyn ChainHandle>,
@@ -219,7 +221,8 @@ pub fn build_create_client_and_send(
 }
 
 /// Lower-level interface to create the message for updating a client to height `target_height`.
-/// # Note
+///
+/// ## Note
 /// Methods in `ForeignClient`, in particular `prepare_update`, should be preferred over this.
 pub fn build_update_client(
     dst_chain: Box<dyn ChainHandle>,
@@ -247,7 +250,8 @@ pub fn build_update_client(
 }
 
 /// Lower-level interface for preparing a message to update a client.
-/// # Note
+///
+/// ## Note
 /// Methods in `ForeignClient` (see `update`) should be preferred over this.
 pub fn build_update_client_and_send(
     dst_chain: Box<dyn ChainHandle>,
@@ -494,13 +498,32 @@ mod test {
 
         let num_iterations = 5;
 
+        let mut b_height_start = b_chain.query_latest_height().unwrap();
+        let mut a_height_start = a_chain.query_latest_height().unwrap();
+
         // Update each client
         for _i in 1..num_iterations {
             let res = client_on_a.update();
             assert!(res.is_ok(), "Client update for chain a failed {:?}", res);
 
+            // Basic check that the height of the chain advanced
+            let a_height_current = a_chain.query_latest_height().unwrap();
+            a_height_start = a_height_start.increment();
+            assert_eq!(
+                a_height_start, a_height_current,
+                "after client update, chain a did not advance"
+            );
+
             let res = client_on_b.update();
             assert!(res.is_ok(), "Client update for chain b failed {:?}", res);
+
+            // Basic check that the height of the chain advanced
+            let b_height_current = b_chain.query_latest_height().unwrap();
+            b_height_start = b_height_start.increment();
+            assert_eq!(
+                b_height_start, b_height_current,
+                "after client update, chain b did not advance"
+            );
         }
     }
 }
