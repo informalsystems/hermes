@@ -1,46 +1,43 @@
 version: '3'
 
 services:
+
   ibc0:
     container_name: ibc0
     logging:
       driver: none
+    stdin_open: true
+    tty: true
     build:
       context: .
       dockerfile: ci/gaia.Dockerfile
       args:
-        release: stargate-4
-    environment:
-      - CHAIN_ID=ibc0
-      - MONIKER=node01
-      - RPC_PORT=26657
-      - P2P_PORT=26656
-      - GRPC_PORT=9090
-    volumes:
-      - chain-data:/data
+        CHAIN: gaia
+        RELEASE: stargate-4
+        NAME: ibc0
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc0:9090  --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 192.168.10.2
+
   ibc1:
     container_name: ibc1
     logging:
       driver: none
+    stdin_open: true
+    tty: true
     build:
       context: .
       dockerfile: ci/gaia.Dockerfile
       args:
-        release: stargate-4
-    environment:
-      - CHAIN_ID=ibc1
-      - MONIKER=node01
-      - RPC_PORT=26557
-      - P2P_PORT=26556
-      - GRPC_PORT=9090
-    volumes:
-      - chain-data:/data
+        CHAIN: gaia
+        RELEASE: stargate-4
+        NAME: ibc1
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc1:9090 --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 192.168.10.3
+
   relayer:
     depends_on:
       - ibc0
@@ -55,12 +52,12 @@ services:
     environment:
       - CHAIN_A=ibc0
       - CHAIN_A_HOME=/data/ibc0
+      - CHAIN_A_PORT=26657
       - CHAIN_B=ibc1
       - CHAIN_B_HOME=/data/ibc1
+      - CHAIN_B_PORT=26657
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
-    volumes:
-      - chain-data:/data
     networks:
       relaynet:
         ipv4_address: 192.168.10.4
@@ -73,6 +70,3 @@ networks:
       config:
         -
           subnet: 192.168.10.0/16
-
-volumes:
-  chain-data:

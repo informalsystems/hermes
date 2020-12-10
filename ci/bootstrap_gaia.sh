@@ -1,19 +1,24 @@
 #!/bin/sh
 
+# This file can be used to initialize a chain
+
 # coins to add to each account
 coins="100000000000stake,100000000000samoleans"
 
-home="/data/$CHAIN_ID"
+home="/chain"
 
 echo Node: "$MONIKER"
 echo Chain: "$CHAIN_ID"
 echo Home_Dir: "$home"
+whoami
 
 # Clean home dir if exists
 rm -Rf "$home"
 
 # Create home dir
 mkdir -p "$home"
+
+ls -allh "$home"
 
 # Check gaia version
 echo "-------------------------------------------------------------------------------------------------------------------"
@@ -69,8 +74,3 @@ echo "Collect genesis txs and output a genesis.json file"
 echo "-------------------------------------------------------------------------------------------------------------------"
 gaiad collect-gentxs --home "$home"
 echo "Done!"
-
-echo "-------------------------------------------------------------------------------------------------------------------"
-echo "Start the node"
-echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad start --home "$home" --pruning=nothing

@@ -32,6 +32,10 @@ COPY ci/simple_config.toml .
 # Copy setup script
 COPY ci/setup_relayer.sh .
 
+# Copy key files
+COPY ci/chains/gaia/stargate-4/ibc0/key_seed.json ./key_seed_ibc0.json
+COPY ci/chains/gaia/stargate-4/ibc1/key_seed.json ./key_seed_ibc1.json
+
 # Make it executable
 RUN chmod +x setup_relayer.sh
 

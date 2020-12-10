@@ -9,19 +9,19 @@ grpc_addr = 'tcp://ibc0:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-client_ids = ['ethbridge']
+client_ids = []
 gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
 
 [[chains]]
 id = 'ibc1'
-rpc_addr = 'tcp://ibc1:26557'
+rpc_addr = 'tcp://ibc1:26657'
 grpc_addr = 'tcp://ibc1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
+client_ids = []
 store_prefix = 'ibc'
-client_ids = ['ibconeclient']
 gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'

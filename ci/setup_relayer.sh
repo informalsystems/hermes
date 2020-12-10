@@ -1,44 +1,51 @@
 #!/bin/sh
 
-# Configuration file
-CONFIG_PATH="$RELAYER_DIR"/"$CONFIG"
-echo Config: "$CONFIG_PATH"
+set -e
 
-echo "Setting up relayer for chains:"
-echo => Chain: "$CHAIN_A" [$CHAIN_A_HOME]
-echo => Chain: "$CHAIN_B" [$CHAIN_B_HOME]
-echo Waiting 30 seconds for chains to generate blocks...
-sleep 30
-echo Done waiting, proceeding...
-
+echo "================================================================================================================="
+echo "                                              INITIALIZE                                                         "
+echo "================================================================================================================="
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Show relayer version"
 echo "-----------------------------------------------------------------------------------------------------------------"
 rrly version
+echo "-----------------------------------------------------------------------------------------------------------------"
+echo "Setting up chains"
+echo "-----------------------------------------------------------------------------------------------------------------"
+# Configuration file
+CONFIG_PATH="$RELAYER_DIR"/"$CONFIG"
+echo Config: "$CONFIG_PATH"
+echo "  Chain:" "$CHAIN_A"
+echo "    creating chain store folder: "["$CHAIN_A_HOME"]
+mkdir -p "$CHAIN_A_HOME"
+echo "  Chain:" "$CHAIN_B" ["$CHAIN_B_HOME"]
+echo "    creating chain store folder: "["$CHAIN_B_HOME"]
+mkdir -p "$CHAIN_B_HOME"
 
+echo Waiting 20 seconds for chains to generate blocks...
+sleep 20
+echo "-----------------------------------------------------------------------------------------------------------------"
 echo "================================================================================================================="
-echo "                                                CONFIGURATION                                                    "
+echo "                                            CONFIGURATION                                                        "
 echo "================================================================================================================="
-
-echo "-----------------------------------------------------------------------------------------------------------------"
-echo "Add light clients configuration for chains"
-echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":26657 -c "$CHAIN_A" -s "$CHAIN_A_HOME" -p -y --force
-sleep 3
-echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":26557 -c "$CHAIN_B" -s "$CHAIN_B_HOME" -p -y --force
-sleep 3
-echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":26557 -c "$CHAIN_A" -s "$CHAIN_A_HOME" -y --force
-sleep 3
-echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":26657 -c "$CHAIN_B" -s "$CHAIN_B_HOME" -y --force
-sleep 3
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_A" "$CHAIN_A_HOME"/key_seed.json
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_B" "$CHAIN_B_HOME"/key_seed.json
+rrly -c "$CONFIG_PATH" keys add "$CHAIN_A" key_seed_"$CHAIN_A".json
+rrly -c "$CONFIG_PATH" keys add "$CHAIN_B" key_seed_"$CHAIN_B".json
+echo "-----------------------------------------------------------------------------------------------------------------"
+echo "Add light clients configuration for chains"
+echo "-----------------------------------------------------------------------------------------------------------------"
+rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":"$CHAIN_A_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -p -y --force
+sleep 3
+echo "-----------------------------------------------------------------------------------------------------------------"
+rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":"$CHAIN_B_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -p -y --force
+sleep 3
+echo "-----------------------------------------------------------------------------------------------------------------"
+rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":"$CHAIN_B_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -y --force
+sleep 3
+echo "-----------------------------------------------------------------------------------------------------------------"
+rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":"$CHAIN_A_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -y --force
 
 echo "================================================================================================================="
 echo "                                             CLIENTS                                                             "

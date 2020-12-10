@@ -1,11 +1,13 @@
+###################################################################################################
 # Build image
+###################################################################################################
 FROM golang:alpine AS build-env
 
 # Add dependencies
 RUN apk add --no-cache curl make git libc-dev bash gcc linux-headers eudev-dev python3
 
 # Gaia Branch or Release
-ARG release
+ARG RELEASE
 
 # Clone repository
 RUN git clone https://github.com/cosmos/gaia /go/src/github.com/cosmos/gaia
@@ -14,7 +16,7 @@ RUN git clone https://github.com/cosmos/gaia /go/src/github.com/cosmos/gaia
 WORKDIR /go/src/github.com/cosmos/gaia
 
 # Checkout branch
-RUN git checkout $release
+RUN git checkout $RELEASE
 
 # Install minimum necessary dependencies, build Cosmos SDK, remove packages
 RUN apk add --no-cache $PACKAGES && \
@@ -24,29 +26,28 @@ RUN apk add --no-cache $PACKAGES && \
 # Show version
 RUN gaiad version --long
 
+###################################################################################################
 # Final image
+###################################################################################################
 FROM alpine:edge
 
-ENV GAIA /gaia
+ARG RELEASE
+ARG CHAIN
+ARG NAME
 
 # Install ca-certificates
 RUN apk add --update ca-certificates
 
 # Add jq for debugging
-RUN apk add --no-cache jq curl
+RUN apk add --no-cache jq curl tree
 
-WORKDIR $GAIA
+WORKDIR /$NAME
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
 
-# Copy bootstrap script
-COPY ci/bootstrap_gaia.sh .
+COPY --chown=root:root ci/chains/$CHAIN/$RELEASE/$NAME /chain
 
-# Make it executable
-RUN chmod +x bootstrap_gaia.sh
+RUN tree -pug /chain
 
-EXPOSE 26657 26656 9090
-
-# Entrypoint
-ENTRYPOINT ["/bin/sh", "-c", "/gaia/bootstrap_gaia.sh"]
+ENTRYPOINT "/bin/sh"
