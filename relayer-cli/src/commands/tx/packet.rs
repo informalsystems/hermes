@@ -72,7 +72,7 @@ impl Runnable for TxRawPacketRecvCmd {
             ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
 
         let res: Result<Vec<String>, Error> =
-            build_and_send_recv_packet_messages(&dst_chain, &src_chain, &opts)
+            build_and_send_recv_packet_messages(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {

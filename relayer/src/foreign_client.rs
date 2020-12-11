@@ -27,8 +27,8 @@ pub enum ForeignClientError {
 
 #[derive(Clone, Debug)]
 pub struct ForeignClientConfig {
-    /// The identifier of the chain which hosts this client
-    chain: ChainId,
+    /// The identifier of the chain which hosts this client, or destination chain
+    chain: ChainId, // TODO: This field seems useless, consider removing
 
     /// The client's identifier
     id: ClientId,
@@ -53,88 +53,129 @@ impl ForeignClientConfig {
 
 #[derive(Clone, Debug)]
 pub struct ForeignClient {
+    /// The configuration of this client.
     config: ForeignClientConfig,
+
+    /// A handle to the chain hosting this client, i.e., destination chain.
+    dst_chain: Box<dyn ChainHandle>,
+
+    /// A handle to the chain whose headers this client is verifying, aka the source chain.
+    src_chain: Box<dyn ChainHandle>,
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client. Blocks until the client is created on `dst_chain` or
+    /// Creates a new foreign client on `host_chain`. Blocks until the client is created, or
     /// an error occurs.
-    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
+    /// Post-condition: `host_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
+    /// Is it enough to have a "live" handle to each of `host_chain` and `src_chain` chains?
     pub fn new(
-        dst_chain: &impl ChainHandle,
-        src_chain: &impl ChainHandle,
+        dst_chain: Box<dyn ChainHandle>,
+        src_chain: Box<dyn ChainHandle>,
         config: ForeignClientConfig,
     ) -> Result<ForeignClient, ForeignClientError> {
+        // Sanity check: the configuration should be consistent with the other parameters
+        if config.chain_id().ne(&dst_chain.id()) {
+            return Err(ForeignClientError::ClientCreate(format!(
+                "host chain id ({}) in config does not not match host chain in argument ({})",
+                config.chain_id(),
+                dst_chain.id()
+            )));
+        }
+
+        let client = ForeignClient {
+            config,
+            dst_chain: dst_chain.clone(),
+            src_chain: src_chain.clone(),
+        };
+
+        client.create()?;
+
+        Ok(client)
+    }
+
+    fn create(&self) -> Result<(), ForeignClientError> {
         let done = '\u{1F36D}';
 
         // Query the client state on source chain.
-        let client_state = dst_chain.query_client_state(&config.id, Height::default());
+        let client_state = self
+            .dst_chain
+            .query_client_state(&self.config.id, Height::default());
+
+        // If an error is returned, the client does not already exist
         if client_state.is_err() {
-            build_create_client_and_send(dst_chain, src_chain, &config).map_err(|e| {
+            build_create_client_and_send(
+                self.dst_chain.clone(),
+                self.src_chain.clone(),
+                &self.config,
+            )
+            .map_err(|e| {
                 ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
             })?;
         }
         info!(
             "{}  Client on {:?} is created {:?}\n",
-            done, config.chain, config.id
+            done, self.config.chain, self.config.id
         );
-        Ok(ForeignClient { config })
+
+        Ok(())
     }
 
-    pub fn update(
-        &mut self,
-        _src_chain: impl ChainHandle,
-        _dst_chain: impl ChainHandle,
-        src_target_height: Height,
-    ) -> Result<Height, ForeignClientError> {
-        /*
-        return Ok(src_target_height);
-        let (src_consensus_state, dst_membership_proof) =
-            dst_chain.consensus_state(src_chain.id(), src_target_height);
+    /// Returns a handle to the chain hosting this client.
+    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+        self.dst_chain.clone()
+    }
 
-        let dst_sh = dst_chain.get_header(dst_membership_proof.height + 1);
-        // type verifyMembership = (root: CommitmentRoot, proof: CommitmentProof, path: CommitmentPath, value: Value) => boolean (ICS-023)
-        if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
-            // Error: Destination chain provided invalid consensus_state
-            return Err(ForeignClientError::VerificationError())
-        }
+    /// Returns a handle to the chain whose headers this client is sourcing (the source chain).
+    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+        self.src_chain.clone()
+    }
 
-        if src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
-            return Err(ForeignClientError::HeaderMismatch())
-        }
+    /// Creates a message for updating this client with the latest header of its source chain.
+    pub fn prepare_update(&self) -> Result<Vec<Any>, ForeignClientError> {
+        let target_height = self.src_chain.query_latest_height().map_err(|e| {
+            ForeignClientError::ClientUpdate(format!("error querying latest height {:?}", e))
+        })?;
+        let msg = build_update_client(
+            self.dst_chain.clone(),
+            self.src_chain.clone(),
+            self.config.client_id(),
+            target_height,
+        )
+        .map_err(|e| {
+            ForeignClientError::ClientUpdate(format!("build_update_client error {:?}", e))
+        })?;
 
-        while src_consensus_state.height < src_target_height {
-            let src_signed_headers = src_chain.get_minimal_set(src_consensus_state.height, src_target_height);
+        Ok(msg)
+    }
 
-            // if we actually want to do this we need to create a transaction
-            // This might fail semantically due to competing relayers
-            // Even if this fails, we need to continue
-            // XXX FIXME
-            dst_chain.submit(vec![create_client_update_datagram(src_signed_headers)]);
+    /// Attempts to update a client using header from the latest height of its source chain.
+    pub fn update(&self) -> Result<(), ForeignClientError> {
+        let res = build_update_client_and_send(
+            self.dst_chain.clone(),
+            self.src_chain.clone(),
+            &self.config,
+        )
+        .map_err(|e| {
+            ForeignClientError::ClientUpdate(format!("build_create_client_and_send {:?}", e))
+        })?;
 
-            let (src_consensus_state, dst_membership_proof) = dst_chain.consensus_state(src_chain.id(), src_target_height);
-            let dst_sh = dst_chain.get_header(dst_membership_proof.height + 1);
-            if ! verify_consensus_state_inclusion(&src_consensus_state, &dst_membership_proof, &(dst_sh.header.app_hash)) {
-                // Error: Destination chain provided invalid client_state
-                return Err(ForeignClientError::VerificationError())
-            }
+        println!(
+            "Client id {:?} on {:?} updated with return message {:?}\n",
+            self.config.id, self.config.chain, res
+        );
 
-            if src_chain.get_header(src_consensus_state.height).header == src_consensus_state.signed_header.header {
-                // Error: consesus_state isn't verified by self light client
-                return  Err(ForeignClientError::HeaderMismatch())
-            }
-        }
-        */
-
-        Ok(src_target_height)
+        Ok(())
     }
 }
 
+/// Lower-level interface for preparing a message to create a client.
+///
+/// ## Note
+/// Methods in `ForeignClient` (see `new`) should be preferred over this.
 pub fn build_create_client(
-    dst_chain: &impl ChainHandle,
-    src_chain: &impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     dst_client_id: &ClientId,
 ) -> Result<MsgCreateAnyClient, Error> {
     // Verify that the client has not been created already, i.e the destination chain does not
@@ -165,19 +206,27 @@ pub fn build_create_client(
     })?)
 }
 
+/// Lower-level interface for creating a client.
+///
+/// ## Note
+/// Methods in `ForeignClient` (see `new`) should be preferred over this.
 pub fn build_create_client_and_send(
-    dst_chain: &impl ChainHandle,
-    src_chain: &impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ForeignClientConfig,
 ) -> Result<Vec<String>, Error> {
-    let new_msg = build_create_client(dst_chain, src_chain, opts.client_id())?;
+    let new_msg = build_create_client(dst_chain.clone(), src_chain, opts.client_id())?;
 
     Ok(dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?)
 }
 
+/// Lower-level interface to create the message for updating a client to height `target_height`.
+///
+/// ## Note
+/// Methods in `ForeignClient`, in particular `prepare_update`, should be preferred over this.
 pub fn build_update_client(
-    dst_chain: &impl ChainHandle,
-    src_chain: &impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     dst_client_id: &ClientId,
     target_height: Height,
 ) -> Result<Vec<Any>, Error> {
@@ -200,14 +249,18 @@ pub fn build_update_client(
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
 
+/// Lower-level interface for preparing a message to update a client.
+///
+/// ## Note
+/// Methods in `ForeignClient` (see `update`) should be preferred over this.
 pub fn build_update_client_and_send(
-    dst_chain: &impl ChainHandle,
-    src_chain: &impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ForeignClientConfig,
 ) -> Result<Vec<String>, Error> {
     let new_msgs = build_update_client(
-        dst_chain,
-        src_chain,
+        dst_chain.clone(),
+        src_chain.clone(),
         opts.client_id(),
         src_chain.query_latest_height()?,
     )?;
@@ -225,7 +278,6 @@ mod test {
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
-    use crate::chain::handle::ChainHandle;
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
@@ -248,7 +300,7 @@ mod test {
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
         // Create the client on chain a
-        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
+        let res = build_create_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain a) with error {:?}",
@@ -256,14 +308,14 @@ mod test {
         );
 
         // Double client creation should be forbidden.
-        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
+        let res = build_create_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
         assert!(
             res.is_err(),
             "build_create_client_and_send double client creation should have failed!",
         );
 
         // Create the client on chain b
-        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        let res = build_create_client_and_send(b_chain.clone(), a_chain.clone(), &b_opts);
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain b) with error {:?}",
@@ -271,7 +323,7 @@ mod test {
         );
 
         // Test double creation for chain b
-        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        let res = build_create_client_and_send(b_chain, a_chain, &b_opts);
         assert!(
             res.is_err(),
             "build_create_client_and_send failed (chain b) with error {:?}",
@@ -296,7 +348,7 @@ mod test {
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
         // This action should fail because no client exists (yet)
-        let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+        let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail (no client existed)"
@@ -306,7 +358,7 @@ mod test {
         let b_height_start = b_chain.query_latest_height().unwrap();
 
         // Create a client on chain a
-        let res = build_create_client_and_send(&a_chain, &b_chain, &a_opts);
+        let res = build_create_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain a) with error {:?}",
@@ -316,7 +368,7 @@ mod test {
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
-        let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+        let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
 
         assert!(
             res.is_err(),
@@ -326,7 +378,7 @@ mod test {
         assert_eq!(b_height_last, b_height_start);
 
         // Create a client on chain b
-        let res = build_create_client_and_send(&b_chain, &a_chain, &b_opts);
+        let res = build_create_client_and_send(b_chain.clone(), a_chain.clone(), &b_opts);
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain b) with error {:?}",
@@ -341,7 +393,7 @@ mod test {
 
         // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
         for _i in 1..num_iterations {
-            let res = build_update_client_and_send(&a_chain, &b_chain, &a_opts);
+            let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_opts);
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain a) with error: {:?}",
@@ -355,7 +407,7 @@ mod test {
             );
 
             // And also update the client on chain b.
-            let res = build_update_client_and_send(&b_chain, &a_chain, &b_opts);
+            let res = build_update_client_and_send(b_chain.clone(), a_chain.clone(), &b_opts);
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain b) with error: {:?}",
@@ -384,14 +436,14 @@ mod test {
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
 
         // Instantiate the foreign clients on the two chains.
-        let client_on_a = ForeignClient::new(&a_chain, &b_chain, a_opts);
+        let client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone(), a_opts);
         assert!(
             client_on_a.is_ok(),
             "Client creation (on chain a) failed with error: {:?}",
             client_on_a
         );
 
-        let client_on_b = ForeignClient::new(&b_chain, &a_chain, b_opts);
+        let client_on_b = ForeignClient::new(b_chain.clone(), a_chain.clone(), b_opts);
         assert!(
             client_on_b.is_ok(),
             "Client creation (on chain a) failed with error: {:?}",
@@ -412,5 +464,66 @@ mod test {
             "Client query (on chain a) failed with error: {:?}",
             a_client_state
         );
+    }
+
+    /// Tests for `ForeignClient::update()`.
+    #[test]
+    fn foreign_client_update() {
+        let a_cfg = get_basic_chain_config("chain_a");
+        let b_cfg = get_basic_chain_config("chain_b");
+        let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let a_opts = ForeignClientConfig::new(&a_cfg.id, &a_client_id);
+        let b_client_id = ClientId::from_str("client_on_b_fora").unwrap();
+        let b_opts = ForeignClientConfig::new(&b_cfg.id, &b_client_id);
+
+        let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
+        let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+
+        // Instantiate the foreign clients on the two chains.
+        let client_on_a_res = ForeignClient::new(a_chain.clone(), b_chain.clone(), a_opts);
+        assert!(
+            client_on_a_res.is_ok(),
+            "Client creation (on chain a) failed with error: {:?}",
+            client_on_a_res
+        );
+        let client_on_a = client_on_a_res.unwrap();
+
+        let client_on_b_res = ForeignClient::new(b_chain.clone(), a_chain.clone(), b_opts);
+        assert!(
+            client_on_b_res.is_ok(),
+            "Client creation (on chain a) failed with error: {:?}",
+            client_on_b_res
+        );
+        let client_on_b = client_on_b_res.unwrap();
+
+        let num_iterations = 5;
+
+        let mut b_height_start = b_chain.query_latest_height().unwrap();
+        let mut a_height_start = a_chain.query_latest_height().unwrap();
+
+        // Update each client
+        for _i in 1..num_iterations {
+            let res = client_on_a.update();
+            assert!(res.is_ok(), "Client update for chain a failed {:?}", res);
+
+            // Basic check that the height of the chain advanced
+            let a_height_current = a_chain.query_latest_height().unwrap();
+            a_height_start = a_height_start.increment();
+            assert_eq!(
+                a_height_start, a_height_current,
+                "after client update, chain a did not advance"
+            );
+
+            let res = client_on_b.update();
+            assert!(res.is_ok(), "Client update for chain b failed {:?}", res);
+
+            // Basic check that the height of the chain advanced
+            let b_height_current = b_chain.query_latest_height().unwrap();
+            b_height_start = b_height_start.increment();
+            assert_eq!(
+                b_height_start, b_height_current,
+                "after client update, chain b did not advance"
+            );
+        }
     }
 }

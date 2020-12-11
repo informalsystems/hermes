@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use crossbeam_channel as channel;
 
+use dyn_clone::DynClone;
+
 use ibc_proto::ibc::core::channel::v1::{
     PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
@@ -32,6 +34,7 @@ use crate::{error::Error, event::monitor::EventBatch};
 mod prod;
 
 pub use prod::ProdChainHandle;
+use std::fmt::Debug;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -42,9 +45,9 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
     channel::bounded(1)
 }
 
-/// Inputs that a Handle may send to a Runtime.
+/// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
-pub enum HandleInput {
+pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
     },
@@ -201,7 +204,10 @@ pub enum HandleInput {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync {
+// Make `clone` accessible to a ChainHandle object
+dyn_clone::clone_trait_object!(ChainHandle);
+
+pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;

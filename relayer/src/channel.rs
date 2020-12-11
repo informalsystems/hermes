@@ -115,6 +115,7 @@ impl ChannelConfig {
 #[derive(Clone, Debug)]
 pub struct Channel {
     pub config: ChannelConfig,
+    connection: Connection,
 }
 
 impl ChannelConfig {
@@ -164,7 +165,7 @@ impl ChannelConfig {
 
 // temp fix for queries
 fn get_channel(
-    chain: impl ChainHandle,
+    chain: Box<dyn ChainHandle>,
     port: &PortId,
     id: &ChannelId,
 ) -> Result<Option<ChannelEnd>, ChannelError> {
@@ -181,17 +182,30 @@ fn get_channel(
 }
 
 impl Channel {
-    pub fn new(
-        a_chain: impl ChainHandle,
-        b_chain: impl ChainHandle,
-        _connection: Connection,
-        config: ChannelConfig,
-    ) -> Result<Channel, ChannelError> {
+    /// Creates a new channel on top of the existing connection. If the channel is not already
+    /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
+    pub fn new(connection: Connection, config: ChannelConfig) -> Result<Channel, ChannelError> {
+        let channel = Channel { config, connection };
+        channel.handshake()?;
+
+        Ok(channel)
+    }
+
+    /// Returns the underlying connection of this channel
+    pub fn connection(&self) -> Connection {
+        self.connection.clone()
+    }
+
+    /// Executes the channel handshake protocol (ICS004)
+    fn handshake(&self) -> Result<(), ChannelError> {
         let done = '\u{1F973}';
 
-        let flipped = config.flipped();
+        let flipped = self.config.flipped();
 
         let mut counter = 0;
+
+        let a_chain = self.connection.chain_a();
+        let b_chain = self.connection.chain_b();
 
         while counter < MAX_ITER {
             counter += 1;
@@ -200,16 +214,16 @@ impl Channel {
             // Continue loop if query error
             let a_channel = get_channel(
                 a_chain.clone(),
-                &config.a_end().port_id,
-                &config.a_end().channel_id,
+                &self.config.a_end().port_id,
+                &self.config.a_end().channel_id,
             );
             if a_channel.is_err() {
                 continue;
             }
             let b_channel = get_channel(
                 b_chain.clone(),
-                &config.b_end().port_id,
-                &config.b_end().channel_id,
+                &self.config.b_end().port_id,
+                &self.config.b_end().channel_id,
             );
             if b_channel.is_err() {
                 continue;
@@ -219,24 +233,24 @@ impl Channel {
                 (None, None) => {
                     // Init to src
                     match build_chan_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => info!("{:?} Failed ChanInit {:?}", e, config.a_end()),
-                        Ok(_) => info!("{}  ChanInit {:?}", done, config.a_end()),
+                        Err(e) => info!("{:?} Failed ChanInit {:?}", e, self.config.a_end()),
+                        Ok(_) => info!("{}  ChanInit {:?}", done, self.config.a_end()),
                     }
                 }
                 (Some(a_channel), None) => {
                     // Try to dest
                     assert!(a_channel.state_matches(&State::Init));
-                    match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config) {
-                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.b_end()),
-                        Ok(_) => info!("{}  ChanTry {:?}", done, config.b_end()),
+                    match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
+                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, self.config.b_end()),
+                        Ok(_) => info!("{}  ChanTry {:?}", done, self.config.b_end()),
                     }
                 }
                 (None, Some(b_channel)) => {
                     // Try to src
                     assert!(b_channel.state_matches(&State::Init));
                     match build_chan_try_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.a_end()),
-                        Ok(_) => info!("{}  ChanTry {:?}", done, config.a_end()),
+                        Err(e) => info!("{:?} Failed ChanTry {:?}", e, self.config.a_end()),
+                        Ok(_) => info!("{}  ChanTry {:?}", done, self.config.a_end()),
                     }
                 }
                 (Some(a_channel), Some(b_channel)) => {
@@ -244,18 +258,24 @@ impl Channel {
                         (&State::Init, &State::Init) => {
                             // Try to dest
                             // Try to dest
-                            match build_chan_try_and_send(b_chain.clone(), a_chain.clone(), &config)
-                            {
-                                Err(e) => info!("{:?} Failed ChanTry {:?}", e, config.b_end()),
-                                Ok(_) => info!("{}  ChanTry {:?}", done, config.b_end()),
+                            match build_chan_try_and_send(
+                                b_chain.clone(),
+                                a_chain.clone(),
+                                &self.config,
+                            ) {
+                                Err(e) => info!("{:?} Failed ChanTry {:?}", e, self.config.b_end()),
+                                Ok(_) => info!("{}  ChanTry {:?}", done, self.config.b_end()),
                             }
                         }
                         (&State::TryOpen, &State::Init) => {
                             // Ack to dest
-                            match build_chan_ack_and_send(b_chain.clone(), a_chain.clone(), &config)
-                            {
-                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, config.b_end()),
-                                Ok(_) => info!("{}  ChanAck {:?}", done, config.b_end()),
+                            match build_chan_ack_and_send(
+                                b_chain.clone(),
+                                a_chain.clone(),
+                                &self.config,
+                            ) {
+                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, self.config.b_end()),
+                                Ok(_) => info!("{}  ChanAck {:?}", done, self.config.b_end()),
                             }
                         }
                         (&State::Init, &State::TryOpen) | (&State::TryOpen, &State::TryOpen) => {
@@ -265,8 +285,8 @@ impl Channel {
                                 b_chain.clone(),
                                 &flipped,
                             ) {
-                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, config.a_end()),
-                                Ok(_) => info!("{}  ChanAck {:?}", done, config.a_end()),
+                                Err(e) => info!("{:?} Failed ChanAck {:?}", e, self.config.a_end()),
+                                Ok(_) => info!("{}  ChanAck {:?}", done, self.config.a_end()),
                             }
                         }
                         (&State::Open, &State::TryOpen) => {
@@ -274,12 +294,12 @@ impl Channel {
                             match build_chan_confirm_and_send(
                                 b_chain.clone(),
                                 a_chain.clone(),
-                                &config,
+                                &self.config,
                             ) {
                                 Err(e) => {
-                                    info!("{:?} Failed ChanConfirm {:?}", e, config.b_end())
+                                    info!("{:?} Failed ChanConfirm {:?}", e, self.config.b_end())
                                 }
-                                Ok(_) => info!("{}  ChanConfirm {:?}", done, config.b_end()),
+                                Ok(_) => info!("{}  ChanConfirm {:?}", done, self.config.b_end()),
                             }
                         }
                         (&State::TryOpen, &State::Open) => {
@@ -296,9 +316,9 @@ impl Channel {
                         (&State::Open, &State::Open) => {
                             info!(
                                 "{}  {}  {}  Channel handshake finished for {:#?}",
-                                done, done, done, config
+                                done, done, done, self.config
                             );
-                            return Ok(Channel { config });
+                            return Ok(());
                         }
                         _ => {} // TODO channel close
                     }
@@ -323,8 +343,8 @@ pub enum ChannelMsgType {
 }
 
 pub fn build_chan_init(
-    dst_chain: impl ChainHandle,
-    _src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    _src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message, i.e. it does not have the channel
@@ -372,8 +392,8 @@ pub fn build_chan_init(
 }
 
 pub fn build_chan_init_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_init(dst_chain.clone(), src_chain, &opts)?;
@@ -412,8 +432,8 @@ fn check_destination_channel_state(
 /// built from the message type (`msg_type`) and options (`opts`).
 /// If the expected and the destination channels are compatible, it returns the expected channel
 fn validated_expected_channel(
-    dst_chain: impl ChainHandle,
-    _src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    _src_chain: Box<dyn ChainHandle>,
     msg_type: ChannelMsgType,
     opts: &ChannelConfig,
 ) -> Result<ChannelEnd, Error> {
@@ -473,8 +493,8 @@ fn validated_expected_channel(
 }
 
 pub fn build_chan_try(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message, i.e. it does not have the channel
@@ -514,8 +534,8 @@ pub fn build_chan_try(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        &dst_chain,
-        &src_chain,
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -561,8 +581,8 @@ pub fn build_chan_try(
 }
 
 pub fn build_chan_try_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_try(dst_chain.clone(), src_chain, &opts)?;
@@ -570,8 +590,8 @@ pub fn build_chan_try_and_send(
 }
 
 pub fn build_chan_ack(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message
@@ -611,8 +631,8 @@ pub fn build_chan_ack(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        &dst_chain,
-        &src_chain,
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -644,8 +664,8 @@ pub fn build_chan_ack(
 }
 
 pub fn build_chan_ack_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_ack(dst_chain.clone(), src_chain, &opts)?;
@@ -653,8 +673,8 @@ pub fn build_chan_ack_and_send(
 }
 
 pub fn build_chan_confirm(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<Any>, Error> {
     // Check that the destination chain will accept the message
@@ -694,8 +714,8 @@ pub fn build_chan_confirm(
 
     // Build message to update client on destination
     let mut msgs = build_update_client(
-        &dst_chain,
-        &src_chain,
+        dst_chain.clone(),
+        src_chain.clone(),
         &dest_connection.client_id(),
         ics_target_height,
     )?;
@@ -725,8 +745,8 @@ pub fn build_chan_confirm(
 }
 
 pub fn build_chan_confirm_and_send(
-    dst_chain: impl ChainHandle,
-    src_chain: impl ChainHandle,
+    dst_chain: Box<dyn ChainHandle>,
+    src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_confirm(dst_chain.clone(), src_chain, &opts)?;
