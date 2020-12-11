@@ -33,7 +33,7 @@ use ibc::{
 use tendermint::account::Id as AccountId;
 
 use super::{
-    handle::{ChainHandle, HandleInput, ProdChainHandle, ReplyTo, Subscription},
+    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain, QueryResponse,
 };
 
@@ -53,11 +53,24 @@ pub struct Threads {
 }
 
 pub struct ChainRuntime<C: Chain> {
+    /// The specific chain this runtime runs against
     chain: C,
-    sender: channel::Sender<HandleInput>,
-    receiver: channel::Receiver<HandleInput>,
+
+    /// The sender side of a channel to this runtime. Any `ChainHandle` can use this to send
+    /// chain requests to this runtime
+    request_sender: channel::Sender<ChainRequest>,
+
+    /// The receiving side of a channel to this runtime. The runtime consumes chain requests coming
+    /// in through this channel.
+    request_receiver: channel::Receiver<ChainRequest>,
+
+    /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
     event_bus: EventBus<Arc<EventBatch>>,
+
+    /// Receiver channel from the event bus
     event_receiver: channel::Receiver<EventBatch>,
+
+    /// A handle to the light client
     light_client: Box<dyn LightClient<C>>,
 
     #[allow(dead_code)]
@@ -117,23 +130,22 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         event_receiver: channel::Receiver<EventBatch>,
         rt: Arc<Mutex<TokioRuntime>>,
     ) -> Self {
-        let (sender, receiver) = channel::unbounded::<HandleInput>();
+        let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
         Self {
             rt,
             chain,
-            sender,
-            receiver,
+            request_sender,
+            request_receiver,
             event_bus: EventBus::new(),
             event_receiver,
             light_client,
         }
     }
 
-    #[allow(unused_variables)]
     pub fn handle(&self) -> Box<dyn ChainHandle> {
         let chain_id = self.chain.id().clone();
-        let sender = self.sender.clone();
+        let sender = self.request_sender.clone();
 
         Box::new(ProdChainHandle::new(chain_id, sender))
     }
@@ -150,117 +162,117 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         // TODO: Handle error
                     }
                 },
-                recv(self.receiver) -> event => {
+                recv(self.request_receiver) -> event => {
                     match event {
-                        Ok(HandleInput::Terminate { reply_to }) => {
+                        Ok(ChainRequest::Terminate { reply_to }) => {
                             reply_to.send(Ok(())).map_err(|_| Kind::Channel)?;
                             break;
                         }
 
-                        Ok(HandleInput::Subscribe { reply_to }) => {
+                        Ok(ChainRequest::Subscribe { reply_to }) => {
                             self.subscribe(reply_to)?
                         },
 
-                        Ok(HandleInput::Query { path, height, prove, reply_to, }) => {
+                        Ok(ChainRequest::Query { path, height, prove, reply_to, }) => {
                             self.query(path, height, prove, reply_to)?
                         },
 
-                        Ok(HandleInput::SendMsgs { proto_msgs, reply_to }) => {
+                        Ok(ChainRequest::SendMsgs { proto_msgs, reply_to }) => {
                             self.send_msgs(proto_msgs, reply_to)?
                         },
 
-                        Ok(HandleInput::GetMinimalSet { from, to, reply_to }) => {
+                        Ok(ChainRequest::GetMinimalSet { from, to, reply_to }) => {
                             self.get_minimal_set(from, to, reply_to)?
                         }
 
-                        // Ok(HandleInput::GetHeader { height, reply_to }) => {
+                        // Ok(ChainRequest::GetHeader { height, reply_to }) => {
                         //     self.get_header(height, reply_to)?
                         // }
                         //
-                        // Ok(HandleInput::Submit { transaction, reply_to, }) => {
+                        // Ok(ChainRequest::Submit { transaction, reply_to, }) => {
                         //     self.submit(transaction, reply_to)?
                         // },
                         //
-                        // Ok(HandleInput::CreatePacket { event, reply_to }) => {
+                        // Ok(ChainRequest::CreatePacket { event, reply_to }) => {
                         //     self.create_packet(event, reply_to)?
                         // }
 
-                        Ok(HandleInput::Signer { reply_to }) => {
+                        Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
                         }
 
-                        Ok(HandleInput::Key { reply_to }) => {
+                        Ok(ChainRequest::Key { reply_to }) => {
                             self.get_key(reply_to)?
                         }
 
-                        Ok(HandleInput::ModuleVersion { port_id, reply_to }) => {
+                        Ok(ChainRequest::ModuleVersion { port_id, reply_to }) => {
                             self.module_version(port_id, reply_to)?
                         }
 
-                        Ok(HandleInput::BuildHeader { trusted_height, target_height, reply_to }) => {
+                        Ok(ChainRequest::BuildHeader { trusted_height, target_height, reply_to }) => {
                             self.build_header(trusted_height, target_height, reply_to)?
                         }
-                        Ok(HandleInput::BuildClientState { height, reply_to }) => {
+                        Ok(ChainRequest::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
                         }
-                        Ok(HandleInput::BuildConsensusState { height, reply_to }) => {
+                        Ok(ChainRequest::BuildConsensusState { height, reply_to }) => {
                             self.build_consensus_state(height, reply_to)?
                         }
-                        Ok(HandleInput::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
+                        Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
-                        Ok(HandleInput::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
+                        Ok(ChainRequest::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryLatestHeight { reply_to }) => {
+                        Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
                             self.query_latest_height(reply_to)?
                         }
-                        Ok(HandleInput::QueryClientState { client_id, height, reply_to }) => {
+                        Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryCommitmentPrefix { reply_to }) => {
+                        Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
                             self.query_commitment_prefix(reply_to)?
                         },
 
-                        Ok(HandleInput::QueryCompatibleVersions { reply_to }) => {
+                        Ok(ChainRequest::QueryCompatibleVersions { reply_to }) => {
                             self.query_compatible_versions(reply_to)?
                         },
 
-                        Ok(HandleInput::QueryConnection { connection_id, height, reply_to }) => {
+                        Ok(ChainRequest::QueryConnection { connection_id, height, reply_to }) => {
                             self.query_connection(connection_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryChannel { port_id, channel_id, height, reply_to }) => {
+                        Ok(ChainRequest::QueryChannel { port_id, channel_id, height, reply_to }) => {
                             self.query_channel(port_id, channel_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenClientState { client_id, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenClientState { client_id, height, reply_to }) => {
                             self.proven_client_state(client_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenConnection { connection_id, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenConnection { connection_id, height, reply_to }) => {
                             self.proven_connection(connection_id, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenClientConsensus { client_id, consensus_height, height, reply_to }) => {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
 
-                        Ok(HandleInput::ProvenPacketCommitment { port_id, channel_id, sequence, height, reply_to }) => {
+                        Ok(ChainRequest::ProvenPacketCommitment { port_id, channel_id, sequence, height, reply_to }) => {
                             self.proven_packet_commitment(port_id, channel_id, sequence, height, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryPacketCommitments { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketCommitments { request, reply_to }) => {
                             self.query_packet_commitments(request, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryUnreceivedPackets { request, reply_to }) => {
+                        Ok(ChainRequest::QueryUnreceivedPackets { request, reply_to }) => {
                             self.query_unreceived_packets(request, reply_to)?
                         },
 
-                        Ok(HandleInput::QueryPacketEventData { request, reply_to }) => {
+                        Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
                             self.query_txs(request, reply_to)?
                         },
 

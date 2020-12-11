@@ -45,9 +45,9 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
     channel::bounded(1)
 }
 
-/// Inputs that a Handle may send to a Runtime.
+/// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
-pub enum HandleInput {
+pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
     },
