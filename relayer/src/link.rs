@@ -154,12 +154,11 @@ impl Link {
         )?)
     }
 
-    pub fn run(
-        &self,
-        a_chain: Box<dyn ChainHandle>,
-        b_chain: Box<dyn ChainHandle>,
-    ) -> Result<(), LinkError> {
+    pub fn run(&self) -> Result<(), LinkError> {
         info!("relaying packets for link {:#?}", self.channel.config);
+
+        let a_chain = self.channel.connection().chain_a();
+        let b_chain = self.channel.connection().chain_b();
 
         let a_subscription = &a_chain.subscribe(a_chain.id())?;
         let b_subscription = &b_chain.subscribe(b_chain.id())?;

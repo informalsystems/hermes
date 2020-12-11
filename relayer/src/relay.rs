@@ -36,7 +36,7 @@ pub fn channel_relay(
 
     let link = Link::new(channel);
 
-    link.run(a_chain_handle, b_chain_handle)?;
+    link.run()?;
 
     Ok(())
 }

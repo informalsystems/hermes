@@ -29,6 +29,9 @@ use crate::relay::MAX_ITER;
 pub enum ConnectionError {
     #[error("Failed")]
     Failed(String),
+
+    #[error("constructor parameters do not match")]
+    ConstructorFailed(String),
 }
 
 #[derive(Clone, Debug)]
@@ -170,6 +173,21 @@ impl Connection {
         b_client: ForeignClient,
         config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {
+        // Validate that the two clients serve the same two chains
+        if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the source chain of client a ({}) does not not match the destination chain of client b ({})",
+                a_client.src_chain().id(),
+                b_client.dst_chain().id()
+            )));
+        } else if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
+            return Err(ConnectionError::ConstructorFailed(format!(
+                "the destination chain of client a ({}) does not not match the source chain of client b ({})",
+                a_client.dst_chain().id(),
+                b_client.src_chain().id()
+            )));
+        }
+
         let c = Connection {
             config,
             a_client,
@@ -190,7 +208,7 @@ impl Connection {
         self.b_client.dst_chain()
     }
 
-    /// Executes a connection handshake for this connection object
+    /// Executes a connection handshake protocol (ICS 003) for this connection object
     fn handshake(&self) -> Result<(), ConnectionError> {
         let done = '\u{1F942}'; // surprise emoji
 
