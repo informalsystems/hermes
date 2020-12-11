@@ -6,6 +6,7 @@ use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 mod channel;
 mod client;
 mod connection;
+mod packet;
 
 /// `tx` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -64,4 +65,8 @@ pub enum TxRawCommands {
     /// The `tx raw chan-confirm` subcommand
     #[options(help = "tx raw chan-confirm")]
     ChanConfirm(channel::TxRawChanConfirmCmd),
+
+    /// The `tx raw packet-recv` subcommand
+    #[options(help = "tx raw packet-recv")]
+    PacketRecv(packet::TxRawPacketRecvCmd),
 }

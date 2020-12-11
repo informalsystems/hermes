@@ -24,14 +24,14 @@ impl From<Sequence> for u64 {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Packet {
-    sequence: Sequence,
-    source_port: PortId,
-    source_channel: ChannelId,
-    destination_port: PortId,
-    destination_channel: ChannelId,
-    data: Vec<u8>,
-    timeout_height: Height,
-    timeout_timestamp: u64,
+    pub sequence: Sequence,
+    pub source_port: PortId,
+    pub source_channel: ChannelId,
+    pub destination_port: PortId,
+    pub destination_channel: ChannelId,
+    pub data: Vec<u8>,
+    pub timeout_height: Height,
+    pub timeout_timestamp: u64,
 }
 
 impl TryFrom<RawPacket> for Packet {

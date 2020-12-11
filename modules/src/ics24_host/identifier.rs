@@ -107,6 +107,12 @@ impl From<tendermint::chain::Id> for ChainId {
     }
 }
 
+impl Default for ChainId {
+    fn default() -> Self {
+        "defaultChainId".to_string().parse().unwrap()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ClientId(String);
 

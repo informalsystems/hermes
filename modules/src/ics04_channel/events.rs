@@ -1,10 +1,11 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -164,29 +165,47 @@ impl From<CloseConfirm> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct SendPacket {
+pub struct PacketEnvelope {
     pub height: block::Height,
     pub packet_src_port: PortId,
     pub packet_src_channel: ChannelId,
     pub packet_dst_port: PortId,
     pub packet_dst_channel: ChannelId,
     pub packet_sequence: u64,
-    pub packet_timeout_height: u64,
+    pub packet_timeout_height: Height,
     pub packet_timeout_stamp: u64,
 }
 
-impl TryFrom<RawObject> for SendPacket {
+impl TryFrom<RawObject> for PacketEnvelope {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(SendPacket {
+        let height_str: String = attribute!(obj, "send_packet.packet_timeout_height");
+        Ok(PacketEnvelope {
             height: obj.height,
             packet_src_port: attribute!(obj, "send_packet.packet_src_port"),
             packet_src_channel: attribute!(obj, "send_packet.packet_src_channel"),
             packet_dst_port: attribute!(obj, "send_packet.packet_dst_port"),
             packet_dst_channel: attribute!(obj, "send_packet.packet_dst_channel"),
             packet_sequence: attribute!(obj, "send_packet.packet_sequence"),
-            packet_timeout_height: attribute!(obj, "send_packet.packet_timeout_height"),
+            packet_timeout_height: height_str.try_into()?,
             packet_timeout_stamp: attribute!(obj, "send_packet.packet_timeout_timestamp"),
+        })
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct SendPacket {
+    pub envelope: PacketEnvelope,
+    pub data: Vec<u8>,
+}
+
+impl TryFrom<RawObject> for SendPacket {
+    type Error = BoxError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let data_str: String = attribute!(obj, "send_packet.packet_data");
+        Ok(SendPacket {
+            envelope: PacketEnvelope::try_from(obj)?,
+            data: Vec::from(data_str.as_str().as_bytes()),
         })
     }
 }
@@ -205,9 +224,8 @@ pub struct ReceivePacket {
     pub packet_dst_port: PortId,
     pub packet_dst_channel: ChannelId,
     pub packet_sequence: u64,
-    pub packet_timeout_height: u64,
+    pub packet_timeout_height: String,
     pub packet_timeout_stamp: u64,
-    pub packet_ack: String,
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
@@ -222,7 +240,6 @@ impl TryFrom<RawObject> for ReceivePacket {
             packet_sequence: attribute!(obj, "recv_packet.packet_sequence"),
             packet_timeout_height: attribute!(obj, "recv_packet.packet_timeout_height"),
             packet_timeout_stamp: attribute!(obj, "recv_packet.packet_timeout_timestamp"),
-            packet_ack: attribute!(obj, "recv_packet.packet_ack"),
         })
     }
 }

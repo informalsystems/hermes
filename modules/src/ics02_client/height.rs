@@ -4,8 +4,9 @@ use tendermint_proto::Protobuf;
 
 use crate::ics02_client::error::{Error, Kind};
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     /// Previously known as "epoch", and will be renamed to "revision" soon
     pub version_number: u64,
@@ -121,10 +122,18 @@ impl From<Height> for RawHeight {
 
 impl std::fmt::Display for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "epoch: {}, height: {}",
-            self.version_number, self.version_height
-        )
+        write!(f, "{}-{}", self.version_number, self.version_height)
+    }
+}
+
+impl TryFrom<String> for Height {
+    type Error = anomaly::Error<Kind>;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let split: Vec<&str> = value.split('-').collect();
+        Ok(Height {
+            version_number: split[0].parse::<u64>().unwrap(),
+            version_height: split[1].parse::<u64>().unwrap(),
+        })
     }
 }

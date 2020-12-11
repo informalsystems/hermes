@@ -23,7 +23,6 @@ pub mod foreign_client;
 pub mod keyring;
 pub mod keys;
 pub mod light_client;
-// pub mod link;
-pub mod msgs;
+pub mod link;
 pub mod relay;
 pub mod util;

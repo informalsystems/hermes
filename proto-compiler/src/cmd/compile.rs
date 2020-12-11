@@ -105,6 +105,7 @@ impl CompileCmd {
         let proto_services_path = [
             sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
             sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
+            sdk_dir.join("proto/ibc/core/channel/v1/query.proto"),
         ];
 
         // List available paths for dependencies
