@@ -90,11 +90,11 @@ impl MockContext {
         );
 
         // Compute the number of blocks to store. If latest_height is 0, nothing is stored.
-        let n = min(max_history_size as u64, latest_height.version_height);
+        let n = min(max_history_size as u64, latest_height.revision_height);
 
         assert_eq!(
             host_id.version(),
-            latest_height.version_number,
+            latest_height.revision_number,
             "The version in the chain identifier must match the version in the latest height"
         );
 
@@ -109,7 +109,7 @@ impl MockContext {
                     HostBlock::generate_block(
                         host_id.clone(),
                         host_type,
-                        latest_height.sub(i).unwrap().version_height,
+                        latest_height.sub(i).unwrap().revision_height,
                     )
                 })
                 .collect(),
@@ -153,7 +153,7 @@ impl MockContext {
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
-                    cs_height.version_height,
+                    cs_height.revision_height,
                 );
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
@@ -192,8 +192,8 @@ impl MockContext {
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
-        let target = target_height.version_height as usize;
-        let latest = self.latest_height.version_height as usize;
+        let target = target_height.revision_height as usize;
+        let latest = self.latest_height.revision_height as usize;
 
         // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
@@ -208,7 +208,7 @@ impl MockContext {
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
             self.host_chain_type,
-            self.latest_height.increment().version_height,
+            self.latest_height.increment().revision_height,
         );
 
         // Append the new header at the tip of the history.
@@ -303,6 +303,10 @@ impl ConnectionReader for MockContext {
 }
 
 impl ConnectionKeeper for MockContext {
+    fn next_connection_id(&mut self) -> ConnectionId {
+        unimplemented!()
+    }
+
     fn store_connection(
         &mut self,
         connection_id: &ConnectionId,
@@ -364,6 +368,10 @@ impl ClientKeeper for MockContext {
 
         client_record.client_type = client_type;
         Ok(())
+    }
+
+    fn next_client_id(&mut self) -> ClientId {
+        unimplemented!()
     }
 
     fn store_client_state(

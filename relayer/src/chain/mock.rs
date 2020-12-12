@@ -11,8 +11,9 @@ use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
 use ibc::events::IBCEvent;
@@ -23,12 +24,11 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensu
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::ICS18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::merkle::MerkleProof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::test_utils::{default_consensus_params, get_dummy_account_id};
+use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
 
 use crate::chain::{Chain, QueryResponse};
@@ -37,6 +37,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -126,8 +127,7 @@ impl Chain for MockChain {
             Duration::from_millis(3000),
             height,
             Height::zero(),
-            default_consensus_params(),
-            "upgrade/upgradedClient".to_string(),
+            vec!["upgrade/upgradedClient".to_string()],
             false,
             false,
         )
@@ -202,7 +202,7 @@ impl Chain for MockChain {
     fn query_packet_commitments(
         &self,
         _request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+    ) -> Result<(Vec<PacketState>, Height), Error> {
         unimplemented!()
     }
 

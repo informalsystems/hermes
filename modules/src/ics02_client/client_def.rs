@@ -13,7 +13,7 @@ use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics07_tendermint::header::Header as TendermintHeader;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
@@ -58,7 +58,7 @@ pub trait ClientDef: Clone {
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
@@ -70,7 +70,7 @@ pub trait ClientDef: Clone {
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>>;
@@ -84,7 +84,7 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         prefix: &CommitmentPrefix,
         client_id: &ClientId,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
@@ -403,7 +403,7 @@ impl ClientDef for AnyClient {
         client_state: &Self::ClientState,
         height: Height,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
@@ -451,7 +451,7 @@ impl ClientDef for AnyClient {
         client_state: &AnyClientState,
         height: Height,
         prefix: &CommitmentPrefix,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -494,7 +494,7 @@ impl ClientDef for AnyClient {
         root: &CommitmentRoot,
         prefix: &CommitmentPrefix,
         client_id: &ClientId,
-        proof: &CommitmentProof,
+        proof: &CommitmentProofBytes,
         client_state_on_counterparty: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match self {

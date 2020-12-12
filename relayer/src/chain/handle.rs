@@ -1,24 +1,26 @@
+use std::fmt::Debug;
 use std::sync::Arc;
 
 use crossbeam_channel as channel;
 
+use dyn_clone::DynClone;
+
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
+    ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
-use ibc::{
-    ics23_commitment::merkle::MerkleProof,
-    ics24_host::{identifier::ChainId, identifier::ClientId, Path},
-};
+use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
@@ -42,9 +44,9 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
     channel::bounded(1)
 }
 
-/// Inputs that a Handle may send to a Runtime.
+/// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
-pub enum HandleInput {
+pub enum ChainRequest {
     Terminate {
         reply_to: ReplyTo<()>,
     },
@@ -135,7 +137,7 @@ pub enum HandleInput {
     },
 
     QueryCompatibleVersions {
-        reply_to: ReplyTo<Vec<String>>,
+        reply_to: ReplyTo<Vec<Version>>,
     },
 
     QueryConnection {
@@ -187,7 +189,7 @@ pub enum HandleInput {
 
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
-        reply_to: ReplyTo<(Vec<PacketAckCommitment>, Height)>,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
     },
 
     QueryUnreceivedPackets {
@@ -201,7 +203,10 @@ pub enum HandleInput {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync {
+// Make `clone` accessible to a ChainHandle object
+dyn_clone::clone_trait_object!(ChainHandle);
+
+pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
@@ -229,7 +234,7 @@ pub trait ChainHandle: Clone + Send + Sync {
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
-    fn query_compatible_versions(&self) -> Result<Vec<String>, Error>;
+    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
     fn query_connection(
         &self,
@@ -301,7 +306,7 @@ pub trait ChainHandle: Clone + Send + Sync {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketAckCommitment>, Height), Error>;
+    ) -> Result<(Vec<PacketState>, Height), Error>;
 
     fn query_unreceived_packets(
         &self,

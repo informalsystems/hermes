@@ -81,7 +81,7 @@ impl IBCEvent {
     pub fn set_height(&mut self, height: ICSHeight) {
         match self {
             IBCEvent::SendPacketChannel(ev) => {
-                ev.envelope.height = Height::try_from(height.version_height).unwrap()
+                ev.envelope.height = Height::try_from(height.revision_height).unwrap()
             }
             _ => {
                 unimplemented!()

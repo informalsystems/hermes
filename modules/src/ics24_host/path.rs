@@ -66,7 +66,7 @@ impl Display for Path {
                 height,
             } => write!(
                 f,
-                "clients/{}/consensusState/{}-{}",
+                "clients/{}/consensusStates/{}-{}",
                 client_id, epoch, height
             ),
             Path::ClientConnections(client_id) => write!(f, "clients/{}/connections", client_id),
@@ -96,7 +96,7 @@ impl Display for Path {
                 sequence,
             } => write!(
                 f,
-                "commitments/ports/{}/channels/{}/packets/{}",
+                "commitments/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
             Path::Acks {

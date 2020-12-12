@@ -2,7 +2,6 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
-use tendermint::consensus::Params;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::Protobuf;
 
@@ -22,9 +21,8 @@ pub struct ClientState {
     pub max_clock_drift: Duration,
     pub frozen_height: Height,
     pub latest_height: Height,
-    pub consensus_params: Params,
     // pub proof_specs: ::std::vec::Vec<super::super::super::super::ics23::ProofSpec>,
-    pub upgrade_path: String,
+    pub upgrade_path: Vec<String>,
     pub allow_update_after_expiry: bool,
     pub allow_update_after_misbehaviour: bool,
 }
@@ -41,8 +39,7 @@ impl ClientState {
         max_clock_drift: Duration,
         latest_height: Height,
         frozen_height: Height,
-        consensus_params: Params,
-        upgrade_path: String,
+        upgrade_path: Vec<String>,
         allow_update_after_expiry: bool,
         allow_update_after_misbehaviour: bool, // proof_specs: Specs
     ) -> Result<ClientState, Error> {
@@ -84,7 +81,6 @@ impl ClientState {
             max_clock_drift,
             frozen_height,
             latest_height,
-            consensus_params,
             upgrade_path,
             allow_update_after_expiry,
             allow_update_after_misbehaviour,
@@ -100,7 +96,7 @@ impl ClientState {
         ClientState {
             latest_height: self
                 .latest_height
-                .with_version_height(u64::from(h.signed_header.header.height)),
+                .with_revision_height(u64::from(h.signed_header.header.height)),
             ..self
         }
     }
@@ -140,8 +136,8 @@ impl TryFrom<RawClientState> for ClientState {
         Ok(Self {
             chain_id: raw.chain_id,
             trust_level: TrustThreshold {
-                numerator: trust_level.numerator as u64,
-                denominator: trust_level.denominator as u64,
+                numerator: trust_level.numerator,
+                denominator: trust_level.denominator,
             },
             trusting_period: raw
                 .trusting_period
@@ -171,11 +167,6 @@ impl TryFrom<RawClientState> for ClientState {
             upgrade_path: raw.upgrade_path,
             allow_update_after_expiry: raw.allow_update_after_expiry,
             allow_update_after_misbehaviour: raw.allow_update_after_misbehaviour,
-            consensus_params: raw
-                .consensus_params
-                .ok_or_else(|| Kind::InvalidRawClientState.context("missing consensus parameters"))?
-                .try_into()
-                .map_err(|e| Kind::InvalidRawClientState.context(e))?,
         })
     }
 }
@@ -185,15 +176,14 @@ impl From<ClientState> for RawClientState {
         RawClientState {
             chain_id: value.chain_id.clone(),
             trust_level: Some(Fraction {
-                numerator: value.trust_level.numerator as i64,
-                denominator: value.trust_level.denominator as i64,
+                numerator: value.trust_level.numerator,
+                denominator: value.trust_level.denominator,
             }),
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
             frozen_height: Some(value.frozen_height.into()),
             latest_height: Some(value.latest_height.into()),
-            consensus_params: Some(value.consensus_params.into()),
             proof_specs: cosmos_specs(),
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
@@ -206,13 +196,11 @@ impl From<ClientState> for RawClientState {
 mod tests {
     use std::time::Duration;
 
-    use tendermint::consensus::Params;
     use tendermint_light_client::types::TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::test::test_serialization_roundtrip;
-    use crate::test_utils::default_consensus_params;
     use crate::Height;
 
     #[test]
@@ -240,9 +228,8 @@ mod tests {
             unbonding_period: Duration,
             max_clock_drift: Duration,
             latest_height: Height,
-            consensus_params: Params,
             frozen_height: Height,
-            upgrade_path: String,
+            upgrade_path: Vec<String>,
             allow_update_after_expiry: bool,
             allow_update_after_misbehaviour: bool,
         }
@@ -258,9 +245,8 @@ mod tests {
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
             latest_height: Height::new(0, 10),
-            consensus_params: default_consensus_params(),
             frozen_height: Height::default(),
-            upgrade_path: "".to_string(),
+            upgrade_path: vec!["".to_string()],
             allow_update_after_expiry: false,
             allow_update_after_misbehaviour: false,
         };
@@ -325,7 +311,6 @@ mod tests {
                 p.max_clock_drift,
                 p.latest_height,
                 p.frozen_height,
-                p.consensus_params,
                 p.upgrade_path,
                 p.allow_update_after_expiry,
                 p.allow_update_after_misbehaviour,
@@ -350,8 +335,6 @@ pub mod test_util {
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ChainId;
 
-    use crate::test_utils::default_consensus_params;
-
     use std::time::Duration;
     use tendermint::block::Header;
 
@@ -368,8 +351,7 @@ pub mod test_util {
                     u64::from(tm_header.height),
                 ),
                 Height::zero(),
-                default_consensus_params(),
-                "".to_string(),
+                vec!["".to_string()],
                 false,
                 false,
             )

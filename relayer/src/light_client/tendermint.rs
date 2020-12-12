@@ -30,7 +30,7 @@ impl super::LightClient<CosmosSDKChain> for LightClient {
     }
 
     fn verify_to_target(&self, height: ibc::Height) -> Result<LightBlock, error::Error> {
-        let height = TMHeight::try_from(height.version_height)
+        let height = TMHeight::try_from(height.revision_height)
             .map_err(|e| error::Kind::InvalidHeight.context(e))?;
 
         self.handle

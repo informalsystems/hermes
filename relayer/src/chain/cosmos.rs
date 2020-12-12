@@ -8,8 +8,6 @@ use std::{
     time::Duration,
 };
 
-use subtle_encoding::base64;
-
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 
@@ -19,7 +17,6 @@ use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 
-use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::Protobuf;
 
 use tendermint_rpc::query::Query;
@@ -39,8 +36,9 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
 use ibc::events::{IBCEvent, IBCEventType};
@@ -52,7 +50,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::merkle::MerkleProof;
+use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
@@ -304,7 +302,7 @@ impl Chain for CosmosSDKChain {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
         let height =
-            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
 
         if !data.is_provable() & prove {
             return Err(Kind::Store
@@ -368,8 +366,8 @@ impl Chain for CosmosSDKChain {
         }
 
         Ok(ICSHeight {
-            version_number: ChainId::chain_version(status.node_info.network.as_str()),
-            version_height: u64::from(status.sync_info.latest_block_height),
+            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+            revision_height: u64::from(status.sync_info.latest_block_height),
         })
     }
 
@@ -411,7 +409,7 @@ impl Chain for CosmosSDKChain {
         let client_state = downcast!(client_state => AnyClientState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
 
-        Ok((client_state, res.proof))
+        Ok((client_state, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
     }
 
     fn proven_client_consensus(
@@ -424,8 +422,8 @@ impl Chain for CosmosSDKChain {
             .query(
                 ClientConsensusPath {
                     client_id: client_id.clone(),
-                    epoch: consensus_height.version_number,
-                    height: consensus_height.version_height,
+                    epoch: consensus_height.revision_number,
+                    height: consensus_height.revision_height,
                 },
                 height,
                 true,
@@ -438,12 +436,12 @@ impl Chain for CosmosSDKChain {
         let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
 
-        Ok((consensus_state, res.proof))
+        Ok((consensus_state, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
-        let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
             self.config.trust_threshold,
             self.config.trusting_period,
@@ -451,14 +449,11 @@ impl Chain for CosmosSDKChain {
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,
             ICSHeight::zero(),
-            self.query_consensus_params()?,
-            "upgrade/upgradedClient".to_string(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             false,
             false,
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
-
-        Ok(client_state)
+            .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
     }
 
     fn build_consensus_state(
@@ -510,12 +505,12 @@ impl Chain for CosmosSDKChain {
     }
     /// Queries the packet commitment hashes associated with a channel.
     /// TODO - move the chain trait
-    /// Note: the result Vec<PacketAckCommitment> has an awkward name but fixed in a future IBC proto variant
+    /// Note: the result Vec<PacketState> has an awkward name but fixed in a future IBC proto variant
     /// It will move to Vec<PacketState>
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketAckCommitment>, ICSHeight), Error> {
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
@@ -622,7 +617,7 @@ fn packet_from_tx_search_response(
 ) -> Result<Option<IBCEvent>, Error> {
     for r in response.txs.iter() {
         let height = r.height;
-        if height.value() > request.height.version_height {
+        if height.value() > request.height.revision_height {
             continue;
         }
         let mut envelope = PacketEnvelope {
@@ -640,11 +635,9 @@ fn packet_from_tx_search_response(
                 continue;
             }
             for a in e.attributes.iter() {
-                let key = String::from_utf8(base64::decode(a.key.to_string().as_bytes()).unwrap())
-                    .unwrap();
-                let value =
-                    String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
-                        .unwrap();
+                println!("tag key {:?} tag value {:?}", a.key.to_string(), a.value.to_string());
+                let key = a.key.to_string();
+                let value = a.value.to_string();
                 match key.as_str() {
                     "packet_src_port" => envelope.packet_src_port = value.parse().unwrap(),
                     "packet_src_channel" => envelope.packet_src_channel = value.parse().unwrap(),
@@ -654,8 +647,8 @@ fn packet_from_tx_search_response(
                     "packet_timeout_height" => {
                         let to: Vec<&str> = value.split('-').collect();
                         envelope.packet_timeout_height = ibc_proto::ibc::core::client::v1::Height {
-                            version_number: to[0].parse::<u64>().unwrap(),
-                            version_height: to[1].parse::<u64>().unwrap(),
+                            revision_number: to[0].parse::<u64>().unwrap(),
+                            revision_height: to[1].parse::<u64>().unwrap(),
                         }
                         .try_into()
                         .unwrap();
@@ -674,14 +667,9 @@ fn packet_from_tx_search_response(
                 IBCEventType::SendPacket => {
                     let mut data = vec![];
                     for a in e.attributes.iter() {
-                        let key = String::from_utf8(
-                            base64::decode(a.key.to_string().as_bytes()).unwrap(),
-                        )
-                        .unwrap();
-                        let value = String::from_utf8(
-                            base64::decode(a.value.to_string().as_bytes()).unwrap(),
-                        )
-                        .unwrap();
+                        println!("tag key {:?} tag value {:?}", a.key.to_string(), a.value.to_string());
+                        let key = a.key.to_string();
+                        let value = a.value.to_string();
                         match key.as_str() {
                             "packet_data" => data = Vec::from(value.as_bytes()),
                             _ => continue,
@@ -734,16 +722,11 @@ async fn abci_query(
     }
 
     let raw_proof_ops = response
-        .proof
-        .map(ProofOps::try_from)
-        .transpose()
-        .map_err(|e| Kind::MalformedProof.context(e))?;
+        .proof;
 
     let response = QueryResponse {
         value: response.value,
-        proof: MerkleProof {
-            proof: raw_proof_ops,
-        },
+        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(),
         height: response.height,
     };
 

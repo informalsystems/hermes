@@ -9,7 +9,7 @@ The `ibc-proto-compiler` is a simple command-line tool to automate the compilati
 From within the `proto-compiler` directory, run the following command to clone the Cosmos SDK repository, and check out a specific commit:
 
 ```bash
-$ cargo run -- clone-sdk --out /tmp/sdk --commit 15324920548c2629e51d837bcefc1cbc40797c5d
+$ cargo run -- clone-sdk --out /tmp/sdk --commit d4a919b7143dc2b5233518c8d1fc299fda66ac77
 ```
 
 Note: the full commit hash must be specified.

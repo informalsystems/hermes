@@ -11,6 +11,7 @@ use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
+use crate::handler;
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -61,12 +62,12 @@ where
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
             // Apply the result to the context (host chain store).
-            ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+            let events: Vec<handler::Event> = ctx.store_client_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?.into_iter().map(|v| v.into()).collect();
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
-                .with_events(handler_output.events)
+                .with_events(events)
                 .with_result(())
         }
 
@@ -129,7 +130,6 @@ mod tests {
         let update_client_height = Height::new(0, 50);
 
         let create_client_msg = MsgCreateAnyClient::new(
-            ClientId::from_str("client_id").unwrap(),
             AnyClientState::from(MockClientState(MockHeader(start_client_height))),
             AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height))),
             get_dummy_account_id(),

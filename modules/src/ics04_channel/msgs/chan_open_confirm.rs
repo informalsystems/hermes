@@ -1,6 +1,6 @@
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{proofs::Proofs, tx_msg::Msg, Height};
 
@@ -30,7 +30,7 @@ impl MsgChannelOpenConfirm {
     fn new(
         port_id: String,
         channel_id: String,
-        proof_ack: CommitmentProof,
+        proof_ack: CommitmentProofBytes,
         proofs_height: Height,
         signer: AccountId,
     ) -> Result<MsgChannelOpenConfirm, Error> {
@@ -132,8 +132,8 @@ pub mod test_util {
             channel_id: "testchannel".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 1,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -218,8 +218,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelOpenConfirm {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg.clone()
                 },

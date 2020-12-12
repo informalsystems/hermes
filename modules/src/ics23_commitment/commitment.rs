@@ -5,8 +5,6 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::error::{Error, Kind};
 
-use super::merkle::MerkleProof;
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
@@ -27,34 +25,34 @@ impl From<Vec<u8>> for CommitmentRoot {
 pub struct CommitmentPath;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct CommitmentProof(Vec<u8>);
+pub struct CommitmentProofBytes(Vec<u8>);
 
-impl CommitmentProof {
+impl CommitmentProofBytes {
     pub fn is_empty(&self) -> bool {
         self.0.len() == 0
     }
 }
 
-impl From<Vec<u8>> for CommitmentProof {
+impl From<Vec<u8>> for CommitmentProofBytes {
     fn from(v: Vec<u8>) -> Self {
         Self { 0: v }
     }
 }
 
-impl From<CommitmentProof> for Vec<u8> {
-    fn from(p: CommitmentProof) -> Vec<u8> {
+impl From<CommitmentProofBytes> for Vec<u8> {
+    fn from(p: CommitmentProofBytes) -> Vec<u8> {
         p.0
     }
 }
+//
+// impl From<MerkleProof> for CommitmentProofBytes {
+//     fn from(proof: MerkleProof) -> Self {
+//         let raw_proof: RawMerkleProof = proof.into();
+//         raw_proof.into()
+//     }
+// }
 
-impl From<MerkleProof> for CommitmentProof {
-    fn from(proof: MerkleProof) -> Self {
-        let raw_proof: RawMerkleProof = proof.into();
-        raw_proof.into()
-    }
-}
-
-impl From<RawMerkleProof> for CommitmentProof {
+impl From<RawMerkleProof> for CommitmentProofBytes {
     fn from(proof: RawMerkleProof) -> Self {
         let mut buf = Vec::new();
         prost::Message::encode(&proof, &mut buf).unwrap();
@@ -62,10 +60,10 @@ impl From<RawMerkleProof> for CommitmentProof {
     }
 }
 
-impl TryFrom<CommitmentProof> for RawMerkleProof {
+impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
     type Error = Error;
 
-    fn try_from(value: CommitmentProof) -> Result<Self, Self::Error> {
+    fn try_from(value: CommitmentProofBytes) -> Result<Self, Self::Error> {
         let value: Vec<u8> = value.into();
         let res: RawMerkleProof = prost::Message::decode(value.as_ref())
             .map_err(|e| Kind::InvalidRawMerkleProof.context(e))?;

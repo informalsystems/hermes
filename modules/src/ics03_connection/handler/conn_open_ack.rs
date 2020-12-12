@@ -62,11 +62,12 @@ pub(crate) fn process(
             ctx.commitment_prefix(),                   // Local commitment prefix.
         ),
         vec![msg.version().clone()],
-    )?;
+        new_conn_end.delay_period,
+    );
+
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.connection_id(),
         msg.client_state(),
         &new_conn_end,
         &expected_conn,
@@ -80,7 +81,7 @@ pub(crate) fn process(
 
     let result = ConnectionResult {
         connection_end: new_conn_end,
-        connection_id: msg.connection_id().clone(),
+        connection_id: Some(msg.connection_id().clone()),
     };
 
     output.emit(ConnOpenAck(result.clone()));
@@ -131,8 +132,8 @@ mod tests {
             client_id.clone(),
             counterparty,
             incorrect_context.get_compatible_versions(),
-        )
-        .unwrap();
+            0_u64,
+        );
 
         // A connection end (with correct state but incorrect versions); exercises unsuccessful
         // processing path.
@@ -156,8 +157,8 @@ mod tests {
             client_id.clone(),
             correct_counterparty,
             vec![msg_ack.version().clone()],
-        )
-        .unwrap();
+            0_u64,
+        );
 
         // Parametrize the (correct) host chain to have a height at least as recent as the
         // the height of the proofs in the Ack msg.
@@ -165,7 +166,7 @@ mod tests {
             ChainId::new("mockgaia".to_string(), 1),
             HostType::Mock,
             5,
-            Height::new(1, msg_ack.proofs().height().increment().version_height),
+            Height::new(1, msg_ack.proofs().height().increment().revision_height),
         );
 
         let tests: Vec<Test> = vec![
@@ -240,7 +241,6 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, msg_ack.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {

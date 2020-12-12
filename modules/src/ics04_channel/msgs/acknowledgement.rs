@@ -8,8 +8,7 @@ use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgeme
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::{proofs::Proofs, tx_msg::Msg};
 
 ///
 /// Message definition for packet acknowledgements.
@@ -18,32 +17,8 @@ use crate::{proofs::Proofs, tx_msg::Msg, Height};
 pub struct MsgAcknowledgement {
     packet: Packet,
     acknowledgement: Vec<u8>,
-    proofs: Proofs,
+    proof_acked: Proofs,
     signer: AccountId,
-}
-
-impl MsgAcknowledgement {
-    // todo: Constructor not used yet.
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
-        packet: Packet,
-        acknowledgement: Vec<u8>,
-        proof: CommitmentProof,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgAcknowledgement, Error> {
-        if acknowledgement.len() > 100 {
-            return Err(Kind::AcknowledgementTooLong.into());
-        }
-
-        Ok(Self {
-            packet: todo!(),
-            acknowledgement,
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
-        })
-    }
 }
 
 impl Msg for MsgAcknowledgement {
@@ -74,7 +49,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
 
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_acked.into(),
             None,
             None,
             raw_msg
@@ -93,7 +68,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement: raw_msg.acknowledgement,
             signer,
-            proofs,
+            proof_acked: proofs,
         })
     }
 }
@@ -103,9 +78,9 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
         RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
             acknowledgement: domain_msg.acknowledgement,
-            proof: domain_msg.proofs.object_proof().clone().into(),
             signer: account_to_string(domain_msg.signer).unwrap(),
-            proof_height: Some(domain_msg.proofs.height().into()),
+            proof_height: Some(domain_msg.proof_acked.height().into()),
+            proof_acked: vec![]
         }
     }
 }
@@ -124,10 +99,10 @@ mod test_util {
         RawMsgAcknowledgement {
             packet: Some(get_dummy_raw_packet(height)),
             acknowledgement: get_dummy_proof(),
-            proof: get_dummy_proof(),
+            proof_acked: vec![],
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -136,7 +111,7 @@ mod test_util {
 
 #[cfg(test)]
 mod test {
-    use std::convert::{TryFrom, TryInto};
+    use std::convert::TryInto;
 
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
@@ -165,14 +140,6 @@ mod test {
                 name: "Missing packet".to_string(),
                 raw: RawMsgAcknowledgement {
                     packet: None,
-                    ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Missing proof".to_string(),
-                raw: RawMsgAcknowledgement {
-                    proof: vec![],
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -207,15 +174,5 @@ mod test {
                 res_msg.err()
             );
         }
-    }
-
-    #[test]
-    fn to_and_from() {
-        let raw = get_dummy_raw_msg_acknowledgement(15);
-        let msg = MsgAcknowledgement::try_from(raw.clone()).unwrap();
-        let raw_back = RawMsgAcknowledgement::from(msg.clone());
-        let msg_back = MsgAcknowledgement::try_from(raw_back.clone()).unwrap();
-        assert_eq!(raw, raw_back);
-        assert_eq!(msg, msg_back);
     }
 }

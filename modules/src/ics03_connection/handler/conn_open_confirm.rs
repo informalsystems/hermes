@@ -47,11 +47,12 @@ pub(crate) fn process(
             ctx.commitment_prefix(),          // Local commitment prefix.
         ),
         new_conn_end.versions(),
-    )?;
+        new_conn_end.delay_period,
+    );
+
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.connection_id(),
         None,
         &new_conn_end,
         &expected_conn,
@@ -64,7 +65,7 @@ pub(crate) fn process(
     new_conn_end.set_state(State::Open);
 
     let result = ConnectionResult {
-        connection_id: msg.connection_id().clone(),
+        connection_id: Some(msg.connection_id().clone()),
         connection_end: new_conn_end,
     };
     output.emit(ConnOpenConfirm(result.clone()));
@@ -114,8 +115,8 @@ mod tests {
             client_id.clone(),
             counterparty,
             context.get_compatible_versions(),
-        )
-        .unwrap();
+            0
+        );
 
         let mut correct_conn_end = incorrect_conn_end_state.clone();
         correct_conn_end.set_state(State::TryOpen);
@@ -168,7 +169,6 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have OPEN state.
                     let res: ConnectionResult = proto_output.result;
-                    assert_eq!(res.connection_id, msg_confirm.connection_id().clone());
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {

@@ -8,9 +8,7 @@ use crate::prelude::*;
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::ChainConfig;
-use relayer::foreign_client::{
-    build_create_client_and_send, build_update_client_and_send, ForeignClientConfig,
-};
+use relayer::foreign_client::{build_update_client_and_send, ForeignClient, ForeignClientConfig};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -52,13 +50,11 @@ impl Runnable for TxCreateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res: Result<Vec<String>, Error> =
-            build_create_client_and_send(&dst_chain, &src_chain, &opts)
-                .map_err(|e| Kind::Tx.context(e).into());
+        let res = ForeignClient::new(dst_chain, src_chain, opts).map_err(|e| Kind::Tx.context(e));
 
         match res {
             Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
-            Err(e) => status_err!("client create failed: {}", e),
+            Err(e) => status_err!("client create failed: {:?}", e),
         }
     }
 }
@@ -103,7 +99,7 @@ impl Runnable for TxUpdateClientCmd {
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
         let res: Result<Vec<String>, Error> =
-            build_update_client_and_send(&dst_chain, &src_chain, &opts)
+            build_update_client_and_send(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {

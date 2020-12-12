@@ -4,7 +4,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
 };
 
 use ibc::ics24_host::identifier::{ChannelId, PortId};
@@ -75,7 +75,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
             pagination: None,
         };
 
-        let res: Result<(Vec<PacketAckCommitment>, Height), Error> = chain
+        let res: Result<(Vec<PacketState>, Height), Error> = chain
             .query_packet_commitments(grpc_request)
             .map_err(|e| Kind::Query.context(e).into());
 
