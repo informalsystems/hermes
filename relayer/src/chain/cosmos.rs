@@ -36,7 +36,8 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -409,7 +410,11 @@ impl Chain for CosmosSDKChain {
         let client_state = downcast!(client_state => AnyClientState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
 
-        Ok((client_state, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
+        Ok((
+            client_state,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn proven_client_consensus(
@@ -436,7 +441,11 @@ impl Chain for CosmosSDKChain {
         let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
 
-        Ok((consensus_state, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
+        Ok((
+            consensus_state,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
@@ -453,7 +462,7 @@ impl Chain for CosmosSDKChain {
             false,
             false,
         )
-            .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
     }
 
     fn build_consensus_state(
@@ -504,9 +513,7 @@ impl Chain for CosmosSDKChain {
         Ok(key)
     }
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
-    /// Note: the result Vec<PacketState> has an awkward name but fixed in a future IBC proto variant
-    /// It will move to Vec<PacketState>
+    /// TODO - move to the chain trait
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -555,6 +562,62 @@ impl Chain for CosmosSDKChain {
 
         let response = self
             .block_on(client.unreceived_packets(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(response.sequences)
+    }
+
+    /// Queries the packet acknowledgment hashes associated with a channel.
+    /// TODO - move to the chain trait
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.packet_acknowledgements(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let pc = response.acknowledgements;
+
+        let height = response
+            .height
+            .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
+            .try_into()
+            .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+
+        Ok((pc, height))
+    }
+
+    /// Queries the packet commitment hashes associated with a channel.
+    /// TODO - move the chain trait
+    fn query_unreceived_acknowledgements(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.unreceived_acks(request))?
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -635,7 +698,11 @@ fn packet_from_tx_search_response(
                 continue;
             }
             for a in e.attributes.iter() {
-                println!("tag key {:?} tag value {:?}", a.key.to_string(), a.value.to_string());
+                println!(
+                    "tag key {:?} tag value {:?}",
+                    a.key.to_string(),
+                    a.value.to_string()
+                );
                 let key = a.key.to_string();
                 let value = a.value.to_string();
                 match key.as_str() {
@@ -667,7 +734,11 @@ fn packet_from_tx_search_response(
                 IBCEventType::SendPacket => {
                     let mut data = vec![];
                     for a in e.attributes.iter() {
-                        println!("tag key {:?} tag value {:?}", a.key.to_string(), a.value.to_string());
+                        println!(
+                            "tag key {:?} tag value {:?}",
+                            a.key.to_string(),
+                            a.value.to_string()
+                        );
                         let key = a.key.to_string();
                         let value = a.value.to_string();
                         match key.as_str() {
@@ -721,8 +792,7 @@ async fn abci_query(
         return Err(Kind::EmptyResponseProof.into());
     }
 
-    let raw_proof_ops = response
-        .proof;
+    let raw_proof_ops = response.proof;
 
     let response = QueryResponse {
         value: response.value,

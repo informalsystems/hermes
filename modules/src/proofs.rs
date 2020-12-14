@@ -67,7 +67,10 @@ pub struct ConsensusProof {
 }
 
 impl ConsensusProof {
-    pub fn new(consensus_proof: CommitmentProofBytes, consensus_height: Height) -> Result<Self, String> {
+    pub fn new(
+        consensus_proof: CommitmentProofBytes,
+        consensus_height: Height,
+    ) -> Result<Self, String> {
         if consensus_height.is_zero() {
             return Err("Consensus height cannot be zero".to_string());
         }

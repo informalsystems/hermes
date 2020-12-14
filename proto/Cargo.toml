@@ -25,6 +25,5 @@ bytes = "0.6"
 thiserror = "1.0"
 tonic = "0.3.1"
 
-tendermint              = { path = "../../tendermint-rs/tendermint" }
-tendermint-proto        = { path = "../../tendermint-rs/proto" }
-tendermint-light-client = { path = "../../tendermint-rs/light-client" }
+[dependencies.tendermint-proto]
+version = "=0.17.0-rc3"

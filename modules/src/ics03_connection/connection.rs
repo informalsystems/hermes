@@ -58,7 +58,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
                 .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
-            delay_period: 0
+            delay_period: 0,
         }
     }
 }
@@ -69,14 +69,14 @@ impl ConnectionEnd {
         client_id: ClientId,
         counterparty: Counterparty,
         versions: Vec<Version>, // TODO: Use Newtype for aliasing the version to a string
-        delay_period: u64
+        delay_period: u64,
     ) -> Self {
         Self {
             state,
             client_id,
             counterparty,
             versions,
-            delay_period
+            delay_period,
         }
     }
 

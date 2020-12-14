@@ -38,13 +38,24 @@ dyn-clonable = "0.9.0"
 regex = "1"
 bech32 = "0.7.2"
 
-tendermint              = { path = "../../tendermint-rs/tendermint" }
-tendermint-rpc          = { path = "../../tendermint-rs/rpc", feature = "websocket-client" }
-tendermint-proto        = { path = "../../tendermint-rs/proto" }
-tendermint-light-client = { path = "../../tendermint-rs/light-client" }
-tendermint-testgen = { path = "../../tendermint-rs/testgen" , optional = true}
+[dependencies.tendermint]
+version = "=0.17.0-rc3"
+
+[dependencies.tendermint-rpc]
+version = "=0.17.0-rc3"
+features = ["http-client", "websocket-client"]
+
+[dependencies.tendermint-light-client]
+version = "=0.17.0-rc3"
+
+[dependencies.tendermint-proto]
+version = "=0.17.0-rc3"
+
+[dependencies.tendermint-testgen]
+version = "0.17.0-rc3"
+optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { path = "../../tendermint-rs/testgen"}
+tendermint-testgen = { version = "0.17.0-rc3" } # Needed for generating (synthetic) light blocks.

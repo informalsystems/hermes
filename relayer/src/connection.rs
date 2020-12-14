@@ -364,11 +364,7 @@ pub fn build_conn_init(
 
     let prefix = src_chain.query_commitment_prefix()?;
 
-    let counterparty = Counterparty::new(
-        opts.src().client_id().clone(),
-        None,
-        prefix,
-    );
+    let counterparty = Counterparty::new(opts.src().client_id().clone(), None, prefix);
 
     // Build the domain type message
     let new_msg = MsgConnectionOpenInit {
@@ -448,7 +444,7 @@ fn validated_expected_connection(
         opts.dst().client_id().clone(),
         counterparty,
         src_chain.query_compatible_versions()?,
-        0
+        0,
     );
 
     // Retrieve existing connection if any

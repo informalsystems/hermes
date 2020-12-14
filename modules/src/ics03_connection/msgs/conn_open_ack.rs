@@ -130,7 +130,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             version: msg
                 .version
-                .ok_or_else(|| Kind::InvalidVersion)?
+                .ok_or(Kind::InvalidVersion)?
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(

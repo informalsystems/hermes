@@ -91,7 +91,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
     fn from(domain_msg: MsgChannelOpenTry) -> Self {
         RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
-            previous_channel_id:  domain_msg
+            previous_channel_id: domain_msg
                 .previous_channel_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             channel: Some(domain_msg.channel.into()),

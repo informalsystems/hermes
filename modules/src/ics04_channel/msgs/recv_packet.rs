@@ -9,8 +9,8 @@ use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::{proofs::Proofs, tx_msg::Msg};
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::{proofs::Proofs, tx_msg::Msg};
 
 ///
 /// Message definition for the "packet receiving" datagram.

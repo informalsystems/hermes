@@ -105,7 +105,7 @@ impl Display for Path {
                 sequence,
             } => write!(
                 f,
-                "acks/ports/{}/channels/{}/acknowledgements/{}",
+                "acks/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
         }

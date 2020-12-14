@@ -21,8 +21,9 @@ pub(crate) fn process(
     // Unwrap the old connection end (if any) and validate it against the message.
     let mut new_connection_end = match msg.previous_connection_id() {
         Some(prev_id) => {
-            let old_connection_end = ctx.connection_end(prev_id).ok_or_else(
-                || Kind::ConnectionNotFound.context(prev_id.to_string()))?;
+            let old_connection_end = ctx
+                .connection_end(prev_id)
+                .ok_or_else(|| Kind::ConnectionNotFound.context(prev_id.to_string()))?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)
@@ -47,7 +48,7 @@ pub(crate) fn process(
             msg.client_id().clone(),
             msg.counterparty(),
             msg.counterparty_versions(),
-            msg.delay_period
+            msg.delay_period,
         )),
     }?;
 
@@ -56,13 +57,9 @@ pub(crate) fn process(
     let expected_conn = ConnectionEnd::new(
         State::Init,
         msg.counterparty().client_id().clone(),
-        Counterparty::new(
-            msg.client_id().clone(),
-            None,
-            ctx.commitment_prefix(),
-        ),
+        Counterparty::new(msg.client_id().clone(), None, ctx.commitment_prefix()),
         msg.counterparty_versions(),
-        msg.delay_period
+        msg.delay_period,
     );
 
     // 2. Pass the details to the verification function.
@@ -80,7 +77,7 @@ pub(crate) fn process(
     // Pick the version.
     new_connection_end.set_version(
         ctx.pick_version(ctx.get_compatible_versions(), msg.counterparty_versions())
-            .ok_or_else(|| Kind::NoCommonVersion)?,
+            .ok_or(Kind::NoCommonVersion)?,
     );
 
     output.log("success: connection verification passed");
@@ -101,6 +98,7 @@ mod tests {
 
     use crate::handler::EventType;
     use crate::ics03_connection::connection::State;
+    use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -109,7 +107,6 @@ mod tests {
     use crate::mock::context::MockContext;
     use crate::mock::host::HostType;
     use crate::Height;
-    use crate::ics03_connection::context::ConnectionReader;
 
     #[test]
     fn conn_open_try_msg_processing() {

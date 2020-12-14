@@ -72,7 +72,10 @@ pub trait ConnectionKeeper {
                 )?;
             }
             State::TryOpen => {
-                self.store_connection(&result.connection_id.clone().unwrap(), &result.connection_end)?;
+                self.store_connection(
+                    &result.connection_id.clone().unwrap(),
+                    &result.connection_end,
+                )?;
                 // If this is the first time the handler processed this connection, associate the
                 // connection end to its client identifier.
                 self.store_connection_to_client(

@@ -51,13 +51,7 @@ pub(crate) fn process(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs(
-        ctx,
-        None,
-        &new_conn_end,
-        &expected_conn,
-        msg.proofs(),
-    )?;
+    verify_proofs(ctx, None, &new_conn_end, &expected_conn, msg.proofs())?;
 
     output.log("success: connection verification passed");
 
@@ -115,7 +109,7 @@ mod tests {
             client_id.clone(),
             counterparty,
             context.get_compatible_versions(),
-            0
+            0,
         );
 
         let mut correct_conn_end = incorrect_conn_end_state.clone();

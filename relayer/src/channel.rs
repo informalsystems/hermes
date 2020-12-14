@@ -367,10 +367,7 @@ pub fn build_chan_init(
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
-    let counterparty = Counterparty::new(
-        opts.src().port_id().clone(),
-        None,
-    );
+    let counterparty = Counterparty::new(opts.src().port_id().clone(), None);
 
     let channel = ChannelEnd::new(
         State::Init,

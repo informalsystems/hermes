@@ -11,7 +11,8 @@ use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -37,7 +38,6 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
-
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -209,6 +209,20 @@ impl Chain for MockChain {
     fn query_unreceived_packets(
         &self,
         _request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        _request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        unimplemented!()
+    }
+
+    fn query_unreceived_acknowledgements(
+        &self,
+        _request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
         unimplemented!()
     }

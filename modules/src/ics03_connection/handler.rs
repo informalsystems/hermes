@@ -36,15 +36,24 @@ impl From<ConnectionEvent> for Event {
             ),
             ConnectionEvent::ConnOpenTry(conn) => Event::new(
                 EventType::Custom("connection_open_try".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.unwrap().to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    conn.connection_id.unwrap().to_string(),
+                )],
             ),
             ConnectionEvent::ConnOpenAck(conn) => Event::new(
                 EventType::Custom("connection_open_ack".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.unwrap().to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    conn.connection_id.unwrap().to_string(),
+                )],
             ),
             ConnectionEvent::ConnOpenConfirm(conn) => Event::new(
                 EventType::Custom("connection_open_confirm".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.unwrap().to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    conn.connection_id.unwrap().to_string(),
+                )],
             ),
         }
     }

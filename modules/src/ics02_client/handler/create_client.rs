@@ -67,7 +67,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg));
 
         match output {
             Ok(HandlerOutput {
@@ -198,7 +198,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg));
 
         match output {
             Ok(HandlerOutput {

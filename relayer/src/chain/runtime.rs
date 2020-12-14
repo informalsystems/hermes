@@ -8,7 +8,8 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -187,18 +188,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.get_minimal_set(from, to, reply_to)?
                         }
 
-                        // Ok(ChainRequest::GetHeader { height, reply_to }) => {
-                        //     self.get_header(height, reply_to)?
-                        // }
-                        //
-                        // Ok(ChainRequest::Submit { transaction, reply_to, }) => {
-                        //     self.submit(transaction, reply_to)?
-                        // },
-                        //
-                        // Ok(ChainRequest::CreatePacket { event, reply_to }) => {
-                        //     self.create_packet(event, reply_to)?
-                        // }
-
                         Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
                         }
@@ -214,15 +203,19 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, reply_to }) => {
                             self.build_header(trusted_height, target_height, reply_to)?
                         }
+
                         Ok(ChainRequest::BuildClientState { height, reply_to }) => {
                             self.build_client_state(height, reply_to)?
                         }
+
                         Ok(ChainRequest::BuildConsensusState { height, reply_to }) => {
                             self.build_consensus_state(height, reply_to)?
                         }
+
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
                         },
+
                         Ok(ChainRequest::BuildChannelProofs { port_id, channel_id, height, reply_to }) => {
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
@@ -230,6 +223,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                         Ok(ChainRequest::QueryLatestHeight { reply_to }) => {
                             self.query_latest_height(reply_to)?
                         }
+
                         Ok(ChainRequest::QueryClientState { client_id, height, reply_to }) => {
                             self.query_client_state(client_id, height, reply_to)?
                         },
@@ -272,6 +266,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryUnreceivedPackets { request, reply_to }) => {
                             self.query_unreceived_packets(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::ProvenPacketAcknowledgment { port_id, channel_id, sequence, height, reply_to }) => {
+                            self.proven_packet_acknowledgment(port_id, channel_id, sequence, height, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryPacketAcknowledgement { request, reply_to }) => {
+                            self.query_packet_acknowledgements(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to }) => {
+                            self.query_unreceived_acknowledgement(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
@@ -350,17 +356,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    // fn get_header(&self, height: Height, reply_to: ReplyTo<AnyHeader>) -> Result<(), Error> {
-    //     let light_block = self.light_client.verify_to_target(height);
-    //     let header: Result<AnyHeader, _> = todo!(); // light_block.map(|lb| lb.signed_header().wrap_any());
-
-    //     reply_to
-    //         .send(header)
-    //         .map_err(|e| Kind::Channel.context(e))?;
-
-    //     Ok(())
-    // }
-
     fn get_minimal_set(
         &self,
         _from: Height,
@@ -369,14 +364,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         todo!()
     }
-
-    // fn submit(&self, transaction: EncodedTransaction, reply_to: ReplyTo<()>) -> Result<(), Error> {
-    //     todo!()
-    // }
-
-    // fn create_packet(&self, event: IBCEvent, reply_to: ReplyTo<Packet>) -> Result<(), Error> {
-    //     todo!()
-    // }
 
     fn get_signer(&mut self, reply_to: ReplyTo<AccountId>) -> Result<(), Error> {
         let result = self.chain.get_signer();
@@ -679,6 +666,53 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn proven_packet_acknowledgment(
+        &self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    ) -> Result<(), Error> {
+        let result =
+            self.chain
+                .proven_packet_acknowledgment(&port_id, &channel_id, sequence, height);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_packet_acknowledgements(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_unreceived_acknowledgements(request);
 
         reply_to
             .send(result)

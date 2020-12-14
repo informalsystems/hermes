@@ -1,10 +1,9 @@
-
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use tendermint::merkle::proof::Proof;
 use crate::ics23_commitment::error::Error;
+use tendermint::merkle::proof::Proof;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
@@ -124,11 +123,10 @@ pub struct MerkleProof {
 
 use prost::Message;
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: Option<Proof>) -> Result<Option<RawMerkleProof>, Error> {
-    if tm_proof.is_none() {
-        Ok(None)
-    } else {
-        let proof = tm_proof.unwrap();
+pub fn convert_tm_to_ics_merkle_proof(
+    tm_proof: Option<Proof>,
+) -> Result<Option<RawMerkleProof>, Error> {
+    if let Some(proof) = tm_proof {
         let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
         for (_i, op) in proof.ops.iter().enumerate() {
             let data = op.clone().data;
@@ -136,8 +134,8 @@ pub fn convert_tm_to_ics_merkle_proof(tm_proof: Option<Proof>) -> Result<Option<
             parsed.merge(data.as_slice()).unwrap();
             mproofs.append(&mut vec![parsed]);
         }
-        Ok(Some(RawMerkleProof{
-            proofs: mproofs
-        }))
+        Ok(Some(RawMerkleProof { proofs: mproofs }))
+    } else {
+        Ok(None)
     }
 }

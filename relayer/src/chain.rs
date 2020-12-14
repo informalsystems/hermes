@@ -23,7 +23,8 @@ use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -188,7 +189,11 @@ pub trait Chain: Sized {
         let connection_end =
             ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
-        Ok((connection_end, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
+        Ok((
+            connection_end,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn proven_client_consensus(
@@ -214,7 +219,11 @@ pub trait Chain: Sized {
 
         let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
 
-        Ok((channel_end, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
+        Ok((
+            channel_end,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     /// Builds the required proofs and the client state for connection handshake messages.
@@ -311,6 +320,7 @@ pub trait Chain: Sized {
         Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
 
+    // TODO - move to cosmos
     fn proven_packet_commitment(
         &self,
         port_id: &PortId,
@@ -318,7 +328,6 @@ pub trait Chain: Sized {
         sequence: u64,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-
         let res = self
             .query(
                 Path::Commitments {
@@ -331,7 +340,11 @@ pub trait Chain: Sized {
             )
             .map_err(|e| Kind::Query.context(e))?;
 
-        Ok((res.value, res.proof.ok_or(Kind::Query.context("empty proof".to_string()))?))
+        Ok((
+            res.value,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn query_packet_commitments(
@@ -342,6 +355,43 @@ pub trait Chain: Sized {
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
+
+    // TODO - move to cosmos
+    fn proven_packet_acknowledgment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        let res = self
+            .query(
+                Path::Acks {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                },
+                height,
+                true,
+            )
+            .map_err(|e| Kind::Query.context(e))?;
+
+        Ok((
+            res.value,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
+    }
+
+    fn query_unreceived_acknowledgements(
+        &self,
+        request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;

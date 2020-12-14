@@ -69,4 +69,8 @@ pub enum TxRawCommands {
     /// The `tx raw packet-recv` subcommand
     #[options(help = "tx raw packet-recv")]
     PacketRecv(packet::TxRawPacketRecvCmd),
+
+    /// The `tx raw packet-ack` subcommand
+    #[options(help = "tx raw packet-ack")]
+    PacketAck(packet::TxRawPacketAckCmd),
 }

@@ -80,7 +80,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
             acknowledgement: domain_msg.acknowledgement,
             signer: account_to_string(domain_msg.signer).unwrap(),
             proof_height: Some(domain_msg.proof_acked.height().into()),
-            proof_acked: vec![]
+            proof_acked: vec![],
         }
     }
 }

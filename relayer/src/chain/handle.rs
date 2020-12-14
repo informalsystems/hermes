@@ -6,10 +6,12 @@ use crossbeam_channel as channel;
 use dyn_clone::DynClone;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
+use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -20,7 +22,6 @@ use ibc::{
     proofs::Proofs,
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
-use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
@@ -67,20 +68,12 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<String>>,
     },
 
-    // GetHeader {
-    //     height: Height,
-    //     reply_to: ReplyTo<AnyHeader>,
-    // },
     GetMinimalSet {
         from: Height,
         to: Height,
         reply_to: ReplyTo<Vec<AnyHeader>>,
     },
 
-    // Submit {
-    //     transaction: EncodedTransaction,
-    //     reply_to: ReplyTo<()>,
-    // },
     Signer {
         reply_to: ReplyTo<AccountId>,
     },
@@ -98,10 +91,6 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Height>,
     },
 
-    // CreatePacket {
-    //     event: IBCEvent,
-    //     reply_to: ReplyTo<Packet>,
-    // },
     BuildHeader {
         trusted_height: Height,
         target_height: Height,
@@ -194,6 +183,24 @@ pub enum ChainRequest {
 
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
+        reply_to: ReplyTo<Vec<u64>>,
+    },
+
+    ProvenPacketAcknowledgment {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+        height: Height,
+        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+    },
+
+    QueryPacketAcknowledgement {
+        request: QueryPacketAcknowledgementsRequest,
+        reply_to: ReplyTo<(Vec<PacketState>, Height)>,
+    },
+
+    QueryUnreceivedAcknowledgement {
+        request: QueryUnreceivedAcksRequest,
         reply_to: ReplyTo<Vec<u64>>,
     },
 
@@ -311,6 +318,24 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
+    ) -> Result<Vec<u64>, Error>;
+
+    fn proven_packet_acknowledgment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error>;
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error>;
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;

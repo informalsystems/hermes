@@ -85,7 +85,7 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .try_into()?,
             version: msg
                 .version
-                .ok_or_else(|| Kind::InvalidVersion)?
+                .ok_or(Kind::InvalidVersion)?
                 .try_into()
                 .map_err(|e| Kind::InvalidVersion.context(e))?,
             delay_period: msg.delay_period,

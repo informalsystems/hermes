@@ -1,6 +1,7 @@
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
+use crate::handler;
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::create_client;
@@ -11,7 +12,6 @@ use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
-use crate::handler;
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -62,8 +62,12 @@ where
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
             // Apply the result to the context (host chain store).
-            let events: Vec<handler::Event> = ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?.into_iter().map(|v| v.into()).collect();
+            let events: Vec<handler::Event> = ctx
+                .store_client_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?
+                .into_iter()
+                .map(|v| v.into())
+                .collect();
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)

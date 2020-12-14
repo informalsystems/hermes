@@ -36,7 +36,7 @@ pub struct MsgConnectionOpenTry {
 
 impl MsgConnectionOpenTry {
     /// Getter for accessing the previous connection identifier of this message.
-    pub fn previous_connection_id(&self) -> &Option<ConnectionId>{
+    pub fn previous_connection_id(&self) -> &Option<ConnectionId> {
         &self.previous_connection_id
     }
 
@@ -103,13 +103,12 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-
         let previous_connection_id = Some(msg.previous_connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
             .transpose()
             .map_err(|e| Kind::IdentifierError.context(e))?;
-        
+
         let consensus_height = msg
             .consensus_height
             .ok_or(Kind::MissingConsensusHeight)?
@@ -175,7 +174,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            previous_connection_id:  ics_msg
+            previous_connection_id: ics_msg
                 .previous_connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             client_state: ics_msg

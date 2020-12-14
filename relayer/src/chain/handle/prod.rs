@@ -3,10 +3,10 @@ use std::fmt::Debug;
 use crossbeam_channel as channel;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -20,6 +20,7 @@ use ibc::{
     proofs::Proofs,
     Height,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
@@ -305,6 +306,36 @@ impl ChainHandle for ProdChainHandle {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
+    }
+
+    fn proven_packet_acknowledgment(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: Height,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        self.send(|reply_to| ChainRequest::ProvenPacketAcknowledgment {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+            height,
+            reply_to,
+        })
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
+    }
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {

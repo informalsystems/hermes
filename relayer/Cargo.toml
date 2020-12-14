@@ -41,13 +41,20 @@ tonic = "0.3.1"
 dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 
-tendermint              = { path = "../../tendermint-rs/tendermint" }
-tendermint-rpc          = { path = "../../tendermint-rs/rpc", features = ["websocket-client"] }
-tendermint-proto        = { path = "../../tendermint-rs/proto" }
-tendermint-light-client = { path = "../../tendermint-rs/light-client" }
-tendermint-testgen = { path = "../../tendermint-rs/testgen" , optional = true}
+[dependencies.tendermint]
+version = "=0.17.0-rc3"
+
+[dependencies.tendermint-rpc]
+version = "=0.17.0-rc3"
+features = ["http-client", "websocket-client"]
+
+[dependencies.tendermint-light-client]
+version = "=0.17.0-rc3"
+
+[dependencies.tendermint-proto]
+version = "=0.17.0-rc3"
 
 [dev-dependencies]
 serial_test = "0.5.0"
 ibc = { path = "../modules", features = [ "mocks" ] }
-tendermint-testgen = { path = "../../tendermint-rs/testgen" }
+tendermint-testgen = { version = "0.17.0-rc3" } # Needed for generating (synthetic) light blocks.
