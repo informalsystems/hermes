@@ -13,7 +13,7 @@ WORKDIR /repo
 COPY . .
 
 # Build files
-RUN cargo build --workspace --all
+RUN cargo build --workspace --all --release
 
 #####################################################
 ####                 Relayer image               ####
@@ -21,7 +21,7 @@ RUN cargo build --workspace --all
 FROM rust:slim
 
 # Copy relayer executable
-COPY --from=build-env /repo/target/debug/rrly /usr/bin/rrly
+COPY --from=build-env /repo/target/release/relayer /usr/bin/rrly
 
 # Relayer folder
 WORKDIR /relayer
