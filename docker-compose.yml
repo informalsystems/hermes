@@ -45,7 +45,6 @@ services:
     container_name: relayer
     stdin_open: true
     tty: true
-    command: ["-c", "/relayer/setup_relayer.sh"]
     build:
       context: .
       dockerfile: ci/relayer.Dockerfile

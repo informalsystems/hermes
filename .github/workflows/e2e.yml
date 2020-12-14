@@ -8,5 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       -  uses: actions/checkout@v2
-      -  name: Run docker-compose stack
-         run: docker-compose -f docker-compose.yml up -d
+      -  name: Run chains and relayer
+         run: docker-compose -f docker-compose.yml up -d ibc0 ibc1 relayer
+      -  name: Run relayer workflow
+         run: docker exec relayer /bin/sh -c /relayer/setup_relayer.sh
