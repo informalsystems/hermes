@@ -14,10 +14,6 @@ description = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
 """
 
-[lib]
-name = "ibc"
-path = "src/lib.rs"
-
 [features]
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.

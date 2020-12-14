@@ -6,10 +6,6 @@ authors = [
   "Informal Systems <hello@informal.systems>"
 ]
 
-[lib]
-name = "relayer"
-path = "src/lib.rs"
-
 [dependencies]
 ibc = { path = "../modules" }
 ibc-proto = { version = "0.5.0", path = "../proto" }

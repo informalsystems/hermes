@@ -6,10 +6,6 @@ authors = [
   "Informal Systems <hello@informal.systems>"
 ]
 
-[[bin]]
-name = "rrly"
-path = "src/bin/relayer/main.rs"
-
 [dependencies]
 relayer = { path = "../relayer" }
 ibc = { path = "../modules" }
