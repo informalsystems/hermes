@@ -107,7 +107,6 @@ mod tests {
             features: vec!["ORDER_RANDOM".to_string(), "ORDER_UNORDERED".to_string()],
         }]
         .into_iter()
-        //.map(|v| v.to_string())
         .collect()
     }
 
@@ -117,7 +116,6 @@ mod tests {
             features: vec!["".to_string()],
         }]
         .into_iter()
-        //.map(|v| v.to_string())
         .collect()
     }
 
@@ -135,7 +133,6 @@ mod tests {
                 },
             ]
             .into_iter()
-            //.map(|v| v.to_string())
             .collect(),
             vec![
                 Version {
@@ -152,7 +149,6 @@ mod tests {
                 },
             ]
             .into_iter()
-            //.map(|v| v.to_string())
             .collect(),
             // Should pick version 3 as it's the lowest of the intersection {3, 4}
             Version {
@@ -169,14 +165,12 @@ mod tests {
                 features: vec![],
             }]
             .into_iter()
-            //.map(|v| v.to_string())
             .collect(),
             vec![Version {
                 identifier: "2".to_string(),
                 features: vec![],
             }]
             .into_iter()
-            //.map(|v| v.to_string())
             .collect(),
         )
     }
