@@ -1,0 +1,12 @@
+name: End to End testing
+on:
+  push:
+    branches:
+      - andy/ci-updates
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      -  uses: actions/checkout@v2
+      -  name: Run docker-compose stack
+         run: docker-compose -f docker-compose.yml up -d
