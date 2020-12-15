@@ -12,6 +12,8 @@ use crate::ics04_channel::packet::Packet;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::{proofs::Proofs, tx_msg::Msg};
 
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
+
 ///
 /// Message definition for the "packet receiving" datagram.
 ///
@@ -59,8 +61,8 @@ impl Msg for MsgRecvPacket {
     }
 
     fn type_url(&self) -> String {
-        "/ibc.core.channel.v1.MsgRecvPacket".to_string()
-    }
+            TYPE_URL.to_string()
+        }
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]

@@ -14,7 +14,7 @@ impl ClientType {
     /// Yields the identifier of this client type as a string
     pub fn as_string(&self) -> &'static str {
         match self {
-            Self::Tendermint => "Tendermint",
+            Self::Tendermint => "07-tendermint",
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock => "mock",
@@ -27,7 +27,7 @@ impl std::str::FromStr for ClientType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "Tendermint" => Ok(Self::Tendermint),
+            "07-tendermint" => Ok(Self::Tendermint),
 
             #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),

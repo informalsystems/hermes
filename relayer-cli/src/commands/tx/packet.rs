@@ -151,8 +151,8 @@ impl Runnable for TxRawPacketAckCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("packet recv, result: ", "{:#?}", receipt),
-            Err(e) => status_info!("packet recv failed, error: ", "{}", e),
+            Ok(receipt) => status_info!("packet ack, result: ", "{:#?}", receipt),
+            Err(e) => status_info!("packet ack failed, error: ", "{}", e),
         }
     }
 }

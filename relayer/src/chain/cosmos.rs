@@ -45,7 +45,7 @@ use ibc::downcast;
 use ibc::events::{IBCEvent, IBCEventType};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
-use ibc::ics04_channel::events::{PacketEnvelope, SendPacket};
+use ibc::ics04_channel::events::{PacketEnvelope, SendPacket, WriteAcknowledgement};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
@@ -684,7 +684,6 @@ fn packet_from_tx_search_response(
             continue;
         }
         let mut envelope = PacketEnvelope {
-            height: r.height,
             packet_src_port: Default::default(),
             packet_src_channel: Default::default(),
             packet_dst_port: Default::default(),
@@ -698,11 +697,6 @@ fn packet_from_tx_search_response(
                 continue;
             }
             for a in e.attributes.iter() {
-                println!(
-                    "tag key {:?} tag value {:?}",
-                    a.key.to_string(),
-                    a.value.to_string()
-                );
                 let key = a.key.to_string();
                 let value = a.value.to_string();
                 match key.as_str() {
@@ -734,11 +728,6 @@ fn packet_from_tx_search_response(
                 IBCEventType::SendPacket => {
                     let mut data = vec![];
                     for a in e.attributes.iter() {
-                        println!(
-                            "tag key {:?} tag value {:?}",
-                            a.key.to_string(),
-                            a.value.to_string()
-                        );
                         let key = a.key.to_string();
                         let value = a.value.to_string();
                         match key.as_str() {
@@ -747,10 +736,31 @@ fn packet_from_tx_search_response(
                         };
                     }
                     return Ok(Some(IBCEvent::SendPacketChannel(SendPacket {
+                        height: r.height,
                         envelope,
                         data,
                     })));
-                }
+                },
+                IBCEventType::WriteAck => {
+                    let mut data = vec![];
+                    let mut ack = vec![];
+
+                    for a in e.attributes.iter() {
+                        let key = a.key.to_string();
+                        let value = a.value.to_string();
+                        match key.as_str() {
+                            "packet_data" => data = Vec::from(value.as_bytes()),
+                            "packet_ack" => ack = Vec::from(value.as_bytes()),
+                            _ => continue,
+                        };
+                    }
+                    return Ok(Some(IBCEvent::WriteAcknowledgementChannel(WriteAcknowledgement {
+                        height: r.height,
+                        envelope,
+                        data,
+                        ack
+                    })));
+                },
                 _ => continue,
             }
         }

@@ -9,6 +9,10 @@ use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
 use crate::{proofs::Proofs, tx_msg::Msg};
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
+use crate::ics02_client::height::Height;
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
 ///
 /// Message definition for packet acknowledgements.
@@ -19,6 +23,25 @@ pub struct MsgAcknowledgement {
     acknowledgement: Vec<u8>,
     proof_acked: Proofs,
     signer: AccountId,
+}
+
+impl MsgAcknowledgement {
+    pub fn new(
+        packet: Packet,
+        acknowledgement: Vec<u8>,
+        proof: CommitmentProofBytes,
+        proof_height: Height,
+        signer: AccountId,
+    ) -> Result<MsgAcknowledgement, Error> {
+
+        Ok(Self {
+            packet,
+            acknowledgement,
+            proof_acked: Proofs::new(proof, None, None, proof_height)
+                .map_err(|e| Kind::InvalidProof.context(e))?,
+            signer,
+        })
+    }
 }
 
 impl Msg for MsgAcknowledgement {
@@ -32,6 +55,10 @@ impl Msg for MsgAcknowledgement {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -80,7 +107,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
             acknowledgement: domain_msg.acknowledgement,
             signer: account_to_string(domain_msg.signer).unwrap(),
             proof_height: Some(domain_msg.proof_acked.height().into()),
-            proof_acked: vec![],
+            proof_acked: domain_msg.proof_acked.object_proof().clone().into(),
         }
     }
 }
