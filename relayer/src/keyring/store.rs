@@ -263,7 +263,7 @@ impl KeyRingOperations for KeyRing {
     fn sign_msg(&self, msg: Vec<u8>) -> Vec<u8> {
         let key = self.get_key().unwrap();
         let private_key_bytes = key.private_key.private_key.to_bytes();
-        let signing_key = SigningKey::new(private_key_bytes.as_slice()).unwrap();
+        let signing_key = SigningKey::from_bytes(private_key_bytes.as_slice()).unwrap();
         let signature: Signature = signing_key.sign(&msg);
         signature.as_ref().to_vec()
     }
