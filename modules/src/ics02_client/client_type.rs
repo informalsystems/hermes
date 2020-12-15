@@ -44,7 +44,7 @@ mod tests {
 
     #[test]
     fn parse_tendermint_client_type() {
-        let client_type = ClientType::from_str("Tendermint");
+        let client_type = ClientType::from_str("07-tendermint");
 
         match client_type {
             Ok(ClientType::Tendermint) => (),

@@ -125,7 +125,7 @@ mod test_util {
         RawMsgAcknowledgement {
             packet: Some(get_dummy_raw_packet(height)),
             acknowledgement: get_dummy_proof(),
-            proof_acked: vec![],
+            proof_acked: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 0,
                 revision_height: height,
@@ -182,6 +182,14 @@ mod test {
                 name: "Missing signer".to_string(),
                 raw: RawMsgAcknowledgement {
                     signer: "".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Empty proof acked".to_string(),
+                raw: RawMsgAcknowledgement {
+                    proof_acked: vec![],
                     ..default_raw_msg
                 },
                 want_pass: false,

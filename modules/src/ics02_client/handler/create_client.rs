@@ -30,6 +30,12 @@ pub fn process(
     })))
 }
 
+/// ## Why are all these tests ignored?
+/// All these tests are ignored as of #451, because the logic inside `process` has been simplified
+/// to the point where there's nothing to test.
+/// TODO: We should consider refactoring the ICS02 handlers
+/// by moving the `next_client_id` method into trait `ClientReader` (make it a deterministic & pure
+/// method call) and thus generate client ids in the `process` call above. Then we re-enable tests.
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
