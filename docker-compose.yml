@@ -4,34 +4,22 @@ services:
 
   ibc0:
     container_name: ibc0
+    image: "informaldev/ibc0:stargate4"
     logging:
       driver: none
     stdin_open: true
     tty: true
-    build:
-      context: .
-      dockerfile: ci/gaia.Dockerfile
-      args:
-        CHAIN: gaia
-        RELEASE: stargate-4
-        NAME: ibc0
     entrypoint: "gaiad start --home=/chain --grpc.address=ibc0:9090  --pruning=nothing"
     networks:
       - relaynet
 
   ibc1:
     container_name: ibc1
+    image: "informaldev/ibc1:stargate4"
     logging:
       driver: none
     stdin_open: true
     tty: true
-    build:
-      context: .
-      dockerfile: ci/gaia.Dockerfile
-      args:
-        CHAIN: gaia
-        RELEASE: stargate-4
-        NAME: ibc1
     entrypoint: "gaiad start --home=/chain --grpc.address=ibc1:9090 --pruning=nothing"
     networks:
       - relaynet
