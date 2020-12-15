@@ -198,6 +198,7 @@ impl Default for ConnectionId {
         "defaultConnection".to_string().parse().unwrap()
     }
 }
+
 /// Equality check against string literal (satisfies &ConnectionId == &str).
 /// ```
 /// use std::str::FromStr;

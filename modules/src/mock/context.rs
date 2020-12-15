@@ -50,11 +50,17 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
+    /// Counter for the client identifiers, necessary to generate ids (see `next_client_id`).
+    client_ids_counter: u32,
+
     /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
 
     /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
+
+    /// Counter for connection identifiers (see `next_connection_id`).
+    connection_ids_counter: u32,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections are
@@ -114,8 +120,10 @@ impl MockContext {
                 })
                 .collect(),
             connections: Default::default(),
+            client_ids_counter: 0,
             clients: Default::default(),
             client_connections: Default::default(),
+            connection_ids_counter: 0
         }
     }
 
@@ -304,7 +312,11 @@ impl ConnectionReader for MockContext {
 
 impl ConnectionKeeper for MockContext {
     fn next_connection_id(&mut self) -> ConnectionId {
-        unimplemented!()
+        let prefix = ConnectionId::default().to_string();
+        let suffix = self.connection_ids_counter;
+        self.connection_ids_counter += 1;
+
+        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
     }
 
     fn store_connection(
@@ -371,7 +383,11 @@ impl ClientKeeper for MockContext {
     }
 
     fn next_client_id(&mut self) -> ClientId {
-        unimplemented!()
+        let prefix = ClientId::default().to_string();
+        let suffix = self.client_ids_counter;
+        self.client_ids_counter += 1;
+
+        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
     }
 
     fn store_client_state(
