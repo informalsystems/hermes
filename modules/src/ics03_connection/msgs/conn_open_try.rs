@@ -65,6 +65,17 @@ impl MsgConnectionOpenTry {
         &self.proofs
     }
 
+    /// Moves the given message into another one, and updates the `previous_connection_id` field.
+    pub fn with_previous_connection_id(
+        self,
+        previous_connection_id: Option<ConnectionId>,
+    ) -> MsgConnectionOpenTry {
+        MsgConnectionOpenTry {
+            previous_connection_id,
+            ..self
+        }
+    }
+
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {

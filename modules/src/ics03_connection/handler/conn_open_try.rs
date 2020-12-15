@@ -183,9 +183,15 @@ mod tests {
                 want_pass: false,
             },
             Test {
+                name: "Good parameters but has previous_connection_id".to_string(),
+                ctx: context.clone().with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
+                want_pass: false,
+            },
+            Test {
                 name: "Good parameters".to_string(),
                 ctx: context.with_client(msg_conn_try.client_id(), Height::new(0, client_consensus_state_height)),
-                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
+                msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.with_previous_connection_id(None))),
                 want_pass: true,
             },
         ]

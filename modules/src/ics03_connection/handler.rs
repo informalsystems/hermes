@@ -38,7 +38,9 @@ impl From<ConnectionEvent> for Event {
                 EventType::Custom("connection_open_try".to_string()),
                 vec![(
                     "connection_id".to_string(),
-                    conn.connection_id.unwrap().to_string(),
+                    // TODO: move connection id decision (`next_connection_id` method) in ClientReader
+                    // to be able to write the connection identifier here, instead of the default.
+                    conn.connection_id.unwrap_or_default().to_string(),
                 )],
             ),
             ConnectionEvent::ConnOpenAck(conn) => Event::new(

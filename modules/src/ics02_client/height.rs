@@ -8,7 +8,7 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
-    /// Previously known as "epoch", and will be renamed to "revision" soon
+    /// Previously known as "epoch"
     pub revision_number: u64,
 
     /// The height of a block
@@ -124,7 +124,7 @@ impl std::fmt::Display for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "epoch: {}, height: {}",
+            "revision: {}, height: {}",
             self.revision_number, self.revision_height
         )
     }
