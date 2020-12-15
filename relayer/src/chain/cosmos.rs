@@ -740,7 +740,7 @@ fn packet_from_tx_search_response(
                         envelope,
                         data,
                     })));
-                },
+                }
                 IBCEventType::WriteAck => {
                     let mut data = vec![];
                     let mut ack = vec![];
@@ -754,14 +754,15 @@ fn packet_from_tx_search_response(
                             _ => continue,
                         };
                     }
-                    return Ok(Some(IBCEvent::WriteAcknowledgementChannel(WriteAcknowledgement {
-                        height: r.height,
-                        envelope,
-                        data,
-                        ack
-                    })));
-                },
-                _ => continue,
+                    return Ok(Some(IBCEvent::WriteAcknowledgementChannel(
+                        WriteAcknowledgement {
+                            height: r.height,
+                            envelope,
+                            data,
+                            ack,
+                        },
+                    )));
+                }
             }
         }
     }

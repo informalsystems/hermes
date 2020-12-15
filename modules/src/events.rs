@@ -84,11 +84,21 @@ impl IBCEvent {
     }
     pub fn set_height(&mut self, height: ICSHeight) {
         match self {
-            IBCEvent::SendPacketChannel(ev) => ev.height = Height::try_from(height.revision_height).unwrap(),
-            IBCEvent::ReceivePacketChannel(ev) => ev.height = Height::try_from(height.revision_height).unwrap(),
-            IBCEvent::WriteAcknowledgementChannel(ev) => ev.height = Height::try_from(height.revision_height).unwrap(),
-            IBCEvent::AcknowledgePacketChannel(ev) => ev.height = Height::try_from(height.revision_height).unwrap(),
-            IBCEvent::TimeoutPacketChannel(ev) => ev.height = Height::try_from(height.revision_height).unwrap(),
+            IBCEvent::SendPacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::ReceivePacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::WriteAcknowledgementChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::AcknowledgePacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::TimeoutPacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
             _ => {
                 unimplemented!()
             }
@@ -242,17 +252,16 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
         "transfer" => {
             object.action = "send_packet".to_string();
             Ok(IBCEvent::from(ChannelEvents::SendPacket::try_from(object)?))
-        },
+        }
         "recv_packet" => {
             object.action = "write_acknowledgement".to_string();
-            Ok(IBCEvent::from(ChannelEvents::WriteAcknowledgement::try_from(
-                object,
-            )?))
-        },
-        "write_acknowledgement" =>
-            Ok(IBCEvent::from(ChannelEvents::WriteAcknowledgement::try_from(
-                object,
-            )?)),
+            Ok(IBCEvent::from(
+                ChannelEvents::WriteAcknowledgement::try_from(object)?,
+            ))
+        }
+        "write_acknowledgement" => Ok(IBCEvent::from(
+            ChannelEvents::WriteAcknowledgement::try_from(object)?,
+        )),
         "acknowledge_packet" => Ok(IBCEvent::from(ChannelEvents::AcknowledgePacket::try_from(
             object,
         )?)),

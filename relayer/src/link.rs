@@ -3,8 +3,9 @@ use thiserror::Error;
 use tracing::{error, info};
 
 use ibc_proto::ibc::core::channel::v1::{
-    MsgAcknowledgement as RawMsgAck, MsgRecvPacket as RawMsgRecvPacket, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    MsgAcknowledgement as RawMsgAck, MsgRecvPacket as RawMsgRecvPacket,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 
 use ibc::{
@@ -100,18 +101,18 @@ impl Link {
                             == send_packet_ev.envelope.packet_src_channel
                         && self.channel.config.b_config.port_id().clone()
                             == send_packet_ev.envelope.packet_src_port
-            },
+            }
             IBCEvent::WriteAcknowledgementChannel(write_ack_ev) => {
                 self.channel.config.a_config.chain_id().clone() == from_chain.id()
                     && self.channel.config.a_config.channel_id().clone()
-                    == write_ack_ev.envelope.packet_src_channel
+                        == write_ack_ev.envelope.packet_src_channel
                     && self.channel.config.a_config.port_id().clone()
-                    == write_ack_ev.envelope.packet_src_port
+                        == write_ack_ev.envelope.packet_src_port
                     || self.channel.config.b_config.chain_id().clone() == from_chain.id()
-                    && self.channel.config.b_config.channel_id().clone()
-                    == write_ack_ev.envelope.packet_src_channel
-                    && self.channel.config.b_config.port_id().clone()
-                    == write_ack_ev.envelope.packet_src_port
+                        && self.channel.config.b_config.channel_id().clone()
+                            == write_ack_ev.envelope.packet_src_channel
+                        && self.channel.config.b_config.port_id().clone()
+                            == write_ack_ev.envelope.packet_src_port
             }
             _ => false,
         }
@@ -190,15 +191,23 @@ fn handle_packet_event(
 ) -> Result<Option<Any>, Error> {
     match event {
         IBCEvent::SendPacketChannel(send_packet_ev) => {
-            info!("received from {:?} send packet event {:#?}", src_chain.id(), send_packet_ev.envelope);
+            info!(
+                "received from {:?} send packet event {:#?}",
+                src_chain.id(),
+                send_packet_ev.envelope
+            );
             let msg = build_packet_recv_msg_from_send_event(dst_chain, src_chain, &send_packet_ev)
                 .unwrap();
             Ok(Some(msg.to_any::<RawMsgRecvPacket>()))
         }
         IBCEvent::WriteAcknowledgementChannel(write_ack_ev) => {
-            info!("received from {:?} write ack event {:#?}", src_chain.id(), write_ack_ev.envelope);
-            let msg = build_packet_ack_msg_from_recv_event(dst_chain, src_chain, &write_ack_ev)
-                .unwrap();
+            info!(
+                "received from {:?} write ack event {:#?}",
+                src_chain.id(),
+                write_ack_ev.envelope
+            );
+            let msg =
+                build_packet_ack_msg_from_recv_event(dst_chain, src_chain, &write_ack_ev).unwrap();
             Ok(Some(msg.to_any::<RawMsgAck>()))
         }
         _ => Ok(None),
@@ -465,13 +474,13 @@ fn build_packet_ack_msg_from_recv_event(
         event_height.increment(),
         signer,
     )
-        .map_err(|e| {
-            Kind::PacketRecv(
-                packet.source_channel,
-                "error while building the recv_packet".to_string(),
-            )
-                .context(e)
-        })?;
+    .map_err(|e| {
+        Kind::PacketRecv(
+            packet.source_channel,
+            "error while building the recv_packet".to_string(),
+        )
+        .context(e)
+    })?;
 
     Ok(msg)
 }

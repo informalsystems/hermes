@@ -177,12 +177,10 @@ pub struct PacketEnvelope {
 
 #[macro_export]
 macro_rules! p_attribute {
-    ($a:ident, $b:literal) => {
-        {
-            let nb = format!("{}.{}", $a.action, $b);
-            $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
-        }
-    };
+    ($a:ident, $b:literal) => {{
+        let nb = format!("{}.{}", $a.action, $b);
+        $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
+    }};
 }
 
 impl TryFrom<RawObject> for PacketEnvelope {
