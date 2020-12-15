@@ -140,7 +140,7 @@ max_subscriptions_per_client = 5
 # WARNING: Using a value larger than 10s will result in increasing the
 # global HTTP write timeout, which applies to all connections and endpoints.
 # See https://github.com/tendermint/tendermint/issues/3435
-timeout_broadcast_tx_commit = "10s"
+timeout_broadcast_tx_commit = "5s"
 
 # Maximum size of request body, in bytes
 max_body_bytes = 1000000
@@ -315,7 +315,7 @@ version = "v0"
 wal_file = "data/cs.wal/wal"
 
 # How long we wait for a proposal block before prevoting nil
-timeout_propose = "3s"
+timeout_propose = "1s"
 # How much timeout_propose increases with each round
 timeout_propose_delta = "500ms"
 # How long we wait after receiving +2/3 prevotes for “anything” (ie. not a single block or nil)
@@ -329,7 +329,7 @@ timeout_precommit_delta = "500ms"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).
-timeout_commit = "5s"
+timeout_commit = "1s"
 
 # How many blocks to look back to check existence of the node's consensus votes before joining consensus
 # When non-zero, the node will panic upon restart

@@ -17,8 +17,7 @@ services:
         NAME: ibc0
     entrypoint: "gaiad start --home=/chain --grpc.address=ibc0:9090  --pruning=nothing"
     networks:
-      relaynet:
-        ipv4_address: 192.168.10.2
+      - relaynet
 
   ibc1:
     container_name: ibc1
@@ -35,8 +34,7 @@ services:
         NAME: ibc1
     entrypoint: "gaiad start --home=/chain --grpc.address=ibc1:9090 --pruning=nothing"
     networks:
-      relaynet:
-        ipv4_address: 192.168.10.3
+      - relaynet
 
   relayer:
     depends_on:
@@ -58,14 +56,8 @@ services:
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
     networks:
-      relaynet:
-        ipv4_address: 192.168.10.4
+      - relaynet
 
 networks:
   relaynet:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        -
-          subnet: 192.168.10.0/16

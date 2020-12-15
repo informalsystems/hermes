@@ -22,8 +22,8 @@ echo "  Chain:" "$CHAIN_B" ["$CHAIN_B_HOME"]
 echo "    creating chain store folder: "["$CHAIN_B_HOME"]
 mkdir -p "$CHAIN_B_HOME"
 
-echo Waiting 20 seconds for chains to generate blocks...
-sleep 20
+echo Waiting 10 seconds for chains to generate blocks...
+sleep 10
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "================================================================================================================="
 echo "                                            CONFIGURATION                                                        "
@@ -153,7 +153,7 @@ rrly -c "$CONFIG_PATH"  tx raw chan-try \
         chan_"$CHAIN_A"_to_"$CHAIN_B"
 
 echo "-----------------------------------------------------------------------------------------------------------------"
-echo "Channel Open Try transaction"
+echo "Channel Open Ack transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
 rrly -c "$CONFIG_PATH" tx raw chan-ack \
         "$CHAIN_A" \
