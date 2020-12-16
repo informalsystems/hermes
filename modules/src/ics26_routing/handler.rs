@@ -101,7 +101,6 @@ where
 }
 
 #[cfg(test)]
-#[allow(unused_imports, unused_variables, dead_code)]
 mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;

@@ -42,6 +42,11 @@ impl Event {
                 .collect(),
         }
     }
+
+    /// Returns a vector containing the values within all attributes of this event
+    pub fn attribute_values(&self) -> Vec<String> {
+        self.attributes.iter().map(|a| a.value.clone()).collect()
+    }
 }
 
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;

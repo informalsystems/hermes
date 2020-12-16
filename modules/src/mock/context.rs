@@ -439,10 +439,20 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<(), ICS18Error> {
-        deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?; // Forward call to ICS26 delivery method
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, ICS18Error> {
+        // Forward call to ICS26 delivery method.
+        let events =
+            deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+
+        // Parse the events into a list of strings.
+        let res: Vec<String> = events
+            .iter()
+            .map(|e| e.attribute_values())
+            .flatten()
+            .collect();
+
         self.advance_host_chain_height(); // Advance chain height
-        Ok(())
+        Ok(res)
     }
 
     fn signer(&self) -> Id {
