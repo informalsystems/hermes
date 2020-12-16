@@ -123,7 +123,7 @@ impl MockContext {
             client_ids_counter: 0,
             clients: Default::default(),
             client_connections: Default::default(),
-            connection_ids_counter: 0
+            connection_ids_counter: 0,
         }
     }
 

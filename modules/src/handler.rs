@@ -10,6 +10,14 @@ impl Attribute {
     pub fn new(key: String, value: String) -> Self {
         Self { key, value }
     }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn key(&self) -> String {
+        self.key.clone()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
