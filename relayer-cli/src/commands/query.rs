@@ -79,6 +79,6 @@ pub enum QueryPacketCmds {
     Ack(packet::QueryPacketAcknowledgmentCmd),
 
     /// The `query unreceived packets` subcommand
-    #[options(help = "query unreceived packets")]
+    #[options(help = "query un-acknowledged packets")]
     UnreceivedAcks(packet::QueryUnreceivedAcknowledgementCmd),
 }

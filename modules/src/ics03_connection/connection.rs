@@ -21,13 +21,29 @@ pub struct ConnectionEnd {
     pub(crate) delay_period: u64,
 }
 
+impl Default for ConnectionEnd {
+    fn default() -> Self {
+        ConnectionEnd {
+            state: State::Uninitialized,
+            client_id: Default::default(),
+            counterparty: Default::default(),
+            versions: vec![],
+            delay_period: 0,
+        }
+    }
+}
+
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+        let state = value.state.try_into()?;
+        if state == State::Uninitialized {
+            return Ok(ConnectionEnd::default());
+        }
         Ok(Self::new(
-            value.state.try_into()?,
+            state,
             value
                 .client_id
                 .parse()
@@ -139,6 +155,16 @@ pub struct Counterparty {
     prefix: CommitmentPrefix,
 }
 
+impl Default for Counterparty {
+    fn default() -> Self {
+        Counterparty {
+            client_id: Default::default(),
+            connection_id: None,
+            prefix: CommitmentPrefix(vec![]),
+        }
+    }
+}
+
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
 // during queries for response validation and to extract the Counterparty structure.
 impl TryFrom<RawCounterparty> for Counterparty {
@@ -213,6 +239,7 @@ impl Counterparty {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum State {
+    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -222,6 +249,7 @@ impl State {
     /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -233,6 +261,7 @@ impl TryFrom<i32> for State {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),

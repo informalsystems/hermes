@@ -182,10 +182,35 @@ pub fn build_create_client_and_send(
     let new_msg = build_create_client(dst_chain.clone(), src_chain)?;
 
     // Parse the client identifier out of the result vector.
-    let mut result = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
-    let client_id_raw = result.pop().ok_or(Kind::EmptyResponseValue)?;
+    let result = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
+    let response: tendermint_rpc::endpoint::broadcast::tx_commit::Response =
+        serde_json::from_str(&result[0]).unwrap();
 
-    ClientId::from_str(client_id_raw.as_str()).map_err(|e| {
+    // TODO - the code below is an example of ID extraction
+    // needs to be generalized for any transaction, extract event similar to the event monitor.
+    if response.check_tx.code.is_err() {
+        return Err(Kind::CreateClient(format!("{}", response.check_tx.log)).into());
+    }
+
+    if response.deliver_tx.code.is_err() {
+        return Err(Kind::CreateClient(format!("{}", response.deliver_tx.log)).into());
+    }
+
+    let client_id_raw = response
+        .deliver_tx
+        .events
+        .iter()
+        .find(|e| e.type_str == "create_client")
+        .ok_or_else(|| Kind::CreateClient("client event not present".to_string()))?
+        .clone()
+        .attributes
+        .iter()
+        .find(|tag| tag.key.to_string() == "client_id")
+        .ok_or_else(|| Kind::CreateClient("client id information not in event".to_string()))?
+        .value
+        .to_string();
+
+    ClientId::from_str(&client_id_raw).map_err(|e| {
         Kind::CreateClient(format!("generated client id {:?}", client_id_raw))
             .context(e)
             .into()

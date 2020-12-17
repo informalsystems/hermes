@@ -35,6 +35,11 @@ pub enum Path {
         channel_id: ChannelId,
         sequence: u64,
     },
+    Receipts {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: u64,
+    },
 }
 
 impl Path {
@@ -106,6 +111,15 @@ impl Display for Path {
             } => write!(
                 f,
                 "acks/ports/{}/channels/{}/sequences/{}",
+                port_id, channel_id, sequence
+            ),
+            Path::Receipts {
+                port_id,
+                channel_id,
+                sequence,
+            } => write!(
+                f,
+                "receipts/ports/{}/channels/{}/sequences/{}",
                 port_id, channel_id, sequence
             ),
         }

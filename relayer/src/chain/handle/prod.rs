@@ -33,6 +33,7 @@ use crate::{
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
+use ibc::ics04_channel::packet::PacketMsgType;
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -278,14 +279,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn proven_packet_commitment(
+    fn build_packet_proofs(
         &self,
+        packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: u64,
         height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenPacketCommitment {
+    ) -> Result<(Vec<u8>, Proofs), Error> {
+        self.send(|reply_to| ChainRequest::BuildPacketProofs {
+            packet_type,
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
@@ -306,22 +309,6 @@ impl ChainHandle for ProdChainHandle {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
-    }
-
-    fn proven_packet_acknowledgment(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: u64,
-        height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenPacketAcknowledgment {
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
-            sequence,
-            height,
-            reply_to,
-        })
     }
 
     fn query_packet_acknowledgements(

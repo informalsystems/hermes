@@ -6,10 +6,8 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics02_client::height::Height;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::{proofs::Proofs, tx_msg::Msg};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
@@ -26,16 +24,15 @@ pub struct MsgRecvPacket {
 
 impl MsgRecvPacket {
     #[allow(dead_code, unreachable_code, unused_variables)]
-    pub fn new(
-        packet: Packet,
-        proof: CommitmentProofBytes,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgRecvPacket, Error> {
+    pub fn new(packet: Packet, proofs: Proofs, signer: AccountId) -> Result<MsgRecvPacket, Error> {
+        println!(
+            "building receive packet for {:?} proof height {:?}",
+            packet.sequence,
+            proofs.height()
+        );
         Ok(Self {
             packet,
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            proofs,
             signer,
         })
     }

@@ -6,10 +6,8 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics02_client::height::Height;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::{proofs::Proofs, tx_msg::Msg};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
@@ -21,7 +19,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 pub struct MsgAcknowledgement {
     packet: Packet,
     acknowledgement: Vec<u8>,
-    proof_acked: Proofs,
+    proofs: Proofs,
     signer: AccountId,
 }
 
@@ -29,15 +27,13 @@ impl MsgAcknowledgement {
     pub fn new(
         packet: Packet,
         acknowledgement: Vec<u8>,
-        proof: CommitmentProofBytes,
-        proof_height: Height,
+        proofs: Proofs,
         signer: AccountId,
     ) -> Result<MsgAcknowledgement, Error> {
         Ok(Self {
             packet,
             acknowledgement,
-            proof_acked: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            proofs,
             signer,
         })
     }
@@ -94,7 +90,7 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
                 .map_err(|e| Kind::InvalidPacket.context(e))?,
             acknowledgement: raw_msg.acknowledgement,
             signer,
-            proof_acked: proofs,
+            proofs,
         })
     }
 }
@@ -105,8 +101,8 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
             acknowledgement: domain_msg.acknowledgement,
             signer: account_to_string(domain_msg.signer).unwrap(),
-            proof_height: Some(domain_msg.proof_acked.height().into()),
-            proof_acked: domain_msg.proof_acked.object_proof().clone().into(),
+            proof_height: Some(domain_msg.proofs.height().into()),
+            proof_acked: domain_msg.proofs.object_proof().clone().into(),
         }
     }
 }

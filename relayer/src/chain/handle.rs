@@ -34,6 +34,7 @@ use crate::{error::Error, event::monitor::EventBatch};
 
 mod prod;
 
+use ibc::ics04_channel::packet::PacketMsgType;
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -168,12 +169,13 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Proofs>,
     },
 
-    ProvenPacketCommitment {
+    BuildPacketProofs {
+        packet_type: PacketMsgType,
         port_id: PortId,
         channel_id: ChannelId,
         sequence: u64,
         height: Height,
-        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
     },
 
     QueryPacketCommitments {
@@ -184,14 +186,6 @@ pub enum ChainRequest {
     QueryUnreceivedPackets {
         request: QueryUnreceivedPacketsRequest,
         reply_to: ReplyTo<Vec<u64>>,
-    },
-
-    ProvenPacketAcknowledgment {
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: u64,
-        height: Height,
-        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
     },
 
     QueryPacketAcknowledgement {
@@ -302,13 +296,14 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         height: Height,
     ) -> Result<Proofs, Error>;
 
-    fn proven_packet_commitment(
+    fn build_packet_proofs(
         &self,
+        packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
         sequence: u64,
         height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error>;
+    ) -> Result<(Vec<u8>, Proofs), Error>;
 
     fn query_packet_commitments(
         &self,
@@ -319,14 +314,6 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error>;
-
-    fn proven_packet_acknowledgment(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: u64,
-        height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error>;
 
     fn query_packet_acknowledgements(
         &self,

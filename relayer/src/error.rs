@@ -103,8 +103,16 @@ pub enum Kind {
     ChanOpenConfirm(ChannelId, String),
 
     /// Packet recv  failure
-    #[error("Failed to build packet recv {0}: {1}")]
-    PacketRecv(ChannelId, String),
+    #[error("Failed to build recv packet {0}: {1}")]
+    RecvPacket(ChannelId, String),
+
+    /// Packet acknowledgement failure
+    #[error("Failed to build acknowledge packet {0}: {1}")]
+    AckPacket(ChannelId, String),
+
+    /// Packet timeout  failure
+    #[error("Failed to build timeout packet {0}: {1}")]
+    TimeoutPacket(ChannelId, String),
 
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]

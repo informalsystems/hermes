@@ -48,6 +48,7 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain, QueryResponse,
 };
+use ibc::ics04_channel::packet::PacketMsgType;
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,
@@ -256,8 +257,8 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
                             self.proven_client_consensus(client_id, consensus_height, height, reply_to)?
                         },
 
-                        Ok(ChainRequest::ProvenPacketCommitment { port_id, channel_id, sequence, height, reply_to }) => {
-                            self.proven_packet_commitment(port_id, channel_id, sequence, height, reply_to)?
+                        Ok(ChainRequest::BuildPacketProofs { packet_type, port_id, channel_id, sequence, height, reply_to }) => {
+                            self.build_packet_proofs(packet_type, port_id, channel_id, sequence, height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketCommitments { request, reply_to }) => {
@@ -266,10 +267,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryUnreceivedPackets { request, reply_to }) => {
                             self.query_unreceived_packets(request, reply_to)?
-                        },
-
-                        Ok(ChainRequest::ProvenPacketAcknowledgment { port_id, channel_id, sequence, height, reply_to }) => {
-                            self.proven_packet_acknowledgment(port_id, channel_id, sequence, height, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketAcknowledgement { request, reply_to }) => {
@@ -627,17 +624,18 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         Ok(())
     }
 
-    fn proven_packet_commitment(
+    fn build_packet_proofs(
         &self,
+        packet_type: PacketMsgType,
         port_id: PortId,
         channel_id: ChannelId,
         sequence: u64,
         height: Height,
-        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
+        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
     ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .proven_packet_commitment(&port_id, &channel_id, sequence, height);
+        let result =
+            self.chain
+                .build_packet_proofs(packet_type, &port_id, &channel_id, sequence, height);
 
         reply_to
             .send(result)
@@ -666,25 +664,6 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_packets(request);
-
-        reply_to
-            .send(result)
-            .map_err(|e| Kind::Channel.context(e))?;
-
-        Ok(())
-    }
-
-    fn proven_packet_acknowledgment(
-        &self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        sequence: u64,
-        height: Height,
-        reply_to: ReplyTo<(Vec<u8>, MerkleProof)>,
-    ) -> Result<(), Error> {
-        let result =
-            self.chain
-                .proven_packet_acknowledgment(&port_id, &channel_id, sequence, height);
 
         reply_to
             .send(result)

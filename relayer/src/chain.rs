@@ -46,6 +46,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+use ibc::ics04_channel::packet::PacketMsgType;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -320,33 +321,6 @@ pub trait Chain: Sized {
         Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
     }
 
-    // TODO - move to cosmos
-    fn proven_packet_commitment(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: u64,
-        height: ICSHeight,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let res = self
-            .query(
-                Path::Commitments {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
-                    sequence,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query.context(e))?;
-
-        Ok((
-            res.value,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
-        ))
-    }
-
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -362,37 +336,61 @@ pub trait Chain: Sized {
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, ICSHeight), Error>;
 
-    // TODO - move to cosmos
-    fn proven_packet_acknowledgment(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        sequence: u64,
-        height: ICSHeight,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let res = self
-            .query(
-                Path::Acks {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
-                    sequence,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query.context(e))?;
-
-        Ok((
-            res.value,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
-        ))
-    }
-
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
+
+    fn build_packet_proofs(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: u64,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, Proofs), Error> {
+        let data: Path;
+        match packet_type {
+            PacketMsgType::Recv => {
+                data = Path::Commitments {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                }
+            }
+            PacketMsgType::Ack => {
+                data = Path::Acks {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                }
+            }
+            PacketMsgType::Timeout => {
+                data = Path::Receipts {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                }
+            }
+        }
+
+        let res = self
+            .query(data, height, true)
+            .map_err(|e| Kind::Query.context(e))?;
+
+        let proofs = Proofs::new(
+            CommitmentProofBytes::from(
+                res.proof
+                    .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+            ),
+            None,
+            None,
+            height.increment(),
+        )
+        .map_err(|_| Kind::MalformedProof)?;
+
+        Ok((res.value, proofs))
+    }
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 }

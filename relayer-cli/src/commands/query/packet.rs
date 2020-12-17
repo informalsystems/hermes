@@ -16,6 +16,7 @@ use relayer::config::{ChainConfig, Config};
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use ibc::ics04_channel::packet::PacketMsgType;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
@@ -149,7 +150,8 @@ impl Runnable for QueryPacketCommitmentCmd {
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
-        let res = chain.proven_packet_commitment(
+        let res = chain.build_packet_proofs(
+            PacketMsgType::Recv,
             &opts.port_id,
             &opts.channel_id,
             sequence,
@@ -409,7 +411,8 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
-        let res = chain.proven_packet_acknowledgment(
+        let res = chain.build_packet_proofs(
+            PacketMsgType::Ack,
             &opts.port_id,
             &opts.channel_id,
             sequence,

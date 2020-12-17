@@ -10,6 +10,8 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::{proofs::Proofs, tx_msg::Msg};
 
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
+
 ///
 /// Message definition for packet timeout domain type.
 ///
@@ -19,6 +21,22 @@ pub struct MsgTimeout {
     next_sequence_recv: Sequence,
     proofs: Proofs,
     signer: AccountId,
+}
+
+impl MsgTimeout {
+    pub fn new(
+        packet: Packet,
+        next_sequence_recv: Sequence,
+        proofs: Proofs,
+        signer: AccountId,
+    ) -> Result<MsgTimeout, Error> {
+        Ok(Self {
+            packet,
+            next_sequence_recv,
+            proofs,
+            signer,
+        })
+    }
 }
 
 impl Msg for MsgTimeout {
@@ -32,6 +50,10 @@ impl Msg for MsgTimeout {
         // Nothing to validate
         // All the validation is performed on creation
         Ok(())
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

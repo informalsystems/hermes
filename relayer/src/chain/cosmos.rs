@@ -794,10 +794,7 @@ async fn abci_query(
         // Fail with response log.
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
-    if response.value.is_empty() {
-        // Fail due to empty response value (nothing to decode).
-        return Err(Kind::EmptyResponseValue.into());
-    }
+
     if prove && response.proof.is_none() {
         // Fail due to empty proof
         return Err(Kind::EmptyResponseProof.into());

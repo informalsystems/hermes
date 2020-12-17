@@ -6,6 +6,14 @@ use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
+/// Enumeration of proof carrying ICS3 message, helper for relayer.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PacketMsgType {
+    Recv,
+    Ack,
+    Timeout,
+}
+
 /// The sequence number of a packet enforces ordering among packets from the same source.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Sequence(u64);
