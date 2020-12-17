@@ -1,9 +1,9 @@
 //! Protocol logic specific to ICS3 messages of type `MsgChannelOpenInit`.
 
 use crate::handler::{HandlerOutput, HandlerResult};
+use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
-use crate::ics04_channel::channel::{ChannelEnd,State};
-use crate::ics04_channel::error::{Error,Kind};
+use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
@@ -14,41 +14,37 @@ pub(crate) fn process(
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
-
-
-
-    let pc_id = (msg.port_id().clone(),msg.channel_id().clone());
+    let pc_id = (msg.port_id().clone(), msg.channel_id().clone());
 
     if ctx.channel_end(&pc_id).is_some() {
         return Err(Kind::ChannelExistsAlready(msg.channel_id().clone()).into());
-    } 
+    }
     //TODO what about the port capabilities  ?
 
-    
-
-    if msg.channel().connection_hops().len() != 1 { 
-        return Err(Kind::InvalidConnectionHopsLength.into()); 
-        }
+    if msg.channel().connection_hops().len() != 1 {
+        return Err(Kind::InvalidConnectionHopsLength.into());
+    }
 
     // An IBC connection running on the local (host) chain should exist.
-    if ctx.connection_state(&msg.channel().connection_hops()[0]).is_none() {
+    if ctx
+        .connection_state(&msg.channel().connection_hops()[0])
+        .is_none()
+    {
         return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
     }
 
-    //TODO Check Version non Empty but not necessary coherent  
-     if msg.channel().version()== "" { 
-        return Err(Kind::InvalidVersion.into()); 
-        }
-
+    //TODO Check Version non Empty but not necessary coherent
+    if msg.channel().version() == "" {
+        return Err(Kind::InvalidVersion.into());
+    }
 
     let new_channel_end = ChannelEnd::new(
         State::Init,
-        *msg.channel().ordering(), 
+        *msg.channel().ordering(),
         msg.channel().counterparty(),
         msg.channel().connection_hops(),
         ctx.get_compatible_versions()[0].clone(),
     );
-    
 
     output.log("success: no channel found");
 
@@ -69,10 +65,9 @@ mod tests {
 
     use crate::handler::EventType;
 
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::connection::ConnectionEnd;
-
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 
     use crate::ics04_channel::channel::{ChannelEnd, State};
 
@@ -83,7 +78,7 @@ mod tests {
     use crate::ics04_channel::msgs::ChannelMsg;
     use crate::mock::context::MockContext;
 
-     #[test]
+    #[test]
     fn chan_open_init_msg_processing() {
         struct Test {
             name: String,
@@ -92,11 +87,10 @@ mod tests {
             want_pass: bool,
         }
 
-         let msg_chan_init =
-             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
+        let msg_chan_init =
+            MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
 
-             
-         let context = MockContext::default();
+        let context = MockContext::default();
 
         let init_chan_end = &ChannelEnd::new(
             State::Init,
@@ -107,21 +101,23 @@ mod tests {
         );
 
         let msg_conn_init =
-        MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
 
         let init_conn_end = &ConnectionEnd::test_channel_new(
             msg_conn_init.client_id().clone(),
             msg_conn_init.counterparty().clone(),
-        ).unwrap();
-    
+        )
+        .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Processing fails because the channel exists in the store already"
                     .to_string(),
-                ctx: context
-                    .clone()
-                    .with_channel(msg_chan_init.port_id().clone(),msg_chan_init.channel_id().clone(), init_chan_end.clone()),
+                ctx: context.clone().with_channel(
+                    msg_chan_init.port_id().clone(),
+                    msg_chan_init.channel_id().clone(),
+                    init_chan_end.clone(),
+                ),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
                 want_pass: false,
             },
@@ -133,7 +129,13 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_connection(MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap().connection_id().clone(), init_conn_end.clone()),
+                ctx: context.with_connection(
+                    MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init())
+                        .unwrap()
+                        .connection_id()
+                        .clone(),
+                    init_conn_end.clone(),
+                ),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
                 want_pass: true,
             },
@@ -179,4 +181,4 @@ mod tests {
             }
         }
     }
- }
+}

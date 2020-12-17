@@ -1,15 +1,13 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
 use crate::handler::{Event, EventType, HandlerOutput};
-use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
- 
 pub mod chan_open_init;
-
 
 #[derive(Clone, Debug)]
 pub enum ChannelEvent {
@@ -51,10 +49,7 @@ impl From<ChannelEvent> for Event {
 
 /// General entry point for processing any type of message related to the ICS4 channel open
 /// handshake protocol.
-pub fn dispatch<Ctx>(
-    ctx: &Ctx,
-    msg: ChannelMsg,
-) -> Result<HandlerOutput<ChannelResult>, Error>
+pub fn dispatch<Ctx>(ctx: &Ctx, msg: ChannelMsg) -> Result<HandlerOutput<ChannelResult>, Error>
 where
     Ctx: ChannelReader,
 {

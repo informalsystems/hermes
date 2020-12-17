@@ -83,7 +83,7 @@ where
                 .with_log(handler_output.log)
                 .with_events(handler_output.events)
                 .with_result(())
-        } 
+        }
 
         ICS4Msg(msg) => {
             let handler_output =
@@ -97,8 +97,7 @@ where
                 .with_log(handler_output.log)
                 .with_events(handler_output.events)
                 .with_result(())
-        }
-        // TODO: add dispatchers for others.
+        } // TODO: add dispatchers for others.
     };
 
     Ok(output)
@@ -107,24 +106,24 @@ where
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-     use std::str::FromStr;
+    use std::str::FromStr;
 
-     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
-     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-     use crate::ics02_client::msgs::ClientMsg;
-     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
-     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-     use crate::ics03_connection::msgs::ConnectionMsg;
-   
+    use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+    use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
+    use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+    use crate::ics02_client::msgs::ClientMsg;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+    use crate::ics03_connection::msgs::ConnectionMsg;
+
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_aux_test_missing_connection;
-    
+
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
-    
+
     use crate::ics24_host::identifier::ClientId;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
@@ -169,8 +168,10 @@ mod tests {
         let msg_chan_init =
             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
 
-        let msg_chan_init2 =
-            MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init_aux_test_missing_connection()).unwrap();
+        let msg_chan_init2 = MsgChannelOpenInit::try_from(
+            get_dummy_raw_msg_chan_open_init_aux_test_missing_connection(),
+        )
+        .unwrap();
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -201,7 +202,7 @@ mod tests {
                 want_pass: false,
             },
             //Test the ICS3 connection functionality.
-            Test { 
+            Test {
                 name: "Connection open init fail due to missing client".to_string(),
                 msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
                     msg_conn_init.clone(),
@@ -230,19 +231,15 @@ mod tests {
                 ))),
                 want_pass: false,
             },
-           // ICS04
+            // ICS04
             Test {
                 name: "Channel open init success".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(
-                    msg_chan_init,
-                )),
+                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
                 want_pass: true,
             },
-            Test { 
+            Test {
                 name: "Channel open init fail due to missing connection".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(
-                    msg_chan_init2,
-                )),
+                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init2)),
                 want_pass: false,
             },
         ]

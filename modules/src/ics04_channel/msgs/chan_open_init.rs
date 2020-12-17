@@ -23,7 +23,6 @@ pub struct MsgChannelOpenInit {
     pub signer: AccountId,
 }
 
-
 impl MsgChannelOpenInit {
     /// Getter: borrow the `connection_id` from this message.
     pub fn channel_id(&self) -> &ChannelId {

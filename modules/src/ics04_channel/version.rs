@@ -124,4 +124,3 @@ pub fn validate_version(raw_version: String) -> Result<String, Error> {
     }
     Ok(raw_version)
 }
-
