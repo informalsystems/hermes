@@ -354,7 +354,10 @@ pub fn build_chan_init_and_send(
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_init(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+
+    Ok(vec![])
 }
 
 fn check_destination_channel_state(
@@ -542,7 +545,10 @@ pub fn build_chan_try_and_send(
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_try(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+
+    Ok(vec![])
 }
 
 pub fn build_chan_ack(
@@ -625,7 +631,10 @@ pub fn build_chan_ack_and_send(
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_ack(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+
+    Ok(vec![])
 }
 
 pub fn build_chan_confirm(
@@ -706,5 +715,8 @@ pub fn build_chan_confirm_and_send(
     opts: &ChannelConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_chan_confirm(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+
+    Ok(vec![])
 }

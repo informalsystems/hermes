@@ -61,6 +61,8 @@ pub enum IBCEvent {
     TimeoutTransfer(TransferEvents::Timeout),
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTransfer(TransferEvents::ChannelClosed),
+
+    Empty(String) // Special event, signifying empty response
 }
 
 impl IBCEvent {

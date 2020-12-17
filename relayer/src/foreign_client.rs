@@ -20,6 +20,7 @@ use crate::chain::cosmos;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
+use ibc::events::IBCEventType;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -53,6 +54,15 @@ impl ForeignClient {
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
     ) -> Result<ForeignClient, ForeignClientError> {
+        // Sanity check
+        if src_chain.id().eq(&dst_chain.id()) {
+            return Err(ForeignClientError::ClientCreate(format!(
+                "the source ({}) and destination ({}) chains must be different",
+                src_chain.id(),
+                dst_chain.id(),
+            )));
+        }
+
         let mut client = ForeignClient {
             id: None,
             dst_chain: dst_chain.clone(),
@@ -188,11 +198,6 @@ pub fn build_create_client_and_send(
     // Parse the client identifier out of the result vector.
     let result = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
 
-    let client_id_raw = cosmos::parse_tx_result(
-        result[0].clone(),
-        ics02_events::CREATE_EVENT_TYPE,
-        ics02_events::CREATE_ID_ATTRIBUTE_KEY,
-    )?;
     ClientId::from_str(&client_id_raw).map_err(|e| {
         Kind::CreateClient(format!(
             "could not parse generated client id {:?}",
@@ -248,7 +253,9 @@ pub fn build_update_client_and_send(
         src_chain.query_latest_height()?,
     )?;
 
-    Ok(dst_chain.send_msgs(new_msgs)?)
+    let _events = dst_chain.send_msgs(new_msgs)?;
+
+    Ok(vec![])
 }
 
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests

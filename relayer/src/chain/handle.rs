@@ -215,7 +215,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error>;
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error>;
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error>;
 
