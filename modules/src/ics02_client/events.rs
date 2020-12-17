@@ -18,6 +18,9 @@ pub const CREATE_ID_ATTRIBUTE_KEY: &str = "client_id";
 /// The content of the `key` field for the attribute containing the client type.
 pub const CREATE_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 
+/// The content of the `key` field for the attribute containing the height.
+pub const CREATE_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
+
 /// NewBlock event signals the committing & execution of a new block.
 // TODO - find a better place for NewBlock
 #[derive(Debug, Deserialize, Serialize, Clone)]

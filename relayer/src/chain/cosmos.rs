@@ -27,7 +27,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 
 use tendermint_light_client::types::LightBlock as TMLightBlock;
-use tendermint_rpc::{Client, HttpClient, Order};
+use tendermint_rpc::{Client, HttpClient, Order, endpoint::broadcast::tx_commit::Response};
 
 use ibc_proto::cosmos::base::v1beta1::Coin;
 
@@ -44,6 +44,8 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc::downcast;
 use ibc::events::{IBCEvent, IBCEventType};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics02_client::events as ClientEvents;
+use ibc::ics02_client::client_type::ClientType;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::ics07_tendermint::client_state::ClientState;
@@ -69,6 +71,7 @@ use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 use ibc::ics04_channel::packet::{Packet, Sequence};
+
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -134,7 +137,7 @@ impl CosmosSDKChain {
         Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         let key = self
             .keybase()
             .get_key()
@@ -223,7 +226,9 @@ impl CosmosSDKChain {
             .block_on(broadcast_tx_commit(self, txraw_buf))?
             .map_err(|e| Kind::Rpc.context(e))?;
 
-        Ok(response)
+        let res = tx_result_to_event(response)?;
+
+        Ok(res)
     }
 
     fn gas(&self) -> u64 {
@@ -322,9 +327,9 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send one or more transactions that include all the specified messages
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         if proto_msgs.is_empty() {
-            return Ok(vec!["No messages to send".to_string()]);
+            return Ok(vec![IBCEvent::Empty("No messages to send".to_string())]);
         }
         let mut res = vec![];
 
@@ -338,17 +343,18 @@ impl Chain for CosmosSDKChain {
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let result = self.send_tx(msg_batch)?;
-                res.append(&mut vec![result]);
+                let mut result = self.send_tx(msg_batch)?;
+                res.append(&mut result);
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
             }
         }
         if !msg_batch.is_empty() {
-            let result = self.send_tx(msg_batch)?;
-            res.append(&mut vec![result]);
+            let mut result = self.send_tx(msg_batch)?;
+            res.append(&mut result);
         }
+
         Ok(res)
     }
 
@@ -840,39 +846,63 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-/// Parse a single `tx_commit::Response` and extracts the relevant value as matched by the input
-/// `event_type` and `attribute_key`.
-pub fn parse_tx_result(
+pub fn tx_result_to_event(
     raw_res: String,
-    event_type: &str,
-    attribute_key: &str,
-) -> Result<String, anomaly::Error<Kind>> {
-    // Verify the return codes from check_tx and deliver_tx
-    let response: tendermint_rpc::endpoint::broadcast::tx_commit::Response =
+) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+    // Decode into the correct type
+    let response: Response =
         serde_json::from_str(raw_res.as_str()).unwrap();
 
-    // Needs to be generalized for any transaction, extract event similar to the event monitor.
+    // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {
-        return Err(Kind::CreateClient(format!("{}", response.check_tx.log)).into());
+        return Ok(vec![IBCEvent::Empty(format!("check_tx reports error: log={:?}", response.check_tx.log))])
     }
-
     if response.deliver_tx.code.is_err() {
-        return Err(Kind::CreateClient(format!("{}", response.deliver_tx.log)).into());
+        return Ok(vec![IBCEvent::Empty(format!("deliver_tx reports error: log={:?}", response.deliver_tx.log))])
     }
 
-    let client_id_raw = response
+    // Attempt to create the `CreateClient` event
+    let ev_attribute_keys = vec![ClientEvents::CREATE_ID_ATTRIBUTE_KEY, ClientEvents::CREATE_TYPE_ATTRIBUTE_KEY, ClientEvents::CREATE_HEIGHT_ATTRIBUTE_KEY];
+    let attribute_values = extract_all_attribute_values(response.clone(), ClientEvents::CREATE_EVENT_TYPE, ev_attribute_keys);
+
+    let event = attribute_values.map(|attributes| {
+        let ics_height = ICSHeight::try_from(attributes.get(2).unwrap()).unwrap();
+
+        ClientEvents::CreateClient {
+            client_id: ClientId::from_str(&attributes.get(0).unwrap()).unwrap(),
+            client_type: ClientType::from_str(&attributes.get(1).unwrap()).unwrap(),
+            height: Height::from(ics_height.revision_height),
+        }
+    }).map(|event| IBCEvent::CreateClient(ClientEvents::CreateClient(event)));
+}
+
+/// Extracts the list of all attribute values, given a list of attribute keys, for a specific event.
+fn extract_all_attribute_values(response: Response, event: &str, attribute_keys: Vec<&str>) -> Option<Vec<String>> {
+    let mut accumulator:Vec<String> = vec![];
+
+    for key in attribute_keys {
+        let res = extract_attribute_value(response.clone(), event, key)?;
+        accumulator.push(res);
+    }
+
+    Some(accumulator)
+}
+
+/// Traverses all the events in the `response`, and extracts a value that matches with the input
+/// parameters `event_type` and `attribute_key`.
+fn extract_attribute_value(
+    tx_response: Response,
+    event_type: &str,
+    attribute_key: &str,
+) -> Option<String> {
+    let value_found = tx_response
         .deliver_tx
         .events
         .iter()
-        .find(|e| e.type_str == event_type)
-        .ok_or_else(|| Kind::CreateClient("requested event type not present".to_string()))?
-        .clone()
-        .attributes
-        .iter()
-        .find(|tag| tag.key.to_string() == attribute_key)
-        .ok_or_else(|| Kind::CreateClient("requested attribute key not in event".to_string()))?
-        .value
-        .to_string();
+        .filter(|&e| e.type_str == event_type)
+        .map(|e|    // For every event, extract the relevant elements
+            e.attributes.iter().filter(|&tag| tag.key.to_string() == attribute_key )
+        ).collect();
 
-    Ok(client_id_raw)
+    Some(value_found)
 }

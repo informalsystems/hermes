@@ -350,7 +350,10 @@ pub fn build_conn_init_and_send(
     opts: &ConnectionConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _e = dst_chain.send_msgs(dst_msgs)?;
+
+    Ok(vec![])
 }
 
 fn check_destination_connection_state(
@@ -539,7 +542,9 @@ pub fn build_conn_try_and_send(
     opts: &ConnectionConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+    Ok(vec![])
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -631,7 +636,9 @@ pub fn build_conn_ack_and_send(
     opts: &ConnectionConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+    Ok(vec![])
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -708,5 +715,7 @@ pub fn build_conn_confirm_and_send(
     opts: &ConnectionConfig,
 ) -> Result<Vec<String>, Error> {
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
-    Ok(dst_chain.send_msgs(dst_msgs)?)
+
+    let _events = dst_chain.send_msgs(dst_msgs)?;
+    Ok(vec![])
 }
