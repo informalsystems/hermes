@@ -3,8 +3,13 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use crate::ics24_host::identifier::{ConnectionId,ChannelId};
+
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
+    #[error("not implemented yet")]
+    Niy,
+
     #[error("channel state unknown")]
     UnknownState,
 
@@ -44,8 +49,17 @@ pub enum Kind {
     #[error("missing counterparty")]
     MissingCounterparty,
 
+    #[error("no commong version")]
+    NoCommonVersion,
+
     #[error("missing channel end")]
     MissingChannel,
+
+    #[error("channel exists (was initialized) already: {0}")]
+    ChannelExistsAlready(ChannelId),
+
+    #[error("given connection {0} for channel innexitant ")]
+    MissingConnection(ConnectionId),
 }
 
 impl Kind {

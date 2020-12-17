@@ -1,4 +1,5 @@
 use crate::ics04_channel::error::{self, Error, Kind};
+
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
@@ -279,8 +280,12 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
+   
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
+    // use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+    // use 
+    //crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
@@ -296,11 +301,22 @@ pub mod test_util {
             state: 1,
             ordering: 0,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            connection_hops: vec!["srcconnection".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
+        }
+    }
+
+    pub fn get_dummy_raw_channel_end_aux_test_missing_connection() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 0,
+            counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec!["noconnection".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
         }
     }
 }
+//MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap().connection_id()
 
 #[cfg(test)]
 mod tests {

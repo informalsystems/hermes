@@ -12,14 +12,19 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHead
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
+
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
+
+use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::error::Error as ICS4Error;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId, ChannelId, PortId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
 use crate::ics26_routing::msgs::ICS26Envelope;
@@ -55,9 +60,23 @@ pub struct MockContext {
 
     /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
+
+    /// All the channels in the store. TODO Make new key PortId X ChanneId
+    channels: HashMap<(PortId,ChannelId),  ChannelEnd>,
+
+    //Tracks the sequence number for the next packet to be sent.
+    next_sequence_send: HashMap<(PortId,ChannelId), u64>,
+
+    //Tracks the sequence number for the next packet to be received.
+    next_sequence_recv: HashMap<(PortId,ChannelId), u64>,
+
+    //Tracks the sequence number for the next packet to be acknowledged.
+    next_sequence_ack: HashMap<(PortId,ChannelId), u64>,
+
+    //TODO: Relate channels with connections? 
 }
 
-/// Returns a MockContext with bare minimum initialization: no clients, no connections are
+/// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
 /// present, and the chain has Height(5). This should be used sparingly, mostly for testing the
 /// creation of new domain objects.
 impl Default for MockContext {
@@ -116,6 +135,10 @@ impl MockContext {
             connections: Default::default(),
             clients: Default::default(),
             client_connections: Default::default(),
+            channels: Default::default(),
+            next_sequence_send: Default::default(),
+            next_sequence_recv: Default::default(),
+            next_sequence_ack: Default::default(),
         }
     }
 
@@ -185,6 +208,22 @@ impl MockContext {
         connections.insert(connection_id, connection_end);
         Self {
             connections,
+            ..self
+        }
+    }
+
+
+    /// Associates a channel to this context.
+    pub fn with_channel(
+        self,
+        port_id: PortId,
+        channel_id: ChannelId,
+        channel_end: ChannelEnd,
+    ) -> Self {
+        let mut channels = self.channels.clone();
+        channels.insert((port_id,channel_id), channel_end);
+        Self {
+            channels,
             ..self
         }
     }
@@ -263,6 +302,61 @@ impl MockContext {
 }
 
 impl ICS26Context for MockContext {}
+
+impl ChannelReader for MockContext {
+    fn channel_end(&self, pcid: &(PortId,ChannelId)) -> Option<ChannelEnd> {
+    self.channels.get(pcid).cloned()
+    }
+
+    fn connection_state(&self, cid: &ConnectionId) -> Option<ConnectionEnd>{
+        self.connections.get(cid).cloned()
+    }
+
+}
+
+impl ChannelKeeper for MockContext {
+    fn store_channel(
+        &mut self,
+        port_channel_id: &(PortId,ChannelId),
+        channel_end: &ChannelEnd,
+    ) -> Result<(), ICS4Error> {
+        self.channels
+            .insert(port_channel_id.clone(), channel_end.clone());
+        Ok(())
+    }
+    fn store_nextsequence_send(
+        &mut self,
+        port_channel_id: &(PortId,ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_send
+            .insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+    fn store_nextsequence_recv(
+        &mut self,
+        port_channel_id: &(PortId,ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_recv
+            .insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+    fn store_nextsequence_ack(
+        &mut self,
+        port_channel_id: &(PortId,ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_ack
+            .insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+
+
+}
 
 impl ConnectionReader for MockContext {
     fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {

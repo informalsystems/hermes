@@ -23,6 +23,29 @@ pub struct MsgChannelOpenInit {
     pub signer: AccountId,
 }
 
+
+impl MsgChannelOpenInit {
+    /// Getter: borrow the `connection_id` from this message.
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    /// Getter: borrow the `client_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+
+    /// Getter: borrow the `counterparty` from this message.
+    pub fn channel(&self) -> &ChannelEnd {
+        &self.channel
+    }
+
+    // /// Setter for `connection_id`. Amenable to chaining, since it consumes the input message.
+    // pub fn with_connection_id(self, connection_hops: Vec<ConnectionId>) -> Self {
+    //     MsgChannelOpenInit { channel.connection_hops, ..self }
+    // }
+}
+
 impl Msg for MsgChannelOpenInit {
     type ValidationError = Error;
 
@@ -83,6 +106,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_aux_test_missing_connection;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
@@ -91,6 +115,15 @@ pub mod test_util {
             port_id: "port".to_string(),
             channel_id: "testchannel".to_string(),
             channel: Some(get_dummy_raw_channel_end()),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+
+    pub fn get_dummy_raw_msg_chan_open_init_aux_test_missing_connection() -> RawMsgChannelOpenInit {
+        RawMsgChannelOpenInit {
+            port_id: "port".to_string(),
+            channel_id: "testchannel".to_string(),
+            channel: Some(get_dummy_raw_channel_end_aux_test_missing_connection()),
             signer: get_dummy_bech32_account(),
         }
     }

@@ -8,6 +8,7 @@ use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::validate_versions;
+use crate::ics03_connection::version::default_version_string;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -51,6 +52,7 @@ impl From<ConnectionEnd> for RawConnectionEnd {
     }
 }
 
+
 impl ConnectionEnd {
     pub fn new(
         state: State,
@@ -65,6 +67,21 @@ impl ConnectionEnd {
             versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
         })
     }
+
+    pub fn test_channel_new(
+        client_id: ClientId,
+        counterparty: Counterparty,
+    ) -> Result<Self, Error> {
+        
+        ConnectionEnd::new(
+            State::Init,
+            client_id,
+            counterparty,
+            vec![default_version_string()],
+        )
+    }
+
+
 
     /// Getter for the state of this connection end.
     pub fn state(&self) -> &State {
