@@ -17,7 +17,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
-    packet: Packet,
+    pub packet: Packet,
     next_sequence_recv: Sequence,
     proofs: Proofs,
     signer: AccountId,

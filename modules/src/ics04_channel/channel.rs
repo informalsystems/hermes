@@ -8,6 +8,7 @@ use tendermint_proto::Protobuf;
 
 use crate::events::IBCEventType;
 use crate::ics02_client::height::Height;
+use crate::ics04_channel::packet::Sequence;
 use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -303,9 +304,9 @@ impl State {
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: IBCEventType,
-    pub channel_id: String,
-    pub port_id: String,
-    pub sequences: Vec<u64>,
+    pub channel_id: ChannelId,
+    pub port_id: PortId,
+    pub sequences: Vec<Sequence>,
     pub height: Height,
 }
 

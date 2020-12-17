@@ -45,7 +45,7 @@ use ibc::downcast;
 use ibc::events::{IBCEvent, IBCEventType};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
-use ibc::ics04_channel::events::{PacketEnvelope, SendPacket, WriteAcknowledgement};
+use ibc::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
@@ -68,6 +68,7 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
+use ibc::ics04_channel::packet::{Packet, Sequence};
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -646,7 +647,7 @@ impl Chain for CosmosSDKChain {
                 .unwrap()
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, seq, &response)?
+            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -654,14 +655,14 @@ impl Chain for CosmosSDKChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Query, Error> {
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
     Ok(tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
-        request.channel_id.clone(),
+        request.channel_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_src_port", request.event_id.as_str()),
-        request.port_id.clone(),
+        request.port_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
@@ -675,7 +676,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Quer
 // committed in one Tx. In this case the response includes the events for 3 and 4.
 fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
-    seq: &u64,
+    seq: Sequence,
     response: &tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Option<IBCEvent>, Error> {
     for r in response.txs.iter() {
@@ -683,15 +684,7 @@ fn packet_from_tx_search_response(
         if height.value() > request.height.revision_height {
             continue;
         }
-        let mut envelope = PacketEnvelope {
-            packet_src_port: Default::default(),
-            packet_src_channel: Default::default(),
-            packet_dst_port: Default::default(),
-            packet_dst_channel: Default::default(),
-            packet_sequence: 0,
-            packet_timeout_height: Default::default(),
-            packet_timeout_stamp: 0, // todo - decoding
-        };
+        let mut packet = Packet::default();
         for e in r.clone().tx_result.events.iter() {
             if e.type_str != request.event_id.as_str() {
                 continue;
@@ -700,14 +693,14 @@ fn packet_from_tx_search_response(
                 let key = a.key.to_string();
                 let value = a.value.to_string();
                 match key.as_str() {
-                    "packet_src_port" => envelope.packet_src_port = value.parse().unwrap(),
-                    "packet_src_channel" => envelope.packet_src_channel = value.parse().unwrap(),
-                    "packet_dst_port" => envelope.packet_dst_port = value.parse().unwrap(),
-                    "packet_dst_channel" => envelope.packet_dst_channel = value.parse().unwrap(),
-                    "packet_sequence" => envelope.packet_sequence = value.parse::<u64>().unwrap(),
+                    "packet_src_port" => packet.source_port = value.parse().unwrap(),
+                    "packet_src_channel" => packet.source_channel = value.parse().unwrap(),
+                    "packet_dst_port" => packet.destination_port = value.parse().unwrap(),
+                    "packet_dst_channel" => packet.destination_channel = value.parse().unwrap(),
+                    "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap().into(),
                     "packet_timeout_height" => {
                         let to: Vec<&str> = value.split('-').collect();
-                        envelope.packet_timeout_height = ibc_proto::ibc::core::client::v1::Height {
+                        packet.timeout_height = ibc_proto::ibc::core::client::v1::Height {
                             revision_number: to[0].parse::<u64>().unwrap(),
                             revision_height: to[1].parse::<u64>().unwrap(),
                         }
@@ -718,38 +711,35 @@ fn packet_from_tx_search_response(
                 };
             }
 
-            if envelope.packet_src_port.as_str() != request.port_id.as_str()
-                || envelope.packet_src_channel.as_str() != request.channel_id.as_str()
-                || envelope.packet_sequence != *seq
+            if packet.source_port != request.port_id
+                || packet.source_channel != request.channel_id
+                || packet.sequence != seq
             {
                 continue;
             }
             match request.event_id {
                 IBCEventType::SendPacket => {
-                    let mut data = vec![];
                     for a in e.attributes.iter() {
                         let key = a.key.to_string();
                         let value = a.value.to_string();
                         match key.as_str() {
-                            "packet_data" => data = Vec::from(value.as_bytes()),
+                            "packet_data" => packet.data = Vec::from(value.as_bytes()),
                             _ => continue,
                         };
                     }
                     return Ok(Some(IBCEvent::SendPacketChannel(SendPacket {
                         height: r.height,
-                        envelope,
-                        data,
+                        packet,
                     })));
                 }
                 IBCEventType::WriteAck => {
-                    let mut data = vec![];
                     let mut ack = vec![];
 
                     for a in e.attributes.iter() {
                         let key = a.key.to_string();
                         let value = a.value.to_string();
                         match key.as_str() {
-                            "packet_data" => data = Vec::from(value.as_bytes()),
+                            "packet_data" => packet.data = Vec::from(value.as_bytes()),
                             "packet_ack" => ack = Vec::from(value.as_bytes()),
                             _ => continue,
                         };
@@ -757,8 +747,7 @@ fn packet_from_tx_search_response(
                     return Ok(Some(IBCEvent::WriteAcknowledgementChannel(
                         WriteAcknowledgement {
                             height: r.height,
-                            envelope,
-                            data,
+                            packet,
                             ack,
                         },
                     )));

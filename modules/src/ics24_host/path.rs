@@ -1,3 +1,4 @@
+use crate::ics04_channel::packet::Sequence;
 /// Path-space as listed in ICS-024
 /// https://github.com/cosmos/ics/tree/master/spec/ics-024-host-requirements#path-space
 /// Some of these are implemented in other ICSs, but ICS-024 has a nice summary table.
@@ -28,17 +29,17 @@ pub enum Path {
     Commitments {
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
     },
     Acks {
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
     },
     Receipts {
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
     },
 }
 

@@ -1,7 +1,7 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
-use crate::ics02_client::height::Height;
+use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
@@ -164,17 +164,6 @@ impl From<CloseConfirm> for IBCEvent {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct PacketEnvelope {
-    pub packet_src_port: PortId,
-    pub packet_src_channel: ChannelId,
-    pub packet_dst_port: PortId,
-    pub packet_dst_channel: ChannelId,
-    pub packet_sequence: u64,
-    pub packet_timeout_height: Height,
-    pub packet_timeout_stamp: u64,
-}
-
 #[macro_export]
 macro_rules! p_attribute {
     ($a:ident, $b:literal) => {{
@@ -183,18 +172,20 @@ macro_rules! p_attribute {
     }};
 }
 
-impl TryFrom<RawObject> for PacketEnvelope {
+impl TryFrom<RawObject> for Packet {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height_str: String = p_attribute!(obj, "packet_timeout_height");
-        Ok(PacketEnvelope {
-            packet_src_port: p_attribute!(obj, "packet_src_port"),
-            packet_src_channel: p_attribute!(obj, "packet_src_channel"),
-            packet_dst_port: p_attribute!(obj, "packet_dst_port"),
-            packet_dst_channel: p_attribute!(obj, "packet_dst_channel"),
-            packet_sequence: p_attribute!(obj, "packet_sequence"),
-            packet_timeout_height: height_str.try_into()?,
-            packet_timeout_stamp: p_attribute!(obj, "packet_timeout_timestamp"),
+        let sequence: u64 = p_attribute!(obj, "packet_sequence");
+        Ok(Packet {
+            sequence: sequence.into(),
+            source_port: p_attribute!(obj, "packet_src_port"),
+            source_channel: p_attribute!(obj, "packet_src_channel"),
+            destination_port: p_attribute!(obj, "packet_dst_port"),
+            destination_channel: p_attribute!(obj, "packet_dst_channel"),
+            data: vec![],
+            timeout_height: height_str.try_into()?,
+            timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
         })
     }
 }
@@ -202,19 +193,17 @@ impl TryFrom<RawObject> for PacketEnvelope {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SendPacket {
     pub height: block::Height,
-    pub envelope: PacketEnvelope,
-    pub data: Vec<u8>,
+    pub packet: Packet,
 }
 
 impl TryFrom<RawObject> for SendPacket {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
-        Ok(SendPacket {
-            height: obj.height,
-            envelope: PacketEnvelope::try_from(obj)?,
-            data: Vec::from(data_str.as_str().as_bytes()),
-        })
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
+        Ok(SendPacket { height, packet })
     }
 }
 
@@ -224,22 +213,26 @@ impl From<SendPacket> for IBCEvent {
     }
 }
 
+impl std::fmt::Display for SendPacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?} {} {}", self.height, "send_packet", self.packet)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReceivePacket {
     pub height: block::Height,
-    pub envelope: PacketEnvelope,
-    pub data: Vec<u8>,
+    pub packet: Packet,
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
-        Ok(ReceivePacket {
-            height: obj.height,
-            envelope: PacketEnvelope::try_from(obj)?,
-            data: Vec::from(data_str.as_str().as_bytes()),
-        })
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
+        Ok(ReceivePacket { height, packet })
     }
 }
 
@@ -249,24 +242,30 @@ impl From<ReceivePacket> for IBCEvent {
     }
 }
 
+impl std::fmt::Display for ReceivePacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?} {} {}", self.height, "receive_packet", self.packet)
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct WriteAcknowledgement {
     pub height: block::Height,
-    pub envelope: PacketEnvelope,
-    pub data: Vec<u8>,
+    pub packet: Packet,
     pub ack: Vec<u8>,
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
         let ack_str: String = p_attribute!(obj, "packet_ack");
-
+        let mut packet = Packet::try_from(obj)?;
+        packet.data = Vec::from(data_str.as_str().as_bytes());
         Ok(WriteAcknowledgement {
-            height: obj.height,
-            envelope: PacketEnvelope::try_from(obj)?,
-            data: Vec::from(data_str.as_str().as_bytes()),
+            height,
+            packet,
             ack: Vec::from(ack_str.as_str().as_bytes()),
         })
     }
@@ -278,19 +277,28 @@ impl From<WriteAcknowledgement> for IBCEvent {
     }
 }
 
+impl std::fmt::Display for WriteAcknowledgement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{:?} {} {}",
+            self.height, "write_acknowledgment", self.packet
+        )
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AcknowledgePacket {
     pub height: block::Height,
-    pub envelope: PacketEnvelope,
+    pub packet: Packet,
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(AcknowledgePacket {
-            height: obj.height,
-            envelope: PacketEnvelope::try_from(obj)?,
-        })
+        let height = obj.height;
+        let packet = Packet::try_from(obj)?;
+        Ok(AcknowledgePacket { height, packet })
     }
 }
 
@@ -300,10 +308,20 @@ impl From<AcknowledgePacket> for IBCEvent {
     }
 }
 
+impl std::fmt::Display for AcknowledgePacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{} {} {}",
+            self.height, "acknowledge_packet", self.packet
+        )
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TimeoutPacket {
     pub height: block::Height,
-    pub envelope: PacketEnvelope,
+    pub packet: Packet,
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
@@ -311,7 +329,7 @@ impl TryFrom<RawObject> for TimeoutPacket {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,
-            envelope: PacketEnvelope::try_from(obj)?,
+            packet: Packet::try_from(obj)?,
         })
     }
 }
@@ -319,5 +337,11 @@ impl TryFrom<RawObject> for TimeoutPacket {
 impl From<TimeoutPacket> for IBCEvent {
     fn from(v: TimeoutPacket) -> Self {
         IBCEvent::TimeoutPacketChannel(v)
+    }
+}
+
+impl std::fmt::Display for TimeoutPacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{} {} {}", self.height, "timeout", self.packet)
     }
 }

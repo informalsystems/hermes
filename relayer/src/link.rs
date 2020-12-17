@@ -28,7 +28,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionError;
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -94,26 +94,26 @@ impl Link {
             IBCEvent::SendPacketChannel(send_packet_ev) => {
                 self.channel.config.a_config.chain_id().clone() == from_chain.id()
                     && self.channel.config.a_config.channel_id().clone()
-                        == send_packet_ev.envelope.packet_src_channel
+                        == send_packet_ev.packet.source_channel
                     && self.channel.config.a_config.port_id().clone()
-                        == send_packet_ev.envelope.packet_src_port
+                        == send_packet_ev.packet.source_port
                     || self.channel.config.b_config.chain_id().clone() == from_chain.id()
                         && self.channel.config.b_config.channel_id().clone()
-                            == send_packet_ev.envelope.packet_src_channel
+                            == send_packet_ev.packet.source_channel
                         && self.channel.config.b_config.port_id().clone()
-                            == send_packet_ev.envelope.packet_src_port
+                            == send_packet_ev.packet.source_port
             }
             IBCEvent::WriteAcknowledgementChannel(write_ack_ev) => {
                 self.channel.config.a_config.chain_id().clone() == from_chain.id()
                     && self.channel.config.a_config.channel_id().clone()
-                        == write_ack_ev.envelope.packet_src_channel
+                        == write_ack_ev.packet.source_channel
                     && self.channel.config.a_config.port_id().clone()
-                        == write_ack_ev.envelope.packet_src_port
+                        == write_ack_ev.packet.source_port
                     || self.channel.config.b_config.chain_id().clone() == from_chain.id()
                         && self.channel.config.b_config.channel_id().clone()
-                            == write_ack_ev.envelope.packet_src_channel
+                            == write_ack_ev.packet.source_channel
                         && self.channel.config.b_config.port_id().clone()
-                            == write_ack_ev.envelope.packet_src_port
+                            == write_ack_ev.packet.source_port
             }
             _ => false,
         }
@@ -195,11 +195,7 @@ fn handle_packet_event(
 ) -> Result<(Option<Any>, Option<Any>), Error> {
     match event {
         IBCEvent::SendPacketChannel(send_packet_ev) => {
-            info!(
-                "received from {:?} send packet event {:#?}",
-                src_chain.id(),
-                send_packet_ev.envelope
-            );
+            info!("received from {} event {}", src_chain.id(), send_packet_ev);
             Ok(build_msg_from_send_packet_event(
                 dst_chain,
                 dst_height,
@@ -208,11 +204,7 @@ fn handle_packet_event(
             )?)
         }
         IBCEvent::WriteAcknowledgementChannel(write_ack_ev) => {
-            info!(
-                "received from {:?} write ack event {:#?}",
-                src_chain.id(),
-                write_ack_ev.envelope
-            );
+            info!("received from {} event {}", src_chain.id(), write_ack_ev);
             Ok((
                 Some(build_packet_ack_msg_from_recv_event(
                     dst_chain,
@@ -251,7 +243,7 @@ fn build_recv_packet(
             PacketMsgType::Recv,
             &packet.source_port,
             &packet.source_channel,
-            u64::from(packet.sequence),
+            packet.sequence,
             height,
         )
         .map_err(|e| Kind::MalformedProof.context(e))?;
@@ -263,6 +255,8 @@ fn build_recv_packet(
         )
         .context(e)
     })?;
+
+    info!("built recv_packet msg {}", msg.packet);
 
     Ok(msg.to_any::<RawMsgRecvPacket>())
 }
@@ -283,7 +277,7 @@ fn build_timeout_packet(
             PacketMsgType::Timeout,
             &packet.source_port,
             &packet.source_channel,
-            u64::from(packet.sequence),
+            packet.sequence,
             height,
         )
         .map_err(|e| Kind::MalformedProof.context(e))?;
@@ -296,6 +290,8 @@ fn build_timeout_packet(
         .context(e)
     })?;
 
+    info!("built timeout msg {}", msg.packet);
+
     Ok(msg.to_any::<RawMsgTimeout>())
 }
 
@@ -305,16 +301,7 @@ fn build_msg_from_send_packet_event(
     src_chain: Box<dyn ChainHandle>,
     event: &SendPacket,
 ) -> Result<(Option<Any>, Option<Any>), Error> {
-    let packet = Packet {
-        sequence: event.envelope.clone().packet_sequence.into(),
-        source_port: event.envelope.clone().packet_src_port,
-        source_channel: event.envelope.clone().packet_src_channel,
-        destination_port: event.envelope.clone().packet_dst_port,
-        destination_channel: event.envelope.clone().packet_dst_channel,
-        timeout_height: event.envelope.clone().packet_timeout_height,
-        timeout_timestamp: event.envelope.clone().packet_timeout_stamp,
-        data: event.clone().data,
-    };
+    let packet = event.packet.clone();
 
     // TODO - change event types to return ICS height
     let event_height = Height::new(
@@ -357,7 +344,7 @@ fn build_packet_recv_msgs(
     src_height: Height,
     src_channel_id: &ChannelId,
     src_port: &PortId,
-    sequences: &[u64],
+    sequences: Vec<Sequence>,
 ) -> Result<(Vec<Any>, Vec<Any>), Error> {
     if sequences.is_empty() {
         return Ok((vec![], vec![]));
@@ -369,9 +356,9 @@ fn build_packet_recv_msgs(
 
     let mut events = src_chain.query_txs(QueryPacketEventDataRequest {
         event_id: IBCEventType::SendPacket,
-        port_id: src_port.to_string(),
-        channel_id: src_channel_id.to_string(),
-        sequences: Vec::from(sequences),
+        port_id: src_port.clone(),
+        channel_id: src_channel_id.clone(),
+        sequences,
         height: src_height,
     })?;
 
@@ -380,7 +367,7 @@ fn build_packet_recv_msgs(
         let send_event = downcast!(event => IBCEvent::SendPacketChannel)
             .ok_or_else(|| Kind::Query.context("unexpected query tx response"))?;
 
-        packet_sequences.append(&mut vec![send_event.envelope.packet_sequence]);
+        packet_sequences.append(&mut vec![send_event.packet.sequence]);
     }
     info!("received from query_txs {:?}", packet_sequences);
 
@@ -403,7 +390,7 @@ fn target_height_and_sequences_of_recv_packets(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &PacketOptions,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let src_channel = src_chain
         .query_channel(&opts.src_port_id, &opts.src_channel_id, Height::default())
         .map_err(|e| {
@@ -477,7 +464,10 @@ fn target_height_and_sequences_of_recv_packets(
         packets_to_send
     );
 
-    Ok((packets_to_send, query_height))
+    Ok((
+        packets_to_send.into_iter().map(From::from).collect(),
+        query_height,
+    ))
 }
 
 pub fn build_and_send_recv_packet_messages(
@@ -500,7 +490,7 @@ pub fn build_and_send_recv_packet_messages(
         src_height,
         &opts.src_channel_id,
         &opts.src_port_id,
-        &sequences,
+        sequences,
     )?;
 
     let mut result = vec![];
@@ -533,16 +523,7 @@ fn build_packet_ack_msg_from_recv_event(
     src_chain: Box<dyn ChainHandle>,
     event: &WriteAcknowledgement,
 ) -> Result<Any, Error> {
-    let packet = Packet {
-        sequence: event.envelope.clone().packet_sequence.into(),
-        source_port: event.envelope.clone().packet_src_port,
-        source_channel: event.envelope.clone().packet_src_channel,
-        destination_port: event.envelope.clone().packet_dst_port,
-        destination_channel: event.envelope.clone().packet_dst_channel,
-        timeout_height: event.envelope.clone().packet_timeout_height,
-        timeout_timestamp: event.envelope.clone().packet_timeout_stamp,
-        data: event.clone().data,
-    };
+    let packet = event.packet.clone();
 
     // TODO - change event types to return ICS height
     let event_height = Height::new(
@@ -558,9 +539,9 @@ fn build_packet_ack_msg_from_recv_event(
     let (_, proofs) = src_chain
         .build_packet_proofs(
             PacketMsgType::Ack,
-            &event.envelope.packet_src_port,
-            &event.envelope.packet_src_channel,
-            event.envelope.packet_sequence,
+            &packet.source_port,
+            &packet.source_channel,
+            packet.sequence,
             event_height,
         )
         .map_err(|e| Kind::MalformedProof.context(e))?;
@@ -575,6 +556,8 @@ fn build_packet_ack_msg_from_recv_event(
         },
     )?;
 
+    info!("built acknowledgment msg {}", msg.packet);
+
     Ok(msg.to_any::<RawMsgAck>())
 }
 
@@ -584,7 +567,7 @@ fn build_packet_ack_msgs(
     src_channel_id: &ChannelId,
     src_port: &PortId,
     src_height: Height,
-    sequences: &[u64],
+    sequences: &[Sequence],
 ) -> Result<Vec<Any>, Error> {
     if sequences.is_empty() {
         return Ok(vec![]);
@@ -596,8 +579,8 @@ fn build_packet_ack_msgs(
 
     let mut events = src_chain.query_txs(QueryPacketEventDataRequest {
         event_id: IBCEventType::WriteAck,
-        port_id: src_port.to_string(),
-        channel_id: src_channel_id.to_string(),
+        port_id: src_port.clone(),
+        channel_id: src_channel_id.clone(),
         sequences: Vec::from(sequences),
         height: query_height,
     })?;
@@ -607,7 +590,7 @@ fn build_packet_ack_msgs(
         let write_ack_event = downcast!(event => IBCEvent::WriteAcknowledgementChannel)
             .ok_or_else(|| Kind::Query.context("unexpected query tx response"))?;
 
-        packet_sequences.append(&mut vec![write_ack_event.envelope.packet_sequence]);
+        packet_sequences.append(&mut vec![write_ack_event.packet.sequence]);
     }
     info!("received from query_txs {:?}", packet_sequences);
 
@@ -630,7 +613,7 @@ fn target_height_and_sequences_of_ack_packets(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &PacketOptions,
-) -> Result<(Vec<u64>, Height), Error> {
+) -> Result<(Vec<Sequence>, Height), Error> {
     let src_channel = src_chain
         .query_channel(&opts.src_port_id, &opts.src_channel_id, Height::default())
         .map_err(|e| {
@@ -704,7 +687,10 @@ fn target_height_and_sequences_of_ack_packets(
         packets_to_send
     );
 
-    Ok((packets_to_send, query_height))
+    Ok((
+        packets_to_send.into_iter().map(From::from).collect(),
+        query_height,
+    ))
 }
 
 pub fn build_and_send_ack_packet_messages(
@@ -731,7 +717,7 @@ pub fn build_and_send_ack_packet_messages(
         &opts.src_channel_id,
         &opts.src_port_id,
         height,
-        &sequences,
+        sequences.as_slice(),
     )?;
 
     msgs.append(&mut packet_msgs);

@@ -17,7 +17,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgAcknowledgement {
-    packet: Packet,
+    pub packet: Packet,
     acknowledgement: Vec<u8>,
     proofs: Proofs,
     signer: AccountId,

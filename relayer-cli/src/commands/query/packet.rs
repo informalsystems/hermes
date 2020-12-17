@@ -16,7 +16,7 @@ use relayer::config::{ChainConfig, Config};
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
@@ -115,7 +115,7 @@ impl QueryPacketCommitmentCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions, u64), String> {
+    ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -128,7 +128,7 @@ impl QueryPacketCommitmentCmd {
             height: self.height.unwrap_or(0_u64),
         };
 
-        Ok((dest_chain_config.clone(), opts, self.sequence))
+        Ok((dest_chain_config.clone(), opts, self.sequence.into()))
     }
 }
 
@@ -376,7 +376,7 @@ impl QueryPacketAcknowledgmentCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<(ChainConfig, QueryPacketOptions, u64), String> {
+    ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
             .chains
             .iter()
@@ -389,7 +389,7 @@ impl QueryPacketAcknowledgmentCmd {
             height: self.height.unwrap_or(0_u64),
         };
 
-        Ok((dest_chain_config.clone(), opts, self.sequence))
+        Ok((dest_chain_config.clone(), opts, self.sequence.into()))
     }
 }
 

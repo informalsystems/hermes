@@ -46,7 +46,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -346,7 +346,7 @@ pub trait Chain: Sized {
         packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         let data: Path;

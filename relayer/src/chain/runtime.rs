@@ -48,7 +48,7 @@ use super::{
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain, QueryResponse,
 };
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 pub struct Threads {
     pub light_client: Option<thread::JoinHandle<()>>,
@@ -629,7 +629,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         packet_type: PacketMsgType,
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: Height,
         reply_to: ReplyTo<(Vec<u8>, Proofs)>,
     ) -> Result<(), Error> {

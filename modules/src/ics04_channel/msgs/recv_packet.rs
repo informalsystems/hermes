@@ -17,7 +17,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
-    packet: Packet,
+    pub packet: Packet,
     proofs: Proofs,
     signer: AccountId,
 }
@@ -25,11 +25,6 @@ pub struct MsgRecvPacket {
 impl MsgRecvPacket {
     #[allow(dead_code, unreachable_code, unused_variables)]
     pub fn new(packet: Packet, proofs: Proofs, signer: AccountId) -> Result<MsgRecvPacket, Error> {
-        println!(
-            "building receive packet for {:?} proof height {:?}",
-            packet.sequence,
-            proofs.height()
-        );
         Ok(Self {
             packet,
             proofs,

@@ -33,7 +33,7 @@ use crate::{
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -98,10 +98,6 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
-    //     self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
-    // }
-
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
         self.send(|reply_to| ChainRequest::GetMinimalSet { from, to, reply_to })
     }
@@ -121,17 +117,6 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
-    //     self.send(|reply_to| HandleInput::Submit {
-    //         transaction,
-    //         reply_to,
-    //     })
-    // }
-
-    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
-    //     self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
-    // }
-
     fn query_latest_height(&self) -> Result<Height, Error> {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
@@ -147,13 +132,6 @@ impl ChainHandle for ProdChainHandle {
             reply_to,
         })
     }
-
-    // fn query_channel(
-    //     &self,
-    //     port_id: &PortId,
-    //     channel_id: &ChannelId,
-    //     height: ICSHeight,
-    // ) -> Result<ChannelEnd, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })
@@ -284,7 +262,7 @@ impl ChainHandle for ProdChainHandle {
         packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: Height,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {

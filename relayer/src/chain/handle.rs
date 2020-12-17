@@ -34,7 +34,7 @@ use crate::{error::Error, event::monitor::EventBatch};
 
 mod prod;
 
-use ibc::ics04_channel::packet::PacketMsgType;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 pub use prod::ProdChainHandle;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -173,7 +173,7 @@ pub enum ChainRequest {
         packet_type: PacketMsgType,
         port_id: PortId,
         channel_id: ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: Height,
         reply_to: ReplyTo<(Vec<u8>, Proofs)>,
     },
@@ -301,7 +301,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: Height,
     ) -> Result<(Vec<u8>, Proofs), Error>;
 
