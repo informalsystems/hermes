@@ -16,11 +16,11 @@ pub struct TxRawPacketRecvCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
+
+    #[options(free, help = "identifier of the destination client")]
+    dest_client_id: ClientId,
 
     #[options(free, help = "identifier of the source port")]
     src_port_id: PortId,
@@ -89,11 +89,11 @@ pub struct TxRawPacketAckCmd {
     #[options(free, help = "identifier of the destination chain")]
     dest_chain_id: String,
 
-    #[options(free, help = "identifier of the destination client")]
-    dest_client_id: ClientId,
-
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
+
+    #[options(free, help = "identifier of the destination client")]
+    dest_client_id: ClientId,
 
     #[options(free, help = "identifier of the source port")]
     src_port_id: PortId,
