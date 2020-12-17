@@ -17,12 +17,6 @@ pub struct TxCreateClientCmd {
 
     #[options(free, help = "identifier of the source chain")]
     src_chain_id: String,
-
-    #[options(
-        free,
-        help = "identifier of the client to be created on destination chain"
-    )]
-    dst_client_id: ClientId,
 }
 
 impl Runnable for TxCreateClientCmd {
@@ -38,7 +32,7 @@ impl Runnable for TxCreateClientCmd {
 
         status_info!(
             "Message CreateClient",
-            "id: TBD, for source chain: {:?}, on destination chain: {:?}",
+            "for source chain: {:?}, on destination chain: {:?}",
             src_chain_config.id,
             dst_chain_config.id
         );
