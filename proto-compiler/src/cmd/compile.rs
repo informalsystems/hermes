@@ -87,6 +87,7 @@ impl CompileCmd {
             .build_server(false)
             .format(false)
             .out_dir(out_dir)
+            .extern_path(".tendermint", "::tendermint_proto")
             .compile(&protos, &includes).unwrap();
     }
 

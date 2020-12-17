@@ -5,7 +5,7 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct HistoricalInfo {
     #[prost(message, optional, tag="1")]
-    pub header: ::std::option::Option<tendermint_proto::types::Header>,
+    pub header: ::std::option::Option<::tendermint_proto::types::Header>,
     #[prost(message, repeated, tag="2")]
     pub valset: ::std::vec::Vec<Validator>,
 }

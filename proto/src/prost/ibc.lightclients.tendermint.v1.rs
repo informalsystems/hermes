@@ -80,13 +80,13 @@ pub struct Misbehaviour {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
     #[prost(message, optional, tag="1")]
-    pub signed_header: ::std::option::Option<tendermint_proto::types::SignedHeader>,
+    pub signed_header: ::std::option::Option<::tendermint_proto::types::SignedHeader>,
     #[prost(message, optional, tag="2")]
-    pub validator_set: ::std::option::Option<tendermint_proto::types::ValidatorSet>,
+    pub validator_set: ::std::option::Option<::tendermint_proto::types::ValidatorSet>,
     #[prost(message, optional, tag="3")]
     pub trusted_height: ::std::option::Option<super::super::super::core::client::v1::Height>,
     #[prost(message, optional, tag="4")]
-    pub trusted_validators: ::std::option::Option<tendermint_proto::types::ValidatorSet>,
+    pub trusted_validators: ::std::option::Option<::tendermint_proto::types::ValidatorSet>,
 }
 /// Fraction defines the protobuf message type for tmmath.Fraction that only supports positive values.
 #[derive(Clone, PartialEq, ::prost::Message)]
