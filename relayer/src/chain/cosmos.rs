@@ -850,3 +850,40 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
 
     Ok(base_account)
 }
+
+/// Parse a single `tx_commit::Response` and extracts the relevant value as matched by the input
+/// `event_type` and `attribute_key`.
+pub fn parse_tx_result(
+    raw_res: String,
+    event_type: &str,
+    attribute_key: &str,
+) -> Result<String, anomaly::Error<Kind>> {
+    // Verify the return codes from check_tx and deliver_tx
+    let response: tendermint_rpc::endpoint::broadcast::tx_commit::Response =
+        serde_json::from_str(raw_res.as_str()).unwrap();
+
+    // Needs to be generalized for any transaction, extract event similar to the event monitor.
+    if response.check_tx.code.is_err() {
+        return Err(Kind::CreateClient(format!("{}", response.check_tx.log)).into());
+    }
+
+    if response.deliver_tx.code.is_err() {
+        return Err(Kind::CreateClient(format!("{}", response.deliver_tx.log)).into());
+    }
+
+    let client_id_raw = response
+        .deliver_tx
+        .events
+        .iter()
+        .find(|e| e.type_str == event_type)
+        .ok_or_else(|| Kind::CreateClient("requested event type not present".to_string()))?
+        .clone()
+        .attributes
+        .iter()
+        .find(|tag| tag.key.to_string() == attribute_key)
+        .ok_or_else(|| Kind::CreateClient("requested attribute key not in event".to_string()))?
+        .value
+        .to_string();
+
+    Ok(client_id_raw)
+}
