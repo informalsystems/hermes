@@ -110,7 +110,7 @@ pub trait Chain: Sized {
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error>;
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error>;
 
     fn get_signer(&mut self) -> Result<AccountId, Error>;
 

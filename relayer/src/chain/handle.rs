@@ -66,7 +66,7 @@ pub enum ChainRequest {
 
     SendMsgs {
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<String>>,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
     },
 
     GetMinimalSet {

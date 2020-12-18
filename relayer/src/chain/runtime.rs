@@ -332,7 +332,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     fn send_msgs(
         &mut self,
         proto_msgs: Vec<prost_types::Any>,
-        reply_to: ReplyTo<Vec<String>>,
+        reply_to: ReplyTo<Vec<IBCEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_msgs(proto_msgs);
 

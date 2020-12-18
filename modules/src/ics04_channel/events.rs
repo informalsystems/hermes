@@ -8,6 +8,12 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
+pub const SEND_PACKET: &str = "send_packet";
+pub const RECV_PACKET: &str = "recv_packet";
+pub const WRITE_ACK: &str = "write_acknowledgement";
+pub const ACK_PACKET: &str = "acknowledge_packet";
+pub const TIMEOUT: &str = "timeout_packet";
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenInit {
     pub height: block::Height,
@@ -215,7 +221,7 @@ impl From<SendPacket> for IBCEvent {
 
 impl std::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?} {} {}", self.height, "send_packet", self.packet)
+        write!(f, "{:?} {} {}", self.height, SEND_PACKET, self.packet)
     }
 }
 
@@ -244,7 +250,7 @@ impl From<ReceivePacket> for IBCEvent {
 
 impl std::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{:?} {} {}", self.height, "receive_packet", self.packet)
+        write!(f, "{:?} {} {}", self.height, RECV_PACKET, self.packet)
     }
 }
 
@@ -279,11 +285,7 @@ impl From<WriteAcknowledgement> for IBCEvent {
 
 impl std::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{:?} {} {}",
-            self.height, "write_acknowledgment", self.packet
-        )
+        write!(f, "{:?} {} {}", self.height, WRITE_ACK, self.packet)
     }
 }
 
@@ -310,11 +312,7 @@ impl From<AcknowledgePacket> for IBCEvent {
 
 impl std::fmt::Display for AcknowledgePacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{} {} {}",
-            self.height, "acknowledge_packet", self.packet
-        )
+        write!(f, "{} {} {}", self.height, ACK_PACKET, self.packet)
     }
 }
 
@@ -342,6 +340,6 @@ impl From<TimeoutPacket> for IBCEvent {
 
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{} {} {}", self.height, "timeout", self.packet)
+        write!(f, "{} {} {}", self.height, TIMEOUT, self.packet)
     }
 }

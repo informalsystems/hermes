@@ -27,7 +27,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 
 use tendermint_light_client::types::LightBlock as TMLightBlock;
-use tendermint_rpc::{Client, HttpClient, Order, endpoint::broadcast::tx_commit::Response};
+use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 
 use ibc_proto::cosmos::base::v1beta1::Coin;
 
@@ -44,8 +44,6 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc::downcast;
 use ibc::events::{IBCEvent, IBCEventType};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::events as ClientEvents;
-use ibc::ics02_client::client_type::ClientType;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::ics07_tendermint::client_state::ClientState;
@@ -71,7 +69,6 @@ use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
 use ibc::ics04_channel::packet::{Packet, Sequence};
-
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -758,6 +755,7 @@ fn packet_from_tx_search_response(
                         },
                     )));
                 }
+                _ => {}
             }
         }
     }
@@ -846,63 +844,29 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(
-    raw_res: String,
-) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
-    // Decode into the correct type
-    let response: Response =
-        serde_json::from_str(raw_res.as_str()).unwrap();
+pub fn tx_result_to_event(raw_res: String) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+    let mut result = vec![];
+
+    let response: Response = serde_json::from_str(raw_res.as_str()).unwrap();
 
     // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {
-        return Ok(vec![IBCEvent::Empty(format!("check_tx reports error: log={:?}", response.check_tx.log))])
+        return Ok(vec![IBCEvent::Empty(format!(
+            "check_tx reports error: log={:?}",
+            response.check_tx.log
+        ))]);
     }
     if response.deliver_tx.code.is_err() {
-        return Ok(vec![IBCEvent::Empty(format!("deliver_tx reports error: log={:?}", response.deliver_tx.log))])
+        return Ok(vec![IBCEvent::Empty(format!(
+            "deliver_tx reports error: log={:?}",
+            response.deliver_tx.log
+        ))]);
     }
 
-    // Attempt to create the `CreateClient` event
-    let ev_attribute_keys = vec![ClientEvents::CREATE_ID_ATTRIBUTE_KEY, ClientEvents::CREATE_TYPE_ATTRIBUTE_KEY, ClientEvents::CREATE_HEIGHT_ATTRIBUTE_KEY];
-    let attribute_values = extract_all_attribute_values(response.clone(), ClientEvents::CREATE_EVENT_TYPE, ev_attribute_keys);
-
-    let event = attribute_values.map(|attributes| {
-        let ics_height = ICSHeight::try_from(attributes.get(2).unwrap()).unwrap();
-
-        ClientEvents::CreateClient {
-            client_id: ClientId::from_str(&attributes.get(0).unwrap()).unwrap(),
-            client_type: ClientType::from_str(&attributes.get(1).unwrap()).unwrap(),
-            height: Height::from(ics_height.revision_height),
+    for event in response.deliver_tx.events {
+        if let Some(ibc_ev) = ibc::events::from_tx_response_event(event) {
+            result.append(&mut vec![ibc_ev])
         }
-    }).map(|event| IBCEvent::CreateClient(ClientEvents::CreateClient(event)));
-}
-
-/// Extracts the list of all attribute values, given a list of attribute keys, for a specific event.
-fn extract_all_attribute_values(response: Response, event: &str, attribute_keys: Vec<&str>) -> Option<Vec<String>> {
-    let mut accumulator:Vec<String> = vec![];
-
-    for key in attribute_keys {
-        let res = extract_attribute_value(response.clone(), event, key)?;
-        accumulator.push(res);
     }
-
-    Some(accumulator)
-}
-
-/// Traverses all the events in the `response`, and extracts a value that matches with the input
-/// parameters `event_type` and `attribute_key`.
-fn extract_attribute_value(
-    tx_response: Response,
-    event_type: &str,
-    attribute_key: &str,
-) -> Option<String> {
-    let value_found = tx_response
-        .deliver_tx
-        .events
-        .iter()
-        .filter(|&e| e.type_str == event_type)
-        .map(|e|    // For every event, extract the relevant elements
-            e.attributes.iter().filter(|&tag| tag.key.to_string() == attribute_key )
-        ).collect();
-
-    Some(value_found)
+    Ok(result)
 }

@@ -91,7 +91,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error> {
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error> {
         self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,

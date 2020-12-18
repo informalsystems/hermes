@@ -4,6 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
 
 use crate::error::{Error, Kind};
+use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
@@ -73,12 +74,12 @@ impl Runnable for TxRawPacketRecvCmd {
         let (dst_chain, _) =
             ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
 
-        let res: Result<Vec<String>, Error> =
+        let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_recv_packet_messages(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("packet recv, result: ", "{:#?}", receipt),
+            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", ev),
             Err(e) => status_info!("packet recv failed, error: ", "{}", e),
         }
     }
@@ -146,12 +147,12 @@ impl Runnable for TxRawPacketAckCmd {
         let (dst_chain, _) =
             ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
 
-        let res: Result<Vec<String>, Error> =
+        let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_ack_packet_messages(dst_chain, src_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_info!("packet ack, result: ", "{:#?}", receipt),
+            Ok(ev) => status_info!("packet ack, result: ", "{:#?}", ev),
             Err(e) => status_info!("packet ack failed, error: ", "{}", e),
         }
     }

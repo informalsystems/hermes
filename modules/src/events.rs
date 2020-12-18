@@ -13,11 +13,13 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 
+use tendermint::abci::Event;
 use tracing::warn;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEventType {
+    CreateClient,
     SendPacket,
     WriteAck,
 }
@@ -25,6 +27,7 @@ pub enum IBCEventType {
 impl IBCEventType {
     pub fn as_str(&self) -> &'static str {
         match *self {
+            IBCEventType::CreateClient => "create_client",
             IBCEventType::SendPacket => "send_packet",
             IBCEventType::WriteAck => "write_acknowledgement",
         }
@@ -62,7 +65,17 @@ pub enum IBCEvent {
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTransfer(TransferEvents::ChannelClosed),
 
-    Empty(String) // Special event, signifying empty response
+    Empty(String), // Special event, signifying empty response
+}
+
+// This is tendermint specific
+pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
+    let res = ClientEvents::try_from_tx(event);
+    if res.is_some() {
+        return res;
+    }
+    // TODO - continue to try for conn and chan events
+    None
 }
 
 impl IBCEvent {
@@ -72,7 +85,7 @@ impl IBCEvent {
     pub fn height(&self) -> Height {
         match self {
             IBCEvent::NewBlock(bl) => bl.height,
-            IBCEvent::UpdateClient(uc) => uc.height,
+            IBCEvent::UpdateClient(uc) => *uc.height(),
             IBCEvent::SendPacketChannel(ev) => ev.height,
             IBCEvent::ReceivePacketChannel(ev) => ev.height,
             IBCEvent::WriteAcknowledgementChannel(ev) => ev.height,

@@ -474,11 +474,11 @@ pub fn build_and_send_recv_packet_messages(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &PacketOptions,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<IBCEvent>, Error> {
     let (sequences, src_height) =
         target_height_and_sequences_of_recv_packets(dst_chain.clone(), src_chain.clone(), opts)?;
     if sequences.is_empty() {
-        return Ok(vec!["No sent packets on source chain".to_string()]);
+        return Ok(vec![]);
     }
 
     let dst_height = dst_chain.query_latest_height()?;
@@ -697,11 +697,11 @@ pub fn build_and_send_ack_packet_messages(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &PacketOptions,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<IBCEvent>, Error> {
     let (sequences, height) =
         target_height_and_sequences_of_ack_packets(dst_chain.clone(), src_chain.clone(), opts)?;
     if sequences.is_empty() {
-        return Ok(vec!["No sent packets on source chain".to_string()]);
+        return Ok(vec![]);
     }
 
     let mut msgs = build_update_client(

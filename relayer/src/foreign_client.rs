@@ -1,9 +1,7 @@
 use prost_types::Any;
-use std::str::FromStr;
 use thiserror::Error;
 use tracing::info;
 
-use ibc::ics02_client::events as ics02_events;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -15,12 +13,9 @@ use ibc::Height;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
-// todo: replace chain-specific parsing
-use crate::chain::cosmos;
-
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
-use ibc::events::IBCEventType;
+use ibc::events::IBCEvent;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -198,14 +193,11 @@ pub fn build_create_client_and_send(
     // Parse the client identifier out of the result vector.
     let result = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
 
-    ClientId::from_str(&client_id_raw).map_err(|e| {
-        Kind::CreateClient(format!(
-            "could not parse generated client id {:?}",
-            client_id_raw
-        ))
-        .context(e)
-        .into()
-    })
+    if let IBCEvent::CreateClient(ev) = &result[0] {
+        Ok(ev.client_id().clone())
+    } else {
+        Err(Kind::CreateClient("cannot extract client_id from result".to_string()).into())
+    }
 }
 
 /// Lower-level interface to create the message for updating a client to height `target_height`.
