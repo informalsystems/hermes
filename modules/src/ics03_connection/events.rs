@@ -17,7 +17,7 @@ const ACK_EVENT_TYPE: &str = "connection_open_ack";
 const CONFIRM_EVENT_TYPE: &str = "connection_open_confirm";
 
 /// The content of the `key` field for the attribute containing the connection identifier.
-pub const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
+const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
 
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
@@ -45,6 +45,9 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
 
     match event.type_str.as_str() {
         INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(attr))),
+        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(attr))),
+        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(attr))),
+        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(attr))),
         _ => None,
     }
 }

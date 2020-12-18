@@ -352,17 +352,20 @@ pub fn build_conn_init_and_send(
 ) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
 
-    let e = dst_chain.send_msgs(dst_msgs)?;
+    let events = dst_chain.send_msgs(dst_msgs)?;
 
     // Find the relevant event for connection init
-    if let Some(open_init_ev) = e
+    events
         .iter()
         .find(|&event| matches!(event, IBCEvent::OpenInitConnection(_)))
-    {
-        Ok(open_init_ev.clone())
-    } else {
-        Err(Kind::CreateClient("no conn init event was in the response".to_string()).into())
-    }
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ConnOpenInit(
+                opts.dst().connection_id().clone(),
+                "no conn init event was in the response".to_string(),
+            )
+            .into()
+        })
 }
 
 fn check_destination_connection_state(
@@ -552,8 +555,20 @@ pub fn build_conn_try_and_send(
 ) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(IBCEvent::Empty("aa".to_string()))
+    let events = dst_chain.send_msgs(dst_msgs)?;
+
+    // Find the relevant event for connection try transaction
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenTryConnection(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ConnOpenTry(
+                opts.dst().connection_id().clone(),
+                "no conn try event was in the response".to_string(),
+            )
+            .into()
+        })
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -646,8 +661,20 @@ pub fn build_conn_ack_and_send(
 ) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(IBCEvent::Empty("aa".to_string()))
+    let events = dst_chain.send_msgs(dst_msgs)?;
+
+    // Find the relevant event for connection ack
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenAckConnection(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ConnOpenAck(
+                opts.dst().connection_id().clone(),
+                "no conn ack event was in the response".to_string(),
+            )
+            .into()
+        })
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -725,6 +752,18 @@ pub fn build_conn_confirm_and_send(
 ) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(IBCEvent::Empty("aa".to_string()))
+    let events = dst_chain.send_msgs(dst_msgs)?;
+
+    // Find the relevant event for connection confirm
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenConfirmConnection(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ConnOpenConfirm(
+                opts.dst().connection_id().clone(),
+                "no conn confirm event was in the response".to_string(),
+            )
+            .into()
+        })
 }
