@@ -75,10 +75,12 @@ pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
     if let Some(client_res) = ClientEvents::try_from_tx(event.clone()) {
         return Some(client_res);
     // Look for connection event...
-    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event) {
+    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event.clone()) {
         return Some(conn_res);
+    } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
+        return Some(chan_res);
     }
-    // TODO - continue to try for conn and chan events
+
     None
 }
 

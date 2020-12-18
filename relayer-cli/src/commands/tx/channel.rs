@@ -3,6 +3,7 @@ use crate::prelude::*;
 use abscissa_core::{Command, Options, Runnable};
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::IBCEvent;
 
 use crate::error::{Error, Kind};
 use relayer::channel::{
@@ -92,7 +93,7 @@ macro_rules! chan_open_cmd {
                 let (dst_chain, _) =
                     ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
 
-                let res: Result<Vec<String>, Error> =
+                let res: Result<IBCEvent, Error> =
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {

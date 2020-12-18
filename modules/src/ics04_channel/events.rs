@@ -7,6 +7,8 @@ use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 pub const SEND_PACKET: &str = "send_packet";
 pub const RECV_PACKET: &str = "recv_packet";
@@ -14,24 +16,106 @@ pub const WRITE_ACK: &str = "write_acknowledgement";
 pub const ACK_PACKET: &str = "acknowledge_packet";
 pub const TIMEOUT: &str = "timeout_packet";
 
+/// The content of the `key` field for the attribute containing the connection identifier.
+const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
+
+/// The content of the `key` field for the attribute containing the port identifier.
+const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
+
+/// The content of the `type` field for the event that a chain produces upon executing a channel handshake transaction.
+const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
+const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
+const OPEN_ACK_EVENT_TYPE: &str = "channel_open_ack";
+const OPEN_CONFIRM_EVENT_TYPE: &str = "channel_open_confirm";
+const CLOSE_INIT_EVENT_TYPE: &str = "channel_close_init";
+const CLOSE_CONFIRM_EVENT_TYPE: &str = "channel_close_confirm";
+
+/// A list of all the event `type`s that this module is capable of parsing
+fn event_types() -> HashSet<String> {
+    HashSet::from_iter(
+        vec![
+            OPEN_INIT_EVENT_TYPE.to_string(),
+            OPEN_TRY_EVENT_TYPE.to_string(),
+            OPEN_ACK_EVENT_TYPE.to_string(),
+            OPEN_CONFIRM_EVENT_TYPE.to_string(),
+            CLOSE_INIT_EVENT_TYPE.to_string(),
+            CLOSE_CONFIRM_EVENT_TYPE.to_string(),
+        ]
+            .iter()
+            .cloned(),
+    )
+}
+
+pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
+    event_types().get(&event.type_str)?; // Quit fast if the event type is irrelevant
+    let mut attr = Attributes::default();
+
+
+    for tag in event.attributes {
+        match tag.key.as_ref() {
+            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = tag.value.to_string().parse().unwrap(),
+            PORT_ID_ATTRIBUTE_KEY => attr.port_id = tag.value.to_string().parse().unwrap(),
+            _ => {}
+        }
+    }
+
+    match event.type_str.as_str() {
+        OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(attr))),
+        OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(attr))),
+        OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(attr))),
+        OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(attr))),
+        CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(attr))),
+        CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(attr))),
+        _ => None,
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenInit {
+pub struct Attributes {
     pub height: block::Height,
     pub port_id: PortId,
-    pub connection_id: ConnectionId,
     pub channel_id: ChannelId,
+}
+
+impl Default for Attributes {
+    fn default() -> Self {
+        Attributes {
+            height: Default::default(),
+            port_id: Default::default(),
+            channel_id: Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OpenInit {
+    pub common_attributes: Attributes,
+    pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: ChannelId,
+}
+
+impl From<Attributes> for OpenInit {
+    fn from(attrs: Attributes) -> Self {
+        OpenInit {
+            common_attributes: attrs,
+            connection_id: Default::default(),
+            counterparty_port_id: Default::default(),
+            counterparty_channel_id: Default::default()
+        }
+    }
 }
 
 impl TryFrom<RawObject> for OpenInit {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_init.port_id"),
+            common_attributes: Attributes {
+                height: obj.height,
+                port_id: attribute!(obj, "channel_open_init.port_id"),
+                channel_id: attribute!(obj, "channel_open_init.channel_id"),
+            },
             connection_id: attribute!(obj, "channel_open_init.connection_id"),
-            channel_id: attribute!(obj, "channel_open_init.channel_id"),
             counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
             counterparty_channel_id: attribute!(obj, "channel_open_init.counterparty_channel_id"),
         })
@@ -46,22 +130,33 @@ impl From<OpenInit> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenTry {
-    pub height: block::Height,
-    pub port_id: PortId,
+    pub common_attributes: Attributes,
     pub connection_id: ConnectionId,
-    pub channel_id: ChannelId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: ChannelId,
+}
+
+impl From<Attributes> for OpenTry {
+    fn from(attrs: Attributes) -> Self {
+        OpenTry {
+            common_attributes: attrs,
+            connection_id: Default::default(),
+            counterparty_port_id: Default::default(),
+            counterparty_channel_id: Default::default()
+        }
+    }
 }
 
 impl TryFrom<RawObject> for OpenTry {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry {
-            height: obj.height,
-            port_id: attribute!(obj, "channel_open_try.port_id"),
+            common_attributes: Attributes {
+                height: obj.height,
+                port_id: attribute!(obj, "channel_open_try.port_id"),
+                channel_id: attribute!(obj, "channel_open_try.channel_id"),
+            },
             connection_id: attribute!(obj, "channel_open_try.connection_id"),
-            channel_id: attribute!(obj, "channel_open_try.channel_id"),
             counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
             counterparty_channel_id: attribute!(obj, "channel_open_try.counterparty_channel_id"),
         })
@@ -75,20 +170,23 @@ impl From<OpenTry> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenAck {
-    pub height: block::Height,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
+pub struct OpenAck(Attributes);
+
+impl From<Attributes> for OpenAck {
+    fn from(attrs: Attributes) -> Self {
+        OpenAck(attrs)
+    }
 }
+
 
 impl TryFrom<RawObject> for OpenAck {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenAck {
+        Ok(OpenAck (Attributes{
             height: obj.height,
             port_id: attribute!(obj, "channel_open_ack.port_id"),
             channel_id: attribute!(obj, "channel_open_ack.channel_id"),
-        })
+        }))
     }
 }
 
@@ -99,20 +197,22 @@ impl From<OpenAck> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenConfirm {
-    pub height: block::Height,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
+pub struct OpenConfirm(Attributes);
+
+impl From<Attributes> for OpenConfirm {
+    fn from(attrs: Attributes) -> Self {
+        OpenConfirm(attrs)
+    }
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenConfirm {
+        Ok(OpenConfirm(Attributes{
             height: obj.height,
             port_id: attribute!(obj, "channel_open_confirm.port_id"),
             channel_id: attribute!(obj, "channel_open_confirm.channel_id"),
-        })
+        }))
     }
 }
 
@@ -123,20 +223,22 @@ impl From<OpenConfirm> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct CloseInit {
-    pub height: block::Height,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
+pub struct CloseInit(Attributes);
+
+impl From<Attributes> for CloseInit {
+    fn from(attrs: Attributes) -> Self {
+        CloseInit(attrs)
+    }
 }
 
 impl TryFrom<RawObject> for CloseInit {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseInit {
+        Ok(CloseInit(Attributes{
             height: obj.height,
             port_id: attribute!(obj, "channel_close_init.port_id"),
             channel_id: attribute!(obj, "channel_close_init.channel_id"),
-        })
+        }))
     }
 }
 
@@ -147,20 +249,23 @@ impl From<CloseInit> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct CloseConfirm {
-    pub height: block::Height,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
+pub struct CloseConfirm(Attributes);
+
+impl From<Attributes> for CloseConfirm {
+    fn from(attrs: Attributes) -> Self {
+        CloseConfirm(attrs)
+    }
 }
+
 
 impl TryFrom<RawObject> for CloseConfirm {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(CloseConfirm {
+        Ok(CloseConfirm(Attributes{
             height: obj.height,
             port_id: attribute!(obj, "channel_close_confirm.port_id"),
             channel_id: attribute!(obj, "channel_close_confirm.channel_id"),
-        })
+        }))
     }
 }
 

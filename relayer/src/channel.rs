@@ -17,6 +17,7 @@ use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
+use ibc::events::IBCEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -352,12 +353,23 @@ pub fn build_chan_init_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_chan_init(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
+    let events = dst_chain.send_msgs(dst_msgs)?;
 
-    Ok(vec![])
+    // Find the relevant event for channel init
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenInitChannel(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ChanOpenInit(
+                opts.dst().channel_id().clone(),
+                "no chan init event was in the response".to_string(),
+            )
+                .into()
+        })
 }
 
 fn check_destination_channel_state(
@@ -543,12 +555,23 @@ pub fn build_chan_try_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_chan_try(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
+    let events = dst_chain.send_msgs(dst_msgs)?;
 
-    Ok(vec![])
+    // Find the relevant event for channel try
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenTryChannel(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ChanOpenTry(
+                opts.dst().channel_id().clone(),
+                "no chan try event was in the response".to_string(),
+            )
+                .into()
+        })
 }
 
 pub fn build_chan_ack(
@@ -629,12 +652,23 @@ pub fn build_chan_ack_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_chan_ack(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
+    let events = dst_chain.send_msgs(dst_msgs)?;
 
-    Ok(vec![])
+    // Find the relevant event for channel ack
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenAckChannel(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ChanOpenAck(
+                opts.dst().channel_id().clone(),
+                "no chan ack event was in the response".to_string(),
+            )
+                .into()
+        })
 }
 
 pub fn build_chan_confirm(
@@ -713,10 +747,21 @@ pub fn build_chan_confirm_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ChannelConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_chan_confirm(dst_chain.clone(), src_chain, &opts)?;
 
-    let _events = dst_chain.send_msgs(dst_msgs)?;
+    let events = dst_chain.send_msgs(dst_msgs)?;
 
-    Ok(vec![])
+    // Find the relevant event for channel confirm
+    events
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenConfirmChannel(_)))
+        .cloned()
+        .ok_or_else(|| {
+            Kind::ChanOpenConfirm(
+                opts.dst().channel_id().clone(),
+                "no chan confirm event was in the response".to_string(),
+            )
+                .into()
+        })
 }
