@@ -64,9 +64,13 @@ fn send_update_client_and_msgs(
         let mut msgs_to_send =
             build_update_client(dst_chain.clone(), src_chain, client_id, update_height)?;
         msgs_to_send.append(msgs);
-        info!("sending {:#?} messages", msgs_to_send.len());
+        info!(
+            "sending {:?} messages to {}",
+            msgs_to_send.len(),
+            dst_chain.id()
+        );
         let res = dst_chain.send_msgs(msgs_to_send)?;
-        info!("result {:#?}", res);
+        info!("result {:?}", res);
     }
     Ok(())
 }
