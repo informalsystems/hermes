@@ -9,6 +9,7 @@ use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConn
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
+use ibc::events::IBCEvent;
 use ibc::ics02_client::height::Height;
 use ibc::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -348,12 +349,20 @@ pub fn build_conn_init_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ConnectionConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_init(dst_chain.clone(), src_chain, opts)?;
 
-    let _e = dst_chain.send_msgs(dst_msgs)?;
+    let e = dst_chain.send_msgs(dst_msgs)?;
 
-    Ok(vec![])
+    // Find the relevant event for connection init
+    if let Some(open_init_ev) = e
+        .iter()
+        .find(|&event| matches!(event, IBCEvent::OpenInitConnection(_)))
+    {
+        Ok(open_init_ev.clone())
+    } else {
+        Err(Kind::CreateClient("no conn init event was in the response".to_string()).into())
+    }
 }
 
 fn check_destination_connection_state(
@@ -540,11 +549,11 @@ pub fn build_conn_try_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ConnectionConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_try(dst_chain.clone(), src_chain, &opts)?;
 
     let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(vec![])
+    Ok(IBCEvent::Empty("aa".to_string()))
 }
 
 /// Attempts to build a MsgConnOpenAck.
@@ -634,11 +643,11 @@ pub fn build_conn_ack_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ConnectionConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_ack(dst_chain.clone(), src_chain, opts)?;
 
     let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(vec![])
+    Ok(IBCEvent::Empty("aa".to_string()))
 }
 
 /// Attempts to build a MsgConnOpenConfirm.
@@ -713,9 +722,9 @@ pub fn build_conn_confirm_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     opts: &ConnectionConfig,
-) -> Result<Vec<String>, Error> {
+) -> Result<IBCEvent, Error> {
     let dst_msgs = build_conn_confirm(dst_chain.clone(), src_chain, &opts)?;
 
     let _events = dst_chain.send_msgs(dst_msgs)?;
-    Ok(vec![])
+    Ok(IBCEvent::Empty("aa".to_string()))
 }
