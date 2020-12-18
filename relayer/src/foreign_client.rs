@@ -237,7 +237,7 @@ pub fn build_update_client_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
     dst_client_id: &ClientId,
-) -> Result<Vec<String>, Error> {
+) -> Result<Vec<IBCEvent>, Error> {
     let new_msgs = build_update_client(
         dst_chain.clone(),
         src_chain.clone(),
@@ -245,9 +245,7 @@ pub fn build_update_client_and_send(
         src_chain.query_latest_height()?,
     )?;
 
-    let _events = dst_chain.send_msgs(new_msgs)?;
-
-    Ok(vec![])
+    Ok(dst_chain.send_msgs(new_msgs)?)
 }
 
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests

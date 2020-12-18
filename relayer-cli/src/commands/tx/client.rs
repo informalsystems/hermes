@@ -1,5 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::ClientId;
 
 use crate::application::app_config;
@@ -87,12 +88,12 @@ impl Runnable for TxUpdateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res: Result<Vec<String>, Error> =
+        let res: Result<Vec<IBCEvent>, Error> =
             build_update_client_and_send(dst_chain, src_chain, &self.dst_client_id)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success client updated: {:?}", &receipt[0]),
+            Ok(receipt) => status_ok!("Success client updated: {}", format!("{:?}", receipt[0])),
             Err(e) => status_err!("client update failed: {}", e),
         }
     }
