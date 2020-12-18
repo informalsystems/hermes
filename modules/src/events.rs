@@ -70,9 +70,13 @@ pub enum IBCEvent {
 
 // This is tendermint specific
 pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
-    let res = ClientEvents::try_from_tx(event);
-    if res.is_some() {
-        return res;
+    // Return the first hit we find
+    // Look for client event...
+    if let Some(client_res) = ClientEvents::try_from_tx(event.clone()) {
+        return Some(client_res);
+    // Look for connection event...
+    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event) {
+        return Some(conn_res);
     }
     // TODO - continue to try for conn and chan events
     None

@@ -24,12 +24,17 @@ pub const CREATE_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 /// The content of the `key` field for the attribute containing the height.
 pub const CREATE_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
-fn event_names() -> HashSet<String> {
-    HashSet::from_iter(vec![CREATE_EVENT_TYPE.to_string()].iter().cloned())
+/// A list of all the event `type`s that this module is capable of parsing
+fn event_types() -> HashSet<String> {
+    HashSet::from_iter(
+        vec![CREATE_EVENT_TYPE.to_string(), UPDATE_EVENT_TYPE.to_string()]
+            .iter()
+            .cloned(),
+    )
 }
 
 pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
-    event_names().get(&event.type_str)?;
+    event_types().get(&event.type_str)?;
     let mut attr = Attributes::default();
 
     for tag in event.attributes {
@@ -98,8 +103,8 @@ impl TryFrom<RawObject> for CreateClient {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CreateClient(Attributes {
             height: obj.height,
-            client_id: attribute!(obj, "update_client.client_id"),
-            client_type: attribute!(obj, "update_client.client_type"),
+            client_id: attribute!(obj, "create_client.client_id"),
+            client_type: attribute!(obj, "create_client.client_type"),
         }))
     }
 }
