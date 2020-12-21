@@ -63,7 +63,7 @@ pub trait ChannelKeeper {
             }
             State::TryOpen => {
                 self.store_channel(&(result.port_id, result.channel_id), &result.channel_end)?;
-                // TODOIf this is the first time the handler processed this channel, associate the
+                // TODO: If this is the first time the handler processed this channel, associate the
                 // channel end to its client identifier.
                 // self.store_channel_to_connection(
                 //     &(result.port_id,result.channel_id),
