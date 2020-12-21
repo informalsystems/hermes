@@ -271,11 +271,7 @@ pub trait Chain: Sized {
                         client_state_value.latest_height(),
                     )
                     .map_err(|e| {
-                        Kind::ConnOpenTry(
-                            connection_id.clone(),
-                            "failed to build consensus proof".to_string(),
-                        )
-                        .context(e)
+                        Kind::ConnOpenTry("failed to build consensus proof".to_string()).context(e)
                     })?,
                 );
 

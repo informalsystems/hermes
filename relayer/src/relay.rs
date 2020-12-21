@@ -1,4 +1,5 @@
 use anomaly::BoxError;
+use tracing::info;
 
 use crate::chain::handle::ChainHandle;
 use crate::channel::{Channel, ChannelConfig};
@@ -14,6 +15,7 @@ pub fn channel_relay(
     conn_cfg: ConnectionConfig,
     chan_cfg: ChannelConfig,
 ) -> Result<(), BoxError> {
+    info!("\nChannel Relay Loop\n");
     // Instantiate the foreign client on the source chain.
     let client_on_a = ForeignClient::new(a_chain_handle.clone(), b_chain_handle.clone())?;
 

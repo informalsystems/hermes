@@ -70,13 +70,17 @@ pub enum Kind {
     #[error("Failed to create client {0}")]
     CreateClient(String),
 
+    /// Common connection failure
+    #[error("Failed to build conn open ack {0}: {1}")]
+    ConnOpen(ConnectionId, String),
+
     /// Connection open init failure
-    #[error("Failed to build conn open init {0}: {1}")]
-    ConnOpenInit(ConnectionId, String),
+    #[error("Failed to build conn open init {0}")]
+    ConnOpenInit(String),
 
     /// Connection open try failure
-    #[error("Failed to build conn open try {0}: {1}")]
-    ConnOpenTry(ConnectionId, String),
+    #[error("Failed to build conn open try {0}")]
+    ConnOpenTry(String),
 
     /// Connection open ack failure
     #[error("Failed to build conn open ack {0}: {1}")]
