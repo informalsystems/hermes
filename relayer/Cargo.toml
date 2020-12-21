@@ -42,7 +42,7 @@ dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 
 [dependencies.tendermint]
-version = "=0.17.0-rc3"
+version = "=0.17.0"
 
 [dependencies.tendermint-rpc]
 version = "=0.17.0-rc3"
