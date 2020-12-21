@@ -2,6 +2,7 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::info;
 
+use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -15,7 +16,6 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
-use ibc::events::IBCEvent;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -77,17 +77,13 @@ impl ForeignClient {
     fn create(&mut self) -> Result<(), ForeignClientError> {
         let done = '\u{1F36D}';
 
-        let client_id =
-            build_create_client_and_send(self.dst_chain.clone(), self.src_chain.clone()).map_err(
-                |e| ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e)),
-            )?;
+        let ibc_ev = build_create_client_and_send(self.dst_chain.clone(), self.src_chain.clone())
+            .map_err(|e| {
+            ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
+        })?;
+        info!("{} {} => {:?}", done, self.dst_chain.id(), ibc_ev);
 
-        info!(
-            "{}  Client id {:?} on {:?} is created {:?}\n",
-            done, client_id, self.dst_chain, self.id
-        );
-
-        self.id = Some(client_id);
+        self.id = Some(extract_client_id(ibc_ev)?);
 
         Ok(())
     }
@@ -154,6 +150,16 @@ impl ForeignClient {
     }
 }
 
+pub fn extract_client_id(event: IBCEvent) -> Result<ClientId, ForeignClientError> {
+    match event {
+        IBCEvent::CreateClient(ev) => Ok(ev.client_id().clone()),
+        IBCEvent::UpdateClient(ev) => Ok(ev.client_id().clone()),
+        _ => Err(ForeignClientError::ClientCreate(
+            "cannot extract client_id from result".to_string(),
+        )),
+    }
+}
+
 /// Lower-level interface for preparing a message to create a client.
 ///
 /// ## Note
@@ -187,17 +193,12 @@ pub fn build_create_client(
 pub fn build_create_client_and_send(
     dst_chain: Box<dyn ChainHandle>,
     src_chain: Box<dyn ChainHandle>,
-) -> Result<ClientId, Error> {
+) -> Result<IBCEvent, Error> {
     let new_msg = build_create_client(dst_chain.clone(), src_chain)?;
 
-    // Parse the client identifier out of the result vector.
-    let result = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
-
-    if let IBCEvent::CreateClient(ev) = &result[0] {
-        Ok(ev.client_id().clone())
-    } else {
-        Err(Kind::CreateClient("cannot extract client_id from result".to_string()).into())
-    }
+    let res = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
+    assert!(!res.is_empty());
+    Ok(res[0].clone())
 }
 
 /// Lower-level interface to create the message for updating a client to height `target_height`.
@@ -269,7 +270,8 @@ mod test {
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
     use crate::foreign_client::{
-        build_create_client_and_send, build_update_client_and_send, ForeignClient,
+        build_create_client_and_send, build_update_client_and_send, extract_client_id,
+        ForeignClient,
     };
 
     /// Basic test for the `build_create_client_and_send` method.
@@ -305,7 +307,7 @@ mod test {
     fn update_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
-        let mut a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
+        let a_client_id = ClientId::from_str("client_on_a_forb").unwrap();
 
         // The number of ping-pong iterations
         let num_iterations = 3;
@@ -330,7 +332,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        a_client_id = res.unwrap();
+        let a_client_id = extract_client_id(res.unwrap()).unwrap();
 
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
@@ -354,7 +356,7 @@ mod test {
         );
 
         // Remember the id of the client we created on chain b
-        let b_client_id = res.unwrap();
+        let b_client_id = extract_client_id(res.unwrap()).unwrap();
 
         // Chain b should have advanced
         let mut b_height_last = b_chain.query_latest_height().unwrap();

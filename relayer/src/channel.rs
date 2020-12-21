@@ -10,6 +10,7 @@ use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpe
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
+use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
 use ibc::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use ibc::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
@@ -17,7 +18,6 @@ use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
-use ibc::events::IBCEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -368,7 +368,7 @@ pub fn build_chan_init_and_send(
                 opts.dst().channel_id().clone(),
                 "no chan init event was in the response".to_string(),
             )
-                .into()
+            .into()
         })
 }
 
@@ -570,7 +570,7 @@ pub fn build_chan_try_and_send(
                 opts.dst().channel_id().clone(),
                 "no chan try event was in the response".to_string(),
             )
-                .into()
+            .into()
         })
 }
 
@@ -667,7 +667,7 @@ pub fn build_chan_ack_and_send(
                 opts.dst().channel_id().clone(),
                 "no chan ack event was in the response".to_string(),
             )
-                .into()
+            .into()
         })
 }
 
@@ -762,6 +762,6 @@ pub fn build_chan_confirm_and_send(
                 opts.dst().channel_id().clone(),
                 "no chan confirm event was in the response".to_string(),
             )
-                .into()
+            .into()
         })
 }

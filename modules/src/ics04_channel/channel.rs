@@ -300,12 +300,11 @@ impl State {
 }
 
 /// Used for queries and not yet standardized in channel's query.proto
-// todo -move to channel.rs?
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: IBCEventType,
-    pub channel_id: ChannelId,
-    pub port_id: PortId,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
 }

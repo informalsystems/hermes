@@ -75,8 +75,6 @@ macro_rules! conn_open_cmd {
                     ),
                 };
 
-                status_info!("Message ", "{}: {:#?}", $dbg_string, opts);
-
                 let (src_chain, _) =
                     ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
                 let (dst_chain, _) =
@@ -86,7 +84,12 @@ macro_rules! conn_open_cmd {
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => status_ok!("Result: ", "{:?} - {:?}", $dbg_string, receipt),
+                    Ok(receipt) => status_ok!(
+                        "Result: ",
+                        "{:?} - {:?}",
+                        $dbg_string,
+                        serde_json::to_string(&receipt).unwrap()
+                    ),
                     Err(e) => status_err!("Failed with Error: {:?} - {:?}", $dbg_string, e),
                 }
             }

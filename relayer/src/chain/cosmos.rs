@@ -42,10 +42,9 @@ use ibc_proto::ibc::core::channel::v1::{
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
-use ibc::events::{IBCEvent, IBCEventType};
+use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
-use ibc::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
@@ -68,7 +67,7 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
-use ibc::ics04_channel::packet::{Packet, Sequence};
+use ibc::ics04_channel::packet::Sequence;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -661,11 +660,11 @@ impl Chain for CosmosSDKChain {
 fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
     Ok(tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
-        request.channel_id.to_string(),
+        request.source_channel_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_src_port", request.event_id.as_str()),
-        request.port_id.to_string(),
+        request.source_port_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
@@ -687,76 +686,36 @@ fn packet_from_tx_search_response(
         if height.value() > request.height.revision_height {
             continue;
         }
-        let mut packet = Packet::default();
+
         for e in r.clone().tx_result.events.iter() {
             if e.type_str != request.event_id.as_str() {
                 continue;
             }
-            for a in e.attributes.iter() {
-                let key = a.key.to_string();
-                let value = a.value.to_string();
-                match key.as_str() {
-                    "packet_src_port" => packet.source_port = value.parse().unwrap(),
-                    "packet_src_channel" => packet.source_channel = value.parse().unwrap(),
-                    "packet_dst_port" => packet.destination_port = value.parse().unwrap(),
-                    "packet_dst_channel" => packet.destination_channel = value.parse().unwrap(),
-                    "packet_sequence" => packet.sequence = value.parse::<u64>().unwrap().into(),
-                    "packet_timeout_height" => {
-                        let to: Vec<&str> = value.split('-').collect();
-                        packet.timeout_height = ibc_proto::ibc::core::client::v1::Height {
-                            revision_number: to[0].parse::<u64>().unwrap(),
-                            revision_height: to[1].parse::<u64>().unwrap(),
-                        }
-                        .try_into()
-                        .unwrap();
-                    }
-                    _ => {}
-                };
+
+            let res = from_tx_response_event(e.clone());
+            if res.is_none() {
+                continue;
+            }
+            let event = res.unwrap();
+            let packet = match event.clone() {
+                IBCEvent::SendPacketChannel(send_ev) => Some(send_ev.packet),
+                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(ack_ev.packet),
+                _ => None,
+            };
+
+            if packet.is_none() {
+                continue;
             }
 
-            if packet.source_port != request.port_id
-                || packet.source_channel != request.channel_id
+            let packet = packet.unwrap();
+            if packet.source_port != request.source_port_id
+                || packet.source_channel != request.source_channel_id
                 || packet.sequence != seq
             {
                 continue;
             }
-            match request.event_id {
-                IBCEventType::SendPacket => {
-                    for a in e.attributes.iter() {
-                        let key = a.key.to_string();
-                        let value = a.value.to_string();
-                        match key.as_str() {
-                            "packet_data" => packet.data = Vec::from(value.as_bytes()),
-                            _ => continue,
-                        };
-                    }
-                    return Ok(Some(IBCEvent::SendPacketChannel(SendPacket {
-                        height: r.height,
-                        packet,
-                    })));
-                }
-                IBCEventType::WriteAck => {
-                    let mut ack = vec![];
 
-                    for a in e.attributes.iter() {
-                        let key = a.key.to_string();
-                        let value = a.value.to_string();
-                        match key.as_str() {
-                            "packet_data" => packet.data = Vec::from(value.as_bytes()),
-                            "packet_ack" => ack = Vec::from(value.as_bytes()),
-                            _ => continue,
-                        };
-                    }
-                    return Ok(Some(IBCEvent::WriteAcknowledgementChannel(
-                        WriteAcknowledgement {
-                            height: r.height,
-                            packet,
-                            ack,
-                        },
-                    )));
-                }
-                _ => {}
-            }
+            return Ok(Some(event));
         }
     }
     Ok(None)
@@ -851,20 +810,20 @@ pub fn tx_result_to_event(raw_res: String) -> Result<Vec<IBCEvent>, anomaly::Err
 
     // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {
-        return Ok(vec![IBCEvent::Empty(format!(
+        return Ok(vec![IBCEvent::ChainError(format!(
             "check_tx reports error: log={:?}",
             response.check_tx.log
         ))]);
     }
     if response.deliver_tx.code.is_err() {
-        return Ok(vec![IBCEvent::Empty(format!(
+        return Ok(vec![IBCEvent::ChainError(format!(
             "deliver_tx reports error: log={:?}",
             response.deliver_tx.log
         ))]);
     }
 
     for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = ibc::events::from_tx_response_event(event) {
+        if let Some(ibc_ev) = from_tx_response_event(event) {
             result.append(&mut vec![ibc_ev])
         }
     }

@@ -357,7 +357,10 @@ pub fn build_conn_init_and_send(
     // Find the relevant event for connection init
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenInitConnection(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenInitConnection(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenInit(
@@ -560,7 +563,10 @@ pub fn build_conn_try_and_send(
     // Find the relevant event for connection try transaction
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenTryConnection(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenTryConnection(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenTry(
@@ -666,7 +672,10 @@ pub fn build_conn_ack_and_send(
     // Find the relevant event for connection ack
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenAckConnection(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenAckConnection(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenAck(
@@ -757,7 +766,10 @@ pub fn build_conn_confirm_and_send(
     // Find the relevant event for connection confirm
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenConfirmConnection(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenConfirmConnection(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenConfirm(

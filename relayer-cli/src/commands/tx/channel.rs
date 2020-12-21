@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
 use abscissa_core::{Command, Options, Runnable};
+use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IBCEvent;
 
 use crate::error::{Error, Kind};
 use relayer::channel::{

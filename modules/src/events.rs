@@ -65,7 +65,8 @@ pub enum IBCEvent {
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTransfer(TransferEvents::ChannelClosed),
 
-    Empty(String), // Special event, signifying empty response
+    Empty(String),      // Special event, signifying empty response
+    ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
 // This is tendermint specific
@@ -270,10 +271,16 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
         )?)),
 
         // Packet events
+        // Note: There is no message.action "send_packet", the only one we can hook into is the
+        // module's action, "transfer" being the only one in IBC1.0. However the attributes
+        // are all prefixed with "send_packet" therefore the overwrite here
+        // TODO: This need to be sorted out
         "transfer" => {
             object.action = "send_packet".to_string();
             Ok(IBCEvent::from(ChannelEvents::SendPacket::try_from(object)?))
         }
+        // Same here
+        // TODO: sort this out
         "recv_packet" => {
             object.action = "write_acknowledgement".to_string();
             Ok(IBCEvent::from(
@@ -319,5 +326,12 @@ macro_rules! make_event {
 macro_rules! attribute {
     ($a:ident, $b:literal) => {
         $a.events.get($b).ok_or($b)?[$a.idx].parse()?
+    };
+}
+
+#[macro_export]
+macro_rules! some_attribute {
+    ($a:ident, $b:literal) => {
+        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
     };
 }

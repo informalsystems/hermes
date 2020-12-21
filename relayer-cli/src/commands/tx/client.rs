@@ -9,7 +9,7 @@ use crate::prelude::*;
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::ChainConfig;
-use relayer::foreign_client::{build_update_client_and_send, ForeignClient};
+use relayer::foreign_client::{build_create_client_and_send, build_update_client_and_send};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -41,10 +41,11 @@ impl Runnable for TxCreateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res = ForeignClient::new(dst_chain, src_chain).map_err(|e| Kind::Tx.context(e));
+        let res: Result<IBCEvent, Error> = build_create_client_and_send(dst_chain, src_chain)
+            .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success", "client created: {:?}", receipt),
+            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
             Err(e) => status_err!("client create failed: {:?}", e),
         }
     }
@@ -93,8 +94,8 @@ impl Runnable for TxUpdateClientCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Success client updated: {}", format!("{:?}", receipt[0])),
-            Err(e) => status_err!("client update failed: {}", e),
+            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt[0]).unwrap()),
+            Err(e) => status_err!("Error {}", e),
         }
     }
 }
