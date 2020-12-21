@@ -33,7 +33,7 @@ pub(crate) fn process(
         return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
     }
 
-    //TODO Check Version non Empty but not necessary coherent
+    // TODO: Check that `version` is non empty but not necessary coherent
     if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());
     }
