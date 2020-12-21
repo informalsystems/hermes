@@ -38,7 +38,7 @@ regex = "1"
 bech32 = "0.7.2"
 
 [dependencies.tendermint]
-version = "=0.17.0-rc3"
+version = "=0.17.0"
 
 [dependencies.tendermint-rpc]
 version = "=0.17.0-rc3"
