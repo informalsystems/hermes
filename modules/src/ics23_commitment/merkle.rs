@@ -1,21 +1,21 @@
-use std::convert::TryFrom;
-
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::ics23_commitment::commitment::CommitmentPrefix;
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use crate::ics23_commitment::error::Error;
+use tendermint::merkle::proof::Proof;
 
 pub fn apply_prefix(
     prefix: &CommitmentPrefix,
-    _path: String,
+    mut path: Vec<String>,
 ) -> Result<MerklePath, Box<dyn std::error::Error>> {
     if prefix.is_empty() {
         return Err("empty prefix".into());
     }
 
-    // TODO
-    Ok(MerklePath { key_path: None })
+    let mut result: Vec<String> = vec![format!("{:?}", prefix)];
+    result.append(&mut path);
+    Ok(MerklePath { key_path: result })
 }
 
 // TODO - get this from the ics23 crate proof
@@ -66,7 +66,7 @@ pub fn cosmos_specs() -> Vec<ibc_proto::ics23::ProofSpec> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MerkleProof {
-    pub proof: Option<tendermint_proto::crypto::ProofOps>,
+    pub proof: Vec<CommitmentProofBytes>,
 }
 
 // Merkle Proof serialization notes:
@@ -108,15 +108,34 @@ pub struct MerkleProof {
 //  - cosmos.rs:abci_query() converts from query proof to Merkle proof:
 //      RawProofOps => RawMerkleProof
 //
-impl TryFrom<RawMerkleProof> for MerkleProof {
-    type Error = Error;
-    fn try_from(value: RawMerkleProof) -> Result<Self, Self::Error> {
-        Ok(MerkleProof { proof: value.proof })
-    }
-}
+// impl TryFrom<RawMerkleProof> for MerkleProof {
+//     type Error = Error;
+//     fn try_from(value: RawMerkleProof) -> Result<Self, Self::Error> {
+//         Ok(MerkleProof { proof: value.proofs.into_iter().map(|v| v.into()).collect() })
+//     }
+// }
+//
+// impl From<MerkleProof> for RawMerkleProof {
+//     fn from(value: MerkleProof) -> Self {
+//         RawMerkleProof { proof: value.proof }
+//     }
+// }
 
-impl From<MerkleProof> for RawMerkleProof {
-    fn from(value: MerkleProof) -> Self {
-        RawMerkleProof { proof: value.proof }
+use prost::Message;
+
+pub fn convert_tm_to_ics_merkle_proof(
+    tm_proof: Option<Proof>,
+) -> Result<Option<RawMerkleProof>, Error> {
+    if let Some(proof) = tm_proof {
+        let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
+        for (_i, op) in proof.ops.iter().enumerate() {
+            let data = op.clone().data;
+            let mut parsed = ibc_proto::ics23::CommitmentProof { proof: None };
+            parsed.merge(data.as_slice()).unwrap();
+            mproofs.append(&mut vec![parsed]);
+        }
+        Ok(Some(RawMerkleProof { proofs: mproofs }))
+    } else {
+        Ok(None)
     }
 }

@@ -1,7 +1,7 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
+use ibc::ics24_host::identifier::{ChannelId, ConnectionId};
 use thiserror::Error;
 
 /// An error that can be raised by the relayer.
@@ -67,8 +67,8 @@ pub enum Kind {
     BuildClientStateFailure,
 
     /// Create client failure
-    #[error("Failed to create client {0}: {1}")]
-    CreateClient(ClientId, String),
+    #[error("Failed to create client {0}")]
+    CreateClient(String),
 
     /// Connection open init failure
     #[error("Failed to build conn open init {0}: {1}")]
@@ -101,6 +101,22 @@ pub enum Kind {
     /// Channel open confirm failure
     #[error("Failed to build channel open confirm {0}: {1}")]
     ChanOpenConfirm(ChannelId, String),
+
+    /// Packet recv  failure
+    #[error("Failed to build packet {0}: {1}")]
+    Packet(ChannelId, String),
+
+    /// Packet recv  failure
+    #[error("Failed to build recv packet {0}: {1}")]
+    RecvPacket(ChannelId, String),
+
+    /// Packet acknowledgement failure
+    #[error("Failed to build acknowledge packet {0}: {1}")]
+    AckPacket(ChannelId, String),
+
+    /// Packet timeout  failure
+    #[error("Failed to build timeout packet {0}: {1}")]
+    TimeoutPacket(ChannelId, String),
 
     /// A message transaction failure
     #[error("Message transaction failure: {0}")]

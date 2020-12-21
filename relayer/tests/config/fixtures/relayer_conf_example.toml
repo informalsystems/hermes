@@ -14,6 +14,8 @@ client_ids = [
     'clA2',
 ]
 gas = 200000
+max_msg_num = 4
+max_tx_size = 1048576
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -29,7 +31,6 @@ account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 client_ids = ['clB1']
-gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
 

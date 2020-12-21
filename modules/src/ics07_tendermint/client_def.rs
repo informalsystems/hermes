@@ -4,7 +4,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
 use crate::ics07_tendermint::header::Header;
-use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProof, CommitmentRoot};
+use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::ClientId;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::Height;
@@ -24,7 +24,8 @@ impl ClientDef for TendermintClient {
     ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
         if client_state.latest_height() >= header.height() {
             return Err(
-                "received header height is lower than (or equal to) client latest height".into(),
+                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                    header.height(), client_state.latest_height).into(),
             );
         }
 
@@ -41,7 +42,7 @@ impl ClientDef for TendermintClient {
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
+        _proof: &CommitmentProofBytes,
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
@@ -54,7 +55,7 @@ impl ClientDef for TendermintClient {
         _client_state: &Self::ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
-        _proof: &CommitmentProof,
+        _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
@@ -68,7 +69,7 @@ impl ClientDef for TendermintClient {
         _root: &CommitmentRoot,
         _prefix: &CommitmentPrefix,
         _client_id: &ClientId,
-        _proof: &CommitmentProof,
+        _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()

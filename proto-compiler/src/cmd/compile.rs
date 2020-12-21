@@ -25,7 +25,6 @@ impl CompileCmd {
 
         Self::output_sdk_version(&self.sdk, tmp.as_ref());
         Self::compile_protos(&self.sdk, tmp.as_ref());
-        Self::compile_proto_services(&self.sdk, &tmp.as_ref());
         Self::copy_generated_files(tmp.as_ref(), &self.out);
     }
 
@@ -50,6 +49,7 @@ impl CompileCmd {
         let proto_paths = [
             format!("{}/../proto/definitions/mock", root),
             format!("{}/proto/ibc", sdk_dir.display()),
+            format!("{}/proto/cosmos/auth", sdk_dir.display()),
             format!("{}/proto/cosmos/tx", sdk_dir.display()),
             format!("{}/proto/cosmos/base", sdk_dir.display()),
             format!("{}/proto/cosmos/staking", sdk_dir.display()),
@@ -81,45 +81,14 @@ impl CompileCmd {
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-        // Compile all proto files
-        let mut config = prost_build::Config::default();
-        config.out_dir(out_dir);
-        config.extern_path(".tendermint", "::tendermint_proto");
-        config.compile_protos(&protos, &includes).unwrap();
-    }
 
-    fn compile_proto_services(sdk_dir: impl AsRef<Path>, out_dir: impl AsRef<Path>) {
-
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        let sdk_dir = sdk_dir.as_ref().to_owned();
-
-        let proto_includes_paths = [
-            root.join("../proto"),
-            sdk_dir.join("proto"),
-            sdk_dir.join("third_party/proto"),
-        ];
-
-        // List available paths for dependencies
-        let includes = proto_includes_paths.iter().map(|p| p.as_os_str().to_os_string()).collect::<Vec<_>>();
-
-        let proto_services_path = [
-            sdk_dir.join("proto/cosmos/auth/v1beta1/query.proto"),
-            sdk_dir.join("proto/cosmos/staking/v1beta1/query.proto"),
-        ];
-
-        // List available paths for dependencies
-        let services = proto_services_path.iter().map(|p| p.as_os_str().to_os_string()).collect::<Vec<_>>();
-
-        // Compile all proto client for GRPC services
-        println!("[info ] Compiling proto clients for GRPC services!");
         tonic_build::configure()
             .build_client(true)
             .build_server(false)
             .format(false)
             .out_dir(out_dir)
-            .compile(&services, &includes).unwrap();
-
-        println!("[info ] => Done!");
+            .extern_path(".tendermint", "::tendermint_proto")
+            .compile(&protos, &includes).unwrap();
     }
 
     fn copy_generated_files(from_dir: &Path, to_dir: &Path) {

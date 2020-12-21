@@ -8,32 +8,26 @@ use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::Packet;
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::{proofs::Proofs, tx_msg::Msg};
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 
 ///
 /// Message definition for the "packet receiving" datagram.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgRecvPacket {
-    packet: Packet,
+    pub packet: Packet,
     proofs: Proofs,
     signer: AccountId,
 }
 
 impl MsgRecvPacket {
-    // todo: Constructor not used yet.
     #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
-        packet: Packet,
-        proof: CommitmentProof,
-        proof_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgRecvPacket, Error> {
+    pub fn new(packet: Packet, proofs: Proofs, signer: AccountId) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
-            packet: todo!(),
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            packet,
+            proofs,
             signer,
         })
     }
@@ -58,6 +52,10 @@ impl Msg for MsgRecvPacket {
         Ok(())
     }
 
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
+    }
+
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -73,7 +71,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
 
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_commitment.into(),
             None,
             None,
             raw_msg
@@ -100,7 +98,7 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
     fn from(domain_msg: MsgRecvPacket) -> Self {
         RawMsgRecvPacket {
             packet: Some(domain_msg.packet.into()),
-            proof: domain_msg.proofs.object_proof().clone().into(),
+            proof_commitment: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: account_to_string(domain_msg.signer).unwrap(),
         }
@@ -120,10 +118,10 @@ mod test_util {
     pub fn get_dummy_raw_msg_recv_packet(height: u64) -> RawMsgRecvPacket {
         RawMsgRecvPacket {
             packet: Some(get_dummy_raw_packet(height)),
-            proof: get_dummy_proof(),
+            proof_commitment: get_dummy_proof(),
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -159,7 +157,7 @@ mod test {
             Test {
                 name: "Missing proof".to_string(),
                 raw: RawMsgRecvPacket {
-                    proof: vec![],
+                    proof_commitment: vec![],
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

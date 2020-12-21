@@ -50,11 +50,17 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
+    /// Counter for the client identifiers, necessary to generate ids (see `next_client_id`).
+    client_ids_counter: u32,
+
     /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
 
     /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
+
+    /// Counter for connection identifiers (see `next_connection_id`).
+    connection_ids_counter: u32,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections are
@@ -90,11 +96,11 @@ impl MockContext {
         );
 
         // Compute the number of blocks to store. If latest_height is 0, nothing is stored.
-        let n = min(max_history_size as u64, latest_height.version_height);
+        let n = min(max_history_size as u64, latest_height.revision_height);
 
         assert_eq!(
             host_id.version(),
-            latest_height.version_number,
+            latest_height.revision_number,
             "The version in the chain identifier must match the version in the latest height"
         );
 
@@ -109,13 +115,15 @@ impl MockContext {
                     HostBlock::generate_block(
                         host_id.clone(),
                         host_type,
-                        latest_height.sub(i).unwrap().version_height,
+                        latest_height.sub(i).unwrap().revision_height,
                     )
                 })
                 .collect(),
             connections: Default::default(),
+            client_ids_counter: 0,
             clients: Default::default(),
             client_connections: Default::default(),
+            connection_ids_counter: 0,
         }
     }
 
@@ -153,7 +161,7 @@ impl MockContext {
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
-                    cs_height.version_height,
+                    cs_height.revision_height,
                 );
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
@@ -192,8 +200,8 @@ impl MockContext {
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
-        let target = target_height.version_height as usize;
-        let latest = self.latest_height.version_height as usize;
+        let target = target_height.revision_height as usize;
+        let latest = self.latest_height.revision_height as usize;
 
         // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
@@ -208,7 +216,7 @@ impl MockContext {
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
             self.host_chain_type,
-            self.latest_height.increment().version_height,
+            self.latest_height.increment().revision_height,
         );
 
         // Append the new header at the tip of the history.
@@ -303,6 +311,14 @@ impl ConnectionReader for MockContext {
 }
 
 impl ConnectionKeeper for MockContext {
+    fn next_connection_id(&mut self) -> ConnectionId {
+        let prefix = ConnectionId::default().to_string();
+        let suffix = self.connection_ids_counter;
+        self.connection_ids_counter += 1;
+
+        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    }
+
     fn store_connection(
         &mut self,
         connection_id: &ConnectionId,
@@ -366,6 +382,14 @@ impl ClientKeeper for MockContext {
         Ok(())
     }
 
+    fn next_client_id(&mut self) -> ClientId {
+        let prefix = ClientId::default().to_string();
+        let suffix = self.client_ids_counter;
+        self.client_ids_counter += 1;
+
+        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    }
+
     fn store_client_state(
         &mut self,
         client_id: ClientId,
@@ -415,10 +439,20 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<(), ICS18Error> {
-        deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?; // Forward call to ICS26 delivery method
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, ICS18Error> {
+        // Forward call to ICS26 delivery method.
+        let events =
+            deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+
+        // Parse the events into a list of strings.
+        let res: Vec<String> = events
+            .iter()
+            .map(|e| e.attribute_values())
+            .flatten()
+            .collect();
+
         self.advance_host_chain_height(); // Advance chain height
-        Ok(())
+        Ok(res)
     }
 
     fn signer(&self) -> Id {

@@ -251,13 +251,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let src_foreign_client_on_dst = ForeignClient::new(
         &src_chain_handle,
-        &dst_chain_handle,
-        ForeignClientConfig::default())?;
+        &dst_chain_handle)?;
 
     let dst_foreign_client_on_src = ForeignClient::new(
         &src_chain_handle,
-        &dst_chain_handle,
-        ForeignClientConfig::default())?;
+        &dst_chain_handle)?;
 
     let connection = Connection::new(
         &src_chain_handle,

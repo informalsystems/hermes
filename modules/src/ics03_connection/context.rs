@@ -6,7 +6,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::handler::ConnectionResult;
-use crate::ics03_connection::version::{get_compatible_versions, pick_version};
+use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
@@ -41,7 +41,7 @@ pub trait ConnectionReader {
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
     /// handshake protocol supports.
-    fn get_compatible_versions(&self) -> Vec<String> {
+    fn get_compatible_versions(&self) -> Vec<Version> {
         get_compatible_versions()
     }
 
@@ -49,9 +49,9 @@ pub trait ConnectionReader {
     /// connection handshake protocol prefers.
     fn pick_version(
         &self,
-        supported_versions: Vec<String>,
-        counterparty_candidate_versions: Vec<String>,
-    ) -> Result<String, Error> {
+        supported_versions: Vec<Version>,
+        counterparty_candidate_versions: Vec<Version>,
+    ) -> Option<Version> {
         pick_version(supported_versions, counterparty_candidate_versions)
     }
 }
@@ -61,21 +61,36 @@ pub trait ConnectionReader {
 pub trait ConnectionKeeper {
     fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
         match result.connection_end.state() {
-            State::Init | State::TryOpen => {
-                self.store_connection(&result.connection_id, &result.connection_end)?;
+            State::Init => {
+                let connection_id = self.next_connection_id();
+                self.store_connection(&connection_id, &result.connection_end)?;
                 // If this is the first time the handler processed this connection, associate the
                 // connection end to its client identifier.
                 self.store_connection_to_client(
-                    &result.connection_id,
+                    &connection_id,
+                    &result.connection_end.client_id(),
+                )?;
+            }
+            State::TryOpen => {
+                self.store_connection(
+                    &result.connection_id.clone().unwrap(),
+                    &result.connection_end,
+                )?;
+                // If this is the first time the handler processed this connection, associate the
+                // connection end to its client identifier.
+                self.store_connection_to_client(
+                    &result.connection_id.clone().unwrap(),
                     &result.connection_end.client_id(),
                 )?;
             }
             _ => {
-                self.store_connection(&result.connection_id, &result.connection_end)?;
+                self.store_connection(&result.connection_id.unwrap(), &result.connection_end)?;
             }
         }
         Ok(())
     }
+
+    fn next_connection_id(&mut self) -> ConnectionId;
 
     /// Stores the given connection_end at a path associated with the connection_id.
     fn store_connection(

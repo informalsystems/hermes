@@ -3,12 +3,23 @@
 ## Unreleased Changes
 
 ### FEATURES
-
+- [relayer]
+  - Implement relaying for recv_packet ([#379]) 
+ 
+- [relayer-cli]
+  - Packet CLIs for recv_packet ([#443])
+  
 ### IMPROVEMENTS
-
-- Mock chain (implementing IBC handlers) and integration against CLI ([#158])
+- [relayer]
+  - Mock chain (implementing IBC handlers) and integration against CLI ([#158])
+  - Relayer tests for client update (ping pong) against MockChain ([#381])
+  - Relayer refactor to improve testing and add semantic dependencies ([#447]) 
 
 [#158]: https://github.com/informalsystems/ibc-rs/issues/158
+[#379]: https://github.com/informalsystems/ibc-rs/issues/379
+[#381]: https://github.com/informalsystems/ibc-rs/issues/381
+[#443]: https://github.com/informalsystems/ibc-rs/issues/443
+[#447]: https://github.com/informalsystems/ibc-rs/issues/447
 
 ## v0.0.5
 *December 2, 2020*
@@ -18,6 +29,11 @@ We now have the full-stack implementation for supporting client creation & updat
 We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and added ICS 020 spec. 
 
 Special thanks to external contributors for this release: @CharlyCst ([#347], [#419]).
+
+- [relayer-cli]
+  - Add `--all` option to `light rm` command to remove all peers for a given chain ([#431])
+
+[#431]: https://github.com/informalsystems/ibc-rs/issues/431
 
 ### FEATURES
 

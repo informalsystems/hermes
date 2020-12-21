@@ -10,8 +10,8 @@ use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::version::validate_versions;
-use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::ics03_connection::version::Version;
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -24,20 +24,20 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 ///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenTry {
-    pub connection_id: ConnectionId,
+    pub previous_connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub client_state: Option<AnyClientState>,
-    pub counterparty_chosen_connection_id: Option<ConnectionId>,
     pub counterparty: Counterparty,
-    pub counterparty_versions: Vec<String>,
+    pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
+    pub delay_period: u64,
     pub signer: AccountId,
 }
 
 impl MsgConnectionOpenTry {
-    /// Getter for accessing the connection identifier of this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
+    /// Getter for accessing the previous connection identifier of this message.
+    pub fn previous_connection_id(&self) -> &Option<ConnectionId> {
+        &self.previous_connection_id
     }
 
     /// Getter for accessing the client identifier from this message.
@@ -50,24 +50,30 @@ impl MsgConnectionOpenTry {
         self.client_state.clone()
     }
 
-    /// Getter for accessing the counterparty connection identifier of this message.
-    pub fn counterparty_chosen_connection_id(&self) -> Option<ConnectionId> {
-        self.counterparty_chosen_connection_id.clone()
-    }
-
     /// Getter for accesing the whole counterparty of this message. Returns a `clone()`.
     pub fn counterparty(&self) -> Counterparty {
         self.counterparty.clone()
     }
 
     /// Getter for accessing the versions from this message. Returns a `clone()`.
-    pub fn counterparty_versions(&self) -> Vec<String> {
+    pub fn counterparty_versions(&self) -> Vec<Version> {
         self.counterparty_versions.clone()
     }
 
     /// Getter for accessing the proofs in this message.
     pub fn proofs(&self) -> &Proofs {
         &self.proofs
+    }
+
+    /// Moves the given message into another one, and updates the `previous_connection_id` field.
+    pub fn with_previous_connection_id(
+        self,
+        previous_connection_id: Option<ConnectionId>,
+    ) -> MsgConnectionOpenTry {
+        MsgConnectionOpenTry {
+            previous_connection_id,
+            ..self
+        }
     }
 
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
@@ -93,12 +99,12 @@ impl Msg for MsgConnectionOpenTry {
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -108,6 +114,12 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
+        let previous_connection_id = Some(msg.previous_connection_id)
+            .filter(|x| !x.is_empty())
+            .map(|v| FromStr::from_str(v.as_str()))
+            .transpose()
+            .map_err(|e| Kind::IdentifierError.context(e))?;
+
         let consensus_height = msg
             .consensus_height
             .ok_or(Kind::MissingConsensusHeight)?
@@ -125,19 +137,23 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())
-            .map(CommitmentProof::from);
+            .map(CommitmentProofBytes::from);
 
-        let counterparty_chosen_connection_id = Some(msg.counterparty_chosen_connection_id)
-            .filter(|x| !x.is_empty())
-            .map(|v| FromStr::from_str(v.as_str()))
-            .transpose()
-            .map_err(|e| Kind::IdentifierError.context(e))?;
+        let counterparty_versions = msg
+            .counterparty_versions
+            .into_iter()
+            .map(Version::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| Kind::InvalidVersion.context(e))?;
+
+        if counterparty_versions.is_empty() {
+            return Err(Kind::EmptyVersions
+                .context("empty counterparty versions in try message".to_string())
+                .into());
+        }
 
         Ok(Self {
-            connection_id: msg
-                .desired_connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
+            previous_connection_id,
             client_id: msg
                 .client_id
                 .parse()
@@ -147,13 +163,11 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            counterparty_chosen_connection_id,
             counterparty: msg
                 .counterparty
                 .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
-            counterparty_versions: validate_versions(msg.counterparty_versions)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            counterparty_versions,
             proofs: Proofs::new(
                 msg.proof_init.into(),
                 client_proof,
@@ -161,6 +175,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,
+            delay_period: msg.delay_period,
             signer: string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?,
         })
     }
@@ -170,16 +185,20 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            desired_connection_id: ics_msg.connection_id.as_str().to_string(),
+            previous_connection_id: ics_msg
+                .previous_connection_id
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
             counterparty: Some(ics_msg.counterparty.into()),
-            counterparty_versions: ics_msg.counterparty_versions,
+            delay_period: 0,
+            counterparty_versions: ics_msg
+                .counterparty_versions
+                .iter()
+                .map(|v| v.clone().into())
+                .collect(),
             proof_height: Some(ics_msg.proofs.height().into()),
-            counterparty_chosen_connection_id: ics_msg
-                .counterparty_chosen_connection_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             proof_init: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg
                 .proofs
@@ -217,20 +236,23 @@ pub mod test_util {
     ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
             client_id: "srcclient".to_string(),
-            desired_connection_id: "srcconnection".to_string(),
+            previous_connection_id: "srcconnection".to_string(),
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
-            counterparty_versions: get_compatible_versions(),
-            counterparty_chosen_connection_id: "srcconnection".to_string(),
+            delay_period: 0,
+            counterparty_versions: get_compatible_versions()
+                .iter()
+                .map(|v| v.clone().into())
+                .collect(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 0,
-                version_height: proof_height,
+                revision_number: 0,
+                revision_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                version_number: 0,
-                version_height: consensus_height,
+                revision_number: 0,
+                revision_height: consensus_height,
             }),
             proof_client: vec![],
             signer: get_dummy_bech32_account(),
@@ -267,14 +289,6 @@ mod tests {
                     name: "Good parameters".to_string(),
                     raw: default_try_msg.clone(),
                     want_pass: true,
-                },
-                Test {
-                    name: "Bad desired connection id, non-alpha".to_string(),
-                    raw: RawMsgConnectionOpenTry {
-                        desired_connection_id: "con007".to_string(),
-                        ..default_try_msg.clone()
-                    },
-                    want_pass: false,
                 },
                 Test {
                     name: "Bad client id, name too short".to_string(),
@@ -320,7 +334,7 @@ mod tests {
                 Test {
                     name: "Bad counterparty versions, empty version string".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        counterparty_versions: vec!["".to_string()],
+                        counterparty_versions: vec![],
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -328,7 +342,7 @@ mod tests {
                 Test {
                     name: "Bad proof height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
+                        proof_height: Some(Height { revision_number: 1, revision_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,
@@ -336,7 +350,7 @@ mod tests {
                 Test {
                     name: "Bad consensus height, height is 0".to_string(),
                     raw: RawMsgConnectionOpenTry {
-                        proof_height: Some(Height { version_number: 1, version_height: 0 }),
+                        proof_height: Some(Height { revision_number: 1, revision_height: 0 }),
                         ..default_try_msg.clone()
                     },
                     want_pass: false,

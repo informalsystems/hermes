@@ -32,6 +32,9 @@ pub enum Kind {
     #[error("invalid version")]
     InvalidVersion,
 
+    #[error("empty supported versions")]
+    EmptyVersions,
+
     #[error("no commong version")]
     NoCommonVersion,
 

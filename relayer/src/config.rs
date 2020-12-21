@@ -90,8 +90,9 @@ pub struct ChainConfig {
     pub key_name: String,
     pub store_prefix: String,
     pub client_ids: Vec<String>,
-    #[serde(default = "default::gas")]
-    pub gas: u64,
+    pub gas: Option<u64>,
+    pub max_msg_num: Option<usize>,
+    pub max_tx_size: Option<usize>,
     #[serde(default = "default::clock_drift", with = "humantime_serde")]
     pub clock_drift: Duration,
     #[serde(default = "default::trusting_period", with = "humantime_serde")]
@@ -219,7 +220,7 @@ pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
 /// Serialize the given `Config` as TOML to the given config file.
 pub fn store(config: &Config, path: impl AsRef<Path>) -> Result<(), error::Error> {
     let mut file = if path.as_ref().exists() {
-        fs::OpenOptions::new().write(true).open(path)
+        fs::OpenOptions::new().write(true).truncate(true).open(path)
     } else {
         File::create(path)
     }
