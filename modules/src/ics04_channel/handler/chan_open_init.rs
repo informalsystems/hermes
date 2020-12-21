@@ -34,7 +34,7 @@ pub(crate) fn process(
     }
 
     //TODO Check Version non Empty but not necessary coherent
-    if msg.channel().version() == "" {
+    if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());
     }
 
