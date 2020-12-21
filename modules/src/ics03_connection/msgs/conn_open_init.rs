@@ -114,9 +114,13 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
+    use crate::ics03_connection::error::Error;
     use crate::ics03_connection::version::default_version_string;
     use crate::test_utils::get_dummy_bech32_account;
+    use crate::{
+        ics03_connection::msgs::test_util::get_dummy_counterparty, ics24_host::identifier::ClientId,
+    };
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
@@ -128,6 +132,18 @@ pub mod test_util {
             version: default_version_string(),
             signer: get_dummy_bech32_account(),
         }
+    }
+
+    pub fn make_default_connection_end_for_client(
+        client_id: ClientId,
+        counterparty: Counterparty,
+    ) -> Result<ConnectionEnd, Error> {
+        return ConnectionEnd::new(
+            State::Init,
+            client_id,
+            counterparty,
+            vec![default_version_string()],
+        );
     }
 }
 

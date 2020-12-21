@@ -2,15 +2,12 @@
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //! TODO make "ADR 004: IBC protocol implementation" for more details.
 //!
-//use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::version::{get_compatible_versions, pick_version};
-//use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-//use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ChannelReader {

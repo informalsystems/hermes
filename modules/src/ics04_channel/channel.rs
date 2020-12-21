@@ -283,9 +283,6 @@ pub mod test_util {
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
-    // use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    // use
-    //crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
@@ -316,7 +313,6 @@ pub mod test_util {
         }
     }
 }
-//MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap().connection_id()
 
 #[cfg(test)]
 mod tests {

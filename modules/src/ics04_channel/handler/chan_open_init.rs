@@ -65,8 +65,9 @@ mod tests {
 
     use crate::handler::EventType;
 
-    use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::make_default_connection_end_for_client;
+
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 
     use crate::ics04_channel::channel::{ChannelEnd, State};
@@ -103,7 +104,7 @@ mod tests {
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
 
-        let init_conn_end = &ConnectionEnd::test_channel_new(
+        let init_conn_end = make_default_connection_end_for_client(
             msg_conn_init.client_id().clone(),
             msg_conn_init.counterparty().clone(),
         )
