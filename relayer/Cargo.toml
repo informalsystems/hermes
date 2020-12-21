@@ -52,7 +52,7 @@ features = ["http-client", "websocket-client"]
 version = "=0.17.0-rc3"
 
 [dependencies.tendermint-proto]
-version = "=0.17.0-rc3"
+version = "=0.17.0"
 
 [dev-dependencies]
 serial_test = "0.5.0"
