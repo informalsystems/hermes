@@ -35,9 +35,6 @@ ARG RELEASE
 ARG CHAIN
 ARG NAME
 
-# Install ca-certificates
-RUN apk add --update ca-certificates
-
 # Add jq for debugging
 RUN apk add --no-cache jq curl tree
 
@@ -46,7 +43,7 @@ WORKDIR /$NAME
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
 
-COPY --chown=root:root ci/chains/$CHAIN/$RELEASE/$NAME /chain
+COPY --chown=root:root ./chains/$CHAIN/$RELEASE/$NAME /chain
 
 RUN tree -pug /chain
 
