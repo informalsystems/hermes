@@ -41,7 +41,7 @@ bech32 = "0.7.2"
 version = "=0.17.0-rc3"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.0-rc3"
+version = "=0.17.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
