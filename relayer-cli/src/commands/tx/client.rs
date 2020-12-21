@@ -89,13 +89,13 @@ impl Runnable for TxUpdateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res: Result<Vec<IBCEvent>, Error> =
+        let res: Result<IBCEvent, Error> =
             build_update_client_and_send(dst_chain, src_chain, &self.dst_client_id)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt[0]).unwrap()),
-            Err(e) => status_err!("Error {}", e),
+            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
+            Err(e) => status_err!("Error: {}", e),
         }
     }
 }

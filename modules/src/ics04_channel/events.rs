@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::{attribute, some_attribute};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -10,6 +10,29 @@ use std::convert::{TryFrom, TryInto};
 use std::iter::FromIterator;
 use tendermint::block;
 
+/// Channel event types
+const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
+const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
+const OPEN_ACK_EVENT_TYPE: &str = "channel_open_ack";
+const OPEN_CONFIRM_EVENT_TYPE: &str = "channel_open_confirm";
+const CLOSE_INIT_EVENT_TYPE: &str = "channel_close_init";
+const CLOSE_CONFIRM_EVENT_TYPE: &str = "channel_close_confirm";
+
+/// Channel event attribute keys
+const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
+const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
+const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
+const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
+const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
+
+/// Packet event types
+pub const SEND_PACKET: &str = "send_packet";
+pub const RECV_PACKET: &str = "recv_packet";
+pub const WRITE_ACK: &str = "write_acknowledgement";
+pub const ACK_PACKET: &str = "acknowledge_packet";
+pub const TIMEOUT: &str = "timeout_packet";
+
+/// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
 const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
 const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
@@ -19,26 +42,6 @@ const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
 const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 //const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
-
-pub const SEND_PACKET: &str = "send_packet";
-pub const RECV_PACKET: &str = "recv_packet";
-pub const WRITE_ACK: &str = "write_acknowledgement";
-pub const ACK_PACKET: &str = "acknowledge_packet";
-pub const TIMEOUT: &str = "timeout_packet";
-
-/// The content of the `key` field for the attribute containing the connection identifier.
-const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
-
-/// The content of the `key` field for the attribute containing the port identifier.
-const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
-
-/// The content of the `type` field for the event that a chain produces upon executing a channel handshake transaction.
-const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
-const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
-const OPEN_ACK_EVENT_TYPE: &str = "channel_open_ack";
-const OPEN_CONFIRM_EVENT_TYPE: &str = "channel_open_confirm";
-const CLOSE_INIT_EVENT_TYPE: &str = "channel_close_init";
-const CLOSE_CONFIRM_EVENT_TYPE: &str = "channel_close_confirm";
 
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
@@ -65,8 +68,17 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
     let mut ack = vec![];
     for tag in event.attributes {
         match tag.key.as_ref() {
-            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = tag.value.to_string().parse().unwrap(),
             PORT_ID_ATTRIBUTE_KEY => attr.port_id = tag.value.to_string().parse().unwrap(),
+            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = tag.value.to_string().parse().unwrap(),
+            CONNECTION_ID_ATTRIBUTE_KEY => {
+                attr.connection_id = tag.value.to_string().parse().unwrap()
+            }
+            COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_port_id = tag.value.to_string().parse().unwrap()
+            }
+            COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_channel_id = tag.value.to_string().parse().ok()
+            }
             _ => {}
         }
 
@@ -119,6 +131,9 @@ pub struct Attributes {
     pub height: block::Height,
     pub port_id: PortId,
     pub channel_id: ChannelId,
+    pub connection_id: ConnectionId,
+    pub counterparty_port_id: PortId,
+    pub counterparty_channel_id: Option<ChannelId>,
 }
 
 impl Default for Attributes {
@@ -127,22 +142,6 @@ impl Default for Attributes {
             height: Default::default(),
             port_id: Default::default(),
             channel_id: Default::default(),
-        }
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenInit {
-    pub common_attributes: Attributes,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
-}
-
-impl From<Attributes> for OpenInit {
-    fn from(attrs: Attributes) -> Self {
-        OpenInit {
-            common_attributes: attrs,
             connection_id: Default::default(),
             counterparty_port_id: Default::default(),
             counterparty_channel_id: Default::default(),
@@ -150,19 +149,29 @@ impl From<Attributes> for OpenInit {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct OpenInit(Attributes);
+
+impl From<Attributes> for OpenInit {
+    fn from(attrs: Attributes) -> Self {
+        OpenInit(attrs)
+    }
+}
+
 impl TryFrom<RawObject> for OpenInit {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenInit {
-            common_attributes: Attributes {
-                height: obj.height,
-                port_id: attribute!(obj, "channel_open_init.port_id"),
-                channel_id: attribute!(obj, "channel_open_init.channel_id"),
-            },
+        Ok(OpenInit(Attributes {
+            height: obj.height,
+            port_id: attribute!(obj, "channel_open_init.port_id"),
+            channel_id: attribute!(obj, "channel_open_init.channel_id"),
             connection_id: attribute!(obj, "channel_open_init.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
-            counterparty_channel_id: attribute!(obj, "channel_open_init.counterparty_channel_id"),
-        })
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_open_init.counterparty_channel_id"
+            ),
+        }))
     }
 }
 
@@ -173,37 +182,27 @@ impl From<OpenInit> for IBCEvent {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct OpenTry {
-    pub common_attributes: Attributes,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: ChannelId,
-}
-
+pub struct OpenTry(Attributes);
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
-        OpenTry {
-            common_attributes: attrs,
-            connection_id: Default::default(),
-            counterparty_port_id: Default::default(),
-            counterparty_channel_id: Default::default(),
-        }
+        OpenTry(attrs)
     }
 }
 
 impl TryFrom<RawObject> for OpenTry {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
-        Ok(OpenTry {
-            common_attributes: Attributes {
-                height: obj.height,
-                port_id: attribute!(obj, "channel_open_try.port_id"),
-                channel_id: attribute!(obj, "channel_open_try.channel_id"),
-            },
+        Ok(OpenTry(Attributes {
+            height: obj.height,
+            port_id: attribute!(obj, "channel_open_try.port_id"),
+            channel_id: attribute!(obj, "channel_open_try.channel_id"),
             connection_id: attribute!(obj, "channel_open_try.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
-            counterparty_channel_id: attribute!(obj, "channel_open_try.counterparty_channel_id"),
-        })
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_open_try.counterparty_channel_id"
+            ),
+        }))
     }
 }
 
@@ -229,6 +228,12 @@ impl TryFrom<RawObject> for OpenAck {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_ack.port_id"),
             channel_id: attribute!(obj, "channel_open_ack.channel_id"),
+            connection_id: attribute!(obj, "channel_open_ack.connection_id"),
+            counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_open_ack.counterparty_channel_id"
+            ),
         }))
     }
 }
@@ -255,6 +260,12 @@ impl TryFrom<RawObject> for OpenConfirm {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_confirm.port_id"),
             channel_id: attribute!(obj, "channel_open_confirm.channel_id"),
+            connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
+            counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_open_confirm.counterparty_channel_id"
+            ),
         }))
     }
 }
@@ -281,6 +292,12 @@ impl TryFrom<RawObject> for CloseInit {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_init.port_id"),
             channel_id: attribute!(obj, "channel_close_init.channel_id"),
+            connection_id: attribute!(obj, "channel_close_init.connection_id"),
+            counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_close_init.counterparty_channel_id"
+            ),
         }))
     }
 }
@@ -307,6 +324,12 @@ impl TryFrom<RawObject> for CloseConfirm {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_confirm.port_id"),
             channel_id: attribute!(obj, "channel_close_confirm.channel_id"),
+            connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
+            counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
+            counterparty_channel_id: some_attribute!(
+                obj,
+                "channel_close_confirm.counterparty_channel_id"
+            ),
         }))
     }
 }

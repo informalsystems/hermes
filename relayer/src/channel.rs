@@ -361,7 +361,10 @@ pub fn build_chan_init_and_send(
     // Find the relevant event for channel init
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenInitChannel(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenInitChannel(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenInit(
@@ -563,7 +566,9 @@ pub fn build_chan_try_and_send(
     // Find the relevant event for channel try
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenTryChannel(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenTryChannel(_)) || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenTry(
@@ -660,7 +665,9 @@ pub fn build_chan_ack_and_send(
     // Find the relevant event for channel ack
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenAckChannel(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenAckChannel(_)) || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenAck(
@@ -755,7 +762,10 @@ pub fn build_chan_confirm_and_send(
     // Find the relevant event for channel confirm
     events
         .iter()
-        .find(|&event| matches!(event, IBCEvent::OpenConfirmChannel(_)))
+        .find(|&event| {
+            matches!(event, IBCEvent::OpenConfirmChannel(_))
+                || matches!(event, IBCEvent::ChainError(_))
+        })
         .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenConfirm(

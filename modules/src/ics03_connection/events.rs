@@ -41,17 +41,16 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
     let mut attr = Attributes::default();
 
     for tag in event.attributes {
-        if CONN_ID_ATTRIBUTE_KEY == tag.key.as_ref() {
-            attr.connection_id = tag.value.to_string().parse().unwrap()
-        }
-        if CLIENT_ID_ATTRIBUTE_KEY == tag.key.as_ref() {
-            attr.client_id = tag.value.to_string().parse().unwrap()
-        }
-        if COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY == tag.key.as_ref() {
-            attr.counterparty_connection_id = tag.value.to_string().parse().ok()
-        }
-        if COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY == tag.key.as_ref() {
-            attr.counterparty_client_id = tag.value.to_string().parse().unwrap()
+        match tag.key.as_ref() {
+            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = tag.value.to_string().parse().unwrap(),
+            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = tag.value.to_string().parse().unwrap(),
+            COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_connection_id = tag.value.to_string().parse().ok()
+            }
+            COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
+                attr.counterparty_client_id = tag.value.to_string().parse().unwrap()
+            }
+            _ => {}
         }
     }
 
