@@ -55,7 +55,7 @@ echo "--------------------------------------------------------------------------
 echo "Create client transactions"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "creating "$CHAIN_B"_client on chain "$CHAIN_A"..."
-rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B" "$CHAIN_B"_client
+rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "creating "$CHAIN_A"_client on chain "$CHAIN_B"..."
 rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A" "$CHAIN_A"_client
