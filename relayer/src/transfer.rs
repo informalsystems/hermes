@@ -15,9 +15,10 @@ pub struct TransferOptions {
     pub packet_src_channel_id: ChannelId,
     pub amount: String,
     pub height_offset: u64,
+    pub number_msgs: usize,
 }
 
-pub fn build_and_send_send_packet_messages(
+pub fn build_and_send_transfer_messages(
     mut packet_src_chain: CosmosSDKChain, // the chain where the transfer is sent
     mut packet_dst_chain: CosmosSDKChain, // the chain from whose account the amount is debited
     opts: &TransferOptions,
@@ -47,7 +48,6 @@ pub fn build_and_send_send_packet_messages(
     };
 
     let raw_msg = msg.to_any::<RawMsgTransfer>();
-    let mut msgs = vec![];
-    msgs.append(&mut vec![raw_msg]);
+    let msgs = vec![raw_msg; opts.number_msgs];
     Ok(packet_src_chain.send_msgs(msgs)?)
 }

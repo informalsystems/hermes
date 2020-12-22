@@ -9,7 +9,7 @@ use crate::error::{Error, Kind};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::transfer::{build_and_send_send_packet_messages, TransferOptions};
+use relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
@@ -30,6 +30,9 @@ pub struct TxRawSendPacketCmd {
 
     #[options(free, help = "timout in number of blocks since current")]
     height_offset: u64,
+
+    #[options(help = "number of messages to send", short = "n")]
+    number_msgs: Option<usize>,
 }
 
 impl TxRawSendPacketCmd {
@@ -53,6 +56,7 @@ impl TxRawSendPacketCmd {
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount.to_string(),
             height_offset: self.height_offset,
+            number_msgs:  self.number_msgs.unwrap_or(1),
         };
 
         Ok(opts)
@@ -79,11 +83,11 @@ impl Runnable for TxRawSendPacketCmd {
             CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt).unwrap();
 
         let res: Result<Vec<IBCEvent>, Error> =
-            build_and_send_send_packet_messages(src_chain, dst_chain, &opts)
+            build_and_send_transfer_messages(src_chain, dst_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", ev),
+            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", serde_json::to_string(&ev).unwrap()),
             Err(e) => status_info!("packet recv failed, error: ", "{}", e),
         }
     }
