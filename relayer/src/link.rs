@@ -29,6 +29,7 @@ use crate::connection::ConnectionError;
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::application::msgs::transfer::MsgTransfer;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -596,7 +597,7 @@ fn verify_channel_state(
             .context(e)
         })?;
 
-    if channel.state_matches(&State::Open) {
+    if !channel.state_matches(&State::Open) {
         return Err(Kind::AckPacket(
             channel_id.clone(),
             format!("channel on chain {} not in open state", chain.id()),
@@ -731,4 +732,52 @@ pub struct PacketOptions {
     pub packet_dst_client_id: ClientId,
     pub packet_dst_port_id: PortId,
     pub packet_dst_channel_id: ChannelId,
+}
+
+use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
+
+#[derive(Clone, Debug)]
+pub struct TransferOptions {
+    pub packet_src_chain_config: ChainConfig,
+    pub packet_dst_chain_config: ChainConfig,
+    pub packet_src_port_id: PortId,
+    pub packet_src_channel_id: ChannelId,
+    pub amount: String,
+    pub height_offset: u64,
+}
+
+pub fn build_and_send_send_packet_messages(
+    packet_src_chain: Box<dyn ChainHandle>, // the chain where the transfer is sent
+    packet_dst_chain: Box<dyn ChainHandle>, // the chain from whose account the amount is debited
+    opts: &TransferOptions,
+) -> Result<Vec<IBCEvent>, Error> {
+
+    let receiver = packet_dst_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    let sender = packet_src_chain
+        .get_signer()
+        .map_err(|e| Kind::KeyBase.context(e))?;
+
+    let latest_height = packet_dst_chain.query_latest_height()?;
+
+    // TODO - send multiple messages
+    let msg = MsgTransfer {
+        source_port: opts.packet_src_port_id.clone(),
+        source_channel: opts.packet_src_channel_id.clone(),
+        token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
+            denom: "samoleans".to_string(),
+            amount: opts.amount.to_string()
+        }),
+        sender,
+        receiver,
+        timeout_height: latest_height.add(opts.height_offset).into(),
+        timeout_timestamp: 0
+    };
+
+    let raw_msg = msg.to_any::<RawMsgTransfer>();
+    let mut msgs = vec![];
+    msgs.append(&mut vec![raw_msg]);
+    Ok(packet_src_chain.send_msgs(msgs)?)
 }

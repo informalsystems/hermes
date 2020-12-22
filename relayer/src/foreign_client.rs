@@ -204,6 +204,8 @@ pub fn build_update_client(
         signer,
     };
 
+    info!("building cl update for {:?}", target_height);
+
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
 
