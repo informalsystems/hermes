@@ -1,4 +1,6 @@
 use crate::prelude::*;
+use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime as TokioRuntime;
 
 use abscissa_core::{Command, Options, Runnable};
 use relayer::config::Config;
@@ -6,9 +8,8 @@ use relayer::config::Config;
 use crate::error::{Error, Kind};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
-use relayer::link::{TransferOptions, build_and_send_send_packet_messages};
+use relayer::chain::{Chain, CosmosSDKChain};
+use relayer::transfer::{build_and_send_send_packet_messages, TransferOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
@@ -71,10 +72,11 @@ impl Runnable for TxRawSendPacketCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let (src_chain, _) =
-            ChainRuntime::<CosmosSDKChain>::spawn(opts.packet_src_chain_config.clone()).unwrap();
-        let (dst_chain, _) =
-            ChainRuntime::<CosmosSDKChain>::spawn(opts.packet_dst_chain_config.clone()).unwrap();
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let src_chain =
+            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone()).unwrap();
+        let dst_chain =
+            CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt).unwrap();
 
         let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_send_packet_messages(src_chain, dst_chain, &opts)

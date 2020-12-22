@@ -5,11 +5,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 
-use crate::ics24_host::identifier::{PortId, ChannelId};
-use crate::ics02_client::height::Height;
+use crate::address::{account_to_string, string_to_account};
 use crate::application::error::{Error, Kind};
+use crate::ics02_client::height::Height;
+use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::tx_msg::Msg;
-use crate::address::{string_to_account, account_to_string};
 
 pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 
@@ -69,7 +69,7 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
             sender: string_to_account(raw_msg.sender).unwrap(),
             receiver: string_to_account(raw_msg.receiver).unwrap(),
             timeout_height: raw_msg.timeout_height.unwrap().try_into().unwrap(),
-            timeout_timestamp: 0
+            timeout_timestamp: 0,
         })
     }
 }
@@ -83,7 +83,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             sender: account_to_string(domain_msg.sender).unwrap(),
             receiver: account_to_string(domain_msg.receiver).unwrap(),
             timeout_height: Some(domain_msg.timeout_height.try_into().unwrap()),
-            timeout_timestamp: 0
+            timeout_timestamp: 0,
         }
     }
 }
