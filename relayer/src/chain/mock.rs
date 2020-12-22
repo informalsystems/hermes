@@ -252,7 +252,6 @@ pub mod test_utils {
             account_prefix: "".to_string(),
             key_name: "".to_string(),
             store_prefix: "".to_string(),
-            client_ids: vec![],
             gas: None,
             max_msg_num: None,
             max_tx_size: None,

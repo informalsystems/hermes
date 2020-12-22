@@ -33,7 +33,6 @@ impl Runnable for V0Cmd {
 
 pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     // Relay for a single channel, first on the first connection in configuration
-    // TODO - change the config to use typed Ids and same with ConnectionConfig, ClientConfig, ChannelConfig, etc
     let conn = &config
         .connections
         .clone()

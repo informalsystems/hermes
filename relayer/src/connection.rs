@@ -1,5 +1,4 @@
 use prost_types::Any;
-use std::str::FromStr;
 use std::time::SystemTime;
 use thiserror::Error;
 use tracing::{debug, error, info};
@@ -112,25 +111,14 @@ impl ConnectionConfig {
 
 impl ConnectionConfig {
     pub fn new(conn: &config::Connection) -> Result<ConnectionConfig, String> {
-        let a_conn_endpoint = conn
-            .a_end
-            .clone()
-            .ok_or("Connection source endpoint not specified")?;
-        let b_conn_endpoint = conn
-            .b_end
-            .clone()
-            .ok_or("Connection destination endpoint not specified")?;
-
         let a_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(a_conn_endpoint.chain_id.as_str())
-                .map_err(|e| format!("Invalid chain id ({:?})", e))?,
+            chain_id: conn.a_chain.clone(),
             connection_id: ConnectionId::default(),
             client_id: ClientId::default(),
         };
 
         let b_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(b_conn_endpoint.chain_id.as_str())
-                .map_err(|e| format!("Invalid counterparty chain id ({:?})", e))?,
+            chain_id: conn.b_chain.clone(),
             connection_id: ConnectionId::default(),
             client_id: ClientId::default(),
         };

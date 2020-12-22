@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::time::SystemTime;
 
 use prost_types::Any;
@@ -133,8 +132,7 @@ impl ChannelConfig {
             chain_id: conn.a_end().chain_id().clone(),
             connection_id: ConnectionId::default(),
             client_id: ClientId::default(),
-            port_id: PortId::from_str(path.a_port.clone().ok_or("Port id not specified")?.as_str())
-                .map_err(|e| format!("Invalid port id ({:?})", e))?,
+            port_id: path.a_port.clone(),
             channel_id: ChannelId::default(),
         };
 
@@ -142,13 +140,7 @@ impl ChannelConfig {
             chain_id: conn.b_end().chain_id().clone(),
             connection_id: ConnectionId::default(),
             client_id: ClientId::default(),
-            port_id: PortId::from_str(
-                path.b_port
-                    .clone()
-                    .ok_or("Counterparty port id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid counterparty port id ({:?})", e))?,
+            port_id: path.b_port.clone(),
             channel_id: ChannelId::default(),
         };
 
@@ -295,7 +287,7 @@ impl Channel {
                 }
                 _ => {} // TODO channel close
             }
-            info!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
+            debug!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
         }
 
         Err(ChannelError::Failed(format!(

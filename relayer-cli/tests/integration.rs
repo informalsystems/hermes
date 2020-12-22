@@ -33,7 +33,6 @@ fn simd_config() -> Config {
         account_prefix: "cosmos".to_string(),
         key_name: "testkey".to_string(),
         store_prefix: "ibc".to_string(),
-        client_ids: vec!["ethbridge".to_string()],
         gas: Some(200000),
         max_msg_num: None,
         max_tx_size: None,
