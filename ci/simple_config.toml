@@ -16,8 +16,8 @@ trusting_period = '14days'
 
 [[chains]]
 id = 'ibc1'
-rpc_addr = 'tcp://ibc1:26657'
-grpc_addr = 'tcp://ibc1:9090'
+rpc_addr = 'tcp://ibc1:26557'
+grpc_addr = 'tcp://ibc1:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 client_ids = []
