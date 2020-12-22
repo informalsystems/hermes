@@ -70,13 +70,17 @@ pub enum Kind {
     #[error("Failed to create client {0}")]
     CreateClient(String),
 
+    /// Common failures to all connection messages
+    #[error("Failed to build conn open message {0}: {1}")]
+    ConnOpen(ConnectionId, String),
+
     /// Connection open init failure
-    #[error("Failed to build conn open init {0}: {1}")]
-    ConnOpenInit(ConnectionId, String),
+    #[error("Failed to build conn open init {0}")]
+    ConnOpenInit(String),
 
     /// Connection open try failure
-    #[error("Failed to build conn open try {0}: {1}")]
-    ConnOpenTry(ConnectionId, String),
+    #[error("Failed to build conn open try {0}")]
+    ConnOpenTry(String),
 
     /// Connection open ack failure
     #[error("Failed to build conn open ack {0}: {1}")]
@@ -86,13 +90,17 @@ pub enum Kind {
     #[error("Failed to build conn open confirm {0}: {1}")]
     ConnOpenConfirm(ConnectionId, String),
 
+    /// Common failures to all channel messages
+    #[error("Failed to build chan open msg {0}: {1}")]
+    ChanOpen(ChannelId, String),
+
     /// Channel open init failure
-    #[error("Failed to build channel open init {0}: {1}")]
-    ChanOpenInit(ChannelId, String),
+    #[error("Failed to build channel open init {0}")]
+    ChanOpenInit(String),
 
     /// Channel open try failure
-    #[error("Failed to build channel open try {0}: {1}")]
-    ChanOpenTry(ChannelId, String),
+    #[error("Failed to build channel open try {0}")]
+    ChanOpenTry(String),
 
     /// Channel open ack failure
     #[error("Failed to build channel open ack {0}: {1}")]

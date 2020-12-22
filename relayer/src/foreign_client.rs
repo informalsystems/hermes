@@ -1,6 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
-use tracing::info;
+use tracing::{error, info};
 
 use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
@@ -30,7 +30,7 @@ pub enum ForeignClientError {
 pub struct ForeignClient {
     /// The identifier of this client. The host chain determines this id upon client creation,
     /// so it may be missing (`None).
-    id: Option<ClientId>,
+    id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
     dst_chain: Box<dyn ChainHandle>,
@@ -59,7 +59,7 @@ impl ForeignClient {
         }
 
         let mut client = ForeignClient {
-            id: None,
+            id: ClientId::default(),
             dst_chain: dst_chain.clone(),
             src_chain: src_chain.clone(),
         };
@@ -69,22 +69,27 @@ impl ForeignClient {
         Ok(client)
     }
 
-    pub fn id(&self) -> Option<ClientId> {
-        self.id.clone()
+    pub fn id(&self) -> &ClientId {
+        &self.id
     }
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
         let done = '\u{1F36D}';
 
-        let ibc_ev = build_create_client_and_send(self.dst_chain.clone(), self.src_chain.clone())
-            .map_err(|e| {
-            ForeignClientError::ClientCreate(format!("Create client failed ({:?})", e))
-        })?;
-        info!("{} {} => {:?}", done, self.dst_chain.id(), ibc_ev);
-
-        self.id = Some(extract_client_id(ibc_ev)?);
-
+        match build_create_client_and_send(self.dst_chain.clone(), self.src_chain.clone()) {
+            Err(e) => {
+                error!("Failed CreateClient {:?}: {}", self.dst_chain.id(), e);
+                return Err(ForeignClientError::ClientCreate(format!(
+                    "Create client failed ({:?})",
+                    e
+                )));
+            }
+            Ok(event) => {
+                self.id = extract_client_id(&event)?.clone();
+                info!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
+            }
+        }
         Ok(())
     }
 
@@ -98,37 +103,9 @@ impl ForeignClient {
         self.src_chain.clone()
     }
 
-    /// Creates a message for updating this client with the latest header of its source chain.
-    pub fn prepare_update(&self) -> Result<Vec<Any>, ForeignClientError> {
-        let client_id = self.id.clone().ok_or_else(|| {
-            ForeignClientError::ClientUpdate(
-                "Client identifier not established for this ForeignClient!".to_string(),
-            )
-        })?;
-
-        let target_height = self.src_chain.query_latest_height().map_err(|e| {
-            ForeignClientError::ClientUpdate(format!("error querying latest height {:?}", e))
-        })?;
-        let msg = build_update_client(
-            self.dst_chain.clone(),
-            self.src_chain.clone(),
-            &client_id,
-            target_height,
-        )
-        .map_err(|e| {
-            ForeignClientError::ClientUpdate(format!("build_update_client error {:?}", e))
-        })?;
-
-        Ok(msg)
-    }
-
     /// Attempts to update a client using header from the latest height of its source chain.
     pub fn update(&self) -> Result<(), ForeignClientError> {
-        let client_id = self.id.clone().ok_or_else(|| {
-            ForeignClientError::ClientUpdate(
-                "Client identifier not established for this ForeignClient!".to_string(),
-            )
-        })?;
+        let client_id = self.id.clone();
 
         let res = build_update_client_and_send(
             self.dst_chain.clone(),
@@ -150,10 +127,10 @@ impl ForeignClient {
     }
 }
 
-pub fn extract_client_id(event: IBCEvent) -> Result<ClientId, ForeignClientError> {
+pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientError> {
     match event {
-        IBCEvent::CreateClient(ev) => Ok(ev.client_id().clone()),
-        IBCEvent::UpdateClient(ev) => Ok(ev.client_id().clone()),
+        IBCEvent::CreateClient(ev) => Ok(ev.client_id()),
+        IBCEvent::UpdateClient(ev) => Ok(ev.client_id()),
         _ => Err(ForeignClientError::ClientCreate(
             "cannot extract client_id from result".to_string(),
         )),
@@ -334,7 +311,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        let a_client_id = extract_client_id(res.unwrap()).unwrap();
+        let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
 
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
@@ -358,7 +335,7 @@ mod test {
         );
 
         // Remember the id of the client we created on chain b
-        let b_client_id = extract_client_id(res.unwrap()).unwrap();
+        let b_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
 
         // Chain b should have advanced
         let mut b_height_last = b_chain.query_latest_height().unwrap();
@@ -417,11 +394,7 @@ mod test {
         );
 
         let client_on_a = res_client_on_a.unwrap();
-        assert!(
-            client_on_a.id().is_some(),
-            "Client identifier for client on chain a was not set!"
-        );
-        let a_client = client_on_a.id.unwrap();
+        let a_client = client_on_a.id;
 
         let res_client_on_b = ForeignClient::new(b_chain.clone(), a_chain.clone());
         assert!(
@@ -430,11 +403,7 @@ mod test {
             res_client_on_b
         );
         let client_on_b = res_client_on_b.unwrap();
-        assert!(
-            client_on_b.id().is_some(),
-            "Client identifier for client on chain b was not set!"
-        );
-        let b_client = client_on_b.id.unwrap();
+        let b_client = client_on_b.id;
 
         // Now that the clients exists, we should be able to query its state
         let b_client_state = b_chain.query_client_state(&b_client, Height::default());

@@ -87,6 +87,12 @@ impl Default for Attributes {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenInit(Attributes);
 
+impl OpenInit {
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.0.connection_id
+    }
+}
+
 impl From<Attributes> for OpenInit {
     fn from(attrs: Attributes) -> Self {
         OpenInit(attrs)
@@ -117,6 +123,12 @@ impl From<OpenInit> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenTry(Attributes);
+
+impl OpenTry {
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.0.connection_id
+    }
+}
 
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
@@ -149,6 +161,12 @@ impl From<OpenTry> for IBCEvent {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenAck(Attributes);
 
+impl OpenAck {
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.0.connection_id
+    }
+}
+
 impl From<Attributes> for OpenAck {
     fn from(attrs: Attributes) -> Self {
         OpenAck(attrs)
@@ -179,6 +197,12 @@ impl From<OpenAck> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenConfirm(Attributes);
+
+impl OpenConfirm {
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.0.connection_id
+    }
+}
 
 impl From<Attributes> for OpenConfirm {
     fn from(attrs: Attributes) -> Self {

@@ -1,8 +1,7 @@
 use prost_types::Any;
-use std::str::FromStr;
 use std::time::SystemTime;
 use thiserror::Error;
-use tracing::info;
+use tracing::{debug, error, info};
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
@@ -37,7 +36,7 @@ pub enum ConnectionError {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
-    config: ConnectionConfig,
+    pub config: ConnectionConfig,
     a_client: ForeignClient,
     b_client: ForeignClient,
 }
@@ -72,6 +71,10 @@ impl ConnectionSideConfig {
 
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
+    }
+
+    pub fn set_connection_id(&mut self, id: &ConnectionId) {
+        self.connection_id = id.clone()
     }
 }
 
@@ -108,41 +111,16 @@ impl ConnectionConfig {
 
 impl ConnectionConfig {
     pub fn new(conn: &config::Connection) -> Result<ConnectionConfig, String> {
-        let a_conn_endpoint = conn
-            .a_end
-            .clone()
-            .ok_or("Connection source endpoint not specified")?;
-        let b_conn_endpoint = conn
-            .b_end
-            .clone()
-            .ok_or("Connection destination endpoint not specified")?;
-
         let a_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(a_conn_endpoint.chain_id.as_str())
-                .map_err(|e| format!("Invalid chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(
-                a_conn_endpoint
-                    .connection_id
-                    .ok_or("Connection id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid connection id ({:?})", e))?,
-            client_id: ClientId::from_str(a_conn_endpoint.client_id.as_str())
-                .map_err(|e| format!("Invalid client id ({:?})", e))?,
+            chain_id: conn.a_chain.clone(),
+            connection_id: ConnectionId::default(),
+            client_id: ClientId::default(),
         };
 
         let b_config = ConnectionSideConfig {
-            chain_id: ChainId::from_str(b_conn_endpoint.chain_id.as_str())
-                .map_err(|e| format!("Invalid counterparty chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(
-                b_conn_endpoint
-                    .connection_id
-                    .ok_or("Counterparty connection id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid counterparty connection id ({:?})", e))?,
-            client_id: ClientId::from_str(b_conn_endpoint.client_id.as_str())
-                .map_err(|e| format!("Invalid counterparty client id ({:?})", e))?,
+            chain_id: conn.b_chain.clone(),
+            connection_id: ConnectionId::default(),
+            client_id: ClientId::default(),
         };
 
         Ok(ConnectionConfig { a_config, b_config })
@@ -155,7 +133,6 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {
         // Validate that the two clients serve the same two chains
         if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
@@ -164,7 +141,8 @@ impl Connection {
                 a_client.src_chain().id(),
                 b_client.dst_chain().id()
             )));
-        } else if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
+        }
+        if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the destination chain of client a ({}) does not not match the source chain of client b ({})",
                 a_client.dst_chain().id(),
@@ -172,8 +150,19 @@ impl Connection {
             )));
         }
 
-        let c = Connection {
-            config,
+        let mut c = Connection {
+            config: ConnectionConfig {
+                a_config: ConnectionSideConfig::new(
+                    a_client.dst_chain().id(),
+                    Default::default(),
+                    a_client.id().clone(),
+                ),
+                b_config: ConnectionSideConfig::new(
+                    b_client.dst_chain().id(),
+                    Default::default(),
+                    b_client.id().clone(),
+                ),
+            },
             a_client,
             b_client,
         };
@@ -193,15 +182,58 @@ impl Connection {
     }
 
     /// Executes a connection handshake protocol (ICS 003) for this connection object
-    fn handshake(&self) -> Result<(), ConnectionError> {
+    fn handshake(&mut self) -> Result<(), ConnectionError> {
         let done = '\u{1F942}'; // surprise emoji
 
         let a_chain = self.chain_a();
         let b_chain = self.chain_b();
 
-        let flipped = self.config.flipped();
+        let mut flipped = self.config.flipped();
 
+        // Try connOpenInit on a_chain
+        let now = SystemTime::now();
         let mut counter = 0;
+        while counter < MAX_ITER {
+            counter += 1;
+            match build_conn_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
+                Err(e) => {
+                    error!("Failed ConnInit {:?}: {}", self.config.a_end(), e);
+                    continue;
+                }
+                Ok(result) => {
+                    self.config
+                        .a_config
+                        .set_connection_id(extract_connection_id(&result)?);
+                    info!("{}  {} => {:?}\n", done, a_chain.id(), result);
+                    break;
+                }
+            }
+        }
+        debug!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
+        let now = SystemTime::now();
+
+        // Try connOpenTry on b_chain
+        counter = 0;
+        while counter < MAX_ITER {
+            counter += 1;
+            match build_conn_try_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
+                Err(e) => {
+                    error!("Failed ConnTry {:?}: {}", self.config.b_end(), e);
+                    continue;
+                }
+                Ok(result) => {
+                    self.config
+                        .b_config
+                        .set_connection_id(extract_connection_id(&result)?);
+                    info!("{}  {} => {:?}\n", done, b_chain.id(), result);
+                    break;
+                }
+            }
+        }
+        debug!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
+
+        flipped = self.config.flipped();
+        counter = 0;
         while counter < MAX_ITER {
             counter += 1;
             let now = SystemTime::now();
@@ -222,50 +254,13 @@ impl Connection {
                 a_connection.unwrap().state().clone(),
                 b_connection.unwrap().state().clone(),
             ) {
-                (State::Uninitialized, State::Uninitialized) => {
-                    // Init to src
-                    match build_conn_init_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => info!("{:?} Failed ConnInit {:?}", e, self.config.a_end()),
-                        Ok(_) => info!("{}  ConnInit {:?}", done, self.config.a_end()),
-                    }
-                }
-                (State::Init, State::Uninitialized) => {
-                    match build_conn_try_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
-                        Err(e) => info!("{:?} Failed ConnTry {:?}", e, self.config.b_end()),
-                        Ok(_) => info!("{}  ConnTry {:?}", done, self.config.b_end()),
-                    }
-                }
-                (State::Uninitialized, State::Init) => {
-                    match build_conn_try_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => info!("{:?} Failed ConnTry {:?}", e, self.config.a_end()),
-                        Ok(_) => info!("{}  ConnTry {:?}", done, self.config.a_end()),
-                    }
-                }
-                (State::Init, State::Init) => {
-                    // Try to dest
-                    match build_conn_try_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
-                        Err(e) => {
-                            info!("{:?} Failed ConnTry {:?}", e, self.config.b_end())
-                        }
-                        Ok(_) => info!("{}  ConnTry {:?}", done, self.config.b_end()),
-                    }
-                }
-                (State::TryOpen, State::Init) => {
-                    // Ack to dest
-                    match build_conn_ack_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
-                        Err(e) => {
-                            info!("{:?} Failed ConnAck {:?}", e, self.config.b_end())
-                        }
-                        Ok(_) => info!("{}  ConnAck {:?}", done, self.config.b_end()),
-                    }
-                }
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                     // Ack to src
                     match build_conn_ack_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => {
-                            info!("{:?} Failed ConnAck {:?}", e, self.config.a_end())
+                            error!("Failed ConnAck {:?}: {}", self.config.a_end(), e);
                         }
-                        Ok(_) => info!("{}  ConnAck {:?}", done, self.config.a_end()),
+                        Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::TryOpen) => {
@@ -275,39 +270,45 @@ impl Connection {
                         a_chain.clone(),
                         &self.config,
                     ) {
-                        Err(e) => {
-                            info!("{:?} Failed ConnConfirm {:?}", e, self.config.b_end())
-                        }
-                        Ok(_) => {
-                            info!("{}  ConnConfirm {:?}", done, self.config.b_end())
-                        }
+                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.config.b_end(), e),
+                        Ok(event) => info!("{}  {} => {:?}\n", done, b_chain.id(), event),
                     }
                 }
                 (State::TryOpen, State::Open) => {
                     // Confirm to src
                     match build_conn_confirm_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
-                        Err(e) => info!("{:?} ConnConfirm {:?}", e, self.config.a_end()),
-                        Ok(_) => {
-                            info!("{}  ConnConfirm {:?}", done, self.config.a_end())
-                        }
+                        Err(e) => error!("Failed ConnConfirm {:?}: {}", self.config.a_end(), e),
+                        Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::Open) => {
                     info!(
-                        "{}  {}  {}  Connection handshake finished for [{:#?}]",
+                        "{}  {}  {}  Connection handshake finished for [{:#?}]\n",
                         done, done, done, self.config
                     );
                     return Ok(());
                 }
                 _ => {}
             }
-            info!("elapsed time {:?}\n", now.elapsed().unwrap().as_secs());
+            debug!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
         }
 
         Err(ConnectionError::Failed(format!(
             "Failed to finish connection handshake in {:?} iterations",
             MAX_ITER
         )))
+    }
+}
+
+fn extract_connection_id(event: &IBCEvent) -> Result<&ConnectionId, ConnectionError> {
+    match event {
+        IBCEvent::OpenInitConnection(ev) => Ok(ev.connection_id()),
+        IBCEvent::OpenTryConnection(ev) => Ok(ev.connection_id()),
+        IBCEvent::OpenAckConnection(ev) => Ok(ev.connection_id()),
+        IBCEvent::OpenConfirmConnection(ev) => Ok(ev.connection_id()),
+        _ => Err(ConnectionError::Failed(
+            "cannot extract connection_id from result".to_string(),
+        )),
     }
 }
 
@@ -355,20 +356,21 @@ pub fn build_conn_init_and_send(
     let events = dst_chain.send_msgs(dst_msgs)?;
 
     // Find the relevant event for connection init
-    events
+    let result = events
         .iter()
         .find(|&event| {
             matches!(event, IBCEvent::OpenInitConnection(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
         .cloned()
-        .ok_or_else(|| {
-            Kind::ConnOpenInit(
-                opts.dst().connection_id().clone(),
-                "no conn init event was in the response".to_string(),
-            )
-            .into()
-        })
+        .ok_or_else(|| Kind::ConnOpenInit("no conn init event was in the response".to_string()))?;
+
+    // TODO - make chainError an actual error
+    match result {
+        IBCEvent::OpenInitConnection(_) => Ok(result),
+        IBCEvent::ChainError(e) => Err(Kind::ConnOpenInit(e).into()),
+        _ => panic!("internal error"),
+    }
 }
 
 fn check_destination_connection_state(
@@ -392,7 +394,7 @@ fn check_destination_connection_state(
     if good_state && good_client_ids && good_connection_ids {
         Ok(())
     } else {
-        Err(Kind::ConnOpenTry(
+        Err(Kind::ConnOpen(
             connection_id,
             "connection already exist in an incompatible state".into(),
         )
@@ -418,9 +420,9 @@ fn validated_expected_connection(
 
     // The highest expected state, depends on the message type:
     let highest_state = match msg_type {
-        ConnectionMsgType::OpenTry => State::Init,
         ConnectionMsgType::OpenAck => State::TryOpen,
         ConnectionMsgType::OpenConfirm => State::TryOpen,
+        _ => State::Uninitialized,
     };
 
     let dst_expected_connection = ConnectionEnd::new(
@@ -436,21 +438,13 @@ fn validated_expected_connection(
         dst_chain.query_connection(&opts.dst().connection_id().clone(), ICSHeight::default())?;
 
     // Check if a connection is expected to exist on destination chain
-    if msg_type == ConnectionMsgType::OpenTry {
-        // TODO - check typed Err, or make query_connection return Option<ConnectionEnd>
-        // It is ok if there is no connection for Try Tx
-        if dst_connection.state_matches(&State::Uninitialized) {
-            return Ok(dst_expected_connection);
-        }
-    } else {
-        // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
-        if dst_connection.state_matches(&State::Uninitialized) {
-            return Err(Kind::ConnOpenTry(
-                opts.src().connection_id().clone(),
-                "missing connection on source chain".to_string(),
-            )
-            .into());
-        }
+    // A connection must exist on destination chain for Ack and Confirm Tx-es to succeed
+    if dst_connection.state_matches(&State::Uninitialized) {
+        return Err(Kind::ConnOpen(
+            opts.src().connection_id().clone(),
+            "missing connection on source chain".to_string(),
+        )
+        .into());
     }
 
     check_destination_connection_state(
@@ -468,34 +462,16 @@ pub fn build_conn_try(
     src_chain: Box<dyn ChainHandle>,
     opts: &ConnectionConfig,
 ) -> Result<Vec<Any>, Error> {
-    let dst_expected_connection = validated_expected_connection(
-        dst_chain.clone(),
-        src_chain.clone(),
-        ConnectionMsgType::OpenTry,
-        opts,
-    )
-    .map_err(|e| {
-        Kind::ConnOpenTry(
-            opts.dst().connection_id().clone(),
-            "try options inconsistent with existing connection on destination chain".to_string(),
-        )
-        .context(e)
-    })?;
-
     let src_connection = src_chain
         .query_connection(&opts.src().connection_id().clone(), ICSHeight::default())
         .map_err(|e| {
-            Kind::ConnOpenTry(
-                opts.src().connection_id().clone(),
-                "missing connection on source chain".to_string(),
-            )
-            .context(e)
+            Kind::ConnOpenTry("missing connection on source chain".to_string()).context(e)
         })?;
 
     // TODO - check that the src connection is consistent with the try options
 
     // Build add send the message(s) for updating client on source
-    // TODO - add check if it is required
+    // TODO - add check if update client is required
     let src_client_target_height = dst_chain.query_latest_height()?;
     let client_msgs = build_update_client(
         src_chain.clone(),
@@ -533,11 +509,17 @@ pub fn build_conn_try(
         .get_signer()
         .map_err(|e| Kind::KeyBase.context(e))?;
 
+    let counterparty = Counterparty::new(
+        opts.src().client_id().clone(),
+        Option::from(opts.src().connection_id().clone()),
+        src_chain.query_commitment_prefix()?,
+    );
+
     let new_msg = MsgConnectionOpenTry {
         client_id: opts.dst().client_id().clone(),
         client_state,
-        previous_connection_id: src_connection.counterparty().connection_id().cloned(),
-        counterparty: dst_expected_connection.counterparty(),
+        previous_connection_id: None,
+        counterparty,
         counterparty_versions,
         proofs,
         delay_period: 0,
@@ -569,11 +551,7 @@ pub fn build_conn_try_and_send(
         })
         .cloned()
         .ok_or_else(|| {
-            Kind::ConnOpenTry(
-                opts.dst().connection_id().clone(),
-                "no conn try event was in the response".to_string(),
-            )
-            .into()
+            Kind::ConnOpenTry("no conn try event was in the response".to_string()).into()
         })
 }
 

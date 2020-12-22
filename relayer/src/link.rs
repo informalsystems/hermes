@@ -596,7 +596,7 @@ fn verify_channel_state(
             .context(e)
         })?;
 
-    if channel.state_matches(&State::Open) {
+    if !channel.state_matches(&State::Open) {
         return Err(Kind::AckPacket(
             channel_id.clone(),
             format!("channel on chain {} not in open state", chain.id()),
