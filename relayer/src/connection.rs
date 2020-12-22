@@ -37,7 +37,7 @@ pub enum ConnectionError {
 
 #[derive(Clone, Debug)]
 pub struct Connection {
-    config: ConnectionConfig,
+    pub config: ConnectionConfig,
     a_client: ForeignClient,
     b_client: ForeignClient,
 }
@@ -72,6 +72,10 @@ impl ConnectionSideConfig {
 
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
+    }
+
+    pub fn set_connection_id(&mut self, id: &ConnectionId) {
+        self.connection_id = id.clone()
     }
 }
 
@@ -120,29 +124,15 @@ impl ConnectionConfig {
         let a_config = ConnectionSideConfig {
             chain_id: ChainId::from_str(a_conn_endpoint.chain_id.as_str())
                 .map_err(|e| format!("Invalid chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(
-                a_conn_endpoint
-                    .connection_id
-                    .ok_or("Connection id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid connection id ({:?})", e))?,
-            client_id: ClientId::from_str(a_conn_endpoint.client_id.as_str())
-                .map_err(|e| format!("Invalid client id ({:?})", e))?,
+            connection_id: ConnectionId::default(),
+            client_id: ClientId::default(),
         };
 
         let b_config = ConnectionSideConfig {
             chain_id: ChainId::from_str(b_conn_endpoint.chain_id.as_str())
                 .map_err(|e| format!("Invalid counterparty chain id ({:?})", e))?,
-            connection_id: ConnectionId::from_str(
-                b_conn_endpoint
-                    .connection_id
-                    .ok_or("Counterparty connection id not specified")?
-                    .as_str(),
-            )
-            .map_err(|e| format!("Invalid counterparty connection id ({:?})", e))?,
-            client_id: ClientId::from_str(b_conn_endpoint.client_id.as_str())
-                .map_err(|e| format!("Invalid counterparty client id ({:?})", e))?,
+            connection_id: ConnectionId::default(),
+            client_id: ClientId::default(),
         };
 
         Ok(ConnectionConfig { a_config, b_config })
@@ -155,7 +145,6 @@ impl Connection {
     pub fn new(
         a_client: ForeignClient,
         b_client: ForeignClient,
-        config: ConnectionConfig,
     ) -> Result<Connection, ConnectionError> {
         // Validate that the two clients serve the same two chains
         if a_client.src_chain().id().ne(&b_client.dst_chain().id()) {
@@ -164,7 +153,8 @@ impl Connection {
                 a_client.src_chain().id(),
                 b_client.dst_chain().id()
             )));
-        } else if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
+        }
+        if a_client.dst_chain().id().ne(&b_client.src_chain().id()) {
             return Err(ConnectionError::ConstructorFailed(format!(
                 "the destination chain of client a ({}) does not not match the source chain of client b ({})",
                 a_client.dst_chain().id(),
@@ -173,7 +163,18 @@ impl Connection {
         }
 
         let mut c = Connection {
-            config,
+            config: ConnectionConfig {
+                a_config: ConnectionSideConfig::new(
+                    a_client.dst_chain().id(),
+                    Default::default(),
+                    a_client.id().clone(),
+                ),
+                b_config: ConnectionSideConfig::new(
+                    b_client.dst_chain().id(),
+                    Default::default(),
+                    b_client.id().clone(),
+                ),
+            },
             a_client,
             b_client,
         };
@@ -212,7 +213,9 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config.a_config.connection_id = extract_connection_id(&result)?.clone();
+                    self.config
+                        .a_config
+                        .set_connection_id(extract_connection_id(&result)?);
                     info!("{}  {} => {:?}\n", done, a_chain.id(), result);
                     break;
                 }
@@ -231,7 +234,9 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config.b_config.connection_id = extract_connection_id(&result)?.clone();
+                    self.config
+                        .b_config
+                        .set_connection_id(extract_connection_id(&result)?);
                     info!("{}  {} => {:?}\n", done, b_chain.id(), result);
                     break;
                 }
@@ -290,7 +295,7 @@ impl Connection {
                 }
                 (State::Open, State::Open) => {
                     info!(
-                        "\n{}  {}  {}  Connection handshake finished for [{:#?}]",
+                        "{}  {}  {}  Connection handshake finished for [{:#?}]\n",
                         done, done, done, self.config
                     );
                     return Ok(());
@@ -372,6 +377,7 @@ pub fn build_conn_init_and_send(
         .cloned()
         .ok_or_else(|| Kind::ConnOpenInit("no conn init event was in the response".to_string()))?;
 
+    // TODO - make chainError an actual error
     match result {
         IBCEvent::OpenInitConnection(_) => Ok(result),
         IBCEvent::ChainError(e) => Err(Kind::ConnOpenInit(e).into()),

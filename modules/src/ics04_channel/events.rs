@@ -152,6 +152,12 @@ impl Default for Attributes {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenInit(Attributes);
 
+impl OpenInit {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
+
 impl From<Attributes> for OpenInit {
     fn from(attrs: Attributes) -> Self {
         OpenInit(attrs)
@@ -183,6 +189,13 @@ impl From<OpenInit> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenTry(Attributes);
+
+impl OpenTry {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
+
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
         OpenTry(attrs)
@@ -214,6 +227,12 @@ impl From<OpenTry> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenAck(Attributes);
+
+impl OpenAck {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
 
 impl From<Attributes> for OpenAck {
     fn from(attrs: Attributes) -> Self {
@@ -247,6 +266,12 @@ impl From<OpenAck> for IBCEvent {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct OpenConfirm(Attributes);
 
+impl OpenConfirm {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
+
 impl From<Attributes> for OpenConfirm {
     fn from(attrs: Attributes) -> Self {
         OpenConfirm(attrs)
@@ -279,6 +304,12 @@ impl From<OpenConfirm> for IBCEvent {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CloseInit(Attributes);
 
+impl CloseInit {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
+
 impl From<Attributes> for CloseInit {
     fn from(attrs: Attributes) -> Self {
         CloseInit(attrs)
@@ -310,6 +341,12 @@ impl From<CloseInit> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CloseConfirm(Attributes);
+
+impl CloseConfirm {
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.0.channel_id
+    }
+}
 
 impl From<Attributes> for CloseConfirm {
     fn from(attrs: Attributes) -> Self {

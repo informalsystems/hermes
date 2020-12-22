@@ -64,7 +64,6 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     Ok(channel_relay(
         src_chain_handle,
         dst_chain_handle,
-        connection_cfg,
         channel_cfg,
     )?)
 }

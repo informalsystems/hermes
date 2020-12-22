@@ -70,8 +70,8 @@ pub enum Kind {
     #[error("Failed to create client {0}")]
     CreateClient(String),
 
-    /// Common connection failure
-    #[error("Failed to build conn open ack {0}: {1}")]
+    /// Common failures to all connection messages
+    #[error("Failed to build conn open message {0}: {1}")]
     ConnOpen(ConnectionId, String),
 
     /// Connection open init failure
@@ -90,13 +90,17 @@ pub enum Kind {
     #[error("Failed to build conn open confirm {0}: {1}")]
     ConnOpenConfirm(ConnectionId, String),
 
+    /// Common failures to all channel messages
+    #[error("Failed to build chan open msg {0}: {1}")]
+    ChanOpen(ChannelId, String),
+
     /// Channel open init failure
-    #[error("Failed to build channel open init {0}: {1}")]
-    ChanOpenInit(ChannelId, String),
+    #[error("Failed to build channel open init {0}")]
+    ChanOpenInit(String),
 
     /// Channel open try failure
-    #[error("Failed to build channel open try {0}: {1}")]
-    ChanOpenTry(ChannelId, String),
+    #[error("Failed to build channel open try {0}")]
+    ChanOpenTry(String),
 
     /// Channel open ack failure
     #[error("Failed to build channel open ack {0}: {1}")]
