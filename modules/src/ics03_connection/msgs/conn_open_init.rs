@@ -8,8 +8,8 @@ use tendermint::account::Id as AccountId;
 use crate::address::{account_to_string, string_to_account};
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::version::validate_version;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics03_connection::version::Version;
+use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
@@ -19,19 +19,14 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenInit";
 ///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenInit {
-    pub connection_id: ConnectionId,
     pub client_id: ClientId,
     pub counterparty: Counterparty,
-    pub version: String,
+    pub version: Version,
+    pub delay_period: u64,
     pub signer: AccountId,
 }
 
 impl MsgConnectionOpenInit {
-    /// Getter: borrow the `connection_id` from this message.
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
     /// Getter: borrow the `client_id` from this message.
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
@@ -62,12 +57,12 @@ impl Msg for MsgConnectionOpenInit {
             .map_err(|e| Kind::InvalidCounterparty.context(e).into())
     }
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -80,10 +75,6 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
         let signer = string_to_account(msg.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
         Ok(Self {
-            connection_id: msg
-                .connection_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
             client_id: msg
                 .client_id
                 .parse()
@@ -92,7 +83,12 @@ impl TryFrom<RawMsgConnectionOpenInit> for MsgConnectionOpenInit {
                 .counterparty
                 .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
-            version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
+            version: msg
+                .version
+                .ok_or(Kind::InvalidVersion)?
+                .try_into()
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            delay_period: msg.delay_period,
             signer,
         })
     }
@@ -102,9 +98,9 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
     fn from(ics_msg: MsgConnectionOpenInit) -> Self {
         RawMsgConnectionOpenInit {
             client_id: ics_msg.client_id.as_str().to_string(),
-            connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty: Some(ics_msg.counterparty.into()),
-            version: ics_msg.version,
+            version: Some(ics_msg.version.into()),
+            delay_period: ics_msg.delay_period,
             signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
@@ -115,7 +111,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
-    use crate::ics03_connection::version::default_version_string;
+    use crate::ics03_connection::version::Version;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy message, for testing only.
@@ -123,9 +119,9 @@ pub mod test_util {
     pub fn get_dummy_msg_conn_open_init() -> RawMsgConnectionOpenInit {
         RawMsgConnectionOpenInit {
             client_id: "srcclient".to_string(),
-            connection_id: "srcconnection".to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            version: default_version_string(),
+            version: Some(Version::default().into()),
+            delay_period: 0,
             signer: get_dummy_bech32_account(),
         }
     }
@@ -158,14 +154,6 @@ mod tests {
                 name: "Good parameters".to_string(),
                 raw: default_init_msg.clone(),
                 want_pass: true,
-            },
-            Test {
-                name: "Bad connection id, non-alpha".to_string(),
-                raw: RawMsgConnectionOpenInit {
-                    connection_id: "con007".to_string(),
-                    ..default_init_msg.clone()
-                },
-                want_pass: false,
             },
             Test {
                 name: "Bad client id, name too short".to_string(),

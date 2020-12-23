@@ -13,20 +13,23 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 
+use tendermint::abci::Event;
 use tracing::warn;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEventType {
+    CreateClient,
     SendPacket,
-    RecvPacket,
+    WriteAck,
 }
 
 impl IBCEventType {
     pub fn as_str(&self) -> &'static str {
         match *self {
+            IBCEventType::CreateClient => "create_client",
             IBCEventType::SendPacket => "send_packet",
-            _ => "unhandled",
+            IBCEventType::WriteAck => "write_acknowledgement",
         }
     }
 }
@@ -54,13 +57,32 @@ pub enum IBCEvent {
 
     SendPacketChannel(ChannelEvents::SendPacket),
     ReceivePacketChannel(ChannelEvents::ReceivePacket),
+    WriteAcknowledgementChannel(ChannelEvents::WriteAcknowledgement),
     AcknowledgePacketChannel(ChannelEvents::AcknowledgePacket),
-    CleanupPacketChannel(ChannelEvents::CleanupPacket),
     TimeoutPacketChannel(ChannelEvents::TimeoutPacket),
 
     TimeoutTransfer(TransferEvents::Timeout),
     PacketTransfer(TransferEvents::Packet),
     ChannelClosedTransfer(TransferEvents::ChannelClosed),
+
+    Empty(String),      // Special event, signifying empty response
+    ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
+}
+
+// This is tendermint specific
+pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
+    // Return the first hit we find
+    // Look for client event...
+    if let Some(client_res) = ClientEvents::try_from_tx(event.clone()) {
+        return Some(client_res);
+    // Look for connection event...
+    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event.clone()) {
+        return Some(conn_res);
+    } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
+        return Some(chan_res);
+    }
+
+    None
 }
 
 impl IBCEvent {
@@ -70,9 +92,13 @@ impl IBCEvent {
     pub fn height(&self) -> Height {
         match self {
             IBCEvent::NewBlock(bl) => bl.height,
-            IBCEvent::UpdateClient(uc) => uc.height,
-            IBCEvent::SendPacketChannel(ev) => ev.envelope.height,
+            IBCEvent::UpdateClient(uc) => *uc.height(),
+            IBCEvent::SendPacketChannel(ev) => ev.height,
             IBCEvent::ReceivePacketChannel(ev) => ev.height,
+            IBCEvent::WriteAcknowledgementChannel(ev) => ev.height,
+            IBCEvent::AcknowledgePacketChannel(ev) => ev.height,
+            IBCEvent::TimeoutPacketChannel(ev) => ev.height,
+
             _ => {
                 unimplemented!()
             }
@@ -81,7 +107,19 @@ impl IBCEvent {
     pub fn set_height(&mut self, height: ICSHeight) {
         match self {
             IBCEvent::SendPacketChannel(ev) => {
-                ev.envelope.height = Height::try_from(height.version_height).unwrap()
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::ReceivePacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::WriteAcknowledgementChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::AcknowledgePacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::TimeoutPacketChannel(ev) => {
+                ev.height = Height::try_from(height.revision_height).unwrap()
             }
             _ => {
                 unimplemented!()
@@ -200,8 +238,9 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<(Height, IBCEvent)>, Strin
     Ok(vals)
 }
 
-pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
+pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
     match object.action.as_str() {
+        // Client events
         "create_client" => Ok(IBCEvent::from(ClientEvents::CreateClient::try_from(
             object,
         )?)),
@@ -209,6 +248,7 @@ pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
+        // Connection events
         "connection_open_init" => Ok(IBCEvent::from(ConnectionEvents::OpenInit::try_from(
             object,
         )?)),
@@ -218,6 +258,7 @@ pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
+        // Channel events
         "channel_open_init" => Ok(IBCEvent::from(ChannelEvents::OpenInit::try_from(object)?)),
         "channel_open_try" => Ok(IBCEvent::from(ChannelEvents::OpenTry::try_from(object)?)),
         "channel_open_ack" => Ok(IBCEvent::from(ChannelEvents::OpenAck::try_from(object)?)),
@@ -229,33 +270,30 @@ pub fn build_event(object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
-        // send_packet
-        "transfer" => Ok(IBCEvent::from(ChannelEvents::SendPacket::try_from(object)?)),
-        // recv_packet
-        "ics04/opaque" => Ok(IBCEvent::from(ChannelEvents::ReceivePacket::try_from(
+        // Packet events
+        // Note: There is no message.action "send_packet", the only one we can hook into is the
+        // module's action, "transfer" being the only one in IBC1.0. However the attributes
+        // are all prefixed with "send_packet" therefore the overwrite here
+        // TODO: This need to be sorted out
+        "transfer" => {
+            object.action = "send_packet".to_string();
+            Ok(IBCEvent::from(ChannelEvents::SendPacket::try_from(object)?))
+        }
+        // Same here
+        // TODO: sort this out
+        "recv_packet" => {
+            object.action = "write_acknowledgement".to_string();
+            Ok(IBCEvent::from(
+                ChannelEvents::WriteAcknowledgement::try_from(object)?,
+            ))
+        }
+        "write_acknowledgement" => Ok(IBCEvent::from(
+            ChannelEvents::WriteAcknowledgement::try_from(object)?,
+        )),
+        "acknowledge_packet" => Ok(IBCEvent::from(ChannelEvents::AcknowledgePacket::try_from(
             object,
         )?)),
-        // acknowledge_packet
-        // needs these changes in cosmos-sdk
-        //        --- a/x/ibc/04-channel/types/msgs.go
-        //        +++ b/x/ibc/04-channel/types/msgs.go
-        //    @@ -511,5 +511,5 @@ func (msg MsgAcknowledgement) GetSigners() []sdk.AccAddress {
-        //
-        //        // Type implements sdk.Msg
-        //        func (msg MsgAcknowledgement) Type() string {
-        //            -       return "ics04/opaque"
-        //            +       return "ics04/acknowledge"
-        //        }
-        "ics04/acknowledge" => Ok(IBCEvent::from(ChannelEvents::AcknowledgePacket::try_from(
-            object,
-        )?)),
-        //timeout_packet
-        "ics04/timeout" => Ok(IBCEvent::from(ChannelEvents::TimeoutPacket::try_from(
-            object,
-        )?)),
-
-        // TODO not clear what the message.action for this is
-        "cleanup_packet" => Ok(IBCEvent::from(ChannelEvents::CleanupPacket::try_from(
+        "timeout_packet" => Ok(IBCEvent::from(ChannelEvents::TimeoutPacket::try_from(
             object,
         )?)),
 
@@ -288,5 +326,12 @@ macro_rules! make_event {
 macro_rules! attribute {
     ($a:ident, $b:literal) => {
         $a.events.get($b).ok_or($b)?[$a.idx].parse()?
+    };
+}
+
+#[macro_export]
+macro_rules! some_attribute {
+    ($a:ident, $b:literal) => {
+        $a.events.get($b).ok_or($b)?[$a.idx].parse().ok()
     };
 }

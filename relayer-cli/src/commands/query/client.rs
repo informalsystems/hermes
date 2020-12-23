@@ -53,7 +53,7 @@ impl QueryClientStateCmd {
         let opts = QueryClientStateOptions {
             client_id,
             height: self.height.unwrap_or(0_u64),
-            proof: self.proof.unwrap_or(true),
+            proof: self.proof.unwrap_or(false),
         };
         Ok((chain_config, opts))
     }
@@ -120,8 +120,8 @@ pub struct QueryClientConsensusCmd {
 #[derive(Debug)]
 struct QueryClientConsensusOptions {
     client_id: ClientId,
-    version_number: u64,
-    version_height: u64,
+    revision_number: u64,
+    revision_height: u64,
     height: u64,
     proof: bool,
 }
@@ -135,11 +135,11 @@ impl QueryClientConsensusCmd {
             validate_common_options(&self.chain_id, &self.client_id, config)?;
 
         match (self.consensus_epoch, self.consensus_height) {
-            (Some(version_number), Some(version_height)) => {
+            (Some(revision_number), Some(revision_height)) => {
                 let opts = QueryClientConsensusOptions {
                     client_id,
-                    version_number,
-                    version_height,
+                    revision_number,
+                    revision_height,
                     height: self.height.unwrap_or(0_u64),
                     proof: self.proof.unwrap_or(true),
                 };
@@ -179,8 +179,8 @@ impl Runnable for QueryClientConsensusCmd {
             .query(
                 ClientConsensusState {
                     client_id: opts.client_id,
-                    epoch: opts.version_number,
-                    height: opts.version_height,
+                    epoch: opts.revision_number,
+                    height: opts.revision_height,
                 },
                 height,
                 opts.proof,

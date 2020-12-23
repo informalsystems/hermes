@@ -1,7 +1,7 @@
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::ics24_host::identifier::PortId;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
@@ -18,7 +18,6 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenInit {
     pub port_id: PortId,
-    pub channel_id: ChannelId,
     pub channel: ChannelEnd,
     pub signer: AccountId,
 }
@@ -57,10 +56,6 @@ impl TryFrom<RawMsgChannelOpenInit> for MsgChannelOpenInit {
                 .port_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: raw_msg
-                .channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
             channel: raw_msg.channel.ok_or(Kind::MissingChannel)?.try_into()?,
             signer,
         })
@@ -71,7 +66,6 @@ impl From<MsgChannelOpenInit> for RawMsgChannelOpenInit {
     fn from(domain_msg: MsgChannelOpenInit) -> Self {
         RawMsgChannelOpenInit {
             port_id: domain_msg.port_id.to_string(),
-            channel_id: domain_msg.channel_id.to_string(),
             channel: Some(domain_msg.channel.into()),
             signer: account_to_string(domain_msg.signer).unwrap(),
         }
@@ -89,7 +83,6 @@ pub mod test_util {
     pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
             channel: Some(get_dummy_raw_channel_end()),
             signer: get_dummy_bech32_account(),
         }
@@ -123,14 +116,6 @@ mod tests {
                 name: "Incorrect port identifier, slash (separator) prohibited".to_string(),
                 raw: RawMsgChannelOpenInit {
                     port_id: "p34/".to_string(),
-                    ..default_raw_msg.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Bad channel, name too short".to_string(),
-                raw: RawMsgChannelOpenInit {
-                    channel_id: "chshort".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

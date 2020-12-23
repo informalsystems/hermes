@@ -1,9 +1,8 @@
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::validate_version;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
 use crate::ics24_host::identifier::{ChannelId, PortId};
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::{proofs::Proofs, tx_msg::Msg};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint::account::Id as AccountId;
@@ -24,34 +23,6 @@ pub struct MsgChannelOpenAck {
     pub counterparty_version: String,
     pub proofs: Proofs,
     pub signer: AccountId,
-}
-
-impl MsgChannelOpenAck {
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    // TODO: Not used (yet). Also missing `counterparty_channel_id` value.
-    fn new(
-        port_id: String,
-        channel_id: String,
-        counterparty_version: String,
-        proof_try: CommitmentProof,
-        proofs_height: Height,
-        signer: AccountId,
-    ) -> Result<MsgChannelOpenAck, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            counterparty_channel_id: todo!(),
-            counterparty_version: validate_version(counterparty_version)
-                .map_err(|e| Kind::InvalidVersion.context(e))?,
-            proofs: Proofs::new(proof_try, None, None, proofs_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
-            signer,
-        })
-    }
 }
 
 impl Msg for MsgChannelOpenAck {
@@ -147,8 +118,8 @@ pub mod test_util {
             counterparty_version: "v1".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 1,
-                version_height: proof_height,
+                revision_number: 1,
+                revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -273,8 +244,8 @@ mod tests {
                 name: "Bad proof height, height = 0".to_string(),
                 raw: RawMsgChannelOpenAck {
                     proof_height: Some(Height {
-                        version_number: 0,
-                        version_height: 0,
+                        revision_number: 0,
+                        revision_height: 0,
                     }),
                     ..default_raw_msg.clone()
                 },

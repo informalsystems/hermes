@@ -1,7 +1,8 @@
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
-use crate::handler::HandlerOutput;
+// use crate::handler;
+use crate::handler::{Event, HandlerOutput};
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::create_client;
 use crate::ics02_client::msgs::update_client;
@@ -15,19 +16,23 @@ use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg};
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<(), Error>
+/// Returns a vector of all events that got generated as a byproduct of processing `messages`.
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<Event>, Error>
 where
     Ctx: ICS26Context,
 {
     // Create a clone, which will store each intermediary stage of applying txs.
     let mut ctx_interim = ctx.clone();
 
+    // A buffer for all the events, to be used as return value.
+    let mut res: Vec<Event> = vec![];
+
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
         let envelope = match any_msg.type_url.as_str() {
             // ICS2 messages
             create_client::TYPE_URL => {
-                // Pop out the message and then wrap it in the corresponding type
+                // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&*any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(ICS2Msg(ClientMsg::CreateClient(domain_msg)))
@@ -40,12 +45,15 @@ where
             // TODO: ICS3 messages
             _ => Err(Kind::UnknownMessageTypeURL(any_msg.type_url)),
         }?;
-        dispatch(&mut ctx_interim, envelope)?;
+
+        // Process the envelope, and accumulate any events that were generated.
+        let mut output = dispatch(&mut ctx_interim, envelope)?;
+        res.append(&mut output.events);
     }
 
     // No error has surfaced, so we now apply the changes permanently to the original context.
     *ctx = ctx_interim;
-    Ok(())
+    Ok(res)
 }
 
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
@@ -61,12 +69,16 @@ where
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
             // Apply the result to the context (host chain store).
-            ctx.store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
+            let events: Vec<Event> = ctx
+                .store_client_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?
+                .into_iter()
+                .map(|v| v.into())
+                .collect();
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
-                .with_events(handler_output.events)
+                .with_events(events)
                 .with_result(())
         }
 
@@ -123,13 +135,11 @@ mod tests {
             msg: ICS26Envelope,
             want_pass: bool,
         }
-        let default_client_id = ClientId::from_str("client_id").unwrap();
         let default_signer = get_dummy_account_id();
         let start_client_height = Height::new(0, 42);
         let update_client_height = Height::new(0, 50);
 
         let create_client_msg = MsgCreateAnyClient::new(
-            ClientId::from_str("client_id").unwrap(),
             AnyClientState::from(MockClientState(MockHeader(start_client_height))),
             AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height))),
             get_dummy_account_id(),
@@ -146,17 +156,44 @@ mod tests {
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
 
+        // First, create a client..
+        let res = dispatch(
+            &mut ctx,
+            ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
+        );
+
+        assert_eq!(
+            true,
+            res.is_ok(),
+            "ICS26 routing dispatch test 'client creation' failed for message {:?} with result: {:?}",
+            create_client_msg,
+            res
+        );
+
+        // Figure out the ID of the client that was just created.
+        // TODO: Create a "search by attribute key" API for HandlerOutput to simplify the following
+        let mut events = res.unwrap().events;
+        let client_id_event = events.pop();
+        assert!(
+            client_id_event.is_some(),
+            "There was no event generated for client creation!"
+        );
+        let client_id_attribute = client_id_event.clone().unwrap().attributes.pop();
+        assert!(
+            client_id_attribute.is_some(),
+            "There is no attribute for client creation event! {:?}",
+            client_id_event
+        );
+        let client_id_raw = client_id_attribute.unwrap().value();
+
+        let client_id = ClientId::from_str(client_id_raw.as_str()).unwrap();
+
         let tests: Vec<Test> = vec![
-            // Test the ICS2 client functionality.
-            Test {
-                name: "Client creation successful".to_string(),
-                msg: ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(create_client_msg)),
-                want_pass: true,
-            },
+            // Test some ICS2 client functionality.
             Test {
                 name: "Client update successful".to_string(),
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id: default_client_id.clone(),
+                    client_id: client_id.clone(),
                     header: MockHeader(update_client_height).into(),
                     signer: default_signer,
                 })),
@@ -165,7 +202,7 @@ mod tests {
             Test {
                 name: "Client update fails due to stale header".to_string(),
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id: default_client_id.clone(),
+                    client_id: client_id.clone(),
                     header: MockHeader(update_client_height).into(),
                     signer: default_signer,
                 })),
@@ -182,7 +219,7 @@ mod tests {
             Test {
                 name: "Connection open init success".to_string(),
                 msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
-                    msg_conn_init.with_client_id(default_client_id),
+                    msg_conn_init.with_client_id(client_id),
                 )),
                 want_pass: true,
             },

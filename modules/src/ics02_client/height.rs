@@ -8,36 +8,36 @@ use serde_derive::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
-    /// Previously known as "epoch", and will be renamed to "revision" soon
-    pub version_number: u64,
+    /// Previously known as "epoch"
+    pub revision_number: u64,
 
     /// The height of a block
-    pub version_height: u64,
+    pub revision_height: u64,
 }
 
 impl Height {
-    pub fn new(version_number: u64, version_height: u64) -> Self {
+    pub fn new(revision_number: u64, revision_height: u64) -> Self {
         Self {
-            version_number,
-            version_height,
+            revision_number,
+            revision_height,
         }
     }
 
     pub fn zero() -> Height {
         Self {
-            version_number: 0,
-            version_height: 0,
+            revision_number: 0,
+            revision_height: 0,
         }
     }
 
     pub fn is_zero(&self) -> bool {
-        self.version_height == 0
+        self.revision_height == 0
     }
 
     pub fn add(&self, delta: u64) -> Height {
         Height {
-            version_number: self.version_number,
-            version_height: self.version_height + delta,
+            revision_number: self.revision_number,
+            revision_height: self.revision_height + delta,
         }
     }
 
@@ -46,15 +46,15 @@ impl Height {
     }
 
     pub fn sub(&self, delta: u64) -> Result<Height, Error> {
-        if self.version_height <= delta {
+        if self.revision_height <= delta {
             return Err(Kind::InvalidHeightResult
                 .context("height cannot end up zero or negative")
                 .into());
         }
 
         Ok(Height {
-            version_number: self.version_number,
-            version_height: self.version_height - delta,
+            revision_number: self.revision_number,
+            revision_height: self.revision_height - delta,
         })
     }
 
@@ -62,9 +62,9 @@ impl Height {
         self.sub(1)
     }
 
-    pub fn with_version_height(self, version_height: u64) -> Height {
+    pub fn with_revision_height(self, revision_height: u64) -> Height {
         Height {
-            version_height,
+            revision_height,
             ..self
         }
     }
@@ -84,13 +84,13 @@ impl PartialOrd for Height {
 
 impl Ord for Height {
     fn cmp(&self, other: &Self) -> Ordering {
-        if self.version_number < other.version_number {
+        if self.revision_number < other.revision_number {
             Ordering::Less
-        } else if self.version_number > other.version_number {
+        } else if self.revision_number > other.revision_number {
             Ordering::Greater
-        } else if self.version_height < other.version_height {
+        } else if self.revision_height < other.revision_height {
             Ordering::Less
-        } else if self.version_height > other.version_height {
+        } else if self.revision_height > other.revision_height {
             Ordering::Greater
         } else {
             Ordering::Equal
@@ -105,8 +105,8 @@ impl TryFrom<RawHeight> for Height {
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
-            version_number: raw.version_number,
-            version_height: raw.version_height,
+            revision_number: raw.revision_number,
+            revision_height: raw.revision_height,
         })
     }
 }
@@ -114,15 +114,19 @@ impl TryFrom<RawHeight> for Height {
 impl From<Height> for RawHeight {
     fn from(ics_height: Height) -> Self {
         RawHeight {
-            version_number: ics_height.version_number,
-            version_height: ics_height.version_height,
+            revision_number: ics_height.revision_number,
+            revision_height: ics_height.revision_height,
         }
     }
 }
 
 impl std::fmt::Display for Height {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(f, "{}-{}", self.version_number, self.version_height)
+        write!(
+            f,
+            "revision: {}, height: {}",
+            self.revision_number, self.revision_height
+        )
     }
 }
 
@@ -132,8 +136,8 @@ impl TryFrom<String> for Height {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
-            version_number: split[0].parse::<u64>().unwrap(),
-            version_height: split[1].parse::<u64>().unwrap(),
+            revision_number: split[0].parse::<u64>().unwrap(),
+            revision_height: split[1].parse::<u64>().unwrap(),
         })
     }
 }

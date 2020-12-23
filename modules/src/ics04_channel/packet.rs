@@ -1,3 +1,4 @@
+use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
@@ -6,8 +7,16 @@ use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::Height;
 
+/// Enumeration of proof carrying ICS3 message, helper for relayer.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PacketMsgType {
+    Recv,
+    Ack,
+    Timeout,
+}
+
 /// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub struct Sequence(u64);
 
 impl From<u64> for Sequence {
@@ -22,7 +31,13 @@ impl From<Sequence> for u64 {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+impl std::fmt::Display for Sequence {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,
@@ -32,6 +47,31 @@ pub struct Packet {
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: u64,
+}
+
+impl std::fmt::Display for Packet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{:?} {:?} {:?}",
+            self.source_port, self.source_channel, self.sequence
+        )
+    }
+}
+
+impl Default for Packet {
+    fn default() -> Self {
+        Packet {
+            sequence: Sequence(0),
+            source_port: Default::default(),
+            source_channel: Default::default(),
+            destination_port: Default::default(),
+            destination_channel: Default::default(),
+            data: vec![],
+            timeout_height: Default::default(),
+            timeout_timestamp: 0,
+        }
+    }
 }
 
 impl TryFrom<RawPacket> for Packet {
@@ -97,8 +137,8 @@ pub mod test_utils {
             destination_channel: "dstchannelid".to_string(),
             data: vec![],
             timeout_height: Some(RawHeight {
-                version_number: 1,
-                version_height: timeout_height,
+                revision_number: 1,
+                revision_height: timeout_height,
             }),
             timeout_timestamp: 0,
         }

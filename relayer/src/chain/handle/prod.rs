@@ -3,22 +3,24 @@ use std::fmt::Debug;
 use crossbeam_channel as channel;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
+    ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
-    ics23_commitment::merkle::MerkleProof,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
     Height,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
@@ -31,6 +33,7 @@ use crate::{
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -88,16 +91,12 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 
-    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<String>, Error> {
+    fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error> {
         self.send(|reply_to| ChainRequest::SendMsgs {
             proto_msgs,
             reply_to,
         })
     }
-
-    // fn get_header(&self, height: Height) -> Result<AnyHeader, Error> {
-    //     self.send(|reply_to| HandleInput::GetHeader { height, reply_to })
-    // }
 
     fn get_minimal_set(&self, from: Height, to: Height) -> Result<Vec<AnyHeader>, Error> {
         self.send(|reply_to| ChainRequest::GetMinimalSet { from, to, reply_to })
@@ -118,17 +117,6 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    // fn submit(&self, transaction: EncodedTransaction) -> Result<(), Error> {
-    //     self.send(|reply_to| HandleInput::Submit {
-    //         transaction,
-    //         reply_to,
-    //     })
-    // }
-
-    // fn create_packet(&self, event: IBCEvent) -> Result<Packet, Error> {
-    //     self.send(|reply_to| HandleInput::CreatePacket { event, reply_to })
-    // }
-
     fn query_latest_height(&self) -> Result<Height, Error> {
         self.send(|reply_to| ChainRequest::QueryLatestHeight { reply_to })
     }
@@ -145,18 +133,11 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    // fn query_channel(
-    //     &self,
-    //     port_id: &PortId,
-    //     channel_id: &ChannelId,
-    //     height: ICSHeight,
-    // ) -> Result<ChannelEnd, Error>;
-
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
         self.send(|reply_to| ChainRequest::QueryCommitmentPrefix { reply_to })
     }
 
-    fn query_compatible_versions(&self) -> Result<Vec<String>, Error> {
+    fn query_compatible_versions(&self) -> Result<Vec<Version>, Error> {
         self.send(|reply_to| ChainRequest::QueryCompatibleVersions { reply_to })
     }
 
@@ -276,14 +257,16 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn proven_packet_commitment(
+    fn build_packet_proofs(
         &self,
+        packet_type: PacketMsgType,
         port_id: &PortId,
         channel_id: &ChannelId,
-        sequence: u64,
+        sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        self.send(|reply_to| ChainRequest::ProvenPacketCommitment {
+    ) -> Result<(Vec<u8>, Proofs), Error> {
+        self.send(|reply_to| ChainRequest::BuildPacketProofs {
+            packet_type,
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             sequence,
@@ -295,7 +278,7 @@ impl ChainHandle for ProdChainHandle {
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketAckCommitment>, Height), Error> {
+    ) -> Result<(Vec<PacketState>, Height), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketCommitments { request, reply_to })
     }
 
@@ -304,6 +287,20 @@ impl ChainHandle for ProdChainHandle {
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
         self.send(|reply_to| ChainRequest::QueryUnreceivedPackets { request, reply_to })
+    }
+
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, Height), Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketAcknowledgement { request, reply_to })
+    }
+
+    fn query_unreceived_acknowledgement(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {

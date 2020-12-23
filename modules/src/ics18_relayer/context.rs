@@ -24,7 +24,7 @@ pub trait ICS18Context {
 
     /// Interface that the relayer uses to submit a datagram to this chain.
     /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.
-    fn send(&mut self, msgs: Vec<Any>) -> Result<(), Error>;
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, Error>;
 
     /// Temporary solution. Similar to `CosmosSDKChain::key_and_signer()` but simpler.
     fn signer(&self) -> AccountId;

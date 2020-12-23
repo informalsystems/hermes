@@ -6,8 +6,8 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 use tendermint_proto::Protobuf;
 
-use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::version::validate_versions;
+use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::version::Version;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
@@ -17,7 +17,20 @@ pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
     counterparty: Counterparty,
-    versions: Vec<String>,
+    versions: Vec<Version>,
+    pub(crate) delay_period: u64,
+}
+
+impl Default for ConnectionEnd {
+    fn default() -> Self {
+        ConnectionEnd {
+            state: State::Uninitialized,
+            client_id: Default::default(),
+            counterparty: Default::default(),
+            versions: vec![],
+            delay_period: 0,
+        }
+    }
 }
 
 impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
@@ -25,8 +38,12 @@ impl Protobuf<RawConnectionEnd> for ConnectionEnd {}
 impl TryFrom<RawConnectionEnd> for ConnectionEnd {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawConnectionEnd) -> Result<Self, Self::Error> {
+        let state = value.state.try_into()?;
+        if state == State::Uninitialized {
+            return Ok(ConnectionEnd::default());
+        }
         Ok(Self::new(
-            value.state.try_into()?,
+            state,
             value
                 .client_id
                 .parse()
@@ -35,8 +52,14 @@ impl TryFrom<RawConnectionEnd> for ConnectionEnd {
                 .counterparty
                 .ok_or(Kind::MissingCounterparty)?
                 .try_into()?,
-            value.versions,
-        )?)
+            value
+                .versions
+                .into_iter()
+                .map(Version::try_from)
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
+            value.delay_period,
+        ))
     }
 }
 
@@ -44,9 +67,14 @@ impl From<ConnectionEnd> for RawConnectionEnd {
     fn from(value: ConnectionEnd) -> Self {
         RawConnectionEnd {
             client_id: value.client_id.to_string(),
-            versions: value.versions,
+            versions: value
+                .versions
+                .iter()
+                .map(|v| From::from(v.clone()))
+                .collect(),
             state: value.state as i32,
             counterparty: Some(value.counterparty.into()),
+            delay_period: 0,
         }
     }
 }
@@ -56,14 +84,16 @@ impl ConnectionEnd {
         state: State,
         client_id: ClientId,
         counterparty: Counterparty,
-        versions: Vec<String>, // TODO: Use Newtype for aliasing the version to a string
-    ) -> Result<Self, Error> {
-        Ok(Self {
+        versions: Vec<Version>, // TODO: Use Newtype for aliasing the version to a string
+        delay_period: u64,
+    ) -> Self {
+        Self {
             state,
             client_id,
             counterparty,
-            versions: validate_versions(versions).map_err(|e| Kind::InvalidVersion.context(e))?,
-        })
+            versions,
+            delay_period,
+        }
     }
 
     /// Getter for the state of this connection end.
@@ -78,7 +108,7 @@ impl ConnectionEnd {
 
     /// Setter for the `version` field.
     /// TODO: A ConnectionEnd should only store one version.
-    pub fn set_version(&mut self, new_version: String) {
+    pub fn set_version(&mut self, new_version: Version) {
         self.versions.insert(0, new_version)
     }
 
@@ -103,7 +133,7 @@ impl ConnectionEnd {
     }
 
     /// Getter for the list of versions in this connection end.
-    pub fn versions(&self) -> Vec<String> {
+    pub fn versions(&self) -> Vec<Version> {
         self.versions.clone()
     }
 
@@ -123,6 +153,16 @@ pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
+}
+
+impl Default for Counterparty {
+    fn default() -> Self {
+        Counterparty {
+            client_id: Default::default(),
+            connection_id: None,
+            prefix: CommitmentPrefix(vec![]),
+        }
+    }
 }
 
 // Converts from the wire format RawCounterparty. Typically used from the relayer side
@@ -199,6 +239,7 @@ impl Counterparty {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum State {
+    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -208,6 +249,7 @@ impl State {
     /// Yields the State as a string.
     pub fn as_string(&self) -> &'static str {
         match self {
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -219,6 +261,7 @@ impl TryFrom<i32> for State {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: i32) -> Result<Self, Self::Error> {
         match value {
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),

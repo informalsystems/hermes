@@ -6,15 +6,13 @@ use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::ics24_host::identifier::ConnectionId;
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS3 message.
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
-    id: &ConnectionId,
     client_state: Option<AnyClientState>,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -22,7 +20,6 @@ pub fn verify_proofs(
 ) -> Result<(), Error> {
     verify_connection_proof(
         ctx,
-        id,
         connection_end,
         expected_conn,
         proofs.height(),
@@ -61,11 +58,10 @@ pub fn verify_proofs(
 /// which created this proof). This object must match the state of `expected_conn`.
 pub fn verify_connection_proof(
     ctx: &dyn ConnectionReader,
-    id: &ConnectionId,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proof_height: Height,
-    proof: &CommitmentProof,
+    proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
     // Fetch the client state (IBC client on the local/host chain).
     let client_state = ctx
@@ -103,7 +99,7 @@ pub fn verify_connection_proof(
             &connection_end.counterparty().connection_id().unwrap(),
             expected_conn,
         )
-        .map_err(|_| Kind::InvalidProof.context(id.to_string()))?)
+        .map_err(|_| Kind::InvalidProof)?)
 }
 
 pub fn verify_client_proof(
@@ -111,7 +107,7 @@ pub fn verify_client_proof(
     connection_end: &ConnectionEnd,
     expected_client_state: AnyClientState,
     proof_height: Height,
-    proof: &CommitmentProof,
+    proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
     // Fetch the local client state (IBC client running on the host chain).
     let client_state = ctx
@@ -194,9 +190,9 @@ pub fn check_client_consensus_height(
     }
 
     let oldest_available_height =
-        ctx.host_current_height().version_height - ctx.host_chain_history_size() as u64;
+        ctx.host_current_height().revision_height - ctx.host_chain_history_size() as u64;
 
-    if claimed_height.version_height < oldest_available_height {
+    if claimed_height.revision_height < oldest_available_height {
         // Fail if the consensus height is too old (has been pruned).
         return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into());
     }

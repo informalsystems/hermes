@@ -45,12 +45,12 @@ impl Msg for MsgConnectionOpenConfirm {
         Ok(())
     }
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -102,8 +102,8 @@ pub mod test_util {
             connection_id: "srcconnection".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 0,
-                version_height: 10,
+                revision_number: 0,
+                revision_height: 10,
             }),
             signer: get_dummy_bech32_account(),
         }
@@ -148,8 +148,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenConfirm {
                     proof_height: Some(Height {
-                        version_number: 1,
-                        version_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg
                 },

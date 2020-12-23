@@ -23,28 +23,39 @@ pub enum ConnectionEvent {
 
 #[derive(Clone, Debug)]
 pub struct ConnectionResult {
-    pub connection_id: ConnectionId,
+    pub connection_id: Option<ConnectionId>,
     pub connection_end: ConnectionEnd,
 }
 
 impl From<ConnectionEvent> for Event {
     fn from(ev: ConnectionEvent) -> Event {
         match ev {
-            ConnectionEvent::ConnOpenInit(conn) => Event::new(
+            ConnectionEvent::ConnOpenInit(_conn) => Event::new(
                 EventType::Custom("connection_open_init".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+                vec![("connection_id".to_string(), "None".to_string())],
             ),
             ConnectionEvent::ConnOpenTry(conn) => Event::new(
                 EventType::Custom("connection_open_try".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    // TODO: move connection id decision (`next_connection_id` method) in ClientReader
+                    // to be able to write the connection identifier here, instead of the default.
+                    conn.connection_id.unwrap_or_default().to_string(),
+                )],
             ),
             ConnectionEvent::ConnOpenAck(conn) => Event::new(
                 EventType::Custom("connection_open_ack".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    conn.connection_id.unwrap().to_string(),
+                )],
             ),
             ConnectionEvent::ConnOpenConfirm(conn) => Event::new(
                 EventType::Custom("connection_open_confirm".to_string()),
-                vec![("connection_id".to_string(), conn.connection_id.to_string())],
+                vec![(
+                    "connection_id".to_string(),
+                    conn.connection_id.unwrap().to_string(),
+                )],
             ),
         }
     }

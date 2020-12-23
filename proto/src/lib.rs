@@ -43,16 +43,6 @@ pub mod cosmos {
                 include!("prost/cosmos.base.reflection.v1beta1.rs");
             }
         }
-        pub mod simulate {
-            pub mod v1beta1 {
-                include!("prost/cosmos.base.simulate.v1beta1.rs");
-            }
-        }
-        pub mod snapshots {
-            pub mod v1beta1 {
-                include!("prost/cosmos.base.snapshots.v1beta1.rs");
-            }
-        }
         pub mod store {
             pub mod v1beta1 {
                 include!("prost/cosmos.base.store.v1beta1.rs");

@@ -8,8 +8,6 @@ use std::{
     time::Duration,
 };
 
-use subtle_encoding::base64;
-
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 
@@ -19,7 +17,6 @@ use prost_types::Any;
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 
-use tendermint_proto::crypto::ProofOps;
 use tendermint_proto::Protobuf;
 
 use tendermint_rpc::query::Query;
@@ -30,7 +27,7 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 
 use tendermint_light_client::types::LightBlock as TMLightBlock;
-use tendermint_rpc::{Client, HttpClient, Order};
+use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 
 use ibc_proto::cosmos::base::v1beta1::Coin;
 
@@ -39,20 +36,21 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketAckCommitment, QueryPacketCommitmentsRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
-use ibc::events::{IBCEvent, IBCEventType};
+use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
-use ibc::ics04_channel::events::{PacketEnvelope, SendPacket};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::merkle::MerkleProof;
+use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
@@ -69,6 +67,7 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
+use ibc::ics04_channel::packet::Sequence;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -134,7 +133,7 @@ impl CosmosSDKChain {
         Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<String, Error> {
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         let key = self
             .keybase()
             .get_key()
@@ -223,7 +222,9 @@ impl CosmosSDKChain {
             .block_on(broadcast_tx_commit(self, txraw_buf))?
             .map_err(|e| Kind::Rpc.context(e))?;
 
-        Ok(response)
+        let res = tx_result_to_event(response)?;
+
+        Ok(res)
     }
 
     fn gas(&self) -> u64 {
@@ -304,7 +305,7 @@ impl Chain for CosmosSDKChain {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
         let height =
-            Height::try_from(height.version_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
 
         if !data.is_provable() & prove {
             return Err(Kind::Store
@@ -322,9 +323,9 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send one or more transactions that include all the specified messages
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<String>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         if proto_msgs.is_empty() {
-            return Ok(vec!["No messages to send".to_string()]);
+            return Ok(vec![IBCEvent::Empty("No messages to send".to_string())]);
         }
         let mut res = vec![];
 
@@ -338,17 +339,18 @@ impl Chain for CosmosSDKChain {
             n += 1;
             size += buf.len();
             if n >= self.max_msg_num() || size >= self.max_tx_size() {
-                let result = self.send_tx(msg_batch)?;
-                res.append(&mut vec![result]);
+                let mut result = self.send_tx(msg_batch)?;
+                res.append(&mut result);
                 n = 0;
                 size = 0;
                 msg_batch = vec![];
             }
         }
         if !msg_batch.is_empty() {
-            let result = self.send_tx(msg_batch)?;
-            res.append(&mut vec![result]);
+            let mut result = self.send_tx(msg_batch)?;
+            res.append(&mut result);
         }
+
         Ok(res)
     }
 
@@ -368,8 +370,8 @@ impl Chain for CosmosSDKChain {
         }
 
         Ok(ICSHeight {
-            version_number: ChainId::chain_version(status.node_info.network.as_str()),
-            version_height: u64::from(status.sync_info.latest_block_height),
+            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+            revision_height: u64::from(status.sync_info.latest_block_height),
         })
     }
 
@@ -411,7 +413,11 @@ impl Chain for CosmosSDKChain {
         let client_state = downcast!(client_state => AnyClientState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
 
-        Ok((client_state, res.proof))
+        Ok((
+            client_state,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn proven_client_consensus(
@@ -424,8 +430,8 @@ impl Chain for CosmosSDKChain {
             .query(
                 ClientConsensusPath {
                     client_id: client_id.clone(),
-                    epoch: consensus_height.version_number,
-                    height: consensus_height.version_height,
+                    epoch: consensus_height.revision_number,
+                    height: consensus_height.revision_height,
                 },
                 height,
                 true,
@@ -438,12 +444,16 @@ impl Chain for CosmosSDKChain {
         let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
             .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
 
-        Ok((consensus_state, res.proof))
+        Ok((
+            consensus_state,
+            res.proof
+                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+        ))
     }
 
     fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
         // Build the client state.
-        let client_state = ibc::ics07_tendermint::client_state::ClientState::new(
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
             self.id().to_string(),
             self.config.trust_threshold,
             self.config.trusting_period,
@@ -451,14 +461,11 @@ impl Chain for CosmosSDKChain {
             Duration::from_millis(3000), // TODO - get it from src config when avail
             height,
             ICSHeight::zero(),
-            self.query_consensus_params()?,
-            "upgrade/upgradedClient".to_string(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             false,
             false,
         )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?;
-
-        Ok(client_state)
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
     }
 
     fn build_consensus_state(
@@ -509,13 +516,11 @@ impl Chain for CosmosSDKChain {
         Ok(key)
     }
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
-    /// Note: the result Vec<PacketAckCommitment> has an awkward name but fixed in a future IBC proto variant
-    /// It will move to Vec<PacketState>
+    /// TODO - move to the chain trait
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
-    ) -> Result<(Vec<PacketAckCommitment>, ICSHeight), Error> {
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
@@ -566,6 +571,62 @@ impl Chain for CosmosSDKChain {
         Ok(response.sequences)
     }
 
+    /// Queries the packet acknowledgment hashes associated with a channel.
+    /// TODO - move to the chain trait
+    fn query_packet_acknowledgements(
+        &self,
+        request: QueryPacketAcknowledgementsRequest,
+    ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.packet_acknowledgements(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let pc = response.acknowledgements;
+
+        let height = response
+            .height
+            .ok_or_else(|| Kind::Grpc.context("missing height in response"))?
+            .try_into()
+            .map_err(|_| Kind::Grpc.context("invalid height in response"))?;
+
+        Ok((pc, height))
+    }
+
+    /// Queries the packet commitment hashes associated with a channel.
+    /// TODO - move the chain trait
+    fn query_unreceived_acknowledgements(
+        &self,
+        request: QueryUnreceivedAcksRequest,
+    ) -> Result<Vec<u64>, Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.unreceived_acks(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(response.sequences)
+    }
+
     /// Queries the packet data for all packets with sequences included in the request.
     /// Note - there is no way to format the query such that it asks for Tx-es with either
     /// sequence (the query conditions can only be AND-ed)
@@ -588,7 +649,7 @@ impl Chain for CosmosSDKChain {
                 .unwrap()
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, seq, &response)?
+            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -596,14 +657,14 @@ impl Chain for CosmosSDKChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Query, Error> {
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
     Ok(tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
-        request.channel_id.clone(),
+        request.source_channel_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_src_port", request.event_id.as_str()),
-        request.port_id.clone(),
+        request.source_port_id.to_string(),
     )
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
@@ -617,83 +678,44 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &u64) -> Result<Quer
 // committed in one Tx. In this case the response includes the events for 3 and 4.
 fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
-    seq: &u64,
+    seq: Sequence,
     response: &tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Option<IBCEvent>, Error> {
     for r in response.txs.iter() {
         let height = r.height;
-        if height.value() > request.height.version_height {
+        if height.value() > request.height.revision_height {
             continue;
         }
-        let mut envelope = PacketEnvelope {
-            height: r.height,
-            packet_src_port: Default::default(),
-            packet_src_channel: Default::default(),
-            packet_dst_port: Default::default(),
-            packet_dst_channel: Default::default(),
-            packet_sequence: 0,
-            packet_timeout_height: Default::default(),
-            packet_timeout_stamp: 0, // todo - decoding
-        };
+
         for e in r.clone().tx_result.events.iter() {
             if e.type_str != request.event_id.as_str() {
                 continue;
             }
-            for a in e.attributes.iter() {
-                let key = String::from_utf8(base64::decode(a.key.to_string().as_bytes()).unwrap())
-                    .unwrap();
-                let value =
-                    String::from_utf8(base64::decode(a.value.to_string().as_bytes()).unwrap())
-                        .unwrap();
-                match key.as_str() {
-                    "packet_src_port" => envelope.packet_src_port = value.parse().unwrap(),
-                    "packet_src_channel" => envelope.packet_src_channel = value.parse().unwrap(),
-                    "packet_dst_port" => envelope.packet_dst_port = value.parse().unwrap(),
-                    "packet_dst_channel" => envelope.packet_dst_channel = value.parse().unwrap(),
-                    "packet_sequence" => envelope.packet_sequence = value.parse::<u64>().unwrap(),
-                    "packet_timeout_height" => {
-                        let to: Vec<&str> = value.split('-').collect();
-                        envelope.packet_timeout_height = ibc_proto::ibc::core::client::v1::Height {
-                            version_number: to[0].parse::<u64>().unwrap(),
-                            version_height: to[1].parse::<u64>().unwrap(),
-                        }
-                        .try_into()
-                        .unwrap();
-                    }
-                    _ => {}
-                };
+
+            let res = from_tx_response_event(e.clone());
+            if res.is_none() {
+                continue;
+            }
+            let event = res.unwrap();
+            let packet = match event.clone() {
+                IBCEvent::SendPacketChannel(send_ev) => Some(send_ev.packet),
+                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(ack_ev.packet),
+                _ => None,
+            };
+
+            if packet.is_none() {
+                continue;
             }
 
-            if envelope.packet_src_port.as_str() != request.port_id.as_str()
-                || envelope.packet_src_channel.as_str() != request.channel_id.as_str()
-                || envelope.packet_sequence != *seq
+            let packet = packet.unwrap();
+            if packet.source_port != request.source_port_id
+                || packet.source_channel != request.source_channel_id
+                || packet.sequence != seq
             {
                 continue;
             }
-            match request.event_id {
-                IBCEventType::SendPacket => {
-                    let mut data = vec![];
-                    for a in e.attributes.iter() {
-                        let key = String::from_utf8(
-                            base64::decode(a.key.to_string().as_bytes()).unwrap(),
-                        )
-                        .unwrap();
-                        let value = String::from_utf8(
-                            base64::decode(a.value.to_string().as_bytes()).unwrap(),
-                        )
-                        .unwrap();
-                        match key.as_str() {
-                            "packet_data" => data = Vec::from(value.as_bytes()),
-                            _ => continue,
-                        };
-                    }
-                    return Ok(Some(IBCEvent::SendPacketChannel(SendPacket {
-                        envelope,
-                        data,
-                    })));
-                }
-                _ => continue,
-            }
+
+            return Ok(Some(event));
         }
     }
     Ok(None)
@@ -724,26 +746,17 @@ async fn abci_query(
         // Fail with response log.
         return Err(Kind::Rpc.context(response.log.to_string()).into());
     }
-    if response.value.is_empty() {
-        // Fail due to empty response value (nothing to decode).
-        return Err(Kind::EmptyResponseValue.into());
-    }
+
     if prove && response.proof.is_none() {
         // Fail due to empty proof
         return Err(Kind::EmptyResponseProof.into());
     }
 
-    let raw_proof_ops = response
-        .proof
-        .map(ProofOps::try_from)
-        .transpose()
-        .map_err(|e| Kind::MalformedProof.context(e))?;
+    let raw_proof_ops = response.proof;
 
     let response = QueryResponse {
         value: response.value,
-        proof: MerkleProof {
-            proof: raw_proof_ops,
-        },
+        proof: convert_tm_to_ics_merkle_proof(raw_proof_ops).unwrap(),
         height: response.height,
     };
 
@@ -788,4 +801,31 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     .map_err(|e| Kind::Grpc.context(e))?;
 
     Ok(base_account)
+}
+
+pub fn tx_result_to_event(raw_res: String) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+    let mut result = vec![];
+
+    let response: Response = serde_json::from_str(raw_res.as_str()).unwrap();
+
+    // Verify the return codes from check_tx and deliver_tx
+    if response.check_tx.code.is_err() {
+        return Ok(vec![IBCEvent::ChainError(format!(
+            "check_tx reports error: log={:?}",
+            response.check_tx.log
+        ))]);
+    }
+    if response.deliver_tx.code.is_err() {
+        return Ok(vec![IBCEvent::ChainError(format!(
+            "deliver_tx reports error: log={:?}",
+            response.deliver_tx.log
+        ))]);
+    }
+
+    for event in response.deliver_tx.events {
+        if let Some(ibc_ev) = from_tx_response_event(event) {
+            result.append(&mut vec![ibc_ev])
+        }
+    }
+    Ok(result)
 }

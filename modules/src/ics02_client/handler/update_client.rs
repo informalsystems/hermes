@@ -5,7 +5,6 @@ use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusSta
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
-
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -83,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_update_client_ok() {
-        let client_id = ClientId::from_str("mockclient").unwrap();
+        let client_id = ClientId::default();
         let signer = get_dummy_account_id();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42));

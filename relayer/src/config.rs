@@ -11,7 +11,7 @@ use std::{
 
 use serde_derive::{Deserialize, Serialize};
 
-use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChainId, PortId};
 use tendermint::{net, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
 
@@ -89,7 +89,6 @@ pub struct ChainConfig {
     pub account_prefix: String,
     pub key_name: String,
     pub store_prefix: String,
-    pub client_ids: Vec<String>,
     pub gas: Option<u64>,
     pub max_msg_num: Option<usize>,
     pub max_tx_size: Option<usize>,
@@ -131,40 +130,15 @@ impl ChainConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Connection {
-    pub a_end: Option<ConnectionEnd>,  // use any source
-    pub b_end: Option<ConnectionEnd>,  // use any destination
-    pub paths: Option<Vec<RelayPath>>, // use any port, direction bidirectional
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ConnectionEnd {
-    pub chain_id: String,
-    pub client_id: String,
-    pub connection_id: Option<String>, // use all connections to this client
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum Direction {
-    #[serde(rename = "unidirectional")]
-    Unidirectional,
-    #[serde(rename = "bidirectional")]
-    Bidirectional,
-}
-
-impl Default for Direction {
-    fn default() -> Self {
-        Self::Bidirectional
-    }
+    pub a_chain: ChainId,
+    pub b_chain: ChainId,
+    pub paths: Option<Vec<RelayPath>>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct RelayPath {
-    pub a_port: Option<String>,    // default from any source port
-    pub b_port: Option<String>,    // default from any dest port
-    pub a_channel: Option<String>, // default from any source port
-    pub b_channel: Option<String>, // default from any dest port
-    #[serde(default)]
-    pub direction: Direction, // default bidirectional
+    pub a_port: PortId,
+    pub b_port: PortId,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
