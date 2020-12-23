@@ -11,7 +11,7 @@
  
 - [relayer-cli]
   - Packet CLIs for recv_packet ([#443])
-  - Packet CLIs for recv_packet ([#468])
+  - Packet CLIs for acknowledging packets ([#468])
 
 ### IMPROVEMENTS
 - [relayer]
