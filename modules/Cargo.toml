@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.0.5"
+version    = "0.0.6"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -21,7 +21,7 @@ mocks = [ "tendermint-testgen" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.5.0", path = "../proto" }
+ibc-proto = { version = "0.6.0", path = "../proto" }
 ics23 = "0.6.0"
 anomaly = "0.2.0"
 chrono = "0.4"
@@ -51,10 +51,10 @@ version = "=0.17.0"
 version = "=0.17.0"
 
 [dependencies.tendermint-testgen]
-version = "0.17.0"
+version = "=0.17.0"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "0.17.0" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.17.0" } # Needed for generating (synthetic) light blocks.
