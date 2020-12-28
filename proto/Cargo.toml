@@ -18,7 +18,7 @@ description = """
 all-features = true
 
 [dependencies]
-prost = { version = "0.6" }
+prost = { version = "0.7" }
 prost-types = { version = "0.6" }
 anomaly = "0.2"
 bytes = "0.6"
