@@ -2,5 +2,9 @@
 
 ## Changelog
 
+* 29.12.2020: First draft proposed.
+
 ## Context
 
+
+This document 

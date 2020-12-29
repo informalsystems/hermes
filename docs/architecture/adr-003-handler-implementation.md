@@ -4,16 +4,14 @@
 * 2020-08-06: Initial proposal
 * 2020-08-10: Rename Handler to Message Processor
 * 2020-08-14: Revamp definition of chain-specific messages, readers and keepers
+* 2020-12-29: Consolidate ADR with latest implementation
 
-## Reader
+## Context
 
-> This section contains all the context one needs to understand the current state, and why there is a problem. It should be as succinct as possible and introduce the high level idea behind the solution.
-
-TODO
+In this ADR, we provide recommendations for implementing the IBC message processing logic within the `ibc-rs` crate.
 
 ## Decision
 
-In this ADR, we provide recommendations for implementing the IBC message processing logic within the `ibc-rs` crate.
 Concepts are introduced in the order given by a topological sort of their dependencies on each other.
 
 ### Events

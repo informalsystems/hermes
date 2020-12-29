@@ -1,7 +1,7 @@
 # ADR 002: IBC Relayer in Rust
 
 ## Changelog
-* {date}: {changelog}
+* 2020-05-19: First draft. Accepted
 
 ## Definitions
 These definitions are specific for this document and they may not be consistent with the IBC Specification.
