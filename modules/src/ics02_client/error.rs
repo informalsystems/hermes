@@ -5,15 +5,13 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
-pub type Error = anomaly::Error<Kind>;
+pub type Error = anomaly::Error<Kind>; // todo: soon we'll delete this
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Kind {
+    // todo: rename into plain `Error`
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
-
-    #[error("client already exists: {0}")]
-    ClientAlreadyExists(ClientId),
 
     #[error("client not found: {0}")]
     ClientNotFound(ClientId),

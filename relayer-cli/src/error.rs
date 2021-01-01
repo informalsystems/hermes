@@ -1,4 +1,4 @@
-//! Error types
+//! Error types for CLIs
 
 use anomaly::{BoxError, Context};
 use thiserror::Error;
@@ -8,24 +8,32 @@ pub type Error = anomaly::Error<Kind>;
 
 /// Kinds of errors
 #[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
-pub enum Kind {
-    /// Error in configuration file
-    #[error("config error")]
-    Config,
-
-    /// Input/output error
-    #[error("I/O error")]
-    Io,
-
-    /// Error during network query
+pub enum ErrorMsg {
+    /// Error during relayer network query
     #[error("query error")]
     Query,
 
-    /// Error during transaction submission
+    /// Error during relayer transaction submission
     #[error("tx error")]
     Tx,
 
-    /// Error during transaction submission
+    /// Error during relayer key manipulation
+    #[error("keys error")]
+    Keys,
+}
+
+/// Kinds of errors
+#[derive(Copy, Clone, Debug, Eq, Error, PartialEq)]
+pub enum Kind {
+    /// Error during relayer network query
+    #[error("query error")]
+    Query,
+
+    /// Error during relayer transaction submission
+    #[error("tx error")]
+    Tx,
+
+    /// Error during relayer key manipulation
     #[error("keys error")]
     Keys,
 }

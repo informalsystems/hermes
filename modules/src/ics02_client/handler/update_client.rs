@@ -1,9 +1,11 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
+use eyre::WrapErr;
+
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Kind;
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
@@ -17,10 +19,7 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(
-    ctx: &dyn ClientReader,
-    msg: MsgUpdateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+pub fn process(ctx: &dyn ClientReader, msg: MsgUpdateAnyClient) -> HandlerResult<ClientResult> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {
@@ -50,7 +49,7 @@ pub fn process(
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
-        .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
+        .wrap_err(Kind::HeaderVerificationFailure)?;
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
@@ -143,9 +142,10 @@ mod tests {
             Ok(_) => {
                 panic!("unexpected success (expected error)");
             }
-            Err(err) => {
-                assert_eq!(err.kind(), &Kind::ClientNotFound(msg.client_id));
-            }
+            Err(err) => match err.downcast::<Kind>() {
+                Ok(kind) => assert_eq!(kind, Kind::ClientNotFound(msg.client_id)),
+                Err(_) => panic!("Unknown error thrown"),
+            },
         }
     }
 

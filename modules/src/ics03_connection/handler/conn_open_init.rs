@@ -3,7 +3,7 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Kind;
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -11,13 +11,12 @@ use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenInit,
-) -> HandlerResult<ConnectionResult, Error> {
+) -> HandlerResult<ConnectionResult> {
     let mut output = HandlerOutput::builder();
 
     // An IBC client running on the local (host) chain should exist.
-    if ctx.client_state(msg.client_id()).is_none() {
-        return Err(Kind::MissingClient(msg.client_id().clone()).into());
-    }
+    ctx.client_state(msg.client_id())
+        .ok_or_else(|| Kind::MissingClient(msg.client_id().clone()))?;
 
     let new_connection_end = ConnectionEnd::new(
         State::Init,

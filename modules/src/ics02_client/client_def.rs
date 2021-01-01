@@ -1,6 +1,6 @@
-use prost_types::Any;
 use std::convert::TryFrom;
 
+use prost_types::Any;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
@@ -43,7 +43,7 @@ pub trait ClientDef: Clone {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>>;
+    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)>;
 
     /// Verification functions as specified in:
     /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
@@ -62,7 +62,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> eyre::Result<()>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     fn verify_connection_state(
@@ -73,7 +73,7 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> eyre::Result<()>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
@@ -86,7 +86,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>>;
+    ) -> eyre::Result<()>;
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -361,7 +361,7 @@ impl ClientDef for AnyClient {
         &self,
         client_state: AnyClientState,
         header: AnyHeader,
-    ) -> Result<(AnyClientState, AnyConsensusState), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<(AnyClientState, AnyConsensusState)> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, header) = downcast!(
@@ -407,7 +407,7 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -454,7 +454,7 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
@@ -496,7 +496,7 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state_on_counterparty: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -538,11 +538,13 @@ impl ClientDef for AnyClient {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
+    use prost_types::Any;
+
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use prost_types::Any;
-    use std::convert::TryFrom;
 
     #[test]
     fn any_client_state_serialization() {

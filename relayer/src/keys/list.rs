@@ -4,7 +4,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
-use crate::error::{Error, Kind};
+use crate::error::Kind;
 use crate::keyring::store::KeyRingOperations;
 
 #[derive(Clone, Debug)]
@@ -12,7 +12,7 @@ pub struct KeysListOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn list_keys(opts: KeysListOptions) -> Result<String, Error> {
+pub fn list_keys(opts: KeysListOptions) -> eyre::Result<String> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain

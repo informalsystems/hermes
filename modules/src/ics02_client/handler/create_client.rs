@@ -4,7 +4,6 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 
@@ -17,10 +16,7 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(
-    _ctx: &dyn ClientReader,
-    msg: MsgCreateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+pub fn process(_ctx: &dyn ClientReader, msg: MsgCreateAnyClient) -> HandlerResult<ClientResult> {
     let output = HandlerOutput::builder();
 
     Ok(output.with_result(ClientResult::Create(Result {

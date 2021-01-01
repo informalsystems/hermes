@@ -5,7 +5,7 @@ use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Kind;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
@@ -17,7 +17,7 @@ pub fn verify_proofs(
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
-) -> Result<(), Error> {
+) -> eyre::Result<()> {
     verify_connection_proof(
         ctx,
         connection_end,
@@ -62,7 +62,7 @@ pub fn verify_connection_proof(
     expected_conn: &ConnectionEnd,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> Result<(), Error> {
+) -> eyre::Result<()> {
     // Fetch the client state (IBC client on the local/host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
@@ -108,7 +108,7 @@ pub fn verify_client_proof(
     expected_client_state: AnyClientState,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> Result<(), Error> {
+) -> eyre::Result<()> {
     // Fetch the local client state (IBC client running on the host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
@@ -144,7 +144,7 @@ pub fn verify_consensus_proof(
     connection_end: &ConnectionEnd,
     proof_height: Height,
     proof: &ConsensusProof,
-) -> Result<(), Error> {
+) -> eyre::Result<()> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
@@ -183,7 +183,7 @@ pub fn verify_consensus_proof(
 pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
-) -> Result<(), Error> {
+) -> eyre::Result<()> {
     if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
         return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into());

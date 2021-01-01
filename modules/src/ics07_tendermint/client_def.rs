@@ -1,3 +1,5 @@
+use eyre::eyre;
+
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::header::Header as ICS2Header;
 use crate::ics03_connection::connection::ConnectionEnd;
@@ -21,11 +23,11 @@ impl ClientDef for TendermintClient {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)> {
         if client_state.latest_height() >= header.height() {
             return Err(
-                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
-                    header.height(), client_state.latest_height).into(),
+                eyre!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                    header.height(), client_state.latest_height),
             );
         }
 
@@ -46,7 +48,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         todo!()
     }
 
@@ -58,7 +60,7 @@ impl ClientDef for TendermintClient {
         _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         todo!()
     }
 
@@ -71,7 +73,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         unimplemented!()
     }
 }

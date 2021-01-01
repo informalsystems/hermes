@@ -1,10 +1,12 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use eyre::{eyre, WrapErr};
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
+use relayer::config::Config;
 use relayer::keys::list::{list_keys, KeysListOptions};
+
+use crate::application::app_config;
+use crate::error::ErrorMsg;
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysListCmd {
@@ -13,18 +15,18 @@ pub struct KeysListCmd {
 }
 
 impl KeysListCmd {
-    fn validate_options(&self, config: &Config) -> Result<KeysListOptions, String> {
+    fn validate_options(&self, config: &Config) -> eyre::Result<KeysListOptions> {
         let chain_id = self
             .chain_id
             .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
+            .ok_or_else(|| eyre!("missing chain identifier"))?;
 
         let chain_config = config
             .chains
             .iter()
             .find(|c| c.id == chain_id.parse().unwrap())
             .ok_or_else(|| {
-                "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
+                eyre!("Invalid chain identifier. Cannot retrieve the chain configuration")
             })?;
 
         Ok(KeysListOptions {
@@ -45,7 +47,7 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        let res: Result<String, Error> = list_keys(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res = list_keys(opts).wrap_err(ErrorMsg::Keys); // todo: maybe unnecessary error chaining, remove it.
 
         match res {
             Ok(r) => status_info!("keys list result: ", "{:?}", r),

@@ -3,7 +3,7 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::error::Kind;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenAck;
 use crate::ics03_connection::handler::ConnectionResult;
@@ -12,7 +12,7 @@ use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenAck,
-) -> HandlerResult<ConnectionResult, Error> {
+) -> HandlerResult<ConnectionResult> {
     let mut output = HandlerOutput::builder();
 
     // Check the client's (consensus state) proof height.
@@ -38,16 +38,12 @@ pub(crate) fn process(
                 Ok(old_conn_end)
             } else {
                 // Old connection end is in incorrect state, propagate the error.
-                Err(Into::<Error>::into(Kind::ConnectionMismatch(
-                    msg.connection_id().clone(),
-                )))
+                Err(Kind::ConnectionMismatch(msg.connection_id().clone()))
             }
         }
         None => {
             // No connection end exists for this conn. identifier. Impossible to continue handshake.
-            Err(Into::<Error>::into(Kind::UninitializedConnection(
-                msg.connection_id().clone(),
-            )))
+            Err(Kind::UninitializedConnection(msg.connection_id().clone()))
         }
     }?;
 

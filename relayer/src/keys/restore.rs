@@ -1,7 +1,6 @@
 use crate::chain::{runtime::ChainRuntime, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error;
-use crate::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct KeysRestoreOptions {
@@ -10,7 +9,7 @@ pub struct KeysRestoreOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn restore_key(opts: KeysRestoreOptions) -> Result<Vec<u8>, Error> {
+pub fn restore_key(opts: KeysRestoreOptions) -> eyre::Result<Vec<u8>> {
     // Get the destination chain
     let (chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(opts.chain_config)?;
 

@@ -1,3 +1,5 @@
+use eyre::eyre;
+
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
@@ -20,11 +22,11 @@ impl ClientDef for MockClient {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)> {
         if client_state.latest_height() >= header.height() {
-            return Err(
-                "received header height is lower than (or equal to) client latest height".into(),
-            );
+            return Err(eyre!(
+                "received header height is lower than (or equal to) client latest height"
+            ));
         }
 
         Ok((MockClientState(header), MockConsensusState(header)))
@@ -39,7 +41,7 @@ impl ClientDef for MockClient {
         client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         let client_prefixed_path = Path::ClientConsensusState {
             client_id: client_id.clone(),
             epoch: height.revision_number,
@@ -65,7 +67,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         Ok(())
     }
 
@@ -78,7 +80,7 @@ impl ClientDef for MockClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> eyre::Result<()> {
         Ok(())
     }
 }

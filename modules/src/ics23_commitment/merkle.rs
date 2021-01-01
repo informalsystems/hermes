@@ -1,16 +1,16 @@
+use eyre::eyre;
+use prost::Message;
+use tendermint::merkle::proof::Proof;
+
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use crate::ics23_commitment::error::Error;
-use tendermint::merkle::proof::Proof;
 
-pub fn apply_prefix(
-    prefix: &CommitmentPrefix,
-    mut path: Vec<String>,
-) -> Result<MerklePath, Box<dyn std::error::Error>> {
+pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> eyre::Result<MerklePath> {
     if prefix.is_empty() {
-        return Err("empty prefix".into());
+        return Err(eyre!("empty prefix"));
     }
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];
@@ -120,8 +120,6 @@ pub struct MerkleProof {
 //         RawMerkleProof { proof: value.proof }
 //     }
 // }
-
-use prost::Message;
 
 pub fn convert_tm_to_ics_merkle_proof(
     tm_proof: Option<Proof>,

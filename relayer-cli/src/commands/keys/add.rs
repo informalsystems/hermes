@@ -1,10 +1,12 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use eyre::{eyre, WrapErr};
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
+use relayer::config::Config;
 use relayer::keys::add::{add_key, KeysAddOptions};
+
+use crate::application::app_config;
+use crate::error::ErrorMsg;
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysAddCmd {
@@ -16,24 +18,24 @@ pub struct KeysAddCmd {
 }
 
 impl KeysAddCmd {
-    fn validate_options(&self, config: &Config) -> Result<KeysAddOptions, String> {
+    fn validate_options(&self, config: &Config) -> eyre::Result<KeysAddOptions> {
         let chain_id = self
             .chain_id
             .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
+            .ok_or_else(|| eyre!("missing chain identifier"))?;
 
         let chain_config = config
             .chains
             .iter()
             .find(|c| c.id == chain_id.parse().unwrap())
             .ok_or_else(|| {
-                "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
+                eyre!("Invalid chain identifier. Cannot retrieve the chain configuration")
             })?;
 
         let key_filename = self
             .file
             .clone()
-            .ok_or_else(|| "missing signer key file".to_string())?;
+            .ok_or_else(|| eyre!("missing signer key file"))?;
 
         Ok(KeysAddOptions {
             name: chain_config.key_name.clone(),
@@ -55,7 +57,7 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
+        let res = add_key(opts).wrap_err(ErrorMsg::Keys); // todo: maybe unnecessary error chaining, remove it.
 
         match res {
             Ok(r) => status_info!("key add result: ", "{:?}", r),

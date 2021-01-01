@@ -1,3 +1,4 @@
+use std::fs;
 use std::sync::{Arc, Mutex};
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -5,9 +6,8 @@ use tokio::runtime::Runtime as TokioRuntime;
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error;
-use crate::error::{Error, Kind};
+use crate::error::Kind;
 use crate::keyring::store::KeyRingOperations;
-use std::fs;
 
 #[derive(Clone, Debug)]
 pub struct KeysAddOptions {
@@ -16,7 +16,7 @@ pub struct KeysAddOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
+pub fn add_key(opts: KeysAddOptions) -> eyre::Result<String> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain

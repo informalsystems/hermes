@@ -1,5 +1,7 @@
-use super::error;
+use eyre::eyre;
 use serde_derive::{Deserialize, Serialize};
+
+use super::error;
 
 /// Type of the client, depending on the specific consensus algorithm.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -23,7 +25,7 @@ impl ClientType {
 }
 
 impl std::str::FromStr for ClientType {
-    type Err = error::Error;
+    type Err = eyre::Report;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -32,15 +34,16 @@ impl std::str::FromStr for ClientType {
             #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),
 
-            _ => Err(error::Kind::UnknownClientType(s.to_string()).into()),
+            _ => Err(eyre!(error::Kind::UnknownClientType(s.to_string()))),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::ClientType;
     use std::str::FromStr;
+
+    use super::ClientType;
 
     #[test]
     fn parse_tendermint_client_type() {
