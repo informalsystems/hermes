@@ -1,3 +1,5 @@
+use eyre::WrapErr;
+
 use crate::chain::{runtime::ChainRuntime, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error;
@@ -13,9 +15,7 @@ pub fn restore_key(opts: KeysRestoreOptions) -> eyre::Result<Vec<u8>> {
     // Get the destination chain
     let (chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(opts.chain_config)?;
 
-    let address = chain
-        .get_key()
-        .map_err(|e| error::Kind::KeyBase.context(e))?;
+    let address = chain.get_key().wrap_err(error::Kind::KeyBase)?;
 
     Ok(address.account.as_bytes().to_vec())
 }

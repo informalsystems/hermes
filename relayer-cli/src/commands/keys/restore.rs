@@ -1,11 +1,10 @@
 use abscissa_core::{Command, Options, Runnable};
-use eyre::{eyre, WrapErr};
+use eyre::eyre;
 
 use relayer::config::Config;
 use relayer::keys::restore::{restore_key, KeysRestoreOptions};
 
 use crate::application::app_config;
-use crate::error::ErrorMsg;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -62,11 +61,11 @@ impl Runnable for KeyRestoreCmd {
             Ok(result) => result,
         };
 
-        let res = restore_key(opts).wrap_err(ErrorMsg::Keys); // todo: maybe unnecessary error chaining? remove.
+        let res = restore_key(opts);
 
         match res {
             Ok(r) => status_info!("key restore result: ", "{:?}", hex::encode(r)),
-            Err(e) => status_info!("key restore failed: ", "{}", e),
+            Err(e) => status_info!("key restore failed: ", "{:#}", e),
         }
     }
 }

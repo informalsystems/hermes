@@ -1,11 +1,10 @@
 use abscissa_core::{Command, Options, Runnable};
-use eyre::{eyre, WrapErr};
+use eyre::eyre;
 
 use relayer::config::Config;
 use relayer::keys::list::{list_keys, KeysListOptions};
 
 use crate::application::app_config;
-use crate::error::ErrorMsg;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
@@ -47,11 +46,11 @@ impl Runnable for KeysListCmd {
             Ok(result) => result,
         };
 
-        let res = list_keys(opts).wrap_err(ErrorMsg::Keys); // todo: maybe unnecessary error chaining, remove it.
+        let res = list_keys(opts);
 
         match res {
             Ok(r) => status_info!("keys list result: ", "{:?}", r),
-            Err(e) => status_info!("keys list failed: ", "{}", e),
+            Err(e) => status_info!("keys list failed: ", "{:#}", e),
         }
     }
 }

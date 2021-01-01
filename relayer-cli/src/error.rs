@@ -16,10 +16,6 @@ pub enum ErrorMsg {
     /// Error during relayer transaction submission
     #[error("tx error")]
     Tx,
-
-    /// Error during relayer key manipulation
-    #[error("keys error")]
-    Keys,
 }
 
 /// Kinds of errors

@@ -4,7 +4,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
-use crate::error::Kind;
 use crate::keyring::store::KeyRingOperations;
 
 #[derive(Clone, Debug)]
@@ -18,15 +17,12 @@ pub fn list_keys(opts: KeysListOptions) -> eyre::Result<String> {
     // Get the destination chain
     let chain = CosmosSDKChain::bootstrap(opts.chain_config, Arc::new(Mutex::new(rt)))?;
 
-    let key_entry = chain.keybase().get_key();
+    let key_entry = chain.keybase().get_key()?;
 
-    match key_entry {
-        Ok(k) => Ok(format!(
-            "chain: {} -> {} ({})",
-            chain.config().id.clone(),
-            chain.config().key_name.clone(),
-            k.account.as_str(),
-        )),
-        Err(e) => Err(Kind::KeyBase.context(e).into()),
-    }
+    Ok(format!(
+        "chain: {} -> {} ({})",
+        chain.config().id.clone(),
+        chain.config().key_name.clone(),
+        key_entry.account.as_str(),
+    ))
 }
