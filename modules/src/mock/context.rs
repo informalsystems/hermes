@@ -11,7 +11,6 @@ use tendermint::account::Id;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
-use crate::ics02_client::error::Error as ICS2Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
@@ -371,7 +370,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> Result<(), ICS2Error> {
+    ) -> eyre::Result<()> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type,
             consensus_states: Default::default(),
@@ -394,7 +393,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> Result<(), ICS2Error> {
+    ) -> eyre::Result<()> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: client_state.client_type(),
             consensus_states: Default::default(),
@@ -410,7 +409,7 @@ impl ClientKeeper for MockContext {
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> Result<(), ICS2Error> {
+    ) -> eyre::Result<()> {
         let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: ClientType::Mock,
             consensus_states: Default::default(),

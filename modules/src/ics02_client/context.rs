@@ -4,7 +4,6 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
 use crate::ics02_client::handler::ClientResult::{Create, Update};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics24_host::identifier::ClientId;
@@ -23,12 +22,9 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> Result<(), Error>;
+    ) -> eyre::Result<()>;
 
-    fn store_client_result(
-        &mut self,
-        handler_res: ClientResult,
-    ) -> Result<Vec<ClientEvent>, Error> {
+    fn store_client_result(&mut self, handler_res: ClientResult) -> eyre::Result<Vec<ClientEvent>> {
         match handler_res {
             Create(res) => {
                 let client_id = self.next_client_id();
@@ -58,12 +54,12 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> Result<(), Error>;
+    ) -> eyre::Result<()>;
 
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> Result<(), Error>;
+    ) -> eyre::Result<()>;
 }

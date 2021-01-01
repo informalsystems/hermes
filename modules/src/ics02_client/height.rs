@@ -2,7 +2,7 @@ use std::{cmp::Ordering, convert::TryFrom};
 
 use tendermint_proto::Protobuf;
 
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use serde_derive::{Deserialize, Serialize};
 
@@ -45,11 +45,9 @@ impl Height {
         self.add(1)
     }
 
-    pub fn sub(&self, delta: u64) -> Result<Height, Error> {
+    pub fn sub(&self, delta: u64) -> eyre::Result<Height> {
         if self.revision_height <= delta {
-            return Err(Kind::InvalidHeightResult
-                .context("height cannot end up zero or negative")
-                .into());
+            return Err(Error::InvalidHeightResult.into());
         }
 
         Ok(Height {
@@ -58,7 +56,7 @@ impl Height {
         })
     }
 
-    pub fn decrement(&self) -> Result<Height, Error> {
+    pub fn decrement(&self) -> eyre::Result<Height> {
         self.sub(1)
     }
 
@@ -101,7 +99,7 @@ impl Ord for Height {
 impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
-    type Error = anomaly::Error<Kind>;
+    type Error = anomaly::Error<Error>;
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
@@ -131,7 +129,7 @@ impl std::fmt::Display for Height {
 }
 
 impl TryFrom<String> for Height {
-    type Error = anomaly::Error<Kind>;
+    type Error = anomaly::Error<Error>;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();

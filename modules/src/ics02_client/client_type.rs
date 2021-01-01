@@ -34,7 +34,7 @@ impl std::str::FromStr for ClientType {
             #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),
 
-            _ => Err(eyre!(error::Kind::UnknownClientType(s.to_string()))),
+            _ => Err(eyre!(error::Error::UnknownClientType(s.to_string()))),
         }
     }
 }

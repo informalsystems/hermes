@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use eyre::eyre;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -8,8 +9,6 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::Error;
-use crate::ics02_client::error::Kind;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock::header::MockHeader;
@@ -50,7 +49,7 @@ impl From<MockClientState> for AnyClientState {
 }
 
 impl TryFrom<RawMockClientState> for MockClientState {
-    type Error = Error;
+    type Error = eyre::Report;
 
     fn try_from(raw: RawMockClientState) -> Result<Self, Self::Error> {
         Ok(MockClientState(raw.header.unwrap().try_into()?))
@@ -102,12 +101,10 @@ pub struct MockConsensusState(pub MockHeader);
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {
-    type Error = Error;
+    type Error = eyre::Report;
 
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
-        let raw_header = raw
-            .header
-            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing header"))?;
+        let raw_header = raw.header.ok_or_else(|| eyre!("missing header"))?;
 
         Ok(Self(MockHeader::try_from(raw_header)?))
     }

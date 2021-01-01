@@ -1,11 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 
-use ibc_proto::ibc::mock::Header as RawMockHeader;
+use eyre::{eyre, WrapErr};
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::mock::Header as RawMockHeader;
 
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{self, Error};
+use crate::ics02_client::error;
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::Height;
@@ -16,14 +18,14 @@ pub struct MockHeader(pub Height);
 impl Protobuf<RawMockHeader> for MockHeader {}
 
 impl TryFrom<RawMockHeader> for MockHeader {
-    type Error = Error;
+    type Error = eyre::Report;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
         Ok(MockHeader(
             raw.height
-                .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
+                .ok_or_else(|| eyre!("missing height in header"))?
                 .try_into()
-                .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+                .wrap_err(error::Error::InvalidRawHeader)?,
         ))
     }
 }

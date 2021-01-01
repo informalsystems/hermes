@@ -1,14 +1,11 @@
-use anomaly::{BoxError, Context};
 use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
-pub type Error = anomaly::Error<Kind>; // todo: soon we'll delete this
-
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
-pub enum Kind {
+pub enum Error {
     // todo: rename into plain `Error`
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
@@ -18,9 +15,6 @@ pub enum Kind {
 
     #[error("consensus state not found at: {0} at height {1}")]
     ConsensusStateNotFound(ClientId, Height),
-
-    #[error("implementation specific")]
-    ImplementationSpecific,
 
     #[error("header verification failed")]
     HeaderVerificationFailure,
@@ -40,13 +34,10 @@ pub enum Kind {
     #[error("invalid raw client consensus state")]
     InvalidRawConsensusState,
 
-    #[error("invalid identifer")]
-    InvalidIdentifier,
-
     #[error("invalid raw header")]
     InvalidRawHeader,
 
-    #[error("invalid height result")]
+    #[error("invalid height result: height cannot end up zero or negative")]
     InvalidHeightResult,
 
     #[error("invalid address")]
@@ -60,10 +51,4 @@ pub enum Kind {
         state_type: ClientType,
         consensus_type: ClientType,
     },
-}
-
-impl Kind {
-    pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {
-        Context::new(self, Some(source.into()))
-    }
 }

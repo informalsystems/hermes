@@ -6,6 +6,7 @@
 
 use std::convert::TryFrom;
 
+use eyre::WrapErr;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
@@ -13,7 +14,7 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyHeader;
-use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
 
@@ -61,11 +62,11 @@ impl Msg for MsgUpdateAnyClient {
 impl Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient {}
 
 impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
-    type Error = Error;
+    type Error = eyre::Report;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or(Kind::InvalidRawHeader)?;
-        let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
+        let raw_header = raw.header.ok_or(Error::InvalidRawHeader)?;
+        let signer = string_to_account(raw.signer).wrap_err(Error::InvalidAddress)?;
 
         Ok(MsgUpdateAnyClient {
             client_id: raw.client_id.parse().unwrap(),
@@ -93,9 +94,8 @@ mod tests {
 
     use crate::ics02_client::client_def::AnyHeader;
     use crate::ics02_client::msgs::MsgUpdateAnyClient;
-    use crate::ics24_host::identifier::ClientId;
-
     use crate::ics07_tendermint::header::test_util::get_dummy_ics07_header;
+    use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
 
     #[test]
