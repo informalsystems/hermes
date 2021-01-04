@@ -8,6 +8,7 @@
 ## Context
 
 This ADR documents the implementation of the `v0` relayer.
+We discuss aspects of concurrency and architecture primarily.
 
 
 ## Decision
@@ -58,7 +59,7 @@ The `v0` relayer has no explicit focus on proof verification.
 > todo: detail the current (working) state of proof verification? 
 
 
-### Relayer Concurrency Model
+## Relayer Concurrency Model
 
 Relayer `v0` works under the assumption that there are no competing relayers 
 running concurrently (which may interfere with each other). 
@@ -87,9 +88,9 @@ required.
 Beside the application thread, the relayer maintains is one or more threads 
 for each chain.
 The number of threads per chain is chain-specific:
-- For the production chain ([Cosmos](cosmos)), there are three separate 
+- For the production chain ([Cosmos](#references)), there are three separate 
   threads, described in more detail below in [architecture](#architecture).
-- For the mock chain ([Mock](mock)), there is one thread.
+- For the mock chain ([Mock](#references)), there is one thread.
 
 The link runs in the main application thread. This consumes events 
 from the chains, performs queries and sends transactions synchronously.
@@ -102,7 +103,7 @@ structured.
 Here the focus is on the interfaces within the relayer, as well as the 
 interface between the relayer and a single chain.
 
-![Relayer v0 architecture diagram!](assets/relayer-v0-arch.jpeg
+![Relayer v0 architecture diagram!](assets/relayer-v0-arch.jpg
 "Relayer v0 architecture diagram")
 
 ##### Levels of abstraction
@@ -117,11 +118,12 @@ levels of abstraction as follows:
 - This is the lowest level of abstraction, the farthest away from relayer 
      users
 - The relayer communicates with a chain via three interfaces: 
-  (i) the `LightClient` trait (handled via the supervisor for the production 
+    - (i) the `LightClient` trait (handled via the supervisor for the 
+      production 
      chain),
-  (ii) the `Chain` trait (where the communication happens over the 
+    - (ii) the `Chain` trait (where the communication happens over the 
   ABCI/gRPC interface primarily), and 
-  (iii) an `EventMonitor` which subscribes to a full node and sends batches 
+    - (iii) an `EventMonitor` which subscribes to a full node and sends batches 
   of events from that node to the chain runtime in the relayer. Currently, 
   the relayer registers for `Tx` and `Block` notifications. It then extracts 
   the IBC events from the Tx and generates a "NewBlock" event also for the
@@ -141,7 +143,7 @@ levels of abstraction as follows:
 
 ###### 3. The relayer application
 - Communicates with the runtime via a `ChainHandle`, which contains the 
-      appropriate crossbeam sender and receiver channels
+      appropriate crossbeam sender and receiver channels to/from the runtime
 - Upon start-up, instantiates relayer-level objects in the following order: 
   two `ForeignClient`s (one per chain), a `Connection` (which contains the 
   two clients), a `Channel` (containing the connection), and on top of that 
@@ -159,5 +161,7 @@ There are four threads running: the `EventMonitor`, the `Supervisor`, the
 
 ## References:
 
-[Cosmos]: github.com/cosmos/relayer branch `colin/329-handshake-refactor`
-[Mock]: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
+- Cosmos: https://github.com/cosmos/relayer branch 
+  `colin/329-handshake-refactor`
+
+- Mock: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
