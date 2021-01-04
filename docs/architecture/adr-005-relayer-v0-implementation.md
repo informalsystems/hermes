@@ -1,4 +1,4 @@
-# Relayer v0 concurrency model
+# ADR 005: Relayer v0 implementation
 
 ## Changelog
 
@@ -8,15 +8,23 @@
 ## Context
 
 This ADR documents the implementation of the `v0` relayer.
-We discuss aspects of concurrency and architecture primarily.
+
+As a main design goal, `v0` is meant to lay a foundation upon which we can 
+add more features and enhancements incrementally with later relayer versions.
+This is to say that `v0` may be deficient in terms of features or 
+robustness, and rather aims to be adaptable and extensible.
+For this reason, we primarily discuss aspects of concurrency and architecture.
 
 
 ## Decision
 
 The relayer is set out to evolve across three versions.
 The first of these versions, `v0`, makes several simplifying assumptions 
-about the environment of the relayer and its functionality. These 
-assumptions are as follows:
+about the environment of the relayer and its features. These assumptions 
+are important towards limiting the scope of functionality that `v0` aims to 
+cover, and allowing a focus on the architecture and concurrency model to 
+provide for growth in the future (see [the design goal](#context) above). 
+These assumptions are as follows:
 
 ### Configuration
 
@@ -88,7 +96,7 @@ required.
 Beside the application thread, the relayer maintains is one or more threads 
 for each chain.
 The number of threads per chain is chain-specific:
-- For the production chain ([Cosmos](#references)), there are three separate 
+- For the production chain ([Gaia](#references)), there are three separate 
   threads, described in more detail below in [architecture](#architecture).
 - For the mock chain ([Mock](#references)), there is one thread.
 
@@ -158,9 +166,12 @@ There are four threads running: the `EventMonitor`, the `Supervisor`, the
 [2]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-004-relayer-domain-decomposition.md#link
 [3]: https://github.com/informalsystems/ibc-rs/blob/379dd9812f6e7a42b9428f64eb52fe292d417476/relayer/src/chain/handle.rs#L51
 
+> TODO: Summary of pros and cons
+
 ## References:
 
-- Cosmos: https://github.com/cosmos/relayer branch 
-  `colin/329-handshake-refactor`
+- Gaia: the correct Gaia instance for working with `v0` can be obtained from 
+  https://github.com/cosmos/relayer, branch 
+  `colin/329-handshake-refactor` by executing `make build-gaia`
 
 - Mock: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
