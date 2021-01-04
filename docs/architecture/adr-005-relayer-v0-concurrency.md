@@ -103,8 +103,7 @@ structured.
 Here the focus is on the interfaces within the relayer, as well as the 
 interface between the relayer and a single chain.
 
-![Relayer v0 architecture diagram!](assets/relayer-v0-arch.jpg
-"Relayer v0 architecture diagram")
+<img src="assets/relayer-v0-arch.jpg" width="500" />
 
 ##### Levels of abstraction
 
