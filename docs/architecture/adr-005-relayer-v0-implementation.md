@@ -172,6 +172,8 @@ There are four threads running: the `EventMonitor`, the `Supervisor`, the
 
 - Gaia: the correct Gaia instance for working with `v0` can be obtained from 
   https://github.com/cosmos/relayer, branch 
-  `colin/329-handshake-refactor` by executing `make build-gaia`
+  `colin/329-handshake-refactor` by executing `make build-gaia`. This
+  [comment](https://github.com/informalsystems/ibc-rs/pull/449#issuecomment-750248113)
+  provides additional insights into development-time relayer `v0` environment.
 
 - Mock: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
