@@ -46,11 +46,7 @@ pub enum Path {
 impl Path {
     /// Indication if the path is provable.
     pub fn is_provable(&self) -> bool {
-        match &self {
-            Path::ClientConnections(_) => false,
-            Path::Ports(_) => false,
-            _ => true,
-        }
+        !matches!(&self, Path::ClientConnections(_) | Path::Ports(_))
     }
 
     /// into_bytes implementation
