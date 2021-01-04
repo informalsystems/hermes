@@ -68,8 +68,8 @@ packet relaying direction from a source chain to a destination chain).
 The following diagram sketches the relayer domain decomposition at a 
 high-level, with a focus on one link.
 
-![Relayer v0 domain decomposition!](assets/relayer-v0-link.jpeg
-"Relayer v0 domain decomposition")
+<img src="assets/relayer-v0-link.jpeg" width="700" alt="relayer v0 domain 
+decomposition"/>
 
 
 The relayer supports a single stack made of a connection, a channel, and a link.
@@ -103,7 +103,7 @@ structured.
 Here the focus is on the interfaces within the relayer, as well as the 
 interface between the relayer and a single chain.
 
-<img src="assets/relayer-v0-arch.jpg" width="500" />
+<img src="assets/relayer-v0-arch.jpg" width="500" alt="relayer v0 architecture"/>
 
 ##### Levels of abstraction
 
