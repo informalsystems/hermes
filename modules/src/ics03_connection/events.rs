@@ -8,7 +8,6 @@ use std::convert::TryFrom;
 use tendermint::block;
 
 use std::collections::HashSet;
-use std::iter::FromIterator;
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
@@ -24,16 +23,15 @@ const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
-    HashSet::from_iter(
-        vec![
-            INIT_EVENT_TYPE.to_string(),
-            TRY_EVENT_TYPE.to_string(),
-            ACK_EVENT_TYPE.to_string(),
-            CONFIRM_EVENT_TYPE.to_string(),
-        ]
-        .iter()
-        .cloned(),
-    )
+    vec![
+        INIT_EVENT_TYPE.to_string(),
+        TRY_EVENT_TYPE.to_string(),
+        ACK_EVENT_TYPE.to_string(),
+        CONFIRM_EVENT_TYPE.to_string(),
+    ]
+    .iter()
+    .cloned()
+    .collect()
 }
 
 pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
