@@ -9,7 +9,6 @@ use crate::ics02_client::height::Height;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
-use std::iter::FromIterator;
 use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
@@ -27,11 +26,10 @@ pub const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
-    HashSet::from_iter(
-        vec![CREATE_EVENT_TYPE.to_string(), UPDATE_EVENT_TYPE.to_string()]
-            .iter()
-            .cloned(),
-    )
+    vec![CREATE_EVENT_TYPE.to_string(), UPDATE_EVENT_TYPE.to_string()]
+        .iter()
+        .cloned()
+        .collect()
 }
 
 pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
