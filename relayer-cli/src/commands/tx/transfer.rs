@@ -56,7 +56,7 @@ impl TxRawSendPacketCmd {
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount.to_string(),
             height_offset: self.height_offset,
-            number_msgs:  self.number_msgs.unwrap_or(1),
+            number_msgs: self.number_msgs.unwrap_or(1),
         };
 
         Ok(opts)
@@ -87,7 +87,11 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", serde_json::to_string(&ev).unwrap()),
+            Ok(ev) => status_info!(
+                "packet recv, result: ",
+                "{:#?}",
+                serde_json::to_string(&ev).unwrap()
+            ),
             Err(e) => status_info!("packet recv failed, error: ", "{}", e),
         }
     }
