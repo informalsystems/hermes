@@ -25,4 +25,5 @@ pub mod keys;
 pub mod light_client;
 pub mod link;
 pub mod relay;
+pub mod transfer;
 pub mod util;
