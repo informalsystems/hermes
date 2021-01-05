@@ -1,7 +1,7 @@
 use crate::chain::{Chain, CosmosSDKChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
-use ibc::application::msgs::transfer::MsgTransfer;
+use ibc::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::tx_msg::Msg;
@@ -13,14 +13,14 @@ pub struct TransferOptions {
     pub packet_dst_chain_config: ChainConfig,
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
-    pub amount: String,
+    pub amount: u64,
     pub height_offset: u64,
     pub number_msgs: usize,
 }
 
 pub fn build_and_send_transfer_messages(
-    mut packet_src_chain: CosmosSDKChain, // the chain where the transfer is sent
-    mut packet_dst_chain: CosmosSDKChain, // the chain from whose account the amount is debited
+    mut packet_src_chain: CosmosSDKChain, // the chain whose account is debited
+    mut packet_dst_chain: CosmosSDKChain, // the chain where the transfer is sent
     opts: &TransferOptions,
 ) -> Result<Vec<IBCEvent>, Error> {
     let receiver = packet_dst_chain

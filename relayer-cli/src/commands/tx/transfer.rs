@@ -26,9 +26,9 @@ pub struct TxRawSendPacketCmd {
     src_channel_id: ChannelId,
 
     #[options(free, help = "amount of samoleans to send (e.g. `100000`)")]
-    amount: u16,
+    amount: u64,
 
-    #[options(free, help = "timout in number of blocks since current")]
+    #[options(free, help = "timeout in number of blocks since current")]
     height_offset: u64,
 
     #[options(help = "number of messages to send", short = "n")]
@@ -54,7 +54,7 @@ impl TxRawSendPacketCmd {
             packet_dst_chain_config: dest_chain_config.clone(),
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
-            amount: self.amount.to_string(),
+            amount: self.amount,
             height_offset: self.height_offset,
             number_msgs: self.number_msgs.unwrap_or(1),
         };

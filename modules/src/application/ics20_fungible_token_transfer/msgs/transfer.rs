@@ -6,7 +6,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::application::error::{Error, Kind};
+use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::tx_msg::Msg;
