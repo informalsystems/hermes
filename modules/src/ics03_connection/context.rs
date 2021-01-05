@@ -4,7 +4,7 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
-use crate::ics03_connection::error::Error;
+use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -59,7 +59,7 @@ pub trait ConnectionReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ConnectionMsg`.
 pub trait ConnectionKeeper {
-    fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
+    fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Kind> {
         match result.connection_end.state() {
             State::Init => {
                 let connection_id = self.next_connection_id();
@@ -97,12 +97,12 @@ pub trait ConnectionKeeper {
         &mut self,
         connection_id: &ConnectionId,
         connection_end: &ConnectionEnd,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Kind>;
 
     /// Stores the given connection_id at a path associated with the client_id.
     fn store_connection_to_client(
         &mut self,
         connection_id: &ConnectionId,
         client_id: &ClientId,
-    ) -> Result<(), Error>;
+    ) -> Result<(), Kind>;
 }

@@ -3,6 +3,7 @@
 use crate::handler::{Event, EventType, HandlerResult};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::msgs::ClientMsg;
+use crate::ics02_client::Error;
 use crate::ics24_host::identifier::ClientId;
 
 pub mod create_client;
@@ -36,7 +37,7 @@ impl From<ClientEvent> for Event {
 }
 
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> HandlerResult<ClientResult>
+pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> HandlerResult<ClientResult, Error>
 where
     Ctx: ClientReader,
 {

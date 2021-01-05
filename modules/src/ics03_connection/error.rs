@@ -5,6 +5,7 @@ pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
+use crate::ics03_connection::connection::ConnectionEnd;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -14,8 +15,8 @@ pub enum Kind {
     #[error("connection exists (was initialized) already: {0}")]
     ConnectionExistsAlready(ConnectionId),
 
-    #[error("a different connection exists (was initialized) already for the same connection identifier {0}")]
-    ConnectionMismatch(ConnectionId),
+    #[error("a different connection exists (was initialized) already for the same connection id {0} -> {:?}")]
+    ConnectionMismatch(ConnectionId, ConnectionEnd),
 
     #[error("connection end for identifier {0} was never initialized")]
     UninitializedConnection(ConnectionId),
@@ -53,8 +54,11 @@ pub enum Kind {
     #[error("invalid signer")]
     InvalidSigner,
 
-    #[error("queried for a non-existing connection")]
-    ConnectionNotFound,
+    #[error("queried for a non-existing connection id {0}")]
+    ConnectionNotFound(ConnectionId),
+
+    #[error("conversion from raw failed because the raw object is empty")]
+    EmptyRawObject,
 
     #[error("invalid counterparty")]
     InvalidCounterparty,

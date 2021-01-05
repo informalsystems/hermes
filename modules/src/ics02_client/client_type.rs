@@ -1,7 +1,6 @@
-use eyre::eyre;
 use serde_derive::{Deserialize, Serialize};
 
-use super::error;
+use crate::ics02_client::Error;
 
 /// Type of the client, depending on the specific consensus algorithm.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -25,7 +24,7 @@ impl ClientType {
 }
 
 impl std::str::FromStr for ClientType {
-    type Err = eyre::Report;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
@@ -34,7 +33,7 @@ impl std::str::FromStr for ClientType {
             #[cfg(any(test, feature = "mocks"))]
             "mock" => Ok(Self::Mock),
 
-            _ => Err(eyre!(error::Error::UnknownClientType(s.to_string()))),
+            _ => Err(Error::UnknownClientType(s.to_string())),
         }
     }
 }

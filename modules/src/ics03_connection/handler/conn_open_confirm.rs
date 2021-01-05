@@ -3,7 +3,7 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::verify::verify_proofs;
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
 use crate::ics03_connection::handler::ConnectionResult;
@@ -12,7 +12,7 @@ use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenConfirm,
-) -> HandlerResult<ConnectionResult> {
+) -> HandlerResult<ConnectionResult, Kind> {
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old connection end & validate it.
@@ -21,7 +21,7 @@ pub(crate) fn process(
         Some(old_conn_end) => {
             if !(old_conn_end.state_matches(&State::TryOpen)) {
                 // Old connection end is in incorrect state, propagate the error.
-                Err(Kind::ConnectionMismatch(msg.connection_id().clone()))
+                Err(Kind::ConnectionMismatch(msg.connection_id().clone(), old_conn_end))
             } else {
                 Ok(old_conn_end)
             }

@@ -12,7 +12,7 @@ use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenAck,
-) -> HandlerResult<ConnectionResult> {
+) -> HandlerResult<ConnectionResult, Kind> {
     let mut output = HandlerOutput::builder();
 
     // Check the client's (consensus state) proof height.
@@ -38,7 +38,7 @@ pub(crate) fn process(
                 Ok(old_conn_end)
             } else {
                 // Old connection end is in incorrect state, propagate the error.
-                Err(Kind::ConnectionMismatch(msg.connection_id().clone()))
+                Err(Kind::ConnectionMismatch(msg.connection_id().clone(), old_conn_end))
             }
         }
         None => {

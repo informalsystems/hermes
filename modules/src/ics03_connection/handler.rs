@@ -4,6 +4,7 @@ use crate::handler::{Event, EventType, HandlerResult};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::msgs::ConnectionMsg;
+use crate::ics03_connection::Kind;
 use crate::ics24_host::identifier::ConnectionId;
 
 pub mod conn_open_ack;
@@ -62,7 +63,7 @@ impl From<ConnectionEvent> for Event {
 
 /// General entry point for processing any type of message related to the ICS3 connection open
 /// handshake protocol.
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: ConnectionMsg) -> HandlerResult<ConnectionResult>
+pub fn dispatch<Ctx>(ctx: &Ctx, msg: ConnectionMsg) -> HandlerResult<ConnectionResult, Kind>
 where
     Ctx: ConnectionReader,
 {

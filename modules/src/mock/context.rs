@@ -11,9 +11,10 @@ use tendermint::account::Id;
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
+use crate::ics02_client::Error as ICS2Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
-use crate::ics03_connection::error::Error as ICS3Error;
+use crate::ics03_connection::Kind as ICS3Error;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
@@ -370,7 +371,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), ICS2Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type,
             consensus_states: Default::default(),
@@ -393,7 +394,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), ICS2Error> {
         let mut client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: client_state.client_type(),
             consensus_states: Default::default(),
@@ -409,7 +410,7 @@ impl ClientKeeper for MockContext {
         client_id: ClientId,
         height: Height,
         consensus_state: AnyConsensusState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), ICS2Error> {
         let client_record = self.clients.entry(client_id).or_insert(MockClientRecord {
             client_type: ClientType::Mock,
             consensus_states: Default::default(),

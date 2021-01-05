@@ -7,7 +7,7 @@ use ibc_proto::ibc::mock::Header as RawMockHeader;
 
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error;
+use crate::ics02_client::Error;
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::Height;
@@ -25,7 +25,7 @@ impl TryFrom<RawMockHeader> for MockHeader {
             raw.height
                 .ok_or_else(|| eyre!("missing height in header"))?
                 .try_into()
-                .wrap_err(error::Error::InvalidRawHeader)?,
+                .wrap_err(Error::InvalidRawHeader)?,
         ))
     }
 }

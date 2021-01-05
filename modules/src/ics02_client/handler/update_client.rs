@@ -1,11 +1,9 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
-use eyre::WrapErr;
-
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error;
+use crate::ics02_client::Error;
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
@@ -19,7 +17,7 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(ctx: &dyn ClientReader, msg: MsgUpdateAnyClient) -> HandlerResult<ClientResult> {
+pub fn process(ctx: &dyn ClientReader, msg: MsgUpdateAnyClient) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {
@@ -49,7 +47,9 @@ pub fn process(ctx: &dyn ClientReader, msg: MsgUpdateAnyClient) -> HandlerResult
     // consensus_state obtained from header. These will be later persisted by the keeper.
     let (new_client_state, new_consensus_state) = client_def
         .check_header_and_update_state(client_state, header)
-        .wrap_err(Error::HeaderVerificationFailure)?;
+        .map_err(|_| Error::HeaderVerificationFailure)?;
+    // todo: map_err needed only if `check_header_and_update_state` is used elsewhere,
+    // otherwise propagate the error with `?`
 
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
@@ -142,9 +142,9 @@ mod tests {
             Ok(_) => {
                 panic!("unexpected success (expected error)");
             }
-            Err(err) => match err.downcast::<Error>() {
-                Ok(kind) => assert_eq!(kind, Error::ClientNotFound(msg.client_id)),
-                Err(_) => panic!("Unknown error thrown"),
+            Err(err) => match err {
+                Error::ClientNotFound(id) => assert_eq!(id, msg.client_id),
+                _ => panic!("Unknown error thrown"),
             },
         }
     }

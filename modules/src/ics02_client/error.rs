@@ -6,11 +6,10 @@ use crate::Height;
 
 #[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum Error {
-    // todo: rename into plain `Error`
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
 
-    #[error("client not found: {0}")]
+    #[error("cannot update client because it was not found: {0}")]
     ClientNotFound(ClientId),
 
     #[error("consensus state not found at: {0} at height {1}")]

@@ -5,7 +5,7 @@ use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::Kind;
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
@@ -183,10 +183,10 @@ pub fn verify_consensus_proof(
 pub fn check_client_consensus_height(
     ctx: &dyn ConnectionReader,
     claimed_height: Height,
-) -> eyre::Result<()> {
+) -> Result<(), Kind> {
     if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
-        return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()).into());
+        return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()));
     }
 
     let oldest_available_height =
@@ -194,7 +194,7 @@ pub fn check_client_consensus_height(
 
     if claimed_height.revision_height < oldest_available_height {
         // Fail if the consensus height is too old (has been pruned).
-        return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()).into());
+        return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()));
     }
 
     // Height check is within normal bounds, check passes.

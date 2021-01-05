@@ -49,8 +49,8 @@ impl Event {
     }
 }
 
-/// A `HandlerResult` is a wrapper over a Result containing an `HandlerOutput` or a `Report`
-pub type HandlerResult<T> = eyre::Result<HandlerOutput<T>>;
+/// A `HandlerResult` is just a result over a parametrized `HandlerOutput` and an error type.
+pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct HandlerOutput<T> {

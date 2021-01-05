@@ -1,11 +1,9 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 
-use eyre::WrapErr;
-
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::error::Kind;
+use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
@@ -14,7 +12,7 @@ use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
     msg: MsgConnectionOpenTry,
-) -> HandlerResult<ConnectionResult> {
+) -> HandlerResult<ConnectionResult, Kind> {
     let mut output = HandlerOutput::builder();
 
     // Check that consensus height (for client proof) in message is not too advanced nor too old.
@@ -25,7 +23,7 @@ pub(crate) fn process(
         Some(prev_id) => {
             let old_connection_end = ctx
                 .connection_end(prev_id)
-                .ok_or_else(|| Kind::ConnectionNotFound.context(prev_id.to_string()))?;
+                .ok_or_else(|| Kind::ConnectionNotFound(prev_id.clone()))?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)
@@ -37,8 +35,7 @@ pub(crate) fn process(
                 Ok(old_connection_end)
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Kind::ConnectionMismatch(prev_id.clone()))
-                    .wrap_err(format!("Old connection end: {:?}", old_connection_end))
+                Err(Kind::ConnectionMismatch(prev_id.clone(), old_connection_end))
             }
         }
         // No connection id was supplied, create a new connection end. Note: the id is assigned
