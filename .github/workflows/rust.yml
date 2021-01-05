@@ -81,6 +81,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -91,14 +93,13 @@ jobs:
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          version: '0.15.0'
+          version: '0.16.0'
           args: '-- --test-threads 1'
           timeout: 600
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          yml: ./codecov.yml
           fail_ci_if_error: true
       - name: Archive code coverage results
         uses: actions/upload-artifact@v2
