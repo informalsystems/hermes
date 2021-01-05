@@ -54,8 +54,7 @@ fn event_types() -> HashSet<String> {
         SEND_PACKET.to_string(),
         WRITE_ACK.to_string(),
     ]
-    .iter()
-    .cloned()
+    .into_iter()
     .collect()
 }
 

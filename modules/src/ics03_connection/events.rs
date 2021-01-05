@@ -29,8 +29,7 @@ fn event_types() -> HashSet<String> {
         ACK_EVENT_TYPE.to_string(),
         CONFIRM_EVENT_TYPE.to_string(),
     ]
-    .iter()
-    .cloned()
+    .into_iter()
     .collect()
 }
 
