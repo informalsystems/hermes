@@ -7,7 +7,6 @@ use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
-use std::iter::FromIterator;
 use tendermint::block;
 
 /// Channel event types
@@ -45,20 +44,18 @@ const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
-    HashSet::from_iter(
-        vec![
-            OPEN_INIT_EVENT_TYPE.to_string(),
-            OPEN_TRY_EVENT_TYPE.to_string(),
-            OPEN_ACK_EVENT_TYPE.to_string(),
-            OPEN_CONFIRM_EVENT_TYPE.to_string(),
-            CLOSE_INIT_EVENT_TYPE.to_string(),
-            CLOSE_CONFIRM_EVENT_TYPE.to_string(),
-            SEND_PACKET.to_string(),
-            WRITE_ACK.to_string(),
-        ]
-        .iter()
-        .cloned(),
-    )
+    vec![
+        OPEN_INIT_EVENT_TYPE.to_string(),
+        OPEN_TRY_EVENT_TYPE.to_string(),
+        OPEN_ACK_EVENT_TYPE.to_string(),
+        OPEN_CONFIRM_EVENT_TYPE.to_string(),
+        CLOSE_INIT_EVENT_TYPE.to_string(),
+        CLOSE_CONFIRM_EVENT_TYPE.to_string(),
+        SEND_PACKET.to_string(),
+        WRITE_ACK.to_string(),
+    ]
+        .into_iter()
+        .collect()
 }
 
 pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
@@ -95,8 +92,8 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
                     revision_number: to[0].parse::<u64>().unwrap(),
                     revision_height: to[1].parse::<u64>().unwrap(),
                 }
-                .try_into()
-                .unwrap();
+                    .try_into()
+                    .unwrap();
             }
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
             PKT_ACK_ATTRIBUTE_KEY => ack = Vec::from(value.as_bytes()),

@@ -7,6 +7,7 @@ mod channel;
 mod client;
 mod connection;
 mod packet;
+mod transfer;
 
 /// `tx` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -65,6 +66,10 @@ pub enum TxRawCommands {
     /// The `tx raw chan-confirm` subcommand
     #[options(help = "tx raw chan-confirm")]
     ChanConfirm(channel::TxRawChanConfirmCmd),
+
+    /// The `tx raw packet-send` subcommand
+    #[options(help = "tx raw packet-send")]
+    PacketSend(transfer::TxRawSendPacketCmd),
 
     /// The `tx raw packet-recv` subcommand
     #[options(help = "tx raw packet-recv")]

@@ -35,7 +35,7 @@ Dependencies:
 - `jq`, a command-line JSON processor
 - [`gaia`](https://github.com/cosmos/gaia), a blockchain supporting IBC 
 
-Clone the relayer implementation from [iqlusioninc/relayer](https://github.com/iqlusioninc/relayer/).
+Clone the relayer implementation from [cosmos/relayer](https://github.com/cosmos/relayer/).
 We are interested in two commands we can run from this repo:
 
 - `bash scripts/two-chainz "local" "skip"`. Running this script will instantiate two chains, listening on ports `26557` and `26657`, respectively.

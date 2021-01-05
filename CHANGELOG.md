@@ -2,16 +2,22 @@
 
 ## Unreleased Changes
 
+## v0.0.6
+*December 23, 2020*
+
+This release focuses on upgrading the relayer and ibc modules to the latest interfaces from the ecosystem:
+tendermint-rs `v0.17`, which brings the protobuf changes from tendermint `v0.34.0`, plus alignment with
+the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-5').
+
 ### FEATURES
 - Update to tendermint-rs version `0.17` ([#451])
 - Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#451])
 
 - [relayer]
-  - Implement packet relaying ([#379]) 
  
 - [relayer-cli]
   - Packet CLIs for recv_packet ([#443])
-  - Packet CLIs for recv_packet ([#468])
+  - Packet CLIs for acknowledging packets ([#468])
 
 ### IMPROVEMENTS
 - [relayer]

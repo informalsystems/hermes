@@ -1,6 +1,6 @@
 [package]
 name = "relayer"
-version = "0.0.5"
+version = "0.0.6"
 edition = "2018"
 authors = [
   "Informal Systems <hello@informal.systems>"
@@ -9,7 +9,7 @@ authors = [
 [dependencies]
 subtle-encoding = "0.5"
 ibc = { path = "../modules" }
-ibc-proto = { version = "0.5.0", path = "../proto" }
+ibc-proto = { version = "0.6.0", path = "../proto" }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
@@ -22,20 +22,20 @@ toml = "0.5"
 tracing = "0.1.13"
 tokio = { version = "0.2", features = ["rt-core", "time", "stream", "sync"] }
 serde_json = { version = "1" }
-bytes = "0.6.0"
+bytes = "1.0.0"
 prost = "0.6.1"
 prost-types = { version = "0.6.1" }
 futures = "0.3.5"
 retry = "1.1.0"
 crossbeam-channel = "0.5.0"
-k256 = { version = "0.5.6", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.7.1", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version= "0.25"}
 bitcoin-wallet = "1.1.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
 rust-crypto = "0.2.36"
 bech32 = "0.7.2"
-itertools = "0.9.0"
+itertools = "0.10.0"
 dyn-clonable = "0.9.0"
 tonic = "0.3.1"
 dirs-next = "2.0.0"
@@ -57,4 +57,4 @@ version = "=0.17.0"
 [dev-dependencies]
 serial_test = "0.5.0"
 ibc = { path = "../modules", features = [ "mocks" ] }
-tendermint-testgen = { version = "0.17.0" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.17.0" } # Needed for generating (synthetic) light blocks.

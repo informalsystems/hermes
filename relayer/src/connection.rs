@@ -357,12 +357,11 @@ pub fn build_conn_init_and_send(
 
     // Find the relevant event for connection init
     let result = events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenInitConnection(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| Kind::ConnOpenInit("no conn init event was in the response".to_string()))?;
 
     // TODO - make chainError an actual error
@@ -544,12 +543,11 @@ pub fn build_conn_try_and_send(
 
     // Find the relevant event for connection try transaction
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenTryConnection(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenTry("no conn try event was in the response".to_string()).into()
         })
@@ -649,12 +647,11 @@ pub fn build_conn_ack_and_send(
 
     // Find the relevant event for connection ack
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenAckConnection(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenAck(
                 opts.dst().connection_id().clone(),
@@ -743,12 +740,11 @@ pub fn build_conn_confirm_and_send(
 
     // Find the relevant event for connection confirm
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenConfirmConnection(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ConnOpenConfirm(
                 opts.dst().connection_id().clone(),

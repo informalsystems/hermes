@@ -1,8 +1,8 @@
+use crate::application::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
-use crate::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::Height as ICSHeight;
 
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
