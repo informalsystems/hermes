@@ -357,12 +357,11 @@ pub fn build_chan_init_and_send(
 
     // Find the relevant event for channel init
     let result = events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenInitChannel(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| Kind::ChanOpenInit("no chan init event was in the response".to_string()))?;
 
     match result {
@@ -533,11 +532,10 @@ pub fn build_chan_try_and_send(
 
     // Find the relevant event for channel try
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenTryChannel(_)) || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenTry("no chan try event was in the response".to_string()).into()
         })
@@ -628,11 +626,10 @@ pub fn build_chan_ack_and_send(
 
     // Find the relevant event for channel ack
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenAckChannel(_)) || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenAck(
                 opts.dst().channel_id().clone(),
@@ -725,12 +722,11 @@ pub fn build_chan_confirm_and_send(
 
     // Find the relevant event for channel confirm
     events
-        .iter()
-        .find(|&event| {
+        .into_iter()
+        .find(|event| {
             matches!(event, IBCEvent::OpenConfirmChannel(_))
                 || matches!(event, IBCEvent::ChainError(_))
         })
-        .cloned()
         .ok_or_else(|| {
             Kind::ChanOpenConfirm(
                 opts.dst().channel_id().clone(),
