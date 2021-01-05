@@ -2,6 +2,8 @@
 
 set -e
 
+RELAYER_CMD=../target/debug/relayer
+
 echo "================================================================================================================="
 echo "                                              INITIALIZE                                                         "
 echo "================================================================================================================="
@@ -31,21 +33,25 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_A" key_seed_"$CHAIN_A".json
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_B" key_seed_"$CHAIN_B".json
+echo "Adding key:" ./chains/gaia/"$GAIA_RELEASE"/"$CHAIN_A"/key_seed.json
+$RELAYER_CMD -c "$CONFIG_PATH" keys add "$CHAIN_A" ./chains/gaia/"$GAIA_RELEASE"/"$CHAIN_A"/key_seed.json
+echo "Adding key:" "$CHAIN_B" ./chains/gaia/"$GAIA_RELEASE"/"$CHAIN_B"/key_seed.json
+$RELAYER_CMD -c "$CONFIG_PATH" keys add "$CHAIN_B" ./chains/gaia/"$GAIA_RELEASE"/"$CHAIN_B"/key_seed.json
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add light clients configuration for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":"$CHAIN_A_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -p -y --force
+echo "Light client $CHAIN_A" tcp://"$CHAIN_A_IP":"$CHAIN_A_PORT"
+echo "Light client $CHAIN_B" tcp://"$CHAIN_B_IP":"$CHAIN_B_PORT"
+$RELAYER_CMD -c "$CONFIG_PATH" light add tcp://"$CHAIN_A_IP":"$CHAIN_A_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -p -y --force
 sleep 3
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":"$CHAIN_B_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -p -y --force
+$RELAYER_CMD -c "$CONFIG_PATH" light add tcp://"$CHAIN_B_IP":"$CHAIN_B_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -p -y --force
 sleep 3
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_B":"$CHAIN_B_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -y --force
+$RELAYER_CMD -c "$CONFIG_PATH" light add tcp://"$CHAIN_B_IP":"$CHAIN_B_PORT" -c "$CHAIN_A" -s "$CHAIN_A_HOME" -y --force
 sleep 3
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" light add tcp://"$CHAIN_A":"$CHAIN_A_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -y --force
+$RELAYER_CMD -c "$CONFIG_PATH" light add tcp://"$CHAIN_A_IP":"$CHAIN_A_PORT" -c "$CHAIN_B" -s "$CHAIN_B_HOME" -y --force
 
 echo "================================================================================================================="
 echo "                                             CLIENTS                                                             "
@@ -55,19 +61,19 @@ echo "--------------------------------------------------------------------------
 echo "Create client transactions"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "creating "$CHAIN_B"_client on chain "$CHAIN_A"..."
-rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "creating "$CHAIN_A"_client on chain "$CHAIN_B"..."
-rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A" "$CHAIN_A"_client
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Query clients"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "querying "$CHAIN_B"_client on chain "$CHAIN_A"..."
-rrly -c "$CONFIG_PATH" query client state "$CHAIN_A" "$CHAIN_B"_client
+$RELAYER_CMD -c "$CONFIG_PATH" query client state "$CHAIN_A" "$CHAIN_B"_client
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "querying "$CHAIN_A"_client on chain "$CHAIN_B"..."
-rrly -c "$CONFIG_PATH" query client state "$CHAIN_B" "$CHAIN_A"_client
+$RELAYER_CMD -c "$CONFIG_PATH" query client state "$CHAIN_B" "$CHAIN_A"_client
 
 echo "================================================================================================================="
 echo "                                             CONNECTIONS                                                         "
@@ -76,7 +82,7 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Connection Init transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw conn-init \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw conn-init \
         "$CHAIN_A" \
         "$CHAIN_B" \
         "$CHAIN_B"_client \
@@ -87,7 +93,7 @@ rrly -c "$CONFIG_PATH" tx raw conn-init \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Connection Open Try transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw conn-try \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw conn-try \
         "$CHAIN_B" \
         "$CHAIN_A" \
         "$CHAIN_A"_client \
@@ -98,7 +104,7 @@ rrly -c "$CONFIG_PATH" tx raw conn-try \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Connection Open Ack transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw conn-ack \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw conn-ack \
         "$CHAIN_A" \
         "$CHAIN_B" \
         "$CHAIN_B"_client \
@@ -109,7 +115,7 @@ rrly -c "$CONFIG_PATH" tx raw conn-ack \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Connection Open Confirm transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw conn-confirm \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw conn-confirm \
         "$CHAIN_B" \
         "$CHAIN_A" \
         "$CHAIN_A"_client \
@@ -120,9 +126,9 @@ rrly -c "$CONFIG_PATH" tx raw conn-confirm \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Query connection - Verify that the two ends are in Open state"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" query connection end "$CHAIN_A" conn_"$CHAIN_A"_to_"$CHAIN_B"
+$RELAYER_CMD -c "$CONFIG_PATH" query connection end "$CHAIN_A" conn_"$CHAIN_A"_to_"$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" query connection end "$CHAIN_B" conn_"$CHAIN_B"_to_"$CHAIN_A"
+$RELAYER_CMD -c "$CONFIG_PATH" query connection end "$CHAIN_B" conn_"$CHAIN_B"_to_"$CHAIN_A"
 
 echo "================================================================================================================="
 echo "                                                CHANNELS                                                         "
@@ -131,7 +137,7 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Channel Open Init transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw chan-init \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw chan-init \
         "$CHAIN_A" \
         "$CHAIN_B" \
         conn_"$CHAIN_A"_to_"$CHAIN_B" \
@@ -143,7 +149,7 @@ rrly -c "$CONFIG_PATH" tx raw chan-init \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Channel Open Try transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH"  tx raw chan-try \
+$RELAYER_CMD -c "$CONFIG_PATH"  tx raw chan-try \
         "$CHAIN_B" \
         "$CHAIN_A" \
         conn_"$CHAIN_B"_to_"$CHAIN_A" \
@@ -155,7 +161,7 @@ rrly -c "$CONFIG_PATH"  tx raw chan-try \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Channel Open Ack transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" tx raw chan-ack \
+$RELAYER_CMD -c "$CONFIG_PATH" tx raw chan-ack \
         "$CHAIN_A" \
         "$CHAIN_B" \
         conn_"$CHAIN_A"_to_"$CHAIN_B" \
@@ -167,7 +173,7 @@ rrly -c "$CONFIG_PATH" tx raw chan-ack \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Channel Open Confirm transaction"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH"  tx raw chan-confirm \
+$RELAYER_CMD -c "$CONFIG_PATH"  tx raw chan-confirm \
         "$CHAIN_B" \
         "$CHAIN_A" \
         conn_"$CHAIN_B"_to_"$CHAIN_A" \
@@ -179,6 +185,6 @@ rrly -c "$CONFIG_PATH"  tx raw chan-confirm \
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Query channel - Verify that the two ends are in Open state"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" query channel end "$CHAIN_A" transfer chan_"$CHAIN_A"_to_"$CHAIN_B"
+$RELAYER_CMD -c "$CONFIG_PATH" query channel end "$CHAIN_A" transfer chan_"$CHAIN_A"_to_"$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" query channel end "$CHAIN_B" transfer chan_"$CHAIN_B"_to_"$CHAIN_A"
+$RELAYER_CMD -c "$CONFIG_PATH" query channel end "$CHAIN_B" transfer chan_"$CHAIN_B"_to_"$CHAIN_A"

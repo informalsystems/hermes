@@ -5,20 +5,23 @@
 # coins to add to each account
 coins="100000000000stake,100000000000samoleans"
 
-home="/chain"
+#home="/chain"
 
 echo Node: "$MONIKER"
 echo Chain: "$CHAIN_ID"
-echo Home_Dir: "$home"
+echo Chain IP: "$CHAIN_IP"
+echo RPC Port: "$RPC_PORT"
+echo GRPC Port: "$GRPC_PORT"
+echo Home_Dir: "$CHAIN_HOME"
 whoami
 
 # Clean home dir if exists
-rm -Rf "$home"
+rm -Rf "$CHAIN_HOME"
 
 # Create home dir
-mkdir -p "$home"
+mkdir -p "$CHAIN_HOME"
 
-ls -allh "$home"
+ls -allh "$CHAIN_HOME"
 
 # Check gaia version
 echo "-------------------------------------------------------------------------------------------------------------------"
@@ -29,48 +32,48 @@ gaiad version --long
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Initialize chain $CHAIN_ID"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad init "$MONIKER" --chain-id "$CHAIN_ID" --home "$home"
+gaiad init "$MONIKER" --chain-id "$CHAIN_ID" --home "$CHAIN_HOME"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Replace addresses and ports in the config file"
 echo "-------------------------------------------------------------------------------------------------------------------"
-sed -i 's#"tcp://127.0.0.1:26657"#"tcp://'"$CHAIN_ID"':'"$RPC_PORT"'"#g' "$home"/config/config.toml
-sed -i 's#"tcp://0.0.0.0:26656"#"tcp://'"$CHAIN_ID"':'"$P2P_PORT"'"#g' "$home"/config/config.toml
-#sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_ID"':'"$GRPC_PORT"'"#g' "$home"/config/config.toml
+sed -i 's#"tcp://127.0.0.1:26657"#"tcp://'"$CHAIN_IP"':'"$RPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
+#sed -i 's#"tcp://0.0.0.0:26656"#"tcp://'"$CHAIN_ID"':'"$P2P_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
+sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_IP"':'"$GRPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator key"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad keys add validator --keyring-backend="test" --home "$home" --output json > "$home"/validator_seed.json
-cat "$home"/validator_seed.json
+gaiad keys add validator --keyring-backend="test" --home "$CHAIN_HOME" --output json > "$CHAIN_HOME"/validator_seed.json
+cat "$CHAIN_HOME"/validator_seed.json
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding use key"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad keys add user --keyring-backend="test" --home $home --output json > "$home"/key_seed.json
-cat "$home"/key_seed.json
+gaiad keys add user --keyring-backend="test" --home $CHAIN_HOME --output json > "$CHAIN_HOME"/key_seed.json
+cat "$CHAIN_HOME"/key_seed.json
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding user account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$home" add-genesis-account $(gaiad --home "$home" keys --keyring-backend="test" show user -a) $coins
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) $coins
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
 # shellcheck disable=SC2046
-gaiad --home "$home" add-genesis-account $(gaiad --home "$home" keys --keyring-backend="test" show validator -a) $coins
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show validator -a) $coins
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Generate a genesis transaction that creates a validator with a self-delegation"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$home" gentx validator --keyring-backend="test" --chain-id "$CHAIN_ID"
+gaiad --home "$CHAIN_HOME" gentx validator --keyring-backend="test" --chain-id "$CHAIN_ID"
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Collect genesis txs and output a genesis.json file"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad collect-gentxs --home "$home"
+gaiad collect-gentxs --home "$CHAIN_HOME"
 echo "Done!"
