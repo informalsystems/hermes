@@ -49,6 +49,10 @@ impl TxRawSendPacketCmd {
             .find(|c| c.id == self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
+        let number_msgs = self.number_msgs.unwrap_or(1);
+        if number_msgs == 0 {
+            return Err("number of messages should be bigger than zero".to_string());
+        }
         let opts = TransferOptions {
             packet_src_chain_config: src_chain_config.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
@@ -56,7 +60,7 @@ impl TxRawSendPacketCmd {
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             height_offset: self.height_offset,
-            number_msgs: self.number_msgs.unwrap_or(1),
+            number_msgs,
         };
 
         Ok(opts)

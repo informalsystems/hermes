@@ -4,10 +4,7 @@ use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
-pub enum Kind {
-    #[error("transfer error")]
-    TransferError,
-}
+pub enum Kind {}
 
 impl Kind {
     pub fn context(self, source: impl Into<BoxError>) -> Context<Self> {

@@ -33,7 +33,6 @@ pub fn build_and_send_transfer_messages(
 
     let latest_height = packet_dst_chain.query_latest_height()?;
 
-    // TODO - send multiple messages
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
         source_channel: opts.packet_src_channel_id.clone(),
