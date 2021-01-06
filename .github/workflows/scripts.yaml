@@ -1,8 +1,7 @@
-name: Check Scripts
+name: Scripts
 on: [pull_request]
 jobs:
   shellcheck:
-    name: Run ShellCheck
     runs-on: ubuntu-latest
     steps:
    - name: Run ShellCheck
