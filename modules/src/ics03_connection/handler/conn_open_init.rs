@@ -3,10 +3,10 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use crate::ics03_connection::Kind;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,

@@ -17,7 +17,7 @@ pub fn verify_proofs(
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
     proofs: &Proofs,
-) -> eyre::Result<()> {
+) -> Result<(), Kind> {
     verify_connection_proof(
         ctx,
         connection_end,
@@ -62,7 +62,7 @@ pub fn verify_connection_proof(
     expected_conn: &ConnectionEnd,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> eyre::Result<()> {
+) -> Result<(), Kind> {
     // Fetch the client state (IBC client on the local/host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
@@ -70,9 +70,7 @@ pub fn verify_connection_proof(
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::FrozenClient(connection_end.client_id().clone()));
     }
 
     // The client must have the consensus state for the height where this proof was created.
@@ -80,9 +78,10 @@ pub fn verify_connection_proof(
         .client_consensus_state(connection_end.client_id(), proof_height)
         .is_none()
     {
-        return Err(Kind::MissingClientConsensusState
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::MissingClientConsensusState(
+            proof_height,
+            connection_end.client_id().clone(),
+        ));
     }
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
@@ -108,7 +107,7 @@ pub fn verify_client_proof(
     expected_client_state: AnyClientState,
     proof_height: Height,
     proof: &CommitmentProofBytes,
-) -> eyre::Result<()> {
+) -> Result<(), Kind> {
     // Fetch the local client state (IBC client running on the host chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
@@ -119,7 +118,7 @@ pub fn verify_client_proof(
     let consensus_state = ctx
         .client_consensus_state(connection_end.client_id(), proof_height)
         .ok_or_else(|| {
-            Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
+            Kind::MissingClientConsensusState(proof_height, connection_end.client_id().clone())
         })?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
@@ -134,9 +133,7 @@ pub fn verify_client_proof(
             proof,
             &expected_client_state,
         )
-        .map_err(|_| {
-            Kind::ClientStateVerificationFailure.context(connection_end.client_id().to_string())
-        })?)
+        .map_err(Kind::ClientStateVerificationFailure)?)
 }
 
 pub fn verify_consensus_proof(
@@ -144,22 +141,20 @@ pub fn verify_consensus_proof(
     connection_end: &ConnectionEnd,
     proof_height: Height,
     proof: &ConsensusProof,
-) -> eyre::Result<()> {
+) -> Result<(), Kind> {
     // Fetch the client state (IBC client on the local chain).
     let client_state = ctx
         .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::FrozenClient(connection_end.client_id().clone()));
     }
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
         .host_consensus_state(proof.height())
-        .ok_or_else(|| Kind::MissingLocalConsensusState.context(proof.height().to_string()))?;
+        .ok_or_else(|| Kind::MissingLocalConsensusState(proof.height()))?;
 
     let client = AnyClient::from_client_type(client_state.client_type());
 
@@ -173,9 +168,7 @@ pub fn verify_consensus_proof(
             proof.height(),
             &expected_consensus,
         )
-        .map_err(|e| {
-            Kind::ConsensusStateVerificationFailure(proof.height()).context(e.to_string())
-        })?)
+        .map_err(|e| Kind::ConsensusStateVerificationFailure(proof.height(), e))?)
 }
 
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
@@ -186,7 +179,10 @@ pub fn check_client_consensus_height(
 ) -> Result<(), Kind> {
     if claimed_height > ctx.host_current_height() {
         // Fail if the consensus height is too advanced.
-        return Err(Kind::InvalidConsensusHeight(claimed_height, ctx.host_current_height()));
+        return Err(Kind::InvalidConsensusHeight(
+            claimed_height,
+            ctx.host_current_height(),
+        ));
     }
 
     let oldest_available_height =
@@ -194,7 +190,10 @@ pub fn check_client_consensus_height(
 
     if claimed_height.revision_height < oldest_available_height {
         // Fail if the consensus height is too old (has been pruned).
-        return Err(Kind::StaleConsensusHeight(claimed_height, ctx.host_current_height()));
+        return Err(Kind::StaleConsensusHeight(
+            claimed_height,
+            ctx.host_current_height(),
+        ));
     }
 
     // Height check is within normal bounds, check passes.

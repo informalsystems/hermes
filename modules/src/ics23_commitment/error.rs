@@ -7,6 +7,9 @@ pub type Error = anomaly::Error<Kind>;
 pub enum Kind {
     #[error("invalid raw merkle proof")]
     InvalidRawMerkleProof,
+
+    #[error("cannot apply an empty prefix")]
+    EmptyPrefix,
 }
 
 impl Kind {

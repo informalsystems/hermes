@@ -1,7 +1,6 @@
-use eyre::eyre;
-
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::header::Header as ICS2Header;
+use crate::ics02_client::Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics07_tendermint::client_state::ClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState;
@@ -14,21 +13,23 @@ use crate::Height;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TendermintClient;
 
+/// `ClientDef` implementation for clients which target Tendermint chains.
 impl ClientDef for TendermintClient {
     type Header = Header;
     type ClientState = ClientState;
     type ConsensusState = ConsensusState;
 
+    // TODO: Errors here should be ICS07-specific, eventually nested into ICS02 `AnyClient` errors.
     fn check_header_and_update_state(
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         if client_state.latest_height() >= header.height() {
-            return Err(
-                eyre!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
-                    header.height(), client_state.latest_height),
-            );
+            return Err(Error::StaleHeader {
+                received_height: header.height(),
+                client_latest_height: client_state.latest_height,
+            });
         }
 
         // TODO: Additional verifications should be implemented here.
@@ -48,7 +49,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -60,7 +61,7 @@ impl ClientDef for TendermintClient {
         _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         todo!()
     }
 
@@ -73,7 +74,7 @@ impl ClientDef for TendermintClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         unimplemented!()
     }
 }

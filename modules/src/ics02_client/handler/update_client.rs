@@ -3,9 +3,9 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::Error;
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use crate::ics02_client::Error;
 use crate::ics24_host::identifier::ClientId;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
@@ -17,7 +17,10 @@ pub struct Result {
     pub consensus_state: AnyConsensusState,
 }
 
-pub fn process(ctx: &dyn ClientReader, msg: MsgUpdateAnyClient) -> HandlerResult<ClientResult, Error> {
+pub fn process(
+    ctx: &dyn ClientReader,
+    msg: MsgUpdateAnyClient,
+) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let MsgUpdateAnyClient {

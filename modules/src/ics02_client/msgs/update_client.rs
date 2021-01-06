@@ -6,7 +6,6 @@
 
 use std::convert::TryFrom;
 
-use eyre::WrapErr;
 use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
@@ -62,11 +61,11 @@ impl Msg for MsgUpdateAnyClient {
 impl Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient {}
 
 impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
-    type Error = eyre::Report;
+    type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or(Error::InvalidRawHeader)?;
-        let signer = string_to_account(raw.signer).wrap_err(Error::InvalidAddress)?;
+        let raw_header = raw.header.ok_or(Error::EmptyRawHeader)?;
+        let signer = string_to_account(raw.signer).map_err(|_| Error::InvalidAddress)?;
 
         Ok(MsgUpdateAnyClient {
             client_id: raw.client_id.parse().unwrap(),

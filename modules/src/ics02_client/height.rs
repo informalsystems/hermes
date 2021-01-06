@@ -45,9 +45,9 @@ impl Height {
         self.add(1)
     }
 
-    pub fn sub(&self, delta: u64) -> eyre::Result<Height> {
+    pub fn sub(&self, delta: u64) -> Result<Height, Error> {
         if self.revision_height <= delta {
-            return Err(Error::InvalidHeightResult.into());
+            return Err(Error::InvalidHeightResult);
         }
 
         Ok(Height {
@@ -56,7 +56,7 @@ impl Height {
         })
     }
 
-    pub fn decrement(&self) -> eyre::Result<Height> {
+    pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
     }
 
@@ -99,7 +99,7 @@ impl Ord for Height {
 impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
-    type Error = anomaly::Error<Error>;
+    type Error = Error;
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
@@ -129,7 +129,7 @@ impl std::fmt::Display for Height {
 }
 
 impl TryFrom<String> for Height {
-    type Error = anomaly::Error<Error>;
+    type Error = Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();

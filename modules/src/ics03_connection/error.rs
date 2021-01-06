@@ -1,11 +1,13 @@
 // TODO: Update error types for Connection!!
 use anomaly::{BoxError, Context};
 use thiserror::Error;
-pub type Error = anomaly::Error<Kind>;
 
+use crate::ics02_client::Error as ICS2Error;
+use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
-use crate::ics03_connection::connection::ConnectionEnd;
+
+pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -78,23 +80,25 @@ pub enum Kind {
     #[error("client proof must be present")]
     NullClientProof,
 
-    #[error("the client is frozen")]
-    FrozenClient,
+    #[error("the client with id {0} is frozen")]
+    FrozenClient(ClientId),
 
     #[error("the connection proof verification failed")]
     ConnectionVerificationFailure,
 
-    #[error("the expected consensus state could not be retrieved")]
-    MissingClientConsensusState,
+    #[error(
+        "the expected consensus state (height {0}) for client (id {1}) could not be retrieved"
+    )]
+    MissingClientConsensusState(Height, ClientId),
 
-    #[error("the local consensus state could not be retrieved")]
-    MissingLocalConsensusState,
+    #[error("the local consensus state (at height {0}) could not be retrieved")]
+    MissingLocalConsensusState(Height),
 
-    #[error("the consensus proof verification failed (height: {0})")]
-    ConsensusStateVerificationFailure(Height),
+    #[error("the consensus proof verification failed (height: {0}) with error: {1}")]
+    ConsensusStateVerificationFailure(Height, ICS2Error),
 
-    #[error("the client state proof verification failed")]
-    ClientStateVerificationFailure,
+    #[error("the client state proof verification failed with error: {0}")]
+    ClientStateVerificationFailure(ICS2Error),
 }
 
 impl Kind {

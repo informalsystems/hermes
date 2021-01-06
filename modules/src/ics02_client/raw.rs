@@ -1,8 +1,10 @@
-use crate::ics03_connection::Kind;
-use crate::ics24_host::identifier::ConnectionId;
 use std::convert::TryFrom;
 use std::str::FromStr;
+
 use tendermint_proto::Protobuf;
+
+use crate::ics03_connection::Kind;
+use crate::ics24_host::identifier::ConnectionId;
 
 //TODO: This might need to be migrated to ibc-proto crate. But ClientConnections (as array of strings)
 // might not be part of an official proto file

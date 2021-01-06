@@ -27,14 +27,17 @@ pub enum Error {
     #[error("unknown header type: {0}")]
     UnknownHeaderType(String),
 
-    #[error("invalid raw client state")]
-    InvalidRawClientState,
+    #[error("invalid raw client state, error in decoding: {0}")]
+    InvalidRawClientState(String),
 
-    #[error("invalid raw client consensus state")]
-    InvalidRawConsensusState,
+    #[error("invalid raw client consensus state, error in decoding: {0}")]
+    InvalidRawConsensusState(String),
 
-    #[error("invalid raw header")]
-    InvalidRawHeader,
+    #[error("invalid raw header, could not convert because {0}")]
+    InvalidRawHeader(String),
+
+    #[error("empty raw header, could not convert")]
+    EmptyRawHeader,
 
     #[error("invalid height result: height cannot end up zero or negative")]
     InvalidHeightResult,
@@ -49,5 +52,11 @@ pub enum Error {
     RawClientAndConsensusStateTypesMismatch {
         state_type: ClientType,
         consensus_type: ClientType,
+    },
+
+    #[error("received header is at lower than (or equal) height to client latest height")]
+    StaleHeader {
+        received_height: Height,
+        client_latest_height: Height,
     },
 }

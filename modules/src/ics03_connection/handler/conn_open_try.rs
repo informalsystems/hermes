@@ -3,11 +3,11 @@
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
-use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
 use crate::ics03_connection::handler::ConnectionEvent::ConnOpenTry;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use crate::ics03_connection::Kind;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
@@ -35,7 +35,10 @@ pub(crate) fn process(
                 Ok(old_connection_end)
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                Err(Kind::ConnectionMismatch(prev_id.clone(), old_connection_end))
+                Err(Kind::ConnectionMismatch(
+                    prev_id.clone(),
+                    old_connection_end,
+                ))
             }
         }
         // No connection id was supplied, create a new connection end. Note: the id is assigned

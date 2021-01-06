@@ -1,4 +1,3 @@
-use eyre::eyre;
 use prost::Message;
 use tendermint::merkle::proof::Proof;
 
@@ -6,11 +5,11 @@ use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use crate::ics23_commitment::error::Error;
+use crate::ics23_commitment::error::Kind;
 
-pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> eyre::Result<MerklePath> {
+pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> Result<MerklePath, Kind> {
     if prefix.is_empty() {
-        return Err(eyre!("empty prefix"));
+        return Err(Kind::EmptyPrefix);
     }
 
     let mut result: Vec<String> = vec![format!("{:?}", prefix)];
@@ -123,7 +122,7 @@ pub struct MerkleProof {
 
 pub fn convert_tm_to_ics_merkle_proof(
     tm_proof: Option<Proof>,
-) -> Result<Option<RawMerkleProof>, Error> {
+) -> Result<Option<RawMerkleProof>, Kind> {
     if let Some(proof) = tm_proof {
         let mut mproofs: Vec<ibc_proto::ics23::CommitmentProof> = vec![];
         for (_i, op) in proof.ops.iter().enumerate() {

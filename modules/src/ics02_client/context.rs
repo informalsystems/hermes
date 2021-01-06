@@ -4,9 +4,9 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::Error;
 use crate::ics02_client::handler::ClientResult::{Create, Update};
 use crate::ics02_client::handler::{ClientEvent, ClientResult};
+use crate::ics02_client::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -25,7 +25,10 @@ pub trait ClientKeeper {
         client_type: ClientType,
     ) -> Result<(), Error>;
 
-    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<Vec<ClientEvent>, Error> {
+    fn store_client_result(
+        &mut self,
+        handler_res: ClientResult,
+    ) -> Result<Vec<ClientEvent>, Error> {
         match handler_res {
             Create(res) => {
                 let client_id = self.next_client_id();

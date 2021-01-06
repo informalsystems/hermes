@@ -4,9 +4,9 @@
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
-use crate::ics03_connection::Kind;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
+use crate::ics03_connection::Kind;
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;

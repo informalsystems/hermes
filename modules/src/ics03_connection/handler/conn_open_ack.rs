@@ -38,7 +38,10 @@ pub(crate) fn process(
                 Ok(old_conn_end)
             } else {
                 // Old connection end is in incorrect state, propagate the error.
-                Err(Kind::ConnectionMismatch(msg.connection_id().clone(), old_conn_end))
+                Err(Kind::ConnectionMismatch(
+                    msg.connection_id().clone(),
+                    old_conn_end,
+                ))
             }
         }
         None => {

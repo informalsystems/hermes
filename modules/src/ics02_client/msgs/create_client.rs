@@ -6,7 +6,6 @@
 
 use std::convert::TryFrom;
 
-use eyre::{eyre, WrapErr};
 use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
@@ -14,7 +13,6 @@ use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use crate::ics02_client::error;
 use crate::ics02_client::error::Error;
 use crate::tx_msg::Msg;
 
@@ -33,13 +31,12 @@ impl MsgCreateAnyClient {
         client_state: AnyClientState,
         consensus_state: AnyConsensusState,
         signer: AccountId,
-    ) -> eyre::Result<Self> {
+    ) -> Result<Self, Error> {
         if client_state.client_type() != consensus_state.client_type() {
-            return Err(error::Error::RawClientAndConsensusStateTypesMismatch {
+            return Err(Error::RawClientAndConsensusStateTypesMismatch {
                 state_type: client_state.client_type(),
                 consensus_type: consensus_state.client_type(),
-            }
-            .into());
+            });
         }
         Ok(MsgCreateAnyClient {
             client_state,
@@ -79,23 +76,24 @@ impl Msg for MsgCreateAnyClient {
 impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
 
 impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
-    type Error = eyre::Report;
+    type Error = Error;
 
     fn try_from(raw: RawMsgCreateClient) -> Result<Self, Self::Error> {
         let raw_client_state = raw
             .client_state
-            .ok_or_else(|| eyre!("missing client_state"))?;
+            .ok_or_else(|| Error::InvalidRawClientState("missing client_state".to_string()))?;
 
-        let raw_consensus_state = raw
-            .consensus_state
-            .ok_or_else(|| eyre!("missing consensus_state"))?;
+        let raw_consensus_state = raw.consensus_state.ok_or_else(|| {
+            Error::InvalidRawConsensusState("missing consensus_state".to_string())
+        })?;
 
-        let signer = string_to_account(raw.signer).wrap_err(Error::InvalidAddress)?;
+        let signer = string_to_account(raw.signer).map_err(|_| Error::InvalidAddress)?;
 
         Ok(MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state).wrap_err(Error::InvalidRawClientState)?,
+            AnyClientState::try_from(raw_client_state)
+                .map_err(|e| Error::InvalidRawClientState(e.to_string()))?,
             AnyConsensusState::try_from(raw_consensus_state)
-                .wrap_err(Error::InvalidRawConsensusState)?,
+                .map_err(|e| Error::InvalidRawConsensusState(e.to_string()))?,
             signer,
         )?)
     }

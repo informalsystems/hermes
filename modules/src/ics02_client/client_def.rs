@@ -1,6 +1,5 @@
 use std::convert::TryFrom;
 
-use eyre::WrapErr;
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
@@ -44,7 +43,7 @@ pub trait ClientDef: Clone {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)>;
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     /// Verification functions as specified in:
     /// https://github.com/cosmos/ics/tree/master/spec/ics-002-client-semantics
@@ -63,7 +62,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> eyre::Result<()>;
+    ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
     fn verify_connection_state(
@@ -74,7 +73,7 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
-    ) -> eyre::Result<()>;
+    ) -> Result<(), Error>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
@@ -87,7 +86,7 @@ pub trait ClientDef: Clone {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
-    ) -> eyre::Result<()>;
+    ) -> Result<(), Error>;
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -126,20 +125,22 @@ impl Header for AnyHeader {
 impl Protobuf<Any> for AnyHeader {}
 
 impl TryFrom<Any> for AnyHeader {
-    type Error = eyre::Report;
+    type Error = Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
-                TendermintHeader::decode_vec(&raw.value).wrap_err(Error::InvalidRawHeader)?,
+                TendermintHeader::decode_vec(&raw.value)
+                    .map_err(|e| Error::InvalidRawHeader(e.to_string()))?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value).wrap_err(Error::InvalidRawHeader)?,
+                MockHeader::decode_vec(&raw.value)
+                    .map_err(|e| Error::InvalidRawHeader(e.to_string()))?,
             )),
 
-            _ => Err(Error::UnknownHeaderType(raw.type_url).into()),
+            _ => Err(Error::UnknownHeaderType(raw.type_url)),
         }
     }
 }
@@ -190,22 +191,23 @@ impl AnyClientState {
 impl Protobuf<Any> for AnyClientState {}
 
 impl TryFrom<Any> for AnyClientState {
-    type Error = eyre::Report;
+    type Error = Error;
 
     // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
-                    .wrap_err(Error::InvalidRawClientState)?,
+                    .map_err(|e| Error::InvalidRawClientState(e.to_string()))?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value).wrap_err(Error::InvalidRawClientState)?,
+                MockClientState::decode_vec(&raw.value)
+                    .map_err(|e| Error::InvalidRawClientState(e.to_string()))?,
             )),
 
-            _ => Err(Error::UnknownClientStateType(raw.type_url).into()),
+            _ => Err(Error::UnknownClientStateType(raw.type_url)),
         }
     }
 }
@@ -275,22 +277,22 @@ impl AnyConsensusState {
 impl Protobuf<Any> for AnyConsensusState {}
 
 impl TryFrom<Any> for AnyConsensusState {
-    type Error = eyre::Report;
+    type Error = Error;
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 TendermintConsensusState::decode_vec(&value.value)
-                    .wrap_err(Error::InvalidRawConsensusState)?,
+                    .map_err(|e| Error::InvalidRawConsensusState(e.to_string()))?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
                 MockConsensusState::decode_vec(&value.value)
-                    .wrap_err(Error::InvalidRawConsensusState)?,
+                    .map_err(|e| Error::InvalidRawConsensusState(e.to_string()))?,
             )),
 
-            _ => Err(Error::UnknownConsensusStateType(value.type_url).into()),
+            _ => Err(Error::UnknownConsensusStateType(value.type_url)),
         }
     }
 }
@@ -359,7 +361,7 @@ impl ClientDef for AnyClient {
         &self,
         client_state: AnyClientState,
         header: AnyHeader,
-    ) -> eyre::Result<(AnyClientState, AnyConsensusState)> {
+    ) -> Result<(AnyClientState, AnyConsensusState), Error> {
         match self {
             Self::Tendermint(client) => {
                 let (client_state, header) = downcast!(
@@ -405,7 +407,7 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(
@@ -452,7 +454,7 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
@@ -494,7 +496,7 @@ impl ClientDef for AnyClient {
         client_id: &ClientId,
         proof: &CommitmentProofBytes,
         client_state_on_counterparty: &AnyClientState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(

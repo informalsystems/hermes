@@ -1,9 +1,7 @@
-use eyre::eyre;
-
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
+use crate::ics02_client::Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -22,11 +20,12 @@ impl ClientDef for MockClient {
         &self,
         client_state: Self::ClientState,
         header: Self::Header,
-    ) -> eyre::Result<(Self::ClientState, Self::ConsensusState)> {
+    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         if client_state.latest_height() >= header.height() {
-            return Err(eyre!(
-                "received header height is lower than (or equal to) client latest height"
-            ));
+            return Err(Error::StaleHeader {
+                received_height: header.height(),
+                client_latest_height: client_state.latest_height(),
+            });
         }
 
         Ok((MockClientState(header), MockConsensusState(header)))
@@ -36,20 +35,20 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         height: Height,
-        prefix: &CommitmentPrefix,
+        _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
-    ) -> eyre::Result<()> {
-        let client_prefixed_path = Path::ClientConsensusState {
+    ) -> Result<(), Error> {
+        let _client_prefixed_path = Path::ClientConsensusState {
             client_id: client_id.clone(),
             epoch: height.revision_number,
             height: height.revision_height,
         }
         .to_string();
 
-        let _path = apply_prefix(prefix, vec![client_prefixed_path])?;
+        // let _path = apply_prefix(prefix, vec![client_prefixed_path])?;
 
         // TODO - add ctx to all client verification functions
         // let cs = ctx.fetch_self_consensus_state(height);
@@ -67,7 +66,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 
@@ -80,7 +79,7 @@ impl ClientDef for MockClient {
         _client_id: &ClientId,
         _proof: &CommitmentProofBytes,
         _expected_client_state: &AnyClientState,
-    ) -> eyre::Result<()> {
+    ) -> Result<(), Error> {
         Ok(())
     }
 }
