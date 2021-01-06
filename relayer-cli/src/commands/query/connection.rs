@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
-use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::error::ValidationKind;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
 
@@ -57,7 +57,7 @@ impl QueryConnectionEndCmd {
             .as_ref()
             .ok_or_else(|| "missing connection identifier".to_string())?
             .parse()
-            .map_err(|err: ValidationError| err.to_string())?;
+            .map_err(|err: ValidationKind| err.to_string())?;
 
         let opts = QueryConnectionOptions {
             connection_id,

@@ -99,7 +99,7 @@ impl Ord for Height {
 impl Protobuf<RawHeight> for Height {}
 
 impl TryFrom<RawHeight> for Height {
-    type Error = Error;
+    type Error = std::convert::Infallible;
 
     fn try_from(raw: RawHeight) -> Result<Self, Self::Error> {
         Ok(Height {
@@ -131,6 +131,7 @@ impl std::fmt::Display for Height {
 impl TryFrom<String> for Height {
     type Error = Error;
 
+    // TODO: remove `unwrap()` calls and return typed `Error` in case of failure.
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {

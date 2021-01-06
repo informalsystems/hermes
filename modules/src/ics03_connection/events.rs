@@ -1,13 +1,14 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
-use crate::events::{IBCEvent, RawObject};
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
-use crate::{attribute, some_attribute};
-use anomaly::BoxError;
-use serde_derive::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::convert::TryFrom;
+
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block;
 
-use std::collections::HashSet;
+use crate::events::{IBCEvent, RawObject};
+use crate::ics03_connection::error::Kind;
+use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::{attribute, some_attribute};
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
@@ -97,7 +98,8 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
@@ -134,7 +136,8 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
@@ -171,7 +174,8 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
@@ -208,7 +212,8 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,

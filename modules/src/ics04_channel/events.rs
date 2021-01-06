@@ -1,13 +1,15 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
+use std::collections::HashSet;
+use std::convert::{TryFrom, TryInto};
+
+use serde_derive::{Deserialize, Serialize};
+use tendermint::block;
+
 use crate::events::{IBCEvent, RawObject};
+use crate::ics04_channel::error::Kind;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{attribute, some_attribute};
-use anomaly::BoxError;
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::convert::{TryFrom, TryInto};
-use tendermint::block;
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
@@ -162,7 +164,8 @@ impl From<Attributes> for OpenInit {
 }
 
 impl TryFrom<RawObject> for OpenInit {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
@@ -200,7 +203,8 @@ impl From<Attributes> for OpenTry {
 }
 
 impl TryFrom<RawObject> for OpenTry {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
@@ -238,7 +242,8 @@ impl From<Attributes> for OpenAck {
 }
 
 impl TryFrom<RawObject> for OpenAck {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
@@ -276,7 +281,8 @@ impl From<Attributes> for OpenConfirm {
 }
 
 impl TryFrom<RawObject> for OpenConfirm {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
@@ -314,7 +320,8 @@ impl From<Attributes> for CloseInit {
 }
 
 impl TryFrom<RawObject> for CloseInit {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseInit(Attributes {
             height: obj.height,
@@ -352,7 +359,8 @@ impl From<Attributes> for CloseConfirm {
 }
 
 impl TryFrom<RawObject> for CloseConfirm {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(CloseConfirm(Attributes {
             height: obj.height,
@@ -378,12 +386,13 @@ impl From<CloseConfirm> for IBCEvent {
 macro_rules! p_attribute {
     ($a:ident, $b:literal) => {{
         let nb = format!("{}.{}", $a.action, $b);
-        $a.events.get(&nb).ok_or(nb)?[$a.idx].parse()?
+        $a.events.get(&nb).ok_or(nb.as_str())?[$a.idx].parse()?
     }};
 }
 
 impl TryFrom<RawObject> for Packet {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height_str: String = p_attribute!(obj, "packet_timeout_height");
         let sequence: u64 = p_attribute!(obj, "packet_sequence");
@@ -394,7 +403,9 @@ impl TryFrom<RawObject> for Packet {
             destination_port: p_attribute!(obj, "packet_dst_port"),
             destination_channel: p_attribute!(obj, "packet_dst_channel"),
             data: vec![],
-            timeout_height: height_str.try_into()?,
+            timeout_height: height_str
+                .try_into()
+                .map_err(Kind::MalformedHeightInRawPacket)?,
             timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
         })
     }
@@ -407,7 +418,8 @@ pub struct SendPacket {
 }
 
 impl TryFrom<RawObject> for SendPacket {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -436,7 +448,8 @@ pub struct ReceivePacket {
 }
 
 impl TryFrom<RawObject> for ReceivePacket {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -466,7 +479,8 @@ pub struct WriteAcknowledgement {
 }
 
 impl TryFrom<RawObject> for WriteAcknowledgement {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let data_str: String = p_attribute!(obj, "packet_data");
@@ -500,7 +514,8 @@ pub struct AcknowledgePacket {
 }
 
 impl TryFrom<RawObject> for AcknowledgePacket {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let height = obj.height;
         let packet = Packet::try_from(obj)?;
@@ -527,7 +542,8 @@ pub struct TimeoutPacket {
 }
 
 impl TryFrom<RawObject> for TimeoutPacket {
-    type Error = BoxError;
+    type Error = Kind;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(TimeoutPacket {
             height: obj.height,

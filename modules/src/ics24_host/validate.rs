@@ -1,9 +1,9 @@
-use super::error::{ValidationError, ValidationKind};
+use super::error::ValidationKind;
 
 /// Bails from the current function with the given error kind.
 macro_rules! bail {
     ($kind:expr) => {
-        return Err($kind.into());
+        return Err($kind);
     };
 }
 
@@ -15,7 +15,7 @@ const VALID_SPECIAL_CHARS: &str = "._+-#[]<>";
 ///
 /// A valid identifier only contain lowercase alphabetic characters, and be of a given min and max
 /// length.
-pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), ValidationError> {
+pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), ValidationKind> {
     assert!(max >= min);
 
     // Check identifier is not empty
@@ -57,7 +57,7 @@ pub fn validate_identifier(id: &str, min: usize, max: usize) -> Result<(), Valid
 ///
 /// A valid identifier must be between 9-64 characters and only contain lowercase
 /// alphabetic characters,
-pub fn validate_client_identifier(id: &str) -> Result<(), ValidationError> {
+pub fn validate_client_identifier(id: &str) -> Result<(), ValidationKind> {
     validate_identifier(id, 9, 64)
 }
 
@@ -65,7 +65,7 @@ pub fn validate_client_identifier(id: &str) -> Result<(), ValidationError> {
 ///
 /// A valid Identifier must be between 10-64 characters and only contain lowercase
 /// alphabetic characters,
-pub fn validate_connection_identifier(id: &str) -> Result<(), ValidationError> {
+pub fn validate_connection_identifier(id: &str) -> Result<(), ValidationKind> {
     validate_identifier(id, 10, 64)
 }
 
@@ -73,7 +73,7 @@ pub fn validate_connection_identifier(id: &str) -> Result<(), ValidationError> {
 ///
 /// A valid Identifier must be between 2-64 characters and only contain lowercase
 /// alphabetic characters,
-pub fn validate_port_identifier(id: &str) -> Result<(), ValidationError> {
+pub fn validate_port_identifier(id: &str) -> Result<(), ValidationKind> {
     validate_identifier(id, 2, 64)
 }
 
@@ -81,7 +81,7 @@ pub fn validate_port_identifier(id: &str) -> Result<(), ValidationError> {
 ///
 /// A valid Identifier must be between 10-64 characters and only contain lowercase
 /// alphabetic characters,
-pub fn validate_channel_identifier(id: &str) -> Result<(), ValidationError> {
+pub fn validate_channel_identifier(id: &str) -> Result<(), ValidationKind> {
     validate_identifier(id, 8, 64)
 }
 

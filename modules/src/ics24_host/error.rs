@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type ValidationError = anomaly::Error<ValidationKind>;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, PartialEq, Eq)]
 pub enum ValidationKind {
     #[error("identifier {id} cannot contain separator '/'")]
     ContainsSeparator { id: String },

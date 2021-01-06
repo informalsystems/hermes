@@ -1,15 +1,16 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
+use std::collections::HashSet;
+use std::convert::{TryFrom, TryInto};
+
+use serde_derive::{Deserialize, Serialize};
+use tendermint::block;
+
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics24_host::identifier::ClientId;
-use anomaly::BoxError;
-
 use crate::ics02_client::height::Height;
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashSet;
-use std::convert::{TryFrom, TryInto};
-use tendermint::block;
+use crate::ics02_client::Error;
+use crate::ics24_host::identifier::ClientId;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 pub const CREATE_EVENT_TYPE: &str = "create_client";
@@ -102,7 +103,8 @@ impl CreateClient {
 }
 
 impl TryFrom<RawObject> for CreateClient {
-    type Error = BoxError;
+    type Error = Error;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "create_client.consensus_height");
         Ok(CreateClient(Attributes {
@@ -134,7 +136,8 @@ impl UpdateClient {
 }
 
 impl TryFrom<RawObject> for UpdateClient {
-    type Error = BoxError;
+    type Error = Error;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
         Ok(UpdateClient(Attributes {
@@ -158,7 +161,8 @@ impl From<UpdateClient> for IBCEvent {
 pub struct ClientMisbehavior(Attributes);
 
 impl TryFrom<RawObject> for ClientMisbehavior {
-    type Error = BoxError;
+    type Error = Error;
+
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
         Ok(ClientMisbehavior(Attributes {

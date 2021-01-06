@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 use crate::ics02_client::client_type::ClientType;
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -59,4 +60,33 @@ pub enum Error {
         received_height: Height,
         client_latest_height: Height,
     },
+
+    #[error("identifier parsing/validation error caught: {0}")]
+    ValidationError(ValidationKind),
+
+    #[error("generic error caught: {0}")]
+    GenericError(String),
+}
+
+/// Validation error type, meant for cases when a `parse` error occurs.
+impl From<ValidationKind> for Error {
+    fn from(v: ValidationKind) -> Self {
+        Self::ValidationError(v)
+    }
+}
+
+/// Catch-all error type, meant for cases when the error is thrown from macros, see e.g.,
+/// the use of `attribute!` in `TryFrom<RawObject> for CreateClient`.
+impl From<&str> for Error {
+    fn from(error_raw: &str) -> Self {
+        Self::GenericError(error_raw.to_string())
+    }
+}
+
+/// Note: Required for cases when there exists a `TryFrom` that returns `Result<_, Error>` but the
+/// error case can never occur.
+impl From<std::convert::Infallible> for Error {
+    fn from(_: std::convert::Infallible) -> Self {
+        unreachable!()
+    }
 }

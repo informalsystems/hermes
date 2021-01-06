@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use super::error::ValidationError;
+use super::error::ValidationKind;
 use super::validate::*;
 
 /// This type is subject to future changes.
@@ -73,7 +73,7 @@ impl ChainId {
 }
 
 impl FromStr for ChainId {
-    type Err = ValidationError;
+    type Err = ValidationKind;
 
     fn from_str(id: &str) -> Result<Self, Self::Err> {
         let version = if Self::is_epoch_format(id) {
@@ -136,7 +136,7 @@ impl std::fmt::Display for ClientId {
 }
 
 impl FromStr for ClientId {
-    type Err = ValidationError;
+    type Err = ValidationKind;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_client_identifier(s).map(|_| Self(s.to_string()))
@@ -186,7 +186,7 @@ impl std::fmt::Display for ConnectionId {
 }
 
 impl FromStr for ConnectionId {
-    type Err = ValidationError;
+    type Err = ValidationKind;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_connection_identifier(s).map(|_| Self(s.to_string()))
@@ -236,7 +236,7 @@ impl std::fmt::Display for PortId {
 }
 
 impl FromStr for PortId {
-    type Err = ValidationError;
+    type Err = ValidationKind;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_port_identifier(s).map(|_| Self(s.to_string()))
@@ -272,7 +272,7 @@ impl std::fmt::Display for ChannelId {
 }
 
 impl FromStr for ChannelId {
-    type Err = ValidationError;
+    type Err = ValidationKind;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         validate_channel_identifier(s).map(|_| Self(s.to_string()))

@@ -38,7 +38,7 @@ impl MsgUpdateAnyClient {
 }
 
 impl Msg for MsgUpdateAnyClient {
-    type ValidationError = crate::ics24_host::error::ValidationError;
+    type ValidationError = crate::ics24_host::error::ValidationKind;
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()

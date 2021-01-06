@@ -1,20 +1,22 @@
+use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
+
+use serde_derive::{Deserialize, Serialize};
+use tendermint::abci::Event;
+use tendermint::block::Height;
+use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
+use thiserror::Error;
+use tracing::warn;
+
 use crate::application::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
+use crate::ics02_client::Error as ICS2Error;
 use crate::ics03_connection::events as ConnectionEvents;
+use crate::ics03_connection::Kind as ICS3Error;
+use crate::ics04_channel::error::Kind as ICS4Error;
 use crate::ics04_channel::events as ChannelEvents;
 use crate::Height as ICSHeight;
-
-use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
-
-use anomaly::BoxError;
-use serde_derive::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
-use tendermint::block::Height;
-
-use tendermint::abci::Event;
-use tracing::warn;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -22,6 +24,49 @@ pub enum IBCEventType {
     CreateClient,
     SendPacket,
     WriteAck,
+}
+
+/// Errors that may occur during event parsing
+#[derive(Clone, Debug, Error)]
+pub enum EventsError {
+    #[error("Missing action string")]
+    MissingActionString,
+
+    #[error("Incorrect event type")]
+    IncorrectEventType,
+
+    #[error("Unknown action in raw event")]
+    UnknownEventType,
+
+    #[error("Error converting into ICS2 event {0}")]
+    ICS2EventConversionError(ICS2Error),
+
+    #[error("Error converting into ICS3 event {0}")]
+    ICS3EventConversionError(ICS3Error),
+
+    #[error("Error converting into ICS4 event {0}")]
+    ICS4EventConversionError(ICS4Error),
+}
+
+// Client events conversion may throw ICS2 errors, so we nest them into an `EventsError`
+impl From<ICS2Error> for EventsError {
+    fn from(e: ICS2Error) -> Self {
+        Self::ICS2EventConversionError(e)
+    }
+}
+
+// Connection events conversion may throw ICS3 errors, so we nest them into an `EventsError`
+impl From<ICS3Error> for EventsError {
+    fn from(e: ICS3Error) -> Self {
+        Self::ICS3EventConversionError(e)
+    }
+}
+
+// ICS4 events conversion may throw errors, so we nest them into an `EventsError`
+impl From<ICS4Error> for EventsError {
+    fn from(e: ICS4Error) -> Self {
+        Self::ICS4EventConversionError(e)
+    }
 }
 
 impl IBCEventType {
@@ -155,14 +200,14 @@ impl RawObject {
 pub fn extract_events<S: ::std::hash::BuildHasher>(
     events: &HashMap<String, Vec<String>, S>,
     action_string: &str,
-) -> Result<(), BoxError> {
+) -> Result<(), EventsError> {
     if let Some(message_action) = events.get("message.action") {
         if message_action.contains(&action_string.to_owned()) {
             return Ok(());
         }
-        return Err("Missing action string".into());
+        return Err(EventsError::MissingActionString);
     }
-    Err("Incorrect Event Type".into())
+    Err(EventsError::IncorrectEventType)
 }
 
 //Takes events in the form
@@ -238,7 +283,7 @@ pub fn get_all_events(result: RpcEvent) -> Result<Vec<(Height, IBCEvent)>, Strin
     Ok(vals)
 }
 
-pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
+pub fn build_event(mut object: RawObject) -> Result<IBCEvent, EventsError> {
     match object.action.as_str() {
         // Client events
         "create_client" => Ok(IBCEvent::from(ClientEvents::CreateClient::try_from(
@@ -297,7 +342,7 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
-        _ => Err("Incorrect Event Type".into()),
+        _ => Err(EventsError::UnknownEventType),
     }
 }
 
@@ -309,7 +354,8 @@ macro_rules! make_event {
             pub data: std::collections::HashMap<String, Vec<String>>,
         }
         impl TryFrom<RawObject> for $a {
-            type Error = BoxError;
+            type Error = EventsError;
+
             fn try_from(result: RawObject) -> Result<Self, Self::Error> {
                 match crate::events::extract_events(&result.events, $b) {
                     Ok(()) => Ok($a {

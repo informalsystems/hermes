@@ -5,7 +5,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
-use ibc::ics24_host::error::ValidationError;
+use ibc::ics24_host::error::ValidationKind;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
@@ -215,7 +215,7 @@ fn validate_common_options(
         .as_ref()
         .ok_or_else(|| "missing client identifier".to_string())?
         .parse()
-        .map_err(|err: ValidationError| err.to_string())?;
+        .map_err(|err: ValidationKind| err.to_string())?;
 
     Ok((chain_config.clone(), client_id))
 }
@@ -259,7 +259,7 @@ impl QueryClientConnectionsCmd {
             .as_ref()
             .ok_or_else(|| "missing client identifier".to_string())?
             .parse()
-            .map_err(|err: ValidationError| err.to_string())?;
+            .map_err(|err: ValidationKind| err.to_string())?;
 
         let opts = QueryClientConnectionsOptions {
             client_id,
