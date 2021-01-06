@@ -1,4 +1,5 @@
 #/bin/bash -e
+# Copied from https://github.com/cosmos/relayer and modified to initialize the Rust relayer light clients.
 
 tomlcfg=$1
 chainid0=$2

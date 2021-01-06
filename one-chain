@@ -1,4 +1,5 @@
 #!/bin/sh
+# Copied from https://github.com/cosmos/relayer/tree/master/scripts
 
 display_usage() {
 	echo "\nMissing $1 parameter. Please check if all parameters were specified."
