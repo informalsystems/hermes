@@ -2,10 +2,23 @@
 
 # Copied from https://github.com/cosmos/relayer and modified to initialize the Rust relayer light clients.
 
-if ([[ -z "$1" ]]) || ([[ -z "$2" ]]) || ([[ -z "$3" ]]);
-then
-  echo "Usage: $0 config.toml ibc-0 ibc-1"
+usage() {
+	echo "Missing $1 parameter. Please check if all parameters were specified."
+	echo "Usage: $0 [CONFIG_FILE] [CHAIN_ID_0] [CHAIN_ID_1]"
+  echo "Example: $0 ./config.toml ibc-0 ibc-1"
   exit 1
+}
+
+if [ -z "$1" ]; then
+  usage "CONFIG_FILE"
+fi
+
+if [ -z "$2" ]; then
+  usage "CHAIN_ID_0"
+fi
+
+if [ -z "$3" ]; then
+  usage "CHAIN_ID_1"
 fi
 
 tomlcfg="$1"
