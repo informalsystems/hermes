@@ -134,11 +134,6 @@ mod tests {
             0_u64,
         );
 
-        // A connection end (with correct state but incorrect versions); exercises unsuccessful
-        // processing path.
-        let mut incorrect_conn_end_vers = incorrect_conn_end_state.clone();
-        incorrect_conn_end_vers.set_state(State::Init);
-
         // A connection end (with correct versions and correct state, but incorrect prefix for the
         // counterparty) that will be part of the context to exercise unsuccessful path.
         let mut incorrect_conn_end_prefix = incorrect_conn_end_state.clone();
@@ -185,16 +180,6 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Processing fails due to connections mismatch (incorrect versions)"
-                    .to_string(),
-                ctx: correct_context
-                    .clone()
-                    .with_client(&client_id, Height::new(0, 10))
-                    .with_connection(msg_ack.connection_id().clone(), incorrect_conn_end_vers),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
-                want_pass: false,
-            },
-            Test {
                 name: "Processing fails: ConsensusStateVerificationFailure due to empty counterparty prefix".to_string(),
                 ctx: correct_context
                     .clone()
@@ -231,7 +216,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "conn_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "conn_open_ack: test passed but was supposed to fail for test: {}, \nparams: \n\t{:?} \n\t{:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -250,7 +235,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "conn_open_ack: failed for test: {}, \nparams {:?} {:?} error: {:?}",
+                        "conn_open_ack: failed for test: {}, \nparams \n\t{:?} \n\t{:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),
