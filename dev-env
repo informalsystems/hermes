@@ -1,4 +1,4 @@
-#/bin/bash -e
+#!/bin/bash -e
 
 # Copied from https://github.com/cosmos/relayer and modified to initialize the Rust relayer light clients.
 
@@ -28,7 +28,7 @@ chainid1="$3"
 GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
-if ([[ -d $GAIA_DATA ]]) && [[ ! "$3" == "skip" ]]; then
+if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
   echo "$0 will delete $HOME/.relayer and $(pwd)/data folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo
@@ -58,7 +58,7 @@ set -e
 echo "Generating gaia configurations..."
 mkdir -p "$GAIA_DATA" && cd "$GAIA_DATA" && cd ../
 
-ONE_CHAIN="$(dirname $0)/one-chain"
+ONE_CHAIN="$(dirname "$0")/one-chain"
 
 "$ONE_CHAIN" gaiad "$chainid0" ./data 26657 26656 6060 9090
 "$ONE_CHAIN" gaiad "$chainid1" ./data 26557 26556 6061 9091
