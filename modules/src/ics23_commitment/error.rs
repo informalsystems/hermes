@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("invalid raw merkle proof")]
     InvalidRawMerkleProof,

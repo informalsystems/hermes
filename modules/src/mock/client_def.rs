@@ -2,6 +2,7 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientD
 use crate::ics02_client::Error;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
+use crate::ics23_commitment::merkle::apply_prefix;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -35,20 +36,21 @@ impl ClientDef for MockClient {
         &self,
         _client_state: &Self::ClientState,
         height: Height,
-        _prefix: &CommitmentPrefix,
+        prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
         client_id: &ClientId,
         _consensus_height: Height,
         _expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
-        let _client_prefixed_path = Path::ClientConsensusState {
+        let client_prefixed_path = Path::ClientConsensusState {
             client_id: client_id.clone(),
             epoch: height.revision_number,
             height: height.revision_height,
         }
         .to_string();
 
-        // let _path = apply_prefix(prefix, vec![client_prefixed_path])?;
+        let _path = apply_prefix(prefix, vec![client_prefixed_path])
+            .map_err(Error::CommitmentPrefixError)?;
 
         // TODO - add ctx to all client verification functions
         // let cs = ctx.fetch_self_consensus_state(height);
