@@ -21,7 +21,7 @@ all-features = true
 prost = { version = "0.6" }
 prost-types = { version = "0.6" }
 anomaly = "0.2"
-bytes = "0.6"
+bytes = "1.0"
 thiserror = "1.0"
 tonic = "0.3.1"
 

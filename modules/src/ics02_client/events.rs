@@ -27,8 +27,7 @@ pub const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 /// A list of all the event `type`s that this module is capable of parsing
 fn event_types() -> HashSet<String> {
     vec![CREATE_EVENT_TYPE.to_string(), UPDATE_EVENT_TYPE.to_string()]
-        .iter()
-        .cloned()
+        .into_iter()
         .collect()
 }
 
