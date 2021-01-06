@@ -1,0 +1,62 @@
+#/bin/bash -e
+
+tomlcfg=$1
+chainid0=$2
+chainid1=$3
+
+GAIA_DATA="$(pwd)/data"
+
+# Ensure user understands what will be deleted
+if ([[ -d $GAIA_DATA ]]) && [[ ! "$3" == "skip" ]]; then
+  read -p "$0 will delete \$HOME/.relayer and \$(pwd)/data folder. Do you wish to continue? (y/n): " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      exit 1
+  fi
+fi
+
+# Ensure gaiad is installed
+if ! [ -x "$(which gaiad)" ]; then
+  echo "Error: gaiad is not installed. Try running 'make build-gaia'" >&2
+  exit 1
+fi
+
+# Display software version
+echo "GAIA VERSION INFO:"
+gaiad version
+
+# Delete data from old runs
+rm -rf $GAIA_DATA &> /dev/null
+
+# Stop existing gaiad processes
+killall gaiad &> /dev/null
+killall akash &> /dev/null
+
+set -e
+
+echo "Generating gaia configurations..."
+mkdir -p $GAIA_DATA && cd $GAIA_DATA && cd ../
+./one-chain gaiad $chainid0 ./data 26657 26656 6060 9090
+./one-chain gaiad $chainid1 ./data 26557 26556 6061 9091
+
+[ -f $GAIA_DATA/$chainid0.log ] && echo "$chainid0 initialized. Watch file $GAIA_DATA/$chainid0.log to see its execution."
+[ -f $GAIA_DATA/$chainid1.log ] && echo "$chainid1 initialized. Watch file $GAIA_DATA/$chainid1.log to see its execution."
+
+echo "Building Relayer..."
+cargo build
+
+# cleanup the client entries from config
+cargo run --bin relayer -- -c $tomlcfg light rm -c $chainid0 --all -y &> /dev/null || true
+cargo run --bin relayer -- -c $tomlcfg light rm -c $chainid1 --all -y &> /dev/null || true
+
+# set the primary peers for clients on each chain
+cargo run --bin relayer -- -c $tomlcfg light add localhost:26657 -c $chainid0 -f -p -s $GAIA_DATA/$chainid0/data -y &>/dev/null
+cargo run --bin relayer -- -c $tomlcfg light add localhost:26557 -c $chainid1 -f -p -s $GAIA_DATA/$chainid1/data -y &>/dev/null
+
+# set the secondary peers for clients on each chain
+cargo run --bin relayer -- -c $tomlcfg light add localhost:26657 -c $chainid0 -s $GAIA_DATA/$chainid0/data -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E &>/dev/null
+cargo run --bin relayer -- -c $tomlcfg light add localhost:26557 -c $chainid1 -s $GAIA_DATA/$chainid1/data -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E &>/dev/null
+
+# add the key seeds to the keyring of each chain
+cargo run --bin relayer -- -c $tomlcfg keys add $chainid0 $GAIA_DATA/$chainid0/key_seed.json &>/dev/null
+cargo run --bin relayer -- -c $tomlcfg keys add $chainid1 $GAIA_DATA/$chainid1/key_seed.json &>/dev/null
