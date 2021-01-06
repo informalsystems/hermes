@@ -57,8 +57,11 @@ set -e
 
 echo "Generating gaia configurations..."
 mkdir -p "$GAIA_DATA" && cd "$GAIA_DATA" && cd ../
-./one-chain gaiad "$chainid0" ./data 26657 26656 6060 9090
-./one-chain gaiad "$chainid1" ./data 26557 26556 6061 9091
+
+ONE_CHAIN="$(dirname $0)/one-chain"
+
+"$ONE_CHAIN" gaiad "$chainid0" ./data 26657 26656 6060 9090
+"$ONE_CHAIN" gaiad "$chainid1" ./data 26557 26556 6061 9091
 
 [ -f "$GAIA_DATA/$chainid0.log" ] && echo "$chainid0 initialized. Watch file $GAIA_DATA/$chainid0.log to see its execution."
 [ -f "$GAIA_DATA/$chainid1.log" ] && echo "$chainid1 initialized. Watch file $GAIA_DATA/$chainid1.log to see its execution."
