@@ -2,6 +2,16 @@
 
 ## Unreleased Changes
 
+### FEATURES
+
+- [relayer-cli]
+  - Implement command to query the channels associated with a connection ([#505])
+
+### IMPROVEMENTS
+
+
+[#505]: https://github.com/informalsystems/ibc-rs/issues/505
+
 ## v0.0.6
 *December 23, 2020*
 
