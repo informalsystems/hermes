@@ -178,7 +178,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::connection::QueryConnectionEndCmd;
+    use crate::commands::query::connection::{QueryConnectionEndCmd, QueryConnectionChannelsCmd};
     use relayer::config::parse;
 
     #[test]
@@ -249,6 +249,98 @@ mod tests {
         let path = concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn parse_query_connection_channels_parameters() {
+        let default_params = QueryConnectionChannelsCmd {
+            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
+        };
+
+        struct Test {
+            name: String,
+            params: QueryConnectionChannelsCmd,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    chain_id: Some("ibc007".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No connection id specified".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    connection_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, non-alpha".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    connection_id: Some("connection-0^".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, name too short".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    connection_id: Some("connshort".to_string()),
+                    ..default_params
+                },
+                want_pass: false,
+            },
+        ]
+            .into_iter()
+            .collect();
+
+        let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/two_chains.toml"
         );
 
         let config = parse(path).unwrap();
