@@ -547,7 +547,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
@@ -571,7 +570,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet acknowledgment hashes associated with a channel.
-    /// TODO - move to the chain trait
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
@@ -676,7 +674,7 @@ impl Chain for CosmosSDKChain {
         let vec_ids = response
             .channels
             .iter()
-            .map(|ic| ChannelId::from_str(ic.channel_id.as_str()).unwrap())
+            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
             .collect();
 
         Ok(vec_ids)
