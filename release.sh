@@ -17,11 +17,11 @@
 #   # Release all packages, prompting for each package as to whether to publish
 #   ./release.sh
 #
-#   # Just release the proto and tendermint crates, but nothing else
-#   ./release.sh proto tendermint
+#   # Just release the ibc-proto and ibc crates, but nothing else
+#   ./release.sh ibc-proto ibc
 #
 # Once it publishes a crate, it will create a file at
-# /tmp/tendermint-rs-release/${TODAY}/${CRATE}, where ${TODAY} is today's date
+# /tmp/ibc-rs-release/${TODAY}/${CRATE}, where ${TODAY} is today's date
 # and ${CRATE} is the name of the crate that was successfully published.
 #
 # Prior to publishing a crate, it checks whether this file is present before
