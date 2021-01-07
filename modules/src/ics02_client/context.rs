@@ -5,8 +5,8 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::handler::ClientResult::{Create, Update};
+use crate::ics02_client::handler::{ClientEvent, ClientResult};
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -25,27 +25,34 @@ pub trait ClientKeeper {
         client_type: ClientType,
     ) -> Result<(), Error>;
 
-    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
+    fn store_client_result(
+        &mut self,
+        handler_res: ClientResult,
+    ) -> Result<Vec<ClientEvent>, Error> {
         match handler_res {
             Create(res) => {
-                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                let client_id = self.next_client_id();
+                self.store_client_state(client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
-                    res.client_id,
+                    client_id.clone(),
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
+                Ok(vec![ClientEvent::ClientCreated(client_id)])
             }
             Update(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
-                    res.client_id,
+                    res.client_id.clone(),
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
+                Ok(vec![ClientEvent::ClientUpdated(res.client_id)])
             }
         }
-        Ok(())
     }
+
+    fn next_client_id(&mut self) -> ClientId;
 
     fn store_client_state(
         &mut self,

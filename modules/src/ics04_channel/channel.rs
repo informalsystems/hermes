@@ -7,6 +7,9 @@ use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
 use tendermint_proto::Protobuf;
 
+use crate::events::IBCEventType;
+use crate::ics02_client::height::Height;
+use crate::ics04_channel::packet::Sequence;
 use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
@@ -20,6 +23,17 @@ pub struct ChannelEnd {
     version: String,
 }
 
+impl Default for ChannelEnd {
+    fn default() -> Self {
+        ChannelEnd {
+            state: State::Uninitialized,
+            ordering: Default::default(),
+            remote: Counterparty::default(),
+            connection_hops: vec![],
+            version: "".to_string(),
+        }
+    }
+}
 impl Protobuf<RawChannel> for ChannelEnd {}
 
 impl TryFrom<RawChannel> for ChannelEnd {
@@ -27,10 +41,13 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Parse the ordering type. Propagate the error, if any, to our caller.
-        let chan_ordering = Order::from_i32(value.ordering)?;
-
         let chan_state = State::from_i32(value.state)?;
 
+        if chan_state == State::Uninitialized {
+            return Ok(ChannelEnd::default());
+        }
+
+        let chan_ordering = Order::from_i32(value.ordering)?;
         // Assemble the 'remote' attribute of the Channel, which represents the Counterparty.
         let remote = value
             .counterparty
@@ -140,6 +157,15 @@ pub struct Counterparty {
     pub channel_id: Option<ChannelId>,
 }
 
+impl Default for Counterparty {
+    fn default() -> Self {
+        Counterparty {
+            port_id: Default::default(),
+            channel_id: None,
+        }
+    }
+}
+
 impl Counterparty {
     pub fn new(port_id: PortId, channel_id: Option<ChannelId>) -> Self {
         Self {
@@ -242,6 +268,7 @@ impl FromStr for Order {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum State {
+    Uninitialized = 0,
     Init = 1,
     TryOpen = 2,
     Open = 3,
@@ -252,6 +279,7 @@ impl State {
     /// Yields the state as a string
     pub fn as_string(&self) -> &'static str {
         match self {
+            Self::Uninitialized => "UNINITIALIZED",
             Self::Init => "INIT",
             Self::TryOpen => "TRYOPEN",
             Self::Open => "OPEN",
@@ -262,6 +290,7 @@ impl State {
     // Parses the State out from a i32.
     pub fn from_i32(s: i32) -> Result<Self, Error> {
         match s {
+            0 => Ok(Self::Uninitialized),
             1 => Ok(Self::Init),
             2 => Ok(Self::TryOpen),
             3 => Ok(Self::Open),
@@ -269,6 +298,16 @@ impl State {
             _ => fail!(error::Kind::UnknownState, s),
         }
     }
+}
+
+/// Used for queries and not yet standardized in channel's query.proto
+#[derive(Clone, Debug)]
+pub struct QueryPacketEventDataRequest {
+    pub event_id: IBCEventType,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
+    pub sequences: Vec<Sequence>,
+    pub height: Height,
 }
 
 /// Version validation, specific for channel (ICS4) opening handshake protocol.

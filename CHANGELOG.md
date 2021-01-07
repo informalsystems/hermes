@@ -2,16 +2,38 @@
 
 ## Unreleased Changes
 
+## v0.0.6
+*December 23, 2020*
+
+This release focuses on upgrading the relayer and ibc modules to the latest interfaces from the ecosystem:
+tendermint-rs `v0.17`, which brings the protobuf changes from tendermint `v0.34.0`, plus alignment with
+the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-5').
+
 ### FEATURES
+- Update to tendermint-rs version `0.17` ([#451])
+- Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#451])
+
+- [relayer]
+  - Implement packet relaying ([#379]) 
+ 
+- [relayer-cli]
+  - Packet CLIs for recv_packet ([#443])
+  - Packet CLIs for acknowledging packets ([#468])
 
 ### IMPROVEMENTS
-
-- Mock chain (implementing IBC handlers) and integration against CLI ([#158])
-- Relayer tests for client update (ping pong) against MockChain ([#381])
-
+- [relayer]
+  - Mock chain (implementing IBC handlers) and integration against CLI ([#158])
+  - Relayer tests for client update (ping pong) against MockChain ([#381])
+  - Relayer refactor to improve testing and add semantic dependencies ([#447]) 
 
 [#158]: https://github.com/informalsystems/ibc-rs/issues/158
+[#379]: https://github.com/informalsystems/ibc-rs/issues/379
 [#381]: https://github.com/informalsystems/ibc-rs/issues/381
+[#443]: https://github.com/informalsystems/ibc-rs/issues/443
+[#447]: https://github.com/informalsystems/ibc-rs/issues/447
+[#451]: https://github.com/informalsystems/ibc-rs/issues/451
+[#468]: https://github.com/informalsystems/ibc-rs/issues/468
+
 
 ## v0.0.5
 *December 2, 2020*

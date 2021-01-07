@@ -6,6 +6,8 @@ use crate::commands::tx::client::{TxCreateClientCmd, TxUpdateClientCmd};
 mod channel;
 mod client;
 mod connection;
+mod packet;
+mod transfer;
 
 /// `tx` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -25,11 +27,11 @@ pub enum TxRawCommands {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `tx raw client-create` subcommand submits a MsgCreateClient in a transaction to a chain
+    /// The `tx raw create-client` subcommand submits a MsgCreateClient in a transaction to a chain
     #[options(help = "tx raw create-client")]
     CreateClient(TxCreateClientCmd),
 
-    /// The `tx raw client-update` subcommand submits a MsgUpdateClient in a transaction to a chain
+    /// The `tx raw update-client` subcommand submits a MsgUpdateClient in a transaction to a chain
     #[options(help = "tx raw update-client")]
     UpdateClient(TxUpdateClientCmd),
 
@@ -64,4 +66,16 @@ pub enum TxRawCommands {
     /// The `tx raw chan-confirm` subcommand
     #[options(help = "tx raw chan-confirm")]
     ChanConfirm(channel::TxRawChanConfirmCmd),
+
+    /// The `tx raw packet-send` subcommand
+    #[options(help = "tx raw packet-send")]
+    PacketSend(transfer::TxRawSendPacketCmd),
+
+    /// The `tx raw packet-recv` subcommand
+    #[options(help = "tx raw packet-recv")]
+    PacketRecv(packet::TxRawPacketRecvCmd),
+
+    /// The `tx raw packet-ack` subcommand
+    #[options(help = "tx raw packet-ack")]
+    PacketAck(packet::TxRawPacketAckCmd),
 }

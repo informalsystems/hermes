@@ -25,22 +25,25 @@ use tendermint_proto::Protobuf;
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {
-    let mut config = Config::default();
-    config.chains = vec![ChainConfig {
-        id: "ibc-test".parse().unwrap(),
-        rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
-        grpc_addr: "tcp://localhost:9090".parse().unwrap(),
-        account_prefix: "cosmos".to_string(),
-        key_name: "testkey".to_string(),
-        store_prefix: "ibc".to_string(),
-        client_ids: vec!["ethbridge".to_string()],
-        gas: 200000,
-        trust_threshold: Default::default(),
-        trusting_period: default::trusting_period(),
-        clock_drift: default::clock_drift(),
-        peers: None,
-    }];
-    config
+    Config {
+        global: Default::default(),
+        chains: vec![ChainConfig {
+            id: "ibc-test".parse().unwrap(),
+            rpc_addr: Address::from_str("127.0.0.1:26657").unwrap(),
+            grpc_addr: "tcp://localhost:9090".parse().unwrap(),
+            account_prefix: "cosmos".to_string(),
+            key_name: "testkey".to_string(),
+            store_prefix: "ibc".to_string(),
+            gas: Some(200000),
+            max_msg_num: None,
+            max_tx_size: None,
+            trust_threshold: Default::default(),
+            trusting_period: default::trusting_period(),
+            clock_drift: default::clock_drift(),
+            peers: None,
+        }],
+        connections: None,
+    }
 }
 
 /// Chain created for the informaldev/simd DockerHub image running on localhost.

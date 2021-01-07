@@ -18,11 +18,13 @@
 //! - ICS 05: Port
 //! - ICS 07: Tendermint Client
 //! - ICS 18: Basic relayer functions
-//! - ICS 20: Fungible Token
 //! - ICS 23: Vector Commitment Scheme
 //! - ICS 24: Host Requirements
 //! - ICS 26: Routing
+//! - Applications:
+//!    - ICS 20: Fungible Token Transfer
 pub mod address;
+pub mod application;
 pub mod events;
 pub mod handler;
 pub mod ics02_client;
@@ -31,7 +33,6 @@ pub mod ics04_channel;
 pub mod ics05_port;
 pub mod ics07_tendermint;
 pub mod ics18_relayer;
-pub mod ics20_fungible_token_transfer;
 pub mod ics23_commitment;
 pub mod ics24_host;
 pub mod ics26_routing;

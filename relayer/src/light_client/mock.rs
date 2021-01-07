@@ -19,7 +19,7 @@ impl LightClient {
 
     /// Returns a LightBlock at the requested height `h`.
     fn light_block(&self, h: Height) -> <MockChain as Chain>::LightBlock {
-        HostBlock::generate_tm_block(self.chain_id.clone(), h.version_height)
+        HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height)
     }
 }
 

@@ -10,6 +10,14 @@ impl Attribute {
     pub fn new(key: String, value: String) -> Self {
         Self { key, value }
     }
+
+    pub fn value(&self) -> String {
+        self.value.clone()
+    }
+
+    pub fn key(&self) -> String {
+        self.key.clone()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -33,6 +41,11 @@ impl Event {
                 .map(|(k, v)| Attribute::new(k, v))
                 .collect(),
         }
+    }
+
+    /// Returns a vector containing the values within all attributes of this event
+    pub fn attribute_values(&self) -> Vec<String> {
+        self.attributes.iter().map(|a| a.value.clone()).collect()
     }
 }
 

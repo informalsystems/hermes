@@ -8,35 +8,32 @@ use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::packet::{Packet, Sequence};
-use crate::ics23_commitment::commitment::CommitmentProof;
-use crate::{proofs::Proofs, tx_msg::Msg, Height};
+use crate::{proofs::Proofs, tx_msg::Msg};
+
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 
 ///
 /// Message definition for packet timeout domain type.
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgTimeout {
-    packet: Packet,
+    pub packet: Packet,
     next_sequence_recv: Sequence,
     proofs: Proofs,
     signer: AccountId,
 }
 
 impl MsgTimeout {
-    // todo: Constructor not used yet.
-    #[allow(dead_code, unreachable_code, unused_variables)]
-    fn new(
+    pub fn new(
         packet: Packet,
-        next_sequence_recv: Option<u64>,
-        proof: CommitmentProof,
-        proof_height: Height,
+        next_sequence_recv: Sequence,
+        proofs: Proofs,
         signer: AccountId,
     ) -> Result<MsgTimeout, Error> {
         Ok(Self {
-            packet: todo!(),
-            next_sequence_recv: todo!(),
-            proofs: Proofs::new(proof, None, None, proof_height)
-                .map_err(|e| Kind::InvalidProof.context(e))?,
+            packet,
+            next_sequence_recv,
+            proofs,
             signer,
         })
     }
@@ -55,6 +52,10 @@ impl Msg for MsgTimeout {
         Ok(())
     }
 
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
+    }
+
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -70,7 +71,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             string_to_account(raw_msg.signer).map_err(|e| Kind::InvalidSigner.context(e))?;
 
         let proofs = Proofs::new(
-            raw_msg.proof.into(),
+            raw_msg.proof_unreceived.into(),
             None,
             None,
             raw_msg
@@ -100,7 +101,7 @@ impl From<MsgTimeout> for RawMsgTimeout {
     fn from(domain_msg: MsgTimeout) -> Self {
         RawMsgTimeout {
             packet: Some(domain_msg.packet.into()),
-            proof: domain_msg.proofs.object_proof().clone().into(),
+            proof_unreceived: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             next_sequence_recv: domain_msg.next_sequence_recv.into(),
             signer: account_to_string(domain_msg.signer).unwrap(),
@@ -121,10 +122,10 @@ mod test_util {
     pub fn get_dummy_raw_msg_timeout(height: u64) -> RawMsgTimeout {
         RawMsgTimeout {
             packet: Some(get_dummy_raw_packet(height)),
-            proof: get_dummy_proof(),
+            proof_unreceived: get_dummy_proof(),
             proof_height: Some(RawHeight {
-                version_number: 0,
-                version_height: height,
+                revision_number: 0,
+                revision_height: height,
             }),
             next_sequence_recv: 0,
             signer: get_dummy_bech32_account(),
@@ -170,7 +171,7 @@ mod test {
             Test {
                 name: "Missing proof".to_string(),
                 raw: RawMsgTimeout {
-                    proof: vec![],
+                    proof_unreceived: vec![],
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

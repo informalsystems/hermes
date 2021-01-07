@@ -9,8 +9,8 @@ use tendermint::account::Id as AccountId;
 use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::version::validate_version;
-use crate::ics23_commitment::commitment::CommitmentProof;
+use crate::ics03_connection::version::Version;
+use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::ics24_host::identifier::ConnectionId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::tx_msg::Msg;
@@ -25,7 +25,7 @@ pub struct MsgConnectionOpenAck {
     pub counterparty_connection_id: Option<ConnectionId>,
     pub client_state: Option<AnyClientState>,
     pub proofs: Proofs,
-    pub version: String,
+    pub version: Version,
     pub signer: AccountId,
 }
 
@@ -51,7 +51,7 @@ impl MsgConnectionOpenAck {
     }
 
     /// Getter for the version field.
-    pub fn version(&self) -> &String {
+    pub fn version(&self) -> &Version {
         &self.version
     }
 
@@ -76,12 +76,12 @@ impl Msg for MsgConnectionOpenAck {
         Ok(())
     }
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 }
 
@@ -109,7 +109,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let client_proof = Some(msg.proof_client)
             .filter(|x| !x.is_empty())
-            .map(CommitmentProof::from);
+            .map(CommitmentProofBytes::from);
 
         let counterparty_connection_id = Some(msg.counterparty_connection_id)
             .filter(|x| !x.is_empty())
@@ -128,7 +128,11 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .map(AnyClientState::try_from)
                 .transpose()
                 .map_err(|e| Kind::InvalidProof.context(e))?,
-            version: validate_version(msg.version).map_err(|e| Kind::InvalidVersion.context(e))?,
+            version: msg
+                .version
+                .ok_or(Kind::InvalidVersion)?
+                .try_into()
+                .map_err(|e| Kind::InvalidVersion.context(e))?,
             proofs: Proofs::new(
                 msg.proof_try.into(),
                 client_proof,
@@ -166,7 +170,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
                 .proofs
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
-            version: ics_msg.version,
+            version: Some(ics_msg.version.into()),
             signer: account_to_string(ics_msg.signer).unwrap(),
         }
     }
@@ -174,7 +178,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::version::default_version_string;
+    use crate::ics03_connection::version::Version;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
@@ -185,17 +189,17 @@ pub mod test_util {
             counterparty_connection_id: "tgtconnection".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
-                version_number: 0,
-                version_height: 10,
+                revision_number: 0,
+                revision_height: 10,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                version_number: 0,
-                version_height: 10,
+                revision_number: 0,
+                revision_height: 10,
             }),
             client_state: None,
             proof_client: vec![],
-            version: default_version_string(),
+            version: Some(Version::default().into()),
             signer: get_dummy_bech32_account(),
         }
     }
@@ -237,9 +241,9 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Bad version, empty version string".to_string(),
+                name: "Bad version, missing version".to_string(),
                 raw: RawMsgConnectionOpenAck {
-                    version: "".to_string(),
+                    version: None,
                     ..default_ack_msg.clone()
                 },
                 want_pass: false,
@@ -248,8 +252,8 @@ mod tests {
                 name: "Bad proof height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     proof_height: Some(Height {
-                        version_number: 1,
-                        version_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg.clone()
                 },
@@ -259,8 +263,8 @@ mod tests {
                 name: "Bad consensus height, height is 0".to_string(),
                 raw: RawMsgConnectionOpenAck {
                     consensus_height: Some(Height {
-                        version_number: 1,
-                        version_height: 0,
+                        revision_number: 1,
+                        revision_height: 0,
                     }),
                     ..default_ack_msg
                 },

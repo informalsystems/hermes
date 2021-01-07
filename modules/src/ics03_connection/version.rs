@@ -3,11 +3,11 @@ use std::convert::TryFrom;
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use tendermint_proto::Protobuf;
 
-use crate::ics03_connection::error::{Error, Kind};
-use std::str::FromStr;
+use crate::ics03_connection::error::Kind;
 
+/// Stores the identifier and the features supported by a version
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Version {
+pub struct Version {
     /// unique version identifier
     identifier: String,
     /// list of features compatible with the specified identifier
@@ -19,6 +19,18 @@ impl Protobuf<RawVersion> for Version {}
 impl TryFrom<RawVersion> for Version {
     type Error = anomaly::Error<Kind>;
     fn try_from(value: RawVersion) -> Result<Self, Self::Error> {
+        if value.identifier.trim().is_empty() {
+            return Err(Kind::InvalidVersion
+                .context("empty version string".to_string())
+                .into());
+        }
+        for feature in value.features.iter() {
+            if feature.trim().is_empty() {
+                return Err(Kind::InvalidVersion
+                    .context("empty feature string".to_string())
+                    .into());
+            }
+        }
         Ok(Version {
             identifier: value.identifier,
             features: value.features,
@@ -44,128 +56,70 @@ impl Default for Version {
     }
 }
 
-impl FromStr for Version {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Version::decode(s.as_bytes()).map_err(|e| Kind::InvalidVersion.context(e))?)
-    }
+/// Returns the lists of supported versions
+pub fn get_compatible_versions() -> Vec<Version> {
+    vec![Version::default()]
 }
 
-impl std::fmt::Display for Version {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(
-            f,
-            "{}",
-            String::from_utf8(Version::encode_vec(&self).unwrap()).unwrap()
-        )
-    }
-}
-
-pub fn default_version_string() -> String {
-    Version::default().to_string()
-}
-
-pub fn get_compatible_versions() -> Vec<String> {
-    vec![default_version_string()]
-}
-
+/// Selects a version from the intersection of locally supported and counterparty versions.
 pub fn pick_version(
-    supported_versions: Vec<String>,
-    counterparty_versions: Vec<String>,
-) -> Result<String, Error> {
+    supported_versions: Vec<Version>,
+    counterparty_versions: Vec<Version>,
+) -> Option<Version> {
     let mut intersection: Vec<Version> = vec![];
     for s in supported_versions.iter() {
-        let supported_version =
-            Version::decode(s.as_bytes()).map_err(|e| Kind::InvalidVersion.context(e))?;
         for c in counterparty_versions.iter() {
-            let counterparty_version = Version::from_str(c.as_str())?;
-            if supported_version.identifier != counterparty_version.identifier {
+            if c.identifier != s.identifier {
                 continue;
             }
             // TODO - perform feature intersection and error if empty
-            intersection.append(&mut vec![supported_version.clone()]);
+            intersection.append(&mut vec![s.clone()]);
         }
     }
     intersection.sort_by(|a, b| a.identifier.cmp(&b.identifier));
     if intersection.is_empty() {
-        return Err(Kind::NoCommonVersion.into());
+        return None;
     }
-    Ok(intersection[0].to_string())
-}
-
-pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, Error> {
-    if versions.is_empty() {
-        return Err(Kind::InvalidVersion
-            .context("no versions".to_string())
-            .into());
-    }
-    for version_str in versions.iter() {
-        validate_version(version_str.clone())?;
-    }
-    Ok(versions)
-}
-
-pub fn validate_version(raw_version: String) -> Result<String, Error> {
-    let version =
-        Version::from_str(raw_version.as_ref()).map_err(|e| Kind::InvalidVersion.context(e))?;
-
-    if version.identifier.trim().is_empty() {
-        return Err(Kind::InvalidVersion
-            .context("empty version string".to_string())
-            .into());
-    }
-    for feature in version.features {
-        if feature.trim().is_empty() {
-            return Err(Kind::InvalidVersion
-                .context("empty feature string".to_string())
-                .into());
-        }
-    }
-    Ok(raw_version)
+    Some(intersection[0].clone())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ics03_connection::version::{
-        default_version_string, get_compatible_versions, pick_version, validate_versions, Version,
-    };
-    use std::str::FromStr;
+    use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
+    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+    use std::convert::{TryFrom, TryInto};
 
-    fn good_versions() -> Vec<String> {
+    fn good_versions() -> Vec<RawVersion> {
         vec![
-            Version::default(),
-            Version {
+            Version::default().into(),
+            RawVersion {
                 identifier: "2".to_string(),
                 features: vec!["ORDER_RANDOM".to_string(), "ORDER_UNORDERED".to_string()],
             },
         ]
         .into_iter()
-        .map(|v| v.to_string())
         .collect()
     }
 
-    fn bad_versions_identifier() -> Vec<String> {
-        vec![Version {
+    fn bad_versions_identifier() -> Vec<RawVersion> {
+        vec![RawVersion {
             identifier: "".to_string(),
             features: vec!["ORDER_RANDOM".to_string(), "ORDER_UNORDERED".to_string()],
         }]
         .into_iter()
-        .map(|v| v.to_string())
         .collect()
     }
 
-    fn bad_versions_features() -> Vec<String> {
-        vec![Version {
+    fn bad_versions_features() -> Vec<RawVersion> {
+        vec![RawVersion {
             identifier: "2".to_string(),
             features: vec!["".to_string()],
         }]
         .into_iter()
-        .map(|v| v.to_string())
         .collect()
     }
 
-    fn overlapping() -> (Vec<String>, Vec<String>, String) {
+    fn overlapping() -> (Vec<Version>, Vec<Version>, Version) {
         (
             vec![
                 Version::default(),
@@ -179,7 +133,6 @@ mod tests {
                 },
             ]
             .into_iter()
-            .map(|v| v.to_string())
             .collect(),
             vec![
                 Version {
@@ -196,34 +149,29 @@ mod tests {
                 },
             ]
             .into_iter()
-            .map(|v| v.to_string())
             .collect(),
             // Should pick version 3 as it's the lowest of the intersection {3, 4}
             Version {
                 identifier: "3".to_string(),
                 features: vec![],
-            }
-            .to_string(),
+            },
         )
     }
 
-    fn disjoint() -> (Vec<String>, Vec<String>, String) {
+    fn disjoint() -> (Vec<Version>, Vec<Version>) {
         (
             vec![Version {
                 identifier: "1".to_string(),
                 features: vec![],
             }]
             .into_iter()
-            .map(|v| v.to_string())
             .collect(),
             vec![Version {
                 identifier: "2".to_string(),
                 features: vec![],
             }]
             .into_iter()
-            .map(|v| v.to_string())
             .collect(),
-            "".to_string(),
         )
     }
 
@@ -231,13 +179,13 @@ mod tests {
     fn verify() {
         struct Test {
             name: String,
-            versions: Vec<String>,
+            versions: Vec<RawVersion>,
             want_pass: bool,
         }
         let tests: Vec<Test> = vec![
             Test {
                 name: "Compatible versions".to_string(),
-                versions: get_compatible_versions(),
+                versions: vec![Version::default().into()],
                 want_pass: true,
             },
             Test {
@@ -258,12 +206,16 @@ mod tests {
             Test {
                 name: "Bad versions empty".to_string(),
                 versions: vec![],
-                want_pass: false,
+                want_pass: true,
             },
         ];
 
         for test in tests {
-            let versions = validate_versions(test.versions);
+            let versions = test
+                .versions
+                .into_iter()
+                .map(Version::try_from)
+                .collect::<Result<Vec<_>, _>>();
 
             assert_eq!(
                 test.want_pass,
@@ -278,9 +230,9 @@ mod tests {
     fn pick() {
         struct Test {
             name: String,
-            supported: Vec<String>,
-            counterparty: Vec<String>,
-            picked: String,
+            supported: Vec<Version>,
+            counterparty: Vec<Version>,
+            picked: Option<Version>,
             want_pass: bool,
         }
         let tests: Vec<Test> = vec![
@@ -288,21 +240,21 @@ mod tests {
                 name: "Compatible versions".to_string(),
                 supported: get_compatible_versions(),
                 counterparty: get_compatible_versions(),
-                picked: default_version_string(),
+                picked: Some(Version::default()),
                 want_pass: true,
             },
             Test {
                 name: "Overlapping versions".to_string(),
                 supported: overlapping().0,
                 counterparty: overlapping().1,
-                picked: overlapping().2,
+                picked: Some(overlapping().2),
                 want_pass: true,
             },
             Test {
                 name: "Disjoint versions".to_string(),
                 supported: disjoint().0,
                 counterparty: disjoint().1,
-                picked: disjoint().2,
+                picked: None,
                 want_pass: false,
             },
         ];
@@ -312,21 +264,21 @@ mod tests {
 
             assert_eq!(
                 test.want_pass,
-                version.is_ok(),
+                version.is_some(),
                 "Validate versions failed for test {}",
                 test.name,
             );
 
             if test.want_pass {
-                assert_eq!(version.unwrap(), test.picked);
+                assert_eq!(version, test.picked);
             }
         }
     }
     #[test]
     fn serialize() {
         let def = Version::default();
-        let def_raw = def.to_string();
-        let def_back = Version::from_str(def_raw.as_ref()).unwrap();
+        let def_raw: RawVersion = def.clone().into();
+        let def_back = def_raw.try_into().unwrap();
         assert_eq!(def, def_back);
     }
 }
