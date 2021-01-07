@@ -2,20 +2,38 @@
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //! TODO make "ADR 004: IBC protocol implementation" for more details.
 //!
+use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::version::{get_compatible_versions, pick_version};
+use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::Height;
 
-/// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
+/// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
     /// Returns the ChannelEnd for the given identifier `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd>;
 
     /// Returns the ConnectionState for the given identifier `connection_id`.
     fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd>;
+
+    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>>;
+
+    fn channel_client_state(&self, port_channel_id: &(PortId, ChannelId))
+        -> Option<AnyClientState>;
+
+    fn channel_consensus_state(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+        height: Height,
+    ) -> Option<AnyConsensusState>;
+
+    fn port_capability(&self, port_id: &PortId) -> Option<Capability>;
+
+    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool;
 
     /// Function required by ICS 04. Returns the list of all possible versions that the channels handshake protocol supports.
     fn get_compatible_versions(&self) -> Vec<String> {
@@ -33,7 +51,7 @@ pub trait ChannelReader {
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
-/// for processing any `ConnectionMsg`.
+/// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         match result.channel_end.state() {
@@ -57,6 +75,11 @@ pub trait ChannelKeeper {
                     &(result.port_id.clone(), result.channel_id.clone()),
                     1,
                 )?;
+
+                self.store_connection_channels(
+                    &result.channel_end.connection_hops()[0].clone(),
+                    &(result.port_id.clone(), result.channel_id.clone()),
+                )?;
             }
             State::TryOpen => {
                 self.store_channel(&(result.port_id, result.channel_id), &result.channel_end)?;
@@ -74,7 +97,13 @@ pub trait ChannelKeeper {
         Ok(())
     }
 
-    /// Stores the given connection_end at a path associated with the connection_id.
+    fn store_connection_channels(
+        &mut self,
+        conn_id: &ConnectionId,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<(), Error>;
+
+    /// Stores the given channel_end at a path associated with the port_id and channel_id.
     fn store_channel(
         &mut self,
         port_channel_id: &(PortId, ChannelId),

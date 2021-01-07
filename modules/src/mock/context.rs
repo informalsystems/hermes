@@ -13,6 +13,9 @@ use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
 
+use crate::ics05_port::capabilities::Capability;
+use crate::ics05_port::context::PortReader;
+
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
@@ -64,6 +67,9 @@ pub struct MockContext {
     /// All the channels in the store. TODO Make new key PortId X ChanneId
     channels: HashMap<(PortId, ChannelId), ChannelEnd>,
 
+    /// Association between conection ids and channel ids.
+    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+
     //Tracks the sequence number for the next packet to be sent.
     next_sequence_send: HashMap<(PortId, ChannelId), u64>,
 
@@ -72,7 +78,8 @@ pub struct MockContext {
 
     //Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
-    //TODO: Relate channels with connections?
+
+    port_capabilities: HashMap<PortId, Capability>,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -135,9 +142,11 @@ impl MockContext {
             clients: Default::default(),
             client_connections: Default::default(),
             channels: Default::default(),
+            connection_channels: Default::default(),
             next_sequence_send: Default::default(),
             next_sequence_recv: Default::default(),
             next_sequence_ack: Default::default(),
+            port_capabilities: Default::default(),
         }
     }
 
@@ -210,6 +219,31 @@ impl MockContext {
             ..self
         }
     }
+    pub fn with_connection_capability(
+        self,
+        port_id: PortId,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> Self {
+        let mut connections = self.connections.clone();
+        connections.insert(connection_id, connection_end);
+        let mut port_capabilities = self.port_capabilities.clone();
+        port_capabilities.insert(port_id, Capability::new());
+        Self {
+            connections,
+            port_capabilities,
+            ..self
+        }
+    }
+
+    // pub fn with_capability(self, port_id: PortId) -> Self {
+    //     let mut port_capabilities = self.port_capabilities.clone();
+    //     port_capabilities.insert(port_id, Capability::new());
+    //     Self {
+    //         port_capabilities,
+    //         ..self
+    //     }
+    // }
 
     /// Associates a channel to this context.
     pub fn with_channel(
@@ -298,6 +332,17 @@ impl MockContext {
 
 impl ICS26Context for MockContext {}
 
+impl PortReader for MockContext {
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
+        //return Some(Capability::new());
+        return self.port_capabilities.get(port_id).cloned();
+    }
+
+    fn autenthenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
+        return true;
+    }
+}
+
 impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
         self.channels.get(pcid).cloned()
@@ -305,6 +350,62 @@ impl ChannelReader for MockContext {
 
     fn connection_state(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
         self.connections.get(cid).cloned()
+    }
+
+    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+        return self.connection_channels.get(cid).cloned();
+    }
+
+    fn channel_client_state(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Option<AnyClientState> {
+        let channel = self.channel_end(port_channel_id);
+        match channel {
+            Some(v) => {
+                let cid = v.connection_hops().clone()[0].clone();
+                let conn = self.connection_state(&cid);
+                match conn {
+                    Some(v) => return ConnectionReader::client_state(self, &v.client_id().clone()),
+                    None => panic!(),
+                }
+            }
+            None => panic!(),
+        }
+    }
+
+    fn channel_consensus_state(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+        height: Height,
+    ) -> Option<AnyConsensusState> {
+        let channel = self.channel_end(port_channel_id);
+        match channel {
+            Some(v) => {
+                let cid = v.connection_hops().clone()[0].clone();
+
+                let conn = self.connection_state(&cid);
+                match conn {
+                    Some(v) => {
+                        return ConnectionReader::client_consensus_state(
+                            self,
+                            &v.client_id().clone(),
+                            height,
+                        )
+                    }
+                    None => panic!(),
+                }
+            }
+            None => panic!(),
+        }
+    }
+
+    fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
+        return PortReader::lookup_module_by_port(self, port_id);
+    }
+
+    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
+        return PortReader::autenthenticate(self, cap, port_id);
     }
 }
 
@@ -343,6 +444,26 @@ impl ChannelKeeper for MockContext {
     ) -> Result<(), ICS4Error> {
         self.next_sequence_ack.insert(port_channel_id.clone(), seq);
         Ok(())
+    }
+
+    fn store_connection_channels(
+        &mut self,
+        cid: &ConnectionId,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<(), ICS4Error> {
+        Ok(match self.connection_channels.get(cid) {
+            Some(v) => {
+                let mut modv = v.clone();
+                modv.push(port_channel_id.clone());
+                &self.connection_channels.remove(cid);
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+            None => {
+                let mut modv = Vec::new();
+                modv.push(port_channel_id.clone());
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+        })
     }
 }
 

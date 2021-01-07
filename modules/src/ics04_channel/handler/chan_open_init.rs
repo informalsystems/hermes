@@ -5,6 +5,7 @@ use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
+//use crate::ics05_port::context::PortReader;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 
@@ -19,7 +20,16 @@ pub(crate) fn process(
     if ctx.channel_end(&pc_id).is_some() {
         return Err(Kind::ChannelExistsAlready(msg.channel_id().clone()).into());
     }
-    //TODO what about the port capabilities  ?
+
+    let cap = ctx.port_capability(&msg.port_id().clone());
+    match cap {
+        Some(key) => {
+            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
+                return Err(Kind::InvalidPortCapability.into());
+            }
+        }
+        None => return Err(Kind::NoPortCapability.into()),
+    }
 
     if msg.channel().connection_hops().len() != 1 {
         return Err(Kind::InvalidConnectionHopsLength.into());
@@ -41,8 +51,8 @@ pub(crate) fn process(
     let new_channel_end = ChannelEnd::new(
         State::Init,
         *msg.channel().ordering(),
-        msg.channel().counterparty(),
-        msg.channel().connection_hops(),
+        msg.channel().counterparty().clone(),
+        msg.channel().connection_hops().clone(),
         ctx.get_compatible_versions()[0].clone(),
     );
 
@@ -66,15 +76,17 @@ mod tests {
     use crate::handler::EventType;
 
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::make_default_connection_end_for_client;
 
+    use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-
     use crate::ics04_channel::channel::{ChannelEnd, State};
+
+    use crate::ics03_connection::connection::ConnectionEnd;
 
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
 
+    use crate::ics03_connection::version::default_version_string;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
     use crate::mock::context::MockContext;
@@ -96,17 +108,19 @@ mod tests {
         let init_chan_end = &ChannelEnd::new(
             State::Init,
             *msg_chan_init.channel().ordering(),
-            msg_chan_init.channel().counterparty(),
-            msg_chan_init.channel().connection_hops(),
+            msg_chan_init.channel().counterparty().clone(),
+            msg_chan_init.channel().connection_hops().clone(),
             "ics20".to_string(),
         );
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
 
-        let init_conn_end = make_default_connection_end_for_client(
+        let init_conn_end = ConnectionEnd::new(
+            ConnectionState::Init,
             msg_conn_init.client_id().clone(),
             msg_conn_init.counterparty().clone(),
+            vec![default_version_string()],
         )
         .unwrap();
 
@@ -129,14 +143,33 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Good parameters".to_string(),
-                ctx: context.with_connection(
+                name: "Processing fails because port does not have a capability associated"
+                    .to_string(),
+                ctx: context.clone().with_connection(
                     MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init())
                         .unwrap()
                         .connection_id()
                         .clone(),
                     init_conn_end.clone(),
                 ),
+                msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Good parameters".to_string(),
+                ctx: context
+                    .with_connection_capability(
+                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
+                            .unwrap()
+                            .port_id()
+                            .clone(),
+                        MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init())
+                            .unwrap()
+                            .connection_id()
+                            .clone(),
+                        init_conn_end.clone(),
+                    )
+                    .clone(),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
                 want_pass: true,
             },

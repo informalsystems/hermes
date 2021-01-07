@@ -62,7 +62,7 @@ impl From<ChannelEnd> for RawChannel {
         RawChannel {
             state: value.state.clone() as i32,
             ordering: value.ordering as i32,
-            counterparty: Some(value.counterparty().into()),
+            counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
                 .connection_hops
                 .iter()
@@ -104,12 +104,12 @@ impl ChannelEnd {
         &self.ordering
     }
 
-    pub fn counterparty(&self) -> Counterparty {
-        self.remote.clone()
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.remote //.clone()
     }
 
-    pub fn connection_hops(&self) -> Vec<ConnectionId> {
-        self.connection_hops.clone()
+    pub fn connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.connection_hops //.clone()
     }
 
     pub fn version(&self) -> String {

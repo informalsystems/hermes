@@ -57,6 +57,12 @@ pub enum Kind {
 
     #[error("given connection {0} for channel innexitant ")]
     MissingConnection(ConnectionId),
+
+    #[error("the port has no capability associated")]
+    NoPortCapability,
+
+    #[error("the module associated with the port does not have the capability it needs")]
+    InvalidPortCapability,
 }
 
 impl Kind {
