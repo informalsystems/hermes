@@ -3,22 +3,31 @@
 # Copied from https://github.com/cosmos/relayer and modified to initialize the Rust relayer light clients.
 
 usage() {
-	echo "Missing $1 parameter. Please check if all parameters were specified."
-	echo "Usage: $0 [CONFIG_FILE] [CHAIN_ID_0] [CHAIN_ID_1]"
+  echo "Usage: $0 [CONFIG_FILE] [CHAIN_ID_0] [CHAIN_ID_1]"
   echo "Example: $0 ./config.toml ibc-0 ibc-1"
   exit 1
 }
 
+missing() {
+  echo "Missing $1 parameter. Please check if all parameters were specified."
+  usage
+}
+
 if [ -z "$1" ]; then
-  usage "CONFIG_FILE"
+  missing "CONFIG_FILE"
 fi
 
 if [ -z "$2" ]; then
-  usage "CHAIN_ID_0"
+  missing "CHAIN_ID_0"
 fi
 
 if [ -z "$3" ]; then
-  usage "CHAIN_ID_1"
+  missing "CHAIN_ID_1"
+fi
+
+if [ "$#" -gt 3 ]; then
+  echo "Incorrect number of parameters."
+  usage
 fi
 
 tomlcfg="$1"
@@ -52,8 +61,6 @@ rm -rf "$GAIA_DATA" &> /dev/null
 # Stop existing gaiad processes
 killall gaiad &> /dev/null || true
 killall akash &> /dev/null || true
-
-set -e
 
 echo "Generating gaia configurations..."
 mkdir -p "$GAIA_DATA" && cd "$GAIA_DATA" && cd ../
