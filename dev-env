@@ -35,7 +35,7 @@ chainid0="$2"
 chainid1="$3"
 
 if ! [ -f $tomlcfg ]; then
-  echo "[CONFIG_FILE] does not exist or is not a file."
+  echo "[CONFIG_FILE] ($1) does not exist or is not a file."
   usage
 fi
 
