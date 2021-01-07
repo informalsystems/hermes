@@ -14,3 +14,9 @@ impl Capability {
         Self { index: 0x0 }
     }
 }
+
+impl Default for Capability {
+    fn default() -> Self {
+        Self::new()
+    }
+}

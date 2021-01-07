@@ -111,8 +111,7 @@ mod tests {
             msg_conn_init.delay_period,
         );
 
-        // let cid = ConnectionId::default();
-        let ccid = <ConnectionId as FromStr>::from_str("srcconnection");
+        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
         let cid = match ccid {
             Ok(v) => v,
             Err(_e) => ConnectionId::default(),
@@ -136,17 +135,15 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context
-                    .with_connection_capability(
-                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                            .unwrap()
-                            .port_id()
-                            .clone(),
-                        cid.clone(),
-                        init_conn_end.clone(),
-                    )
-                    .clone(),
-                msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
+                ctx: context.with_connection_capability(
+                    MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
+                        .unwrap()
+                        .port_id()
+                        .clone(),
+                    cid,
+                    init_conn_end,
+                ),
+                msg: ChannelMsg::ChannelOpenInit(msg_chan_init),
                 want_pass: true,
             },
         ]

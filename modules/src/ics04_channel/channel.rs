@@ -337,7 +337,7 @@ pub mod test_util {
             state: 1,
             ordering: 0,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec!["srcconnection".to_string()],
+            connection_hops: vec!["defaultConnection-0".to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
     }

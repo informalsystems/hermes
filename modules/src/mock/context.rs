@@ -318,6 +318,14 @@ impl MockContext {
         }
         Ok(())
     }
+    pub fn add_port(&self, port_id: PortId) -> Self {
+        let mut port_capabilities = self.port_capabilities.clone();
+        port_capabilities.insert(port_id, Capability::new());
+        Self {
+            port_capabilities,
+            ..self.clone()
+        }
+    }
 }
 
 impl ICS26Context for MockContext {}
@@ -329,7 +337,7 @@ impl PortReader for MockContext {
     }
 
     fn autenthenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
-        return true;
+        true
     }
 }
 
@@ -391,11 +399,11 @@ impl ChannelReader for MockContext {
     }
 
     fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
-        return PortReader::lookup_module_by_port(self, port_id);
+        PortReader::lookup_module_by_port(self, port_id)
     }
 
     fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
-        return PortReader::autenthenticate(self, cap, port_id);
+        PortReader::autenthenticate(self, cap, port_id)
     }
 }
 
@@ -449,11 +457,11 @@ impl ChannelKeeper for MockContext {
         cid: &ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), ICS4Error> {
-        Ok(match self.connection_channels.get(cid) {
+        match self.connection_channels.get(cid) {
             Some(v) => {
                 let mut modv = v.clone();
                 modv.push(port_channel_id.clone());
-                &self.connection_channels.remove(cid);
+                self.connection_channels.remove(cid);
                 self.connection_channels.insert(cid.clone(), modv);
             }
             None => {
@@ -461,7 +469,8 @@ impl ChannelKeeper for MockContext {
                 modv.push(port_channel_id.clone());
                 self.connection_channels.insert(cid.clone(), modv);
             }
-        })
+        }
+        Ok(())
     }
 }
 

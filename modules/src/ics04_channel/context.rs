@@ -70,7 +70,7 @@ pub trait ChannelKeeper {
 
                 self.store_connection_channels(
                     &result.channel_end.connection_hops()[0].clone(),
-                    &(result.port_id.clone(), channel_id.clone()),
+                    &(result.port_id.clone(), channel_id),
                 )?;
             }
             State::TryOpen => {
