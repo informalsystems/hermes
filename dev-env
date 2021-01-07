@@ -34,6 +34,11 @@ tomlcfg="$1"
 chainid0="$2"
 chainid1="$3"
 
+if ! [ -f $tomlcfg ]; then
+  echo "[CONFIG_FILE] does not exist or is not a file."
+  usage
+fi
+
 GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
