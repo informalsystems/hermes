@@ -23,17 +23,12 @@ pub struct MsgChannelOpenInit {
 }
 
 impl MsgChannelOpenInit {
-    /// Getter: borrow the `connection_id` from this message.
-    pub fn channel_id(&self) -> &ChannelId {
-        &self.channel_id
-    }
-
-    /// Getter: borrow the `client_id` from this message.
+    /// Getter: borrow the `port_id` from this message.
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
 
-    /// Getter: borrow the `counterparty` from this message.
+    /// Getter: borrow the `channelEnd` from this message.
     pub fn channel(&self) -> &ChannelEnd {
         &self.channel
     }
@@ -114,7 +109,6 @@ pub mod test_util {
     pub fn get_dummy_raw_msg_chan_open_init_aux_test_missing_connection() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
             channel: Some(get_dummy_raw_channel_end_aux_test_missing_connection()),
             signer: get_dummy_bech32_account(),
         }

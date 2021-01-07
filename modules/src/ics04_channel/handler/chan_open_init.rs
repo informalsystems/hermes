@@ -5,7 +5,6 @@ use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
-//use crate::ics05_port::context::PortReader;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 
@@ -14,12 +13,6 @@ pub(crate) fn process(
     msg: MsgChannelOpenInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
-
-    let pc_id = (msg.port_id().clone(), msg.channel_id().clone());
-
-    if ctx.channel_end(&pc_id).is_some() {
-        return Err(Kind::ChannelExistsAlready(msg.channel_id().clone()).into());
-    }
 
     let cap = ctx.port_capability(&msg.port_id().clone());
     match cap {
@@ -60,7 +53,7 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: msg.channel_id().clone(),
+        channel_id: None,
         channel_end: new_channel_end,
     };
 
@@ -72,6 +65,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
+    use std::str::FromStr;
 
     use crate::handler::EventType;
 
@@ -79,16 +73,17 @@ mod tests {
 
     use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics04_channel::channel::{ChannelEnd, State};
+    use crate::ics04_channel::channel::State;
 
     use crate::ics03_connection::connection::ConnectionEnd;
-
+    use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
 
-    use crate::ics03_connection::version::default_version_string;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
+
+    use crate::ics24_host::identifier::ConnectionId;
     use crate::mock::context::MockContext;
 
     #[test]
@@ -105,14 +100,6 @@ mod tests {
 
         let context = MockContext::default();
 
-        let init_chan_end = &ChannelEnd::new(
-            State::Init,
-            *msg_chan_init.channel().ordering(),
-            msg_chan_init.channel().counterparty().clone(),
-            msg_chan_init.channel().connection_hops().clone(),
-            "ics20".to_string(),
-        );
-
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
 
@@ -120,22 +107,18 @@ mod tests {
             ConnectionState::Init,
             msg_conn_init.client_id().clone(),
             msg_conn_init.counterparty().clone(),
-            vec![default_version_string()],
-        )
-        .unwrap();
+            get_compatible_versions(),
+            msg_conn_init.delay_period,
+        );
+
+        // let cid = ConnectionId::default();
+        let ccid = <ConnectionId as FromStr>::from_str("srcconnection");
+        let cid = match ccid {
+            Ok(v) => v,
+            Err(_e) => ConnectionId::default(),
+        };
 
         let tests: Vec<Test> = vec![
-            Test {
-                name: "Processing fails because the channel exists in the store already"
-                    .to_string(),
-                ctx: context.clone().with_channel(
-                    msg_chan_init.port_id().clone(),
-                    msg_chan_init.channel_id().clone(),
-                    init_chan_end.clone(),
-                ),
-                msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
-                want_pass: false,
-            },
             Test {
                 name: "Processing fails because no connection exists in the context".to_string(),
                 ctx: context.clone(),
@@ -145,13 +128,9 @@ mod tests {
             Test {
                 name: "Processing fails because port does not have a capability associated"
                     .to_string(),
-                ctx: context.clone().with_connection(
-                    MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init())
-                        .unwrap()
-                        .connection_id()
-                        .clone(),
-                    init_conn_end.clone(),
-                ),
+                ctx: context
+                    .clone()
+                    .with_connection(cid.clone(), init_conn_end.clone()),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init.clone()),
                 want_pass: false,
             },
@@ -163,10 +142,7 @@ mod tests {
                             .unwrap()
                             .port_id()
                             .clone(),
-                        MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init())
-                            .unwrap()
-                            .connection_id()
-                            .clone(),
+                        cid.clone(),
                         init_conn_end.clone(),
                     )
                     .clone(),
@@ -194,7 +170,7 @@ mod tests {
 
                     // The object in the output is a ConnectionEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
-                    assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
+                    //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
                     assert_eq!(res.channel_end.state().clone(), State::Init);
 
                     for e in proto_output.events.iter() {

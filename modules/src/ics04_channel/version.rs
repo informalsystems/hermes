@@ -7,7 +7,7 @@ use crate::ics04_channel::error::{Error, Kind};
 use std::str::FromStr;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Version {
+pub struct Version {
     /// unique version identifier
     identifier: String,
     /// list of features compatible with the specified identifier

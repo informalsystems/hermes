@@ -56,33 +56,28 @@ pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         match result.channel_end.state() {
             State::Init => {
+                let channel_id = self.next_channel_id();
                 self.store_channel(
-                    &(result.port_id.clone(), result.channel_id.clone()),
+                    &(result.port_id.clone(), channel_id.clone()),
                     &result.channel_end,
                 )?;
 
-                self.store_nextsequence_send(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    1,
-                )?;
+                self.store_nextsequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
-                self.store_nextsequence_recv(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    1,
-                )?;
+                self.store_nextsequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
-                self.store_nextsequence_ack(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    1,
-                )?;
+                self.store_nextsequence_ack(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
                 self.store_connection_channels(
                     &result.channel_end.connection_hops()[0].clone(),
-                    &(result.port_id.clone(), result.channel_id.clone()),
+                    &(result.port_id.clone(), channel_id.clone()),
                 )?;
             }
             State::TryOpen => {
-                self.store_channel(&(result.port_id, result.channel_id), &result.channel_end)?;
+                self.store_channel(
+                    &(result.port_id, result.channel_id.clone().unwrap()),
+                    &result.channel_end,
+                )?;
                 // TODO: If this is the first time the handler processed this channel, associate the
                 // channel end to its client identifier.
                 // self.store_channel_to_connection(
@@ -91,11 +86,16 @@ pub trait ChannelKeeper {
                 // )?;
             }
             _ => {
-                self.store_channel(&(result.port_id, result.channel_id), &result.channel_end)?;
+                self.store_channel(
+                    &(result.port_id, result.channel_id.clone().unwrap()),
+                    &result.channel_end,
+                )?;
             }
         }
         Ok(())
     }
+
+    fn next_channel_id(&mut self) -> ChannelId;
 
     fn store_connection_channels(
         &mut self,

@@ -20,16 +20,16 @@ pub enum ChannelEvent {
 #[derive(Clone, Debug)]
 pub struct ChannelResult {
     pub port_id: PortId,
-    pub channel_id: ChannelId,
+    pub channel_id: Option<ChannelId>,
     pub channel_end: ChannelEnd,
 }
 
 impl From<ChannelEvent> for Event {
     fn from(ev: ChannelEvent) -> Event {
         match ev {
-            ChannelEvent::ChanOpenInit(chan) => Event::new(
+            ChannelEvent::ChanOpenInit(_chan) => Event::new(
                 EventType::Custom("channel_open_init".to_string()),
-                vec![("channel_id".to_string(), chan.channel_id.to_string())],
+                vec![("channel_id".to_string(), "None".to_string())],
             ),
             // ChannelEvent::ChanOpenTry(conn) => Event::new(
             //     EventType::Custom("channel_open_try".to_string()),

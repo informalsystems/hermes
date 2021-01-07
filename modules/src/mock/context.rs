@@ -83,9 +83,11 @@ pub struct MockContext {
     next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
 
     port_capabilities: HashMap<PortId, Capability>,
-  
+
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
+
+    channel_ids_counter: u32,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -155,7 +157,7 @@ impl MockContext {
             next_sequence_ack: Default::default(),
             port_capabilities: Default::default(),
             connection_ids_counter: 0,
-
+            channel_ids_counter: 0,
         }
     }
 
@@ -243,27 +245,6 @@ impl MockContext {
             port_capabilities,
             ..self
         }
-    }
-
-    // pub fn with_capability(self, port_id: PortId) -> Self {
-    //     let mut port_capabilities = self.port_capabilities.clone();
-    //     port_capabilities.insert(port_id, Capability::new());
-    //     Self {
-    //         port_capabilities,
-    //         ..self
-    //     }
-    // }
-
-    /// Associates a channel to this context.
-    pub fn with_channel(
-        self,
-        port_id: PortId,
-        channel_id: ChannelId,
-        channel_end: ChannelEnd,
-    ) -> Self {
-        let mut channels = self.channels.clone();
-        channels.insert((port_id, channel_id), channel_end);
-        Self { channels, ..self }
     }
 
     /// Accessor for a block of the local (host) chain from this context.
@@ -419,6 +400,14 @@ impl ChannelReader for MockContext {
 }
 
 impl ChannelKeeper for MockContext {
+    fn next_channel_id(&mut self) -> ChannelId {
+        let prefix = ChannelId::default().to_string();
+        let suffix = self.channel_ids_counter;
+        self.channel_ids_counter += 1;
+
+        ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    }
+
     fn store_channel(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
