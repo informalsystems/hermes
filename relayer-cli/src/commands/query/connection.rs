@@ -13,6 +13,7 @@ use relayer::config::{ChainConfig, Config};
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -94,6 +95,83 @@ impl Runnable for QueryConnectionEndCmd {
         match res {
             Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
             Err(e) => status_info!("connection query error", "{}", e),
+        }
+    }
+}
+
+/// Command for querying the channel identifiers associated with a connection.
+/// Sample invocation:
+/// `cargo run --bin relayer -- -c simple_config.toml query connection channels ibc-0 connection-0`
+#[derive(Clone, Command, Debug, Options)]
+pub struct QueryConnectionChannelsCmd {
+    #[options(free, help = "identifier of the chain to query")]
+    chain_id: Option<ChainId>,
+
+    #[options(free, help = "identifier of the connection to query")]
+    connection_id: Option<String>,
+}
+
+#[derive(Debug)]
+struct QueryConnectionChannelsOptions {
+    connection_id: ConnectionId,
+}
+
+impl QueryConnectionChannelsCmd {
+    fn validate_options(
+        &self,
+        config: &Config,
+    ) -> Result<(ChainConfig, QueryConnectionChannelsOptions), String> {
+        let chain_id = self
+            .chain_id
+            .clone()
+            .ok_or_else(|| "no chain chain identifier provided".to_string())?;
+        let chain_config = config
+            .chains
+            .iter()
+            .find(|c| c.id == chain_id)
+            .ok_or_else(|| "missing chain configuration for the given chain id".to_string())?;
+
+        let connection_id = self
+            .connection_id
+            .as_ref()
+            .ok_or_else(|| "no connection identifier was provided".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
+
+        let opts = QueryConnectionChannelsOptions { connection_id };
+
+        Ok((chain_config.clone(), opts))
+    }
+}
+
+impl Runnable for QueryConnectionChannelsCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let (chain_config, opts) = match self.validate_options(&config) {
+            Err(err) => {
+                status_err!("invalid options: {}", err);
+                return;
+            }
+            Ok(result) => result,
+        };
+        status_info!("Options", "{:?}", opts);
+
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+
+        let req = QueryConnectionChannelsRequest {
+            connection: opts.connection_id.to_string(),
+            pagination: None,
+        };
+
+        let res: Result<_, Error> = chain
+            .query_connection_channels(req)
+            .map_err(|e| Kind::Query.context(e).into());
+
+        match res {
+            Ok(cs) => status_info!("Result for connection channels query: ", "{:?}", cs),
+            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
         }
     }
 }
