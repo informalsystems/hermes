@@ -2,6 +2,15 @@
 
 ## Unreleased Changes
 
+### FEATURES
+
+- Add support for streamlining releases ([#507])
+
+### IMPROVEMENTS
+
+
+[#507]: https://github.com/informalsystems/ibc-rs/issues/507
+
 ## v0.0.6
 *December 23, 2020*
 
