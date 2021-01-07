@@ -178,7 +178,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::connection::{QueryConnectionEndCmd, QueryConnectionChannelsCmd};
+    use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
     use relayer::config::parse;
 
     #[test]
@@ -335,12 +335,12 @@ mod tests {
                 want_pass: false,
             },
         ]
-            .into_iter()
-            .collect();
+        .into_iter()
+        .collect();
 
         let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/two_chains.toml"
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
         );
 
         let config = parse(path).unwrap();
