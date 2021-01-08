@@ -125,7 +125,6 @@ pub mod test_util {
             signer: get_dummy_bech32_account(),
         }
     }
-
 }
 
 #[cfg(test)]
