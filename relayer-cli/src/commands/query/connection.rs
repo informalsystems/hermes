@@ -7,13 +7,13 @@ use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
-
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 
+use crate::conclude::{on_exit, CommandOutput, CommandStatus};
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
@@ -109,6 +109,9 @@ pub struct QueryConnectionChannelsCmd {
 
     #[options(free, help = "identifier of the connection to query")]
     connection_id: Option<String>,
+
+    #[options(help = "enable output in JSON format")]
+    json: bool,
 }
 
 #[derive(Debug)]
@@ -150,12 +153,16 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return on_exit(
+                    self.json,
+                    CommandOutput::new(CommandStatus::Error).with_msg(err),
+                );
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        if !self.json {
+            status_info!("Options", "{:?}", opts);
+        }
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -170,16 +177,24 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("Result for connection channels query: ", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
+            Ok(cs) => on_exit(
+                self.json,
+                CommandOutput::new(CommandStatus::Success).with_msg(format!("{:?}", cs)),
+            ),
+            Err(e) => on_exit(
+                self.json,
+                CommandOutput::new(CommandStatus::Error)
+                    .with_msg(format!("error encountered: {:?}", e)),
+            ),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
     use relayer::config::parse;
+
+    use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
 
     #[test]
     fn parse_connection_query_end_parameters() {
@@ -280,6 +295,7 @@ mod tests {
         let default_params = QueryConnectionChannelsCmd {
             chain_id: Some("ibc-0".to_string().parse().unwrap()),
             connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
+            json: false,
         };
 
         struct Test {
