@@ -6,7 +6,7 @@ pub type Error = anomaly::Error<Kind>;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("connection state unknown")]
     InvalidState(i32),
