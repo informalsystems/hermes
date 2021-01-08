@@ -4,6 +4,7 @@
 
 ### FEATURES
 
+- Add support for streamlining releases ([#507])
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
 
@@ -11,6 +12,8 @@
 
 
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
+[#507]: https://github.com/informalsystems/ibc-rs/issues/507
+
 
 ## v0.0.6
 *December 23, 2020*
