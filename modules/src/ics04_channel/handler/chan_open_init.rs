@@ -1,4 +1,4 @@
-//! Protocol logic specific to ICS3 messages of type `MsgChannelOpenInit`.
+//! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::{ChannelEnd, State};
@@ -15,10 +15,14 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     let cap = ctx.port_capability(&msg.port_id().clone());
+    let cap_key;
+
     match cap {
         Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
                 return Err(Kind::InvalidPortCapability.into());
+            } else {
+                cap_key = key;
             }
         }
         None => return Err(Kind::NoPortCapability.into()),
@@ -55,6 +59,7 @@ pub(crate) fn process(
         port_id: msg.port_id().clone(),
         channel_id: None,
         channel_end: new_channel_end,
+        channel_cap: cap_key,
     };
 
     output.emit(ChanOpenInit(result.clone()));

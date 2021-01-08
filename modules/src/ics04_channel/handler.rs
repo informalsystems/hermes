@@ -5,6 +5,7 @@ use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::msgs::ChannelMsg;
+use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
 pub mod chan_open_init;
@@ -21,6 +22,7 @@ pub enum ChannelEvent {
 pub struct ChannelResult {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
+    pub channel_cap: Capability,
     pub channel_end: ChannelEnd,
 }
 
