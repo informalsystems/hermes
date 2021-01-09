@@ -117,15 +117,11 @@ fn validate_common_options(
 
     // Get the source and destination chain configuration
     let dst_chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == dst_chain_id)
+        .find_chain(&dst_chain_id)
         .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
     let src_chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == src_chain_id)
+        .find_chain(&src_chain_id)
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
     Ok((dst_chain_config.clone(), src_chain_config.clone()))

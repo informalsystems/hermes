@@ -38,15 +38,11 @@ pub struct TxRawSendPacketCmd {
 impl TxRawSendPacketCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let number_msgs = self.number_msgs.unwrap_or(1);
