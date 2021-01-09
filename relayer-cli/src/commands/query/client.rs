@@ -206,9 +206,7 @@ fn validate_common_options(
         .clone()
         .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == chain_id)
+        .find_chain(&chain_id)
         .ok_or_else(|| "missing chain in configuration".to_string())?;
 
     let client_id = client_id
@@ -249,9 +247,7 @@ impl QueryClientConnectionsCmd {
             .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id)
+            .find_chain(&chain_id)
             .ok_or_else(|| "missing chain configuration".to_string())?;
 
         let client_id = self

@@ -42,15 +42,11 @@ pub struct TxRawPacketRecvCmd {
 impl TxRawPacketRecvCmd {
     fn validate_options(&self, config: &Config) -> Result<PacketOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = PacketOptions {
@@ -127,15 +123,11 @@ pub struct TxRawPacketAckCmd {
 impl TxRawPacketAckCmd {
     fn validate_options(&self, config: &Config) -> Result<PacketOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = PacketOptions {

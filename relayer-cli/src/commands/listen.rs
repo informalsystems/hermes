@@ -22,16 +22,12 @@ pub struct ListenCmd {
 impl ListenCmd {
     fn cmd(&self) -> Result<(), BoxError> {
         let rt = Arc::new(Mutex::new(TokioRuntime::new()?));
-        let config = app_config().clone();
+        let config = app_config();
 
         let chain_id = self.chain_id.clone().unwrap();
-        let chain_config = config
-            .chains
-            .into_iter()
-            .find(|c| c.id == chain_id)
-            .unwrap();
+        let chain_config = config.find_chain(&chain_id).unwrap();
 
-        listen(rt, chain_config)
+        listen(rt, chain_config.clone())
     }
 }
 
