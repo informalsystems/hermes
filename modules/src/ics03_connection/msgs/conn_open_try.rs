@@ -93,12 +93,6 @@ impl Msg for MsgConnectionOpenTry {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.counterparty
-            .validate_basic()
-            .map_err(|e| Kind::InvalidCounterparty.context(e).into())
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }

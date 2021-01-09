@@ -31,7 +31,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
@@ -228,8 +228,7 @@ pub trait Chain: Sized {
     }
 
     /// Builds the required proofs and the client state for connection handshake messages.
-    /// The proofs and client state must be obtained from queries at same height with value
-    /// `height - 1`
+    /// The proofs and client state must be obtained from queries at same height.
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -237,14 +236,30 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
-        // Set the height of the queries at height - 1
-        let query_height = height
-            .decrement()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
 
-        // Collect all proofs as required
-        let connection_proof =
-            CommitmentProofBytes::from(self.proven_connection(&connection_id, query_height)?.1);
+        // Check that the connection state is compatible with the message
+        match message_type {
+            ConnectionMsgType::OpenTry => {
+                if !connection_end.state_matches(&State::Init)
+                    && !connection_end.state_matches(&State::TryOpen)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenAck => {
+                if !connection_end.state_matches(&State::TryOpen)
+                    && !connection_end.state_matches(&State::Open)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenConfirm => {
+                if !connection_end.state_matches(&State::Open) {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+        }
 
         let mut client_state = None;
         let mut client_proof = None;
@@ -253,7 +268,7 @@ pub trait Chain: Sized {
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state_value, client_state_proof) =
-                    self.proven_client_state(&client_id, query_height)?;
+                    self.proven_client_state(&client_id, height)?;
 
                 client_proof = Some(CommitmentProofBytes::from(client_state_proof));
 
@@ -261,7 +276,7 @@ pub trait Chain: Sized {
                     .proven_client_consensus(
                         &client_id,
                         client_state_value.latest_height(),
-                        query_height,
+                        height,
                     )?
                     .1;
 
@@ -282,8 +297,13 @@ pub trait Chain: Sized {
 
         Ok((
             client_state,
-            Proofs::new(connection_proof, client_proof, consensus_proof, height)
-                .map_err(|_| Kind::MalformedProof)?,
+            Proofs::new(
+                CommitmentProofBytes::from(connection_proof),
+                client_proof,
+                consensus_proof,
+                height.increment(),
+            )
+            .map_err(|_| Kind::MalformedProof)?,
         ))
     }
 
@@ -298,23 +318,19 @@ pub trait Chain: Sized {
     }
 
     /// Builds the proof for channel handshake messages.
-    /// The proof must be obtained from queries at height `height - 1`
+    /// The proof is obtained from queries at height `height`
     fn build_channel_proofs(
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<Proofs, Error> {
-        // Set the height of the queries at height - 1
-        let query_height = height
-            .decrement()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
-
         // Collect all proofs as required
         let channel_proof =
-            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, query_height)?.1);
+            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
 
-        Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
+        Ok(Proofs::new(channel_proof, None, None, height.increment())
+            .map_err(|_| Kind::MalformedProof)?)
     }
 
     fn query_packet_commitments(

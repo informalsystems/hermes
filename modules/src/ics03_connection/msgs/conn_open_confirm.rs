@@ -41,10 +41,6 @@ impl Msg for MsgConnectionOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Error> {
-        Ok(())
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }

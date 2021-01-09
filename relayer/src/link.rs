@@ -322,8 +322,6 @@ fn build_timeout_packet(
         )
         .map_err(|e| Kind::MalformedProof.context(e))?;
 
-    println!("timeout for packet {:#?}", packet);
-
     let msg =
         MsgTimeout::new(packet.clone(), packet.sequence, proofs.clone(), signer).map_err(|e| {
             Kind::TimeoutPacket(
@@ -395,26 +393,54 @@ fn build_ack_from_recv_event(
     build_ack_packet(dst_chain, src_chain, &event, event_height)
 }
 
+struct RecvPacketsAndTimeouts {
+    recv_msgs: Vec<Any>,
+    dst_query_height: Height,
+    timeouts: Vec<Any>,
+    src_query_height: Height,
+}
+
+impl Default for RecvPacketsAndTimeouts {
+    fn default() -> Self {
+        RecvPacketsAndTimeouts {
+            recv_msgs: vec![],
+            dst_query_height: Default::default(),
+            timeouts: vec![],
+            src_query_height: Default::default(),
+        }
+    }
+}
+
+impl RecvPacketsAndTimeouts {
+    fn none() -> RecvPacketsAndTimeouts {
+        RecvPacketsAndTimeouts::default()
+    }
+}
+
 /// From each sequence it builds either a MsgRecvPacket or a MsgTimeout message
 /// MsgTimeout-s are sent to the source chain while MsgRecvPacket-s are sent to
 /// the destination chain
 fn build_recv_packet_and_timeout_msgs(
     packet_src_chain: Box<dyn ChainHandle>,
-    src_query_height: Height,
     packet_dst_chain: Box<dyn ChainHandle>,
-    dst_query_height: Height,
-    src_channel_id: &ChannelId,
-    src_port: &PortId,
-    sequences: Vec<Sequence>,
-) -> Result<(Vec<Any>, Vec<Any>), Error> {
+    opts: &PacketOptions,
+) -> Result<RecvPacketsAndTimeouts, Error> {
+    // Get the sequences of packets that have been sent on source chain but
+    // have not been received on destination chain (i.e. ack was not seen on source chain)
+    let (sequences, src_query_height) = target_height_and_sequences_of_recv_packets(
+        packet_src_chain.clone(),
+        packet_dst_chain.clone(),
+        opts,
+    )?;
+
     if sequences.is_empty() {
-        return Ok((vec![], vec![]));
+        return Ok(RecvPacketsAndTimeouts::none());
     }
 
     let mut events = packet_src_chain.query_txs(QueryPacketEventDataRequest {
         event_id: IBCEventType::SendPacket,
-        source_port_id: src_port.clone(),
-        source_channel_id: src_channel_id.clone(),
+        source_port_id: opts.packet_src_port_id.clone(),
+        source_channel_id: opts.packet_src_channel_id.clone(),
         sequences,
         height: src_query_height,
     })?;
@@ -428,7 +454,9 @@ fn build_recv_packet_and_timeout_msgs(
     }
     info!("received from query_txs {:?}", packet_sequences);
 
-    let (mut recv_msgs, mut timeout_msgs) = (vec![], vec![]);
+    let dst_query_height = packet_dst_chain.query_latest_height()?;
+    let mut result = RecvPacketsAndTimeouts::default();
+
     for event in events.iter_mut() {
         event.set_height(src_query_height);
 
@@ -439,32 +467,39 @@ fn build_recv_packet_and_timeout_msgs(
             event,
         )?;
         if let Some(recv) = recv {
-            recv_msgs.append(&mut vec![recv]);
+            result.recv_msgs.append(&mut vec![recv]);
         }
         if let Some(timeout) = timeout {
-            timeout_msgs.append(&mut vec![timeout]);
+            result.timeouts.append(&mut vec![timeout]);
         }
     }
-    Ok((recv_msgs, timeout_msgs))
+    result.src_query_height = src_query_height;
+    result.dst_query_height = dst_query_height;
+    Ok(result)
 }
 
 fn build_packet_ack_msgs(
     packet_src_chain: Box<dyn ChainHandle>,
     packet_dst_chain: Box<dyn ChainHandle>,
-    dst_query_height: Height,
-    src_channel_id: &ChannelId,
-    src_port: &PortId,
-    sequences: &[Sequence],
-) -> Result<Vec<Any>, Error> {
+    opts: &PacketOptions,
+) -> Result<(Vec<Any>, Height), Error> {
+    // Get the sequences of packets that have been acknowledged on destination chain but still
+    // have commitments on source chain (i.e. ack was not seen on source chain)
+    let (sequences, dst_query_height) = target_height_and_sequences_of_ack_packets(
+        packet_src_chain.clone(),
+        packet_dst_chain.clone(),
+        opts,
+    )?;
+
     if sequences.is_empty() {
-        return Ok(vec![]);
+        return Ok((vec![], dst_query_height));
     }
 
     let mut events = packet_dst_chain.query_txs(QueryPacketEventDataRequest {
         event_id: IBCEventType::WriteAck,
-        source_port_id: src_port.clone(),
-        source_channel_id: src_channel_id.clone(),
-        sequences: Vec::from(sequences),
+        source_port_id: opts.packet_src_port_id.clone(),
+        source_channel_id: opts.packet_src_channel_id.clone(),
+        sequences,
         height: dst_query_height,
     })?;
 
@@ -489,7 +524,7 @@ fn build_packet_ack_msgs(
             msgs.append(&mut vec![new_msg]);
         }
     }
-    Ok(msgs)
+    Ok((msgs, dst_query_height))
 }
 
 fn target_height_and_sequences_of_recv_packets(
@@ -611,30 +646,15 @@ pub fn build_and_send_recv_packet_messages(
     packet_dst_chain: Box<dyn ChainHandle>, // the chain where recv is sent and from where ack data and proofs are collected
     opts: &PacketOptions,
 ) -> Result<Vec<IBCEvent>, Error> {
-    let (sequences, src_query_height) = target_height_and_sequences_of_recv_packets(
+    let mut result = build_recv_packet_and_timeout_msgs(
         packet_src_chain.clone(),
         packet_dst_chain.clone(),
         opts,
     )?;
-    if sequences.is_empty() {
-        return Ok(vec![]);
-    }
 
-    let dst_query_height = packet_dst_chain.query_latest_height()?;
+    let mut tx_result = vec![];
 
-    let (mut recv_msgs, mut timeout_msgs) = build_recv_packet_and_timeout_msgs(
-        packet_src_chain.clone(),
-        src_query_height,
-        packet_dst_chain.clone(),
-        dst_query_height,
-        &opts.packet_src_channel_id,
-        &opts.packet_src_port_id,
-        sequences,
-    )?;
-
-    let mut result = vec![];
-
-    if !recv_msgs.is_empty() {
+    if !result.recv_msgs.is_empty() {
         // Check the channel on destination chain is Open
         verify_channel_state(
             packet_dst_chain.clone(),
@@ -647,13 +667,13 @@ pub fn build_and_send_recv_packet_messages(
             packet_dst_chain.clone(),
             packet_src_chain.clone(),
             &opts.packet_dst_client_id.clone(),
-            src_query_height.increment(),
+            result.src_query_height.increment(),
         )?;
-        dst_msgs.append(&mut recv_msgs);
-        result.append(&mut packet_dst_chain.send_msgs(dst_msgs)?);
+        dst_msgs.append(&mut result.recv_msgs);
+        tx_result.append(&mut packet_dst_chain.send_msgs(dst_msgs)?);
     }
 
-    if !timeout_msgs.is_empty() {
+    if !result.timeouts.is_empty() {
         // Check the channel on source chain is Open
         verify_channel_state(
             packet_src_chain.clone(),
@@ -666,12 +686,12 @@ pub fn build_and_send_recv_packet_messages(
             packet_src_chain.clone(),
             packet_dst_chain.clone(),
             &opts.packet_src_client_id.clone(),
-            dst_query_height.increment(),
+            result.dst_query_height.increment(),
         )?;
-        src_msgs.append(&mut timeout_msgs);
-        result.append(&mut packet_src_chain.send_msgs(src_msgs)?);
+        src_msgs.append(&mut result.timeouts);
+        tx_result.append(&mut packet_src_chain.send_msgs(src_msgs)?);
     }
-    Ok(result)
+    Ok(tx_result)
 }
 
 pub fn build_and_send_ack_packet_messages(
@@ -679,23 +699,9 @@ pub fn build_and_send_ack_packet_messages(
     packet_dst_chain: Box<dyn ChainHandle>, // the chain from where ack data and proofs are collected
     opts: &PacketOptions,
 ) -> Result<Vec<IBCEvent>, Error> {
-    let (sequences, dst_query_height) = target_height_and_sequences_of_ack_packets(
-        packet_src_chain.clone(),
-        packet_dst_chain.clone(),
-        opts,
-    )?;
-    if sequences.is_empty() {
-        return Ok(vec![]);
-    }
-
-    let mut ack_msgs = build_packet_ack_msgs(
-        packet_src_chain.clone(),
-        packet_dst_chain.clone(),
-        dst_query_height,
-        &opts.packet_src_channel_id,
-        &opts.packet_src_port_id,
-        sequences.as_slice(),
-    )?;
+    // Construct the ack messages and get the height of their proofs
+    let (mut ack_msgs, proof_height) =
+        build_packet_ack_msgs(packet_src_chain.clone(), packet_dst_chain.clone(), opts)?;
 
     let mut result = vec![];
 
@@ -711,7 +717,7 @@ pub fn build_and_send_ack_packet_messages(
             packet_src_chain.clone(),
             packet_dst_chain.clone(),
             &opts.packet_src_client_id.clone(),
-            dst_query_height.increment(),
+            proof_height.increment(),
         )?;
 
         src_msgs.append(&mut ack_msgs);
