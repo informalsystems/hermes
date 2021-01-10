@@ -20,7 +20,6 @@ use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
 use crate::chain::handle::ChainHandle;
-use crate::config;
 use crate::error::{Error, Kind};
 use crate::foreign_client::{build_update_client, ForeignClient};
 use crate::relay::MAX_ITER;
@@ -44,20 +43,20 @@ pub struct Connection {
 #[derive(Clone, Debug)]
 pub struct ConnectionSideConfig {
     chain_id: ChainId,
-    connection_id: ConnectionId,
     client_id: ClientId,
+    connection_id: ConnectionId,
 }
 
 impl ConnectionSideConfig {
     pub fn new(
         chain_id: ChainId,
-        connection_id: ConnectionId,
         client_id: ClientId,
+        connection_id: ConnectionId,
     ) -> ConnectionSideConfig {
         Self {
             chain_id,
-            connection_id,
             client_id,
+            connection_id,
         }
     }
 
@@ -65,16 +64,16 @@ impl ConnectionSideConfig {
         &self.chain_id
     }
 
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
     }
 
-    pub fn set_connection_id(&mut self, id: &ConnectionId) {
-        self.connection_id = id.clone()
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub(crate) fn set_connection_id(&mut self, id: &ConnectionId) {
+        self.connection_id = id.clone();
     }
 }
 
@@ -109,24 +108,6 @@ impl ConnectionConfig {
     }
 }
 
-impl ConnectionConfig {
-    pub fn new(conn: &config::Connection) -> Result<ConnectionConfig, String> {
-        let a_config = ConnectionSideConfig {
-            chain_id: conn.a_chain.clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-        };
-
-        let b_config = ConnectionSideConfig {
-            chain_id: conn.b_chain.clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-        };
-
-        Ok(ConnectionConfig { a_config, b_config })
-    }
-}
-
 impl Connection {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
@@ -154,13 +135,13 @@ impl Connection {
             config: ConnectionConfig {
                 a_config: ConnectionSideConfig::new(
                     a_client.dst_chain().id(),
-                    Default::default(),
                     a_client.id().clone(),
+                    Default::default(),
                 ),
                 b_config: ConnectionSideConfig::new(
                     b_client.dst_chain().id(),
-                    Default::default(),
                     b_client.id().clone(),
+                    Default::default(),
                 ),
             },
             a_client,
