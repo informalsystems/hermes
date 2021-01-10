@@ -28,7 +28,7 @@ pub fn channel_relay(
     let connection = Connection::new(client_on_a, client_on_b)?;
 
     // Setup the channel over the connection
-    let channel = Channel::new(connection, ordering, path)?;
+    let channel = Channel::new(connection, ordering, path.a_port, path.b_port)?;
 
     let link = Link::new(channel);
 

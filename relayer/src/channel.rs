@@ -20,7 +20,6 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
@@ -124,7 +123,8 @@ impl Channel {
     pub fn new(
         connection: Connection,
         ordering: Order,
-        path: RelayPath,
+        a_port: PortId,
+        b_port: PortId,
     ) -> Result<Channel, ChannelError> {
         let config = ChannelConfig {
             ordering,
@@ -132,14 +132,14 @@ impl Channel {
                 connection.config.a_config.chain_id().clone(),
                 connection.config.a_config.client_id().clone(),
                 connection.config.a_config.connection_id().clone(),
-                path.a_port,
+                a_port,
                 Default::default(),
             ),
             b_config: ChannelConfigSide::new(
                 connection.config.b_config.chain_id().clone(),
                 connection.config.b_config.client_id().clone(),
                 connection.config.b_config.connection_id().clone(),
-                path.b_port,
+                b_port,
                 Default::default(),
             ),
         };
