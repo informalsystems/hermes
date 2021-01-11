@@ -9,7 +9,8 @@ use ibc::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::link::{
-    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketOptions,
+    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketEnvelope,
+    PacketOptions,
 };
 
 #[derive(Clone, Command, Debug, Options)]
@@ -55,13 +56,15 @@ impl TxRawPacketRecvCmd {
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)
@@ -91,7 +94,11 @@ impl Runnable for TxRawPacketRecvCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", ev),
+            Ok(events) => status_info!(
+                "packet recv, result: ",
+                "{:#?}",
+                serde_json::to_string(&events).unwrap()
+            ),
             Err(e) => status_info!("packet recv failed, error: ", "{}", e),
         }
     }
@@ -140,13 +147,15 @@ impl TxRawPacketAckCmd {
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)
@@ -176,7 +185,11 @@ impl Runnable for TxRawPacketAckCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet ack, result: ", "{:#?}", ev),
+            Ok(events) => status_info!(
+                "packet ack, result: ",
+                "{:#?}",
+                serde_json::to_string(&events).unwrap()
+            ),
             Err(e) => status_info!("packet ack failed, error: ", "{}", e),
         }
     }
