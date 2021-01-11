@@ -18,11 +18,11 @@ if [ -z "$1" ]; then
 fi
 
 if [ -z "$2" ]; then
-  missing "CHAIN_ID_0"
+  missing "CHAIN_0_ID"
 fi
 
 if [ -z "$3" ]; then
-  missing "CHAIN_ID_1"
+  missing "CHAIN_1_ID"
 fi
 
 if [ "$#" -gt 3 ]; then
@@ -43,7 +43,7 @@ GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
 if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
-  echo "$0 will delete and $(pwd)/data folder."
+  echo "$0 will delete $(pwd)/data folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
