@@ -72,8 +72,8 @@ impl ConnectionSideConfig {
         &self.connection_id
     }
 
-    pub(crate) fn set_connection_id(&mut self, id: &ConnectionId) {
-        self.connection_id = id.clone();
+    pub(crate) fn set_connection_id(&mut self, id: ConnectionId) {
+        self.connection_id = id;
     }
 }
 
@@ -182,9 +182,8 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config
-                        .a_config
-                        .set_connection_id(extract_connection_id(&result)?);
+                    let connection_id = extract_connection_id(&result)?.clone();
+                    self.config.a_config.set_connection_id(connection_id);
                     info!("{}  {} => {:?}\n", done, a_chain.id(), result);
                     break;
                 }
@@ -203,9 +202,8 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config
-                        .b_config
-                        .set_connection_id(extract_connection_id(&result)?);
+                    let connection_id = extract_connection_id(&result)?.clone();
+                    self.config.b_config.set_connection_id(connection_id);
                     info!("{}  {} => {:?}\n", done, b_chain.id(), result);
                     break;
                 }
