@@ -39,9 +39,7 @@ impl QueryPacketCommitmentsCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions), String> {
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.chain_id.parse().unwrap())
+            .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {
@@ -117,9 +115,7 @@ impl QueryPacketCommitmentCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.chain_id.parse().unwrap())
+            .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {
@@ -201,15 +197,11 @@ impl QueryUnreceivedPacketsCmd {
         config: &Config,
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| "missing destination chain configuration".to_string())?;
+            .find_chain(&self.src_chain_id.parse().unwrap())
+            .ok_or_else(|| "missing source chain configuration".to_string())?;
 
         let dst_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
+            .find_chain(&self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {
@@ -296,9 +288,7 @@ impl QueryPacketAcknowledgementsCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions), String> {
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.chain_id.parse().unwrap())
+            .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {
@@ -378,9 +368,7 @@ impl QueryPacketAcknowledgmentCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.chain_id.parse().unwrap())
+            .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {
@@ -459,15 +447,11 @@ impl QueryUnreceivedAcknowledgementCmd {
         config: &Config,
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let dst_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dst_chain_id.parse().unwrap())
+            .find_chain(&self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = QueryPacketOptions {

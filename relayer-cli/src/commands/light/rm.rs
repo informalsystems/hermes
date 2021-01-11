@@ -80,9 +80,7 @@ impl RmCmd {
         let mut config = (*app_config()).clone();
 
         let chain_config = config
-            .chains
-            .iter_mut()
-            .find(|c| c.id == options.chain_id)
+            .find_chain_mut(&options.chain_id)
             .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
 
         let mut peers_config = chain_config
