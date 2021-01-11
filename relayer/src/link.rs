@@ -700,18 +700,18 @@ pub fn build_and_send_ack_packet_messages(
     packet_dst_chain: Box<dyn ChainHandle>, // the chain from where ack data and proofs are collected
     opts: &PacketOptions,
 ) -> Result<Vec<IBCEvent>, Error> {
-    let mut msg_colletcor = PacketMsgCollector::new(
+    let mut msg_collector = PacketMsgCollector::new(
         packet_dst_chain.clone(),
         packet_src_chain.clone(),
         &opts.packet_envelope,
     );
     // Construct the ack messages and get the height of their proofs
-    msg_colletcor.build_packet_ack_msgs()?;
-    msg_colletcor.build_client_updates()?;
+    msg_collector.build_packet_ack_msgs()?;
+    msg_collector.build_client_updates()?;
     let mut result = vec![];
 
-    if !msg_colletcor.src_msgs.is_empty() {
-        result.append(&mut packet_src_chain.send_msgs(msg_colletcor.src_msgs)?);
+    if !msg_collector.src_msgs.is_empty() {
+        result.append(&mut packet_src_chain.send_msgs(msg_collector.src_msgs)?);
     }
     Ok(result)
 }
