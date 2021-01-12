@@ -126,7 +126,7 @@ impl ChannelEnd {
     }
 
     pub fn connection_hops(&self) -> &Vec<ConnectionId> {
-        &self.connection_hops //.clone()
+        &self.connection_hops
     }
 
     pub fn version(&self) -> String {
