@@ -1,4 +1,4 @@
-//! ICS4 (channel) context. The two traits `ConnectionReader` and `ConnectionKeeper` define
+//! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //! TODO make "ADR 004: IBC protocol implementation" for more details.
 //!
