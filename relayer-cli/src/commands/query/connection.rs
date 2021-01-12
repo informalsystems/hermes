@@ -169,8 +169,8 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
-            Err(e) => status_info!("connection query error", "{}", e),
+            Ok(cs) => status_info!("connection channels query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection channels query error", "{}", e),
         }
     }
 }
