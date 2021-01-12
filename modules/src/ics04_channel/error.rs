@@ -52,9 +52,6 @@ pub enum Kind {
     #[error("missing channel end")]
     MissingChannel,
 
-    #[error("channel exists (was initialized) already: {0}")]
-    ChannelExistsAlready(ChannelId),
-
     #[error("given connection {0} for channel innexitant ")]
     MissingConnection(ConnectionId),
 
