@@ -150,6 +150,9 @@ impl QueryConnectionChannelsCmd {
 impl Runnable for QueryConnectionChannelsCmd {
     fn run(&self) {
         let config = app_config();
+        tracing::debug!("post-push ^2");
+        tracing::info!("post-push ^2");
+        tracing::error!("ERROROROOROR");
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
