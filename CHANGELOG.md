@@ -10,9 +10,12 @@
 
 ### IMPROVEMENTS
 
+- Update to `tendermint-rs` v0.17.1 ([#517])
+
 
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
+[#517]: https://github.com/informalsystems/ibc-rs/issues/517
 
 ## v0.0.6
 *December 23, 2020*
