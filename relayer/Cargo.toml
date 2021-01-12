@@ -42,19 +42,19 @@ dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 
 [dependencies.tendermint]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.0"
+version = "=0.17.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dependencies.tendermint-proto]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dev-dependencies]
 serial_test = "0.5.0"
 ibc = { path = "../modules", features = [ "mocks" ] }
-tendermint-testgen = { version = "=0.17.0" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.17.1" } # Needed for generating (synthetic) light blocks.

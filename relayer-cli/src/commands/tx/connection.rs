@@ -43,15 +43,11 @@ macro_rules! conn_open_cmd {
                 let config = app_config();
 
                 let src_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.src_chain_id.parse().unwrap())
+                    .find_chain(&self.src_chain_id.parse().unwrap())
                     .ok_or_else(|| "missing src chain configuration".to_string());
 
                 let dst_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.dst_chain_id.parse().unwrap())
+                    .find_chain(&self.dst_chain_id.parse().unwrap())
                     .ok_or_else(|| "missing src chain configuration".to_string());
 
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {

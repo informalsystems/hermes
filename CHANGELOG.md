@@ -2,6 +2,18 @@
 
 ## Unreleased Changes
 
+### FEATURES
+
+- Add support for streamlining releases ([#507])
+
+### IMPROVEMENTS
+
+- Update to `tendermint-rs` v0.17.1 ([#517])
+
+
+[#507]: https://github.com/informalsystems/ibc-rs/issues/507
+[#517]: https://github.com/informalsystems/ibc-rs/issues/517
+
 ## v0.0.6
 *December 23, 2020*
 

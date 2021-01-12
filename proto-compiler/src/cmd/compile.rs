@@ -81,14 +81,14 @@ impl CompileCmd {
         // List available paths for dependencies
         let includes: Vec<PathBuf> = proto_includes_paths.iter().map(PathBuf::from).collect();
 
-
         tonic_build::configure()
             .build_client(true)
             .build_server(false)
             .format(false)
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
-            .compile(&protos, &includes).unwrap();
+            .compile(&protos, &includes)
+            .unwrap();
     }
 
     fn copy_generated_files(from_dir: &Path, to_dir: &Path) {
