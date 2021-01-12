@@ -52,7 +52,7 @@ pub enum Kind {
     #[error("missing channel end")]
     MissingChannel,
 
-    #[error("given connection {0} for channel innexitant ")]
+    #[error("given connection hop {0} does not exist")]
     MissingConnection(ConnectionId),
 
     #[error("the port has no capability associated")]
