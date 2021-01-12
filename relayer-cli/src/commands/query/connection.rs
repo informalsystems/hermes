@@ -11,7 +11,6 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 
-use crate::conclude::{on_exit, CommandOutput, CommandStatus};
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -109,9 +108,6 @@ pub struct QueryConnectionChannelsCmd {
 
     #[options(free, help = "identifier of the connection to query")]
     connection_id: Option<String>,
-
-    #[options(help = "enable output in JSON format")]
-    json: bool,
 }
 
 #[derive(Debug)]
@@ -153,16 +149,12 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return on_exit(
-                    self.json,
-                    CommandOutput::new(CommandStatus::Error).with_msg(err),
-                );
+                status_err!("invalid options: {}", err);
+                return;
             }
             Ok(result) => result,
         };
-        if !self.json {
-            status_info!("Options", "{:?}", opts);
-        }
+        status_info!("Options", "{:?}", opts);
 
         let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -177,15 +169,8 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => on_exit(
-                self.json,
-                CommandOutput::new(CommandStatus::Success).with_msg(format!("{:?}", cs)),
-            ),
-            Err(e) => on_exit(
-                self.json,
-                CommandOutput::new(CommandStatus::Error)
-                    .with_msg(format!("error encountered: {:?}", e)),
-            ),
+            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
+            Err(e) => status_info!("connection query error", "{}", e),
         }
     }
 }
@@ -295,7 +280,6 @@ mod tests {
         let default_params = QueryConnectionChannelsCmd {
             chain_id: Some("ibc-0".to_string().parse().unwrap()),
             connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
-            json: false,
         };
 
         struct Test {
