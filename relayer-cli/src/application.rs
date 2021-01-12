@@ -1,12 +1,10 @@
 //! Cli Abscissa Application
 
+use crate::{commands::CliCmd, config::Config};
 use abscissa_core::{
     application::{self, AppCell},
-    component::Component,
-    Application, config, EntryPoint, FrameworkError, StandardPaths, trace,
+    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
 };
-
-use crate::{commands::CliCmd, config::Config, components::Tracing};
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();
@@ -78,26 +76,13 @@ impl Application for CliApp {
         &mut self.state
     }
 
-    fn framework_components(
-        &mut self,
-        command: &Self::Cmd,
-    ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
-        Ok(vec![])
-    }
-
     /// Register all components used by this application.
     ///
     /// If you would like to add additional components to your application
     /// beyond the default ones provided by the framework, this is the place
     /// to do so.
     fn register_components(&mut self, command: &Self::Cmd) -> Result<(), FrameworkError> {
-        let mut components = self.framework_components(command)?;
-
-        tracing::info!("pre-push");
-        let c = Tracing::new()?;
-        components.push(Box::new(c));
-        tracing::info!("post-push");
-
+        let components = self.framework_components(command)?;
         self.state.components.register(components)
     }
 
