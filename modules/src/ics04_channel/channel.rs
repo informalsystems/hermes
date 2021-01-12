@@ -122,7 +122,7 @@ impl ChannelEnd {
     }
 
     pub fn counterparty(&self) -> &Counterparty {
-        &self.remote //.clone()
+        &self.remote
     }
 
     pub fn connection_hops(&self) -> &Vec<ConnectionId> {
