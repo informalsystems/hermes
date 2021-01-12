@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -16,6 +17,7 @@ use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::{ChainConfig, Config};
 
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -274,8 +276,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -293,8 +294,10 @@ impl Runnable for QueryClientConnectionsCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
-            Err(e) => status_info!("client connections query error", "{}", e),
+            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }

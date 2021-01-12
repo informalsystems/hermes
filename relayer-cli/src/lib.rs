@@ -18,6 +18,7 @@
 
 pub mod application;
 pub mod commands;
+pub(crate) mod conclude;
 pub mod config;
 pub mod error;
 pub mod prelude;
