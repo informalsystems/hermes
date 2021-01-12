@@ -4,33 +4,27 @@ services:
 
   ibc0:
     container_name: ibc0
-    image: "informaldev/ibc0:stargate-6"
+    image: "informaldev/ibc0:main"
 #    logging:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=172.25.0.10:9090  --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc0:9090  --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.10
-    ports:
-      - 26657:26657
-      - 9090:9090
 
   ibc1:
     container_name: ibc1
-    image: "informaldev/ibc1:stargate-6"
+    image: "informaldev/ibc1:main"
 #    logging:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=172.25.0.11:9091 --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc1:9090 --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.11
-    ports:
-      - 26557:26557
-      - 9091:9091
 
   relayer:
     depends_on:
@@ -42,15 +36,18 @@ services:
     build:
       context: .
       dockerfile: ci/relayer.Dockerfile
+      args:
+        RELEASE: v3.0.0
     environment:
       - CHAIN_A=ibc0
       - CHAIN_A_HOME=/data/ibc0
       - CHAIN_A_PORT=26657
       - CHAIN_B=ibc1
       - CHAIN_B_HOME=/data/ibc1
-      - CHAIN_B_PORT=26557
+      - CHAIN_B_PORT=26657
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer
+      - RELEASE=v3.0.0
     networks:
       relaynet:
         ipv4_address: 172.25.0.12
@@ -62,4 +59,3 @@ networks:
       driver: default
       config:
         - subnet: 172.25.0.0/16
-          gateway: 172.25.0.1

@@ -4,81 +4,22 @@ strategy = 'naive'
 
 [[chains]]
 id = 'ibc0'
-rpc_addr = 'tcp://172.25.0.10:26657'
-grpc_addr = 'tcp://172.25.0.10:9090'
+rpc_addr = 'tcp://ibc0:26657'
+grpc_addr = 'tcp://ibc0:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
-[chains.peers]
-primary = 'F93BE2D0D51D349C1930EA4CBE89BC8D3F767F9F'
-
-[[chains.peers.light_clients]]
-peer_id = 'F93BE2D0D51D349C1930EA4CBE89BC8D3F767F9F'
-address = 'tcp://172.25.0.10:26657'
-timeout = '10s'
-trusted_header_hash = '7378B607414A3DC2304CAA03E61BB13B15983E4239AE44BC488D8861D725DE96'
-trusted_height = '180'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = './data/ibc0/F93BE2D0D51D349C1930EA4CBE89BC8D3F767F9F'
-
-[[chains.peers.light_clients]]
-peer_id = '5516BCBF250A9292946602EF0AE4367870A9999A'
-address = 'tcp://172.25.0.11:26557'
-timeout = '10s'
-trusted_header_hash = 'D353EA7C86C675956578A07999A6B47C04926034CC7A807619ACC8ABD21599DF'
-trusted_height = '181'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = './data/ibc0/5516BCBF250A9292946602EF0AE4367870A9999A'
 
 [[chains]]
 id = 'ibc1'
-rpc_addr = 'tcp://172.25.0.11:26557'
-grpc_addr = 'tcp://172.25.0.11:9091'
+rpc_addr = 'tcp://ibc1:26657'
+grpc_addr = 'tcp://ibc1:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
 gas = 200000
 clock_drift = '5s'
 trusting_period = '14days'
-
-[chains.trust_threshold]
-numerator = '1'
-denominator = '3'
-
-[chains.peers]
-primary = '5516BCBF250A9292946602EF0AE4367870A9999A'
-
-[[chains.peers.light_clients]]
-peer_id = '5516BCBF250A9292946602EF0AE4367870A9999A'
-address = 'tcp://172.25.0.11:26557'
-timeout = '10s'
-trusted_header_hash = 'D353EA7C86C675956578A07999A6B47C04926034CC7A807619ACC8ABD21599DF'
-trusted_height = '181'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = './data/ibc1/5516BCBF250A9292946602EF0AE4367870A9999A'
-
-[[chains.peers.light_clients]]
-peer_id = 'F93BE2D0D51D349C1930EA4CBE89BC8D3F767F9F'
-address = 'tcp://172.25.0.10:26657'
-timeout = '10s'
-trusted_header_hash = '1000E649E2B95A2D12A8479B9E69B011D615CA8CA9323161BCE97BE07E827773'
-trusted_height = '182'
-
-[chains.peers.light_clients.store]
-type = 'disk'
-path = './data/ibc1/F93BE2D0D51D349C1930EA4CBE89BC8D3F767F9F'
-

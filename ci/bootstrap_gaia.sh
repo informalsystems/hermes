@@ -4,7 +4,9 @@
 
 # coins to add to each account
 coins="100000000000stake,100000000000samoleans"
-
+STAKE="100000000000stake"
+# - the user also needs stake to perform actions
+USER_COINS="${STAKE},${SAMOLEANS}samoleans"
 #home="/chain"
 
 echo Node: "$MONIKER"
@@ -56,20 +58,20 @@ cat "$CHAIN_HOME"/key_seed.json
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding user account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) $coins
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) "$coins"
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
 # shellcheck disable=SC2046
-gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show validator -a) $coins
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show validator -a) "$STAKE"
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Generate a genesis transaction that creates a validator with a self-delegation"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$CHAIN_HOME" gentx validator --keyring-backend="test" --chain-id "$CHAIN_ID"
+gaiad --home "$CHAIN_HOME" gentx validator --keyring-backend="test" --chain-id "$CHAIN_ID" "$STAKE"
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
