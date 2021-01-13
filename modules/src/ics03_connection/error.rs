@@ -53,7 +53,7 @@ pub enum Kind {
     #[error("invalid signer")]
     InvalidSigner,
 
-    #[error("no connection was found for the previous connection id provide {0}")]
+    #[error("no connection was found for the previous connection id provided {0}")]
     ConnectionNotFound(ConnectionId),
 
     #[error("invalid counterparty")]

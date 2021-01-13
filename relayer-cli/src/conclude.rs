@@ -1,5 +1,31 @@
 //! Custom-made solution to output a JSON return message and ensure a return code
-//! from a CLI command.
+//! from a CLI command. The main use-case for this module is to provide a consistent output for
+//! queries and transactions.
+//!
+//! ## Examples:
+//! - Exit from a query/tx with a string error:
+//!
+//! ```
+//! use serde_json::json;
+//! use crate::conclude::Output;
+//! let e = String::from("error message");
+//! Output::with_error().with_result(json!(e)).exit();
+//! ```
+//!
+//! - Exit from a query/tx with an anomaly error:
+//!
+//! ```
+//! use crate::relayer_cli::error::{Error, Kind};
+//! use Output;
+//! let e: Error = Kind::Query.into();
+//! Output::with_success().with_result(json!(format!("{}", e))).exit();
+//! ```
+//!
+//! - Exit from a query/tx with success:
+//!
+//! ```
+//! Output::with_success().with_result(json!(cs)).exit();
+//! ```
 
 use serde::Serialize;
 

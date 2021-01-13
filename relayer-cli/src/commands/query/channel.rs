@@ -1,18 +1,16 @@
 use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
+use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::Path::ChannelEnds;
-
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
-
-use tendermint_proto::Protobuf;
 
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -120,8 +118,9 @@ impl Runnable for QueryChannelEndCmd {
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::channel::QueryChannelEndCmd;
     use relayer::config::parse;
+
+    use crate::commands::query::channel::QueryChannelEndCmd;
 
     #[test]
     fn parse_channel_query_end_parameters() {

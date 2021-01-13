@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
+use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -10,9 +11,6 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
-
-use tendermint_proto::Protobuf;
-
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::{ChainConfig, Config};
@@ -73,8 +71,7 @@ impl Runnable for QueryClientStateCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -91,8 +88,10 @@ impl Runnable for QueryClientStateCmd {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
-            Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
-            Err(e) => status_info!("client state query error: ", "{:?}", e),
+            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -166,8 +165,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -193,8 +191,10 @@ impl Runnable for QueryClientConsensusCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
-            Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
+            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -305,8 +305,9 @@ impl Runnable for QueryClientConnectionsCmd {
 /// Tests
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
     use relayer::config::parse;
+
+    use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
 
     #[test]
     fn parse_query_state_parameters() {
