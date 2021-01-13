@@ -2,9 +2,7 @@ use std::convert::TryFrom;
 
 use chrono::{TimeZone, Utc};
 use serde::Serialize;
-use tendermint::{Hash,
-                 hash::Algorithm,
-                 time::Time};
+use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;

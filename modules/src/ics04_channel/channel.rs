@@ -5,13 +5,14 @@ use anomaly::fail;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel,
-                                        Counterparty as RawCounterparty};
+use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
 
 use crate::events::IBCEventType;
 use crate::ics02_client::height::Height;
-use crate::ics04_channel::{error::{self, Error, Kind},
-                           packet::Sequence};
+use crate::ics04_channel::{
+    error::{self, Error, Kind},
+    packet::Sequence,
+};
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -349,8 +350,8 @@ mod tests {
 
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
-    use crate::ics04_channel::channel::ChannelEnd;
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics04_channel::channel::ChannelEnd;
 
     #[test]
     fn channel_end_try_from_raw() {

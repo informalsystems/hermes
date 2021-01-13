@@ -7,8 +7,8 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics24_host::error::ValidationError;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::identifier::ChainId;
+use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::Path::ChannelEnds;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
@@ -86,9 +86,7 @@ impl Runnable for QueryChannelEndCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error()
-                    .with_result(json!(err))
-                    .exit();
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -113,9 +111,7 @@ impl Runnable for QueryChannelEndCmd {
             });
 
         match res {
-            Ok(ce) => Output::with_success()
-                .with_result(json!(ce))
-                .exit(),
+            Ok(ce) => Output::with_success().with_result(json!(ce)).exit(),
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),

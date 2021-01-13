@@ -11,6 +11,8 @@
 //! use crate::conclude::Output;
 //! let e = String::from("error message");
 //! Output::with_error().with_result(json!(e)).exit();
+//! // or as an alternative:
+//! Output::with_error().with_result(json!("error occurred")).exit();
 //! ```
 //!
 //! - Exit from a query/tx with an error of type `anomaly`:

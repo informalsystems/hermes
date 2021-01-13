@@ -4,9 +4,9 @@ use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::Height;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,

@@ -5,12 +5,12 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 
-use crate::Height;
 use crate::ics02_client::client_def::{AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{self, Error};
 use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
+use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
 pub struct MockHeader(pub Height);

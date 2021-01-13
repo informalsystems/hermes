@@ -5,7 +5,6 @@ use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
-use crate::Height;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
@@ -17,6 +16,7 @@ use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsen
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::{
