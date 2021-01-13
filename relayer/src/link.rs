@@ -458,7 +458,7 @@ impl PacketMsgCollector {
             .map(From::from)
             .collect();
         info!(
-            "packets to send out of the ones with commitments on source {:?}",
+            "recv packets to send out of the ones with commitments on source {:?}",
             self.recv_seqs
         );
 
@@ -500,7 +500,7 @@ impl PacketMsgCollector {
             .map(From::from)
             .collect();
         info!(
-            "acks to send out to {} of the ones with acknowledgments on destination {}: {:?}",
+            "ack packets to send out to {} of the ones with acknowledgments on destination {}: {:?}",
             self.packet_src_chain.id(),
             self.packet_dst_chain.id(),
             self.ack_seqs
@@ -611,7 +611,7 @@ impl PacketMsgCollector {
                 &self.opts.packet_dst_channel_id,
             )?;
 
-            // Prepend client update and send all recv_packet messages
+            // Prepend client updates and send all recv_packet messages
             let mut dst_msgs = build_update_client(
                 self.packet_dst_chain.clone(),
                 self.packet_src_chain.clone(),
@@ -630,7 +630,7 @@ impl PacketMsgCollector {
                 &self.opts.packet_src_channel_id,
             )?;
 
-            // Prepend client update and send all ack and timeout messages
+            // Prepend client updates and send all ack and timeout messages
             let mut src_msgs = build_update_client(
                 self.packet_src_chain.clone(),
                 self.packet_dst_chain.clone(),
@@ -649,7 +649,7 @@ fn verify_channel_state(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<(), Error> {
-    // Check the packet's channel on source chain is Open
+    // Check that the packet's channel on source chain is Open
     let channel = chain
         .query_channel(port_id, channel_id, Height::default())
         .map_err(|e| {

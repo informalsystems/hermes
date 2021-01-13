@@ -83,8 +83,8 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok(cs) => status_info!(
                 "Result for packet commitments query at height",
                 "{:?} {:#?}",
-                cs.0,
-                cs.1
+                cs.1,
+                cs.0
             ),
             Err(e) => status_info!("Error encountered on packet commitments query:", "{}", e),
         }

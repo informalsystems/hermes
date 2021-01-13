@@ -218,7 +218,7 @@ impl Connection {
             counter += 1;
             match build_conn_try_and_send(b_chain.clone(), a_chain.clone(), &self.config) {
                 Err(e) => {
-                    info!("Failed ConnTry {:?}: {}", self.config.b_end(), e);
+                    error!("Failed ConnTry {:?}: {}", self.config.b_end(), e);
                     continue;
                 }
                 Ok(result) => {
