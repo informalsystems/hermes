@@ -36,8 +36,8 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -51,7 +51,7 @@ use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -525,7 +525,6 @@ impl Chain for CosmosSDKChain {
         Ok(key)
     }
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move to the chain trait
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -557,7 +556,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
@@ -581,7 +579,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet acknowledgment hashes associated with a channel.
-    /// TODO - move to the chain trait
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
@@ -613,7 +610,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
@@ -663,6 +659,37 @@ impl Chain for CosmosSDKChain {
             result.append(&mut events);
         }
         Ok(result)
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connection_channels(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
+
+        let vec_ids = response
+            .channels
+            .iter()
+            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
+            .collect();
+
+        Ok(vec_ids)
     }
 }
 

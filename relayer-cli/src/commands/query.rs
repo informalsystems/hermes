@@ -47,6 +47,10 @@ pub enum QueryConnectionCmds {
     /// The `query connection end` subcommand
     #[options(help = "query connection end")]
     End(connection::QueryConnectionEndCmd),
+
+    /// The `query connection channels` subcommand
+    #[options(help = "query connection channels")]
+    Channels(connection::QueryConnectionChannelsCmd),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
