@@ -148,8 +148,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -168,8 +167,10 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("connection channels query result: ", "{:?}", cs),
-            Err(e) => status_info!("connection channels query error", "{}", e),
+            Ok(cids) => Output::with_success().with_result(json!(cids)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
