@@ -81,10 +81,13 @@ impl Runnable for QueryPacketCommitmentsCmd {
         match res {
             Ok(cs) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
-                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence ).collect();
+                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence).collect();
 
-                Output::with_success().with_result(json!(seqs)).with_result(json!(cs.1)).exit();
-            },
+                Output::with_success()
+                    .with_result(json!(seqs))
+                    .with_result(json!(cs.1))
+                    .exit();
+            }
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
@@ -333,9 +336,12 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         match res {
             Ok(ps) => {
                 // Transform the raw packet state into the list of acks. sequence numbers
-                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence ).collect();
+                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
 
-                Output::with_success().with_result(json!(seqs)).with_result(json!(ps.1)).exit();
+                Output::with_success()
+                    .with_result(json!(seqs))
+                    .with_result(json!(ps.1))
+                    .exit();
             }
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))

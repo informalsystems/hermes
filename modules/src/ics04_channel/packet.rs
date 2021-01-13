@@ -4,9 +4,9 @@ use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-use crate::Height;
 use crate::ics04_channel::error::Kind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::Height;
 
 /// Enumeration of proof carrying ICS3 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -162,8 +162,8 @@ mod tests {
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-    use crate::ics04_channel::packet::Packet;
     use crate::ics04_channel::packet::test_utils::get_dummy_raw_packet;
+    use crate::ics04_channel::packet::Packet;
 
     #[test]
     fn packet_try_from_raw() {

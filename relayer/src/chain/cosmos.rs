@@ -384,10 +384,13 @@ impl Chain for CosmosSDKChain {
             .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query("client state".into()).context(e))
             .and_then(|v| {
-                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query("client state".into()).context(e))
+                AnyClientState::decode_vec(&v.value)
+                    .map_err(|e| Kind::Query("client state".into()).context(e))
             })?;
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query("client state".into()).context("unexpected client state type"))?;
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
         Ok(client_state)
     }
 
@@ -407,16 +410,19 @@ impl Chain for CosmosSDKChain {
             .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query("client state".into()).context(e))?;
 
-        let client_state =
-            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query("client state".into()).context(e))?;
+        let client_state = AnyClientState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
 
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query("client state".into()).context("unexpected client state type"))?;
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
 
         Ok((
             client_state,
-            res.proof
-                .ok_or_else(|| Kind::Query("client state".into()).context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client state".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
@@ -438,16 +444,19 @@ impl Chain for CosmosSDKChain {
             )
             .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
-        let consensus_state =
-            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query("client consensus".into()).context(e))?;
+        let consensus_state = AnyConsensusState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
         let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| Kind::Query("client consensus".into()).context("unexpected client consensus type"))?;
+            .ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("unexpected client consensus type")
+            })?;
 
         Ok((
             consensus_state,
-            res.proof
-                .ok_or_else(|| Kind::Query("client consensus".into()).context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
