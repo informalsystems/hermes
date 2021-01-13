@@ -671,6 +671,9 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
+
         let vec_ids = response
             .channels
             .iter()
