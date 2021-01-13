@@ -3,6 +3,7 @@
 //! queries and transactions.
 //!
 //! ## Examples:
+//!
 //! - Exit from a query/tx with a string error:
 //!
 //! ```
@@ -12,7 +13,10 @@
 //! Output::with_error().with_result(json!(e)).exit();
 //! ```
 //!
-//! - Exit from a query/tx with an anomaly error:
+//! - Exit from a query/tx with an error of type `anomaly`:
+//! In the case where the error is a complex type such as anomaly (including backtraces), it is
+//! better to simplify the output and only write out the chain of error sources, which we can
+//! achieve with `format!("{}", e)`. The complete solution is as follows:
 //!
 //! ```
 //! use crate::relayer_cli::error::{Error, Kind};
@@ -22,6 +26,12 @@
 //! ```
 //!
 //! - Exit from a query/tx with success:
+//!
+//! ```
+//! Output::with_success().with_result(json!(cs)).exit();
+//! ```
+//!
+//! - Exit from a query/tx with success and multiple objects in the result:
 //!
 //! ```
 //! Output::with_success().with_result(json!(cs)).exit();
@@ -52,8 +62,8 @@ pub struct Output {
     pub status: Status,
 
     /// The result of a command, such as the output from a query or transaction.
-    /// An arbitrary strongly typed JSON object.
-    pub result: Option<serde_json::Value>,
+    /// This is a vector, possibly empty, of strongly typed JSON objects.
+    pub result: Vec<serde_json::Value>,
 }
 
 impl Output {
@@ -61,7 +71,7 @@ impl Output {
     pub fn new(status: Status) -> Self {
         Output {
             status,
-            result: None,
+            result: vec![],
         }
     }
 
@@ -75,10 +85,14 @@ impl Output {
         Output::new(Status::Error)
     }
 
-    /// Builder-style method for attaching a result to an output object.
+    /// Builder-style method for attaching a result to an output object. Can be called multiple
+    /// times, with each subsequent call appending the given `res` JSON object to the output.
     pub fn with_result(self, res: serde_json::Value) -> Self {
+        let mut new_res = self.result.clone();
+        new_res.push(res);
+
         Output {
-            result: Some(res),
+            result: new_res,
             ..self
         }
     }
