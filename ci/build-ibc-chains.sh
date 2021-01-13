@@ -6,28 +6,22 @@
 set -eou pipefail
 GAIA_BRANCH="v3.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
-ONE_CHAIN="$(dirname "$0")/../one-chain"
-echo $ONE_CHAIN
-
 echo "*** Building config folders"
 MONIKER=node_ibc0 \
-CHAIN_0_ID=ibc0 \
+CHAIN_ID=ibc0 \
 CHAIN_IP=172.25.0.10 \
 CHAIN_HOME=./chains/gaia/$GAIA_BRANCH/ibc0 \
-CHAIN_0_RPC_PORT=26657 \
+RPC_PORT=26657 \
 GRPC_PORT=9090 \
-CHAIN_0_SAMOLEANS=100000000000
-#./bootstrap_gaia.sh
-"$ONE_CHAIN" gaiad "$CHAIN_0_ID" ./data $CHAIN_0_RPC_PORT 26656 6060 9090 $CHAIN_0_SAMOLEANS
-
-exit 1
+CHAIN_SAMOLEANS=100000000000 \
+./bootstrap_gaia.sh
 
 MONIKER=node_ibc1 \
 CHAIN_ID=ibc1 \
 CHAIN_IP=172.25.0.11 \
 CHAIN_HOME=./chains/gaia/$GAIA_BRANCH/ibc1 \
-RPC_PORT=26557 \
-GRPC_PORT=9091 \
+RPC_PORT=26657 \
+GRPC_PORT=9090 \
 ./bootstrap_gaia.sh
 
 echo "*** Requirements"

@@ -4,7 +4,7 @@ services:
 
   ibc0:
     container_name: ibc0
-    image: "informaldev/ibc0:main"
+    image: "informaldev/ibc0:v3.0.0"
 #    logging:
 #      driver: none
     stdin_open: true
@@ -16,7 +16,7 @@ services:
 
   ibc1:
     container_name: ibc1
-    image: "informaldev/ibc1:main"
+    image: "informaldev/ibc1:v3.0.0"
 #    logging:
 #      driver: none
     stdin_open: true

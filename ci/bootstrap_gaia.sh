@@ -15,7 +15,6 @@ echo Chain IP: "$CHAIN_IP"
 echo RPC Port: "$RPC_PORT"
 echo GRPC Port: "$GRPC_PORT"
 echo Home_Dir: "$CHAIN_HOME"
-whoami
 
 # Clean home dir if exists
 rm -Rf "$CHAIN_HOME"
@@ -41,7 +40,7 @@ echo "Replace addresses and ports in the config file"
 echo "-------------------------------------------------------------------------------------------------------------------"
 sed -i 's#"tcp://127.0.0.1:26657"#"tcp://'"$CHAIN_IP"':'"$RPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
 #sed -i 's#"tcp://0.0.0.0:26656"#"tcp://'"$CHAIN_ID"':'"$P2P_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
-sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_IP"':'"$GRPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
+#sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_IP"':'"$GRPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator key"
@@ -58,20 +57,19 @@ cat "$CHAIN_HOME"/key_seed.json
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding user account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) "$coins"
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show user -a) 1000000000stake
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator account to genesis"
 echo "-------------------------------------------------------------------------------------------------------------------"
-# shellcheck disable=SC2046
-gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show validator -a) "$STAKE"
+gaiad --home "$CHAIN_HOME" add-genesis-account $(gaiad --home "$CHAIN_HOME" keys --keyring-backend="test" show validator -a) 1000000000stake,1000000000validatortoken
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Generate a genesis transaction that creates a validator with a self-delegation"
 echo "-------------------------------------------------------------------------------------------------------------------"
-gaiad --home "$CHAIN_HOME" gentx validator --keyring-backend="test" --chain-id "$CHAIN_ID" "$STAKE"
+gaiad --home "$CHAIN_HOME" gentx validator 1000000000stake --keyring-backend="test" --chain-id "$CHAIN_ID"
 echo "Done!"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
