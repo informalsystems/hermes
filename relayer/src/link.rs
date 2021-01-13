@@ -409,12 +409,12 @@ impl PacketMsgCollector {
     fn new(
         packet_dst_chain: Box<dyn ChainHandle>,
         packet_src_chain: Box<dyn ChainHandle>,
-        opts: &PacketEnvelope,
+        opts: PacketEnvelope,
     ) -> Self {
         PacketMsgCollector {
             packet_src_chain,
             packet_dst_chain,
-            opts: opts.clone(),
+            opts,
             recv_seqs: vec![],
             ack_seqs: vec![],
             dst_query_height: Default::default(),
@@ -678,7 +678,7 @@ pub fn build_and_send_recv_packet_messages(
     let mut msg_collector = PacketMsgCollector::new(
         packet_dst_chain.clone(),
         packet_src_chain.clone(),
-        &opts.packet_envelope,
+        opts.packet_envelope.clone(),
     );
 
     msg_collector.build_recv_packet_and_timeout_msgs()?;
@@ -703,7 +703,7 @@ pub fn build_and_send_ack_packet_messages(
     let mut msg_collector = PacketMsgCollector::new(
         packet_dst_chain.clone(),
         packet_src_chain.clone(),
-        &opts.packet_envelope,
+        opts.packet_envelope.clone(),
     );
     // Construct the ack messages and get the height of their proofs
     msg_collector.build_packet_ack_msgs()?;

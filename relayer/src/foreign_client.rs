@@ -191,7 +191,7 @@ pub fn build_update_client(
 ) -> Result<Vec<Any>, Error> {
     // Wait for source chain to reach `target_height`
     while src_chain.query_latest_height()? < target_height {
-        thread::sleep(Duration::from_millis(40))
+        thread::sleep(Duration::from_millis(100))
     }
 
     // Get the latest trusted height from the client state on destination.
@@ -209,6 +209,7 @@ pub fn build_update_client(
         header,
         signer,
     };
+    info!("built update client msg for {:?} height {:?}", dst_client_id, target_height);
 
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
