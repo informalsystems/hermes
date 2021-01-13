@@ -2,6 +2,8 @@
 
 ## Unreleased Changes
 
+- Replace `ChannelConfig` in `Channel::new` ([#511])
+
 ### FEATURES
 
 - Add support for streamlining releases ([#507])
@@ -12,6 +14,7 @@
 
 
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
+[#511]: https://github.com/informalsystems/ibc-rs/pull/511
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
 
 ## v0.0.6

@@ -20,8 +20,7 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::config::RelayPath;
-use crate::connection::{Connection, ConnectionConfig};
+use crate::connection::Connection;
 use crate::error::{Error, Kind};
 use crate::foreign_client::build_update_client;
 use crate::relay::MAX_ITER;
@@ -35,26 +34,26 @@ pub enum ChannelError {
 #[derive(Clone, Debug)]
 pub struct ChannelConfigSide {
     chain_id: ChainId,
-    connection_id: ConnectionId,
     client_id: ClientId,
+    connection_id: ConnectionId,
     port_id: PortId,
     channel_id: ChannelId,
 }
 
 impl ChannelConfigSide {
     pub fn new(
-        chain_id: &ChainId,
-        connection_id: &ConnectionId,
-        client_id: &ClientId,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        chain_id: ChainId,
+        client_id: ClientId,
+        connection_id: ConnectionId,
+        port_id: PortId,
+        channel_id: ChannelId,
     ) -> ChannelConfigSide {
         Self {
-            chain_id: chain_id.clone(),
-            connection_id: connection_id.clone(),
-            client_id: client_id.clone(),
-            port_id: port_id.clone(),
-            channel_id: channel_id.clone(),
+            chain_id,
+            client_id,
+            connection_id,
+            port_id,
+            channel_id,
         }
     }
 
@@ -62,12 +61,12 @@ impl ChannelConfigSide {
         &self.chain_id
     }
 
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
+    }
+
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
     }
 
     pub fn port_id(&self) -> &PortId {
@@ -76,14 +75,6 @@ impl ChannelConfigSide {
 
     pub fn channel_id(&self) -> &ChannelId {
         &self.channel_id
-    }
-
-    pub fn set_client_id(&mut self, id: &ClientId) {
-        self.client_id = id.clone()
-    }
-
-    pub fn set_connection_id(&mut self, id: &ConnectionId) {
-        self.connection_id = id.clone()
     }
 }
 
@@ -126,48 +117,32 @@ pub struct Channel {
     connection: Connection,
 }
 
-impl ChannelConfig {
-    pub fn new(conn: &ConnectionConfig, path: &RelayPath) -> Result<ChannelConfig, String> {
-        let a_config = ChannelConfigSide {
-            chain_id: conn.a_end().chain_id().clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-            port_id: path.a_port.clone(),
-            channel_id: ChannelId::default(),
-        };
-
-        let b_config = ChannelConfigSide {
-            chain_id: conn.b_end().chain_id().clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-            port_id: path.b_port.clone(),
-            channel_id: ChannelId::default(),
-        };
-
-        Ok(ChannelConfig {
-            ordering: Default::default(), // TODO - add to config
-            a_config,
-            b_config,
-        })
-    }
-}
-
 impl Channel {
     /// Creates a new channel on top of the existing connection. If the channel is not already
     /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
-    pub fn new(connection: Connection, mut config: ChannelConfig) -> Result<Channel, ChannelError> {
-        config
-            .a_config
-            .set_client_id(connection.config.a_config.client_id());
-        config
-            .b_config
-            .set_client_id(connection.config.b_config.client_id());
-        config
-            .a_config
-            .set_connection_id(connection.config.a_config.connection_id());
-        config
-            .b_config
-            .set_connection_id(connection.config.b_config.connection_id());
+    pub fn new(
+        connection: Connection,
+        ordering: Order,
+        a_port: PortId,
+        b_port: PortId,
+    ) -> Result<Channel, ChannelError> {
+        let config = ChannelConfig {
+            ordering,
+            a_config: ChannelConfigSide::new(
+                connection.config.a_config.chain_id().clone(),
+                connection.config.a_config.client_id().clone(),
+                connection.config.a_config.connection_id().clone(),
+                a_port,
+                Default::default(),
+            ),
+            b_config: ChannelConfigSide::new(
+                connection.config.b_config.chain_id().clone(),
+                connection.config.b_config.client_id().clone(),
+                connection.config.b_config.connection_id().clone(),
+                b_port,
+                Default::default(),
+            ),
+        };
         let mut channel = Channel { config, connection };
         channel.handshake()?;
         Ok(channel)

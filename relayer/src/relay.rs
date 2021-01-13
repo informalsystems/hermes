@@ -1,8 +1,11 @@
 use anomaly::BoxError;
 use tracing::info;
 
+use ibc::ics04_channel::channel::Order;
+
 use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelConfig};
+use crate::channel::Channel;
+use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
 use crate::link::Link;
@@ -12,7 +15,8 @@ pub(crate) const MAX_ITER: u32 = 10;
 pub fn channel_relay(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,
-    chan_cfg: ChannelConfig,
+    ordering: Order,
+    path: RelayPath,
 ) -> Result<(), BoxError> {
     info!("\nChannel Relay Loop\n");
 
@@ -24,7 +28,7 @@ pub fn channel_relay(
     let connection = Connection::new(client_on_a, client_on_b)?;
 
     // Setup the channel over the connection
-    let channel = Channel::new(connection, chan_cfg)?;
+    let channel = Channel::new(connection, ordering, path.a_port, path.b_port)?;
 
     let link = Link::new(channel);
 

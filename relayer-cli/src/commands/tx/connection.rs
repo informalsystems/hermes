@@ -61,13 +61,13 @@ macro_rules! conn_open_cmd {
                 let opts = ConnectionConfig {
                     a_config: ConnectionSideConfig::new(
                         src_chain_config.id.clone(),
-                        self.src_connection_id.clone(),
                         self.src_client_id.clone(),
+                        self.src_connection_id.clone(),
                     ),
                     b_config: ConnectionSideConfig::new(
                         dst_chain_config.id.clone(),
-                        self.dst_connection_id.clone(),
                         self.dst_client_id.clone(),
+                        self.dst_connection_id.clone(),
                     ),
                 };
 
