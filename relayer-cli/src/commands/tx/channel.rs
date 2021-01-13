@@ -70,18 +70,18 @@ macro_rules! chan_open_cmd {
                 let opts = ChannelConfig {
                     ordering: self.ordering,
                     a_config: ChannelConfigSide::new(
-                        &src_chain_config.id,
-                        &ConnectionId::default(),
-                        &ClientId::default(),
-                        &self.src_port_id,
-                        &self.src_channel_id,
+                        src_chain_config.id.clone(),
+                        ClientId::default(),
+                        ConnectionId::default(),
+                        self.src_port_id.clone(),
+                        self.src_channel_id.clone(),
                     ),
                     b_config: ChannelConfigSide::new(
-                        &dst_chain_config.id,
-                        &self.dst_connection_id,
-                        &ClientId::default(),
-                        &self.dst_port_id,
-                        &self.dst_channel_id,
+                        dst_chain_config.id.clone(),
+                        ClientId::default(),
+                        self.dst_connection_id.clone(),
+                        self.dst_port_id.clone(),
+                        self.dst_channel_id.clone(),
                     ),
                 };
 
