@@ -422,7 +422,7 @@ fn build_recv_packet_and_timeout_msgs(
     let mut packet_sequences = vec![];
     for event in events.iter() {
         let send_event = downcast!(event => IBCEvent::SendPacketChannel)
-            .ok_or_else(|| Kind::Query.context("unexpected query tx response"))?;
+            .ok_or_else(|| Kind::Query("packet events".into()).context("unexpected query tx response"))?;
 
         packet_sequences.append(&mut vec![send_event.packet.sequence]);
     }
@@ -471,7 +471,7 @@ fn build_packet_ack_msgs(
     let mut packet_sequences = vec![];
     for event in events.iter() {
         let write_ack_event = downcast!(event => IBCEvent::WriteAcknowledgementChannel)
-            .ok_or_else(|| Kind::Query.context("unexpected query tx response"))?;
+            .ok_or_else(|| Kind::Query("packet events".into()).context("unexpected query tx response"))?;
 
         packet_sequences.append(&mut vec![write_ack_event.packet.sequence]);
     }

@@ -154,7 +154,7 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        Ok(ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
+        Ok(ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query("connection".into()).context(e))?)
     }
 
     fn query_channel(
@@ -168,7 +168,7 @@ pub trait Chain: Sized {
             height,
             false,
         )?;
-        Ok(ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
+        Ok(ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query("channel".into()).context(e))?)
     }
 
     // Provable queries
@@ -186,14 +186,14 @@ pub trait Chain: Sized {
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
         let res = self
             .query(Path::Connections(connection_id.clone()), height, true)
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
         let connection_end =
-            ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+            ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query("proven connection".into()).context(e))?;
 
         Ok((
             connection_end,
             res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+                .ok_or_else(|| Kind::Query("proven connection".into()).context("empty proof".to_string()))?,
         ))
     }
 
@@ -216,14 +216,14 @@ pub trait Chain: Sized {
                 height,
                 true,
             )
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
         Ok((
             channel_end,
             res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+                .ok_or_else(|| Kind::Query("proven channel".into()).context("empty proof".to_string()))?,
         ))
     }
 
@@ -372,12 +372,12 @@ pub trait Chain: Sized {
 
         let res = self
             .query(data, height, true)
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
 
         let proofs = Proofs::new(
             CommitmentProofBytes::from(
                 res.proof
-                    .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+                    .ok_or_else(|| Kind::Query(packet_type.to_string()).context("empty proof".to_string()))?,
             ),
             None,
             None,

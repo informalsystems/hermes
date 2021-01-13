@@ -197,6 +197,8 @@ impl TryFrom<Any> for AnyClientState {
     // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
+            "" => Err(Kind::EmptyClientState.into()),
+
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?,

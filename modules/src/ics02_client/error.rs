@@ -30,6 +30,9 @@ pub enum Kind {
     #[error("unknown client state type: {0}")]
     UnknownClientStateType(String),
 
+    #[error("empty client state")]
+    EmptyClientState,
+
     #[error("unknown client consensus state type: {0}")]
     UnknownConsensusStateType(String),
 
