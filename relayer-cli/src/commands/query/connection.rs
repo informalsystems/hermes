@@ -47,9 +47,7 @@ impl QueryConnectionEndCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
 
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id)
+            .find_chain(&chain_id)
             .ok_or_else(|| "missing chain configuration".to_string())?;
 
         let connection_id = self

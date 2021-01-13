@@ -26,9 +26,7 @@ impl KeyRestoreCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
 
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id.parse().unwrap())
+            .find_chain(&chain_id.parse().unwrap())
             .ok_or_else(|| {
                 "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
             })?;

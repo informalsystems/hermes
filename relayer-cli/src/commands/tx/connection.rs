@@ -43,15 +43,11 @@ macro_rules! conn_open_cmd {
                 let config = app_config();
 
                 let src_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.src_chain_id.parse().unwrap())
+                    .find_chain(&self.src_chain_id.parse().unwrap())
                     .ok_or_else(|| "missing src chain configuration".to_string());
 
                 let dst_config = config
-                    .chains
-                    .iter()
-                    .find(|c| c.id == self.dst_chain_id.parse().unwrap())
+                    .find_chain(&self.dst_chain_id.parse().unwrap())
                     .ok_or_else(|| "missing src chain configuration".to_string());
 
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
@@ -65,13 +61,13 @@ macro_rules! conn_open_cmd {
                 let opts = ConnectionConfig {
                     a_config: ConnectionSideConfig::new(
                         src_chain_config.id.clone(),
-                        self.src_connection_id.clone(),
                         self.src_client_id.clone(),
+                        self.src_connection_id.clone(),
                     ),
                     b_config: ConnectionSideConfig::new(
                         dst_chain_config.id.clone(),
-                        self.dst_connection_id.clone(),
                         self.dst_client_id.clone(),
+                        self.dst_connection_id.clone(),
                     ),
                 };
 
