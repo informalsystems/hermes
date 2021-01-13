@@ -79,21 +79,18 @@ impl Runnable for QueryPacketCommitmentsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet commitments query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
+            Ok(cs) => {
+                // Transform the raw packet commitm. state into the list of sequence numbers
+                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence ).collect();
+
+                Output::with_success().with_result(json!(seqs)).with_result(json!(cs.1)).exit();
+            },
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
         }
     }
 }
-
-// Output::with_success().with_result(json!(cs.0))
-// .with_result(json!(cs.1)).exit(),
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentCmd {
@@ -265,7 +262,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let res = dst_chain.query_unreceived_packets(request);
 
         match res {
-            Ok(cs) => status_info!("Result for unreceived packets query", "{:?}", cs),
+            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
@@ -334,12 +331,12 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet acknowledgement query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
+            Ok(ps) => {
+                // Transform the raw packet state into the list of acks. sequence numbers
+                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence ).collect();
+
+                Output::with_success().with_result(json!(seqs)).with_result(json!(ps.1)).exit();
+            }
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
@@ -514,7 +511,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let res = dst_chain.query_unreceived_acknowledgements(request);
 
         match res {
-            Ok(cs) => status_info!("Result for unreceived acks query", "{:?}", cs),
+            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
