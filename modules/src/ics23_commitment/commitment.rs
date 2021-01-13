@@ -26,7 +26,7 @@ impl From<Vec<u8>> for CommitmentRoot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CommitmentProofBytes(Vec<u8>);
 
 impl CommitmentProofBytes {

@@ -158,12 +158,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet commitment query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
+            Ok(cs) => Output::with_success().with_result(json!(cs.1)).exit(),
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
@@ -413,12 +408,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         );
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet acknowledgment query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
+            Ok(out) => Output::with_success().with_result(json!(out)).exit(),
             Err(e) => Output::with_error()
                 .with_result(json!(format!("{}", e)))
                 .exit(),
