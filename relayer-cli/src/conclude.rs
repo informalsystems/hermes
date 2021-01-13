@@ -88,14 +88,9 @@ impl Output {
 
     /// Builder-style method for attaching a result to an output object. Can be called multiple
     /// times, with each subsequent call appending the given `res` JSON object to the output.
-    pub fn with_result(self, res: serde_json::Value) -> Self {
-        let mut new_res = self.result.clone();
-        new_res.push(res);
-
-        Output {
-            result: new_res,
-            ..self
-        }
+    pub fn with_result(mut self, res: serde_json::Value) -> Self {
+        self.result.push(res);
+        self
     }
 
     /// Exits from the process with the current output. Convenience wrapper over `exit_with`.
