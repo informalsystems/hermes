@@ -6,9 +6,7 @@
 //!
 //! - Exit from a query/tx with a string error:
 //!
-//! ```
-//! use serde_json::json;
-//! use crate::conclude::Output;
+//! ```ignore
 //! let e = String::from("error message");
 //! Output::with_error().with_result(json!(e)).exit();
 //! // or as an alternative:
@@ -20,23 +18,24 @@
 //! better to simplify the output and only write out the chain of error sources, which we can
 //! achieve with `format!("{}", e)`. The complete solution is as follows:
 //!
-//! ```
-//! use crate::relayer_cli::error::{Error, Kind};
-//! use Output;
+//! ```ignore
 //! let e: Error = Kind::Query.into();
 //! Output::with_success().with_result(json!(format!("{}", e))).exit();
 //! ```
 //!
 //! - Exit from a query/tx with success:
 //!
-//! ```
+//! ```ignore
+//! let cs = ChannelEnd::default();
 //! Output::with_success().with_result(json!(cs)).exit();
 //! ```
 //!
 //! - Exit from a query/tx with success and multiple objects in the result:
 //!
-//! ```
-//! Output::with_success().with_result(json!(cs)).exit();
+//! ```ignore
+//! let h = Height::default();
+//! let end = ConnectionEnd::default();
+//! Output::with_success().with_result(json!(h)).with_result(end).exit();
 //! ```
 
 use serde::Serialize;
