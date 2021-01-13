@@ -8,11 +8,16 @@
 
 - Add support for streamlining releases ([#507])
 
+[relayer-cli]
+- JSON output for queries and txs ([#500])
+
+
 ### IMPROVEMENTS
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 
 
+[#500]: https://github.com/informalsystems/ibc-rs/issues/500
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
