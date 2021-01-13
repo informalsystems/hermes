@@ -11,8 +11,8 @@ use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -25,7 +25,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensu
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::ics18_relayer::context::ICS18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
 use ibc::ics24_host::Path;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -225,6 +225,13 @@ impl Chain for MockChain {
         &self,
         _request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_connection_channels(
+        &self,
+        _request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error> {
         unimplemented!()
     }
 
