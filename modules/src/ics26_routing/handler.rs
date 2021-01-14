@@ -131,7 +131,7 @@ mod tests {
     use crate::ics03_connection::msgs::ConnectionMsg;
 
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
-    use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_aux_test_missing_connection;
+    use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_with_missing_connection;
 
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
@@ -179,7 +179,7 @@ mod tests {
             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
 
         let msg_chan_init2 = MsgChannelOpenInit::try_from(
-            get_dummy_raw_msg_chan_open_init_aux_test_missing_connection(),
+            get_dummy_raw_msg_chan_open_init_with_missing_connection(),
         )
         .unwrap();
 

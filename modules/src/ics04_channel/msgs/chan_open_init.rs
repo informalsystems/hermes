@@ -106,7 +106,7 @@ pub mod test_util {
         }
     }
 
-    pub fn get_dummy_raw_msg_chan_open_init_aux_test_missing_connection() -> RawMsgChannelOpenInit {
+    pub fn get_dummy_raw_msg_chan_open_init_with_missing_connection() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),
             channel: Some(get_dummy_raw_channel_end_with_missing_connection()),
