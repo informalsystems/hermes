@@ -17,7 +17,6 @@ use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
 use crate::error::{Error, Kind};
-use std::time::SystemTime;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -191,10 +190,6 @@ pub fn build_update_client(
     target_height: Height,
 ) -> Result<Vec<Any>, Error> {
     // Wait for source chain to reach `target_height`
-    info!("time start q height {:?}", SystemTime::now());
-    let _h = src_chain.query_latest_height()?;
-    info!("time end wait{:?}", SystemTime::now());
-
     while src_chain.query_latest_height()? < target_height {
         thread::sleep(Duration::from_millis(100))
     }
@@ -214,10 +209,6 @@ pub fn build_update_client(
         header,
         signer,
     };
-    info!(
-        "built update client msg for {:?} height {:?}",
-        dst_client_id, target_height
-    );
 
     Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
 }
