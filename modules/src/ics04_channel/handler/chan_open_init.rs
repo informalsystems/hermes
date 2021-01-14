@@ -33,11 +33,16 @@ pub(crate) fn process(
     }
 
     // An IBC connection running on the local (host) chain should exist.
-    if ctx
-        .connection_state(&msg.channel().connection_hops()[0])
-        .is_none()
+     
+    let connection_end = ctx
+        .connection_state(&msg.channel().connection_hops()[0]);
+
+    if connection_end.is_none()
     {
-        return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
+       return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
+    }
+    else{
+        //TODO: Understand conenction version. 
     }
 
     // TODO: Check that `version` is non empty but not necessary coherent
@@ -50,7 +55,7 @@ pub(crate) fn process(
         *msg.channel().ordering(),
         msg.channel().counterparty().clone(),
         msg.channel().connection_hops().clone(),
-        ctx.get_compatible_versions()[0].clone(),
+        msg.channel().version(),
     );
 
     output.log("success: no channel found");
@@ -140,7 +145,7 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_connection_capability(
+                ctx: context.with_connection_and_port_capability(
                     MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
                         .unwrap()
                         .port_id()

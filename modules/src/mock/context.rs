@@ -230,7 +230,7 @@ impl MockContext {
             ..self
         }
     }
-    pub fn with_connection_capability(
+    pub fn with_connection_and_port_capability(
         self,
         port_id: PortId,
         connection_id: ConnectionId,
@@ -332,8 +332,7 @@ impl ICS26Context for MockContext {}
 
 impl PortReader for MockContext {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
-        //return Some(Capability::new());
-        return self.port_capabilities.get(port_id).cloned();
+        self.port_capabilities.get(port_id).cloned()
     }
 
     fn autenthenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
@@ -351,7 +350,7 @@ impl ChannelReader for MockContext {
     }
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
-        return self.connection_channels.get(cid).cloned();
+        self.connection_channels.get(cid).cloned()
     }
 
     fn channel_client_state(
@@ -364,7 +363,7 @@ impl ChannelReader for MockContext {
                 let cid = v.connection_hops().clone()[0].clone();
                 let conn = self.connection_state(&cid);
                 match conn {
-                    Some(v) => return ConnectionReader::client_state(self, &v.client_id().clone()),
+                    Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
                     None => panic!(),
                 }
             }
@@ -385,7 +384,7 @@ impl ChannelReader for MockContext {
                 let conn = self.connection_state(&cid);
                 match conn {
                     Some(v) => {
-                        return ConnectionReader::client_consensus_state(
+                        ConnectionReader::client_consensus_state(
                             self,
                             &v.client_id().clone(),
                             height,

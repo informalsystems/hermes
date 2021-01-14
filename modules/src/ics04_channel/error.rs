@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::ics24_host::identifier::{ChannelId, ConnectionId};
+use crate::ics24_host::identifier::ConnectionId;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {

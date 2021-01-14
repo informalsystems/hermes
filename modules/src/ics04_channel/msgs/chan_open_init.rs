@@ -94,7 +94,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
-    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_aux_test_missing_connection;
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_with_missing_connection;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
@@ -109,7 +109,7 @@ pub mod test_util {
     pub fn get_dummy_raw_msg_chan_open_init_aux_test_missing_connection() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),
-            channel: Some(get_dummy_raw_channel_end_aux_test_missing_connection()),
+            channel: Some(get_dummy_raw_channel_end_with_missing_connection()),
             signer: get_dummy_bech32_account(),
         }
     }

@@ -6,7 +6,6 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
-use crate::ics04_channel::version::{get_compatible_versions, pick_version};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::Height;
