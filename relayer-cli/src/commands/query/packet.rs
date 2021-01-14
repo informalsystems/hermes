@@ -1,22 +1,22 @@
 use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime as TokioRuntime;
 
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
+use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-
-use ibc::ics24_host::identifier::{ChannelId, PortId};
-use ibc::Height;
-
 use relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
 use relayer::config::{ChainConfig, Config};
 
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
@@ -59,8 +59,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -80,13 +79,18 @@ impl Runnable for QueryPacketCommitmentsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet commitments query at height",
-                "{:?} {:#?}",
-                cs.1,
-                cs.0
-            ),
-            Err(e) => status_info!("Error encountered on packet commitments query:", "{}", e),
+            Ok(cs) => {
+                // Transform the raw packet commitm. state into the list of sequence numbers
+                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence).collect();
+
+                Output::with_success()
+                    .with_result(json!(seqs))
+                    .with_result(json!(cs.1))
+                    .exit();
+            }
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -134,8 +138,7 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -155,13 +158,10 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet commitment query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
-            Err(e) => status_info!("Error encountered on packet commitment query:", "{}", e),
+            Ok(cs) => Output::with_success().with_result(json!(cs.1)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -220,8 +220,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -261,8 +260,10 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let res = dst_chain.query_unreceived_packets(request);
 
         match res {
-            Ok(cs) => status_info!("Result for unreceived packets query", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on unreceived packets query:", "{}", e),
+            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -308,8 +309,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -329,17 +329,18 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet acknowledgement query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
-            Err(e) => status_info!(
-                "Error encountered on packet acknowledgement query:",
-                "{}",
-                e
-            ),
+            Ok(ps) => {
+                // Transform the raw packet state into the list of acks. sequence numbers
+                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
+
+                Output::with_success()
+                    .with_result(json!(seqs))
+                    .with_result(json!(ps.1))
+                    .exit();
+            }
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -387,8 +388,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -408,13 +408,10 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         );
 
         match res {
-            Ok(cs) => status_info!(
-                "Result for packet acknowledgment query at height",
-                "{:?} {:#?}",
-                cs.0,
-                cs.1
-            ),
-            Err(e) => status_info!("Error encountered on packet acknowledgment query:", "{}", e),
+            Ok(out) => Output::with_success().with_result(json!(out)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -470,8 +467,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -511,8 +507,10 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let res = dst_chain.query_unreceived_acknowledgements(request);
 
         match res {
-            Ok(cs) => status_info!("Result for unreceived acks query", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on unreceived acks query:", "{}", e),
+            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }

@@ -1,20 +1,24 @@
-use crate::ics04_channel::error::{self, Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-
-use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
-
-use tendermint_proto::Protobuf;
-
-use crate::events::IBCEventType;
-use crate::ics02_client::height::Height;
-use crate::ics04_channel::packet::Sequence;
-use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq)]
+use anomaly::fail;
+use serde::Serialize;
+use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
+
+use crate::events::IBCEventType;
+use crate::ics02_client::height::Height;
+use crate::ics04_channel::{
+    error::{self, Error, Kind},
+    packet::Sequence,
+};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "ChannelEnd")] // Internal tagging, to make the type explicit in JSON outputs.
 pub struct ChannelEnd {
+    // see https://serde.rs/enum-representations.html#internally-tagged
     state: State,
     ordering: Order,
     remote: Counterparty,
@@ -150,7 +154,7 @@ impl ChannelEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
@@ -218,7 +222,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -265,7 +269,7 @@ impl FromStr for Order {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -343,13 +347,13 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::ics04_channel::channel::ChannelEnd;
-
-    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-    use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {

@@ -1,6 +1,7 @@
-use prost_types::Any;
 use std::convert::TryFrom;
 
+use prost_types::Any;
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
@@ -161,7 +162,8 @@ impl From<AnyHeader> for Any {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "AnyClientState")]
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
@@ -196,6 +198,8 @@ impl TryFrom<Any> for AnyClientState {
     // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
+            "" => Err(Kind::EmptyClientState.into()),
+
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?,
@@ -255,7 +259,8 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "AnyConsensusState")]
 pub enum AnyConsensusState {
     Tendermint(TendermintConsensusState),
 
@@ -538,11 +543,13 @@ impl ClientDef for AnyClient {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
+    use prost_types::Any;
+
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use prost_types::Any;
-    use std::convert::TryFrom;
 
     #[test]
     fn any_client_state_serialization() {
