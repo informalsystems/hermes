@@ -1,10 +1,12 @@
+use serde::Serialize;
+
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::Height;
 
 /// Structure comprising proofs in a message. Proofs are typically present in messages for
 /// handshake protocols, e.g., ICS3 connection (open) handshake or ICS4 channel (open and close)
 /// handshake, as well as for ICS4 packets, timeouts, and acknowledgements.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Proofs {
     object_proof: CommitmentProofBytes,
     client_proof: Option<CommitmentProofBytes>,
@@ -60,7 +62,7 @@ impl Proofs {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusProof {
     proof: CommitmentProofBytes,
     height: Height,

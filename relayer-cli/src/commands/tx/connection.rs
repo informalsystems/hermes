@@ -1,19 +1,18 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ClientId, ConnectionId};
-
+use relayer::chain::{runtime::ChainRuntime, CosmosSDKChain};
 use relayer::connection::{
     build_conn_ack_and_send, build_conn_confirm_and_send, build_conn_init_and_send,
     build_conn_try_and_send,
 };
-
-use crate::error::{Error, Kind};
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
 use relayer::connection::{ConnectionConfig, ConnectionSideConfig};
+
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 macro_rules! conn_open_cmd {
     ($conn_open_cmd:ident, $dbg_string:literal, $func:ident) => {
@@ -53,21 +52,22 @@ macro_rules! conn_open_cmd {
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
                     (Ok(s), Ok(d)) => (s, d),
                     (_, _) => {
-                        status_err!("invalid options");
-                        return;
+                        return Output::with_error()
+                            .with_result(json!("invalid options"))
+                            .exit();
                     }
                 };
 
                 let opts = ConnectionConfig {
                     a_config: ConnectionSideConfig::new(
                         src_chain_config.id.clone(),
-                        self.src_connection_id.clone(),
                         self.src_client_id.clone(),
+                        self.src_connection_id.clone(),
                     ),
                     b_config: ConnectionSideConfig::new(
                         dst_chain_config.id.clone(),
-                        self.dst_connection_id.clone(),
                         self.dst_client_id.clone(),
+                        self.dst_connection_id.clone(),
                     ),
                 };
 
@@ -82,8 +82,10 @@ macro_rules! conn_open_cmd {
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
-                    Err(e) => status_err!("Error: {}", e),
+                    Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
+                    Err(e) => Output::with_error()
+                        .with_result(json!(format!("{}", e)))
+                        .exit(),
                 }
             }
         }

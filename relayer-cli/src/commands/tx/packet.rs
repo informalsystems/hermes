@@ -1,16 +1,18 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use serde_json::json;
 
-use crate::error::{Error, Kind};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
+use relayer::config::Config;
 use relayer::link::{
     build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketOptions,
 };
+
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawPacketRecvCmd {
@@ -70,8 +72,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -87,8 +88,10 @@ impl Runnable for TxRawPacketRecvCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", ev),
-            Err(e) => status_info!("packet recv failed, error: ", "{}", e),
+            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -151,8 +154,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -168,8 +170,10 @@ impl Runnable for TxRawPacketAckCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet ack, result: ", "{:#?}", ev),
-            Err(e) => status_info!("packet ack failed, error: ", "{}", e),
+            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
