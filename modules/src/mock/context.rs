@@ -367,6 +367,14 @@ impl ClientReader for MockContext {
 }
 
 impl ClientKeeper for MockContext {
+    fn next_client_id(&mut self) -> ClientId {
+        let prefix = ClientId::default().to_string();
+        let suffix = self.client_ids_counter;
+        self.client_ids_counter += 1;
+
+        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    }
+
     fn store_client_type(
         &mut self,
         client_id: ClientId,
@@ -380,14 +388,6 @@ impl ClientKeeper for MockContext {
 
         client_record.client_type = client_type;
         Ok(())
-    }
-
-    fn next_client_id(&mut self) -> ClientId {
-        let prefix = ClientId::default().to_string();
-        let suffix = self.client_ids_counter;
-        self.client_ids_counter += 1;
-
-        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
     }
 
     fn store_client_state(
