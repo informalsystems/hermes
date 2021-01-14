@@ -49,11 +49,11 @@ pub trait ChannelKeeper {
                     &result.channel_end,
                 )?;
 
-                self.store_nextsequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                self.store_next_sequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
-                self.store_nextsequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
-                self.store_nextsequence_ack(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                self.store_next_sequence_ack(&(result.port_id.clone(), channel_id.clone()), 1)?;
 
                 self.store_connection_channels(
                     &result.channel_end.connection_hops()[0].clone(),
@@ -95,19 +95,19 @@ pub trait ChannelKeeper {
         channel_end: &ChannelEnd,
     ) -> Result<(), Error>;
 
-    fn store_nextsequence_send(
+    fn store_next_sequence_send(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
 
-    fn store_nextsequence_recv(
+    fn store_next_sequence_recv(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
 
-    fn store_nextsequence_ack(
+    fn store_next_sequence_ack(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,

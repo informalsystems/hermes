@@ -424,7 +424,7 @@ impl ChannelKeeper for MockContext {
             .insert(port_channel_id.clone(), channel_end.clone());
         Ok(())
     }
-    fn store_nextsequence_send(
+    fn store_next_sequence_send(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
@@ -433,7 +433,7 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_nextsequence_recv(
+    fn store_next_sequence_recv(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
@@ -442,7 +442,7 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_nextsequence_ack(
+    fn store_next_sequence_ack(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,

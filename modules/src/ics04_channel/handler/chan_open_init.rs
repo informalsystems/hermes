@@ -168,17 +168,22 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "chan_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
                     );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
-                    // The object in the output is a ConnectionEnd, should have init state.
+                    // The object in the output is a ChannelEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
                     //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
-                    assert_eq!(res.channel_end.state().clone(), State::Init);
+                    assert_eq!(res.channel_end.state().clone(), State::Init); 
+                    let msg_init = test.msg.clone();
+
+                    if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {
+                        assert_eq!(res.port_id.clone(), msg_init.port_id().clone());
+                    }
 
                     for e in proto_output.events.iter() {
                         assert_eq!(e.tpe, EventType::Custom("channel_open_init".to_string()));
