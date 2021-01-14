@@ -13,7 +13,7 @@ use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
-    /// Returns the ChannelEnd for the given identifier `chan_id`.
+    /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd>;
 
     /// Returns the ConnectionState for the given identifier `connection_id`.
