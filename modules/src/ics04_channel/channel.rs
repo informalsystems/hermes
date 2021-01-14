@@ -342,7 +342,7 @@ pub mod test_util {
         }
     }
 
-    pub fn get_dummy_raw_channel_end_aux_test_missing_connection() -> RawChannel {
+    pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
         RawChannel {
             state: 1,
             ordering: 0,
