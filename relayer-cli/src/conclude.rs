@@ -2,11 +2,14 @@
 //! from a CLI command. The main use-case for this module is to provide a consistent output for
 //! queries and transactions.
 //!
+//! The examples below rely on crate-private methods (for this reason, doctests do not compile.)
+//! They are intended for contributors to crate `relayer-cli`, and _not_ for users of this binary.
+//!
 //! ## Examples:
 //!
 //! - Exit from a query/tx with a string error:
 //!
-//! ```ignore
+//! ```compile_fail
 //! let e = String::from("error message");
 //! Output::with_error().with_result(json!(e)).exit();
 //! // or as an alternative:
@@ -18,21 +21,21 @@
 //! better to simplify the output and only write out the chain of error sources, which we can
 //! achieve with `format!("{}", e)`. The complete solution is as follows:
 //!
-//! ```ignore
+//! ```compile_fail
 //! let e: Error = Kind::Query.into();
 //! Output::with_success().with_result(json!(format!("{}", e))).exit();
 //! ```
 //!
 //! - Exit from a query/tx with success:
 //!
-//! ```ignore
+//! ```compile_fail
 //! let cs = ChannelEnd::default();
 //! Output::with_success().with_result(json!(cs)).exit();
 //! ```
 //!
 //! - Exit from a query/tx with success and multiple objects in the result:
 //!
-//! ```ignore
+//! ```compile_fail
 //! let h = Height::default();
 //! let end = ConnectionEnd::default();
 //! Output::with_success().with_result(json!(h)).with_result(end).exit();
