@@ -33,25 +33,14 @@ pub trait ChannelReader {
     fn port_capability(&self, port_id: &PortId) -> Option<Capability>;
 
     fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool;
-
-    /// Function required by ICS 04. Returns the list of all possible versions that the channels handshake protocol supports.
-    fn get_compatible_versions(&self) -> Vec<String> {
-        get_compatible_versions()
-    }
-
-    /// Function required by ICS 04. Returns one version out of the supplied list of versions, which the channel handshake protocol prefers.
-    fn pick_version(
-        &self,
-        supported_versions: Vec<String>,
-        counterparty_candidate_versions: Vec<String>,
-    ) -> Result<String, Error> {
-        pick_version(supported_versions, counterparty_candidate_versions)
-    }
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
+
+    fn next_channel_id(&mut self) -> ChannelId;
+    
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         match result.channel_end.state() {
             State::Init => {
@@ -93,9 +82,7 @@ pub trait ChannelKeeper {
         }
         Ok(())
     }
-
-    fn next_channel_id(&mut self) -> ChannelId;
-
+    
     fn store_connection_channels(
         &mut self,
         conn_id: &ConnectionId,
