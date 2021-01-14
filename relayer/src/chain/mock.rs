@@ -174,8 +174,9 @@ impl Chain for MockChain {
             .context
             .query_client_full_state(client_id)
             .ok_or(Kind::EmptyResponseValue)?;
-        let client_state = downcast!(any_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        let client_state = downcast!(any_state => AnyClientState::Tendermint).ok_or_else(|| {
+            Kind::Query("client state".into()).context("unexpected client state type")
+        })?;
         Ok(client_state)
     }
 

@@ -1,19 +1,19 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
+
 use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-
-use crate::error::{Error, Kind};
+use relayer::chain::{runtime::ChainRuntime, CosmosSDKChain};
 use relayer::channel::{
     build_chan_ack_and_send, build_chan_confirm_and_send, build_chan_init_and_send,
     build_chan_try_and_send,
 };
-
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
 use relayer::channel::{ChannelConfig, ChannelConfigSide};
+
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 macro_rules! chan_open_cmd {
     ($chan_open_cmd:ident, $dbg_string:literal, $func:ident) => {
@@ -59,8 +59,11 @@ macro_rules! chan_open_cmd {
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
                     (Ok(s), Ok(d)) => (s, d),
                     (_, _) => {
-                        status_err!("invalid options");
-                        return;
+                        return Output::with_error()
+                            .with_result(json!(
+                                "error occurred in finding the chains' configuration"
+                            ))
+                            .exit();
                     }
                 };
 
@@ -93,8 +96,10 @@ macro_rules! chan_open_cmd {
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
-                    Err(e) => status_err!("Error: {}", e),
+                    Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
+                    Err(e) => Output::with_error()
+                        .with_result(json!(format!("{}", e)))
+                        .exit(),
                 }
             }
         }

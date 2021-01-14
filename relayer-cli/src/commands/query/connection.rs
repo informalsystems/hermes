@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
@@ -11,6 +12,7 @@ use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -73,8 +75,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -90,8 +91,10 @@ impl Runnable for QueryConnectionEndCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
-            Err(e) => status_info!("connection query error", "{}", e),
+            Ok(ce) => Output::with_success().with_result(json!(ce)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -145,8 +148,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -165,8 +167,10 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("connection channels query result: ", "{:?}", cs),
-            Err(e) => status_info!("connection channels query error", "{}", e),
+            Ok(cids) => Output::with_success().with_result(json!(cids)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }

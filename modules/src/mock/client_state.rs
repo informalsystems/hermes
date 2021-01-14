@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -32,7 +33,7 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 // TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl Protobuf<RawMockClientState> for MockClientState {}
@@ -96,7 +97,7 @@ impl From<MockConsensusState> for MockClientState {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
 
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}

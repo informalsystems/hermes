@@ -1,6 +1,8 @@
 use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
+use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::ChannelEnd;
@@ -8,12 +10,10 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::Path::ChannelEnds;
-
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 
-use tendermint_proto::Protobuf;
-
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -86,8 +86,7 @@ impl Runnable for QueryChannelEndCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -112,16 +111,19 @@ impl Runnable for QueryChannelEndCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
+            Ok(ce) => Output::with_success().with_result(json!(ce)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::channel::QueryChannelEndCmd;
     use relayer::config::parse;
+
+    use crate::commands::query::channel::QueryChannelEndCmd;
 
     #[test]
     fn parse_channel_query_end_parameters() {

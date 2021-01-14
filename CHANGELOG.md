@@ -2,19 +2,23 @@
 
 ## Unreleased Changes
 
-- Replace `ChannelConfig` in `Channel::new` ([#511])
 
 ### FEATURES
 
 - Add support for streamlining releases ([#507])
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
+  - JSON output for queries and txs ([#500])
 
 ### IMPROVEMENTS
+
+- [relayer-cli]
+  - Replace `ChannelConfig` in `Channel::new` ([#511])
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 
 
+[#500]: https://github.com/informalsystems/ibc-rs/issues/500
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
