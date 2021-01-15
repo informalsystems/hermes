@@ -20,6 +20,7 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use tendermint::account::Id as AccountId;
+use std::str::FromStr;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
 pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
@@ -137,7 +138,7 @@ impl KeyRingOperations for KeyRing {
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
         let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
-            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
+            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from_str(hd_path.to_string().as_str()).unwrap()))
             .map_err(|e| Kind::PrivateKey.context(e))?;
 
         // Get Public Key from Private Key
