@@ -189,7 +189,6 @@ mod tests {
 
                     // The object in the output is a ChannelEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
-                    //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
                     assert_eq!(res.channel_end.state().clone(), State::Init); 
                     let msg_init = test.msg.clone();
 
