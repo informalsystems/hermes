@@ -178,7 +178,6 @@ mod tests {
     fn to_and_from() {
         let raw = get_dummy_raw_msg_chan_open_init();
         let msg = MsgChannelOpenInit::try_from(raw.clone()).unwrap();
-        assert!(msg.channel().state_matches(&crate::ics04_channel::channel::State::Init));
         let raw_back = RawMsgChannelOpenInit::from(msg.clone());
         let msg_back = MsgChannelOpenInit::try_from(raw_back.clone()).unwrap();
         assert_eq!(raw, raw_back);
