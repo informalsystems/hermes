@@ -1,8 +1,4 @@
-//TODO: this is a module on it's own !
-
-///
-/// Capabilities: this is a placeholder.
-///
+//! Capabilities: this is a placeholder.
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Capability {
