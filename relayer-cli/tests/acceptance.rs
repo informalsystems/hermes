@@ -30,6 +30,7 @@ use once_cell::sync::Lazy;
 pub static RUNNER: Lazy<CmdRunner> = Lazy::new(CmdRunner::default);
 
 /// Use `Config::default()` value if no config or args
+#[cfg(not(tarpaulin))]
 #[test]
 fn start_no_args() {
     let mut runner = RUNNER.clone();
