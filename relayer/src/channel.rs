@@ -490,9 +490,9 @@ pub fn build_chan_try(
     // Build the domain type message
     let new_msg = MsgChannelOpenTry {
         port_id: opts.dst().port_id().clone(),
-        previous_channel_id: src_channel.counterparty().clone().channel_id,
-        channel,
+        previous_channel_id: src_channel.counterparty().channel_id.clone(),
         counterparty_version: src_chain.module_version(&opts.src().port_id())?,
+        channel,
         proofs,
         signer,
     };
