@@ -790,14 +790,14 @@ async fn abci_query(
 async fn broadcast_tx_commit(
     chain: &CosmosSDKChain,
     data: Vec<u8>,
-) -> Result<String, anomaly::Error<Kind>> {
+) -> Result<Response, anomaly::Error<Kind>> {
     let response = chain
         .rpc_client()
         .broadcast_tx_commit(data.into())
         .await
         .map_err(|e| Kind::Rpc.context(e))?;
 
-    Ok(serde_json::to_string(&response).unwrap())
+    Ok(response)
 }
 
 /// Uses the GRPC client to retrieve the account sequence
@@ -826,10 +826,8 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(raw_res: String) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
-
-    let response: Response = serde_json::from_str(raw_res.as_str()).unwrap();
 
     // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {

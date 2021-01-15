@@ -41,11 +41,11 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client on `host_chain`. Blocks until the client is created, or
+    /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
-    /// Post-condition: `host_chain` hosts an IBC client for `src_chain`.
+    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `host_chain` and `src_chain` chains?
+    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
     pub fn new(
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
