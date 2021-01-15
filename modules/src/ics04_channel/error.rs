@@ -3,6 +3,8 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use crate::ics24_host::identifier::ConnectionId;
+
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
     #[error("channel state unknown")]
@@ -44,8 +46,26 @@ pub enum Kind {
     #[error("missing counterparty")]
     MissingCounterparty,
 
+    #[error("no commong version")]
+    NoCommonVersion,
+
     #[error("missing channel end")]
     MissingChannel,
+
+    #[error("given connection hop {0} does not exist")]
+    MissingConnection(ConnectionId),
+
+    #[error("the port has no capability associated")]
+    NoPortCapability,
+
+    #[error("the module associated with the port does not have the capability it needs")]
+    InvalidPortCapability,
+
+    #[error("single version must be negociated on connection before opening channel")]
+    InvalidVersionLengthConnection,
+
+    #[error("the channel ordering is not supported by connection ")]
+    ChannelFeatureNotSuportedByConnection,
 }
 
 impl Kind {

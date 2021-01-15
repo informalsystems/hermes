@@ -25,7 +25,7 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     let key_contents = fs::read_to_string(&opts.file)
         .map_err(|_| Kind::KeyBase.context("error reading the key file"))?;
 
-    //Check if it's a valid Key seed file
+    // Check if it's a valid Key seed file
     let key_entry = chain.keybase().key_from_seed_file(&key_contents);
 
     match key_entry {

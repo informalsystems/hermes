@@ -99,9 +99,7 @@ impl IBCEvent {
             IBCEvent::AcknowledgePacketChannel(ev) => ev.height,
             IBCEvent::TimeoutPacketChannel(ev) => ev.height,
 
-            _ => {
-                unimplemented!()
-            }
+            _ => unimplemented!(),
         }
     }
     pub fn set_height(&mut self, height: ICSHeight) {
@@ -121,9 +119,7 @@ impl IBCEvent {
             IBCEvent::TimeoutPacketChannel(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            _ => {
-                unimplemented!()
-            }
+            _ => unimplemented!(),
         }
     }
 }

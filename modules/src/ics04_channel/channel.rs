@@ -44,7 +44,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Parse the ordering type. Propagate the error, if any, to our caller.
-        let chan_state = State::from_i32(value.state)?;
+        let chan_state: State = State::from_i32(value.state)?;
 
         if chan_state == State::Uninitialized {
             return Ok(ChannelEnd::default());
@@ -82,7 +82,7 @@ impl From<ChannelEnd> for RawChannel {
         RawChannel {
             state: value.state.clone() as i32,
             ordering: value.ordering as i32,
-            counterparty: Some(value.counterparty().into()),
+            counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
                 .connection_hops
                 .iter()
@@ -124,12 +124,12 @@ impl ChannelEnd {
         &self.ordering
     }
 
-    pub fn counterparty(&self) -> Counterparty {
-        self.remote.clone()
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.remote
     }
 
-    pub fn connection_hops(&self) -> Vec<ConnectionId> {
-        self.connection_hops.clone()
+    pub fn connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.connection_hops
     }
 
     pub fn version(&self) -> String {
@@ -240,8 +240,8 @@ impl Order {
     pub fn as_string(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
-            Self::Unordered => "UNORDERED",
-            Self::Ordered => "ORDERED",
+            Self::Unordered => "ORDER_UNORDERED",
+            Self::Ordered => "ORDER_ORDERED",
         }
     }
 
@@ -322,6 +322,7 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
+
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
@@ -337,10 +338,20 @@ pub mod test_util {
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
             state: 1,
-            ordering: 0,
+            ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            connection_hops: vec!["defaultConnection-0".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
+        }
+    }
+
+    pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 1,
+            counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec!["noconnection".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
         }
     }
 }
