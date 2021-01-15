@@ -56,7 +56,10 @@ impl TxRawSendPacketCmd {
             .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
-        let denom = self.denom.clone().unwrap_or("samoleans".to_string());
+        let denom = self
+            .denom
+            .clone()
+            .unwrap_or_else(|| "samoleans".to_string());
         let number_msgs = self.number_msgs.unwrap_or(1);
         if number_msgs == 0 {
             return Err("number of messages should be bigger than zero".to_string());
