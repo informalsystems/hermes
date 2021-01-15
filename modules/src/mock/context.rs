@@ -230,18 +230,13 @@ impl MockContext {
             ..self
         }
     }
-    pub fn with_connection_and_port_capability(
+    pub fn with_port_capability(
         self,
         port_id: PortId,
-        connection_id: ConnectionId,
-        connection_end: ConnectionEnd,
     ) -> Self {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
         let mut port_capabilities = self.port_capabilities.clone();
         port_capabilities.insert(port_id, Capability::new());
         Self {
-            connections,
             port_capabilities,
             ..self
         }
