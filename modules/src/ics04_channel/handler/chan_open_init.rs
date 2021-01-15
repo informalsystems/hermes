@@ -1,12 +1,14 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::handler::{HandlerOutput, HandlerResult};
+//use crate::ics03_connection::connection::C;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use crate::ics03_connection::version::verify_supported_feature;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -37,13 +39,22 @@ pub(crate) fn process(
     let connection_end = ctx
         .connection_state(&msg.channel().connection_hops()[0]);
 
-    if connection_end.is_none()
-    {
-       return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
+    match connection_end{
+        None=>     {
+            return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
+         }
+         Some(conn) =>
+        {
+        let get_versions = conn.versions();
+        if get_versions.len() != 1 {
+            return Err(Kind::InvalidVersionLengthConnection.into());
+        }
+        if !verify_supported_feature(get_versions[0].clone(),msg.channel().ordering().as_string().to_string())
+            {
+                return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
+            }
     }
-    else{
-        //TODO: Understand conenction version. 
-    }
+}
 
     // TODO: Check that `version` is non empty but not necessary coherent
     if msg.channel().version().is_empty() {
@@ -120,6 +131,7 @@ mod tests {
             get_compatible_versions(),
             msg_conn_init.delay_period,
         );
+        
 
         let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
         let cid = match ccid {

@@ -94,6 +94,7 @@ pub fn pick_version(
     Ok(intersection[0].to_string())
 }
 
+
 pub fn validate_versions(versions: Vec<String>) -> Result<Vec<String>, Error> {
     if versions.is_empty() {
         return Err(Kind::InvalidVersion

@@ -60,6 +60,11 @@ pub enum Kind {
 
     #[error("the module associated with the port does not have the capability it needs")]
     InvalidPortCapability,
+
+    #[error("single version must be negociated on connection before opening channel")]
+    InvalidVersionLengthConnection,
+    #[error("the channel ordering is not supported by connection ")]
+    ChannelFeatureNotSuportedByConnection
 }
 
 impl Kind {

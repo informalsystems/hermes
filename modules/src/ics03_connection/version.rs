@@ -56,6 +56,15 @@ impl Default for Version {
     }
 }
 
+pub fn verify_supported_feature(version: Version, feature: String) -> bool{
+    for f in version.features.iter() {
+       if f.eq(&feature) {
+           return true;
+        }
+     }
+    false
+}
+
 /// Returns the lists of supported versions
 pub fn get_compatible_versions() -> Vec<Version> {
     vec![Version::default()]
