@@ -310,13 +310,9 @@ impl MockContext {
         }
         Ok(())
     }
-    pub fn add_port(&self, port_id: PortId) -> Self {
-        let mut port_capabilities = self.port_capabilities.clone();
-        port_capabilities.insert(port_id, Capability::new());
-        Self {
-            port_capabilities,
-            ..self.clone()
-        }
+
+    pub fn add_port(&mut self, port_id: PortId) {
+        self.port_capabilities.insert(port_id, Capability::new());
     }
 }
 

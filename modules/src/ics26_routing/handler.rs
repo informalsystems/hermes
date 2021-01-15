@@ -200,7 +200,7 @@ mod tests {
             res
         );
 
-        ctx = MockContext::add_port(&ctx, msg_chan_init.port_id().clone());
+        ctx.add_port(msg_chan_init.port_id().clone());
 
         // Figure out the ID of the client that was just created.
         // TODO: Create a "search by attribute key" API for HandlerOutput to simplify the following
