@@ -18,9 +18,14 @@
 
 - [relayer]
   - Performance improvements ([#514])
+  - Fix for mismatching `bitcoin` dep ([#525])
+
+- [modules]
+  -  Clean the validate_basic method ([#94])
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 
+[#94]: https://github.com/informalsystems/ibc-rs/issues/94
 [#470]: https://github.com/informalsystems/ibc-rs/issues/470
 [#500]: https://github.com/informalsystems/ibc-rs/issues/500
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
@@ -28,6 +33,7 @@
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
 [#514]: https://github.com/informalsystems/ibc-rs/issues/514
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
+[#525]: https://github.com/informalsystems/ibc-rs/issues/525
 
 
 ## v0.0.6
