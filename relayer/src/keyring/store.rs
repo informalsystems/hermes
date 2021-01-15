@@ -9,12 +9,12 @@ use std::str::FromStr;
 use bech32::ToBase32;
 use bitcoin::{
     network::constants::Network,
+    secp256k1::Secp256k1,
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
-use bitcoin::secp256k1::Secp256k1;
 use bitcoin_wallet::mnemonic::Mnemonic;
 use hdpath::StandardHDPath;
-use k256::ecdsa::{Signature, signature::Signer, SigningKey};
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use serde_json::Value;
 use tendermint::account::Id as AccountId;
 
