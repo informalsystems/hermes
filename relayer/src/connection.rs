@@ -20,7 +20,6 @@ use ibc::tx_msg::Msg;
 use ibc::Height as ICSHeight;
 
 use crate::chain::handle::ChainHandle;
-use crate::config;
 use crate::error::{Error, Kind};
 use crate::foreign_client::{build_update_client, ForeignClient};
 use crate::relay::MAX_ITER;
@@ -44,20 +43,20 @@ pub struct Connection {
 #[derive(Clone, Debug)]
 pub struct ConnectionSideConfig {
     chain_id: ChainId,
-    connection_id: ConnectionId,
     client_id: ClientId,
+    connection_id: ConnectionId,
 }
 
 impl ConnectionSideConfig {
     pub fn new(
         chain_id: ChainId,
-        connection_id: ConnectionId,
         client_id: ClientId,
+        connection_id: ConnectionId,
     ) -> ConnectionSideConfig {
         Self {
             chain_id,
-            connection_id,
             client_id,
+            connection_id,
         }
     }
 
@@ -65,16 +64,16 @@ impl ConnectionSideConfig {
         &self.chain_id
     }
 
-    pub fn connection_id(&self) -> &ConnectionId {
-        &self.connection_id
-    }
-
     pub fn client_id(&self) -> &ClientId {
         &self.client_id
     }
 
-    pub fn set_connection_id(&mut self, id: &ConnectionId) {
-        self.connection_id = id.clone()
+    pub fn connection_id(&self) -> &ConnectionId {
+        &self.connection_id
+    }
+
+    pub(crate) fn set_connection_id(&mut self, id: ConnectionId) {
+        self.connection_id = id;
     }
 }
 
@@ -109,24 +108,6 @@ impl ConnectionConfig {
     }
 }
 
-impl ConnectionConfig {
-    pub fn new(conn: &config::Connection) -> Result<ConnectionConfig, String> {
-        let a_config = ConnectionSideConfig {
-            chain_id: conn.a_chain.clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-        };
-
-        let b_config = ConnectionSideConfig {
-            chain_id: conn.b_chain.clone(),
-            connection_id: ConnectionId::default(),
-            client_id: ClientId::default(),
-        };
-
-        Ok(ConnectionConfig { a_config, b_config })
-    }
-}
-
 impl Connection {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
@@ -154,13 +135,13 @@ impl Connection {
             config: ConnectionConfig {
                 a_config: ConnectionSideConfig::new(
                     a_client.dst_chain().id(),
-                    Default::default(),
                     a_client.id().clone(),
+                    Default::default(),
                 ),
                 b_config: ConnectionSideConfig::new(
                     b_client.dst_chain().id(),
-                    Default::default(),
                     b_client.id().clone(),
+                    Default::default(),
                 ),
             },
             a_client,
@@ -201,9 +182,8 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config
-                        .a_config
-                        .set_connection_id(extract_connection_id(&result)?);
+                    let connection_id = extract_connection_id(&result)?.clone();
+                    self.config.a_config.set_connection_id(connection_id);
                     info!("{}  {} => {:?}\n", done, a_chain.id(), result);
                     break;
                 }
@@ -222,9 +202,8 @@ impl Connection {
                     continue;
                 }
                 Ok(result) => {
-                    self.config
-                        .b_config
-                        .set_connection_id(extract_connection_id(&result)?);
+                    let connection_id = extract_connection_id(&result)?.clone();
+                    self.config.b_config.set_connection_id(connection_id);
                     info!("{}  {} => {:?}\n", done, b_chain.id(), result);
                     break;
                 }
@@ -480,21 +459,20 @@ pub fn build_conn_try(
     )?;
     src_chain.send_msgs(client_msgs)?;
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
+    let query_height = src_chain.query_latest_height()?;
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenTry,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     let counterparty_versions = if src_connection.versions().is_empty() {
@@ -598,21 +576,20 @@ pub fn build_conn_ack(
     )?;
     src_chain.send_msgs(client_msgs)?;
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
+    let query_height = src_chain.query_latest_height()?;
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenAck,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     // Get signer
@@ -682,10 +659,11 @@ pub fn build_conn_confirm(
         .context(e)
     })?;
 
+    let query_height = src_chain.query_latest_height()?;
     let _src_connection = src_chain
-        .query_connection(&opts.src().connection_id().clone(), ICSHeight::default())
+        .query_connection(&opts.src().connection_id().clone(), query_height)
         .map_err(|e| {
-            Kind::ConnOpenAck(
+            Kind::ConnOpenConfirm(
                 opts.src().connection_id().clone(),
                 "missing connection on source chain".to_string(),
             )
@@ -694,21 +672,19 @@ pub fn build_conn_confirm(
 
     // TODO - check that the src connection is consistent with the confirm options
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
     let (_, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenConfirm,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     // Get signer

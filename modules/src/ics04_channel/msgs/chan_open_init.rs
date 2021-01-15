@@ -46,10 +46,6 @@ impl Msg for MsgChannelOpenInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        self.channel.validate_basic()
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
@@ -97,7 +93,6 @@ pub mod test_util {
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_with_missing_connection;
     use crate::test_utils::get_dummy_bech32_account;
     //use crate::ics04_channel::channel::State;
-
 
     /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_init() -> RawMsgChannelOpenInit {

@@ -1,16 +1,18 @@
 use std::sync::{Arc, Mutex};
 
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
-
+use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
 use relayer::chain::{Chain, CosmosSDKChain};
 use relayer::config::{ChainConfig, Config};
 
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
@@ -47,9 +49,7 @@ impl QueryConnectionEndCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
 
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id)
+            .find_chain(&chain_id)
             .ok_or_else(|| "missing chain configuration".to_string())?;
 
         let connection_id = self
@@ -75,8 +75,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -92,16 +91,95 @@ impl Runnable for QueryConnectionEndCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => status_info!("connection query result: ", "{:?}", cs),
-            Err(e) => status_info!("connection query error", "{}", e),
+            Ok(ce) => Output::with_success().with_result(json!(ce)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
+        }
+    }
+}
+
+/// Command for querying the channel identifiers associated with a connection.
+/// Sample invocation:
+/// `cargo run --bin relayer -- -c simple_config.toml query connection channels ibc-0 connection-0`
+#[derive(Clone, Command, Debug, Options)]
+pub struct QueryConnectionChannelsCmd {
+    #[options(free, help = "identifier of the chain to query")]
+    chain_id: Option<ChainId>,
+
+    #[options(free, help = "identifier of the connection to query")]
+    connection_id: Option<String>,
+}
+
+#[derive(Debug)]
+struct QueryConnectionChannelsOptions {
+    connection_id: ConnectionId,
+}
+
+impl QueryConnectionChannelsCmd {
+    fn validate_options(
+        &self,
+        config: &Config,
+    ) -> Result<(ChainConfig, QueryConnectionChannelsOptions), String> {
+        let chain_id = self
+            .chain_id
+            .clone()
+            .ok_or_else(|| "no chain chain identifier provided".to_string())?;
+        let chain_config = config
+            .find_chain(&chain_id)
+            .ok_or_else(|| "missing chain configuration for the given chain id".to_string())?;
+
+        let connection_id = self
+            .connection_id
+            .as_ref()
+            .ok_or_else(|| "no connection identifier was provided".to_string())?
+            .parse()
+            .map_err(|err: ValidationError| err.to_string())?;
+
+        let opts = QueryConnectionChannelsOptions { connection_id };
+
+        Ok((chain_config.clone(), opts))
+    }
+}
+
+impl Runnable for QueryConnectionChannelsCmd {
+    fn run(&self) {
+        let config = app_config();
+
+        let (chain_config, opts) = match self.validate_options(&config) {
+            Err(err) => {
+                return Output::with_error().with_result(json!(err)).exit();
+            }
+            Ok(result) => result,
+        };
+        status_info!("Options", "{:?}", opts);
+
+        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+
+        let req = QueryConnectionChannelsRequest {
+            connection: opts.connection_id.to_string(),
+            pagination: None,
+        };
+
+        let res: Result<_, Error> = chain
+            .query_connection_channels(req)
+            .map_err(|e| Kind::Query.context(e).into());
+
+        match res {
+            Ok(cids) => Output::with_success().with_result(json!(cids)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::connection::QueryConnectionEndCmd;
     use relayer::config::parse;
+
+    use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
 
     #[test]
     fn parse_connection_query_end_parameters() {
@@ -159,6 +237,98 @@ mod tests {
             Test {
                 name: "Bad connection, name too short".to_string(),
                 params: QueryConnectionEndCmd {
+                    connection_id: Some("connshort".to_string()),
+                    ..default_params
+                },
+                want_pass: false,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/two_chains.toml"
+        );
+
+        let config = parse(path).unwrap();
+
+        for test in tests {
+            let res = test.params.validate_options(&config);
+
+            match res {
+                Ok(_res) => {
+                    assert!(
+                        test.want_pass,
+                        "validate_options should have failed for test {}",
+                        test.name
+                    );
+                }
+                Err(err) => {
+                    assert!(
+                        !test.want_pass,
+                        "validate_options failed for test {}, \nerr {}",
+                        test.name, err
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn parse_query_connection_channels_parameters() {
+        let default_params = QueryConnectionChannelsCmd {
+            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            connection_id: Some("ibconeconnection".to_string().parse().unwrap()),
+        };
+
+        struct Test {
+            name: String,
+            params: QueryConnectionChannelsCmd,
+            want_pass: bool,
+        }
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Good parameters".to_string(),
+                params: default_params.clone(),
+                want_pass: true,
+            },
+            Test {
+                name: "No chain specified".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    chain_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Chain not configured".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    chain_id: Some("ibc007".to_string().parse().unwrap()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "No connection id specified".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    connection_id: None,
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, non-alpha".to_string(),
+                params: QueryConnectionChannelsCmd {
+                    connection_id: Some("connection-0^".to_string()),
+                    ..default_params.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad connection, name too short".to_string(),
+                params: QueryConnectionChannelsCmd {
                     connection_id: Some("connshort".to_string()),
                     ..default_params
                 },

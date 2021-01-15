@@ -1,15 +1,17 @@
 use abscissa_core::{Command, Options, Runnable};
+use serde_json::json;
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::ClientId;
-
-use crate::application::app_config;
-use crate::error::{Error, Kind};
-use crate::prelude::*;
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::ChainConfig;
 use relayer::foreign_client::{build_create_client_and_send, build_update_client_and_send};
+
+use crate::application::app_config;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
@@ -26,8 +28,7 @@ impl Runnable for TxCreateClientCmd {
             match validate_common_options(&self.dst_chain_id, &self.src_chain_id) {
                 Ok(result) => result,
                 Err(err) => {
-                    status_err!("invalid options: {}", err);
-                    return;
+                    return Output::with_error().with_result(json!(err)).exit();
                 }
             };
 
@@ -45,8 +46,10 @@ impl Runnable for TxCreateClientCmd {
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
-            Err(e) => status_err!("client create failed: {:?}", e),
+            Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -73,8 +76,7 @@ impl Runnable for TxUpdateClientCmd {
         let (dst_chain_config, src_chain_config) = match opts {
             Ok(result) => result,
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
         };
 
@@ -94,8 +96,10 @@ impl Runnable for TxUpdateClientCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => status_ok!("Ok: ", serde_json::to_string(&receipt).unwrap()),
-            Err(e) => status_err!("Error: {}", e),
+            Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -117,15 +121,11 @@ fn validate_common_options(
 
     // Get the source and destination chain configuration
     let dst_chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == dst_chain_id)
+        .find_chain(&dst_chain_id)
         .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
     let src_chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == src_chain_id)
+        .find_chain(&src_chain_id)
         .ok_or_else(|| "missing source chain configuration".to_string())?;
 
     Ok((dst_chain_config.clone(), src_chain_config.clone()))

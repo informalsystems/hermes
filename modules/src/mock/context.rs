@@ -230,10 +230,7 @@ impl MockContext {
             ..self
         }
     }
-    pub fn with_port_capability(
-        self,
-        port_id: PortId,
-    ) -> Self {
+    pub fn with_port_capability(self, port_id: PortId) -> Self {
         let mut port_capabilities = self.port_capabilities.clone();
         port_capabilities.insert(port_id, Capability::new());
         Self {
@@ -378,13 +375,11 @@ impl ChannelReader for MockContext {
 
                 let conn = self.connection_state(&cid);
                 match conn {
-                    Some(v) => {
-                        ConnectionReader::client_consensus_state(
-                            self,
-                            &v.client_id().clone(),
-                            height,
-                        )
-                    }
+                    Some(v) => ConnectionReader::client_consensus_state(
+                        self,
+                        &v.client_id().clone(),
+                        height,
+                    ),
                     None => panic!(),
                 }
             }

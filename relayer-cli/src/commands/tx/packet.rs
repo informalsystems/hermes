@@ -1,16 +1,19 @@
-use crate::prelude::*;
-
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use serde_json::json;
 
-use crate::error::{Error, Kind};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, PortId};
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
+use relayer::config::Config;
 use relayer::link::{
-    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketOptions,
+    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketEnvelope,
+    PacketOptions,
 };
+
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawPacketRecvCmd {
@@ -42,26 +45,24 @@ pub struct TxRawPacketRecvCmd {
 impl TxRawPacketRecvCmd {
     fn validate_options(&self, config: &Config) -> Result<PacketOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)
@@ -74,8 +75,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -91,8 +91,10 @@ impl Runnable for TxRawPacketRecvCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet recv, result: ", "{:#?}", ev),
-            Err(e) => status_info!("packet recv failed, error: ", "{}", e),
+            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
@@ -127,26 +129,24 @@ pub struct TxRawPacketAckCmd {
 impl TxRawPacketAckCmd {
     fn validate_options(&self, config: &Config) -> Result<PacketOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)
@@ -159,8 +159,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -176,8 +175,10 @@ impl Runnable for TxRawPacketAckCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!("packet ack, result: ", "{:#?}", ev),
-            Err(e) => status_info!("packet ack failed, error: ", "{}", e),
+            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }

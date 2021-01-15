@@ -43,10 +43,6 @@ impl Msg for MsgTransfer {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }

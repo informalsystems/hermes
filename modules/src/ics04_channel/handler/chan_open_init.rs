@@ -2,13 +2,13 @@
 
 use crate::handler::{HandlerOutput, HandlerResult};
 //use crate::ics03_connection::connection::C;
+use crate::ics03_connection::version::verify_supported_feature;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use crate::ics03_connection::version::verify_supported_feature;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -35,26 +35,26 @@ pub(crate) fn process(
     }
 
     // An IBC connection running on the local (host) chain should exist.
-     
-    let connection_end = ctx
-        .connection_state(&msg.channel().connection_hops()[0]);
 
-    match connection_end{
-        None=>     {
+    let connection_end = ctx.connection_state(&msg.channel().connection_hops()[0]);
+
+    match connection_end {
+        None => {
             return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
-         }
-         Some(conn) =>
-        {
-        let get_versions = conn.versions();
-        if get_versions.len() != 1 {
-            return Err(Kind::InvalidVersionLengthConnection.into());
         }
-        if !verify_supported_feature(get_versions[0].clone(),msg.channel().ordering().as_string().to_string())
-            {
+        Some(conn) => {
+            let get_versions = conn.versions();
+            if get_versions.len() != 1 {
+                return Err(Kind::InvalidVersionLengthConnection.into());
+            }
+            if !verify_supported_feature(
+                get_versions[0].clone(),
+                msg.channel().ordering().as_string().to_string(),
+            ) {
                 return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
             }
+        }
     }
-}
 
     // TODO: Check that `version` is non empty but not necessary coherent
     if msg.channel().version().is_empty() {
@@ -131,7 +131,6 @@ mod tests {
             get_compatible_versions(),
             msg_conn_init.delay_period,
         );
-        
 
         let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
         let cid = match ccid {
@@ -157,13 +156,14 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_connection(cid,
-                    init_conn_end).with_port_capability(
-                    MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                        .unwrap()
-                        .port_id()
-                        .clone(),
-                ),
+                ctx: context
+                    .with_connection(cid, init_conn_end)
+                    .with_port_capability(
+                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
+                            .unwrap()
+                            .port_id()
+                            .clone(),
+                    ),
                 msg: ChannelMsg::ChannelOpenInit(msg_chan_init),
                 want_pass: true,
             },
@@ -188,7 +188,7 @@ mod tests {
 
                     // The object in the output is a ChannelEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
-                    assert_eq!(res.channel_end.state().clone(), State::Init); 
+                    assert_eq!(res.channel_end.state().clone(), State::Init);
                     let msg_init = test.msg.clone();
 
                     if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {

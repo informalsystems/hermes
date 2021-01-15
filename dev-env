@@ -3,33 +3,47 @@
 # Copied from https://github.com/cosmos/relayer and modified to initialize the Rust relayer light clients.
 
 usage() {
-	echo "Missing $1 parameter. Please check if all parameters were specified."
-	echo "Usage: $0 [CONFIG_FILE] [CHAIN_ID_0] [CHAIN_ID_1]"
+  echo "Usage: $0 [CONFIG_FILE] [CHAIN_0_ID] [CHAIN_1_ID]"
   echo "Example: $0 ./config.toml ibc-0 ibc-1"
   exit 1
 }
 
+missing() {
+  echo "Missing $1 parameter. Please check if all parameters were specified."
+  usage
+}
+
 if [ -z "$1" ]; then
-  usage "CONFIG_FILE"
+  missing "CONFIG_FILE"
 fi
 
 if [ -z "$2" ]; then
-  usage "CHAIN_ID_0"
+  missing "CHAIN_0_ID"
 fi
 
 if [ -z "$3" ]; then
-  usage "CHAIN_ID_1"
+  missing "CHAIN_1_ID"
 fi
 
-tomlcfg="$1"
-chainid0="$2"
-chainid1="$3"
+if [ "$#" -gt 3 ]; then
+  echo "Incorrect number of parameters."
+  usage
+fi
+
+CONFIG_FILE="$1"
+CHAIN_0_ID="$2"
+CHAIN_1_ID="$3"
+
+if ! [ -f $CONFIG_FILE ]; then
+  echo "[CONFIG_FILE] ($1) does not exist or is not a file."
+  usage
+fi
 
 GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted
 if [[ -d $GAIA_DATA ]] && [[ ! "$3" == "skip" ]]; then
-  echo "$0 will delete $HOME/.relayer and $(pwd)/data folder."
+  echo "$0 will delete $(pwd)/data folder."
   read -p "> Do you wish to continue? (y/n): " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -50,41 +64,49 @@ echo "GAIA VERSION INFO: $(gaiad version)"
 rm -rf "$GAIA_DATA" &> /dev/null
 
 # Stop existing gaiad processes
-killall gaiad &> /dev/null
-killall akash &> /dev/null
-
-set -e
+killall gaiad &> /dev/null || true
+killall akash &> /dev/null || true
 
 echo "Generating gaia configurations..."
 mkdir -p "$GAIA_DATA" && cd "$GAIA_DATA" && cd ../
 
 ONE_CHAIN="$(dirname "$0")/one-chain"
 
-"$ONE_CHAIN" gaiad "$chainid0" ./data 26657 26656 6060 9090
-"$ONE_CHAIN" gaiad "$chainid1" ./data 26557 26556 6061 9091
+CHAIN_0_RPC_PORT=26657
+CHAIN_0_RPC_ADDR="localhost:$CHAIN_0_RPC_PORT"
+CHAIN_1_RPC_PORT=26557
+CHAIN_1_RPC_ADDR="localhost:$CHAIN_1_RPC_PORT"
 
-[ -f "$GAIA_DATA/$chainid0.log" ] && echo "$chainid0 initialized. Watch file $GAIA_DATA/$chainid0.log to see its execution."
-[ -f "$GAIA_DATA/$chainid1.log" ] && echo "$chainid1 initialized. Watch file $GAIA_DATA/$chainid1.log to see its execution."
+CHAIN_0_SAMOLEANS=100000000000
+CHAIN_1_SAMOLEANS=100000000000
+
+"$ONE_CHAIN" gaiad "$CHAIN_0_ID" ./data $CHAIN_0_RPC_PORT 26656 6060 9090 $CHAIN_0_SAMOLEANS
+"$ONE_CHAIN" gaiad "$CHAIN_1_ID" ./data $CHAIN_1_RPC_PORT 26556 6061 9091 $CHAIN_1_SAMOLEANS
+
+[ -f "$GAIA_DATA/$CHAIN_0_ID.log" ] && echo "$CHAIN_0_ID initialized. Watch file $GAIA_DATA/$CHAIN_0_ID.log to see its execution."
+[ -f "$GAIA_DATA/$CHAIN_1_ID.log" ] && echo "$CHAIN_1_ID initialized. Watch file $GAIA_DATA/$CHAIN_1_ID.log to see its execution."
 
 echo "Building the Rust relayer..."
-cargo build
+cargo build &> /dev/null
 
 # cleanup the client entries from config
 echo "Removing light client peers from configuration..."
-cargo run --bin relayer -- -c "$tomlcfg" light rm -c "$chainid0" --all -y &> /dev/null || true
-cargo run --bin relayer -- -c "$tomlcfg" light rm -c "$chainid1" --all -y &> /dev/null || true
+cargo run --bin relayer -- -c "$CONFIG_FILE" light rm -c "$CHAIN_0_ID" --all -y &> /dev/null || true
+cargo run --bin relayer -- -c "$CONFIG_FILE" light rm -c "$CHAIN_1_ID" --all -y &> /dev/null || true
 
 # set the primary peers for clients on each chain
 echo "Adding primary peers to light client configuration..."
-cargo run --bin relayer -- -c "$tomlcfg" light add localhost:26657 -c "$chainid0" -f -p -s "$GAIA_DATA/$chainid0/data" -y &>/dev/null
-cargo run --bin relayer -- -c "$tomlcfg" light add localhost:26557 -c "$chainid1" -f -p -s "$GAIA_DATA/$chainid1/data" -y &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -f -p -s "$GAIA_DATA/$CHAIN_0_ID/data" -y &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -f -p -s "$GAIA_DATA/$CHAIN_1_ID/data" -y &>/dev/null
 
 # set the secondary peers for clients on each chain
 echo "Adding secondary peers to light client configuration..."
-cargo run --bin relayer -- -c "$tomlcfg" light add localhost:26657 -c "$chainid0" -s "$GAIA_DATA/$chainid0/data" -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E &>/dev/null
-cargo run --bin relayer -- -c "$tomlcfg" light add localhost:26557 -c "$chainid1" -s "$GAIA_DATA/$chainid1/data" -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" light add $CHAIN_0_RPC_ADDR -c "$CHAIN_0_ID" -s "$GAIA_DATA/$CHAIN_0_ID/data" -y --peer-id 2427F8D914A6862279B3326FA64F76E3BC06DB2E &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" light add $CHAIN_1_RPC_ADDR -c "$CHAIN_1_ID" -s "$GAIA_DATA/$CHAIN_1_ID/data" -y --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E &>/dev/null
 
 # add the key seeds to the keyring of each chain
 echo "Importing keys..."
-cargo run --bin relayer -- -c "$tomlcfg" keys add "$chainid0" "$GAIA_DATA/$chainid0/key_seed.json" &>/dev/null
-cargo run --bin relayer -- -c "$tomlcfg" keys add "$chainid1" "$GAIA_DATA/$chainid1/key_seed.json" &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" keys add "$CHAIN_0_ID" "$GAIA_DATA/$CHAIN_0_ID/key_seed.json" &>/dev/null
+cargo run --bin relayer -- -c "$CONFIG_FILE" keys add "$CHAIN_1_ID" "$GAIA_DATA/$CHAIN_1_ID/key_seed.json" &>/dev/null
+
+echo "Done!"

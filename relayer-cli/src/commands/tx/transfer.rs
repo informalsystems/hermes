@@ -1,15 +1,20 @@
-use crate::prelude::*;
 use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime as TokioRuntime;
 
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use serde_json::json;
+use tokio::runtime::Runtime as TokioRuntime;
 
-use crate::error::{Error, Kind};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
+use relayer::{
+    chain::{Chain, CosmosSDKChain},
+    config::Config,
+    transfer::{build_and_send_transfer_messages, TransferOptions},
+};
+
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
@@ -38,15 +43,11 @@ pub struct TxRawSendPacketCmd {
 impl TxRawSendPacketCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let number_msgs = self.number_msgs.unwrap_or(1);
@@ -73,8 +74,7 @@ impl Runnable for TxRawSendPacketCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -91,12 +91,10 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => status_info!(
-                "packet recv, result: ",
-                "{:#?}",
-                serde_json::to_string(&ev).unwrap()
-            ),
-            Err(e) => status_info!("packet recv failed, error: ", "{}", e),
+            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }

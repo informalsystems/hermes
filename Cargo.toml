@@ -13,8 +13,8 @@ exclude = [
 
 [patch.crates-io]
 
-tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/skip-verif" }
-tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/skip-verif" }
-tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/skip-verif" }
-tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/skip-verif" }
-tendermint-testgen = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/skip-verif" }
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "ibc" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "ibc" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "ibc" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "ibc" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "ibc" }

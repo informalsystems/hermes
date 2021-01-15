@@ -55,12 +55,6 @@ impl Msg for MsgChannelOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }

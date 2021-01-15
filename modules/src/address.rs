@@ -19,5 +19,5 @@ pub fn string_to_account(raw: String) -> Result<AccountId, BoxError> {
     let addr_bytes =
         Vec::<u8>::from_base32(&data).map_err(|e| Context::new("bad signer", Some(e.into())))?;
 
-    Ok(AccountId::try_from(addr_bytes).map_err(|e| Context::new("bad signer", Some(e)))?)
+    Ok(AccountId::try_from(addr_bytes).map_err(|e| Context::new("bad signer", Some(e.into())))?)
 }

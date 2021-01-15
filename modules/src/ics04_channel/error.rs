@@ -64,7 +64,7 @@ pub enum Kind {
     #[error("single version must be negociated on connection before opening channel")]
     InvalidVersionLengthConnection,
     #[error("the channel ordering is not supported by connection ")]
-    ChannelFeatureNotSuportedByConnection
+    ChannelFeatureNotSuportedByConnection,
 }
 
 impl Kind {

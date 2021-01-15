@@ -46,12 +46,6 @@ impl Msg for MsgChannelCloseInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }

@@ -53,6 +53,8 @@ fn event_types() -> HashSet<String> {
         CLOSE_CONFIRM_EVENT_TYPE.to_string(),
         SEND_PACKET.to_string(),
         WRITE_ACK.to_string(),
+        ACK_PACKET.to_string(),
+        TIMEOUT.to_string(),
     ]
     .into_iter()
     .collect()
@@ -119,6 +121,14 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
                 ack,
             },
         )),
+        ACK_PACKET => Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
+            height: Default::default(),
+            packet,
+        })),
+        TIMEOUT => Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
+            height: Default::default(),
+            packet,
+        })),
         _ => None,
     }
 }

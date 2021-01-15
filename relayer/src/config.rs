@@ -51,6 +51,16 @@ pub struct Config {
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 
+impl Config {
+    pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
+        self.chains.iter().find(|c| c.id == *id)
+    }
+
+    pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
+        self.chains.iter_mut().find(|c| c.id == *id)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Strategy {
     #[serde(rename = "naive")]

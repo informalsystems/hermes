@@ -38,23 +38,23 @@ regex = "1"
 bech32 = "0.7.2"
 
 [dependencies.tendermint]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.0"
+version = "=0.17.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dependencies.tendermint-proto]
-version = "=0.17.0"
+version = "=0.17.1"
 
 [dependencies.tendermint-testgen]
-version = "=0.17.0"
+version = "=0.17.1"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros"] }
 subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "=0.17.0" } # Needed for generating (synthetic) light blocks.
+tendermint-testgen = { version = "=0.17.1" } # Needed for generating (synthetic) light blocks.

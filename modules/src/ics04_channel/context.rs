@@ -37,9 +37,8 @@ pub trait ChannelReader {
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
-
     fn next_channel_id(&mut self) -> ChannelId;
-    
+
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         match result.channel_end.state() {
             State::Init => {
@@ -81,7 +80,7 @@ pub trait ChannelKeeper {
         }
         Ok(())
     }
-    
+
     fn store_connection_channels(
         &mut self,
         conn_id: &ConnectionId,
