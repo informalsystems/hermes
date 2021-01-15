@@ -191,11 +191,18 @@ impl Channel {
                     error!("Failed ChanTry {:?}: {}", self.config.b_end(), e);
                     continue;
                 }
-                Ok(result) => {
-                    self.config.b_config.channel_id = extract_channel_id(&result)?.clone();
-                    info!("{}  {} => {:?}\n", done, b_chain.id(), result);
-                    break;
-                }
+                Ok(result) => match result {
+                    IBCEvent::ChainError(e) => {
+                        info!("Failed ChanTry {:?}: {}", self.config.b_end(), e);
+                        continue;
+                    }
+
+                    _ => {
+                        self.config.b_config.channel_id = extract_channel_id(&result)?.clone();
+                        info!("{}  {} => {:?}\n", done, b_chain.id(), result);
+                        break;
+                    }
+                },
             }
         }
         debug!("elapsed time {:?}", now.elapsed().unwrap().as_secs());
@@ -447,14 +454,19 @@ pub fn build_chan_try(
     let dst_connection =
         dst_chain.query_connection(&opts.dst().connection_id().clone(), Height::default())?;
 
-    let ics_target_height = src_chain.query_latest_height()?;
+    let query_height = src_chain.query_latest_height()?;
+    let proofs = src_chain.build_channel_proofs(
+        &opts.src().port_id(),
+        &opts.src().channel_id(),
+        query_height,
+    )?;
 
-    // Build message to update client on destination
+    // Build message(s) to update client on destination
     let mut msgs = build_update_client(
         dst_chain.clone(),
         src_chain.clone(),
         &dst_connection.client_id(),
-        ics_target_height,
+        proofs.height(),
     )?;
 
     let counterparty = Counterparty::new(
@@ -481,11 +493,7 @@ pub fn build_chan_try(
         previous_channel_id: src_channel.counterparty().channel_id,
         channel,
         counterparty_version: src_chain.module_version(&opts.src().port_id())?,
-        proofs: src_chain.build_channel_proofs(
-            &opts.src().port_id(),
-            &opts.src().channel_id(),
-            ics_target_height,
-        )?,
+        proofs,
         signer,
     };
 
@@ -554,14 +562,19 @@ pub fn build_chan_ack(
     let dst_connection =
         dst_chain.query_connection(&opts.dst().connection_id().clone(), Height::default())?;
 
-    let ics_target_height = src_chain.query_latest_height()?;
+    let query_height = src_chain.query_latest_height()?;
+    let proofs = src_chain.build_channel_proofs(
+        &opts.src().port_id(),
+        &opts.src().channel_id(),
+        query_height,
+    )?;
 
-    // Build message to update client on destination
+    // Build message(s) to update client on destination
     let mut msgs = build_update_client(
         dst_chain.clone(),
         src_chain.clone(),
         &dst_connection.client_id(),
-        ics_target_height,
+        proofs.height(),
     )?;
 
     // Get signer
@@ -575,11 +588,7 @@ pub fn build_chan_ack(
         channel_id: opts.dst().channel_id().clone(),
         counterparty_channel_id: opts.src().channel_id().clone(),
         counterparty_version: src_chain.module_version(&opts.dst().port_id())?,
-        proofs: src_chain.build_channel_proofs(
-            &opts.src().port_id(),
-            &opts.src().channel_id(),
-            ics_target_height,
-        )?,
+        proofs,
         signer,
     };
 
@@ -652,14 +661,19 @@ pub fn build_chan_confirm(
     let dst_connection =
         dst_chain.query_connection(&opts.dst().connection_id().clone(), Height::default())?;
 
-    let ics_target_height = src_chain.query_latest_height()?;
+    let query_height = src_chain.query_latest_height()?;
+    let proofs = src_chain.build_channel_proofs(
+        &opts.src().port_id(),
+        &opts.src().channel_id(),
+        query_height,
+    )?;
 
-    // Build message to update client on destination
+    // Build message(s) to update client on destination
     let mut msgs = build_update_client(
         dst_chain.clone(),
         src_chain.clone(),
         &dst_connection.client_id(),
-        ics_target_height,
+        proofs.height(),
     )?;
 
     // Get signer
@@ -671,11 +685,7 @@ pub fn build_chan_confirm(
     let new_msg = MsgChannelOpenConfirm {
         port_id: opts.dst().port_id().clone(),
         channel_id: opts.dst().channel_id().clone(),
-        proofs: src_chain.build_channel_proofs(
-            &opts.src().port_id(),
-            &opts.src().channel_id(),
-            ics_target_height,
-        )?,
+        proofs,
         signer,
     };
 

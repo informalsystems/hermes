@@ -7,7 +7,8 @@ use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::Config;
 use relayer::link::{
-    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketOptions,
+    build_and_send_ack_packet_messages, build_and_send_recv_packet_messages, PacketEnvelope,
+    PacketOptions,
 };
 
 use crate::conclude::Output;
@@ -53,13 +54,15 @@ impl TxRawPacketRecvCmd {
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)
@@ -135,13 +138,15 @@ impl TxRawPacketAckCmd {
 
         let opts = PacketOptions {
             packet_src_chain_config: src_chain_config.clone(),
-            packet_src_client_id: self.src_client_id.clone(),
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
             packet_dst_chain_config: dest_chain_config.clone(),
-            packet_dst_client_id: self.dest_client_id.clone(),
-            packet_dst_port_id: self.dst_port_id.clone(),
-            packet_dst_channel_id: self.dst_channel_id.clone(),
+            packet_envelope: PacketEnvelope {
+                packet_src_client_id: self.src_client_id.clone(),
+                packet_src_port_id: self.src_port_id.clone(),
+                packet_src_channel_id: self.src_channel_id.clone(),
+                packet_dst_client_id: self.dest_client_id.clone(),
+                packet_dst_port_id: self.dst_port_id.clone(),
+                packet_dst_channel_id: self.dst_channel_id.clone(),
+            },
         };
 
         Ok(opts)

@@ -459,21 +459,20 @@ pub fn build_conn_try(
     )?;
     src_chain.send_msgs(client_msgs)?;
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
+    let query_height = src_chain.query_latest_height()?;
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenTry,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     let counterparty_versions = if src_connection.versions().is_empty() {
@@ -577,21 +576,20 @@ pub fn build_conn_ack(
     )?;
     src_chain.send_msgs(client_msgs)?;
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
+    let query_height = src_chain.query_latest_height()?;
     let (client_state, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenAck,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     // Get signer
@@ -661,10 +659,11 @@ pub fn build_conn_confirm(
         .context(e)
     })?;
 
+    let query_height = src_chain.query_latest_height()?;
     let _src_connection = src_chain
-        .query_connection(&opts.src().connection_id().clone(), ICSHeight::default())
+        .query_connection(&opts.src().connection_id().clone(), query_height)
         .map_err(|e| {
-            Kind::ConnOpenAck(
+            Kind::ConnOpenConfirm(
                 opts.src().connection_id().clone(),
                 "missing connection on source chain".to_string(),
             )
@@ -673,21 +672,19 @@ pub fn build_conn_confirm(
 
     // TODO - check that the src connection is consistent with the confirm options
 
-    // Build message(s) for updating client on destination
-    let ics_target_height = src_chain.query_latest_height()?;
-
-    let mut msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        &opts.dst().client_id(),
-        ics_target_height,
-    )?;
-
     let (_, proofs) = src_chain.build_connection_proofs_and_client_state(
         ConnectionMsgType::OpenConfirm,
         &opts.src().connection_id().clone(),
         &opts.src().client_id(),
-        ics_target_height,
+        query_height,
+    )?;
+
+    // Build message(s) for updating client on destination
+    let mut msgs = build_update_client(
+        dst_chain.clone(),
+        src_chain.clone(),
+        &opts.dst().client_id(),
+        proofs.height(),
     )?;
 
     // Get signer
