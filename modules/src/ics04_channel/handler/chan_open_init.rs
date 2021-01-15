@@ -1,8 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::handler::{HandlerOutput, HandlerResult};
-//use crate::ics03_connection::connection::C;
-use crate::ics03_connection::version::verify_supported_feature;
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
@@ -38,22 +36,18 @@ pub(crate) fn process(
 
     let connection_end = ctx.connection_state(&msg.channel().connection_hops()[0]);
 
-    match connection_end {
-        None => {
-            return Err(Kind::MissingConnection(msg.channel().connection_hops()[0].clone()).into());
-        }
-        Some(conn) => {
-            let get_versions = conn.versions();
-            if get_versions.len() != 1 {
-                return Err(Kind::InvalidVersionLengthConnection.into());
-            }
-            if !verify_supported_feature(
-                get_versions[0].clone(),
-                msg.channel().ordering().as_string().to_string(),
-            ) {
-                return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
-            }
-        }
+    let conn = connection_end
+        .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
+
+    let get_versions = conn.versions();
+    let version = match get_versions.as_slice() {
+        [version] => version,
+        _ => return Err(Kind::InvalidVersionLengthConnection.into()),
+    };
+
+    let channel_feature = msg.channel().ordering().as_string().to_string();
+    if !version.is_supported_feature(channel_feature) {
+        return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
     }
 
     // TODO: Check that `version` is non empty but not necessary coherent

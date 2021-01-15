@@ -16,6 +16,13 @@ pub struct Version {
     features: Vec<String>,
 }
 
+impl Version {
+    /// Checks whether or not the given feature is supported in this versin
+    pub fn is_supported_feature(&self, feature: String) -> bool {
+        self.features.contains(&feature)
+    }
+}
+
 impl Protobuf<RawVersion> for Version {}
 
 impl TryFrom<RawVersion> for Version {
@@ -56,15 +63,6 @@ impl Default for Version {
             features: vec!["ORDER_ORDERED".to_string(), "ORDER_UNORDERED".to_string()],
         }
     }
-}
-
-pub fn verify_supported_feature(version: Version, feature: String) -> bool {
-    for f in version.features.iter() {
-        if f.eq(&feature) {
-            return true;
-        }
-    }
-    false
 }
 
 /// Returns the lists of supported versions
