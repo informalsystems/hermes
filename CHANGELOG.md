@@ -19,8 +19,12 @@
 - [relayer]
   - Performance improvements ([#514])
 
+- [modules]
+  -  Clean the validate_basic method ([#94])
+
 - Update to `tendermint-rs` v0.17.1 ([#517])
 
+[#94]: https://github.com/informalsystems/ibc-rs/issues/94
 [#470]: https://github.com/informalsystems/ibc-rs/issues/470
 [#500]: https://github.com/informalsystems/ibc-rs/issues/500
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
