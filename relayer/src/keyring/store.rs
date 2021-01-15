@@ -4,7 +4,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use bech32::ToBase32;
 use bitcoin::{
@@ -137,12 +136,7 @@ impl KeyRingOperations for KeyRing {
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
         let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
-            .and_then(|k| {
-                k.derive_priv(
-                    &Secp256k1::new(),
-                    &DerivationPath::from_str(hd_path.to_string().as_str()).unwrap(),
-                )
-            })
+            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from(hd_path)))
             .map_err(|e| Kind::PrivateKey.context(e))?;
 
         // Get Public Key from Private Key

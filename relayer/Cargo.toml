@@ -30,7 +30,7 @@ retry = "1.1.0"
 crossbeam-channel = "0.5.0"
 k256 = { version = "0.7.1", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
-bitcoin = { version= "0.25"}
+bitcoin = { version = ">= 0.21" }
 bitcoin-wallet = "1.1.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
 rust-crypto = "0.2.36"
