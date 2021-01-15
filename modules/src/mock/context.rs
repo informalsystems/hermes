@@ -368,23 +368,11 @@ impl ChannelReader for MockContext {
         port_channel_id: &(PortId, ChannelId),
         height: Height,
     ) -> Option<AnyConsensusState> {
-        let channel = self.channel_end(port_channel_id);
-        match channel {
-            Some(v) => {
-                let cid = v.connection_hops().clone()[0].clone();
+        let channel = self.channel_end(port_channel_id).unwrap();
+        let cid = channel.connection_hops()[0].clone();
+        let conn = self.connection_state(&cid).unwrap();
 
-                let conn = self.connection_state(&cid);
-                match conn {
-                    Some(v) => ConnectionReader::client_consensus_state(
-                        self,
-                        &v.client_id().clone(),
-                        height,
-                    ),
-                    None => panic!(),
-                }
-            }
-            None => panic!(),
-        }
+        ConnectionReader::client_consensus_state(self, conn.client_id(), height)
     }
 
     fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
