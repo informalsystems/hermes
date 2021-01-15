@@ -73,20 +73,22 @@ pub struct MockContext {
     /// Association between conection ids and channel ids.
     connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
 
-    //Tracks the sequence number for the next packet to be sent.
+    /// Tracks the sequence number for the next packet to be sent.
     next_sequence_send: HashMap<(PortId, ChannelId), u64>,
 
-    //Tracks the sequence number for the next packet to be received.
+    /// Tracks the sequence number for the next packet to be received.
     next_sequence_recv: HashMap<(PortId, ChannelId), u64>,
 
-    //Tracks the sequence number for the next packet to be acknowledged.
+    /// Tracks the sequence number for the next packet to be acknowledged.
     next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
 
+    /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
 
+    /// Counter for channel identifiers (see `next_channel_id`).
     channel_ids_counter: u32,
 }
 

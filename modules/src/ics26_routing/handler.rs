@@ -240,7 +240,7 @@ mod tests {
                 })),
                 want_pass: false,
             },
-            //Test the ICS3 connection functionality.
+            // Test the ICS3 connection functionality.
             Test {
                 name: "Connection open init fail due to missing client".to_string(),
                 msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
