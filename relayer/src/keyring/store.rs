@@ -1,26 +1,25 @@
-use crate::config::ChainConfig;
-use crate::keyring::errors::{Error, Kind};
-use bech32::ToBase32;
-
-use bitcoin::secp256k1::Secp256k1;
-use bitcoin::{
-    network::constants::Network,
-    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-};
-
-use bitcoin_wallet::mnemonic::Mnemonic;
-use hdpath::StandardHDPath;
-use k256::ecdsa::{signature::Signer, Signature, SigningKey};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-
-use tendermint::account::Id as AccountId;
 use std::str::FromStr;
+
+use bech32::ToBase32;
+use bitcoin::{
+    network::constants::Network,
+    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
+};
+use bitcoin::secp256k1::Secp256k1;
+use bitcoin_wallet::mnemonic::Mnemonic;
+use hdpath::StandardHDPath;
+use k256::ecdsa::{Signature, signature::Signer, SigningKey};
+use serde_json::Value;
+use tendermint::account::Id as AccountId;
+
+use crate::config::ChainConfig;
+use crate::keyring::errors::{Error, Kind};
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
 pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
@@ -138,7 +137,12 @@ impl KeyRingOperations for KeyRing {
         // Get Private Key from seed and standard derivation path
         let hd_path = StandardHDPath::try_from("m/44'/118'/0'/0/0").unwrap();
         let private_key = ExtendedPrivKey::new_master(Network::Bitcoin, &seed.0)
-            .and_then(|k| k.derive_priv(&Secp256k1::new(), &DerivationPath::from_str(hd_path.to_string().as_str()).unwrap()))
+            .and_then(|k| {
+                k.derive_priv(
+                    &Secp256k1::new(),
+                    &DerivationPath::from_str(hd_path.to_string().as_str()).unwrap(),
+                )
+            })
             .map_err(|e| Kind::PrivateKey.context(e))?;
 
         // Get Public Key from Private Key
