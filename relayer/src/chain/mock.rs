@@ -1,5 +1,5 @@
 use std::ops::Add;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -54,7 +54,7 @@ impl Chain for MockChain {
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
 
-    fn bootstrap(config: ChainConfig, _rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
+    fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         Ok(MockChain {
             config: config.clone(),
             context: MockContext::new(
@@ -77,7 +77,7 @@ impl Chain for MockChain {
 
     fn init_event_monitor(
         &self,
-        _rt: Arc<Mutex<Runtime>>,
+        _rt: Arc<Runtime>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,

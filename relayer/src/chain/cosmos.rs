@@ -1,10 +1,5 @@
 use std::{
-    convert::TryFrom,
-    convert::TryInto,
-    future::Future,
-    str::FromStr,
-    sync::{Arc, Mutex},
-    thread,
+    convert::TryFrom, convert::TryInto, future::Future, str::FromStr, sync::Arc, thread,
     time::Duration,
 };
 
@@ -78,7 +73,7 @@ const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 pub struct CosmosSDKChain {
     config: ChainConfig,
     rpc_client: HttpClient,
-    rt: Arc<Mutex<TokioRuntime>>,
+    rt: Arc<TokioRuntime>,
     keybase: KeyRing,
 }
 
@@ -128,7 +123,7 @@ impl CosmosSDKChain {
 
     /// Run a future to completion on the Tokio runtime.
     fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
-        Ok(self.rt.lock().map_err(|_| Kind::PoisonedMutex)?.block_on(f))
+        Ok(self.rt.block_on(f))
     }
 
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
@@ -242,7 +237,7 @@ impl Chain for CosmosSDKChain {
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
 
-    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error> {
+    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client =
             HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
 
@@ -272,7 +267,7 @@ impl Chain for CosmosSDKChain {
 
     fn init_event_monitor(
         &self,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,
