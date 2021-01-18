@@ -1,9 +1,11 @@
 use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
-use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
+use serde::Serialize;
 use tendermint_light_client::types::TrustThreshold;
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
 
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
@@ -12,7 +14,7 @@ use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
     pub chain_id: String,
     pub trust_level: TrustThreshold,
@@ -330,13 +332,14 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
+    use std::time::Duration;
+
+    use tendermint::block::Header;
+
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::height::Height;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ChainId;
-
-    use std::time::Duration;
-    use tendermint::block::Header;
 
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
         AnyClientState::Tendermint(

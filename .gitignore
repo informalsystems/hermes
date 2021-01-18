@@ -16,3 +16,6 @@ Cargo.lock
 
 # Ignore Jetbrains
 .idea
+
+# Ignore VisualStudio
+.vscode

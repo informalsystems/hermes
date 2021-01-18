@@ -1,17 +1,26 @@
 use std::convert::TryFrom;
 
-use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+use serde::Serialize;
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 
 use crate::ics03_connection::error::Kind;
 
 /// Stores the identifier and the features supported by a version
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Version {
     /// unique version identifier
     identifier: String,
     /// list of features compatible with the specified identifier
     features: Vec<String>,
+}
+
+impl Version {
+    /// Checks whether or not the given feature is supported in this versin
+    pub fn is_supported_feature(&self, feature: String) -> bool {
+        self.features.contains(&feature)
+    }
 }
 
 impl Protobuf<RawVersion> for Version {}
@@ -85,9 +94,11 @@ pub fn pick_version(
 
 #[cfg(test)]
 mod tests {
-    use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
-    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
     use std::convert::{TryFrom, TryInto};
+
+    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+
+    use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
 
     fn good_versions() -> Vec<RawVersion> {
         vec![

@@ -23,7 +23,7 @@ pub(crate) fn process(
         Some(prev_id) => {
             let old_connection_end = ctx
                 .connection_end(prev_id)
-                .ok_or_else(|| Kind::ConnectionNotFound.context(prev_id.to_string()))?;
+                .ok_or_else(|| Kind::ConnectionNotFound(prev_id.clone()))?;
 
             // Validate that existing connection end matches with the one we're trying to establish.
             if old_connection_end.state_matches(&State::Init)

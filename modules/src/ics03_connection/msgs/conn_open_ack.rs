@@ -72,10 +72,6 @@ impl Msg for MsgConnectionOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        Ok(())
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }

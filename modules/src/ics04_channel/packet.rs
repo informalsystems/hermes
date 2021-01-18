@@ -1,5 +1,6 @@
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+
+use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
@@ -13,6 +14,16 @@ pub enum PacketMsgType {
     Recv,
     Ack,
     Timeout,
+}
+
+impl std::fmt::Display for PacketMsgType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PacketMsgType::Recv => write!(f, "(PacketMsgType::Recv)"),
+            PacketMsgType::Ack => write!(f, "(PacketMsgType::Ack)"),
+            PacketMsgType::Timeout => write!(f, "(PacketMsgType::Timeout)"),
+        }
+    }
 }
 
 /// The sequence number of a packet enforces ordering among packets from the same source.

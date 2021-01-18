@@ -1,10 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
+use serde::Serialize;
+use tendermint_proto::Protobuf;
+
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
-use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::Kind;
 use crate::ics03_connection::version::Version;
@@ -12,7 +14,8 @@ use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(tag = "ConnectionEnd")]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -153,7 +156,7 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -242,7 +245,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,

@@ -4,9 +4,9 @@ use abscissa_core::{
     application::fatal_error, error::BoxError, tracing::debug, Command, Options, Runnable,
 };
 
+use ibc::ics04_channel::channel::Order;
+
 use relayer::chain::runtime::ChainRuntime;
-use relayer::channel::ChannelConfig;
-use relayer::connection::ConnectionConfig;
 use relayer::relay::channel_relay;
 
 use crate::config::Config;
@@ -38,23 +38,17 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
         .clone()
         .ok_or("No connections configured")?[0];
 
-    let path = &conn.paths.clone().ok_or("No paths configured")?[0];
-
-    let connection_cfg = ConnectionConfig::new(&conn.clone())?;
-    let channel_cfg = ChannelConfig::new(&connection_cfg, &path)?;
+    let ordering = Order::default(); // TODO - add to config
+    let path = conn.paths.clone().ok_or("No paths configured")?[0].clone();
 
     let src_chain_config = config
-        .chains
-        .clone()
-        .into_iter()
-        .find(|c| c.id == connection_cfg.src().chain_id().clone())
+        .find_chain(&conn.a_chain)
+        .cloned()
         .ok_or("Configuration for source chain not found")?;
 
     let dst_chain_config = config
-        .chains
-        .clone()
-        .into_iter()
-        .find(|c| c.id == connection_cfg.dst().chain_id().clone())
+        .find_chain(&conn.b_chain)
+        .cloned()
         .ok_or("Configuration for source chain not found")?;
 
     let (src_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)?;
@@ -63,6 +57,7 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     Ok(channel_relay(
         src_chain_handle,
         dst_chain_handle,
-        channel_cfg,
+        ordering,
+        path,
     )?)
 }

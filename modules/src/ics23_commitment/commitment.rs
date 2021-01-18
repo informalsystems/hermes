@@ -1,11 +1,13 @@
 use std::convert::TryFrom;
 use std::fmt;
 
+use serde::Serialize;
+
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use crate::ics23_commitment::error::{Error, Kind};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CommitmentRoot(pub Vec<u8>); // Todo: write constructor
 impl CommitmentRoot {
     pub fn from_bytes(bytes: &[u8]) -> Self {
@@ -24,7 +26,7 @@ impl From<Vec<u8>> for CommitmentRoot {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CommitmentPath;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CommitmentProofBytes(Vec<u8>);
 
 impl CommitmentProofBytes {
@@ -72,7 +74,7 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
 }
 
 // TODO: decent getter or Protobuf trait implementation
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize)]
 pub struct CommitmentPrefix(pub Vec<u8>);
 
 impl CommitmentPrefix {

@@ -1,19 +1,18 @@
-use chrono::{TimeZone, Utc};
 use std::convert::TryFrom;
 
-use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
-
-use tendermint::time::Time;
-use tendermint::Hash;
+use chrono::{TimeZone, Utc};
+use serde::Serialize;
+use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
 use crate::ics02_client::{client_def::AnyConsensusState, client_type::ClientType};
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::commitment::CommitmentRoot;
-use tendermint::hash::Algorithm;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,
@@ -101,8 +100,9 @@ impl From<Header> for ConsensusState {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_serialization_roundtrip;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
+
+    use crate::test::test_serialization_roundtrip;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

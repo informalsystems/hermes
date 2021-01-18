@@ -36,8 +36,8 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -51,7 +51,7 @@ use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ClientId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -67,6 +67,7 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
+use crate::util::block_on;
 use ibc::ics04_channel::packet::Sequence;
 
 // TODO size this properly
@@ -97,9 +98,7 @@ impl CosmosSDKChain {
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
-        let response = self
-            .block_on(client.params(request))?
-            .map_err(|e| Kind::Grpc.context(e))?;
+        let response = block_on(client.params(request)).map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
             .into_inner()
@@ -122,8 +121,7 @@ impl CosmosSDKChain {
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
-        Ok(self
-            .block_on(self.rpc_client().genesis())?
+        Ok(block_on(self.rpc_client().genesis())
             .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
     }
@@ -160,9 +158,8 @@ impl CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_response = self
-            .block_on(query_account(self, key.account))?
-            .map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response =
+            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -218,9 +215,8 @@ impl CosmosSDKChain {
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
-        let response = self
-            .block_on(broadcast_tx_commit(self, txraw_buf))?
-            .map_err(|e| Kind::Rpc.context(e))?;
+        let response =
+            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
 
         let res = tx_result_to_event(response)?;
 
@@ -313,8 +309,7 @@ impl Chain for CosmosSDKChain {
                 .into());
         }
 
-        let response =
-            self.block_on(abci_query(&self, path, data.to_string(), height, prove))??;
+        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -356,9 +351,7 @@ impl Chain for CosmosSDKChain {
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = self
-            .block_on(self.rpc_client().status())?
-            .map_err(|e| Kind::Rpc.context(e))?;
+        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
@@ -382,12 +375,15 @@ impl Chain for CosmosSDKChain {
     ) -> Result<Self::ClientState, Error> {
         let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
-            .map_err(|e| Kind::Query.context(e))
+            .map_err(|e| Kind::Query("client state".into()).context(e))
             .and_then(|v| {
-                AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e))
+                AnyClientState::decode_vec(&v.value)
+                    .map_err(|e| Kind::Query("client state".into()).context(e))
             })?;
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
         Ok(client_state)
     }
 
@@ -405,18 +401,21 @@ impl Chain for CosmosSDKChain {
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
         let res = self
             .query(ClientStatePath(client_id.clone()), height, true)
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
+
+        let client_state = AnyClientState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
 
         let client_state =
-            AnyClientState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
-
-        let client_state = downcast!(client_state => AnyClientState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client state type"))?;
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
 
         Ok((
             client_state,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client state".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
@@ -436,18 +435,21 @@ impl Chain for CosmosSDKChain {
                 height,
                 true,
             )
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
-        let consensus_state =
-            AnyConsensusState::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let consensus_state = AnyConsensusState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
         let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| Kind::Query.context("unexpected client consensus type"))?;
+            .ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("unexpected client consensus type")
+            })?;
 
         Ok((
             consensus_state,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
@@ -516,7 +518,6 @@ impl Chain for CosmosSDKChain {
         Ok(key)
     }
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move to the chain trait
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
@@ -531,8 +532,7 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.packet_commitments(request))?
+        let response = block_on(client.packet_commitments(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -548,7 +548,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
@@ -563,8 +562,7 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.unreceived_packets(request))?
+        let response = block_on(client.unreceived_packets(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -572,7 +570,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet acknowledgment hashes associated with a channel.
-    /// TODO - move to the chain trait
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
@@ -587,8 +584,7 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.packet_acknowledgements(request))?
+        let response = block_on(client.packet_acknowledgements(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -604,7 +600,6 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Queries the packet commitment hashes associated with a channel.
-    /// TODO - move the chain trait
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
@@ -619,8 +614,7 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
-            .block_on(client.unreceived_acks(request))?
+        let response = block_on(client.unreceived_acks(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -638,22 +632,51 @@ impl Chain for CosmosSDKChain {
         let mut result: Vec<IBCEvent> = vec![];
         for seq in request.sequences.iter() {
             // query all Tx-es that include events related to packet with given port, channel and sequence
-            let response = self
-                .block_on(self.rpc_client.tx_search(
-                    packet_query(&request, seq)?,
-                    false,
-                    1,
-                    1,
-                    Order::Ascending,
-                ))
-                .unwrap()
-                .unwrap(); // todo
+            let response = block_on(self.rpc_client.tx_search(
+                packet_query(&request, seq)?,
+                false,
+                1,
+                1,
+                Order::Ascending,
+            ))
+            .unwrap(); // todo
 
             let mut events = packet_from_tx_search_response(&request, *seq, &response)?
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
         Ok(result)
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error> {
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )?
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connection_channels(request))?
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
+
+        let vec_ids = response
+            .channels
+            .iter()
+            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
+            .collect();
+
+        Ok(vec_ids)
     }
 }
 
@@ -767,14 +790,14 @@ async fn abci_query(
 async fn broadcast_tx_commit(
     chain: &CosmosSDKChain,
     data: Vec<u8>,
-) -> Result<String, anomaly::Error<Kind>> {
+) -> Result<Response, anomaly::Error<Kind>> {
     let response = chain
         .rpc_client()
         .broadcast_tx_commit(data.into())
         .await
         .map_err(|e| Kind::Rpc.context(e))?;
 
-    Ok(serde_json::to_string(&response).unwrap())
+    Ok(response)
 }
 
 /// Uses the GRPC client to retrieve the account sequence
@@ -803,10 +826,8 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(raw_res: String) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
-
-    let response: Response = serde_json::from_str(raw_res.as_str()).unwrap();
 
     // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {
