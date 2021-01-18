@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::ics24_host::identifier::ConnectionId;
+use crate::ics24_host::identifier::{ChannelId,ConnectionId};
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -66,6 +66,17 @@ pub enum Kind {
 
     #[error("the channel ordering is not supported by connection ")]
     ChannelFeatureNotSuportedByConnection,
+
+    #[error("queried for a non-existing connection")]
+    ChannelNotFound,
+
+    #[error(
+        "a different channel exists (was initialized) already for the same channel identifier {0}"
+    )]
+    ChannelMismatch(ChannelId),
+
+    #[error("the associated connection {0} is not OPEN ")]
+    ConnectionNotOpen(ConnectionId),
 }
 
 impl Kind {

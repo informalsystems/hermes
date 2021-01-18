@@ -9,11 +9,12 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
 pub mod chan_open_init;
-
+pub mod chan_open_try;
+mod verify;
 #[derive(Clone, Debug)]
 pub enum ChannelEvent {
     ChanOpenInit(ChannelResult),
-    // ConnOpenTry(ConnectionResult),
+    ChanOpenTry(ChannelResult),
     // ConnOpenAck(ConnectionResult),
     // ConnOpenConfirm(ConnectionResult),
 }
@@ -33,10 +34,10 @@ impl From<ChannelEvent> for Event {
                 EventType::Custom("channel_open_init".to_string()),
                 vec![("channel_id".to_string(), "None".to_string())],
             ),
-            // ChannelEvent::ChanOpenTry(conn) => Event::new(
-            //     EventType::Custom("channel_open_try".to_string()),
-            //     vec![("channel_id".to_string(), chan.channel_id.to_string())],
-            // ),
+            ChannelEvent::ChanOpenTry(_chan) => Event::new(
+                EventType::Custom("channel_open_try".to_string()),
+                vec![("channel_id".to_string(), "None".to_string())],
+            ),
             // ChannelEvent::ChanOpenAck(conn) => Event::new(
             //     EventType::Custom("channel_open_ack".to_string()),
             //     vec![("channel_id".to_string(), chan.channel_id.to_string())],
@@ -57,7 +58,7 @@ where
 {
     Ok(match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg)?,
-        // ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, *msg)?,
+        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, *msg)?,
         // ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, *msg)?,
         // ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg)?,
         _ => panic!(),
