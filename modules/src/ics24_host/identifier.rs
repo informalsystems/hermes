@@ -149,8 +149,10 @@ impl ClientId {
     /// chain, for example, will have the prefix '07-tendermint'.
     pub fn prefix(client_type: ClientType) -> &'static str {
         match client_type {
-            ClientType::Mock => ClientType::Mock.as_string(),
             ClientType::Tendermint => ClientType::Tendermint.as_string(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            ClientType::Mock => ClientType::Mock.as_string(),
         }
     }
 
