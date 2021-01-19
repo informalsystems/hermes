@@ -1,7 +1,7 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::{ChannelId, ConnectionId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 use thiserror::Error;
 
 /// An error that can be raised by the relayer.
@@ -30,9 +30,13 @@ pub enum Kind {
     #[error("GRPC error")]
     Grpc,
 
-    /// Light client error, typically raised by a `Client`
-    #[error("Light client error")]
-    LightClient,
+    /// Light client supervisor error
+    #[error("Light client supervisor error for chain id {0}")]
+    LightClientSupervisor(ChainId),
+
+    /// Light client instance error, typically raised by a `Client`
+    #[error("Light client instance error for rpc address {0}")]
+    LightClientInstance(String),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]

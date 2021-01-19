@@ -350,7 +350,7 @@ impl Chain for CosmosSDKChain {
 
         if status.sync_info.catching_up {
             fail!(
-                Kind::LightClient,
+                Kind::LightClientSupervisor(self.config.id.clone()),
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
