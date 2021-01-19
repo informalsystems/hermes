@@ -12,6 +12,9 @@
 
 ### IMPROVEMENTS
 
+- Update to `tendermint-rs` v0.17.1 ([#517])
+- Update to `tokio` 1.0, `prost` 0.7 and `tonic` 0.4 ([#527])
+
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
@@ -23,8 +26,6 @@
 - [modules]
   - Clean the validate_basic method ([#94])
   - MsgConnectionOpenAck testing improvements ([#306])
-
-- Update to `tendermint-rs` v0.17.1 ([#517])
 
 ### BUG FIXES:
 
@@ -42,6 +43,7 @@
 [#514]: https://github.com/informalsystems/ibc-rs/issues/514
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
 [#525]: https://github.com/informalsystems/ibc-rs/issues/525
+[#527]: https://github.com/informalsystems/ibc-rs/issues/527
 
 
 ## v0.0.6
