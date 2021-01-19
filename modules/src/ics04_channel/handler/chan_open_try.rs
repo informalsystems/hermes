@@ -143,8 +143,6 @@ pub(crate) fn process(
 
     if verify_proofs(
         ctx,
-        msg.port_id().clone(),
-        channel_id.clone(),
         &new_channel_end,
         &expected_channel_end,
         &msg.proofs(),
@@ -190,11 +188,13 @@ mod tests {
     use crate::ics04_channel::channel::{ChannelEnd, State};
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
+    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try_with_counterparty;
+
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     //use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
 
-    use crate::ics24_host::identifier::{ChannelId, ConnectionId};
+    use crate::ics24_host::identifier::{ChannelId, ConnectionId,PortId};
     use crate::mock::context::MockContext;
     use crate::Height;
 
@@ -208,9 +208,7 @@ mod tests {
         }
         let proof_height = 10;
 
-        let msg_chan_try =
-            MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
-
+        
         //chan_id is used to add a channel to the context
         let cchan_id2 = <ChannelId as FromStr>::from_str(&"channel24".to_string());
 
@@ -221,6 +219,7 @@ mod tests {
 
         //msg_chan_try2 is used to test against an exiting channel entry.
         let cchan_id = <ChannelId as FromStr>::from_str(&"channel24".to_string());
+
         let mut msg_chan_try2 =
             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
 
@@ -263,8 +262,6 @@ mod tests {
             },
         );
 
-        let mut connection_vec3 = Vec::new();
-        connection_vec3.insert(0, ConnectionId::default());
 
         let init_chan_end = ChannelEnd::new(
             State::Init,
@@ -283,6 +280,10 @@ mod tests {
             msg_chan_try2.counterparty_version().clone(),
         );
 
+        //Used for Test "Processing connection does not match when a channel exists "
+        let mut connection_vec3 = Vec::new();
+        connection_vec3.insert(0, ConnectionId::default());
+        
         let init_chan_end3 = ChannelEnd::new(
             State::Init,
             *msg_chan_try2.channel.ordering(),
@@ -292,6 +293,9 @@ mod tests {
             msg_chan_try2.channel().version(),
         );
 
+   
+
+
         let client_consensus_state_height = 10;
         let host_chain_height = Height::new(1, 35);
 
@@ -300,6 +304,19 @@ mod tests {
             host_chain_height.revision_height,
         ))
         .unwrap();
+
+
+        //Test "Good parameters: No channel Open Init found" 
+
+        let msg_chan_try =
+        MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try_with_counterparty(proof_height)).unwrap(); 
+       
+        let ccounterparty_chan_id = <ChannelId as FromStr>::from_str(&"channel25".to_string());
+        let counterparty_chan_id = match ccounterparty_chan_id {
+            Ok(v) => v,
+            Err(_e) => ChannelId::default(),
+        };
+
 
         let tests: Vec<Test> = vec![
             Test {
@@ -400,11 +417,11 @@ mod tests {
                     )
                     .with_channel_init(
                         MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-                            .unwrap()
-                            .port_id()
-                            .clone(),
+                        .unwrap()
+                        .port_id()
+                        .clone(),
                         chan_id,
-                        init_chan_end,
+                        init_chan_end.clone(),
                     ),
                 msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2)),
                 want_pass: true,
@@ -422,6 +439,11 @@ mod tests {
                             .unwrap()
                             .port_id()
                             .clone(),
+                    )
+                    .with_channel_init(
+                        PortId::from_str("port12").unwrap(),
+                        counterparty_chan_id,
+                        init_chan_end,
                     ),
                 msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try)),
                 want_pass: true,

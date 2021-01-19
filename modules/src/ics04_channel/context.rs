@@ -7,7 +7,7 @@ use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics05_port::capabilities::Capability;
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
@@ -22,14 +22,12 @@ pub trait ChannelReader {
 
     fn channel_client_state(
         &self,
-        port_channel_id: Option<&(PortId, ChannelId)>,
-        client_id: &ClientId,
+        port_channel_id:&(PortId, ChannelId),
     ) -> Option<AnyClientState>;
 
     fn channel_client_consensus_state(
         &self,
-        port_channel_id: Option<&(PortId, ChannelId)>,
-        client_id: &ClientId,
+        port_channel_id: &(PortId, ChannelId),
         height: Height,
     ) -> Option<AnyConsensusState>;
 

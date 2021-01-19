@@ -95,6 +95,12 @@ pub enum Kind {
 
     #[error("Missing client consensus state")]
     MissingClientConsensusState,
+
+    #[error("Invalid channel id in counterparty")]
+    InvalidCcounterpartyChannelId,
+
+    #[error("Client not found in chan open verification")]
+    ClientNotFound,
 }
 
 impl Kind {

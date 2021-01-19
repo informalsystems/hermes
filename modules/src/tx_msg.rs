@@ -1,5 +1,6 @@
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
+use crate::ics24_host::error::ValidationError;
 
 pub trait Msg: Clone {
     type ValidationError: std::error::Error;
@@ -27,4 +28,8 @@ pub trait Msg: Clone {
     }
 
     fn get_signers(&self) -> Vec<AccountId>;
+
+    fn validate_basic(&self) -> Result<(),ValidationError>{ 
+        Ok(())
+    }
 }

@@ -346,8 +346,16 @@ pub mod test_util {
     /// Returns a dummy `RawCounterparty`, for testing only!
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
-            port_id: "0123456789".into(),
-            channel_id: "0987654321".into(),
+            port_id: "port".into(),
+            channel_id: "channel24".into(),
+        }
+    }
+
+    /// Returns a dummy `RawCounterparty`, for testing only!
+    pub fn get_another_dummy_raw_counterparty() -> RawCounterparty {
+        RawCounterparty {
+            port_id: "port12".into(),
+            channel_id: "channel25".into(),
         }
     }
 
@@ -361,6 +369,17 @@ pub mod test_util {
             version: "ics20".to_string(), // The version is not validated.
         }
     }
+
+        /// Returns a dummy `RawChannel`, for testing only!
+        pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
+            RawChannel {
+                state: 1,
+                ordering: 1,
+                counterparty: Some(get_another_dummy_raw_counterparty()),
+                connection_hops: vec!["defaultConnection-0".to_string()],
+                version: "ics20".to_string(), // The version is not validated.
+            }
+        }
 
     pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
         RawChannel {

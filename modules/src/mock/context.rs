@@ -356,42 +356,37 @@ impl ChannelReader for MockContext {
 
     fn channel_client_state(
         &self,
-        port_channel_id: Option<&(PortId, ChannelId)>,
-        client_id: &ClientId,
+        port_channel_id: &(PortId, ChannelId),
     ) -> Option<AnyClientState> {
-        match port_channel_id {
-            Some(pc_id) => {
-                let channel = self.channel_end(pc_id);
-                match channel {
-                    Some(v) => {
-                        let cid = v.connection_hops().clone()[0].clone();
-                        let conn = self.connection_state(&cid);
-                        match conn {
-                            Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
-                            None => panic!(),
-                        }
+            let channel = self.channel_end(port_channel_id);
+            match channel {
+                Some(v) => {
+                    let cid = v.connection_hops().clone()[0].clone();
+                    let conn = self.connection_state(&cid);
+                    match conn {
+                        Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
+                        _ => None,
                     }
-                    None => ClientReader::client_state(self, client_id),
                 }
+                _ => None,
             }
-            None => ClientReader::client_state(self, client_id),
-        }
+    
     }
 
     fn channel_client_consensus_state(
         &self,
-        port_channel_id: Option<&(PortId, ChannelId)>,
-        client_id: &ClientId,
+        port_channel_id: &(PortId, ChannelId),
         height: Height,
     ) -> Option<AnyConsensusState> {
-        match port_channel_id {
-            Some(pc_id) => {
-                let channel = self.channel_end(pc_id).unwrap();
+      
+        let channel_end = self.channel_end(port_channel_id);
+        match channel_end{
+            Some(channel) => {
                 let cid = channel.connection_hops()[0].clone();
                 let conn = self.connection_state(&cid).unwrap();
                 ConnectionReader::client_consensus_state(self, conn.client_id(), height)
-            }
-            None => ClientReader::consensus_state(self, client_id, height),
+            },
+            _ => None,
         }
     }
 
