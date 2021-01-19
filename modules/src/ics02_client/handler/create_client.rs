@@ -4,41 +4,46 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
-use crate::ics02_client::error::Error;
+use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use crate::ics24_host::identifier::ClientId;
 
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Result {
+    pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
     pub consensus_state: AnyConsensusState,
 }
 
 pub fn process(
-    _ctx: &dyn ClientReader,
+    ctx: &dyn ClientReader,
     msg: MsgCreateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
-    let output = HandlerOutput::builder();
+    let mut output = HandlerOutput::builder();
+
+    // Construct this client's identifier
+    let id_counter = ctx.client_counter();
+    let client_id = ClientId::new(msg.client_state().client_type(), id_counter).map_err(|e| {
+        Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
+    })?;
+
+    output.log("success: generated new client identifier");
 
     Ok(output.with_result(ClientResult::Create(Result {
+        client_id,
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
     })))
 }
 
-/// ## Why are all these tests ignored?
-/// All these tests are ignored as of #451, because the logic inside `process` has been simplified
-/// to the point where there's nothing to test.
-/// TODO: We should consider refactoring the ICS02 handlers
-/// by moving the `next_client_id` method into trait `ClientReader` (make it a deterministic & pure
-/// method call) and thus generate client ids in the `process` call above. Then we re-enable tests.
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::convert::TryInto;
     use std::time::Duration;
 
     use tendermint_light_client::types::TrustThreshold;
@@ -50,18 +55,15 @@ mod tests {
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
     use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::ics24_host::identifier::ClientId;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
+    use crate::test_utils::get_dummy_account_id;
     use crate::Height;
 
-    use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::test_utils::get_dummy_account_id;
-    use std::convert::TryInto;
-
     #[test]
-    #[ignore = "handlers simplified (#451), nothing left to test"]
     fn test_create_client_ok() {
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
@@ -74,7 +76,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -84,7 +86,16 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_result) => {
                     assert_eq!(create_result.client_type, ClientType::Mock);
-                    assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                    assert_eq!(
+                        log,
+                        vec!["success: generated new client identifier".to_string(),]
+                    );
+
+                    let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
+                    assert_eq!(create_result.client_id, expected_client_id);
+
+                    assert_eq!(create_result.client_state, msg.client_state());
+                    assert_eq!(create_result.consensus_state, msg.consensus_state());
                 }
                 _ => {
                     panic!("unexpected result type: expected ClientResult::CreateResult!");
@@ -97,9 +108,8 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "handlers simplified (#451), nothing left to test"]
     fn test_create_client_ok_multiple() {
-        let existing_client_id = ClientId::from_str("existingmockclient").unwrap();
+        let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
 
@@ -152,6 +162,11 @@ mod tests {
         .into_iter()
         .collect();
 
+        // The expected client id that will be generated will be identical to "9999-mock-0" for all
+        // tests. This is because we're not persisting any client results (which is done via the
+        // tests for `ics26_routing::dispatch`.
+        let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
+
         for msg in create_client_msgs {
             let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
@@ -163,7 +178,15 @@ mod tests {
                 }) => match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, msg.client_state().client_type());
-                        assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                        assert_eq!(
+                            log,
+                            vec!["success: generated new client identifier".to_string(),]
+                        );
+
+                        assert_eq!(create_res.client_id, expected_client_id);
+
+                        assert_eq!(create_res.client_state, msg.client_state());
+                        assert_eq!(create_res.consensus_state, msg.consensus_state());
                     }
                     _ => {
                         panic!("expected result of type ClientResult::CreateResult");
@@ -177,7 +200,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "handlers simplified (#451), nothing left to test"]
     fn test_tm_create_client_ok() {
         let signer = get_dummy_account_id();
 
@@ -207,7 +229,7 @@ mod tests {
         )
         .unwrap();
 
-        let output = dispatch(&ctx, ClientMsg::CreateClient(msg));
+        let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
             Ok(HandlerOutput {
@@ -217,7 +239,16 @@ mod tests {
             }) => match result {
                 ClientResult::Create(create_res) => {
                     assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    assert_eq!(log, vec!["success: no client state found".to_string(),]);
+                    assert_eq!(
+                        log,
+                        vec!["success: generated new client identifier".to_string(),]
+                    );
+
+                    let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+                    assert_eq!(create_res.client_id, expected_client_id);
+
+                    assert_eq!(create_res.client_state, msg.client_state());
+                    assert_eq!(create_res.consensus_state, msg.consensus_state());
                 }
                 _ => {
                     panic!("expected result of type ClientResult::CreateResult");

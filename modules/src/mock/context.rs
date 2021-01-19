@@ -58,8 +58,9 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
-    /// Counter for the client identifiers, necessary to generate ids (see `next_client_id`).
-    client_ids_counter: u32,
+    /// Counter for the client identifiers, necessary for `increase_client_counter` and the
+    /// `client_counter` methods.
+    client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
@@ -541,17 +542,13 @@ impl ClientReader for MockContext {
             None => None,
         }
     }
+
+    fn client_counter(&self) -> u64 {
+        self.client_ids_counter
+    }
 }
 
 impl ClientKeeper for MockContext {
-    fn next_client_id(&mut self) -> ClientId {
-        let prefix = ClientId::default().to_string();
-        let suffix = self.client_ids_counter;
-        self.client_ids_counter += 1;
-
-        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
-    }
-
     fn store_client_type(
         &mut self,
         client_id: ClientId,
@@ -598,6 +595,10 @@ impl ClientKeeper for MockContext {
             .consensus_states
             .insert(height, consensus_state);
         Ok(())
+    }
+
+    fn increase_client_counter(&mut self) {
+        self.client_ids_counter += 1
     }
 }
 

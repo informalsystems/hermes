@@ -12,6 +12,9 @@ pub enum Kind {
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
 
+    #[error("Client identifier constructor failed for type {0} with counter {1}")]
+    ClientIdentifierConstructor(ClientType, u64),
+
     #[error("client already exists: {0}")]
     ClientAlreadyExists(ClientId),
 
