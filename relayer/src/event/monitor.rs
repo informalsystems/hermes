@@ -1,11 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use anomaly::BoxError;
 use crossbeam_channel as channel;
+use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
-use tokio::stream::StreamExt;
 
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
@@ -44,7 +44,7 @@ pub struct EventMonitor {
     /// All subscriptions combined in a single stream
     subscriptions: Box<SubscriptionStream>,
     /// Tokio runtime
-    rt: Arc<Mutex<TokioRuntime>>,
+    rt: Arc<TokioRuntime>,
 }
 
 impl EventMonitor {
@@ -52,24 +52,18 @@ impl EventMonitor {
     pub fn new(
         chain_id: ChainId,
         rpc_addr: net::Address,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Result<(Self, channel::Receiver<EventBatch>), Error> {
         let (tx, rx) = channel::unbounded();
 
         let websocket_addr = rpc_addr.clone();
-        let (websocket_client, websocket_driver) = rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(async move {
-                WebSocketClient::new(websocket_addr)
-                    .await
-                    .map_err(|e| Kind::Rpc.context(e))
-            })?;
+        let (websocket_client, websocket_driver) = rt.block_on(async move {
+            WebSocketClient::new(websocket_addr)
+                .await
+                .map_err(|e| Kind::Rpc.context(e))
+        })?;
 
-        let websocket_driver_handle = rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .spawn(websocket_driver.run());
+        let websocket_driver_handle = rt.spawn(websocket_driver.run());
 
         // TODO: move them to config file(?)
         let event_queries = vec![Query::from(EventType::Tx), Query::from(EventType::NewBlock)];
@@ -95,8 +89,6 @@ impl EventMonitor {
         for query in &self.event_queries {
             let subscription = self
                 .rt
-                .lock()
-                .map_err(|_| Kind::PoisonedMutex)?
                 .block_on(self.websocket_client.subscribe(query.clone()))?;
 
             subscriptions.push(subscription);
@@ -111,15 +103,9 @@ impl EventMonitor {
         // Try to reconnect
         let (mut websocket_client, websocket_driver) = self
             .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
             .block_on(WebSocketClient::new(self.node_addr.clone()))?;
 
-        let mut websocket_driver_handle = self
-            .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .spawn(websocket_driver.run());
+        let mut websocket_driver_handle = self.rt.spawn(websocket_driver.run());
 
         // Swap the new client with the previous one which failed,
         // so that we can shut the latter down gracefully.
@@ -138,16 +124,12 @@ impl EventMonitor {
             error!("Previous websocket client closing failure {}", e);
         }
 
-        self.rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(websocket_driver_handle)
-            .map_err(|e| {
-                tendermint_rpc::Error::client_internal_error(format!(
-                    "failed to terminate previous WebSocket client driver: {}",
-                    e
-                ))
-            })??;
+        self.rt.block_on(websocket_driver_handle).map_err(|e| {
+            tendermint_rpc::Error::client_internal_error(format!(
+                "failed to terminate previous WebSocket client driver: {}",
+                e
+            ))
+        })??;
 
         Ok(())
     }
@@ -185,11 +167,7 @@ impl EventMonitor {
 
     /// Collect the IBC events from the subscriptions
     fn collect_events(&mut self) -> Result<(), BoxError> {
-        let event = self
-            .rt
-            .lock()
-            .map_err(|_| Kind::PoisonedMutex)?
-            .block_on(self.subscriptions.next());
+        let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
             Some(Ok(event)) => match ibc::events::get_all_events(event.clone()) {

@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
@@ -91,7 +91,7 @@ impl Runnable for TxRawSendPacketCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain =
             CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone()).unwrap();
         let dst_chain =
