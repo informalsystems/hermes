@@ -64,11 +64,15 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Create client transactions"
 echo "-----------------------------------------------------------------------------------------------------------------"
-echo "creating "$CHAIN_B"_client on chain "$CHAIN_A"..."
+echo "Creating $CHAIN_B client on chain $CHAIN_A"
 rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
-echo "creating "$CHAIN_A"_client on chain "$CHAIN_B"..."
+# shellcheck disable=SC2027
+echo "Creating $CHAIN_A client on chain $CHAIN_B"
 rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
+
+# TODO: jq -r '.result[].CreateClient.client_id')
+
 
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Query clients"

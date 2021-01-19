@@ -36,11 +36,14 @@ echo "--------------------------------------------------------------------------
 gaiad init "$MONIKER" --chain-id "$CHAIN_ID" --home "$CHAIN_HOME"
 
 echo "-------------------------------------------------------------------------------------------------------------------"
-echo "Replace addresses and ports in the config file"
+echo "Replace addresses and ports in the config file and some performance tweaks"
 echo "-------------------------------------------------------------------------------------------------------------------"
 sed -i 's#"tcp://127.0.0.1:26657"#"tcp://'"$CHAIN_IP"':'"$RPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
 #sed -i 's#"tcp://0.0.0.0:26656"#"tcp://'"$CHAIN_ID"':'"$P2P_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
 #sed -i 's#grpc_laddr = ""#grpc_laddr = "tcp://'"$CHAIN_IP"':'"$GRPC_PORT"'"#g' "$CHAIN_HOME"/config/config.toml
+sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' "$CHAIN_HOME"/config/config.toml
+sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' "$CHAIN_HOME"/config/config.toml
+sed -i 's/index_all_keys = false/index_all_keys = true/g' "$CHAIN_HOME"/config/config.toml
 
 echo "-------------------------------------------------------------------------------------------------------------------"
 echo "Adding validator key"

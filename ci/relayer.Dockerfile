@@ -9,18 +9,32 @@ RUN cargo --version
 # Set working dir
 WORKDIR /repo
 
+# Cache dependencies
+COPY Cargo.toml .
+COPY ./modules/Cargo.toml ./modules
+COPY ./relayer/Cargo.toml ./relayer
+COPY ./relayer-cli/Cargo.toml ./relayer-cli
+COPY ./proto/Cargo.toml ./proto
+
+RUN cargo fetch
+
 # Copy project files
 COPY . .
 
+# Update packages
+RUN cargo update
+
 # Build files
 RUN cargo build --workspace --all --release
-
 #####################################################
 ####                 Relayer image               ####
 #####################################################
 FROM rust:slim
 
 ARG RELEASE
+
+# Add jq package
+RUN apt-get update -y && apt-get install jq -y
 
 # Copy relayer executable
 COPY --from=build-env /repo/target/release/relayer /usr/bin/rrly
