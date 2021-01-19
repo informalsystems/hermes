@@ -1,8 +1,9 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics23_commitment::merkle::apply_prefix;
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics24_host::Path;
 use crate::mock::client_state::{MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
@@ -65,6 +66,19 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _connection_id: &ConnectionId,
         _expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+
+    fn verify_channel_state(
+        &self,
+        _client_state: &Self::ClientState,
+        _height: Height,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _expected_channel_end: &ChannelEnd,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }

@@ -7,7 +7,7 @@ use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics05_port::capabilities::Capability;
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
@@ -20,12 +20,16 @@ pub trait ChannelReader {
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>>;
 
-    fn channel_client_state(&self, port_channel_id: &(PortId, ChannelId))
-        -> Option<AnyClientState>;
-
-    fn channel_consensus_state(
+    fn channel_client_state(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: Option<&(PortId, ChannelId)>,
+        client_id: &ClientId,
+    ) -> Option<AnyClientState>;
+
+    fn channel_client_consensus_state(
+        &self,
+        port_channel_id: Option<&(PortId, ChannelId)>,
+        client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState>;
 
@@ -76,11 +80,17 @@ pub trait ChannelKeeper {
                     )?;
 
                     // initialize send sequence number
-                    self.store_next_sequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                    self.store_next_sequence_send(
+                        &(result.port_id.clone(), channel_id.clone()),
+                        1,
+                    )?;
                     // initialize recv sequence number
-                    self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                    self.store_next_sequence_recv(
+                        &(result.port_id.clone(), channel_id.clone()),
+                        1,
+                    )?;
                     // initialize ack sequence number
-                    self.store_next_sequence_ack(&(result.port_id.clone(), channel_id.clone()), 1)?;
+                    self.store_next_sequence_ack(&(result.port_id.clone(), channel_id), 1)?;
                 } else {
                     //the handler processed this channel for channel open init
                     self.store_channel(

@@ -248,29 +248,9 @@ impl MockContext {
         channel_end: ChannelEnd,
     ) -> Self {
         let mut channels = self.channels.clone();
-        channels.insert((port_id.clone(), chan_id.clone()), channel_end);
-        Self {
-            channels,
-            ..self
-        }
+        channels.insert((port_id, chan_id), channel_end);
+        Self { channels, ..self }
     }
-
-    // pub fn with_connection_capability(
-    //     self,
-    //     port_id: PortId,
-    //     connection_id: ConnectionId,
-    //     connection_end: ConnectionEnd,
-    // ) -> Self {
-    //     let mut connections = self.connections.clone();
-    //     connections.insert(connection_id, connection_end);
-    //     let mut port_capabilities = self.port_capabilities.clone();
-    //     port_capabilities.insert(port_id, Capability::new());
-    //     Self {
-    //         connections,
-    //         port_capabilities,
-    //         ..self
-    //     }
-    // }
 
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
@@ -376,32 +356,43 @@ impl ChannelReader for MockContext {
 
     fn channel_client_state(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: Option<&(PortId, ChannelId)>,
+        client_id: &ClientId,
     ) -> Option<AnyClientState> {
-        let channel = self.channel_end(port_channel_id);
-        match channel {
-            Some(v) => {
-                let cid = v.connection_hops().clone()[0].clone();
-                let conn = self.connection_state(&cid);
-                match conn {
-                    Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
-                    None => panic!(),
+        match port_channel_id {
+            Some(pc_id) => {
+                let channel = self.channel_end(pc_id);
+                match channel {
+                    Some(v) => {
+                        let cid = v.connection_hops().clone()[0].clone();
+                        let conn = self.connection_state(&cid);
+                        match conn {
+                            Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
+                            None => panic!(),
+                        }
+                    }
+                    None => ClientReader::client_state(self, client_id),
                 }
             }
-            None => panic!(),
+            None => ClientReader::client_state(self, client_id),
         }
     }
 
-    fn channel_consensus_state(
+    fn channel_client_consensus_state(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        port_channel_id: Option<&(PortId, ChannelId)>,
+        client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        let channel = self.channel_end(port_channel_id).unwrap();
-        let cid = channel.connection_hops()[0].clone();
-        let conn = self.connection_state(&cid).unwrap();
-
-        ConnectionReader::client_consensus_state(self, conn.client_id(), height)
+        match port_channel_id {
+            Some(pc_id) => {
+                let channel = self.channel_end(pc_id).unwrap();
+                let cid = channel.connection_hops()[0].clone();
+                let conn = self.connection_state(&cid).unwrap();
+                ConnectionReader::client_consensus_state(self, conn.client_id(), height)
+            }
+            None => ClientReader::consensus_state(self, client_id, height),
+        }
     }
 
     fn port_capability(&self, port_id: &PortId) -> Option<Capability> {

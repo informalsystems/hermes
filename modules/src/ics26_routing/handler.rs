@@ -15,8 +15,7 @@ use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg, ICS4Msg};
-   // use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
-
+// use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -136,13 +135,13 @@ mod tests {
 
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_with_missing_connection;
-    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
 
-    use crate::ics24_host::identifier::{ChannelId,ClientId};
-    
+    use crate::ics24_host::identifier::{ChannelId, ClientId};
+
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -191,23 +190,19 @@ mod tests {
 
         let proof_height = 10;
         //let msg_chan_try =
-       // MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
+        // MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
         let mut msg_chan_try2 =
             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
 
-
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
-
-
 
         let prefix = ChannelId::default().to_string();
         let suffix = 0;
         msg_chan_try2.previous_channel_id =
             Some(ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap());
-       // msg_chan_try2.counterparty_version = get_compatible_versions().clone()[0].clone();
-       
-       
+        // msg_chan_try2.counterparty_version = get_compatible_versions().clone()[0].clone();
+
         // First, create a client..
         let res = dispatch(
             &mut ctx,
@@ -303,13 +298,10 @@ mod tests {
                 msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init2)),
                 want_pass: false,
             },
-            
             Test {
-                name: "Channel open try success".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenTry(Box::new(
-                    msg_chan_try2.clone(),
-                ))),
-                want_pass: true,
+                name: "Channel open try fails due to connection not open".to_string(),
+                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2))),
+                want_pass: false,
             },
         ]
         .into_iter()

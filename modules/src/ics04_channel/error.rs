@@ -3,7 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::ics24_host::identifier::{ChannelId,ConnectionId};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId};
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -77,6 +77,24 @@ pub enum Kind {
 
     #[error("the associated connection {0} is not OPEN ")]
     ConnectionNotOpen(ConnectionId),
+
+    #[error("the counterparty connection {0} does not exist in the context ")]
+    MissingConnectionCounterparty(ConnectionId),
+
+    #[error("Undefined counterparty connection for {0}")]
+    UndefinedConnectionCounterparty(ConnectionId),
+
+    #[error("Channel chain verification fails")]
+    FailedChanneOpenTryVerification,
+
+    #[error("No client state associated with the channel")]
+    MissingClientState,
+
+    #[error("Frozen Client")]
+    FrozenClient,
+
+    #[error("Missing client consensus state")]
+    MissingClientConsensusState,
 }
 
 impl Kind {

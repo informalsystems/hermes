@@ -166,7 +166,7 @@ impl ChannelEnd {
         self.counterparty().eq(other)
     }
 
-    pub fn version_matches(&self, other: &String) -> bool {
+    pub fn version_matches(&self, other: &str) -> bool {
         self.version().eq(other)
     }
 }
