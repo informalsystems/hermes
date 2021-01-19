@@ -109,6 +109,11 @@ impl ConnectionEnd {
         self.state = new_state;
     }
 
+    /// Setter for the `counterparty` field.
+    pub fn set_counterparty(&mut self, new_cparty: Counterparty) {
+        self.counterparty = new_cparty;
+    }
+
     /// Setter for the `version` field.
     /// TODO: A ConnectionEnd should only store one version.
     pub fn set_version(&mut self, new_version: Version) {

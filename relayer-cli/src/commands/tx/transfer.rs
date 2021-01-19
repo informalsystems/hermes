@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
@@ -30,11 +30,17 @@ pub struct TxRawSendPacketCmd {
     #[options(free, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
-    #[options(free, help = "amount of samoleans to send (e.g. `100000`)")]
+    #[options(
+        free,
+        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+    )]
     amount: u64,
 
     #[options(free, help = "timeout in number of blocks since current")]
     height_offset: u64,
+
+    #[options(help = "denomination of the coins to send", short = "d")]
+    denom: Option<String>,
 
     #[options(help = "number of messages to send", short = "n")]
     number_msgs: Option<usize>,
@@ -50,6 +56,10 @@ impl TxRawSendPacketCmd {
             .find_chain(&self.dest_chain_id.parse().unwrap())
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
+        let denom = self
+            .denom
+            .clone()
+            .unwrap_or_else(|| "samoleans".to_string());
         let number_msgs = self.number_msgs.unwrap_or(1);
         if number_msgs == 0 {
             return Err("number of messages should be bigger than zero".to_string());
@@ -60,6 +70,7 @@ impl TxRawSendPacketCmd {
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
+            denom,
             height_offset: self.height_offset,
             number_msgs,
         };
@@ -80,7 +91,7 @@ impl Runnable for TxRawSendPacketCmd {
         };
         status_info!("Message", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain =
             CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone()).unwrap();
         let dst_chain =

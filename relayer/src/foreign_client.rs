@@ -1,4 +1,5 @@
 use prost_types::Any;
+use std::{thread, time::Duration};
 use thiserror::Error;
 use tracing::{error, info};
 
@@ -40,11 +41,11 @@ pub struct ForeignClient {
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client on `host_chain`. Blocks until the client is created, or
+    /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
-    /// Post-condition: `host_chain` hosts an IBC client for `src_chain`.
+    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `host_chain` and `src_chain` chains?
+    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
     pub fn new(
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
@@ -116,7 +117,7 @@ impl ForeignClient {
             ForeignClientError::ClientUpdate(format!("build_create_client_and_send {:?}", e))
         })?;
 
-        println!(
+        info!(
             "Client id {:?} on {:?} updated with return message {:?}\n",
             client_id,
             self.dst_chain.id(),
@@ -188,6 +189,11 @@ pub fn build_update_client(
     dst_client_id: &ClientId,
     target_height: Height,
 ) -> Result<Vec<Any>, Error> {
+    // Wait for source chain to reach `target_height`
+    while src_chain.query_latest_height()? < target_height {
+        thread::sleep(Duration::from_millis(100))
+    }
+
     // Get the latest trusted height from the client state on destination.
     let trusted_height = dst_chain
         .query_client_state(&dst_client_id, Height::default())?

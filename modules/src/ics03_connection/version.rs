@@ -16,6 +16,13 @@ pub struct Version {
     features: Vec<String>,
 }
 
+impl Version {
+    /// Checks whether or not the given feature is supported in this versin
+    pub fn is_supported_feature(&self, feature: String) -> bool {
+        self.features.contains(&feature)
+    }
+}
+
 impl Protobuf<RawVersion> for Version {}
 
 impl TryFrom<RawVersion> for Version {

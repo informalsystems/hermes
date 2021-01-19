@@ -70,9 +70,7 @@ pub fn verify_connection_proof(
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
     }
 
     // The client must have the consensus state for the height where this proof was created.
@@ -80,9 +78,11 @@ pub fn verify_connection_proof(
         .client_consensus_state(connection_end.client_id(), proof_height)
         .is_none()
     {
-        return Err(Kind::MissingClientConsensusState
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::MissingClientConsensusState(
+            proof_height,
+            connection_end.client_id().clone(),
+        )
+        .into());
     }
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
@@ -102,6 +102,13 @@ pub fn verify_connection_proof(
         .map_err(|_| Kind::InvalidProof)?)
 }
 
+/// Verifies the client `proof` from a connection handshake message, typically from a
+/// `MsgConnectionOpenTry` or a `MsgConnectionOpenAck`. The `expected_client_state` argument is a
+/// representation for a client of the current chain (the chain handling the current message), which
+/// is running on the counterparty chain (the chain which sent this message). This method does a
+/// complete verification: that the client state the counterparty stores is valid (i.e., not frozen,
+/// at the same revision as the current chain, with matching chain identifiers, etc) and that the
+/// `proof` is correct.
 pub fn verify_client_proof(
     ctx: &dyn ConnectionReader,
     connection_end: &ConnectionEnd,
@@ -114,12 +121,14 @@ pub fn verify_client_proof(
         .client_state(connection_end.client_id())
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
-    // TODO: Client frozen check?
+    if client_state.is_frozen() {
+        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
+    }
 
     let consensus_state = ctx
         .client_consensus_state(connection_end.client_id(), proof_height)
         .ok_or_else(|| {
-            Kind::MissingClientConsensusState.context(connection_end.client_id().to_string())
+            Kind::MissingClientConsensusState(proof_height, connection_end.client_id().clone())
         })?;
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
@@ -134,8 +143,9 @@ pub fn verify_client_proof(
             proof,
             &expected_client_state,
         )
-        .map_err(|_| {
-            Kind::ClientStateVerificationFailure.context(connection_end.client_id().to_string())
+        .map_err(|e| {
+            Kind::ClientStateVerificationFailure(connection_end.client_id().clone())
+                .context(e.to_string())
         })?)
 }
 
@@ -151,9 +161,7 @@ pub fn verify_consensus_proof(
         .ok_or_else(|| Kind::MissingClient(connection_end.client_id().clone()))?;
 
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient
-            .context(connection_end.client_id().to_string())
-            .into());
+        return Err(Kind::FrozenClient(connection_end.client_id().clone()).into());
     }
 
     // Fetch the expected consensus state from the historical (local) header data.

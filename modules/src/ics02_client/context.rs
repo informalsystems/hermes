@@ -19,12 +19,6 @@ pub trait ClientReader {
 
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
-    fn store_client_type(
-        &mut self,
-        client_id: ClientId,
-        client_type: ClientType,
-    ) -> Result<(), Error>;
-
     fn store_client_result(
         &mut self,
         handler_res: ClientResult,
@@ -32,6 +26,7 @@ pub trait ClientKeeper {
         match handler_res {
             Create(res) => {
                 let client_id = self.next_client_id();
+                self.store_client_type(client_id.clone(), res.client_type)?;
                 self.store_client_state(client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
                     client_id.clone(),
@@ -54,12 +49,21 @@ pub trait ClientKeeper {
 
     fn next_client_id(&mut self) -> ClientId;
 
+    /// Called upon successful client creation
+    fn store_client_type(
+        &mut self,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> Result<(), Error>;
+
+    /// Called upon successful client creation and update
     fn store_client_state(
         &mut self,
         client_id: ClientId,
         client_state: AnyClientState,
     ) -> Result<(), Error>;
 
+    /// Called upon successful client creation and update
     fn store_consensus_state(
         &mut self,
         client_id: ClientId,

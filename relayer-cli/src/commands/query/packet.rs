@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
@@ -65,7 +65,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
@@ -146,7 +146,7 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
@@ -226,7 +226,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
         let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 
@@ -315,7 +315,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketAcknowledgementsRequest {
@@ -396,7 +396,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
@@ -473,7 +473,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
         let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 

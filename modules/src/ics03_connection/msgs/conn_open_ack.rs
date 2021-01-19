@@ -35,7 +35,7 @@ impl MsgConnectionOpenAck {
         &self.connection_id
     }
 
-    /// Getter for accessing the connection identifier of this message.
+    /// Getter for accessing the counterparty's connection identifier from this message.
     pub fn counterparty_connection_id(&self) -> Option<&ConnectionId> {
         self.counterparty_connection_id.as_ref()
     }
@@ -70,10 +70,6 @@ impl Msg for MsgConnectionOpenAck {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        Ok(())
     }
 
     fn get_signers(&self) -> Vec<AccountId> {

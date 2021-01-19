@@ -20,24 +20,24 @@ sled = { version = "0.34.4", features = ["no_metrics", "no_logs"] }
 thiserror = "1.0.11"
 toml = "0.5"
 tracing = "0.1.13"
-tokio = { version = "0.2", features = ["rt-core", "time", "stream", "sync"] }
+tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.0.0"
-prost = "0.6.1"
-prost-types = { version = "0.6.1" }
+prost = "0.7"
+prost-types = "0.7"
 futures = "0.3.5"
 retry = "1.1.0"
 crossbeam-channel = "0.5.0"
 k256 = { version = "0.7.1", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
-bitcoin = { version= "0.25"}
+bitcoin = { version = "=0.26" }
 bitcoin-wallet = "1.1.0"
 hdpath = { version = "0.6.0", features = ["with-bitcoin"] }
 rust-crypto = "0.2.36"
 bech32 = "0.7.2"
 itertools = "0.10.0"
 dyn-clonable = "0.9.0"
-tonic = "0.3.1"
+tonic = "0.4"
 dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
 

@@ -14,6 +14,7 @@ pub struct TransferOptions {
     pub packet_src_port_id: PortId,
     pub packet_src_channel_id: ChannelId,
     pub amount: u64,
+    pub denom: String,
     pub height_offset: u64,
     pub number_msgs: usize,
 }
@@ -37,7 +38,7 @@ pub fn build_and_send_transfer_messages(
         source_port: opts.packet_src_port_id.clone(),
         source_channel: opts.packet_src_channel_id.clone(),
         token: Some(ibc_proto::cosmos::base::v1beta1::Coin {
-            denom: "samoleans".to_string(),
+            denom: opts.denom.clone(),
             amount: opts.amount.to_string(),
         }),
         sender,
