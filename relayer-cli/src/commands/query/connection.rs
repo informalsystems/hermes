@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
@@ -81,7 +81,7 @@ impl Runnable for QueryConnectionEndCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -154,7 +154,7 @@ impl Runnable for QueryConnectionChannelsCmd {
         };
         status_info!("Options", "{:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let req = QueryConnectionChannelsRequest {

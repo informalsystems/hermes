@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -16,7 +16,7 @@ pub fn list_keys(opts: KeysListOptions) -> Result<String, Error> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain
-    let chain = CosmosSDKChain::bootstrap(opts.chain_config, Arc::new(Mutex::new(rt)))?;
+    let chain = CosmosSDKChain::bootstrap(opts.chain_config, Arc::new(rt))?;
 
     let key_entry = chain.keybase().get_key();
 

@@ -8,10 +8,7 @@ pub mod runtime;
 pub mod mock;
 
 use crossbeam_channel as channel;
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{sync::Arc, thread};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use prost_types::Any;
@@ -80,7 +77,7 @@ pub trait Chain: Sized {
     type ClientState: ClientState;
 
     /// Constructs the chain
-    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error>;
+    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
     #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
@@ -91,7 +88,7 @@ pub trait Chain: Sized {
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
         &self,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,
