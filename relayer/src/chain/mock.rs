@@ -103,12 +103,12 @@ impl Chain for MockChain {
 
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
-        self.context
+        let events = self
+            .context
             .send(proto_msgs)
             .map_err(|e| Kind::Rpc.context(e))?;
 
-        // TODO FIX tests with this
-        Ok(vec![])
+        Ok(events)
     }
 
     fn get_signer(&mut self) -> Result<Id, Error> {

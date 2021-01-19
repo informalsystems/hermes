@@ -20,6 +20,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
 
+use crate::events::IBCEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ICS4Error;
@@ -617,20 +618,15 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, ICS18Error> {
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
-        let events =
+        let _events =
             deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
 
-        // Parse the events into a list of strings.
-        let res: Vec<String> = events
-            .iter()
-            .map(|e| e.attribute_values())
-            .flatten()
-            .collect();
-
+        // TODO: Fix for #469 to re-enable ForeignClient tests requires a translation layer
+        //     ibc::handler::Event -> ibc::Event.
         self.advance_host_chain_height(); // Advance chain height
-        Ok(res)
+        Ok(vec![])
     }
 
     fn signer(&self) -> Id {
