@@ -48,6 +48,8 @@ pub mod profiling {
 /// ## Example
 ///
 /// ```rust
+/// use relayer::time;
+///
 /// time!("full scope");
 /// let x = {
 ///   time!("inner {}", "scope");
