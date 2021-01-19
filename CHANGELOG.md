@@ -21,16 +21,24 @@
   - Fix for mismatching `bitcoin` dep ([#525])
 
 - [modules]
-  -  Clean the validate_basic method ([#94])
+  - Clean the validate_basic method ([#94])
+  - MsgConnectionOpenAck testing improvements ([#306])
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 
+### BUG FIXES:
+
+- [modules]
+  - Fix for storing ClientType upon 'create-client' ([#513])
+
 [#94]: https://github.com/informalsystems/ibc-rs/issues/94
+[#306]: https://github.com/informalsystems/ibc-rs/issues/306
 [#470]: https://github.com/informalsystems/ibc-rs/issues/470
 [#500]: https://github.com/informalsystems/ibc-rs/issues/500
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
+[#513]: https://github.com/informalsystems/ibc-rs/issues/513
 [#514]: https://github.com/informalsystems/ibc-rs/issues/514
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
 [#525]: https://github.com/informalsystems/ibc-rs/issues/525
