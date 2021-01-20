@@ -4,6 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
 use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
@@ -75,7 +76,7 @@ impl Runnable for QueryClientStateCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -169,7 +170,7 @@ impl Runnable for QueryClientConsensusCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -280,7 +281,7 @@ impl Runnable for QueryClientConnectionsCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
