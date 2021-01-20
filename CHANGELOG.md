@@ -20,17 +20,17 @@
   - Add `packet-send` CLI ([#470])
 
 - [relayer]
-  - Performance improvements ([#514])
+  - Performance improvements ([#514], [#537])
   - Fix for mismatching `bitcoin` dep ([#525])
 
 - [modules]
-  - Clean the validate_basic method ([#94])
-  - MsgConnectionOpenAck testing improvements ([#306])
+  - Clean the `validate_basic` method ([#94])
+  - `MsgConnectionOpenAck` testing improvements ([#306])
 
 ### BUG FIXES:
 
 - [modules]
-  - Fix for storing ClientType upon 'create-client' ([#513])
+  - Fix for storing `ClientType` upon 'create-client' ([#513])
 
 [#94]: https://github.com/informalsystems/ibc-rs/issues/94
 [#306]: https://github.com/informalsystems/ibc-rs/issues/306
@@ -44,6 +44,7 @@
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
 [#525]: https://github.com/informalsystems/ibc-rs/issues/525
 [#527]: https://github.com/informalsystems/ibc-rs/issues/527
+[#537]: https://github.com/informalsystems/ibc-rs/issues/537
 
 
 ## v0.0.6
