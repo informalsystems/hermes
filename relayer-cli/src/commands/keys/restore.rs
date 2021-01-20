@@ -1,10 +1,12 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
+use serde_json::json;
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
+use relayer::config::Config;
 use relayer::keys::restore::{restore_key, KeysRestoreOptions};
+
+use crate::application::app_config;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeyRestoreCmd {
@@ -55,8 +57,7 @@ impl Runnable for KeyRestoreCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::with_error().with_result(json!(err)).exit();
             }
             Ok(result) => result,
         };
@@ -65,8 +66,10 @@ impl Runnable for KeyRestoreCmd {
             restore_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("key restore result: ", "{:?}", hex::encode(r)),
-            Err(e) => status_info!("key restore failed: ", "{}", e),
+            Ok(r) => Output::with_success().with_result(json!(r)).exit(),
+            Err(e) => Output::with_error()
+                .with_result(json!(format!("{}", e)))
+                .exit(),
         }
     }
 }
