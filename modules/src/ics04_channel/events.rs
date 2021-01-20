@@ -56,8 +56,8 @@ fn event_types() -> HashSet<String> {
         ACK_PACKET.to_string(),
         TIMEOUT.to_string(),
     ]
-        .into_iter()
-        .collect()
+    .into_iter()
+    .collect()
 }
 
 pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
@@ -94,8 +94,8 @@ pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
                     revision_number: to[0].parse::<u64>().unwrap(),
                     revision_height: to[1].parse::<u64>().unwrap(),
                 }
-                    .try_into()
-                    .unwrap();
+                .try_into()
+                .unwrap();
             }
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
             PKT_ACK_ATTRIBUTE_KEY => ack = Vec::from(value.as_bytes()),
