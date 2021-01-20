@@ -1,8 +1,10 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use tendermint::net;
 use thiserror::Error;
+
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -23,8 +25,8 @@ pub enum Kind {
     Config,
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
-    #[error("RPC error")]
-    Rpc,
+    #[error("RPC error to endpoint {0}")]
+    Rpc(net::Address),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]

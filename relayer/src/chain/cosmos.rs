@@ -117,7 +117,7 @@ impl CosmosSDKChain {
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
         Ok(block_on(self.rpc_client().genesis())
-            .map_err(|e| Kind::Rpc.context(e))?
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?
             .consensus_params)
     }
 
@@ -210,8 +210,8 @@ impl CosmosSDKChain {
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
-        let response =
-            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+        let response = block_on(broadcast_tx_commit(self, txraw_buf))
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         let res = tx_result_to_event(response)?;
 
@@ -238,8 +238,8 @@ impl Chain for CosmosSDKChain {
     type ClientState = ClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
-        let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+        let rpc_client = HttpClient::new(config.rpc_addr.clone())
+            .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
@@ -411,7 +411,8 @@ impl Chain for CosmosSDKChain {
 
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
+        let status = block_on(self.rpc_client().status())
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
@@ -758,11 +759,13 @@ async fn abci_query(
         .rpc_client()
         .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     if !response.code.is_ok() {
         // Fail with response log.
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
+        return Err(Kind::Rpc(chain.config.rpc_addr.clone())
+            .context(response.log.to_string())
+            .into());
     }
 
     if prove && response.proof.is_none() {
@@ -790,7 +793,7 @@ async fn broadcast_tx_commit(
         .rpc_client()
         .broadcast_tx_commit(data.into())
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     Ok(response)
 }
