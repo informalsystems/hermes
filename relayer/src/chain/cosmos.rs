@@ -88,14 +88,14 @@ impl CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
         let response = self
-            .block_on(client.params(request))?
+            .block_on(client.params(request))
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
@@ -122,16 +122,15 @@ impl CosmosSDKChain {
         crate::time!("query_consensus_params");
 
         Ok(self
-            .block_on(self.rpc_client().genesis())?
+            .block_on(self.rpc_client().genesis())
             .map_err(|e| Kind::Rpc.context(e))?
             .consensus_params)
     }
 
     /// Run a future to completion on the Tokio runtime.
-    fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
+    fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
-        // Ok(crate::util::block_on(f))
-        Ok(self.rt.block_on(f))
+        self.rt.block_on(f)
     }
 
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
@@ -165,7 +164,7 @@ impl CosmosSDKChain {
         };
 
         let acct_response = self
-            .block_on(query_account(self, key.account))?
+            .block_on(query_account(self, key.account))
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
@@ -223,7 +222,7 @@ impl CosmosSDKChain {
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
         let response = self
-            .block_on(broadcast_tx_commit(self, txraw_buf))?
+            .block_on(broadcast_tx_commit(self, txraw_buf))
             .map_err(|e| Kind::Rpc.context(e))?;
 
         let res = tx_result_to_event(response)?;
@@ -323,9 +322,7 @@ impl Chain for CosmosSDKChain {
                 .into());
         }
 
-        let response = self
-            .block_on(abci_query(&self, path, data.to_string(), height, prove))
-            .and_then(|x| x)?; // flatten the nested Result<Result<T, E>, E>
+        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -372,7 +369,7 @@ impl Chain for CosmosSDKChain {
         crate::time!("query_latest_height");
 
         let status = self
-            .block_on(self.rpc_client().status())?
+            .block_on(self.rpc_client().status())
             .map_err(|e| Kind::Rpc.context(e))?;
 
         if status.sync_info.catching_up {
@@ -567,13 +564,13 @@ impl Chain for CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.packet_commitments(request))?
+            .block_on(client.packet_commitments(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -600,13 +597,13 @@ impl Chain for CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.unreceived_packets(request))?
+            .block_on(client.unreceived_packets(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -625,13 +622,13 @@ impl Chain for CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.packet_acknowledgements(request))?
+            .block_on(client.packet_acknowledgements(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -658,13 +655,13 @@ impl Chain for CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.unreceived_acks(request))?
+            .block_on(client.unreceived_acks(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -692,7 +689,7 @@ impl Chain for CosmosSDKChain {
                     1,
                     1,
                     Order::Ascending,
-                ))?
+                ))
                 .unwrap(); // todo
 
             let mut events = packet_from_tx_search_response(&request, *seq, &response)?
@@ -713,13 +710,13 @@ impl Chain for CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.connection_channels(request))?
+            .block_on(client.connection_channels(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
