@@ -6,7 +6,7 @@
 
     ```shell script
     git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/comsos/gaia
-    ~/go/src/github.com/comsos/gaia ; git co new-main ; make install
+    ~/go/src/github.com/comsos/gaia ; git co v3.0.0 ; make install
     ```
 
 2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
@@ -279,4 +279,3 @@ Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - s
 Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
 Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
 ```
-
