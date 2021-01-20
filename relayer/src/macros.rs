@@ -51,8 +51,10 @@ pub mod profiling {
 /// use relayer::time;
 ///
 /// time!("full scope");
+///
 /// let x = {
 ///   time!("inner {}", "scope");
+///
 ///   42
 ///   // "inner scope" timer ends here
 /// };

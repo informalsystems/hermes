@@ -15,7 +15,7 @@
     ./dev-env <config.toml> <chain1> <chain2>
     ```
     e.g.:
-    
+
     ```shell
     ./dev-env my_config.toml ibc-0 ibc-1
     ```
@@ -38,13 +38,13 @@ alias rrly='cargo run --bin relayer --'`
     ```shell script
     rrly -c loop_config.toml tx raw create-client ibc-0 ibc-1
     rrly -c loop_config.toml tx raw create-client ibc-1 ibc-0
-    
+
     rrly -c loop_config.toml query client state ibc-0 07-tendermint-0
     rrly -c loop_config.toml query client state ibc-1 07-tendermint-0
     ```
 
 - update client
-  
+
     ```shell script
     rrly -c loop_config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0
     rrly -c loop_config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-0
@@ -57,7 +57,7 @@ alias rrly='cargo run --bin relayer --'`
     ```shell script
     rrly -c loop_config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
     ```
-    
+
     Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0`. Use in the `conn-try` CLI
 
 - init-try:
@@ -65,7 +65,7 @@ alias rrly='cargo run --bin relayer --'`
     ```shell script
     rrly -c loop_config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection connection-0
     ```
-    
+
     Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-1`. Use in the `conn-ack` CLI
 
 - open-try:
@@ -139,7 +139,7 @@ Note that the addresses used in the two commands above are configured in `dev-en
 First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 
 - send 1 packet to ibc-0
-    
+
     ```shell script
     rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
     ```
@@ -190,7 +190,7 @@ rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 07-tendermint-0 07-tende
 
 The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
 
-### Relayer loop: 
+### Relayer loop:
 
 Client, connection, channel handshake and packet relaying can pe done from the relayer loop
 
@@ -206,7 +206,7 @@ Client, connection, channel handshake and packet relaying can pe done from the r
     rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
 - use the CLI to send 2 packets to ibc0 chain:
-    
+
     ```shell script
     rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-2 transfer channel-0 9999 1000 -n 2
     ```
@@ -254,19 +254,19 @@ The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to a
 ```rust
 fn my_function(x: u32) -> u32 {
     time!("myfunction: x={}", x); // A
-    
+
     std::thread::sleep(Duration::from_secs(1));
-    
+
     {
         time!("inner operation"); // B
-        
+
         std::thread::sleep(Duration::from_secs(2));
-        
+
         // timer B ends here
     }
-    
+
     x + 1
-    
+
     // timer A ends here
 }
 ```
