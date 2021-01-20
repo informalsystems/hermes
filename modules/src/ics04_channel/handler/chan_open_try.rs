@@ -81,8 +81,6 @@ pub(crate) fn process(
     let conn = connection_end
         .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
 
-    //assert!(conn.state_matches(&ConnectionState::Open));
-
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(ConnectionNotOpen(msg.channel.connection_hops()[0].clone()).into());
     }
@@ -113,10 +111,9 @@ pub(crate) fn process(
         None => return Err(Kind::NoPortCapability.into()),
     }
 
-    // // TODO: Check that `version` is non empty but not necessary coherent
-    // if msg.channel().version().is_empty() {
-    //     return Err(Kind::InvalidVersion.into());
-    // }
+    if msg.channel().version().is_empty() {
+        return Err(Kind::InvalidVersion.into());
+    }
 
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
@@ -141,16 +138,13 @@ pub(crate) fn process(
         msg.counterparty_version().clone(),
     );
 
-    if verify_proofs(
-        ctx,
-        &new_channel_end,
-        &expected_channel_end,
-        &msg.proofs(),
-    )
-    .is_err()
-    {
-        return Err(Kind::FailedChanneOpenTryVerification.into());
-    }
+    let _verif = match verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs()) {
+        Err(e) => return Err(Kind::FailedChanneOpenTryVerification.context(e).into()),
+        Ok(()) => true,
+    };
+    // if verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs()).is_err() {
+    //     return Err(Kind::FailedChanneOpenTryVerification.into());
+    // }
 
     output.log("success: channel open try ");
 
@@ -189,12 +183,10 @@ mod tests {
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try_with_counterparty;
-
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-    //use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
 
-    use crate::ics24_host::identifier::{ChannelId, ConnectionId,PortId};
+    use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::Height;
 
@@ -208,7 +200,6 @@ mod tests {
         }
         let proof_height = 10;
 
-        
         //chan_id is used to add a channel to the context
         let cchan_id2 = <ChannelId as FromStr>::from_str(&"channel24".to_string());
 
@@ -262,7 +253,6 @@ mod tests {
             },
         );
 
-
         let init_chan_end = ChannelEnd::new(
             State::Init,
             *msg_chan_try2.channel.ordering(),
@@ -283,18 +273,14 @@ mod tests {
         //Used for Test "Processing connection does not match when a channel exists "
         let mut connection_vec3 = Vec::new();
         connection_vec3.insert(0, ConnectionId::default());
-        
+
         let init_chan_end3 = ChannelEnd::new(
             State::Init,
             *msg_chan_try2.channel.ordering(),
             msg_chan_try2.channel.counterparty().clone(),
-            //msg_chan_try.channel.connection_hops().clone(),
             connection_vec3,
             msg_chan_try2.channel().version(),
         );
-
-   
-
 
         let client_consensus_state_height = 10;
         let host_chain_height = Height::new(1, 35);
@@ -305,18 +291,18 @@ mod tests {
         ))
         .unwrap();
 
+        //Test "Good parameters: No channel Open Init found"
 
-        //Test "Good parameters: No channel Open Init found" 
+        let msg_chan_try = MsgChannelOpenTry::try_from(
+            get_dummy_raw_msg_chan_open_try_with_counterparty(proof_height),
+        )
+        .unwrap();
 
-        let msg_chan_try =
-        MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try_with_counterparty(proof_height)).unwrap(); 
-       
         let ccounterparty_chan_id = <ChannelId as FromStr>::from_str(&"channel25".to_string());
         let counterparty_chan_id = match ccounterparty_chan_id {
             Ok(v) => v,
             Err(_e) => ChannelId::default(),
         };
-
 
         let tests: Vec<Test> = vec![
             Test {
@@ -379,7 +365,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: " Channel Open Try fails due to Frozen client ".to_string(),
+                name: " Channel Open Try fails due to missing client state ".to_string(),
                 ctx: context
                     .clone()
                     .with_connection(cid.clone(), init_conn_end.clone())
@@ -417,9 +403,9 @@ mod tests {
                     )
                     .with_channel_init(
                         MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-                        .unwrap()
-                        .port_id()
-                        .clone(),
+                            .unwrap()
+                            .port_id()
+                            .clone(),
                         chan_id,
                         init_chan_end.clone(),
                     ),

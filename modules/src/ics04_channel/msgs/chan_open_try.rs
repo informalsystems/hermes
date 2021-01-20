@@ -1,8 +1,11 @@
-use crate::{address::{account_to_string, string_to_account}, ics24_host::error::ValidationError};
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::ics24_host::error::ValidationKind;
+use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::{
+    address::{account_to_string, string_to_account},
+    ics24_host::error::ValidationError,
+};
 use crate::{proofs::Proofs, tx_msg::Msg};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
@@ -60,12 +63,11 @@ impl Msg for MsgChannelOpenTry {
         vec![self.signer]
     }
 
-    fn validate_basic(&self) -> Result<(),ValidationError>{
-        match self.channel().counterparty().channel_id() 
-         { None => Err(ValidationKind::InvalidCcounterpartyChannelId.into()),
-          Some(_c) => Ok(()),
-         }
-
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        match self.channel().counterparty().channel_id() {
+            None => Err(ValidationKind::InvalidCcounterpartyChannelId.into()),
+            Some(_c) => Ok(()),
+        }
     }
 }
 
@@ -109,10 +111,9 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
         };
 
         match msg.validate_basic() {
-            Err(_e) =>Err(Kind::InvalidCcounterpartyChannelId.into()),
-            Ok(())=> Ok(msg),
+            Err(_e) => Err(Kind::InvalidCcounterpartyChannelId.into()),
+            Ok(()) => Ok(msg),
         }
-        
     }
 }
 
@@ -157,7 +158,9 @@ pub mod test_util {
         }
     }
 
-    pub fn get_dummy_raw_msg_chan_open_try_with_counterparty(proof_height: u64) -> RawMsgChannelOpenTry {
+    pub fn get_dummy_raw_msg_chan_open_try_with_counterparty(
+        proof_height: u64,
+    ) -> RawMsgChannelOpenTry {
         RawMsgChannelOpenTry {
             port_id: "port".to_string(),
             previous_channel_id: "".to_string(),

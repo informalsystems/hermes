@@ -20,10 +20,8 @@ pub trait ChannelReader {
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>>;
 
-    fn channel_client_state(
-        &self,
-        port_channel_id:&(PortId, ChannelId),
-    ) -> Option<AnyClientState>;
+    fn channel_client_state(&self, port_channel_id: &(PortId, ChannelId))
+        -> Option<AnyClientState>;
 
     fn channel_client_consensus_state(
         &self,

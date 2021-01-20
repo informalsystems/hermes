@@ -157,10 +157,20 @@ impl ChannelEnd {
     pub fn order_matches(&self, other: &Order) -> bool {
         self.ordering.eq(other)
     }
-
+    #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
         self.connection_hops.eq(other)
     }
+
+    // #[allow(clippy::needless_range_loop)]
+    // pub fn connection_hops_matches(&self, other: &[ConnectionId]) -> bool {
+
+    //     if self.connection_hops.len() != other.len() {return false;}
+    //     for i in 0 .. other.len(){
+    //         if !self.connection_hops[i].eq(&other[i]) {return false;}
+    //     }
+    //     true
+    // }
 
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
         self.counterparty().eq(other)
@@ -370,16 +380,16 @@ pub mod test_util {
         }
     }
 
-        /// Returns a dummy `RawChannel`, for testing only!
-        pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
-            RawChannel {
-                state: 1,
-                ordering: 1,
-                counterparty: Some(get_another_dummy_raw_counterparty()),
-                connection_hops: vec!["defaultConnection-0".to_string()],
-                version: "ics20".to_string(), // The version is not validated.
-            }
+    /// Returns a dummy `RawChannel`, for testing only!
+    pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 1,
+            counterparty: Some(get_another_dummy_raw_counterparty()),
+            connection_hops: vec!["defaultConnection-0".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
         }
+    }
 
     pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
         RawChannel {

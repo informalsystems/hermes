@@ -3,7 +3,6 @@ use crate::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
-//use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::proofs::Proofs;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message.
@@ -13,22 +12,21 @@ pub fn verify_proofs(
     expected_chan: &ChannelEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    //let connection_end = ctx.connection_state(&channel_end.connection_hops()[0].clone());
-
-    let connection_end = match  ctx.connection_state(&channel_end.connection_hops()[0].clone()){
+    let connection_end = match ctx.connection_state(&channel_end.connection_hops()[0].clone()) {
         Some(c) => c,
-        None => return Err(Kind::MissingConnection(channel_end.connection_hops()[0].clone()).into()),
+        None => {
+            return Err(Kind::MissingConnection(channel_end.connection_hops()[0].clone()).into())
+        }
     };
 
     let client = connection_end.client_id().clone();
-       
 
     let port_id = channel_end.counterparty().port_id().clone();
     let chan_id = channel_end.counterparty().channel_id().unwrap().clone();
 
     // Fetch the client state (IBC client on the local/host chain).
-    let client_state =  ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
-        
+    let client_state = ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
+
     if client_state.is_none() {
         return Err(Kind::MissingClientState.context(client.to_string()).into());
     }
@@ -40,7 +38,6 @@ pub fn verify_proofs(
         return Err(Kind::FrozenClient.context(client.to_string()).into());
     }
 
-
     if ctx
         .channel_client_consensus_state(&(port_id, chan_id), proofs.height())
         .is_none()
@@ -50,12 +47,10 @@ pub fn verify_proofs(
             .into());
     }
 
-
     let client_def = AnyClient::from_client_type(client_st.client_type());
 
     // Verify the proof for the channel state against the expected channel end.
-    // A counterparty channel id of None causes `unwrap()` below and indicates an internal
-    // error as this is the channel id on the counterparty chain that must always be present.
+    // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
     Ok(client_def
         .verify_channel_state(
             &client_st,
@@ -67,32 +62,4 @@ pub fn verify_proofs(
             expected_chan,
         )
         .map_err(|_| Kind::InvalidProof)?)
-
-    //Ok(())
-
-    // // If the message includes a client state, then verify the proof for that state.
-    // if let Some(expected_client_state) = client_state {
-    //     verify_client_proof(
-    //         ctx,
-    //         connection_end,
-    //         expected_client_state,
-    //         proofs.height(),
-    //         proofs
-    //             .client_proof()
-    //             .as_ref()
-    //             .ok_or(Kind::NullClientProof)?,
-    //     )?;
-    // }
-
-    // // If a consensus proof is attached to the message, then verify it.
-    // if let Some(proof) = proofs.consensus_proof() {
-    //     Ok(verify_consensus_proof(
-    //         ctx,
-    //         connection_end,
-    //         proofs.height(),
-    //         &proof,
-    //     )?)
-    // } else {
-    //     Ok(())
-    // }
 }
