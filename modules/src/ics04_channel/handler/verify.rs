@@ -31,7 +31,7 @@ pub fn verify_proofs(
         return Err(Kind::MissingClientState.context(client.to_string()).into());
     }
 
-    let client_st = client_state.ok_or_else(|| Kind::MissingClientState)?;
+    let client_st = client_state.ok_or(Kind::MissingClientState)?;
 
     // The client must not be frozen.
     if client_st.is_frozen() {
