@@ -2,34 +2,34 @@ version: '3'
 
 services:
 
-  ibc0:
-    container_name: ibc0
-    image: "informaldev/ibc0:v3.0.0"
+  ibc-0:
+    container_name: ibc-0
+    image: "informaldev/ibc-0:v3.0.0"
 #    logging:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=ibc0:9090  --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc-0:9090  --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.10
 
-  ibc1:
-    container_name: ibc1
-    image: "informaldev/ibc1:v3.0.0"
+  ibc-1:
+    container_name: ibc-1
+    image: "informaldev/ibc-1:v3.0.0"
 #    logging:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=ibc1:9090 --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain --grpc.address=ibc-1:9090 --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.11
 
   relayer:
     depends_on:
-      - ibc0
-      - ibc1
+      - ibc-0
+      - ibc-1
     container_name: relayer
     stdin_open: true
     tty: true
@@ -39,11 +39,11 @@ services:
       args:
         RELEASE: v3.0.0
     environment:
-      - CHAIN_A=ibc0
-      - CHAIN_A_HOME=/data/ibc0
+      - CHAIN_A=ibc-0
+      - CHAIN_A_HOME=/data/ibc-0
       - CHAIN_A_PORT=26657
-      - CHAIN_B=ibc1
-      - CHAIN_B_HOME=/data/ibc1
+      - CHAIN_B=ibc-1
+      - CHAIN_B_HOME=/data/ibc-1
       - CHAIN_B_PORT=26657
       - CONFIG=simple_config.toml
       - RELAYER_DIR=/relayer

@@ -49,8 +49,8 @@ COPY ci/simple_config.toml .
 COPY ci/setup_relayer.sh .
 
 # Copy key files
-COPY ci/chains/gaia/$RELEASE/ibc0/key_seed.json ./key_seed_ibc0.json
-COPY ci/chains/gaia/$RELEASE/ibc1/key_seed.json ./key_seed_ibc1.json
+COPY ci/chains/gaia/$RELEASE/ibc-0/key_seed.json ./key_seed_ibc-0.json
+COPY ci/chains/gaia/$RELEASE/ibc-1/key_seed.json ./key_seed_ibc-1.json
 
 # Make it executable
 RUN chmod +x setup_relayer.sh
