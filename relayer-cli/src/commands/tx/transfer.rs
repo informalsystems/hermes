@@ -92,10 +92,29 @@ impl Runnable for TxRawSendPacketCmd {
         status_info!("Message", "{:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain =
-            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone()).unwrap();
-        let dst_chain =
-            CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt).unwrap();
+
+        let src_chain_res =
+            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone())
+                .map_err(|e| Kind::Runtime.context(e));
+        let src_chain = match src_chain_res {
+            Ok(chain) => chain,
+            Err(e) => {
+                return Output::with_error()
+                    .with_result(json!(format!("{}", e)))
+                    .exit();
+            }
+        };
+
+        let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
+            .map_err(|e| Kind::Runtime.context(e));
+        let dst_chain = match dst_chain_res {
+            Ok(chain) => chain,
+            Err(e) => {
+                return Output::with_error()
+                    .with_result(json!(format!("{}", e)))
+                    .exit();
+            }
+        };
 
         let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_transfer_messages(src_chain, dst_chain, &opts)

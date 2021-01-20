@@ -344,6 +344,71 @@ impl Chain for CosmosSDKChain {
         Ok(res)
     }
 
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<AccountId, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        let signer: AccountId =
+            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(signer)
+    }
+
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key()
+            .map_err(|e| Kind::KeyBase.context(e))?;
+
+        Ok(key)
+    }
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        // Build the client state.
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.unbonding_period()?,
+            Duration::from_millis(3000), // TODO - get it from src config when avail
+            height,
+            ICSHeight::zero(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+    }
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error> {
+        Ok(TMConsensusState::from(light_block.signed_header.header))
+    }
+
+    fn build_header(
+        &self,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error> {
+        let trusted_height =
+            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
+
+        Ok(TMHeader {
+            trusted_height,
+            signed_header: target_light_block.signed_header.clone(),
+            validator_set: target_light_block.validators,
+            trusted_validator_set: trusted_light_block.validators,
+        })
+    }
+
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
         let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
@@ -446,71 +511,6 @@ impl Chain for CosmosSDKChain {
                 Kind::Query("client consensus".into()).context("empty proof".to_string())
             })?,
         ))
-    }
-
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
-        // Build the client state.
-        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
-            self.config.trust_threshold,
-            self.config.trusting_period,
-            self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
-            height,
-            ICSHeight::zero(),
-            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
-        )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
-    }
-
-    fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error> {
-        Ok(TMConsensusState::from(light_block.signed_header.header))
-    }
-
-    fn build_header(
-        &self,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
-
-        Ok(TMHeader {
-            trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
-        })
-    }
-
-    /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<AccountId, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        let signer: AccountId =
-            AccountId::from_str(&key.address.to_hex()).map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(signer)
-    }
-
-    /// Get the signing key
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key()
-            .map_err(|e| Kind::KeyBase.context(e))?;
-
-        Ok(key)
     }
     /// Queries the packet commitment hashes associated with a channel.
     fn query_packet_commitments(
@@ -616,33 +616,6 @@ impl Chain for CosmosSDKChain {
         Ok(response.sequences)
     }
 
-    /// Queries the packet data for all packets with sequences included in the request.
-    /// Note - there is no way to format the query such that it asks for Tx-es with either
-    /// sequence (the query conditions can only be AND-ed)
-    /// There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    /// string attributes (sequence is emmitted as a string).
-    /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
-    /// for all packets could be performed but it would return all packets ever sent.
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
-        let mut result: Vec<IBCEvent> = vec![];
-        for seq in request.sequences.iter() {
-            // query all Tx-es that include events related to packet with given port, channel and sequence
-            let response = block_on(self.rpc_client.tx_search(
-                packet_query(&request, seq)?,
-                false,
-                1,
-                1,
-                Order::Ascending,
-            ))
-            .unwrap(); // todo
-
-            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
-                .map_or(vec![], |v| vec![v]);
-            result.append(&mut events);
-        }
-        Ok(result)
-    }
-
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
@@ -672,6 +645,33 @@ impl Chain for CosmosSDKChain {
             .collect();
 
         Ok(vec_ids)
+    }
+
+    /// Queries the packet data for all packets with sequences included in the request.
+    /// Note - there is no way to format the query such that it asks for Tx-es with either
+    /// sequence (the query conditions can only be AND-ed)
+    /// There is a possibility to include "<=" and ">=" conditions but it doesn't work with
+    /// string attributes (sequence is emmitted as a string).
+    /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
+    /// for all packets could be performed but it would return all packets ever sent.
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        let mut result: Vec<IBCEvent> = vec![];
+        for seq in request.sequences.iter() {
+            // query all Tx-es that include events related to packet with given port, channel and sequence
+            let response = block_on(self.rpc_client.tx_search(
+                packet_query(&request, seq)?,
+                false,
+                1,
+                1,
+                Order::Ascending,
+            ))
+            .unwrap(); // todo
+
+            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
+                .map_or(vec![], |v| vec![v]);
+            result.append(&mut events);
+        }
+        Ok(result)
     }
 }
 

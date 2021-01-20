@@ -73,10 +73,27 @@ macro_rules! conn_open_cmd {
 
                 status_info!("Message ", "{}: {:?}", $dbg_string, opts);
 
-                let (src_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
-                let (dst_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
+                let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone())
+                    .map_err(|e| Kind::Runtime.context(e));
+                let src_chain = match src_chain_res {
+                    Ok((handle, _)) => handle,
+                    Err(e) => {
+                        return Output::with_error()
+                            .with_result(json!(format!("{}", e)))
+                            .exit();
+                    }
+                };
+
+                let dst_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone())
+                    .map_err(|e| Kind::Runtime.context(e));
+                let dst_chain = match dst_chain_res {
+                    Ok((handle, _)) => handle,
+                    Err(e) => {
+                        return Output::with_error()
+                            .with_result(json!(format!("{}", e)))
+                            .exit();
+                    }
+                };
 
                 let res: Result<IBCEvent, Error> =
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
