@@ -27,9 +27,10 @@ use crate::channel::{Channel, ChannelError};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionError;
 use crate::error::{Error, Kind};
-use crate::foreign_client::build_update_client;
+use crate::foreign_client::{build_update_client, ForeignClient};
 use crate::relay::MAX_ITER;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics24_host::identifier::ConnectionId;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -84,13 +85,67 @@ impl Link {
         })
     }
 
+    pub fn src_chain(&self) -> Box<dyn ChainHandle> {
+        self.src_chain.clone()
+    }
+
+    pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
+        self.dst_chain.clone()
+    }
+
+    pub fn src_client_id(&self) -> &ClientId {
+        &self.channel.src_client_id()
+    }
+
+    pub fn dst_client_id(&self) -> &ClientId {
+        &self.channel.dst_client_id()
+    }
+
+    pub fn src_connection_id(&self) -> &ConnectionId {
+        &self.channel.src_connection_id()
+    }
+
+    pub fn dst_connection_id(&self) -> &ConnectionId {
+        &self.channel.dst_connection_id()
+    }
+
+    pub fn src_port_id(&self) -> &PortId {
+        &self.channel.src_port_id()
+    }
+
+    pub fn dst_port_id(&self) -> &PortId {
+        &self.channel.dst_port_id()
+    }
+
+    pub fn src_channel_id(&self) -> &ChannelId {
+        &self.channel.src_channel_id()
+    }
+
+    pub fn dst_channel_id(&self) -> &ChannelId {
+        &self.channel.dst_channel_id()
+    }
+
+    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, Error> {
+        let client = ForeignClient {
+            id: self.dst_client_id().clone(),
+            dst_chain: self.dst_chain(),
+            src_chain: self.src_chain(),
+        };
+        client.build_update_client(height)
+    }
+
+    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, Error> {
+        let client = ForeignClient {
+            id: self.src_client_id().clone(),
+            dst_chain: self.src_chain(),
+            src_chain: self.dst_chain(),
+        };
+        client.build_update_client(height)
+    }
+
     fn handle_packet_event(&mut self, event: &IBCEvent) -> Result<(), LinkError> {
-        let (packet, timeout) = handle_packet_event(
-            self.dst_chain.clone(),
-            self.dst_height,
-            self.src_chain.clone(),
-            event,
-        )?;
+        let (packet, timeout) =
+            handle_packet_event(self.dst_chain(), self.dst_height, self.src_chain(), event)?;
 
         if let Some(msg) = packet {
             self.packet_msgs.append(&mut vec![msg]);
@@ -109,19 +164,15 @@ impl Link {
     fn collect_event(&mut self, event: &IBCEvent) {
         match event {
             IBCEvent::SendPacketChannel(send_packet_ev) => {
-                if self.channel.config.a_config.channel_id().clone()
-                    == send_packet_ev.packet.source_channel
-                    && self.channel.config.a_config.port_id().clone()
-                        == send_packet_ev.packet.source_port
+                if self.src_channel_id().clone() == send_packet_ev.packet.source_channel
+                    && self.src_port_id().clone() == send_packet_ev.packet.source_port
                 {
                     self.all_events.append(&mut vec![event.clone()]);
                 }
             }
             IBCEvent::WriteAcknowledgementChannel(write_ack_ev) => {
-                if self.channel.config.a_config.channel_id().clone()
-                    == write_ack_ev.packet.destination_channel
-                    && self.channel.config.a_config.port_id().clone()
-                        == write_ack_ev.packet.destination_port
+                if self.channel.src_channel_id().clone() == write_ack_ev.packet.destination_channel
+                    && self.channel.src_port_id().clone() == write_ack_ev.packet.destination_port
                 {
                     self.all_events.append(&mut vec![event.clone()]);
                 }
@@ -146,12 +197,7 @@ impl Link {
 
         if !self.dst_msgs_input_events.is_empty() {
             let update_height = self.src_height.increment();
-            let mut msgs_to_send = build_update_client(
-                self.dst_chain.clone(),
-                self.src_chain.clone(),
-                &self.channel.config.dst().client_id().clone(),
-                update_height,
-            )?;
+            let mut msgs_to_send = self.build_update_client_on_dst(update_height)?;
             msgs_to_send.append(&mut self.packet_msgs);
             info!(
                 "sending {:?} messages to {}, update client at height {:?}",
@@ -176,12 +222,7 @@ impl Link {
 
         if !self.src_msgs_input_envens.is_empty() {
             let update_height = self.dst_height.increment();
-            let mut msgs_to_send = build_update_client(
-                self.src_chain.clone(),
-                self.dst_chain.clone(),
-                &self.channel.config.src().client_id().clone(),
-                update_height,
-            )?;
+            let mut msgs_to_send = self.build_update_client_on_src(update_height)?;
             msgs_to_send.append(&mut self.timeout_msgs);
             info!(
                 "sending {:?} messages to {}, update client at height {:?}",
@@ -237,8 +278,8 @@ pub struct BidirectionalLink {
 
 impl BidirectionalLink {
     pub fn new(channel: Channel) -> Result<BidirectionalLink, LinkError> {
-        let a_chain = channel.connection().chain_a();
-        let b_chain = channel.connection().chain_b();
+        let a_chain = channel.src_chain();
+        let b_chain = channel.dst_chain();
 
         Ok(BidirectionalLink {
             a_to_b: Link::new(a_chain.clone(), b_chain.clone(), channel.clone())?,
@@ -247,10 +288,7 @@ impl BidirectionalLink {
     }
 
     pub fn run(&mut self) -> Result<(), LinkError> {
-        info!(
-            "relaying packets for link {:#?}",
-            self.a_to_b.channel.config
-        );
+        info!("relaying packets for link {:#?}", self.a_to_b.channel);
         loop {
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;
@@ -683,7 +721,7 @@ impl PacketMsgCollector {
             let mut dst_msgs = build_update_client(
                 self.packet_dst_chain.clone(),
                 self.packet_src_chain.clone(),
-                &self.opts.packet_dst_client_id,
+                &self.opts.packet_dst_client_id.clone(),
                 self.src_query_height.increment(),
             )?;
             dst_msgs.append(&mut self.dst_msgs);

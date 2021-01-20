@@ -6,7 +6,7 @@ use ibc::ics24_host::identifier::ClientId;
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::ChainConfig;
-use relayer::foreign_client::{build_create_client_and_send, build_update_client_and_send};
+use relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
 use crate::conclude::Output;
@@ -41,8 +41,14 @@ impl Runnable for TxCreateClientCmd {
 
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
+        let client = ForeignClient {
+            dst_chain,
+            src_chain,
+            id: ClientId::default(),
+        };
 
-        let res: Result<IBCEvent, Error> = build_create_client_and_send(dst_chain, src_chain)
+        let res: Result<IBCEvent, Error> = client
+            .build_create_client_and_send()
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
@@ -83,7 +89,7 @@ impl Runnable for TxUpdateClientCmd {
         status_info!(
             "Message UpdateClient",
             "id: {:?}, for chain: {:?}, on chain: {:?}",
-            self.dst_client_id,
+            self.dst_client_id.clone(),
             src_chain_config.id,
             dst_chain_config.id
         );
@@ -91,9 +97,15 @@ impl Runnable for TxUpdateClientCmd {
         let (src_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config).unwrap();
         let (dst_chain, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config).unwrap();
 
-        let res: Result<IBCEvent, Error> =
-            build_update_client_and_send(dst_chain, src_chain, &self.dst_client_id)
-                .map_err(|e| Kind::Tx.context(e).into());
+        let client = ForeignClient {
+            dst_chain,
+            src_chain,
+            id: self.dst_client_id.clone(),
+        };
+
+        let res: Result<IBCEvent, Error> = client
+            .build_update_client_and_send()
+            .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
             Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),

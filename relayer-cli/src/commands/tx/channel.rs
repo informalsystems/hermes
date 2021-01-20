@@ -4,12 +4,9 @@ use serde_json::json;
 use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::Height;
 use relayer::chain::{runtime::ChainRuntime, CosmosSDKChain};
-use relayer::channel::{
-    build_chan_ack_and_send, build_chan_confirm_and_send, build_chan_init_and_send,
-    build_chan_try_and_send,
-};
-use relayer::channel::{ChannelConfig, ChannelConfigSide};
+use relayer::channel::{Channel, ChannelSide};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -67,33 +64,38 @@ macro_rules! chan_open_cmd {
                     }
                 };
 
-                let opts = ChannelConfig {
+                let (src_chain, _) =
+                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
+                let (dst_chain, _) =
+                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
+
+                // Retrieve the connection
+                let dst_connection = dst_chain
+                    .query_connection(&self.dst_connection_id, Height::default())
+                    .unwrap();
+
+                let channel = Channel {
                     ordering: self.ordering,
-                    a_config: ChannelConfigSide::new(
-                        src_chain_config.id.clone(),
+                    a_side: ChannelSide::new(
+                        src_chain,
                         ClientId::default(),
                         ConnectionId::default(),
                         self.src_port_id.clone(),
                         self.src_channel_id.clone(),
                     ),
-                    b_config: ChannelConfigSide::new(
-                        dst_chain_config.id.clone(),
-                        ClientId::default(),
+                    b_side: ChannelSide::new(
+                        dst_chain,
+                        dst_connection.client_id().clone(),
                         self.dst_connection_id.clone(),
                         self.dst_port_id.clone(),
                         self.dst_channel_id.clone(),
                     ),
                 };
 
-                status_info!("Message ", "{}: {:?}", $dbg_string, opts);
-
-                let (src_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
-                let (dst_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
+                status_info!("Message ", "{}: {:?}", $dbg_string, self);
 
                 let res: Result<IBCEvent, Error> =
-                    $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
+                    channel.$func().map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
                     Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
