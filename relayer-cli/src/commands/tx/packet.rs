@@ -79,7 +79,7 @@ impl Runnable for TxRawPacketRecvCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let src_chain_res =
             ChainRuntime::<CosmosSDKChain>::spawn(opts.packet_src_chain_config.clone())
@@ -182,7 +182,7 @@ impl Runnable for TxRawPacketAckCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let src_chain_res =
             ChainRuntime::<CosmosSDKChain>::spawn(opts.packet_src_chain_config.clone())

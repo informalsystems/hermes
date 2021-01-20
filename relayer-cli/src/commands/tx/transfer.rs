@@ -89,7 +89,7 @@ impl Runnable for TxRawSendPacketCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
 

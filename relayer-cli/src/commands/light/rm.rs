@@ -1,12 +1,14 @@
 use std::{io, io::Write, ops::Deref};
 
-use crate::prelude::*;
-
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
+use serde_json::json;
+use tendermint_light_client::types::PeerId;
 
 use ibc::ics24_host::identifier::ChainId;
 use relayer::config::PeersConfig;
-use tendermint_light_client::types::PeerId;
+
+use crate::conclude::Output;
+use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct RmCmd {
@@ -88,19 +90,30 @@ impl RmCmd {
             .as_mut()
             .ok_or_else(|| format!("no peers configured for chain: {}", options.chain_id))?;
 
-        if options.all && (options.yes || confirm(&options.chain_id)?) {
+        let rmd_peers = if options.all && (options.yes || confirm(&options.chain_id)?) {
             let removed_peers = get_all_peer_ids(&peers_config);
             chain_config.peers = None;
-            status_ok!("Removed", "light client peers {:?}", removed_peers);
+
+            removed_peers
         } else {
+            let mut res: Vec<String> = vec![];
             for peer_id in options.peer_ids {
                 let removed_peer = remove_peer(&mut peers_config, peer_id, options.force)?;
-                status_ok!("Removed", "light client peer '{}'", removed_peer);
+                res.push(removed_peer.to_string());
             }
+
+            res
         };
 
         let config_path = crate::config::config_path()?;
         relayer::config::store(&config, config_path)?;
+
+        Output::with_success()
+            .with_result(json!(format!(
+                "Removed light client peer(s) '{:?}'",
+                rmd_peers
+            )))
+            .exit();
 
         Ok(())
     }

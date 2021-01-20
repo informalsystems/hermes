@@ -63,7 +63,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -142,7 +142,7 @@ impl Runnable for QueryPacketCommitmentCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
@@ -224,7 +224,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
@@ -313,7 +313,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -392,7 +392,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
@@ -471,7 +471,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();

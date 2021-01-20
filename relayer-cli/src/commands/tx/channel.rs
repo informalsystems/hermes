@@ -85,7 +85,7 @@ macro_rules! chan_open_cmd {
                     ),
                 };
 
-                status_info!("Message ", "{}: {:?}", $dbg_string, opts);
+                info!("Message {}: {:?}", $dbg_string, opts);
 
                 let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone())
                     .map_err(|e| Kind::Runtime.context(e));

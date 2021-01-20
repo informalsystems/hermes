@@ -32,11 +32,9 @@ impl Runnable for TxCreateClientCmd {
                 }
             };
 
-        status_info!(
-            "Message CreateClient",
-            "for source chain: {:?}, on destination chain: {:?}",
-            src_chain_config.id,
-            dst_chain_config.id
+        info!(
+            "Message CreateClient for source chain: {:?}, on destination chain: {:?}",
+            src_chain_config.id, dst_chain_config.id
         );
 
         let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)
@@ -99,12 +97,9 @@ impl Runnable for TxUpdateClientCmd {
             }
         };
 
-        status_info!(
-            "Message UpdateClient",
-            "id: {:?}, for chain: {:?}, on chain: {:?}",
-            self.dst_client_id,
-            src_chain_config.id,
-            dst_chain_config.id
+        info!(
+            "Message UpdateClient id: {:?}, for chain: {:?}, on chain: {:?}",
+            self.dst_client_id, src_chain_config.id, dst_chain_config.id
         );
 
         let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)
