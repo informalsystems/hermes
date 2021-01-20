@@ -212,7 +212,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
 
     fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
 
-    fn subscribe(&self, chain_id: ChainId) -> Result<Subscription, Error>;
+    fn subscribe(&self) -> Result<Subscription, Error>;
 
     /// Send a transaction with `msgs` to chain.
     fn send_msgs(&self, proto_msgs: Vec<prost_types::Any>) -> Result<Vec<IBCEvent>, Error>;

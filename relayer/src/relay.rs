@@ -8,7 +8,7 @@ use crate::channel::Channel;
 use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
-use crate::link::Link;
+use crate::link::BidirectionalLink;
 
 pub(crate) const MAX_ITER: u32 = 10;
 
@@ -30,7 +30,7 @@ pub fn channel_relay(
     // Setup the channel over the connection
     let channel = Channel::new(connection, ordering, path.a_port, path.b_port)?;
 
-    let link = Link::new(channel);
+    let mut link = BidirectionalLink::new(channel)?;
 
     link.run()?;
 

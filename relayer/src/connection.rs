@@ -34,13 +34,6 @@ pub enum ConnectionError {
 }
 
 #[derive(Clone, Debug)]
-pub struct Connection {
-    pub config: ConnectionConfig,
-    a_client: ForeignClient,
-    b_client: ForeignClient,
-}
-
-#[derive(Clone, Debug)]
 pub struct ConnectionSideConfig {
     chain_id: ChainId,
     client_id: ClientId,
@@ -108,6 +101,13 @@ impl ConnectionConfig {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct Connection {
+    pub config: ConnectionConfig,
+    a_client: ForeignClient,
+    b_client: ForeignClient,
+}
+
 impl Connection {
     /// Create a new connection, ensuring that the handshake has succeeded and the two connection
     /// ends exist on each side.
@@ -150,6 +150,14 @@ impl Connection {
         c.handshake()?;
 
         Ok(c)
+    }
+
+    pub fn flipped(&self) -> Connection {
+        Connection {
+            config: self.config.flipped(),
+            a_client: self.b_client.clone(),
+            b_client: self.a_client.clone(),
+        }
     }
 
     /// Returns the "a" side of the connection.
@@ -234,7 +242,7 @@ impl Connection {
                 b_connection.unwrap().state().clone(),
             ) {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
-                    // Ack to src
+                    // Ack to a_chain
                     match build_conn_ack_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => {
                             error!("Failed ConnAck {:?}: {}", self.config.a_end(), e);
@@ -243,7 +251,7 @@ impl Connection {
                     }
                 }
                 (State::Open, State::TryOpen) => {
-                    // Confirm to dest
+                    // Confirm to b_chain
                     match build_conn_confirm_and_send(
                         b_chain.clone(),
                         a_chain.clone(),
@@ -254,7 +262,7 @@ impl Connection {
                     }
                 }
                 (State::TryOpen, State::Open) => {
-                    // Confirm to src
+                    // Confirm to a_chain
                     match build_conn_confirm_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.config.a_end(), e),
                         Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),

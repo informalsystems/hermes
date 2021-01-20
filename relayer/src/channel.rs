@@ -148,6 +148,13 @@ impl Channel {
         Ok(channel)
     }
 
+    pub fn flipped(&self) -> Channel {
+        Channel {
+            config: self.config.flipped(),
+            connection: self.connection.flipped(),
+        }
+    }
+
     /// Returns the underlying connection of this channel
     pub fn connection(&self) -> Connection {
         self.connection.clone()
@@ -236,14 +243,14 @@ impl Channel {
                 b_channel.unwrap().state().clone(),
             ) {
                 (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
-                    // Ack to src
+                    // Ack to a_chain
                     match build_chan_ack_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => error!("Failed ChanAck {:?}: {}", self.config.a_end(), e),
                         Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::TryOpen) => {
-                    // Confirm to dest
+                    // Confirm to b_chain
                     match build_chan_confirm_and_send(
                         b_chain.clone(),
                         a_chain.clone(),
@@ -254,7 +261,7 @@ impl Channel {
                     }
                 }
                 (State::TryOpen, State::Open) => {
-                    // Confirm to src
+                    // Confirm to a_chain
                     match build_chan_confirm_and_send(a_chain.clone(), b_chain.clone(), &flipped) {
                         Err(e) => error!("Failed ChanConfirm {:?}: {}", self.config.a_end(), e),
                         Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
