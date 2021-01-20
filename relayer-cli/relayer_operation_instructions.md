@@ -221,3 +221,62 @@ Client, connection, channel handshake and packet relaying can pe done from the r
     rrly -c loop_config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
     rrly -c loop_config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
     ```
+
+## Profiling the relayer
+
+The `relayer` crate provides a `time!` macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.
+
+### Setup
+
+The `time!` macro has no effect unless the `profiling` feature of the `relayer` crate is enabled.
+
+To enable it, one must compile the `relayer-cli` crate with the `--features=profiling` flag.
+
+a) One way is to build the `relayer` binary and update the `rrly` alias to point to the executable:
+
+```shell script
+$ cd relayer-cli/
+$ cargo build --features=profiling
+$ cd ..
+$ alias rrly=target/debug/relayer
+```
+
+b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
+
+```shell script
+$ alias rrly='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
+```
+
+The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to accept the `--features` flag.
+
+### Example
+
+```rust
+fn my_function(x: u32) -> u32 {
+    time!("myfunction: x={}", x); // A
+    
+    std::thread::sleep(Duration::from_secs(1));
+    
+    {
+        time!("inner operation"); // B
+        
+        std::thread::sleep(Duration::from_secs(2));
+        
+        // timer B ends here
+    }
+    
+    x + 1
+    
+    // timer A ends here
+}
+```
+
+#### Output
+
+```
+Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
+Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - start
+Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
+Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
+```
+
