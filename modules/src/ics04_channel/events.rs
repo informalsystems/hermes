@@ -108,7 +108,7 @@ fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Att
     let mut attr = Attributes::default();
 
     for (key, value) in &event.attributes {
-        match key.as_ref() {
+        match *key {
             PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().unwrap(),
             CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().unwrap(),
             CONNECTION_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),

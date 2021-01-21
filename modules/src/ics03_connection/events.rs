@@ -41,7 +41,7 @@ fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Att
     let mut attr = Attributes::default();
 
     for (key, value) in &event.attributes {
-        match key.as_ref() {
+        match *key {
             CONN_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
             CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {

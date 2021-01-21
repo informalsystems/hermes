@@ -39,7 +39,7 @@ fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Att
     let mut attr = Attributes::default();
 
     for (key, value) in &event.attributes {
-        match key.as_ref() {
+        match *key {
             CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
             CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
