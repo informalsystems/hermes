@@ -263,16 +263,16 @@ mod tests {
             Test {
                 name: "Connection open try fails due to InvalidConsensusHeight (too high)"
                     .to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(
-                    Box::new(incorrect_msg_conn_try),
-                )),
+                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                    incorrect_msg_conn_try,
+                ))),
                 want_pass: false,
             },
             Test {
                 name: "Connection open try fails due to mismatching connection ends".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(
-                    Box::new(msg_conn_try_good_height),
-                )),
+                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                    msg_conn_try_good_height,
+                ))),
                 want_pass: false,
             },
             // ICS04
