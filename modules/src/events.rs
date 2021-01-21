@@ -110,6 +110,7 @@ pub fn from_tx_response_event(event: &tendermint::abci::Event) -> Option<IBCEven
     from_generic_event(GenericEvent::from_tx_response_event(event))
 }
 
+// This is mock-chain specific
 pub fn from_handler_event(event: &crate::handler::Event) -> Option<IBCEvent> {
     from_generic_event(GenericEvent::from_handler_event(event))
 }
