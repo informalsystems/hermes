@@ -2,6 +2,7 @@
 
 use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics02_client::error::Error;
+use crate::ics02_client::events::{CREATE_EVENT_TYPE, UPDATE_EVENT_TYPE};
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics24_host::identifier::ClientId;
 
@@ -26,11 +27,11 @@ impl From<ClientEvent> for Event {
     fn from(ce: ClientEvent) -> Event {
         match ce {
             ClientEvent::ClientCreated(client_id) => Event::new(
-                EventType::Custom("ClientCreated".to_string()),
+                EventType::Custom(CREATE_EVENT_TYPE.to_string()),
                 vec![("client_id".to_string(), client_id.to_string())],
             ),
             ClientEvent::ClientUpdated(client_id) => Event::new(
-                EventType::Custom("ClientUpdated".to_string()),
+                EventType::Custom(UPDATE_EVENT_TYPE.to_string()),
                 vec![("client_id".to_string(), client_id.to_string())],
             ),
         }
@@ -42,8 +43,8 @@ pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientRe
 where
     Ctx: ClientReader,
 {
-    Ok(match msg {
-        ClientMsg::CreateClient(msg) => create_client::process(ctx, msg)?,
-        ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg)?,
-    })
+    match msg {
+        ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
+        ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg),
+    }
 }

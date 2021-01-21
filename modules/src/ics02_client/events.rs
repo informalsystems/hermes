@@ -7,7 +7,6 @@ use anomaly::BoxError;
 
 use crate::ics02_client::height::Height;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
@@ -16,41 +15,40 @@ pub const CREATE_EVENT_TYPE: &str = "create_client";
 pub const UPDATE_EVENT_TYPE: &str = "update_client";
 
 /// The content of the `key` field for the attribute containing the client identifier.
-pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
+const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 
 /// The content of the `key` field for the attribute containing the client type.
-pub const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
+const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 
 /// The content of the `key` field for the attribute containing the height.
-pub const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
+const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
-/// A list of all the event `type`s that this module is capable of parsing
-fn event_types() -> HashSet<String> {
-    vec![CREATE_EVENT_TYPE.to_string(), UPDATE_EVENT_TYPE.to_string()]
-        .into_iter()
-        .collect()
+pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEvent> {
+    match event.type_str {
+        CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(
+            extract_attributes_from_event(event),
+        ))),
+        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(
+            extract_attributes_from_event(event),
+        ))),
+        _ => None,
+    }
 }
 
-pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
-    event_types().get(&event.type_str)?;
+fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Attributes {
     let mut attr = Attributes::default();
 
-    for tag in event.attributes {
-        match tag.key.as_ref() {
-            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = tag.value.to_string().parse().unwrap(),
-            CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = tag.value.to_string().parse().unwrap(),
-            CONSENSUS_HEIGHT_ATTRIBUTE_KEY => {
-                attr.consensus_height = tag.value.to_string().try_into().unwrap()
-            }
-            _ => {}
+    for (key, value) in &event.attributes {
+        match key.as_ref() {
+            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
+            CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
+            CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
+            // TODO: `Attributes` has 4 fields and we're only parsing 3; is that intended?
+            _ => panic!("unexpected attribute key: {}", key),
         }
     }
 
-    match event.type_str.as_str() {
-        CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(attr))),
-        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(attr))),
-        _ => None,
-    }
+    attr
 }
 
 /// NewBlock event signals the committing & execution of a new block.
@@ -109,7 +107,7 @@ impl TryFrom<RawObject> for CreateClient {
             height: obj.height,
             client_id: attribute!(obj, "create_client.client_id"),
             client_type: attribute!(obj, "create_client.client_type"),
-            consensus_height: consensus_height_str.try_into()?,
+            consensus_height: consensus_height_str.as_str().try_into()?,
         }))
     }
 }
@@ -141,7 +139,7 @@ impl TryFrom<RawObject> for UpdateClient {
             height: obj.height,
             client_id: attribute!(obj, "update_client.client_id"),
             client_type: attribute!(obj, "update_client.client_type"),
-            consensus_height: consensus_height_str.try_into()?,
+            consensus_height: consensus_height_str.as_str().try_into()?,
         }))
     }
 }
@@ -165,7 +163,7 @@ impl TryFrom<RawObject> for ClientMisbehavior {
             height: obj.height,
             client_id: attribute!(obj, "client_misbehaviour.client_id"),
             client_type: attribute!(obj, "client_misbehaviour.client_type"),
-            consensus_height: consensus_height_str.try_into()?,
+            consensus_height: consensus_height_str.as_str().try_into()?,
         }))
     }
 }

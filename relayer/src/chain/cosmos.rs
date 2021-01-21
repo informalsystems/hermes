@@ -764,19 +764,19 @@ fn packet_from_tx_search_response(
             continue;
         }
 
-        for e in r.clone().tx_result.events.iter() {
+        for e in r.tx_result.events.iter() {
             if e.type_str != request.event_id.as_str() {
                 continue;
             }
 
-            let res = from_tx_response_event(e.clone());
+            let res = from_tx_response_event(e);
             if res.is_none() {
                 continue;
             }
             let event = res.unwrap();
-            let packet = match event.clone() {
-                IBCEvent::SendPacketChannel(send_ev) => Some(send_ev.packet),
-                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(ack_ev.packet),
+            let packet = match &event {
+                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
+                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
 
@@ -900,8 +900,8 @@ pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::
     }
 
     for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(event) {
-            result.append(&mut vec![ibc_ev])
+        if let Some(ibc_ev) = from_tx_response_event(&event) {
+            result.push(ibc_ev);
         }
     }
     Ok(result)

@@ -167,7 +167,7 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert_eq!(
-                            e.tpe,
+                            e.event_type,
                             EventType::Custom("connection_open_confirm".to_string())
                         );
                     }

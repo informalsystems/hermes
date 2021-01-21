@@ -102,7 +102,10 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Init);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.tpe, EventType::Custom("connection_open_init".to_string()));
+                        assert_eq!(
+                            e.event_type,
+                            EventType::Custom("connection_open_init".to_string())
+                        );
                     }
                 }
                 Err(e) => {

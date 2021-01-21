@@ -11,12 +11,12 @@ impl Attribute {
         Self { key, value }
     }
 
-    pub fn value(&self) -> String {
-        self.value.clone()
+    pub fn value(&self) -> &String {
+        &self.value
     }
 
-    pub fn key(&self) -> String {
-        self.key.clone()
+    pub fn key(&self) -> &String {
+        &self.key
     }
 }
 
@@ -28,24 +28,19 @@ pub enum EventType {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Event {
-    pub tpe: EventType,
+    pub event_type: EventType,
     pub attributes: Vec<Attribute>,
 }
 
 impl Event {
-    pub fn new(tpe: EventType, attrs: Vec<(String, String)>) -> Self {
+    pub fn new(event_type: EventType, attrs: Vec<(String, String)>) -> Self {
         Self {
-            tpe,
+            event_type,
             attributes: attrs
                 .into_iter()
                 .map(|(k, v)| Attribute::new(k, v))
                 .collect(),
         }
-    }
-
-    /// Returns a vector containing the values within all attributes of this event
-    pub fn attribute_values(&self) -> Vec<String> {
-        self.attributes.iter().map(|a| a.value.clone()).collect()
     }
 }
 

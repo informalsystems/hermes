@@ -128,10 +128,6 @@ impl ClientId {
     /// let tm_client_id = ClientId::new(ClientType::Tendermint, 0);
     /// assert!(tm_client_id.is_ok());
     /// tm_client_id.map(|id| { assert_eq!(&id, "07-tendermint-0") });
-    ///
-    /// let mock_client_id = ClientId::new(ClientType::Mock, 87);
-    /// assert!(mock_client_id.is_ok());
-    /// mock_client_id.map(|id| { assert_eq!(&id, "9999-mock-87") });
     /// ```
     pub fn new(ctype: ClientType, counter: u64) -> Result<Self, ValidationError> {
         let prefix = Self::prefix(ctype);

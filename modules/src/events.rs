@@ -13,7 +13,6 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 
-use tendermint::abci::Event;
 use tracing::warn;
 
 /// Events types
@@ -69,26 +68,70 @@ pub enum IBCEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-// This is tendermint specific
-pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
-    // Return the first hit we find
-    // Look for client event...
-    if let Some(client_res) = ClientEvents::try_from_tx(event.clone()) {
-        return Some(client_res);
-    // Look for connection event...
-    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event.clone()) {
-        return Some(conn_res);
-    } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
-        return Some(chan_res);
+#[derive(Debug)]
+pub struct GenericEvent<'a> {
+    pub type_str: &'a str,
+    pub attributes: Vec<(&'a str, &'a str)>,
+}
+
+impl<'a> GenericEvent<'a> {
+    fn from_tx_response_event(event: &'a tendermint::abci::Event) -> Self {
+        let type_str = event.type_str.as_ref();
+        let attributes = event
+            .attributes
+            .iter()
+            .map(|tag| (tag.key.as_ref(), tag.value.as_ref()))
+            .collect();
+        Self {
+            type_str,
+            attributes,
+        }
     }
 
-    None
+    fn from_handler_event(event: &'a crate::handler::Event) -> Self {
+        let type_str = match &event.event_type {
+            crate::handler::EventType::Custom(type_str) => type_str.as_ref(),
+            _ => unimplemented!(),
+        };
+        let attributes = event
+            .attributes
+            .iter()
+            .map(|tag| (tag.key().as_ref(), tag.value().as_ref()))
+            .collect();
+        Self {
+            type_str,
+            attributes,
+        }
+    }
+}
+
+// This is tendermint specific
+pub fn from_tx_response_event(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+    from_generic_event(GenericEvent::from_tx_response_event(event))
+}
+
+pub fn from_handler_event(event: &crate::handler::Event) -> Option<IBCEvent> {
+    from_generic_event(GenericEvent::from_handler_event(event))
+}
+
+fn from_generic_event(event: GenericEvent<'_>) -> Option<IBCEvent> {
+    // Return the first hit we find
+    if let Some(client_res) = ClientEvents::try_from_event(&event) {
+        Some(client_res)
+    } else if let Some(conn_res) = ConnectionEvents::try_from_event(&event) {
+        Some(conn_res)
+    } else if let Some(chan_res) = ChannelEvents::try_from_event(&event) {
+        Some(chan_res)
+    } else {
+        None
+    }
 }
 
 impl IBCEvent {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
     pub fn height(&self) -> Height {
         match self {
             IBCEvent::NewBlock(bl) => bl.height,
@@ -102,6 +145,7 @@ impl IBCEvent {
             _ => unimplemented!(),
         }
     }
+
     pub fn set_height(&mut self, height: ICSHeight) {
         match self {
             IBCEvent::SendPacketChannel(ev) => {

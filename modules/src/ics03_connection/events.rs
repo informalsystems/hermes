@@ -7,13 +7,11 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::block;
 
-use std::collections::HashSet;
-
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
-const INIT_EVENT_TYPE: &str = "connection_open_init";
-const TRY_EVENT_TYPE: &str = "connection_open_try";
-const ACK_EVENT_TYPE: &str = "connection_open_ack";
-const CONFIRM_EVENT_TYPE: &str = "connection_open_confirm";
+pub const INIT_EVENT_TYPE: &str = "connection_open_init";
+pub const TRY_EVENT_TYPE: &str = "connection_open_try";
+pub const ACK_EVENT_TYPE: &str = "connection_open_ack";
+pub const CONFIRM_EVENT_TYPE: &str = "connection_open_confirm";
 
 /// The content of the `key` field for the attribute containing the connection identifier.
 const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -21,43 +19,43 @@ const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-/// A list of all the event `type`s that this module is capable of parsing
-fn event_types() -> HashSet<String> {
-    vec![
-        INIT_EVENT_TYPE.to_string(),
-        TRY_EVENT_TYPE.to_string(),
-        ACK_EVENT_TYPE.to_string(),
-        CONFIRM_EVENT_TYPE.to_string(),
-    ]
-    .into_iter()
-    .collect()
+pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEvent> {
+    match event.type_str {
+        INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(
+            extract_attributes_from_event(event),
+        ))),
+        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(
+            extract_attributes_from_event(event),
+        ))),
+        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(
+            extract_attributes_from_event(event),
+        ))),
+        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(
+            extract_attributes_from_event(event),
+        ))),
+        _ => None,
+    }
 }
 
-pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
-    event_types().get(&event.type_str)?; // Quit fast if the event type is irrelevant
+fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Attributes {
     let mut attr = Attributes::default();
 
-    for tag in event.attributes {
-        match tag.key.as_ref() {
-            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = tag.value.to_string().parse().unwrap(),
-            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = tag.value.to_string().parse().unwrap(),
+    for (key, value) in &event.attributes {
+        match key.as_ref() {
+            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
+            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_connection_id = tag.value.to_string().parse().ok()
+                attr.counterparty_connection_id = value.parse().ok()
             }
             COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_client_id = tag.value.to_string().parse().unwrap()
+                attr.counterparty_client_id = value.parse().unwrap()
             }
-            _ => {}
+            // TODO: `Attributes` has 5 fields and we're only parsing 4; is that intended?
+            _ => panic!("unexpected attribute key: {}", key),
         }
     }
 
-    match event.type_str.as_str() {
-        INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(attr))),
-        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(attr))),
-        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(attr))),
-        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(attr))),
-        _ => None,
-    }
+    attr
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]

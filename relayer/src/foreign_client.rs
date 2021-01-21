@@ -230,20 +230,13 @@ pub fn build_update_client_and_send(
     )?;
 
     let mut events = dst_chain.send_msgs(new_msgs)?;
-    assert!(!events.is_empty());
+    assert_eq!(events.len(), 1);
     Ok(events.pop().unwrap())
 }
 
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests
 /// exercise various client methods (create, update, ForeignClient::new) using locally-running
 /// instances of chains built using `MockChain`.
-///
-/// ## Why are all these tests ignored?
-/// We ignore these tests as of #451, because the mock chain is not yet capable of producing
-/// transaction responses of correct types (the types should be similar to `tx_commit::Response`).
-/// Another problem is that `build_create_client_and_send` contains a Cosmos-specific method
-/// for parsing transaction response. Once this parsing stage is general enough for the Mock chain,
-/// these tests should require minimal changes to pass.
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
@@ -261,7 +254,6 @@ mod test {
 
     /// Basic test for the `build_create_client_and_send` method.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn create_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -288,7 +280,6 @@ mod test {
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn update_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -383,7 +374,6 @@ mod test {
 
     /// Tests for `ForeignClient::new()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_create() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -429,7 +419,6 @@ mod test {
 
     /// Tests for `ForeignClient::update()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_update() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");

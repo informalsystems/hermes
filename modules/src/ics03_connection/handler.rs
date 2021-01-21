@@ -4,6 +4,9 @@ use crate::handler::{Event, EventType, HandlerOutput};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::Error;
+use crate::ics03_connection::events::{
+    ACK_EVENT_TYPE, CONFIRM_EVENT_TYPE, INIT_EVENT_TYPE, TRY_EVENT_TYPE,
+};
 use crate::ics03_connection::msgs::ConnectionMsg;
 use crate::ics24_host::identifier::ConnectionId;
 
@@ -31,11 +34,11 @@ impl From<ConnectionEvent> for Event {
     fn from(ev: ConnectionEvent) -> Event {
         match ev {
             ConnectionEvent::ConnOpenInit(_conn) => Event::new(
-                EventType::Custom("connection_open_init".to_string()),
+                EventType::Custom(INIT_EVENT_TYPE.to_string()),
                 vec![("connection_id".to_string(), "None".to_string())],
             ),
             ConnectionEvent::ConnOpenTry(conn) => Event::new(
-                EventType::Custom("connection_open_try".to_string()),
+                EventType::Custom(TRY_EVENT_TYPE.to_string()),
                 vec![(
                     "connection_id".to_string(),
                     // TODO: move connection id decision (`next_connection_id` method) in ClientReader
@@ -44,14 +47,14 @@ impl From<ConnectionEvent> for Event {
                 )],
             ),
             ConnectionEvent::ConnOpenAck(conn) => Event::new(
-                EventType::Custom("connection_open_ack".to_string()),
+                EventType::Custom(ACK_EVENT_TYPE.to_string()),
                 vec![(
                     "connection_id".to_string(),
                     conn.connection_id.unwrap().to_string(),
                 )],
             ),
             ConnectionEvent::ConnOpenConfirm(conn) => Event::new(
-                EventType::Custom("connection_open_confirm".to_string()),
+                EventType::Custom(CONFIRM_EVENT_TYPE.to_string()),
                 vec![(
                     "connection_id".to_string(),
                     conn.connection_id.unwrap().to_string(),
@@ -70,10 +73,10 @@ pub fn dispatch<Ctx>(
 where
     Ctx: ConnectionReader,
 {
-    Ok(match msg {
-        ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg)?,
-        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg)?,
-        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, *msg)?,
-        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg)?,
-    })
+    match msg {
+        ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
+        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg),
+        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, *msg),
+        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
+    }
 }

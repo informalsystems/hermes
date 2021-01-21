@@ -34,12 +34,12 @@ where
             // ICS2 messages
             create_client::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
-                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&*any_msg.value)
+                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(ICS2Msg(ClientMsg::CreateClient(domain_msg)))
             }
             update_client::TYPE_URL => {
-                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&*any_msg.value)
+                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(ICS2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
@@ -49,6 +49,8 @@ where
 
         // Process the envelope, and accumulate any events that were generated.
         let mut output = dispatch(&mut ctx_interim, envelope)?;
+        // TODO: output.log and output.result are discarded; does this mean that the method
+        //       `dispatch` below should only return the events?
         res.append(&mut output.events);
     }
 
@@ -68,6 +70,9 @@ where
         ICS2Msg(msg) => {
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
+
+            // TODO assert that no events were produced, as they would be discarded
+            // assert!(handler_output.events.is_empty());
 
             // Apply the result to the context (host chain store).
             let events: Vec<Event> = ctx
@@ -216,7 +221,7 @@ mod tests {
             "There is no attribute for client creation event! {:?}",
             client_id_event
         );
-        let client_id_raw = client_id_attribute.unwrap().value();
+        let client_id_raw = client_id_attribute.unwrap().value().clone();
 
         let client_id = ClientId::from_str(client_id_raw.as_str()).unwrap();
 
@@ -258,16 +263,16 @@ mod tests {
             Test {
                 name: "Connection open try fails due to InvalidConsensusHeight (too high)"
                     .to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    incorrect_msg_conn_try,
-                ))),
+                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(
+                    Box::new(incorrect_msg_conn_try),
+                )),
                 want_pass: false,
             },
             Test {
                 name: "Connection open try fails due to mismatching connection ends".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
-                    msg_conn_try_good_height,
-                ))),
+                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(
+                    Box::new(msg_conn_try_good_height),
+                )),
                 want_pass: false,
             },
             // ICS04

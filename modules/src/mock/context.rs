@@ -620,13 +620,17 @@ impl ICS18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
-        let _events =
-            deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
+        let events = deliver(self, msgs)
+            .map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?
+            .iter()
+            .map(|event| {
+                // Panic if no `IBCEvent` is found.
+                crate::events::from_handler_event(event).unwrap()
+            })
+            .collect();
 
-        // TODO: Fix for #469 to re-enable ForeignClient tests requires a translation layer
-        //     ibc::handler::Event -> ibc::Event.
         self.advance_host_chain_height(); // Advance chain height
-        Ok(vec![])
+        Ok(events)
     }
 
     fn signer(&self) -> Id {
