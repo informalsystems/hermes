@@ -1,5 +1,4 @@
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
@@ -62,20 +61,18 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_recv_packet_messages(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(ev) => Output::success(ev).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -130,20 +127,18 @@ impl Runnable for TxRawPacketAckCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_ack_packet_messages(&opts).map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(ev) => Output::success(ev).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

@@ -266,8 +266,8 @@ impl RelayPath {
                 .find(|event| matches!(event, IBCEvent::ChainError(_)));
 
             if let Some(_e) = ev {
-                    self.all_events
-                        .append(&mut self.dst_msgs_input_events.clone());
+                self.all_events
+                    .append(&mut self.dst_msgs_input_events.clone());
             }
         }
 

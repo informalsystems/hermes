@@ -10,10 +10,10 @@ use std::{
 };
 
 use serde_derive::{Deserialize, Serialize};
-
-use ibc::ics24_host::identifier::{ChainId, PortId};
 use tendermint::{net, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
+
+use ibc::ics24_host::identifier::{ChainId, PortId};
 
 use crate::error;
 
@@ -77,8 +77,13 @@ impl Default for Strategy {
 pub struct GlobalConfig {
     #[serde(default = "default::timeout", with = "humantime_serde")]
     pub timeout: Duration,
+
     #[serde(default)]
     pub strategy: Strategy,
+
+    /// All valid log levels, as defined in tracing:
+    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+    pub log_level: String,
 }
 
 impl Default for GlobalConfig {
@@ -86,6 +91,7 @@ impl Default for GlobalConfig {
         Self {
             timeout: default::timeout(),
             strategy: Strategy::default(),
+            log_level: "info".to_string(),
         }
     }
 }

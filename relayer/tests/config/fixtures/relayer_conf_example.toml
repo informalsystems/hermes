@@ -1,6 +1,7 @@
 [global]
 timeout = '10s'
 strategy = 'naive'
+log_level = 'error'
 
 [[chains]]
 id = 'chain_A'

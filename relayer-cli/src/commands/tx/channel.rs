@@ -56,18 +56,30 @@ macro_rules! chan_open_cmd {
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
                     (Ok(s), Ok(d)) => (s, d),
                     (_, _) => {
-                        return Output::with_error()
-                            .with_result(json!(
-                                "error occurred in finding the chains' configuration"
-                            ))
-                            .exit();
+                        return Output::error(json!(
+                            "error occurred in finding the chains' configuration"
+                        ))
+                        .exit();
                     }
                 };
 
-                let (src_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone()).unwrap();
-                let (dst_chain, _) =
-                    ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone()).unwrap();
+                let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config.clone())
+                    .map_err(|e| Kind::Runtime.context(e));
+                let src_chain = match src_chain_res {
+                    Ok((handle, _)) => handle,
+                    Err(e) => {
+                        return Output::error(format!("{}", e)).exit();
+                    }
+                };
+
+                let dst_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config.clone())
+                    .map_err(|e| Kind::Runtime.context(e));
+                let dst_chain = match dst_chain_res {
+                    Ok((handle, _)) => handle,
+                    Err(e) => {
+                        return Output::error(format!("{}", e)).exit();
+                    }
+                };
 
                 // Retrieve the connection
                 let dst_connection = dst_chain
@@ -92,16 +104,14 @@ macro_rules! chan_open_cmd {
                     ),
                 };
 
-                status_info!("Message ", "{}: {:?}", $dbg_string, self);
+                info!("Message {}: {:?}", $dbg_string, channel);
 
                 let res: Result<IBCEvent, Error> =
                     channel.$func().map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
-                    Err(e) => Output::with_error()
-                        .with_result(json!(format!("{}", e)))
-                        .exit(),
+                    Ok(receipt) => Output::success(receipt).exit(),
+                    Err(e) => Output::error(format!("{}", e)).exit(),
                 }
             }
         }
