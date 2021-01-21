@@ -1,8 +1,6 @@
 name: End to End testing
-on:
-  push:
-    branches:
-      - andy/ci-updates
+on: [pull_request]
+
 jobs:
   build:
     runs-on: ubuntu-latest
