@@ -62,7 +62,6 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
-use crate::util::block_on;
 use ibc::ics04_channel::packet::Sequence;
 
 // TODO size this properly
@@ -80,6 +79,8 @@ pub struct CosmosSDKChain {
 impl CosmosSDKChain {
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
+        crate::time!("unbonding_period");
+
         // TODO - generalize this
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
@@ -87,13 +88,15 @@ impl CosmosSDKChain {
         let mut client = self
             .block_on(
                 ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request =
             tonic::Request::new(ibc_proto::cosmos::staking::v1beta1::QueryParamsRequest {});
 
-        let response = block_on(client.params(request)).map_err(|e| Kind::Grpc.context(e))?;
+        let response = self
+            .block_on(client.params(request))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let res = response
             .into_inner()
@@ -116,21 +119,28 @@ impl CosmosSDKChain {
     /// Query the consensus parameters via an RPC query
     /// Specific to the SDK and used only for Tendermint client create
     pub fn query_consensus_params(&self) -> Result<Params, Error> {
-        Ok(block_on(self.rpc_client().genesis())
-            .map_err(|e| Kind::Rpc.context(e))?
+        crate::time!("query_consensus_params");
+
+        Ok(self
+            .block_on(self.rpc_client().genesis())
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?
             .consensus_params)
     }
 
     /// Run a future to completion on the Tokio runtime.
-    fn block_on<F: Future>(&self, f: F) -> Result<F::Output, Error> {
-        Ok(self.rt.block_on(f))
+    fn block_on<F: Future>(&self, f: F) -> F::Output {
+        crate::time!("block_on");
+        self.rt.block_on(f)
     }
 
     fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+        crate::time!("send_tx");
+
         let key = self
             .keybase()
             .get_key()
             .map_err(|e| Kind::KeyBase.context(e))?;
+
         // Create TxBody
         let body = TxBody {
             messages: proto_msgs.to_vec(),
@@ -153,8 +163,9 @@ impl CosmosSDKChain {
             value: pk_buf,
         };
 
-        let acct_response =
-            block_on(query_account(self, key.account)).map_err(|e| Kind::Grpc.context(e))?;
+        let acct_response = self
+            .block_on(query_account(self, key.account))
+            .map_err(|e| Kind::Grpc.context(e))?;
 
         let single = Single { mode: 1 };
         let sum_single = Some(Sum::Single(single));
@@ -210,8 +221,9 @@ impl CosmosSDKChain {
         let mut txraw_buf = Vec::new();
         prost::Message::encode(&tx_raw, &mut txraw_buf).unwrap();
 
-        let response =
-            block_on(broadcast_tx_commit(self, txraw_buf)).map_err(|e| Kind::Rpc.context(e))?;
+        let response = self
+            .block_on(broadcast_tx_commit(self, txraw_buf))
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         let res = tx_result_to_event(response)?;
 
@@ -238,8 +250,8 @@ impl Chain for CosmosSDKChain {
     type ClientState = ClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
-        let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+        let rpc_client = HttpClient::new(config.rpc_addr.clone())
+            .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
@@ -258,6 +270,8 @@ impl Chain for CosmosSDKChain {
     fn init_light_client(
         &self,
     ) -> Result<(Box<dyn LightClient<Self>>, Option<thread::JoinHandle<()>>), Error> {
+        crate::time!("init_light_client");
+
         let (lc, supervisor) = TMLightClient::from_config(&self.config, true)?;
 
         let supervisor_thread = thread::spawn(move || supervisor.run().unwrap());
@@ -275,6 +289,8 @@ impl Chain for CosmosSDKChain {
         ),
         Error,
     > {
+        crate::time!("init_event_monitor");
+
         let (mut event_monitor, event_receiver) =
             EventMonitor::new(self.config.id.clone(), self.config.rpc_addr.clone(), rt)?;
 
@@ -293,6 +309,8 @@ impl Chain for CosmosSDKChain {
     }
 
     fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+        crate::time!("query");
+
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
 
         let height =
@@ -304,7 +322,7 @@ impl Chain for CosmosSDKChain {
                 .into());
         }
 
-        let response = block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
 
         // TODO - Verify response proof, if requested.
         if prove {}
@@ -314,6 +332,8 @@ impl Chain for CosmosSDKChain {
 
     /// Send one or more transactions that include all the specified messages
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+        crate::time!("send_msgs");
+
         if proto_msgs.is_empty() {
             return Ok(vec![IBCEvent::Empty("No messages to send".to_string())]);
         }
@@ -344,13 +364,34 @@ impl Chain for CosmosSDKChain {
         Ok(res)
     }
 
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        // Build the client state.
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.unbonding_period()?,
+            Duration::from_millis(3000), // TODO - get it from src config when avail
+            height,
+            ICSHeight::zero(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+    }
+
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        let status = block_on(self.rpc_client().status()).map_err(|e| Kind::Rpc.context(e))?;
+        crate::time!("query_latest_height");
+
+        let status = self
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
-                Kind::LightClient,
+                Kind::LightClientSupervisor(self.config.id.clone()),
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
@@ -368,6 +409,8 @@ impl Chain for CosmosSDKChain {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error> {
+        crate::time!("query_client_state");
+
         let client_state = self
             .query(ClientStatePath(client_id.clone()), height, false)
             .map_err(|e| Kind::Query("client state".into()).context(e))
@@ -383,6 +426,8 @@ impl Chain for CosmosSDKChain {
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        crate::time!("query_commitment_prefix");
+
         // TODO - do a real chain query
         Ok(CommitmentPrefix::from(
             self.config().store_prefix.as_bytes().to_vec(),
@@ -394,6 +439,8 @@ impl Chain for CosmosSDKChain {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        crate::time!("proven_client_state");
+
         let res = self
             .query(ClientStatePath(client_id.clone()), height, true)
             .map_err(|e| Kind::Query("client state".into()).context(e))?;
@@ -420,6 +467,8 @@ impl Chain for CosmosSDKChain {
         consensus_height: ICSHeight,
         height: ICSHeight,
     ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        crate::time!("proven_client_consensus");
+
         let res = self
             .query(
                 ClientConsensusPath {
@@ -448,27 +497,12 @@ impl Chain for CosmosSDKChain {
         ))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
-        // Build the client state.
-        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
-            self.config.trust_threshold,
-            self.config.trusting_period,
-            self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
-            height,
-            ICSHeight::zero(),
-            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
-        )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
-    }
-
     fn build_consensus_state(
         &self,
         light_block: Self::LightBlock,
     ) -> Result<Self::ConsensusState, Error> {
+        crate::time!("build_consensus_state");
+
         Ok(TMConsensusState::from(light_block.signed_header.header))
     }
 
@@ -477,6 +511,8 @@ impl Chain for CosmosSDKChain {
         trusted_light_block: Self::LightBlock,
         target_light_block: Self::LightBlock,
     ) -> Result<Self::Header, Error> {
+        crate::time!("build_header");
+
         let trusted_height =
             ICSHeight::new(self.id().version(), trusted_light_block.height().into());
 
@@ -490,6 +526,8 @@ impl Chain for CosmosSDKChain {
 
     /// Get the account for the signer
     fn get_signer(&mut self) -> Result<AccountId, Error> {
+        crate::time!("get_signer");
+
         // Get the key from key seed file
         let key = self
             .keybase()
@@ -504,6 +542,8 @@ impl Chain for CosmosSDKChain {
 
     /// Get the signing key
     fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        crate::time!("get_key");
+
         // Get the key from key seed file
         let key = self
             .keybase()
@@ -512,22 +552,26 @@ impl Chain for CosmosSDKChain {
 
         Ok(key)
     }
+
     /// Queries the packet commitment hashes associated with a channel.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+        crate::time!("query_packet_commitments");
+
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
-        let response = block_on(client.packet_commitments(request))
+        let response = self
+            .block_on(client.packet_commitments(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -547,17 +591,20 @@ impl Chain for CosmosSDKChain {
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<u64>, Error> {
+        crate::time!("query_unreceived_packets");
+
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
-        let response = block_on(client.unreceived_packets(request))
+        let response = self
+            .block_on(client.unreceived_packets(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -569,17 +616,20 @@ impl Chain for CosmosSDKChain {
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<PacketState>, ICSHeight), Error> {
+        crate::time!("query_packet_acknowledgements");
+
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
-        let response = block_on(client.packet_acknowledgements(request))
+        let response = self
+            .block_on(client.packet_acknowledgements(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -599,17 +649,20 @@ impl Chain for CosmosSDKChain {
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
+        crate::time!("query_unreceived_acknowledgements");
+
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
-        let response = block_on(client.unreceived_acks(request))
+        let response = self
+            .block_on(client.unreceived_acks(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -624,17 +677,21 @@ impl Chain for CosmosSDKChain {
     /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
     /// for all packets could be performed but it would return all packets ever sent.
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        crate::time!("query_txs");
+
         let mut result: Vec<IBCEvent> = vec![];
+
         for seq in request.sequences.iter() {
             // query all Tx-es that include events related to packet with given port, channel and sequence
-            let response = block_on(self.rpc_client.tx_search(
-                packet_query(&request, seq)?,
-                false,
-                1,
-                1,
-                Order::Ascending,
-            ))
-            .unwrap(); // todo
+            let response = self
+                .block_on(self.rpc_client.tx_search(
+                    packet_query(&request, seq)?,
+                    false,
+                    1,
+                    1,
+                    Order::Ascending,
+                ))
+                .unwrap(); // todo
 
             let mut events = packet_from_tx_search_response(&request, *seq, &response)?
                 .map_or(vec![], |v| vec![v]);
@@ -647,18 +704,20 @@ impl Chain for CosmosSDKChain {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error> {
+        crate::time!("query_connection_channels");
+
         let grpc_addr =
             Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
         let mut client = self
             .block_on(
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )?
+            )
             .map_err(|e| Kind::Grpc.context(e))?;
 
         let request = tonic::Request::new(request);
 
         let response = self
-            .block_on(client.connection_channels(request))?
+            .block_on(client.connection_channels(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
@@ -758,11 +817,13 @@ async fn abci_query(
         .rpc_client()
         .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     if !response.code.is_ok() {
         // Fail with response log.
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
+        return Err(Kind::Rpc(chain.config.rpc_addr.clone())
+            .context(response.log.to_string())
+            .into());
     }
 
     if prove && response.proof.is_none() {
@@ -790,7 +851,7 @@ async fn broadcast_tx_commit(
         .rpc_client()
         .broadcast_tx_commit(data.into())
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     Ok(response)
 }

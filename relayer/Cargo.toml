@@ -6,6 +6,9 @@ authors = [
   "Informal Systems <hello@informal.systems>"
 ]
 
+[features]
+profiling = []
+
 [dependencies]
 subtle-encoding = "0.5"
 ibc = { path = "../modules" }

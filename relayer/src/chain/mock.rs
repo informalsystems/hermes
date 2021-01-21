@@ -106,7 +106,7 @@ impl Chain for MockChain {
         let events = self
             .context
             .send(proto_msgs)
-            .map_err(|e| Kind::Rpc.context(e))?;
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         Ok(events)
     }
@@ -255,7 +255,7 @@ pub mod test_utils {
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
-            rpc_addr: "35.192.61.41:26656".parse().unwrap(),
+            rpc_addr: "127.0.0.1:26656".parse().unwrap(),
             grpc_addr: "".to_string(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),

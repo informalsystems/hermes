@@ -1,6 +1,7 @@
 [global]
 timeout = '10s'
 strategy = 'naive'
+log_level = 'error' # valid options: 'error', 'warn', 'info', 'debug', 'trace'
 
 [[chains]]
 id = 'ibc-0'
