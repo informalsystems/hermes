@@ -123,7 +123,7 @@ impl CosmosSDKChain {
 
         Ok(self
             .block_on(self.rpc_client().genesis())
-            .map_err(|e| Kind::Rpc.context(e))?
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?
             .consensus_params)
     }
 
@@ -223,7 +223,7 @@ impl CosmosSDKChain {
 
         let response = self
             .block_on(broadcast_tx_commit(self, txraw_buf))
-            .map_err(|e| Kind::Rpc.context(e))?;
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         let res = tx_result_to_event(response)?;
 
@@ -250,8 +250,8 @@ impl Chain for CosmosSDKChain {
     type ClientState = ClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
-        let rpc_client =
-            HttpClient::new(config.rpc_addr.clone()).map_err(|e| Kind::Rpc.context(e))?;
+        let rpc_client = HttpClient::new(config.rpc_addr.clone())
+            .map_err(|e| Kind::Rpc(config.rpc_addr.clone()).context(e))?;
 
         // Initialize key store and load key
         let key_store = KeyRing::init(StoreBackend::Test, config.clone())
@@ -364,17 +364,34 @@ impl Chain for CosmosSDKChain {
         Ok(res)
     }
 
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        // Build the client state.
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.unbonding_period()?,
+            Duration::from_millis(3000), // TODO - get it from src config when avail
+            height,
+            ICSHeight::zero(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+    }
+
     /// Query the latest height the chain is at via a RPC query
     fn query_latest_height(&self) -> Result<ICSHeight, Error> {
         crate::time!("query_latest_height");
 
         let status = self
             .block_on(self.rpc_client().status())
-            .map_err(|e| Kind::Rpc.context(e))?;
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         if status.sync_info.catching_up {
             fail!(
-                Kind::LightClient,
+                Kind::LightClientSupervisor(self.config.id.clone()),
                 "node at {} running chain {} not caught up",
                 self.config().rpc_addr,
                 self.config().id,
@@ -480,23 +497,6 @@ impl Chain for CosmosSDKChain {
         ))
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
-        // Build the client state.
-        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
-            self.config.trust_threshold,
-            self.config.trusting_period,
-            self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
-            height,
-            ICSHeight::zero(),
-            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
-        )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
-    }
-
     fn build_consensus_state(
         &self,
         light_block: Self::LightBlock,
@@ -552,6 +552,7 @@ impl Chain for CosmosSDKChain {
 
         Ok(key)
     }
+
     /// Queries the packet commitment hashes associated with a channel.
     fn query_packet_commitments(
         &self,
@@ -816,11 +817,13 @@ async fn abci_query(
         .rpc_client()
         .abci_query(Some(path), data.into_bytes(), height, prove)
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     if !response.code.is_ok() {
         // Fail with response log.
-        return Err(Kind::Rpc.context(response.log.to_string()).into());
+        return Err(Kind::Rpc(chain.config.rpc_addr.clone())
+            .context(response.log.to_string())
+            .into());
     }
 
     if prove && response.proof.is_none() {
@@ -848,7 +851,7 @@ async fn broadcast_tx_commit(
         .rpc_client()
         .broadcast_tx_commit(data.into())
         .await
-        .map_err(|e| Kind::Rpc.context(e))?;
+        .map_err(|e| Kind::Rpc(chain.config.rpc_addr.clone()).context(e))?;
 
     Ok(response)
 }

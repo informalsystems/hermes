@@ -195,7 +195,6 @@ impl Protobuf<Any> for AnyClientState {}
 impl TryFrom<Any> for AnyClientState {
     type Error = Error;
 
-    // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             "" => Err(Kind::EmptyClientState.into()),
@@ -286,6 +285,8 @@ impl TryFrom<Any> for AnyConsensusState {
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
+            "" => Err(Kind::EmptyConsensusState.into()),
+
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 TendermintConsensusState::decode_vec(&value.value)
                     .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,

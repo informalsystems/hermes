@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IBCEvent;
@@ -85,27 +84,40 @@ impl Runnable for TxRawSendPacketCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Message", "{:?}", opts);
+        info!("Message {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let src_chain =
-            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone()).unwrap();
-        let dst_chain =
-            CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt).unwrap();
+
+        let src_chain_res =
+            CosmosSDKChain::bootstrap(opts.packet_src_chain_config.clone(), rt.clone())
+                .map_err(|e| Kind::Runtime.context(e));
+        let src_chain = match src_chain_res {
+            Ok(chain) => chain,
+            Err(e) => {
+                return Output::error(format!("{}", e)).exit();
+            }
+        };
+
+        let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
+            .map_err(|e| Kind::Runtime.context(e));
+        let dst_chain = match dst_chain_res {
+            Ok(chain) => chain,
+            Err(e) => {
+                return Output::error(format!("{}", e)).exit();
+            }
+        };
 
         let res: Result<Vec<IBCEvent>, Error> =
             build_and_send_transfer_messages(src_chain, dst_chain, &opts)
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(ev) => Output::success(ev).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

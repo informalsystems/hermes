@@ -12,12 +12,11 @@ mod listen;
 mod query;
 mod start;
 mod tx;
-mod v0;
 mod version;
 
 use self::{
     config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, v0::V0Cmd, version::VersionCmd,
+    start::StartCmd, tx::TxCmd, version::VersionCmd,
 };
 
 use crate::config::Config;
@@ -34,12 +33,8 @@ pub enum CliCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
-    /// The `v0` subcommand
-    #[options(help = "start the v0 relayer")]
-    V0(V0Cmd),
-
     /// The `start` subcommand
-    #[options(help = "start the relayer")]
+    #[options(help = "start the relayer (currently this refers to the v0 relayer)")]
     Start(StartCmd),
 
     /// The `listen` subcommand
