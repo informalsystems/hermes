@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics03_connection::connection::ConnectionEnd;
@@ -75,7 +74,7 @@ impl Runnable for QueryConnectionEndCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -91,10 +90,8 @@ impl Runnable for QueryConnectionEndCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(ce) => Output::with_success().with_result(json!(ce)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(ce) => Output::success(ce).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -148,7 +145,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -167,10 +164,8 @@ impl Runnable for QueryConnectionChannelsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cids) => Output::with_success().with_result(json!(cids)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cids) => Output::success(cids).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

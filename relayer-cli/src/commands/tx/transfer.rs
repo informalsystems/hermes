@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IBCEvent;
@@ -85,7 +84,7 @@ impl Runnable for TxRawSendPacketCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -99,9 +98,7 @@ impl Runnable for TxRawSendPacketCmd {
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -110,9 +107,7 @@ impl Runnable for TxRawSendPacketCmd {
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -121,10 +116,8 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(ev) => Output::with_success().with_result(json!(ev)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(ev) => Output::success(ev).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

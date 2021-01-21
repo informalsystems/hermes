@@ -1,7 +1,6 @@
 use std::{io, io::Write, ops::Deref};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
-use serde_json::json;
 use tendermint_light_client::types::PeerId;
 
 use ibc::ics24_host::identifier::ChainId;
@@ -108,12 +107,7 @@ impl RmCmd {
         let config_path = crate::config::config_path()?;
         relayer::config::store(&config, config_path)?;
 
-        Output::with_success()
-            .with_result(json!(format!(
-                "Removed light client peer(s) '{:?}'",
-                rmd_peers
-            )))
-            .exit();
+        Output::success(format!("Removed light client peer(s) '{:?}'", rmd_peers)).exit();
 
         Ok(())
     }

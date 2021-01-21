@@ -52,9 +52,7 @@ macro_rules! conn_open_cmd {
                 let (src_chain_config, dst_chain_config) = match (src_config, dst_config) {
                     (Ok(s), Ok(d)) => (s, d),
                     (_, _) => {
-                        return Output::with_error()
-                            .with_result(json!("invalid options"))
-                            .exit();
+                        return Output::error(json!("invalid options")).exit();
                     }
                 };
 
@@ -78,9 +76,7 @@ macro_rules! conn_open_cmd {
                 let src_chain = match src_chain_res {
                     Ok((handle, _)) => handle,
                     Err(e) => {
-                        return Output::with_error()
-                            .with_result(json!(format!("{}", e)))
-                            .exit();
+                        return Output::error(format!("{}", e)).exit();
                     }
                 };
 
@@ -89,9 +85,7 @@ macro_rules! conn_open_cmd {
                 let dst_chain = match dst_chain_res {
                     Ok((handle, _)) => handle,
                     Err(e) => {
-                        return Output::with_error()
-                            .with_result(json!(format!("{}", e)))
-                            .exit();
+                        return Output::error(format!("{}", e)).exit();
                     }
                 };
 
@@ -99,10 +93,8 @@ macro_rules! conn_open_cmd {
                     $func(dst_chain, src_chain, &opts).map_err(|e| Kind::Tx.context(e).into());
 
                 match res {
-                    Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
-                    Err(e) => Output::with_error()
-                        .with_result(json!(format!("{}", e)))
-                        .exit(),
+                    Ok(receipt) => Output::success(receipt).exit(),
+                    Err(e) => Output::error(format!("{}", e)).exit(),
                 }
             }
         }

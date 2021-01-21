@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
@@ -72,7 +71,7 @@ impl Runnable for QueryClientStateCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -89,10 +88,8 @@ impl Runnable for QueryClientStateCmd {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -166,7 +163,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -192,10 +189,8 @@ impl Runnable for QueryClientConsensusCmd {
             });
 
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -277,7 +272,7 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -295,10 +290,8 @@ impl Runnable for QueryClientConnectionsCmd {
             });
 
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

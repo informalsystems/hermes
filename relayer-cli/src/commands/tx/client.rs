@@ -1,5 +1,4 @@
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::ClientId;
@@ -28,10 +27,9 @@ impl Runnable for TxCreateClientCmd {
             match validate_common_options(&self.dst_chain_id, &self.src_chain_id) {
                 Ok(result) => result,
                 Err(err) => {
-                    return Output::with_error().with_result(json!(err)).exit();
+                    return Output::error(err).exit();
                 }
             };
-
         info!(
             "Message CreateClient for source chain: {:?}, on destination chain: {:?}",
             src_chain_config.id, dst_chain_config.id
@@ -42,9 +40,7 @@ impl Runnable for TxCreateClientCmd {
         let src_chain = match src_chain_res {
             Ok((handle, _)) => handle,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -53,9 +49,7 @@ impl Runnable for TxCreateClientCmd {
         let dst_chain = match dst_chain_res {
             Ok((handle, _)) => handle,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -63,10 +57,8 @@ impl Runnable for TxCreateClientCmd {
             .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -93,7 +85,7 @@ impl Runnable for TxUpdateClientCmd {
         let (dst_chain_config, src_chain_config) = match opts {
             Ok(result) => result,
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
         };
 
@@ -107,9 +99,7 @@ impl Runnable for TxUpdateClientCmd {
         let src_chain = match src_chain_res {
             Ok((handle, _)) => handle,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -118,9 +108,7 @@ impl Runnable for TxUpdateClientCmd {
         let dst_chain = match dst_chain_res {
             Ok((handle, _)) => handle,
             Err(e) => {
-                return Output::with_error()
-                    .with_result(json!(format!("{}", e)))
-                    .exit();
+                return Output::error(format!("{}", e)).exit();
             }
         };
 
@@ -129,10 +117,8 @@ impl Runnable for TxUpdateClientCmd {
                 .map_err(|e| Kind::Tx.context(e).into());
 
         match res {
-            Ok(receipt) => Output::with_success().with_result(json!(receipt)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -146,20 +132,20 @@ fn validate_common_options(
     // Validate parameters
     let dst_chain_id = dst_chain_id
         .parse()
-        .map_err(|_| "bad destination chain identifier".to_string())?;
+        .map_err(|_| format!("bad destination chain ({}) identifier", dst_chain_id))?;
 
     let src_chain_id = src_chain_id
         .parse()
-        .map_err(|_| "bad source chain identifier".to_string())?;
+        .map_err(|_| format!("bad source chain ({}) identifier", src_chain_id))?;
 
     // Get the source and destination chain configuration
     let dst_chain_config = config
         .find_chain(&dst_chain_id)
-        .ok_or_else(|| "missing destination chain configuration".to_string())?;
+        .ok_or_else(|| format!("missing destination chain ({}) configuration", dst_chain_id))?;
 
     let src_chain_config = config
         .find_chain(&src_chain_id)
-        .ok_or_else(|| "missing source chain configuration".to_string())?;
+        .ok_or_else(|| format!("missing source chain ({}) configuration", src_chain_id))?;
 
     Ok((dst_chain_config.clone(), src_chain_config.clone()))
 }

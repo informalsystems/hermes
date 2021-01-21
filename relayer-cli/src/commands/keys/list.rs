@@ -1,5 +1,4 @@
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 
 use relayer::config::Config;
 use relayer::keys::list::{list_keys, KeysListOptions};
@@ -39,7 +38,7 @@ impl Runnable for KeysListCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -47,10 +46,8 @@ impl Runnable for KeysListCmd {
         let res: Result<String, Error> = list_keys(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => Output::with_success().with_result(json!(r)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(r) => Output::success(r).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
