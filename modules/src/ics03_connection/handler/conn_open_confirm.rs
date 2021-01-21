@@ -75,6 +75,7 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
+    use crate::ics03_connection::events::CONFIRM_EVENT_TYPE;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
@@ -168,7 +169,7 @@ mod tests {
                     for e in proto_output.events.iter() {
                         assert_eq!(
                             e.event_type,
-                            EventType::Custom("connection_open_confirm".to_string())
+                            EventType::Custom(CONFIRM_EVENT_TYPE.to_string())
                         );
                     }
                 }

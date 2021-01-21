@@ -84,14 +84,13 @@ mod tests {
 
     use crate::handler::EventType;
 
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-
-    use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics04_channel::channel::State;
-
     use crate::ics03_connection::connection::ConnectionEnd;
+    use crate::ics03_connection::connection::State as ConnectionState;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::version::get_compatible_versions;
+    use crate::ics04_channel::channel::State;
+    use crate::ics04_channel::events::OPEN_INIT_EVENT_TYPE;
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
 
@@ -192,7 +191,7 @@ mod tests {
                     for e in proto_output.events.iter() {
                         assert_eq!(
                             e.event_type,
-                            EventType::Custom("channel_open_init".to_string())
+                            EventType::Custom(OPEN_INIT_EVENT_TYPE.to_string())
                         );
                     }
                 }

@@ -99,6 +99,7 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::State;
     use crate::ics03_connection::context::ConnectionReader;
+    use crate::ics03_connection::events::TRY_EVENT_TYPE;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -218,10 +219,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(
-                            e.event_type,
-                            EventType::Custom("connection_open_try".to_string())
-                        );
+                        assert_eq!(e.event_type, EventType::Custom(TRY_EVENT_TYPE.to_string()));
                     }
                 }
                 Err(e) => {

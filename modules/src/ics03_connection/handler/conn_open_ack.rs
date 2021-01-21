@@ -97,6 +97,7 @@ mod tests {
     use crate::handler::EventType;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::error::Kind;
+    use crate::ics03_connection::events::ACK_EVENT_TYPE;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -248,10 +249,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(
-                            e.event_type,
-                            EventType::Custom("connection_open_ack".to_string())
-                        );
+                        assert_eq!(e.event_type, EventType::Custom(ACK_EVENT_TYPE.to_string()));
                     }
                 }
                 Err(e) => {
