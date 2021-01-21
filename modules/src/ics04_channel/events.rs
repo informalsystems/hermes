@@ -132,7 +132,7 @@ fn extract_packet_and_write_ack_from_event(
     let mut packet = Packet::default();
     let mut write_ack = None;
     for (key, value) in &event.attributes {
-        match key.as_ref() {
+        match *key {
             PKT_SRC_PORT_ATTRIBUTE_KEY => packet.source_port = value.parse().unwrap(),
             PKT_SRC_CHANNEL_ATTRIBUTE_KEY => packet.source_channel = value.parse().unwrap(),
             PKT_DST_PORT_ATTRIBUTE_KEY => packet.destination_port = value.parse().unwrap(),
