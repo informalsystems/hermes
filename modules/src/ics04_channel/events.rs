@@ -138,18 +138,10 @@ fn extract_packet_and_write_ack_from_event(
             PKT_DST_PORT_ATTRIBUTE_KEY => packet.destination_port = value.parse().unwrap(),
             PKT_DST_CHANNEL_ATTRIBUTE_KEY => packet.destination_channel = value.parse().unwrap(),
             PKT_SEQ_ATTRIBUTE_KEY => packet.sequence = value.parse::<u64>().unwrap().into(),
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                let to: Vec<&str> = value.split('-').collect();
-                packet.timeout_height = ibc_proto::ibc::core::client::v1::Height {
-                    revision_number: to[0].parse::<u64>().unwrap(),
-                    revision_height: to[1].parse::<u64>().unwrap(),
-                }
-                .try_into()
-                .unwrap();
-            }
+            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => packet.timeout_height = value.parse().unwrap(),
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
             // TODO: `Packet` has 7 fields and we're only parsing 6; is that intended?
+            PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
             _ => panic!("unexpected attribute key: {}", key),
         };
     }
