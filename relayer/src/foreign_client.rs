@@ -84,9 +84,6 @@ impl ForeignClient {
     }
 
     /// Lower-level interface for preparing a message to create a client.
-    ///
-    /// ## Note
-    /// Methods in `ForeignClient` (see `new`) should be preferred over this.
     pub fn build_create_client(&self) -> Result<MsgCreateAnyClient, Error> {
         // Get signer
         let signer = self
@@ -108,11 +105,7 @@ impl ForeignClient {
         })?)
     }
 
-    /// Lower-level interface for creating a client.
     /// Returns the identifier of the newly created client.
-    ///
-    /// ## Note
-    /// Methods in `ForeignClient` (see `new`) should be preferred over this.
     pub fn build_create_client_and_send(&self) -> Result<IBCEvent, Error> {
         let new_msg = self.build_create_client()?;
 
@@ -143,10 +136,6 @@ impl ForeignClient {
         Ok(())
     }
 
-    /// Lower-level interface to create the message for updating a client to height `target_height`.
-    ///
-    /// ## Note
-    /// Methods in `ForeignClient`, in particular `prepare_update`, should be preferred over this.
     pub fn build_update_client(&self, target_height: Height) -> Result<Vec<Any>, Error> {
         // Wait for source chain to reach `target_height`
         while self.src_chain().query_latest_height()? < target_height {
@@ -174,10 +163,6 @@ impl ForeignClient {
         Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
     }
 
-    /// Lower-level interface for preparing a message to update a client.
-    ///
-    /// ## Note
-    /// Methods in `ForeignClient` (see `update`) should be preferred over this.
     pub fn build_update_client_and_send(&self) -> Result<IBCEvent, Error> {
         let new_msgs = self.build_update_client(self.src_chain.query_latest_height()?)?;
 
@@ -211,102 +196,6 @@ pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientErr
             "cannot extract client_id from result".to_string(),
         )),
     }
-}
-
-/// Lower-level interface for preparing a message to create a client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `new`) should be preferred over this.
-pub fn build_create_client(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-) -> Result<MsgCreateAnyClient, Error> {
-    // Get signer
-    let signer = dst_chain
-        .get_signer()
-        .map_err(|e| Kind::KeyBase.context(e))?;
-
-    // Build client create message with the data from source chain at latest height.
-    let latest_height = src_chain.query_latest_height()?;
-    Ok(MsgCreateAnyClient::new(
-        src_chain.build_client_state(latest_height)?.wrap_any(),
-        src_chain.build_consensus_state(latest_height)?.wrap_any(),
-        signer,
-    )
-    .map_err(|e| {
-        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
-    })?)
-}
-
-/// Lower-level interface for creating a client.
-/// Returns the identifier of the newly created client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `new`) should be preferred over this.
-pub fn build_create_client_and_send(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-) -> Result<IBCEvent, Error> {
-    let new_msg = build_create_client(dst_chain.clone(), src_chain)?;
-
-    let res = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
-    assert!(!res.is_empty());
-    Ok(res[0].clone())
-}
-
-/// Lower-level interface to create the message for updating a client to height `target_height`.
-///
-/// ## Note
-/// Methods in `ForeignClient`, in particular `prepare_update`, should be preferred over this.
-pub fn build_update_client(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-    dst_client_id: &ClientId,
-    target_height: Height,
-) -> Result<Vec<Any>, Error> {
-    // Wait for source chain to reach `target_height`
-    while src_chain.query_latest_height()? < target_height {
-        thread::sleep(Duration::from_millis(100))
-    }
-
-    // Get the latest trusted height from the client state on destination.
-    let trusted_height = dst_chain
-        .query_client_state(&dst_client_id, Height::default())?
-        .latest_height();
-
-    let header = src_chain
-        .build_header(trusted_height, target_height)?
-        .wrap_any();
-
-    let signer = dst_chain.get_signer()?;
-    let new_msg = MsgUpdateAnyClient {
-        client_id: dst_client_id.clone(),
-        header,
-        signer,
-    };
-
-    Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
-}
-
-/// Lower-level interface for preparing a message to update a client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `update`) should be preferred over this.
-pub fn build_update_client_and_send(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-    dst_client_id: &ClientId,
-) -> Result<IBCEvent, Error> {
-    let new_msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        dst_client_id,
-        src_chain.query_latest_height()?,
-    )?;
-
-    let mut events = dst_chain.send_msgs(new_msgs)?;
-    assert!(!events.is_empty());
-    Ok(events.pop().unwrap())
 }
 
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests

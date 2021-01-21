@@ -103,7 +103,7 @@ Note that the addresses used in the two commands above are configured in `dev-en
 
 First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 
-  - send 1 packet to ibc-0
+  - start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This results in a Tx to `ibc-0` for a `MsgTransfer` packet
 ```shell script
 rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 ```
@@ -113,7 +113,7 @@ rrly -c loop_config.toml query packet unreceived-packets ibc-1 ibc-0 transfer ch
 ```
   - send recv_packet to ibc-1
 ```shell script
-rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-recv ibc-1 ibc0 transfer transfer channel-0 channel-0
 ```
   - query unreceived acks on ibc-0
 ```shell script
@@ -121,7 +121,7 @@ rrly -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer chann
 ```
   - send acknowledgement to ibc-0
 ```shell script
-rrly -c loop_config.toml tx raw packet-ack  ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-ack  ibc-0 ibc-1 transfer transfer channel-0 channel-0
 ```
   - send 1 packet with low timeout height offset to ibc-0
 ```shell script
@@ -129,15 +129,15 @@ rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 
 ```
   - send timeout to ibc-0
 ```shell script
-rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer transfer channel-0 channel-0
 ```
 
-Now, we'll send those samoleans back, from `ibc-1` to `ibc-1`.
+Send those samoleans back, from `ibc-1` to `ibc-1`.
 
 ```shell script
 rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C
-rrly -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
-rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 transfer transfer channel-0 channel-0
 ```
 
 The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.

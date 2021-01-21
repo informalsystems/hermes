@@ -85,7 +85,7 @@ pub struct Channel {
 
 impl Channel {
     /// Creates a new channel on top of the existing connection. If the channel is not already
- /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
+    /// set-up on both sides of the connection, this functions also fulfils the channel handshake.
     pub fn new(
         connection: Connection,
         ordering: Order,
