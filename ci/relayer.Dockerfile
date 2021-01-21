@@ -30,6 +30,7 @@ RUN cargo build --workspace --all --release
 ####                 Relayer image               ####
 #####################################################
 FROM rust:slim
+LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 

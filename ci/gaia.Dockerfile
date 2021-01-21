@@ -30,6 +30,7 @@ RUN gaiad version --long
 # Final image
 ###################################################################################################
 FROM alpine:edge
+LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 ARG CHAIN
