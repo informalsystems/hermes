@@ -50,7 +50,7 @@ pub enum LinkError {
     RetryError,
 }
 
-pub struct Link {
+pub struct RelayPath {
     src_chain: Box<dyn ChainHandle>,
     dst_chain: Box<dyn ChainHandle>,
     subscription: Subscription,
@@ -64,13 +64,13 @@ pub struct Link {
     timeout_msgs: Vec<Any>,
 }
 
-impl Link {
+impl RelayPath {
     fn new(
         src_chain: Box<dyn ChainHandle>,
         dst_chain: Box<dyn ChainHandle>,
         channel: Channel,
     ) -> Result<Self, LinkError> {
-        Ok(Link {
+        Ok(RelayPath {
             src_chain: src_chain.clone(),
             dst_chain: dst_chain.clone(),
             subscription: src_chain.subscribe()?,
@@ -271,19 +271,19 @@ impl Link {
     }
 }
 
-pub struct BidirectionalLink {
-    pub a_to_b: Link,
-    pub b_to_a: Link,
+pub struct Link {
+    pub a_to_b: RelayPath,
+    pub b_to_a: RelayPath,
 }
 
-impl BidirectionalLink {
-    pub fn new(channel: Channel) -> Result<BidirectionalLink, LinkError> {
+impl Link {
+    pub fn new(channel: Channel) -> Result<Link, LinkError> {
         let a_chain = channel.src_chain();
         let b_chain = channel.dst_chain();
 
-        Ok(BidirectionalLink {
-            a_to_b: Link::new(a_chain.clone(), b_chain.clone(), channel.clone())?,
-            b_to_a: Link::new(b_chain, a_chain, channel.flipped())?,
+        Ok(Link {
+            a_to_b: RelayPath::new(a_chain.clone(), b_chain.clone(), channel.clone())?,
+            b_to_a: RelayPath::new(b_chain, a_chain, channel.flipped())?,
         })
     }
 
