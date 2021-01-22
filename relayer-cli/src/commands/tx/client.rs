@@ -14,13 +14,15 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
-    #[options(free, help = "identifier of the destination chain")]
+    #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: String,
 
-    #[options(free, help = "identifier of the source chain")]
+    #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: String,
 }
 
+/// Sample to run this tx:
+///     `rrly -c loop_config.toml tx raw create-client ibc-0 ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let (dst_chain_config, src_chain_config) =
@@ -59,6 +61,7 @@ impl Runnable for TxCreateClientCmd {
             id: ClientId::default(),
         };
 
+        // Trigger client creation via the "build" interface, so that we obtain the resulting event
         let res: Result<IBCEvent, Error> = client
             .build_create_client_and_send()
             .map_err(|e| Kind::Tx.context(e).into());
@@ -72,14 +75,15 @@ impl Runnable for TxCreateClientCmd {
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpdateClientCmd {
-    #[options(free, help = "identifier of the destination chain")]
+    #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: String,
 
-    #[options(free, help = "identifier of the source chain")]
+    #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: String,
 
     #[options(
         free,
+        required,
         help = "identifier of the client to be updated on destination chain"
     )]
     dst_client_id: ClientId,
@@ -96,9 +100,8 @@ impl Runnable for TxUpdateClientCmd {
             }
         };
 
-        status_info!(
-            "Message UpdateClient",
-            "id: {:?}, for chain: {:?}, on chain: {:?}",
+        info!(
+            "Message UpdateClient client id: {:?}, for chain: {:?}, on chain: {:?}",
             self.dst_client_id.clone(),
             src_chain_config.id,
             dst_chain_config.id
