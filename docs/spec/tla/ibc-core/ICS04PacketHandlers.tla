@@ -99,8 +99,8 @@ HandlePacketAck(chainID, chain, packetDatagram, log) ==
     IF \* if the channel and connection ends are open for packet transmission
        /\ channelEnd.state = "OPEN"
        /\ connectionEnd.state = "OPEN" 
-       \* if the packet committment exists in the chain store
-       /\ packetCommitment \in chain.packetCommittments
+       \* if the packet commitment exists in the chain store
+       /\ packetCommitment \in chain.packetCommitments
        \* if the "PacketRecv" datagram has valid port and channel IDs 
        /\ packet.srcPortID = channelEnd.portID
        /\ packet.srcChannelID = channelEnd.channelID

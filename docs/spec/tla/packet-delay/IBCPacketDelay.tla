@@ -259,6 +259,7 @@ Init ==
     /\ ChainB!Init
     /\ outgoingPacketDatagrams = [chainID \in ChainIDs |-> <<>>] 
     /\ packetLog = <<>>    
+    /\ packetDatagramTimestamp = [x \in {} |-> 0]
     
 \* Next state action
 Next ==
@@ -268,13 +269,25 @@ Next ==
     
 Spec == Init /\ [][Next]_vars       
 
+(***************************************************************************
+ Invariants
+ ***************************************************************************)
 
-Inv ==
+\* each packet datagam is processed at time t (stored in packetDatagramTimestamp), 
+\* such that t > ht + delay, where 
+\* ht is the time when the client height is installed  
+PacketDatagramsDelay ==
     \A chainID \in ChainIDs : 
-        \A h \in DOMAIN GetChainByID(chainID).counterpartyClientHeights : 
-            packetDatagramTimestamp[<<h, chainID>>] > GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
+        \A h \in DOMAIN GetChainByID(chainID).counterpartyClientHeights :
+            <<chainID, h>> \in DOMAIN packetDatagramTimestamp
+            =>
+            packetDatagramTimestamp[<<chainID, h>>] > GetChainByID(chainID).counterpartyClientHeights[h] + MaxDelay
+
+\* a conjnction of all invariants
+Inv ==
+    /\ PacketDatagramsDelay
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 15 17:10:33 CET 2020 by ilinastoilkovska
+\* Last modified Wed Dec 16 17:41:19 CET 2020 by ilinastoilkovska
 \* Created Thu Dec 10 13:44:21 CET 2020 by ilinastoilkovska

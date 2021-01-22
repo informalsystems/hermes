@@ -14,7 +14,7 @@ VARIABLES chainStore, \* chain store, containing client heights, a connection en
           packetLog, \* packet log
           packetDatagramTimestamp \* history variable that tracks when packet datagrams were processed
           
-vars == <<chainStore, incomingPacketDatagrams, appPacketSeq, packetLog>>
+vars == <<chainStore, incomingPacketDatagrams, appPacketSeq, packetLog, packetDatagramTimestamp>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system  
 
 (***************************************************************************
@@ -60,7 +60,7 @@ AdvanceChain ==
     /\ chainStore' = [chainStore EXCEPT 
                         !.height = chainStore.height + 1,
                         !.timestamp = chainStore.timestamp + 1]
-    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq, packetLog>>
+    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq, packetLog, packetDatagramTimestamp>>
 
 \* handle the incoming packet datagrams
 HandlePacketDatagrams ==
@@ -70,6 +70,7 @@ HandlePacketDatagrams ==
         /\ chainStore' = packetUpdate.chainStore 
         /\ packetLog' = packetUpdate.packetLog
         /\ incomingPacketDatagrams' = Tail(incomingPacketDatagrams)
+        /\ packetDatagramTimestamp' = packetUpdate.datagramTimestamp
         /\ UNCHANGED appPacketSeq
         
 \* Send a packet
@@ -95,7 +96,7 @@ SendPacket ==
                                   )
         \* increase application packet sequence
         /\ appPacketSeq' = appPacketSeq + 1
-        /\ UNCHANGED incomingPacketDatagrams
+        /\ UNCHANGED <<incomingPacketDatagrams, packetDatagramTimestamp>>
      
 
        
@@ -106,7 +107,7 @@ AcknowledgePacket ==
     /\ chainStore' = WriteAcknowledgement(chainStore, Head(chainStore.packetsToAcknowledge))
     \* log acknowledgement
     /\ packetLog' = LogAcknowledgement(ChainID, chainStore, packetLog, Head(chainStore.packetsToAcknowledge))
-    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq>> 
+    /\ UNCHANGED <<incomingPacketDatagrams, appPacketSeq, packetDatagramTimestamp>> 
 
 (***************************************************************************
  Specification
@@ -138,5 +139,5 @@ Next ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 16 13:16:38 CET 2020 by ilinastoilkovska
+\* Last modified Wed Dec 16 13:36:59 CET 2020 by ilinastoilkovska
 \* Created Thu Dec 10 13:52:13 CET 2020 by ilinastoilkovska

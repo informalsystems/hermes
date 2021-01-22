@@ -171,7 +171,7 @@ InitChainStore(ChainID, ChannelOrdering, MaxDelay) ==
     [
         height |-> 1,
         timestamp |-> 1,
-        counterpartyClientHeights |-> [h \in {1} |-> 1], 
+        counterpartyClientHeights |-> [h \in {} |-> 0], 
         channelEnd |-> InitChannelEnd(ChainID, ChannelOrdering),
         
         packetCommitments |-> {},
@@ -182,5 +182,5 @@ InitChainStore(ChainID, ChannelOrdering, MaxDelay) ==
     
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 15 15:53:32 CET 2020 by ilinastoilkovska
+\* Last modified Wed Dec 16 17:40:36 CET 2020 by ilinastoilkovska
 \* Created Thu Dec 10 14:06:33 CET 2020 by ilinastoilkovska

@@ -284,7 +284,7 @@ Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
 ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==    
     [
         height : 1..maxHeight,
-        clientHeight : 1..maxHeight,
+        counterpartyClientHeights : SUBSET (1..maxHeight),
         channelEnd : ChannelEnds,
         
         packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq, maxBalance, 
@@ -370,7 +370,7 @@ GetLatestHeight(chain) ==
     AsInt(chain.height) 
 
 (***************************************************************************
- Initial values of a channel end, chain store, accounts for ICS02
+ Initial values of a channel end, chain store, accounts for ICS20
  ***************************************************************************)
 \* Initial value of a channel end:
 \*      - state is "OPEN" (we assume channel handshake has successfully finished)

@@ -50,8 +50,16 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                                           sequence |-> packet.sequence]},
                     \* add packet to the set of packets for which an acknowledgement should be written
                     !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN
+              \* record the timestamp in the history variable
+              LET newDatagramTimestamp == 
+                    [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
+                        IF tID = <<chainID, packetDatagram.proofHeight>>
+                        THEN chain.timestamp
+                        ELSE datagramTimestamp[tID]] IN
                                       
-              [chainStore |-> newChainStore, packetLog |-> Append(log, logEntry)] 
+              [chainStore |-> newChainStore, 
+               packetLog |-> Append(log, logEntry), 
+               datagramTimestamp |-> newDatagramTimestamp] 
          
          ELSE \* if the channel is ordered and the packet sequence is nextRcvSeq 
               IF /\ channelEnd.order = "ORDERED"
@@ -62,8 +70,16 @@ HandlePacketRecv(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                              chain.connectionEnd.channelEnd.nextRcvSeq + 1,
                         \* add packet to the set of packets for which an acknowledgement should be written
                         !.packetsToAcknowledge = Append(chain.packetsToAcknowledge, packet)] IN             
-                   
-                   [chainStore |-> newChainStore, packetLog |-> Append(log, logEntry)]
+                   \* record the timestamp in the history variable
+                   LET newDatagramTimestamp == 
+                       [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
+                            IF tID = <<chainID, packetDatagram.proofHeight>>
+                            THEN chain.timestamp
+                            ELSE datagramTimestamp[tID]] IN
+                                      
+                   [chainStore |-> newChainStore, 
+                    packetLog |-> Append(log, logEntry), 
+                    datagramTimestamp |-> newDatagramTimestamp] 
  
     
     \* otherwise, do not update the chain store and the log               
@@ -109,11 +125,20 @@ HandlePacketAck(chainID, chain, packetDatagram, log, datagramTimestamp) ==
                             !.packetCommitments = chain.packetCommitments \ {packetCommitment}] 
                   \* otherwise, do not update the chain store
                   ELSE chain IN
+                  
+         \* record the timestamp in the history variable
+         LET newDatagramTimestamp == 
+               [tID \in (DOMAIN datagramTimestamp \union {<<chainID, packetDatagram.proofHeight>>}) |->
+                    IF tID = <<chainID, packetDatagram.proofHeight>>
+                    THEN chain.timestamp
+                    ELSE datagramTimestamp[tID]] IN
+                                      
+        [chainStore |-> newChainStore, 
+         packetLog |-> log, 
+         datagramTimestamp |-> newDatagramTimestamp]          
 
-         [chainStore |-> newChainStore, packetLog |-> log]     
-                 
     \* otherwise, do not update the chain store and the log
-    ELSE [chainStore |-> chain, packetLog |-> log] 
+    ELSE [chainStore |-> chain, packetLog |-> log, datagramTimestamp |-> datagramTimestamp] 
     
     
 \* write packet committments to chain store
@@ -326,5 +351,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 16 13:17:08 CET 2020 by ilinastoilkovska
+\* Last modified Wed Dec 16 13:28:05 CET 2020 by ilinastoilkovska
 \* Created Thu Dec 10 15:12:41 CET 2020 by ilinastoilkovska
