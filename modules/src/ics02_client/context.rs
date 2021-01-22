@@ -29,6 +29,9 @@ pub trait ClientKeeper {
     ) -> Result<Vec<ClientEvent>, Error> {
         match handler_res {
             Create(res) => {
+                // TODO: if `create_client.rs` simply returns the client counter, and the
+                //       full id is instead computed here, we assert that atomicity was
+                //       preserved
                 let client_id = res.client_id.clone();
 
                 self.store_client_type(client_id.clone(), res.client_type)?;
