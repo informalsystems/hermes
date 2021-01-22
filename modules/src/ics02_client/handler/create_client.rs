@@ -58,6 +58,7 @@ mod tests {
 
     use tendermint_light_client::types::TrustThreshold;
 
+    use crate::events::IBCEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
@@ -90,27 +91,26 @@ mod tests {
 
         match output {
             Ok(HandlerOutput {
-                result,
-                log,
-                events: _,
-            }) => match result {
-                ClientResult::Create(create_result) => {
-                    assert_eq!(create_result.client_type, ClientType::Mock);
-                    assert_eq!(
-                        log,
-                        vec!["success: generated new client identifier".to_string(),]
-                    );
-
-                    let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
-                    assert_eq!(create_result.client_id, expected_client_id);
-
-                    assert_eq!(create_result.client_state, msg.client_state());
-                    assert_eq!(create_result.consensus_state, msg.consensus_state());
+                result, mut events, ..
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
+                assert!(
+                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                );
+                match result {
+                    ClientResult::Create(create_result) => {
+                        assert_eq!(create_result.client_type, ClientType::Mock);
+                        assert_eq!(create_result.client_id, expected_client_id);
+                        assert_eq!(create_result.client_state, msg.client_state());
+                        assert_eq!(create_result.consensus_state, msg.consensus_state());
+                    }
+                    _ => {
+                        panic!("unexpected result type: expected ClientResult::CreateResult!");
+                    }
                 }
-                _ => {
-                    panic!("unexpected result type: expected ClientResult::CreateResult!");
-                }
-            },
+            }
             Err(err) => {
                 panic!("unexpected error: {}", err);
             }
@@ -181,17 +181,26 @@ mod tests {
             let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
-                Ok(HandlerOutput { result, .. }) => match result {
-                    ClientResult::Create(create_res) => {
-                        assert_eq!(create_res.client_type, msg.client_state().client_type());
-                        assert_eq!(create_res.client_id, expected_client_id);
-                        assert_eq!(create_res.client_state, msg.client_state());
-                        assert_eq!(create_res.consensus_state, msg.consensus_state());
+                Ok(HandlerOutput {
+                    result, mut events, ..
+                }) => {
+                    assert_eq!(events.len(), 1);
+                    let event = events.pop().unwrap();
+                    assert!(
+                        matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    );
+                    match result {
+                        ClientResult::Create(create_res) => {
+                            assert_eq!(create_res.client_type, msg.client_state().client_type());
+                            assert_eq!(create_res.client_id, expected_client_id);
+                            assert_eq!(create_res.client_state, msg.client_state());
+                            assert_eq!(create_res.consensus_state, msg.consensus_state());
+                        }
+                        _ => {
+                            panic!("expected result of type ClientResult::CreateResult");
+                        }
                     }
-                    _ => {
-                        panic!("expected result of type ClientResult::CreateResult");
-                    }
-                },
+                }
                 Err(err) => {
                     panic!("unexpected error: {}", err);
                 }
