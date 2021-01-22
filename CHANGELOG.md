@@ -5,6 +5,7 @@
 
 ### FEATURES
 
+- Continous Integration (CI) end-to-end (e2e) testing ([#32])
 - Add support for streamlining releases ([#507])
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
@@ -14,7 +15,7 @@
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 - Update to `tokio` 1.0, `prost` 0.7 and `tonic` 0.4 ([#527])
-
+  
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
@@ -45,6 +46,7 @@
 [#517]: https://github.com/informalsystems/ibc-rs/issues/517
 [#525]: https://github.com/informalsystems/ibc-rs/issues/525
 [#527]: https://github.com/informalsystems/ibc-rs/issues/527
+[#32]: https://github.com/informalsystems/ibc-rs/issues/32
 [#536]: https://github.com/informalsystems/ibc-rs/issues/536
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
@@ -62,7 +64,6 @@ the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-
 - Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#451])
 
 - [relayer]
-  - Implement packet relaying ([#379]) 
  
 - [relayer-cli]
   - Packet CLIs for recv_packet ([#443])
