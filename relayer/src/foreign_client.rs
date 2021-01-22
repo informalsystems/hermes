@@ -30,7 +30,7 @@ pub enum ForeignClientError {
 #[derive(Clone, Debug)]
 pub struct ForeignClient {
     /// The identifier of this client. The host chain determines this id upon client creation,
-    /// so it may be missing (`None).
+    /// so we may be using the default value temporarily.
     pub id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
@@ -44,8 +44,6 @@ impl ForeignClient {
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
-    /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `dst_chain` and `src_chain` chains?
     pub fn new(
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,

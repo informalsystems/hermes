@@ -17,8 +17,17 @@
     e.g.:
 
     ```shell
-    ./dev-env my_config.toml ibc-0 ibc-1
+    ./dev-env loop_config.toml ibc-0 ibc-1
     ```
+
+#### Stop and cleanup
+
+You can manually stop the two gaia instances and cleanup after them as follows:
+
+```shell
+killall gaiad
+rm -rf data/
+```
 
 ### CLI Step Relaying:
 
@@ -28,7 +37,7 @@ You can use the relayer CLIs, below are some examples.
 can be executed as `rrly`, eg. by using an shell alias:
 
 ```shell script
-alias rrly='cargo run --bin relayer --'`
+alias rrly='cargo run --bin relayer --'
 ```
 
 #### Client CLIs:
