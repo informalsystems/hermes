@@ -201,15 +201,18 @@ The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denom
 
 ### Relayer loop:
 
-Client, connection, channel handshake and packet relaying can pe done from the relayer loop
+Client, connection, channel handshake and packet relaying can pe done from 
+the relayer `v0` loop.
 
-- start the relayer, the relayer should create the clients, and do the handshake for the connection and channel. Once that is done it will sit in a loop, listening for events
+- start the relayer, the relayer should create the clients, and do the 
+  handshake for the connection and channel. Once that is done, it will sit 
+  in a loop, listening for events:
 
     ```shell script
-    rrly -c loop_config.toml v-0
+    rrly -c loop_config.toml start
     ```
 
-- use the CLI to send 2 packets to ibc0 chain:
+- in a separate terminal, use the CLI to send 2 packets to ibc0 chain:
 
     ```shell script
     rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
@@ -217,7 +220,7 @@ Client, connection, channel handshake and packet relaying can pe done from the r
 - use the CLI to send 2 packets to ibc0 chain:
 
     ```shell script
-    rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-2 transfer channel-0 9999 1000 -n 2
+    rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 2
     ```
 
 - observe the output on the relayer terminal, verify that the send events are processed and the recv_packets are sent out.

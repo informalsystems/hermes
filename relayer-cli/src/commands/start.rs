@@ -16,7 +16,7 @@ pub struct StartCmd {}
 impl StartCmd {
     fn cmd(&self) -> Result<(), BoxError> {
         let config = app_config().clone();
-        debug!("launching 'v0' command");
+        debug!("launching command `start` for relayer v0 command");
         v0_task(&config)
     }
 }
