@@ -109,6 +109,12 @@ impl Application for CliApp {
     ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
         let terminal = Terminal::new(self.term_colors(command));
 
+        let config = command
+            .config_path()
+            .map(|path| self.load_config(&path))
+            .transpose()?
+            .unwrap_or_default();
+
         // For `start` cmd exclusively we disable JSON; otherwise output is JSON-only
         let json_on = if let Some(c) = &command.command {
             !matches!(c, CliCmd::Start(..))
@@ -117,16 +123,11 @@ impl Application for CliApp {
         };
 
         if json_on {
-            let config = command
-                .config_path()
-                .map(|path| self.load_config(&path))
-                .transpose()?
-                .unwrap_or_default();
             let tracing = Tracing::new(config.global)?;
             Ok(vec![Box::new(terminal), Box::new(tracing)])
         } else {
             let alt_tracing = abscissa_core::trace::Tracing::new(
-                abscissa_core::trace::Config::default(),
+                abscissa_core::trace::Config::from(config.global.log_level),
                 abscissa_core::terminal::ColorChoice::Auto,
             )
             .unwrap();
