@@ -97,6 +97,7 @@ HandlePacketAck(chain, packetDatagram, log, accounts, escrowAccounts, maxBalance
     LET packetCommitment == AsPacketCommitment(
                              [portID |-> packet.srcPortID, 
                               channelID |-> packet.srcChannelID, 
+                              data |-> packet.data,
                               sequence |-> packet.sequence,
                               timeoutHeight |-> packet.timeoutHeight]) IN
     
@@ -321,5 +322,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 16:59:04 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jan 15 15:26:01 CET 2021 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska
