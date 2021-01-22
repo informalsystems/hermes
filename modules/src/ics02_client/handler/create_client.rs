@@ -241,18 +241,27 @@ mod tests {
         let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
-            Ok(HandlerOutput { result, .. }) => match result {
-                ClientResult::Create(create_res) => {
-                    assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
-                    assert_eq!(create_res.client_id, expected_client_id);
-                    assert_eq!(create_res.client_state, msg.client_state());
-                    assert_eq!(create_res.consensus_state, msg.consensus_state());
+            Ok(HandlerOutput {
+                result, mut events, ..
+            }) => {
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+                assert!(
+                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                );
+                match result {
+                    ClientResult::Create(create_res) => {
+                        assert_eq!(create_res.client_type, ClientType::Tendermint);
+                        assert_eq!(create_res.client_id, expected_client_id);
+                        assert_eq!(create_res.client_state, msg.client_state());
+                        assert_eq!(create_res.consensus_state, msg.consensus_state());
+                    }
+                    _ => {
+                        panic!("expected result of type ClientResult::CreateResult");
+                    }
                 }
-                _ => {
-                    panic!("expected result of type ClientResult::CreateResult");
-                }
-            },
+            }
             Err(err) => {
                 panic!("unexpected error: {}", err);
             }
