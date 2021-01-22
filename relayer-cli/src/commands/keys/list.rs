@@ -1,10 +1,11 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
+use relayer::config::Config;
 use relayer::keys::list::{list_keys, KeysListOptions};
+
+use crate::application::app_config;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysListCmd {
@@ -37,8 +38,7 @@ impl Runnable for KeysListCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -46,8 +46,8 @@ impl Runnable for KeysListCmd {
         let res: Result<String, Error> = list_keys(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("keys list result: ", "{:?}", r),
-            Err(e) => status_info!("keys list failed: ", "{}", e),
+            Ok(r) => Output::success(r).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

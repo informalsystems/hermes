@@ -5,14 +5,13 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
+use tendermint::{block::Height, net};
+use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 use tokio::runtime::Runtime as TokioRuntime;
-
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
 use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
-use tendermint::{block::Height, net};
-use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 
 use crate::error::{Error, Kind};
 
@@ -58,9 +57,9 @@ impl EventMonitor {
 
         let websocket_addr = rpc_addr.clone();
         let (websocket_client, websocket_driver) = rt.block_on(async move {
-            WebSocketClient::new(websocket_addr)
+            WebSocketClient::new(websocket_addr.clone())
                 .await
-                .map_err(|e| Kind::Rpc.context(e))
+                .map_err(|e| Kind::Rpc(websocket_addr).context(e))
         })?;
 
         let websocket_driver_handle = rt.spawn(websocket_driver.run());

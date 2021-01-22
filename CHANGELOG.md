@@ -5,6 +5,7 @@
 
 ### FEATURES
 
+- Continous Integration (CI) end-to-end (e2e) testing ([#32])
 - Add support for streamlining releases ([#507])
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
@@ -14,24 +15,24 @@
 
 - Update to `tendermint-rs` v0.17.1 ([#517])
 - Update to `tokio` 1.0, `prost` 0.7 and `tonic` 0.4 ([#527])
-- Continous Integration (CI) end-to-end (e2e) testing ([#32])
   
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
+  - UX improvements for relayer txs ([#536, 540])
 
 - [relayer]
-  - Performance improvements ([#514])
+  - Performance improvements ([#514], [#537])
   - Fix for mismatching `bitcoin` dep ([#525])
 
 - [modules]
-  - Clean the validate_basic method ([#94])
-  - MsgConnectionOpenAck testing improvements ([#306])
+  - Clean the `validate_basic` method ([#94])
+  - `MsgConnectionOpenAck` testing improvements ([#306])
 
 ### BUG FIXES:
 
 - [modules]
-  - Fix for storing ClientType upon 'create-client' ([#513])
+  - Fix for storing `ClientType` upon 'create-client' ([#513])
 
 [#94]: https://github.com/informalsystems/ibc-rs/issues/94
 [#306]: https://github.com/informalsystems/ibc-rs/issues/306
@@ -46,6 +47,9 @@
 [#525]: https://github.com/informalsystems/ibc-rs/issues/525
 [#527]: https://github.com/informalsystems/ibc-rs/issues/527
 [#32]: https://github.com/informalsystems/ibc-rs/issues/32
+[#536]: https://github.com/informalsystems/ibc-rs/issues/536
+[#537]: https://github.com/informalsystems/ibc-rs/issues/537
+[#540]: https://github.com/informalsystems/ibc-rs/issues/540
 
 
 ## v0.0.6

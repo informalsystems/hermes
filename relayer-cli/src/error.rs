@@ -21,6 +21,10 @@ pub enum Kind {
     #[error("query error")]
     Query,
 
+    /// Error while spawning the runtime
+    #[error("chain runtime/handle error")]
+    Runtime,
+
     /// Error during transaction submission
     #[error("tx error")]
     Tx,

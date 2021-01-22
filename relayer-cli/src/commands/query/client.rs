@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use serde_json::json;
 use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
@@ -71,11 +71,11 @@ impl Runnable for QueryClientStateCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -88,10 +88,8 @@ impl Runnable for QueryClientStateCmd {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -165,11 +163,11 @@ impl Runnable for QueryClientConsensusCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -191,10 +189,8 @@ impl Runnable for QueryClientConsensusCmd {
             });
 
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -276,11 +272,11 @@ impl Runnable for QueryClientConnectionsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -294,10 +290,8 @@ impl Runnable for QueryClientConnectionsCmd {
             });
 
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

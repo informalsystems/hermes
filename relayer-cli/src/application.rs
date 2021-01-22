@@ -1,9 +1,12 @@
 //! Cli Abscissa Application
 
+use crate::components::Tracing;
 use crate::{commands::CliCmd, config::Config};
+use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
-    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
+    component::Component,
+    config, trace, Application, Configurable, EntryPoint, FrameworkError, StandardPaths,
 };
 
 /// Application state
@@ -96,6 +99,24 @@ impl Application for CliApp {
         self.state.components.after_config(&config)?;
         self.config = Some(config);
         Ok(())
+    }
+
+    /// Overrides the default abscissa components, so that we can setup tracing on our own. See
+    /// also `register_components`.
+    fn framework_components(
+        &mut self,
+        command: &Self::Cmd,
+    ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
+        let terminal = Terminal::new(self.term_colors(command));
+
+        let config = command
+            .config_path()
+            .map(|path| self.load_config(&path))
+            .transpose()?
+            .unwrap_or_default();
+        let tracing = Tracing::new(config.global)?;
+
+        Ok(vec![Box::new(terminal), Box::new(tracing)])
     }
 
     /// Get tracing configuration from command-line options
