@@ -1,0 +1,26 @@
+[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'info'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://ibc-0:26657'
+grpc_addr = 'tcp://ibc-0:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://ibc-1:26657'
+grpc_addr = 'tcp://ibc-1:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
