@@ -52,6 +52,8 @@ pub fn process(
         .check_header_and_update_state(client_state, header)
         .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
 
+    // TODO: it seems that the event always contains a subset of the information in the result;
+    //       why do we have both?
     output.emit(ClientEvent::ClientUpdated(client_id.clone()));
 
     Ok(output.with_result(ClientResult::Update(Result {

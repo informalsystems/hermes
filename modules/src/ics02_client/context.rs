@@ -48,6 +48,7 @@ pub trait ClientKeeper {
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
+                // TODO: this event is being created here and in `update_client.rs`
                 Ok(vec![ClientEvent::ClientUpdated(res.client_id)])
             }
         }
