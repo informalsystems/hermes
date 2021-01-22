@@ -6,7 +6,7 @@ use ibc::ics04_channel::channel::Order;
 use relayer::chain::runtime::ChainRuntime;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::Config;
-use relayer::relay::channel_relay;
+use relayer::relay::relay_on_new_link;
 
 use crate::prelude::*;
 
@@ -51,7 +51,7 @@ pub fn v0_task(config: &Config) -> Result<(), BoxError> {
     let (src_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)?;
     let (dst_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)?;
 
-    Ok(channel_relay(
+    Ok(relay_on_new_link(
         src_chain_handle,
         dst_chain_handle,
         ordering,

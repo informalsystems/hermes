@@ -130,7 +130,7 @@ impl ForeignClient {
             }
             Ok(event) => {
                 self.id = extract_client_id(&event)?.clone();
-                info!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
+                println!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
             }
         }
         Ok(())

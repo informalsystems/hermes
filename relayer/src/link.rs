@@ -24,14 +24,13 @@ use ibc::{
 };
 
 use crate::chain::handle::{ChainHandle, Subscription};
-use crate::chain::runtime::ChainRuntime;
-use crate::chain::CosmosSDKChain;
 use crate::channel::{Channel, ChannelError, ChannelSide};
-use crate::config::ChainConfig;
 use crate::connection::ConnectionError;
 use crate::error::{Error, Kind};
 use crate::foreign_client::ForeignClient;
 use crate::relay::MAX_ITER;
+use std::thread;
+use std::time::Duration;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
@@ -622,20 +621,21 @@ impl Link {
         })
     }
 
-    pub fn run(&mut self) -> Result<(), Error> {
+    pub fn relay(&mut self) -> Result<(), Error> {
         info!("relaying packets for link {:#?}", self.a_to_b.channel);
         loop {
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;
+            // TODO - select over the two subscriptions
+            thread::sleep(Duration::from_millis(100))
         }
     }
 
-    pub fn new_from_opts(opts: &PacketOptions) -> Result<Link, Error> {
-        let (a_chain, _) =
-            ChainRuntime::<CosmosSDKChain>::spawn(opts.src_chain_config.clone()).unwrap();
-        let (b_chain, _) =
-            ChainRuntime::<CosmosSDKChain>::spawn(opts.dst_chain_config.clone()).unwrap();
-
+    pub fn new_from_opts(
+        a_chain: Box<dyn ChainHandle>,
+        b_chain: Box<dyn ChainHandle>,
+        opts: &ChannelParameters,
+    ) -> Result<Link, Error> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain
@@ -697,34 +697,26 @@ impl Link {
         };
         Ok(Link::new(channel)?)
     }
+
+    pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IBCEvent>, Error> {
+        self.a_to_b.build_recv_packet_and_timeout_msgs()?;
+        let (mut dst_res, mut src_res) = self.a_to_b.send_update_client_and_msgs()?;
+        dst_res.append(&mut src_res);
+        Ok(dst_res)
+    }
+
+    pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IBCEvent>, Error> {
+        self.b_to_a.build_packet_ack_msgs()?;
+        let (mut dst_res, mut src_res) = self.b_to_a.send_update_client_and_msgs()?;
+        dst_res.append(&mut src_res);
+        Ok(dst_res)
+    }
 }
 
 #[derive(Clone, Debug)]
-pub struct PacketOptions {
-    pub src_chain_config: ChainConfig,
-    pub dst_chain_config: ChainConfig,
+pub struct ChannelParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
     pub dst_port_id: PortId,
     pub dst_channel_id: ChannelId,
-}
-
-pub fn build_and_send_recv_packet_messages(opts: &PacketOptions) -> Result<Vec<IBCEvent>, Error> {
-    let mut link = Link::new_from_opts(opts)?;
-
-    link.a_to_b.build_recv_packet_and_timeout_msgs()?;
-
-    let (mut dst_res, mut src_res) = link.a_to_b.send_update_client_and_msgs()?;
-    dst_res.append(&mut src_res);
-    Ok(dst_res)
-}
-
-pub fn build_and_send_ack_packet_messages(opts: &PacketOptions) -> Result<Vec<IBCEvent>, Error> {
-    let mut link = Link::new_from_opts(opts)?;
-
-    link.b_to_a.build_packet_ack_msgs()?;
-
-    let (mut dst_res, mut src_res) = link.b_to_a.send_update_client_and_msgs()?;
-    dst_res.append(&mut src_res);
-    Ok(dst_res)
 }

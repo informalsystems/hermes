@@ -1,6 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::error;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
@@ -179,7 +179,7 @@ impl Channel {
                 }
                 Ok(result) => {
                     self.a_side.channel_id = extract_channel_id(&result)?.clone();
-                    info!("{}  {} => {:?}\n", done, a_chain.id(), result);
+                    println!("{}  {} => {:?}\n", done, a_chain.id(), result);
                     break;
                 }
             }
@@ -196,13 +196,13 @@ impl Channel {
                 }
                 Ok(result) => match result {
                     IBCEvent::ChainError(e) => {
-                        info!("Failed ChanTry {:?}: {}", self.b_side, e);
+                        println!("Failed ChanTry {:?}: {}", self.b_side, e);
                         continue;
                     }
 
                     _ => {
                         self.b_side.channel_id = extract_channel_id(&result)?.clone();
-                        info!("{}  {} => {:?}\n", done, b_chain.id(), result);
+                        println!("{}  {} => {:?}\n", done, b_chain.id(), result);
                         break;
                     }
                 },
@@ -233,25 +233,25 @@ impl Channel {
                     // Ack to a_chain
                     match self.flipped().build_chan_ack_and_send() {
                         Err(e) => error!("Failed ChanAck {:?}: {}", self.a_side, e),
-                        Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_chan_confirm_and_send() {
                         Err(e) => error!("Failed ChanConfirm {:?}: {}", self.b_side, e),
-                        Ok(event) => info!("{}  {} => {:?}\n", done, b_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, b_chain.id(), event),
                     }
                 }
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_chan_confirm_and_send() {
                         Err(e) => error!("Failed ChanConfirm {:?}: {}", self.a_side, e),
-                        Ok(event) => info!("{}  {} => {:?}\n", done, a_chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, a_chain.id(), event),
                     }
                 }
                 (State::Open, State::Open) => {
-                    info!(
+                    println!(
                         "{}  {}  {}  Channel handshake finished for {:#?}\n",
                         done, done, done, self
                     );

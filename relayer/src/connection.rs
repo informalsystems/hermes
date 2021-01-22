@@ -1,6 +1,6 @@
 use prost_types::Any;
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::error;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
@@ -148,7 +148,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.a_side.connection_id = extract_connection_id(&result)?.clone();
-                    info!("{}  {} => {:?}\n", done, self.a_side.chain.id(), result);
+                    println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), result);
                     break;
                 }
             }
@@ -165,7 +165,7 @@ impl Connection {
                 }
                 Ok(result) => {
                     self.b_side.connection_id = extract_connection_id(&result)?.clone();
-                    info!("{}  {} => {:?}\n", done, self.b_side.chain.id(), result);
+                    println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), result);
                     break;
                 }
             }
@@ -195,25 +195,25 @@ impl Connection {
                         Err(e) => {
                             error!("Failed ConnAck {:?}: {}", self.a_side, e);
                         }
-                        Ok(event) => info!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
                     }
                 }
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
-                        Ok(event) => info!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event),
                     }
                 }
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
-                        Ok(event) => info!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
+                        Ok(event) => println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
                     }
                 }
                 (State::Open, State::Open) => {
-                    info!(
+                    println!(
                         "{}  {}  {}  Connection handshake finished for [{:#?}]\n",
                         done, done, done, self
                     );
