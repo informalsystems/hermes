@@ -1,10 +1,9 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 
-use crate::handler::{Event, EventType, HandlerOutput};
+use crate::handler::HandlerOutput;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::events::OPEN_INIT_EVENT_TYPE;
 use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
@@ -12,42 +11,11 @@ use crate::ics24_host::identifier::{ChannelId, PortId};
 pub mod chan_open_init;
 
 #[derive(Clone, Debug)]
-pub enum ChannelEvent {
-    ChanOpenInit(ChannelResult),
-    // ConnOpenTry(ConnectionResult),
-    // ConnOpenAck(ConnectionResult),
-    // ConnOpenConfirm(ConnectionResult),
-}
-
-#[derive(Clone, Debug)]
 pub struct ChannelResult {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub channel_cap: Capability,
     pub channel_end: ChannelEnd,
-}
-
-impl From<ChannelEvent> for Event {
-    fn from(ev: ChannelEvent) -> Event {
-        match ev {
-            ChannelEvent::ChanOpenInit(_chan) => Event::new(
-                EventType::Custom(OPEN_INIT_EVENT_TYPE.to_string()),
-                vec![("channel_id".to_string(), "None".to_string())],
-            ),
-            // ChannelEvent::ChanOpenTry(conn) => Event::new(
-            //     EventType::Custom(TODO.to_string()),
-            //     vec![("channel_id".to_string(), chan.channel_id.to_string())],
-            // ),
-            // ChannelEvent::ChanOpenAck(conn) => Event::new(
-            //     EventType::Custom(TODO.to_string()),
-            //     vec![("channel_id".to_string(), chan.channel_id.to_string())],
-            // ),
-            // ChannelEvent::ChanOpenConfirm(conn) => Event::new(
-            //     EventType::Custom(TODO.to_string()),
-            //     vec![("channel_id".to_string(), conn.channel _id.to_string())],
-            // ),
-        }
-    }
 }
 
 /// General entry point for processing any type of message related to the ICS4 channel open

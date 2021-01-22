@@ -23,23 +23,25 @@ const CLIENT_TYPE_ATTRIBUTE_KEY: &str = "client_type";
 /// The content of the `key` field for the attribute containing the height.
 const CONSENSUS_HEIGHT_ATTRIBUTE_KEY: &str = "consensus_height";
 
-pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEvent> {
-    match event.type_str {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+    match event.type_str.as_ref() {
         CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         _ => None,
     }
 }
 
-fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Attributes {
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     let mut attr = Attributes::default();
 
-    for (key, value) in &event.attributes {
-        match *key {
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
             CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
             CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
@@ -99,6 +101,12 @@ impl CreateClient {
     }
 }
 
+impl From<Attributes> for CreateClient {
+    fn from(attrs: Attributes) -> Self {
+        CreateClient(attrs)
+    }
+}
+
 impl TryFrom<RawObject> for CreateClient {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
@@ -126,8 +134,15 @@ impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
+
     pub fn height(&self) -> &tendermint::block::Height {
         &self.0.height
+    }
+}
+
+impl From<Attributes> for UpdateClient {
+    fn from(attrs: Attributes) -> Self {
+        UpdateClient(attrs)
     }
 }
 

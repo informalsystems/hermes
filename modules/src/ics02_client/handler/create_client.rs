@@ -1,10 +1,12 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
+use crate::ics02_client::events::Attributes;
 use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use crate::ics24_host::identifier::ClientId;
@@ -33,12 +35,20 @@ pub fn process(
 
     output.log("success: generated new client identifier");
 
-    Ok(output.with_result(ClientResult::Create(Result {
-        client_id,
+    let result = ClientResult::Create(Result {
+        client_id: client_id.clone(),
         client_type: msg.client_state().client_type(),
         client_state: msg.client_state(),
         consensus_state: msg.consensus_state(),
-    })))
+    });
+
+    let event_attributes = Attributes {
+        client_id,
+        ..Default::default()
+    };
+    output.emit(IBCEvent::CreateClient(event_attributes.into()));
+
+    Ok(output.with_result(result))
 }
 
 #[cfg(test)]

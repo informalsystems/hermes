@@ -41,28 +41,28 @@ const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 //const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
-pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEvent> {
-    match event.type_str {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+    match event.type_str.as_str() {
         OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(
-            extract_attributes_from_event(event),
+            extract_attributes_from_tx(event),
         ))),
         SEND_PACKET => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_event(event);
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
             Some(IBCEvent::SendPacketChannel(SendPacket {
@@ -71,7 +71,7 @@ pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEven
             }))
         }
         WRITE_ACK => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_event(event);
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should have a write ack.
             let write_ack = write_ack.unwrap();
             Some(IBCEvent::WriteAcknowledgementChannel(
@@ -83,7 +83,7 @@ pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEven
             ))
         }
         ACK_PACKET => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_event(event);
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
             Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
@@ -92,7 +92,7 @@ pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEven
             }))
         }
         TIMEOUT => {
-            let (packet, write_ack) = extract_packet_and_write_ack_from_event(event);
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
             Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
@@ -104,11 +104,13 @@ pub fn try_from_event(event: &crate::events::GenericEvent<'_>) -> Option<IBCEven
     }
 }
 
-fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Attributes {
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     let mut attr = Attributes::default();
 
-    for (key, value) in &event.attributes {
-        match *key {
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
             PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().unwrap(),
             CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().unwrap(),
             CONNECTION_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
@@ -126,13 +128,15 @@ fn extract_attributes_from_event(event: &crate::events::GenericEvent<'_>) -> Att
     attr
 }
 
-fn extract_packet_and_write_ack_from_event(
-    event: &crate::events::GenericEvent<'_>,
+fn extract_packet_and_write_ack_from_tx(
+    event: &tendermint::abci::Event,
 ) -> (Packet, Option<Vec<u8>>) {
     let mut packet = Packet::default();
     let mut write_ack = None;
-    for (key, value) in &event.attributes {
-        match *key {
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
             PKT_SRC_PORT_ATTRIBUTE_KEY => packet.source_port = value.parse().unwrap(),
             PKT_SRC_CHANNEL_ATTRIBUTE_KEY => packet.source_channel = value.parse().unwrap(),
             PKT_DST_PORT_ATTRIBUTE_KEY => packet.destination_port = value.parse().unwrap(),

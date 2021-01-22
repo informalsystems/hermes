@@ -68,60 +68,14 @@ pub enum IBCEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-#[derive(Debug)]
-pub struct GenericEvent<'a> {
-    pub type_str: &'a str,
-    pub attributes: Vec<(&'a str, &'a str)>,
-}
-
-impl<'a> GenericEvent<'a> {
-    fn from_tx_response_event(event: &'a tendermint::abci::Event) -> Self {
-        let type_str = event.type_str.as_ref();
-        let attributes = event
-            .attributes
-            .iter()
-            .map(|tag| (tag.key.as_ref(), tag.value.as_ref()))
-            .collect();
-        Self {
-            type_str,
-            attributes,
-        }
-    }
-
-    fn from_handler_event(event: &'a crate::handler::Event) -> Self {
-        let type_str = match &event.event_type {
-            crate::handler::EventType::Custom(type_str) => type_str.as_ref(),
-            _ => unimplemented!(),
-        };
-        let attributes = event
-            .attributes
-            .iter()
-            .map(|tag| (tag.key().as_ref(), tag.value().as_ref()))
-            .collect();
-        Self {
-            type_str,
-            attributes,
-        }
-    }
-}
-
 // This is tendermint specific
 pub fn from_tx_response_event(event: &tendermint::abci::Event) -> Option<IBCEvent> {
-    from_generic_event(GenericEvent::from_tx_response_event(event))
-}
-
-// This is mock-chain specific
-pub fn from_handler_event(event: &crate::handler::Event) -> Option<IBCEvent> {
-    from_generic_event(GenericEvent::from_handler_event(event))
-}
-
-fn from_generic_event(event: GenericEvent<'_>) -> Option<IBCEvent> {
     // Return the first hit we find
-    if let Some(client_res) = ClientEvents::try_from_event(&event) {
+    if let Some(client_res) = ClientEvents::try_from_tx(event) {
         Some(client_res)
-    } else if let Some(conn_res) = ConnectionEvents::try_from_event(&event) {
+    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event) {
         Some(conn_res)
-    } else if let Some(chan_res) = ChannelEvents::try_from_event(&event) {
+    } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
         Some(chan_res)
     } else {
         None

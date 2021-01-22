@@ -611,14 +611,8 @@ impl ICS18Context for MockContext {
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
-        let events = deliver(self, msgs)
-            .map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?
-            .iter()
-            .map(|event| {
-                // Panic if no `IBCEvent` is found.
-                crate::events::from_handler_event(event).unwrap()
-            })
-            .collect();
+        let events =
+            deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
 
         self.advance_host_chain_height(); // Advance chain height
         Ok(events)

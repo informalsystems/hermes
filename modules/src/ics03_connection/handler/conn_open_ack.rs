@@ -1,11 +1,12 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenAck`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenAck;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
@@ -84,7 +85,11 @@ pub(crate) fn process(
         connection_id: Some(msg.connection_id().clone()),
     };
 
-    output.emit(ConnOpenAck(result.clone()));
+    let event_attributes = Attributes {
+        connection_id: result.connection_id.clone(),
+        ..Default::default()
+    };
+    output.emit(IBCEvent::OpenAckConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -94,10 +99,9 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::handler::EventType;
+    use crate::events::IBCEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::error::Kind;
-    use crate::ics03_connection::events::ACK_EVENT_TYPE;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -249,7 +253,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.event_type, EventType::Custom(ACK_EVENT_TYPE.to_string()));
+                        assert!(matches!(e, &IBCEvent::OpenAckConnection(_)));
                     }
                 }
                 Err(e) => {

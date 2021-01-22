@@ -1,10 +1,11 @@
 //! Protocol logic specific to ICS3 messages of type `MsgConnectionOpenInit`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenInit;
+use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 
@@ -34,7 +35,11 @@ pub(crate) fn process(
         connection_end: new_connection_end,
     };
 
-    output.emit(ConnOpenInit(result.clone()));
+    let event_attributes = Attributes {
+        connection_id: result.connection_id.clone(),
+        ..Default::default()
+    };
+    output.emit(IBCEvent::OpenInitConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -43,9 +48,8 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::handler::EventType;
+    use crate::events::IBCEvent;
     use crate::ics03_connection::connection::State;
-    use crate::ics03_connection::events::INIT_EVENT_TYPE;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
@@ -103,7 +107,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Init);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.event_type, EventType::Custom(INIT_EVENT_TYPE.to_string()));
+                        assert!(matches!(e, &IBCEvent::OpenInitConnection(_)));
                     }
                 }
                 Err(e) => {
