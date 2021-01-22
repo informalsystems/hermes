@@ -71,20 +71,14 @@ where
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-            // TODO assert that no events were produced, as they would be discarded
-            // assert!(handler_output.events.is_empty());
-
             // Apply the result to the context (host chain store).
-            let events: Vec<Event> = ctx
+            ctx
                 .store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?
-                .into_iter()
-                .map(|v| v.into())
-                .collect();
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
-                .with_events(events)
+                .with_events(handler_output.events)
                 .with_result(())
         }
 

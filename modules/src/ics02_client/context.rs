@@ -5,8 +5,7 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::handler::ClientResult::{Create, Update};
-use crate::ics02_client::handler::{ClientEvent, ClientResult};
+use crate::ics02_client::handler::ClientResult::{self, Create, Update};
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -23,15 +22,9 @@ pub trait ClientReader {
 
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
-    fn store_client_result(
-        &mut self,
-        handler_res: ClientResult,
-    ) -> Result<Vec<ClientEvent>, Error> {
+    fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
             Create(res) => {
-                // TODO: if `create_client.rs` simply returns the client counter, and the
-                //       full id is instead computed here, we can assert that atomicity was
-                //       preserved
                 let client_id = res.client_id.clone();
 
                 self.store_client_type(client_id.clone(), res.client_type)?;
@@ -42,7 +35,7 @@ pub trait ClientKeeper {
                     res.consensus_state,
                 )?;
                 self.increase_client_counter();
-                Ok(vec![ClientEvent::ClientCreated(client_id)])
+                Ok(())
             }
             Update(res) => {
                 self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
@@ -51,8 +44,7 @@ pub trait ClientKeeper {
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
-                // TODO: this event is being created here and in `update_client.rs`
-                Ok(vec![ClientEvent::ClientUpdated(res.client_id)])
+                Ok(())
             }
         }
     }
