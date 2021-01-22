@@ -179,13 +179,12 @@ impl MockContext {
     /// `consensus_state_height` is None, then the client will be initialized with a consensus
     /// state matching the same height as the client state (`client_state_height`).
     pub fn with_client_parametrized(
-        self,
+        mut self,
         client_id: &ClientId,
         client_state_height: Height,
         client_type: Option<ClientType>,
         consensus_state_height: Option<Height>,
     ) -> Self {
-        let mut clients = self.clients.clone();
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
@@ -216,31 +215,23 @@ impl MockContext {
             client_state,
             consensus_states,
         };
-        clients.insert(client_id.clone(), client_record);
-
-        Self { clients, ..self }
+        self.clients.insert(client_id.clone(), client_record);
+        self
     }
 
     /// Associates a connection to this context.
     pub fn with_connection(
-        self,
+        mut self,
         connection_id: ConnectionId,
         connection_end: ConnectionEnd,
     ) -> Self {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
-        Self {
-            connections,
-            ..self
-        }
+        self.connections.insert(connection_id, connection_end);
+        self
     }
-    pub fn with_port_capability(self, port_id: PortId) -> Self {
-        let mut port_capabilities = self.port_capabilities.clone();
-        port_capabilities.insert(port_id, Capability::new());
-        Self {
-            port_capabilities,
-            ..self
-        }
+
+    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
+        self.port_capabilities.insert(port_id, Capability::new());
+        self
     }
 
     /// Accessor for a block of the local (host) chain from this context.
