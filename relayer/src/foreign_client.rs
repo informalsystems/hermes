@@ -174,9 +174,9 @@ pub fn build_create_client_and_send(
 ) -> Result<IBCEvent, Error> {
     let new_msg = build_create_client(dst_chain.clone(), src_chain)?;
 
-    let res = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
-    assert!(!res.is_empty());
-    Ok(res[0].clone())
+    let mut res = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
+    assert_eq!(res.len(), 1);
+    Ok(res.pop().unwrap())
 }
 
 /// Lower-level interface to create the message for updating a client to height `target_height`.
