@@ -1,6 +1,7 @@
 [global]
 timeout = '10s'
 strategy = 'naive'
+log_level = 'info'
 
 [[chains]]
 id = 'ibc-0'

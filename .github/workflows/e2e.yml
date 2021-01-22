@@ -8,7 +8,7 @@ jobs:
       -  uses: actions/checkout@v2
       -  name: Build relayer image
          run: docker-compose -f docker-compose.yml build relayer
-      -  name: Run chains and relayer
+      -  name: Start chains and relayer
          run: docker-compose -f docker-compose.yml up -d ibc-0 ibc-1 relayer
       -  name: Run relayer workflow
          run: docker exec relayer /bin/sh -c /relayer/setup_relayer.sh
