@@ -227,12 +227,16 @@ impl RelayPath {
                 self.reset_buffers();
                 self.dst_height = self.dst_chain.query_latest_height()?;
                 for event in self.all_events.clone() {
+                    println!("{} => {:?}", self.src_chain.id(), event);
                     self.handle_packet_event(&event)?;
                 }
-                let _res = self.send_update_client_and_msgs();
+                let res = self.send_update_client_and_msgs();
+                println!("\nresult {:?}", res);
+
                 if self.all_events.is_empty() {
                     break;
                 }
+                println!("retrying");
             }
             // TODO - add error
             self.all_events = vec![];

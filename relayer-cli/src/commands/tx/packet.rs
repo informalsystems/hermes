@@ -3,7 +3,7 @@ use abscissa_core::{Command, Options, Runnable};
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use relayer::config::{ChainConfig, Config};
-use relayer::link::{Link, ChannelParameters};
+use relayer::link::{ChannelParameters, Link};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};

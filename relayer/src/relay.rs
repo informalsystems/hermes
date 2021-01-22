@@ -8,7 +8,7 @@ use crate::channel::Channel;
 use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
-use crate::link::{Link, ChannelParameters};
+use crate::link::{ChannelParameters, Link};
 
 pub(crate) const MAX_ITER: u32 = 10;
 

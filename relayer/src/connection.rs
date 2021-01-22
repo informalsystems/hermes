@@ -195,21 +195,27 @@ impl Connection {
                         Err(e) => {
                             error!("Failed ConnAck {:?}: {}", self.a_side, e);
                         }
-                        Ok(event) => println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
+                        Ok(event) => {
+                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                        }
                     }
                 }
                 (State::Open, State::TryOpen) => {
                     // Confirm to b_chain
                     match self.build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.b_side, e),
-                        Ok(event) => println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event),
+                        Ok(event) => {
+                            println!("{}  {} => {:?}\n", done, self.b_side.chain.id(), event)
+                        }
                     }
                 }
                 (State::TryOpen, State::Open) => {
                     // Confirm to a_chain
                     match self.flipped().build_conn_confirm_and_send() {
                         Err(e) => error!("Failed ConnConfirm {:?}: {}", self.a_side, e),
-                        Ok(event) => println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event),
+                        Ok(event) => {
+                            println!("{}  {} => {:?}\n", done, self.a_side.chain.id(), event)
+                        }
                     }
                 }
                 (State::Open, State::Open) => {
