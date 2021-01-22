@@ -30,7 +30,7 @@ pub trait ClientKeeper {
         match handler_res {
             Create(res) => {
                 // TODO: if `create_client.rs` simply returns the client counter, and the
-                //       full id is instead computed here, we assert that atomicity was
+                //       full id is instead computed here, we can assert that atomicity was
                 //       preserved
                 let client_id = res.client_id.clone();
 
