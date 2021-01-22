@@ -638,7 +638,7 @@ impl Link {
     pub fn new_from_opts(
         a_chain: Box<dyn ChainHandle>,
         b_chain: Box<dyn ChainHandle>,
-        opts: &ChannelParameters,
+        opts: &LinkParameters,
     ) -> Result<Link, Error> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
@@ -718,7 +718,7 @@ impl Link {
 }
 
 #[derive(Clone, Debug)]
-pub struct ChannelParameters {
+pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
     pub dst_port_id: PortId,

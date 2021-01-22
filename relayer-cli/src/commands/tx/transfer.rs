@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IBCEvent;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use relayer::{
     chain::{Chain, CosmosSDKChain},
     config::Config,
@@ -18,10 +18,10 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
     #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
+    src_chain_id: ChainId,
 
     #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    dest_chain_id: ChainId,
 
     #[options(free, help = "identifier of the source port")]
     src_port_id: PortId,
@@ -48,11 +48,11 @@ pub struct TxRawSendPacketCmd {
 impl TxRawSendPacketCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
-            .find_chain(&self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id)
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .find_chain(&self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id)
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let denom = self

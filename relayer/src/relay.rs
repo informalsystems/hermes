@@ -8,7 +8,7 @@ use crate::channel::Channel;
 use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
-use crate::link::{ChannelParameters, Link};
+use crate::link::{Link, LinkParameters};
 
 pub(crate) const MAX_ITER: u32 = 10;
 
@@ -63,7 +63,7 @@ pub fn connect_with_new_channel(
 pub fn channel_relay(
     a_chain: Box<dyn ChainHandle>,
     b_chain: Box<dyn ChainHandle>,
-    opts: &ChannelParameters,
+    opts: &LinkParameters,
 ) -> Result<(), BoxError> {
     let mut link = Link::new_from_opts(a_chain, b_chain, opts)?;
     Ok(link.relay()?)

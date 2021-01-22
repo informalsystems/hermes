@@ -2,6 +2,7 @@
 
 use crate::components::Tracing;
 use crate::{commands::CliCmd, config::Config};
+
 use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},

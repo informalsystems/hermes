@@ -5,6 +5,7 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+mod cli_utils;
 mod config;
 mod keys;
 mod light;

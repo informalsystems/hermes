@@ -1,63 +1,40 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
-use ibc::ics24_host::identifier::ClientId;
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
-use relayer::config::ChainConfig;
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
+use crate::commands::cli_utils::chain_handlers_from_chain_id;
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
-use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxCreateClientCmd {
     #[options(free, required, help = "identifier of the destination chain")]
-    dst_chain_id: String,
+    dst_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: String,
+    src_chain_id: ChainId,
 }
 
 /// Sample to run this tx:
 ///     `rrly -c loop_config.toml tx raw create-client ibc-0 ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
-        let (dst_chain_config, src_chain_config) =
-            match validate_common_options(&self.dst_chain_id, &self.src_chain_id) {
-                Ok(result) => result,
-                Err(err) => {
-                    return Output::error(err).exit();
+        let config = app_config();
+
+        let chains =
+            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+                Ok(chains) => chains,
+                Err(e) => {
+                    return Output::error(format!("{}", e)).exit();
                 }
             };
-        info!(
-            "Message CreateClient for source chain: {:?}, on destination chain: {:?}",
-            src_chain_config.id, dst_chain_config.id
-        );
-
-        let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)
-            .map_err(|e| Kind::Runtime.context(e));
-        let src_chain = match src_chain_res {
-            Ok((handle, _)) => handle,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
-        };
-
-        let dst_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)
-            .map_err(|e| Kind::Runtime.context(e));
-        let dst_chain = match dst_chain_res {
-            Ok((handle, _)) => handle,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
-        };
 
         let client = ForeignClient {
-            dst_chain,
-            src_chain,
+            dst_chain: chains.dst,
+            src_chain: chains.src,
             id: ClientId::default(),
         };
 
@@ -76,10 +53,10 @@ impl Runnable for TxCreateClientCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxUpdateClientCmd {
     #[options(free, required, help = "identifier of the destination chain")]
-    dst_chain_id: String,
+    dst_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: String,
+    src_chain_id: ChainId,
 
     #[options(
         free,
@@ -91,43 +68,19 @@ pub struct TxUpdateClientCmd {
 
 impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
-        let opts = validate_common_options(&self.dst_chain_id, &self.src_chain_id);
+        let config = app_config();
 
-        let (dst_chain_config, src_chain_config) = match opts {
-            Ok(result) => result,
-            Err(err) => {
-                return Output::error(err).exit();
-            }
-        };
-
-        info!(
-            "Message UpdateClient client id: {:?}, for chain: {:?}, on chain: {:?}",
-            self.dst_client_id.clone(),
-            src_chain_config.id,
-            dst_chain_config.id
-        );
-
-        let src_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)
-            .map_err(|e| Kind::Runtime.context(e));
-        let src_chain = match src_chain_res {
-            Ok((handle, _)) => handle,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
-        };
-
-        let dst_chain_res = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)
-            .map_err(|e| Kind::Runtime.context(e));
-        let dst_chain = match dst_chain_res {
-            Ok((handle, _)) => handle,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
-        };
+        let chains =
+            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+                Ok(chains) => chains,
+                Err(e) => {
+                    return Output::error(format!("{}", e)).exit();
+                }
+            };
 
         let client = ForeignClient {
-            dst_chain,
-            src_chain,
+            dst_chain: chains.dst,
+            src_chain: chains.src,
             id: self.dst_client_id.clone(),
         };
 
@@ -140,31 +93,4 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
-}
-
-fn validate_common_options(
-    dst_chain_id: &str,
-    src_chain_id: &str,
-) -> Result<(ChainConfig, ChainConfig), String> {
-    let config = app_config();
-
-    // Validate parameters
-    let dst_chain_id = dst_chain_id
-        .parse()
-        .map_err(|_| format!("bad destination chain ({}) identifier", dst_chain_id))?;
-
-    let src_chain_id = src_chain_id
-        .parse()
-        .map_err(|_| format!("bad source chain ({}) identifier", src_chain_id))?;
-
-    // Get the source and destination chain configuration
-    let dst_chain_config = config
-        .find_chain(&dst_chain_id)
-        .ok_or_else(|| format!("missing destination chain ({}) configuration", dst_chain_id))?;
-
-    let src_chain_config = config
-        .find_chain(&src_chain_id)
-        .ok_or_else(|| format!("missing source chain ({}) configuration", src_chain_id))?;
-
-    Ok((dst_chain_config.clone(), src_chain_config.clone()))
 }
