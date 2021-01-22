@@ -73,8 +73,10 @@ pub(crate) fn process(
         channel_cap: cap_key,
     };
 
-    // TODO: Attributes.channel_id should be an Option and be set to `None` here
-    let event_attributes = Attributes::default();
+    let event_attributes = Attributes {
+        channel_id: None,
+        ..Default::default()
+    };
     output.emit(IBCEvent::OpenInitChannel(event_attributes.into()));
 
     Ok(output.with_result(result))

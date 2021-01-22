@@ -36,7 +36,7 @@ pub(crate) fn process(
     };
 
     let event_attributes = Attributes {
-        connection_id: result.connection_id.clone(),
+        connection_id: None,
         ..Default::default()
     };
     output.emit(IBCEvent::OpenInitConnection(event_attributes.into()));

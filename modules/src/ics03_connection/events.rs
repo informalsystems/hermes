@@ -8,10 +8,10 @@ use std::convert::TryFrom;
 use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
-pub const INIT_EVENT_TYPE: &str = "connection_open_init";
-pub const TRY_EVENT_TYPE: &str = "connection_open_try";
-pub const ACK_EVENT_TYPE: &str = "connection_open_ack";
-pub const CONFIRM_EVENT_TYPE: &str = "connection_open_confirm";
+const INIT_EVENT_TYPE: &str = "connection_open_init";
+const TRY_EVENT_TYPE: &str = "connection_open_try";
+const ACK_EVENT_TYPE: &str = "connection_open_ack";
+const CONFIRM_EVENT_TYPE: &str = "connection_open_confirm";
 
 /// The content of the `key` field for the attribute containing the connection identifier.
 const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -52,7 +52,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
             COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_client_id = value.parse().unwrap()
             }
-            // TODO: `Attributes` has 5 fields and we're only parsing 4; is that intended?
+            // TODO: `Attributes` has 5 fields and we're only parsing 4
             _ => panic!("unexpected attribute key: {}", key),
         }
     }

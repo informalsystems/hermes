@@ -181,20 +181,10 @@ mod tests {
             let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
             match output {
-                Ok(HandlerOutput {
-                    result,
-                    log,
-                    events: _,
-                }) => match result {
+                Ok(HandlerOutput { result, .. }) => match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, msg.client_state().client_type());
-                        assert_eq!(
-                            log,
-                            vec!["success: generated new client identifier".to_string(),]
-                        );
-
                         assert_eq!(create_res.client_id, expected_client_id);
-
                         assert_eq!(create_res.client_state, msg.client_state());
                         assert_eq!(create_res.consensus_state, msg.consensus_state());
                     }
@@ -242,21 +232,11 @@ mod tests {
         let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));
 
         match output {
-            Ok(HandlerOutput {
-                result,
-                log,
-                events: _,
-            }) => match result {
+            Ok(HandlerOutput { result, .. }) => match result {
                 ClientResult::Create(create_res) => {
                     assert_eq!(create_res.client_type, ClientType::Tendermint);
-                    assert_eq!(
-                        log,
-                        vec!["success: generated new client identifier".to_string(),]
-                    );
-
                     let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
                     assert_eq!(create_res.client_id, expected_client_id);
-
                     assert_eq!(create_res.client_state, msg.client_state());
                     assert_eq!(create_res.consensus_state, msg.consensus_state());
                 }

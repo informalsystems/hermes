@@ -11,8 +11,8 @@ use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
-pub const CREATE_EVENT_TYPE: &str = "create_client";
-pub const UPDATE_EVENT_TYPE: &str = "update_client";
+const CREATE_EVENT_TYPE: &str = "create_client";
+const UPDATE_EVENT_TYPE: &str = "update_client";
 
 /// The content of the `key` field for the attribute containing the client identifier.
 const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
@@ -45,7 +45,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
             CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
             CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
-            // TODO: `Attributes` has 4 fields and we're only parsing 3; is that intended?
+            // TODO: `Attributes` has 4 fields and we're only parsing 3
             _ => panic!("unexpected attribute key: {}", key),
         }
     }

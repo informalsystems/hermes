@@ -9,12 +9,12 @@ use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
 /// Channel event types
-pub const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
-pub const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
-pub const OPEN_ACK_EVENT_TYPE: &str = "channel_open_ack";
-pub const OPEN_CONFIRM_EVENT_TYPE: &str = "channel_open_confirm";
-pub const CLOSE_INIT_EVENT_TYPE: &str = "channel_close_init";
-pub const CLOSE_CONFIRM_EVENT_TYPE: &str = "channel_close_confirm";
+const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
+const OPEN_TRY_EVENT_TYPE: &str = "channel_open_try";
+const OPEN_ACK_EVENT_TYPE: &str = "channel_open_ack";
+const OPEN_CONFIRM_EVENT_TYPE: &str = "channel_open_confirm";
+const CLOSE_INIT_EVENT_TYPE: &str = "channel_close_init";
+const CLOSE_CONFIRM_EVENT_TYPE: &str = "channel_close_confirm";
 
 /// Channel event attribute keys
 const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -24,11 +24,11 @@ const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
 const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event types
-pub const SEND_PACKET: &str = "send_packet";
-pub const RECV_PACKET: &str = "recv_packet";
-pub const WRITE_ACK: &str = "write_acknowledgement";
-pub const ACK_PACKET: &str = "acknowledge_packet";
-pub const TIMEOUT: &str = "timeout_packet";
+const SEND_PACKET: &str = "send_packet";
+const RECV_PACKET: &str = "recv_packet";
+const WRITE_ACK: &str = "write_acknowledgement";
+const ACK_PACKET: &str = "acknowledge_packet";
+const TIMEOUT: &str = "timeout_packet";
 
 /// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -112,7 +112,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
         let value = tag.value.as_ref();
         match key {
             PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().unwrap(),
-            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().unwrap(),
+            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().ok(),
             CONNECTION_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
             COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_port_id = value.parse().unwrap()
@@ -120,7 +120,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
             COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok()
             }
-            // TODO: `Attributes` has 6 fields and we're only parsing 5; is that intended?
+            // TODO: `Attributes` has 6 fields and we're only parsing 5
             _ => panic!("unexpected attribute key: {}", key),
         }
     }
@@ -157,7 +157,7 @@ fn extract_packet_and_write_ack_from_tx(
 pub struct Attributes {
     pub height: block::Height,
     pub port_id: PortId,
-    pub channel_id: ChannelId,
+    pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
@@ -180,7 +180,7 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -197,7 +197,7 @@ impl TryFrom<RawObject> for OpenInit {
         Ok(OpenInit(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_init.port_id"),
-            channel_id: attribute!(obj, "channel_open_init.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
             connection_id: attribute!(obj, "channel_open_init.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -218,7 +218,7 @@ impl From<OpenInit> for IBCEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -235,7 +235,7 @@ impl TryFrom<RawObject> for OpenTry {
         Ok(OpenTry(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_try.port_id"),
-            channel_id: attribute!(obj, "channel_open_try.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
             connection_id: attribute!(obj, "channel_open_try.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -256,7 +256,7 @@ impl From<OpenTry> for IBCEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -273,7 +273,7 @@ impl TryFrom<RawObject> for OpenAck {
         Ok(OpenAck(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_ack.port_id"),
-            channel_id: attribute!(obj, "channel_open_ack.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
             connection_id: attribute!(obj, "channel_open_ack.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -294,7 +294,7 @@ impl From<OpenAck> for IBCEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -311,7 +311,7 @@ impl TryFrom<RawObject> for OpenConfirm {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_confirm.port_id"),
-            channel_id: attribute!(obj, "channel_open_confirm.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
             connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -332,7 +332,7 @@ impl From<OpenConfirm> for IBCEvent {
 pub struct CloseInit(Attributes);
 
 impl CloseInit {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -349,7 +349,7 @@ impl TryFrom<RawObject> for CloseInit {
         Ok(CloseInit(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_init.port_id"),
-            channel_id: attribute!(obj, "channel_close_init.channel_id"),
+            channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
             connection_id: attribute!(obj, "channel_close_init.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -370,7 +370,7 @@ impl From<CloseInit> for IBCEvent {
 pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -387,7 +387,7 @@ impl TryFrom<RawObject> for CloseConfirm {
         Ok(CloseConfirm(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_confirm.port_id"),
-            channel_id: attribute!(obj, "channel_close_confirm.channel_id"),
+            channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
             connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
