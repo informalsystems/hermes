@@ -69,8 +69,8 @@ pub(crate) fn process(
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
         channel_id: None,
-        channel_end: new_channel_end.clone(),
-        channel_cap: cap_key.clone(),
+        channel_end: new_channel_end,
+        channel_cap: cap_key,
     };
 
     // TODO: Attributes.channel_id should be an Option and be set to `None` here

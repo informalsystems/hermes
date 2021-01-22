@@ -30,7 +30,7 @@ pub trait ClientKeeper {
                 self.store_client_type(client_id.clone(), res.client_type)?;
                 self.store_client_state(client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
-                    client_id.clone(),
+                    client_id,
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
