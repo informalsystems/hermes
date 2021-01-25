@@ -1,4 +1,6 @@
-use std::{cmp::Ordering, convert::TryFrom};
+use std::cmp::Ordering;
+use std::convert::TryFrom;
+use std::str::FromStr;
 
 use tendermint_proto::Protobuf;
 
@@ -130,14 +132,22 @@ impl std::fmt::Display for Height {
     }
 }
 
-impl TryFrom<String> for Height {
-    type Error = anomaly::Error<Kind>;
+impl TryFrom<&str> for Height {
+    type Error = Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
             revision_number: split[0].parse::<u64>().unwrap(),
             revision_height: split[1].parse::<u64>().unwrap(),
         })
+    }
+}
+
+impl FromStr for Height {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        Height::try_from(s)
     }
 }

@@ -7,8 +7,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use tendermint::block;
 
-use std::collections::HashSet;
-
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
 const TRY_EVENT_TYPE: &str = "connection_open_try";
@@ -21,49 +19,51 @@ const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-/// A list of all the event `type`s that this module is capable of parsing
-fn event_types() -> HashSet<String> {
-    vec![
-        INIT_EVENT_TYPE.to_string(),
-        TRY_EVENT_TYPE.to_string(),
-        ACK_EVENT_TYPE.to_string(),
-        CONFIRM_EVENT_TYPE.to_string(),
-    ]
-    .into_iter()
-    .collect()
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+    match event.type_str.as_ref() {
+        INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(
+            extract_attributes_from_tx(event),
+        ))),
+        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(
+            extract_attributes_from_tx(event),
+        ))),
+        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(
+            extract_attributes_from_tx(event),
+        ))),
+        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(
+            extract_attributes_from_tx(event),
+        ))),
+        _ => None,
+    }
 }
 
-pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
-    event_types().get(&event.type_str)?; // Quit fast if the event type is irrelevant
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     let mut attr = Attributes::default();
 
-    for tag in event.attributes {
-        match tag.key.as_ref() {
-            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = tag.value.to_string().parse().unwrap(),
-            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = tag.value.to_string().parse().unwrap(),
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
+            CONN_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().ok(),
+            CLIENT_ID_ATTRIBUTE_KEY => attr.client_id = value.parse().unwrap(),
             COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_connection_id = tag.value.to_string().parse().ok()
+                attr.counterparty_connection_id = value.parse().ok()
             }
             COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_client_id = tag.value.to_string().parse().unwrap()
+                attr.counterparty_client_id = value.parse().unwrap()
             }
-            _ => {}
+            // TODO: `Attributes` has 5 fields and we're only parsing 4
+            _ => panic!("unexpected attribute key: {}", key),
         }
     }
 
-    match event.type_str.as_str() {
-        INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(attr))),
-        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(attr))),
-        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(attr))),
-        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(attr))),
-        _ => None,
-    }
+    attr
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
     pub height: block::Height,
-    pub connection_id: ConnectionId,
+    pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
@@ -85,7 +85,7 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
-    pub fn connection_id(&self) -> &ConnectionId {
+    pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
 }
@@ -101,7 +101,7 @@ impl TryFrom<RawObject> for OpenInit {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenInit(Attributes {
             height: obj.height,
-            connection_id: attribute!(obj, "connection_open_init.connection_id"),
+            connection_id: some_attribute!(obj, "connection_open_init.connection_id"),
             client_id: attribute!(obj, "connection_open_init.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
@@ -122,7 +122,7 @@ impl From<OpenInit> for IBCEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
-    pub fn connection_id(&self) -> &ConnectionId {
+    pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
 }
@@ -138,7 +138,7 @@ impl TryFrom<RawObject> for OpenTry {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenTry(Attributes {
             height: obj.height,
-            connection_id: attribute!(obj, "connection_open_try.connection_id"),
+            connection_id: some_attribute!(obj, "connection_open_try.connection_id"),
             client_id: attribute!(obj, "connection_open_try.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
@@ -159,7 +159,7 @@ impl From<OpenTry> for IBCEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
-    pub fn connection_id(&self) -> &ConnectionId {
+    pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
 }
@@ -175,7 +175,7 @@ impl TryFrom<RawObject> for OpenAck {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenAck(Attributes {
             height: obj.height,
-            connection_id: attribute!(obj, "connection_open_ack.connection_id"),
+            connection_id: some_attribute!(obj, "connection_open_ack.connection_id"),
             client_id: attribute!(obj, "connection_open_ack.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,
@@ -196,7 +196,7 @@ impl From<OpenAck> for IBCEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
-    pub fn connection_id(&self) -> &ConnectionId {
+    pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
 }
@@ -212,7 +212,7 @@ impl TryFrom<RawObject> for OpenConfirm {
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
-            connection_id: attribute!(obj, "connection_open_confirm.connection_id"),
+            connection_id: some_attribute!(obj, "connection_open_confirm.connection_id"),
             client_id: attribute!(obj, "connection_open_confirm.client_id"),
             counterparty_connection_id: some_attribute!(
                 obj,

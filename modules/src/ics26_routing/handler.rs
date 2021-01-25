@@ -2,7 +2,8 @@ use prost_types::Any;
 use tendermint_proto::Protobuf;
 
 // use crate::handler;
-use crate::handler::{Event, HandlerOutput};
+use crate::events::IBCEvent;
+use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::create_client;
 use crate::ics02_client::msgs::update_client;
@@ -18,7 +19,7 @@ use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg, ICS4Msg};
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<Event>, Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IBCEvent>, Error>
 where
     Ctx: ICS26Context,
 {
@@ -26,7 +27,7 @@ where
     let mut ctx_interim = ctx.clone();
 
     // A buffer for all the events, to be used as return value.
-    let mut res: Vec<Event> = vec![];
+    let mut res: Vec<IBCEvent> = vec![];
 
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
@@ -34,12 +35,12 @@ where
             // ICS2 messages
             create_client::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
-                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&*any_msg.value)
+                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(ICS2Msg(ClientMsg::CreateClient(domain_msg)))
             }
             update_client::TYPE_URL => {
-                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&*any_msg.value)
+                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
                 Ok(ICS2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
@@ -49,6 +50,7 @@ where
 
         // Process the envelope, and accumulate any events that were generated.
         let mut output = dispatch(&mut ctx_interim, envelope)?;
+        // TODO: output.log and output.result are discarded
         res.append(&mut output.events);
     }
 
@@ -70,16 +72,12 @@ where
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
             // Apply the result to the context (host chain store).
-            let events: Vec<Event> = ctx
-                .store_client_result(handler_output.result)
-                .map_err(|e| Kind::KeeperRaisedError.context(e))?
-                .into_iter()
-                .map(|v| v.into())
-                .collect();
+            ctx.store_client_result(handler_output.result)
+                .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
             HandlerOutput::builder()
                 .with_log(handler_output.log)
-                .with_events(events)
+                .with_events(handler_output.events)
                 .with_result(())
         }
 
@@ -118,7 +116,6 @@ where
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -136,7 +133,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
 
-    use crate::ics24_host::identifier::ClientId;
+    use crate::events::IBCEvent;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
@@ -203,22 +200,16 @@ mod tests {
         ctx.add_port(msg_chan_init.port_id().clone());
 
         // Figure out the ID of the client that was just created.
-        // TODO: Create a "search by attribute key" API for HandlerOutput to simplify the following
         let mut events = res.unwrap().events;
         let client_id_event = events.pop();
         assert!(
             client_id_event.is_some(),
             "There was no event generated for client creation!"
         );
-        let client_id_attribute = client_id_event.clone().unwrap().attributes.pop();
-        assert!(
-            client_id_attribute.is_some(),
-            "There is no attribute for client creation event! {:?}",
-            client_id_event
-        );
-        let client_id_raw = client_id_attribute.unwrap().value();
-
-        let client_id = ClientId::from_str(client_id_raw.as_str()).unwrap();
+        let client_id = match client_id_event.unwrap() {
+            IBCEvent::CreateClient(create_client) => create_client.client_id().clone(),
+            event => panic!("unexpected IBC event: {:?}", event),
+        };
 
         let tests: Vec<Test> = vec![
             // Test some ICS2 client functionality.

@@ -20,6 +20,7 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
 
+use crate::events::IBCEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ICS4Error;
@@ -58,8 +59,9 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
-    /// Counter for the client identifiers, necessary to generate ids (see `next_client_id`).
-    client_ids_counter: u32,
+    /// Counter for the client identifiers, necessary for `increase_client_counter` and the
+    /// `client_counter` methods.
+    client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
@@ -177,13 +179,12 @@ impl MockContext {
     /// `consensus_state_height` is None, then the client will be initialized with a consensus
     /// state matching the same height as the client state (`client_state_height`).
     pub fn with_client_parametrized(
-        self,
+        mut self,
         client_id: &ClientId,
         client_state_height: Height,
         client_type: Option<ClientType>,
         consensus_state_height: Option<Height>,
     ) -> Self {
-        let mut clients = self.clients.clone();
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
@@ -214,31 +215,23 @@ impl MockContext {
             client_state,
             consensus_states,
         };
-        clients.insert(client_id.clone(), client_record);
-
-        Self { clients, ..self }
+        self.clients.insert(client_id.clone(), client_record);
+        self
     }
 
     /// Associates a connection to this context.
     pub fn with_connection(
-        self,
+        mut self,
         connection_id: ConnectionId,
         connection_end: ConnectionEnd,
     ) -> Self {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
-        Self {
-            connections,
-            ..self
-        }
+        self.connections.insert(connection_id, connection_end);
+        self
     }
-    pub fn with_port_capability(self, port_id: PortId) -> Self {
-        let mut port_capabilities = self.port_capabilities.clone();
-        port_capabilities.insert(port_id, Capability::new());
-        Self {
-            port_capabilities,
-            ..self
-        }
+
+    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
+        self.port_capabilities.insert(port_id, Capability::new());
+        self
     }
 
     /// Accessor for a block of the local (host) chain from this context.
@@ -541,17 +534,13 @@ impl ClientReader for MockContext {
             None => None,
         }
     }
+
+    fn client_counter(&self) -> u64 {
+        self.client_ids_counter
+    }
 }
 
 impl ClientKeeper for MockContext {
-    fn next_client_id(&mut self) -> ClientId {
-        let prefix = ClientId::default().to_string();
-        let suffix = self.client_ids_counter;
-        self.client_ids_counter += 1;
-
-        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
-    }
-
     fn store_client_type(
         &mut self,
         client_id: ClientId,
@@ -599,6 +588,10 @@ impl ClientKeeper for MockContext {
             .insert(height, consensus_state);
         Ok(())
     }
+
+    fn increase_client_counter(&mut self) {
+        self.client_ids_counter += 1
+    }
 }
 
 impl ICS18Context for MockContext {
@@ -616,20 +609,13 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, ICS18Error> {
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
         let events =
             deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
 
-        // Parse the events into a list of strings.
-        let res: Vec<String> = events
-            .iter()
-            .map(|e| e.attribute_values())
-            .flatten()
-            .collect();
-
         self.advance_host_chain_height(); // Advance chain height
-        Ok(res)
+        Ok(events)
     }
 
     fn signer(&self) -> Id {

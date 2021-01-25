@@ -1,10 +1,11 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
-use crate::ics04_channel::handler::ChannelEvent::ChanOpenInit;
+use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 
@@ -72,7 +73,11 @@ pub(crate) fn process(
         channel_cap: cap_key,
     };
 
-    output.emit(ChanOpenInit(result.clone()));
+    let event_attributes = Attributes {
+        channel_id: None,
+        ..Default::default()
+    };
+    output.emit(IBCEvent::OpenInitChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -82,22 +87,17 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::handler::EventType;
-
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-
-    use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics04_channel::channel::State;
-
+    use crate::events::IBCEvent;
     use crate::ics03_connection::connection::ConnectionEnd;
+    use crate::ics03_connection::connection::State as ConnectionState;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::version::get_compatible_versions;
+    use crate::ics04_channel::channel::State;
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
-
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::ChannelMsg;
-
     use crate::ics24_host::identifier::ConnectionId;
     use crate::mock::context::MockContext;
 
@@ -190,7 +190,7 @@ mod tests {
                     }
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.tpe, EventType::Custom("channel_open_init".to_string()));
+                        assert!(matches!(e, &IBCEvent::OpenInitChannel(_)));
                     }
                 }
                 Err(e) => {
