@@ -26,7 +26,7 @@ pub enum ValidationKind {
     ChainIdInvalidFormat { id: String },
 
     #[error("Invalid channel id in counterparty")]
-    InvalidCcounterpartyChannelId,
+    InvalidCounterpartyChannelId,
 }
 
 impl ValidationKind {

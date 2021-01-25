@@ -12,7 +12,7 @@ pub fn verify_proofs(
     expected_chan: &ChannelEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let connection_end = match ctx.connection_state(&channel_end.connection_hops()[0].clone()) {
+    let connection_end = match ctx.connection_end(&channel_end.connection_hops()[0].clone()) {
         Some(c) => c,
         None => {
             return Err(Kind::MissingConnection(channel_end.connection_hops()[0].clone()).into())
@@ -24,12 +24,17 @@ pub fn verify_proofs(
     let port_id = channel_end.counterparty().port_id().clone();
     let chan_id = channel_end.counterparty().channel_id().unwrap().clone();
 
-    // Fetch the client state (IBC client on the local/host chain).
-    let client_state = ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
 
-    if client_state.is_none() {
-        return Err(Kind::MissingClientState.context(client.to_string()).into());
-    }
+    let client_state = ctx
+    .channel_client_state(&(port_id.clone(), chan_id.clone()))
+    .ok_or(Kind::MissingClientState)?;
+
+    // // Fetch the client state (IBC client on the local/host chain).
+    // let client_state = ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
+
+    // if client_state.is_none() {
+    //     return Err(Kind::MissingClientState.context(client.to_string()).into());
+    // }
 
     let client_st = client_state.ok_or(Kind::MissingClientState)?;
 

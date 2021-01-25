@@ -1,6 +1,7 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
 use Kind::{ConnectionNotOpen, MissingConnectionCounterparty};
+use std::result::Result;
 
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -76,7 +77,7 @@ pub(crate) fn process(
         return Err(Kind::InvalidConnectionHopsLength.into());
     }
 
-    let connection_end = ctx.connection_state(&msg.channel().connection_hops()[0]);
+    let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
     let conn = connection_end
         .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
@@ -98,18 +99,16 @@ pub(crate) fn process(
 
     //Channel capabilities
     let cap = ctx.port_capability(&msg.port_id().clone());
-    let cap_key;
-
-    match cap {
+    let cap_key =  match cap {
         Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
                 return Err(Kind::InvalidPortCapability.into());
             } else {
-                cap_key = key;
+                Ok(key);
             }
         }
         None => return Err(Kind::NoPortCapability.into()),
-    }
+    };
 
     if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());
@@ -118,14 +117,14 @@ pub(crate) fn process(
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
-    let _expected_counterparty = Counterparty::new(msg.port_id().clone(), None);
+    let expected_counterparty = Counterparty::new(msg.port_id().clone(), None);
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
         Kind::UndefinedConnectionCounterparty(msg.channel().connection_hops()[0].clone())
     })?;
 
-    let expected_connection_hops = match ctx.connection_state(ccid) {
+    let expected_connection_hops = match ctx.connection_end(ccid) {
         Some(_c) => vec![ccid.clone()],
         None => return Err(MissingConnectionCounterparty(ccid.clone()).into()),
     };
@@ -133,7 +132,7 @@ pub(crate) fn process(
     let expected_channel_end = ChannelEnd::new(
         State::Init,
         *msg.channel.ordering(),
-        msg.channel.counterparty().clone(),
+        expected_counterparty,
         expected_connection_hops,
         msg.counterparty_version().clone(),
     );
@@ -145,6 +144,10 @@ pub(crate) fn process(
     // if verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs()).is_err() {
     //     return Err(Kind::FailedChanneOpenTryVerification.into());
     // }
+
+//     verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
+// +        .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
+
 
     output.log("success: channel open try ");
 

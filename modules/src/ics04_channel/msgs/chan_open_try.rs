@@ -65,7 +65,7 @@ impl Msg for MsgChannelOpenTry {
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
         match self.channel().counterparty().channel_id() {
-            None => Err(ValidationKind::InvalidCcounterpartyChannelId.into()),
+            None => Err(ValidationKind::InvalidCounterpartyChannelId.into()),
             Some(_c) => Ok(()),
         }
     }
@@ -111,7 +111,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
         };
 
         match msg.validate_basic() {
-            Err(_e) => Err(Kind::InvalidCcounterpartyChannelId.into()),
+            Err(_e) => Err(Kind::InvalidCounterpartyChannelId.into()),
             Ok(()) => Ok(msg),
         }
     }

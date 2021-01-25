@@ -16,7 +16,7 @@ pub trait ChannelReader {
     fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Option<ChannelEnd>;
 
     /// Returns the ConnectionState for the given identifier `connection_id`.
-    fn connection_state(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd>;
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd>;
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>>;
 

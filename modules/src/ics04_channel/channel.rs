@@ -162,16 +162,6 @@ impl ChannelEnd {
         self.connection_hops.eq(other)
     }
 
-    // #[allow(clippy::needless_range_loop)]
-    // pub fn connection_hops_matches(&self, other: &[ConnectionId]) -> bool {
-
-    //     if self.connection_hops.len() != other.len() {return false;}
-    //     for i in 0 .. other.len(){
-    //         if !self.connection_hops[i].eq(&other[i]) {return false;}
-    //     }
-    //     true
-    // }
-
     pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
         self.counterparty().eq(other)
     }

@@ -97,7 +97,7 @@ pub enum Kind {
     MissingClientConsensusState,
 
     #[error("Invalid channel id in counterparty")]
-    InvalidCcounterpartyChannelId,
+    InvalidCounterpartyChannelId,
 
     #[error("Client not found in chan open verification")]
     ClientNotFound,
