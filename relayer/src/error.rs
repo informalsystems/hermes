@@ -1,8 +1,10 @@
 //! This module defines the various errors that be raised in the relayer.
 
 use anomaly::{BoxError, Context};
-use ibc::ics24_host::identifier::{ChannelId, ConnectionId};
+use tendermint::net;
 use thiserror::Error;
+
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 
 /// An error that can be raised by the relayer.
 pub type Error = anomaly::Error<Kind>;
@@ -18,25 +20,25 @@ pub enum Kind {
     #[error("I/O error")]
     Io,
 
-    /// Poisoned mutex
-    #[error("poisoned mutex")]
-    PoisonedMutex,
-
     /// Invalid configuration
     #[error("Invalid configuration")]
     Config,
 
     /// RPC error (typically raised by the RPC client or the RPC requester)
-    #[error("RPC error")]
-    Rpc,
+    #[error("RPC error to endpoint {0}")]
+    Rpc(net::Address),
 
     /// GRPC error (typically raised by the GRPC client or the GRPC requester)
     #[error("GRPC error")]
     Grpc,
 
-    /// Light client error, typically raised by a `Client`
-    #[error("Light client error")]
-    LightClient,
+    /// Light client supervisor error
+    #[error("Light client supervisor error for chain id {0}")]
+    LightClientSupervisor(ChainId),
+
+    /// Light client instance error, typically raised by a `Client`
+    #[error("Light client instance error for rpc address {0}")]
+    LightClientInstance(String),
 
     /// Trusted store error, raised by instances of `Store`
     #[error("Store error")]

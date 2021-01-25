@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
@@ -59,13 +59,13 @@ impl Runnable for QueryPacketCommitmentsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketCommitmentsRequest {
@@ -83,14 +83,9 @@ impl Runnable for QueryPacketCommitmentsCmd {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence).collect();
 
-                Output::with_success()
-                    .with_result(json!(seqs))
-                    .with_result(json!(cs.1))
-                    .exit();
+                Output::success(seqs).with_result(json!(cs.1)).exit();
             }
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -138,15 +133,15 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
@@ -158,10 +153,8 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
-            Ok(cs) => Output::with_success().with_result(json!(cs.1)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(cs) => Output::success(cs.1).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -220,13 +213,13 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
         let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 
@@ -260,10 +253,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let res = dst_chain.query_unreceived_packets(request);
 
         match res {
-            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(seqs) => Output::success(seqs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -309,13 +300,13 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
         let (chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let grpc_request = QueryPacketAcknowledgementsRequest {
@@ -333,14 +324,9 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
                 // Transform the raw packet state into the list of acks. sequence numbers
                 let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
 
-                Output::with_success()
-                    .with_result(json!(seqs))
-                    .with_result(json!(ps.1))
-                    .exit();
+                Output::success(seqs).with_result(json!(ps.1)).exit();
             }
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -388,15 +374,15 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         // run without proof:
         // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
         let res = chain.build_packet_proofs(
@@ -408,10 +394,8 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         );
 
         match res {
-            Ok(out) => Output::with_success().with_result(json!(out)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(out) => Output::success(out).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -467,13 +451,13 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
             Err(err) => {
-                return Output::with_error().with_result(json!(err)).exit();
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let src_chain = CosmosSDKChain::bootstrap(src_chain_config, rt.clone()).unwrap();
         let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 
@@ -507,10 +491,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let res = dst_chain.query_unreceived_acknowledgements(request);
 
         match res {
-            Ok(seqs) => Output::with_success().with_result(json!(seqs)).exit(),
-            Err(e) => Output::with_error()
-                .with_result(json!(format!("{}", e)))
-                .exit(),
+            Ok(seqs) => Output::success(seqs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

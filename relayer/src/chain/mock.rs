@@ -1,5 +1,5 @@
 use std::ops::Add;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -54,7 +54,7 @@ impl Chain for MockChain {
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
 
-    fn bootstrap(config: ChainConfig, _rt: Arc<Mutex<Runtime>>) -> Result<Self, Error> {
+    fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         Ok(MockChain {
             config: config.clone(),
             context: MockContext::new(
@@ -77,7 +77,7 @@ impl Chain for MockChain {
 
     fn init_event_monitor(
         &self,
-        _rt: Arc<Mutex<Runtime>>,
+        _rt: Arc<Runtime>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,
@@ -105,7 +105,7 @@ impl Chain for MockChain {
         // Use the ICS18Context interface to submit the set of messages.
         self.context
             .send(proto_msgs)
-            .map_err(|e| Kind::Rpc.context(e))?;
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
         // TODO FIX tests with this
         Ok(vec![])
@@ -255,7 +255,7 @@ pub mod test_utils {
     pub fn get_basic_chain_config(id: &str) -> ChainConfig {
         ChainConfig {
             id: ChainId::from_str(id).unwrap(),
-            rpc_addr: "35.192.61.41:26656".parse().unwrap(),
+            rpc_addr: "127.0.0.1:26656".parse().unwrap(),
             grpc_addr: "".to_string(),
             account_prefix: "".to_string(),
             key_name: "".to_string(),

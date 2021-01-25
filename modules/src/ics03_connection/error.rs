@@ -6,7 +6,7 @@ pub type Error = anomaly::Error<Kind>;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("connection state unknown")]
     InvalidState(i32),
@@ -74,14 +74,14 @@ pub enum Kind {
     #[error("client proof must be present")]
     NullClientProof,
 
-    #[error("the client is frozen")]
-    FrozenClient,
+    #[error("the client running locally is frozen")]
+    FrozenClient(ClientId),
 
     #[error("the connection proof verification failed")]
     ConnectionVerificationFailure,
 
-    #[error("the expected consensus state could not be retrieved")]
-    MissingClientConsensusState,
+    #[error("the consensus state at height {0} for client id {1} could not be retrieved")]
+    MissingClientConsensusState(Height, ClientId),
 
     #[error("the local consensus state could not be retrieved")]
     MissingLocalConsensusState,
@@ -89,8 +89,8 @@ pub enum Kind {
     #[error("the consensus proof verification failed (height: {0})")]
     ConsensusStateVerificationFailure(Height),
 
-    #[error("the client state proof verification failed")]
-    ClientStateVerificationFailure,
+    #[error("the client state proof verification failed for client id: {0}")]
+    ClientStateVerificationFailure(ClientId),
 }
 
 impl Kind {

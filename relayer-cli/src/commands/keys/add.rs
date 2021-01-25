@@ -1,10 +1,11 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
 
-use crate::error::{Error, Kind};
-use crate::prelude::*;
+use relayer::config::Config;
 use relayer::keys::add::{add_key, KeysAddOptions};
+
+use crate::application::app_config;
+use crate::conclude::Output;
+use crate::error::{Error, Kind};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysAddCmd {
@@ -47,8 +48,7 @@ impl Runnable for KeysAddCmd {
 
         let opts = match self.validate_options(&config) {
             Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
+                return Output::error(err).exit();
             }
             Ok(result) => result,
         };
@@ -56,8 +56,8 @@ impl Runnable for KeysAddCmd {
         let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("key add result: ", "{:?}", r),
-            Err(e) => status_info!("key add failed: ", "{}", e),
+            Ok(r) => Output::success(r).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
