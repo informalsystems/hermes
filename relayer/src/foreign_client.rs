@@ -243,6 +243,7 @@ mod test {
 
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
+    use ibc::events::IBCEvent;
 
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
@@ -268,6 +269,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = build_create_client_and_send(b_chain.clone(), a_chain.clone());
@@ -276,6 +278,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
@@ -308,6 +311,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
+        assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
         let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
 
         // This should fail because the client on chain a already has the latest headers. Chain b,
@@ -330,6 +334,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
+        assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
 
         // Remember the id of the client we created on chain b
         let b_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
@@ -349,6 +354,8 @@ mod test {
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
             assert_eq!(
@@ -363,6 +370,8 @@ mod test {
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();
             assert_eq!(
