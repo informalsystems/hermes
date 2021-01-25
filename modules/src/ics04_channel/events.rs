@@ -120,8 +120,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
             COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
                 attr.counterparty_channel_id = value.parse().ok()
             }
-            // TODO: `Attributes` has 6 fields and we're only parsing 5
-            _ => panic!("unexpected attribute key: {}", key),
+            _ => {}
         }
     }
 
@@ -146,7 +145,7 @@ fn extract_packet_and_write_ack_from_tx(
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
             // TODO: `Packet` has 7 fields and we're only parsing 6; is that intended?
             PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
-            _ => panic!("unexpected attribute key: {}", key),
+            _ => {}
         };
     }
 
