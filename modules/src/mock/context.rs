@@ -362,7 +362,7 @@ impl ChannelReader for MockContext {
         match channel {
             Some(v) => {
                 let cid = v.connection_hops().clone()[0].clone();
-                let conn = self.connection_end(&cid);
+                let conn = ChannelReader::connection_end(self,&cid);
                 match conn {
                     Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
                     _ => None,
@@ -381,7 +381,7 @@ impl ChannelReader for MockContext {
         match channel_end {
             Some(channel) => {
                 let cid = channel.connection_hops()[0].clone();
-                let conn = self.connection_end(&cid).unwrap();
+                let conn = ChannelReader::connection_end(self,&cid).unwrap();
                 ConnectionReader::client_consensus_state(self, conn.client_id(), height)
             }
             _ => None,

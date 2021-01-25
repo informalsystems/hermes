@@ -1,7 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
 use Kind::{ConnectionNotOpen, MissingConnectionCounterparty};
-use std::result::Result;
 
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -98,13 +97,14 @@ pub(crate) fn process(
     }
 
     //Channel capabilities
+    let cap_key;
     let cap = ctx.port_capability(&msg.port_id().clone());
-    let cap_key =  match cap {
+    let _cap_key =  match cap {
         Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
                 return Err(Kind::InvalidPortCapability.into());
             } else {
-                Ok(key);
+                cap_key = key;
             }
         }
         None => return Err(Kind::NoPortCapability.into()),
@@ -137,16 +137,9 @@ pub(crate) fn process(
         msg.counterparty_version().clone(),
     );
 
-    let _verif = match verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs()) {
-        Err(e) => return Err(Kind::FailedChanneOpenTryVerification.context(e).into()),
-        Ok(()) => true,
-    };
-    // if verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs()).is_err() {
-    //     return Err(Kind::FailedChanneOpenTryVerification.into());
-    // }
 
-//     verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
-// +        .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
+    verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
+        .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
 
 
     output.log("success: channel open try ");
@@ -156,8 +149,8 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id,
         channel_cap: cap_key,
+        channel_id,
         channel_end: new_channel_end,
     };
 

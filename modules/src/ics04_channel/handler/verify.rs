@@ -32,14 +32,10 @@ pub fn verify_proofs(
     // // Fetch the client state (IBC client on the local/host chain).
     // let client_state = ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
 
-    // if client_state.is_none() {
-    //     return Err(Kind::MissingClientState.context(client.to_string()).into());
-    // }
-
-    let client_st = client_state.ok_or(Kind::MissingClientState)?;
+    //let client_st = client_state.ok_or(Kind::MissingClientState)?;
 
     // The client must not be frozen.
-    if client_st.is_frozen() {
+    if client_state.is_frozen() {
         return Err(Kind::FrozenClient.context(client.to_string()).into());
     }
 
@@ -52,13 +48,13 @@ pub fn verify_proofs(
             .into());
     }
 
-    let client_def = AnyClient::from_client_type(client_st.client_type());
+    let client_def = AnyClient::from_client_type(client_state.client_type());
 
     // Verify the proof for the channel state against the expected channel end.
     // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
     Ok(client_def
         .verify_channel_state(
-            &client_st,
+            &client_state,
             proofs.height(),
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
