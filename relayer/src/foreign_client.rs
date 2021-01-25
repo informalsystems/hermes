@@ -272,17 +272,11 @@ pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientErr
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests
 /// exercise various client methods (create, update, ForeignClient::new) using locally-running
 /// instances of chains built using `MockChain`.
-///
-/// ## Why are all these tests ignored?
-/// We ignore these tests as of #451, because the mock chain is not yet capable of producing
-/// transaction responses of correct types (the types should be similar to `tx_commit::Response`).
-/// Another problem is that `build_create_client_and_send` contains a Cosmos-specific method
-/// for parsing transaction response. Once this parsing stage is general enough for the Mock chain,
-/// these tests should require minimal changes to pass.
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
 
+    use ibc::events::IBCEvent;
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
@@ -293,7 +287,6 @@ mod test {
 
     /// Basic test for the `build_create_client_and_send` method.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn create_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -319,6 +312,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = b_client.build_create_client_and_send();
@@ -327,11 +321,11 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn update_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -372,6 +366,10 @@ mod test {
             res
         );
 
+        // TODO: optionally add return events from `create` and assert on the event type, e.g.:
+        //      assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
+        //      let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
+
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
@@ -392,6 +390,8 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
+        // TODO: assert return events
+        //  assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
 
         // Chain b should have advanced
         let mut b_height_last = b_chain.query_latest_height().unwrap();
@@ -408,6 +408,8 @@ mod test {
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
             assert_eq!(
@@ -422,6 +424,8 @@ mod test {
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();
             assert_eq!(
@@ -433,7 +437,6 @@ mod test {
 
     /// Tests for `ForeignClient::new()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_create() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -479,7 +482,6 @@ mod test {
 
     /// Tests for `ForeignClient::update()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_update() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");

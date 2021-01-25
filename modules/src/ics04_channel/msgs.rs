@@ -25,7 +25,7 @@ pub mod timeout;
 #[derive(Clone, Debug, PartialEq)]
 pub enum ChannelMsg {
     ChannelOpenInit(MsgChannelOpenInit),
-    ChannelOpenTry(Box<MsgChannelOpenTry>),
-    ChannelOpenAck(Box<MsgChannelOpenAck>),
+    ChannelOpenTry(MsgChannelOpenTry),
+    ChannelOpenAck(MsgChannelOpenAck),
     ChannelOpenConfirm(MsgChannelOpenConfirm),
 }

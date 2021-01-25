@@ -5,7 +5,6 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{attribute, some_attribute};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block;
 
@@ -25,11 +24,11 @@ const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
 const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event types
-pub const SEND_PACKET: &str = "send_packet";
-pub const RECV_PACKET: &str = "recv_packet";
-pub const WRITE_ACK: &str = "write_acknowledgement";
-pub const ACK_PACKET: &str = "acknowledge_packet";
-pub const TIMEOUT: &str = "timeout_packet";
+const SEND_PACKET: &str = "send_packet";
+const RECV_PACKET: &str = "recv_packet";
+const WRITE_ACK: &str = "write_acknowledgement";
+const ACK_PACKET: &str = "acknowledge_packet";
+const TIMEOUT: &str = "timeout_packet";
 
 /// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -42,102 +41,123 @@ const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 //const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
-/// A list of all the event `type`s that this module is capable of parsing
-fn event_types() -> HashSet<String> {
-    vec![
-        OPEN_INIT_EVENT_TYPE.to_string(),
-        OPEN_TRY_EVENT_TYPE.to_string(),
-        OPEN_ACK_EVENT_TYPE.to_string(),
-        OPEN_CONFIRM_EVENT_TYPE.to_string(),
-        CLOSE_INIT_EVENT_TYPE.to_string(),
-        CLOSE_CONFIRM_EVENT_TYPE.to_string(),
-        SEND_PACKET.to_string(),
-        WRITE_ACK.to_string(),
-        ACK_PACKET.to_string(),
-        TIMEOUT.to_string(),
-    ]
-    .into_iter()
-    .collect()
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+    match event.type_str.as_str() {
+        OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(
+            extract_attributes_from_tx(event),
+        ))),
+        OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(
+            extract_attributes_from_tx(event),
+        ))),
+        OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(
+            extract_attributes_from_tx(event),
+        ))),
+        OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(
+            extract_attributes_from_tx(event),
+        ))),
+        CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(
+            extract_attributes_from_tx(event),
+        ))),
+        CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(
+            extract_attributes_from_tx(event),
+        ))),
+        SEND_PACKET => {
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
+            // This event should not have a write ack.
+            assert!(write_ack.is_none());
+            Some(IBCEvent::SendPacketChannel(SendPacket {
+                height: Default::default(),
+                packet,
+            }))
+        }
+        WRITE_ACK => {
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
+            // This event should have a write ack.
+            let write_ack = write_ack.unwrap();
+            Some(IBCEvent::WriteAcknowledgementChannel(
+                WriteAcknowledgement {
+                    height: Default::default(),
+                    packet,
+                    ack: write_ack,
+                },
+            ))
+        }
+        ACK_PACKET => {
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
+            // This event should not have a write ack.
+            assert!(write_ack.is_none());
+            Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
+                height: Default::default(),
+                packet,
+            }))
+        }
+        TIMEOUT => {
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
+            // This event should not have a write ack.
+            assert!(write_ack.is_none());
+            Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
+                height: Default::default(),
+                packet,
+            }))
+        }
+        _ => None,
+    }
 }
 
-pub fn try_from_tx(event: tendermint::abci::Event) -> Option<IBCEvent> {
-    event_types().get(&event.type_str)?; // Quit fast if the event type is irrelevant
+fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
     let mut attr = Attributes::default();
-    let mut packet = Packet::default();
-    let mut ack = vec![];
-    for tag in event.attributes {
-        match tag.key.as_ref() {
-            PORT_ID_ATTRIBUTE_KEY => attr.port_id = tag.value.to_string().parse().unwrap(),
-            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = tag.value.to_string().parse().unwrap(),
-            CONNECTION_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = tag.value.to_string().parse().unwrap()
-            }
+
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
+            PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().unwrap(),
+            CHANNEL_ID_ATTRIBUTE_KEY => attr.channel_id = value.parse().ok(),
+            CONNECTION_ID_ATTRIBUTE_KEY => attr.connection_id = value.parse().unwrap(),
             COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_port_id = tag.value.to_string().parse().unwrap()
+                attr.counterparty_port_id = value.parse().unwrap()
             }
             COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_channel_id = tag.value.to_string().parse().ok()
+                attr.counterparty_channel_id = value.parse().ok()
             }
-            _ => {}
+            // TODO: `Attributes` has 6 fields and we're only parsing 5
+            _ => panic!("unexpected attribute key: {}", key),
         }
+    }
 
-        let value = tag.value.to_string();
-        match tag.key.as_ref() {
+    attr
+}
+
+fn extract_packet_and_write_ack_from_tx(
+    event: &tendermint::abci::Event,
+) -> (Packet, Option<Vec<u8>>) {
+    let mut packet = Packet::default();
+    let mut write_ack = None;
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
             PKT_SRC_PORT_ATTRIBUTE_KEY => packet.source_port = value.parse().unwrap(),
             PKT_SRC_CHANNEL_ATTRIBUTE_KEY => packet.source_channel = value.parse().unwrap(),
             PKT_DST_PORT_ATTRIBUTE_KEY => packet.destination_port = value.parse().unwrap(),
             PKT_DST_CHANNEL_ATTRIBUTE_KEY => packet.destination_channel = value.parse().unwrap(),
             PKT_SEQ_ATTRIBUTE_KEY => packet.sequence = value.parse::<u64>().unwrap().into(),
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                let to: Vec<&str> = value.split('-').collect();
-                packet.timeout_height = ibc_proto::ibc::core::client::v1::Height {
-                    revision_number: to[0].parse::<u64>().unwrap(),
-                    revision_height: to[1].parse::<u64>().unwrap(),
-                }
-                .try_into()
-                .unwrap();
-            }
+            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => packet.timeout_height = value.parse().unwrap(),
             PKT_DATA_ATTRIBUTE_KEY => packet.data = Vec::from(value.as_bytes()),
-            PKT_ACK_ATTRIBUTE_KEY => ack = Vec::from(value.as_bytes()),
-            _ => {}
+            // TODO: `Packet` has 7 fields and we're only parsing 6; is that intended?
+            PKT_ACK_ATTRIBUTE_KEY => write_ack = Some(Vec::from(value.as_bytes())),
+            _ => panic!("unexpected attribute key: {}", key),
         };
     }
 
-    match event.type_str.as_str() {
-        OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(attr))),
-        OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(attr))),
-        OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(attr))),
-        OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(attr))),
-        CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(attr))),
-        CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(attr))),
-        SEND_PACKET => Some(IBCEvent::SendPacketChannel(SendPacket {
-            height: Default::default(),
-            packet,
-        })),
-        WRITE_ACK => Some(IBCEvent::WriteAcknowledgementChannel(
-            WriteAcknowledgement {
-                height: Default::default(),
-                packet,
-                ack,
-            },
-        )),
-        ACK_PACKET => Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
-            height: Default::default(),
-            packet,
-        })),
-        TIMEOUT => Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
-            height: Default::default(),
-            packet,
-        })),
-        _ => None,
-    }
+    (packet, write_ack)
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
     pub height: block::Height,
     pub port_id: PortId,
-    pub channel_id: ChannelId,
+    pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
     pub counterparty_port_id: PortId,
     pub counterparty_channel_id: Option<ChannelId>,
@@ -160,7 +180,7 @@ impl Default for Attributes {
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -177,7 +197,7 @@ impl TryFrom<RawObject> for OpenInit {
         Ok(OpenInit(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_init.port_id"),
-            channel_id: attribute!(obj, "channel_open_init.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_init.channel_id"),
             connection_id: attribute!(obj, "channel_open_init.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -198,7 +218,7 @@ impl From<OpenInit> for IBCEvent {
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -215,7 +235,7 @@ impl TryFrom<RawObject> for OpenTry {
         Ok(OpenTry(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_try.port_id"),
-            channel_id: attribute!(obj, "channel_open_try.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_try.channel_id"),
             connection_id: attribute!(obj, "channel_open_try.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_try.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -236,7 +256,7 @@ impl From<OpenTry> for IBCEvent {
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -253,7 +273,7 @@ impl TryFrom<RawObject> for OpenAck {
         Ok(OpenAck(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_ack.port_id"),
-            channel_id: attribute!(obj, "channel_open_ack.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_ack.channel_id"),
             connection_id: attribute!(obj, "channel_open_ack.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_ack.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -274,7 +294,7 @@ impl From<OpenAck> for IBCEvent {
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -291,7 +311,7 @@ impl TryFrom<RawObject> for OpenConfirm {
         Ok(OpenConfirm(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_open_confirm.port_id"),
-            channel_id: attribute!(obj, "channel_open_confirm.channel_id"),
+            channel_id: some_attribute!(obj, "channel_open_confirm.channel_id"),
             connection_id: attribute!(obj, "channel_open_confirm.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_open_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -312,7 +332,7 @@ impl From<OpenConfirm> for IBCEvent {
 pub struct CloseInit(Attributes);
 
 impl CloseInit {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -329,7 +349,7 @@ impl TryFrom<RawObject> for CloseInit {
         Ok(CloseInit(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_init.port_id"),
-            channel_id: attribute!(obj, "channel_close_init.channel_id"),
+            channel_id: some_attribute!(obj, "channel_close_init.channel_id"),
             connection_id: attribute!(obj, "channel_close_init.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_close_init.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -350,7 +370,7 @@ impl From<CloseInit> for IBCEvent {
 pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
-    pub fn channel_id(&self) -> &ChannelId {
+    pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
 }
@@ -367,7 +387,7 @@ impl TryFrom<RawObject> for CloseConfirm {
         Ok(CloseConfirm(Attributes {
             height: obj.height,
             port_id: attribute!(obj, "channel_close_confirm.port_id"),
-            channel_id: attribute!(obj, "channel_close_confirm.channel_id"),
+            channel_id: some_attribute!(obj, "channel_close_confirm.channel_id"),
             connection_id: attribute!(obj, "channel_close_confirm.connection_id"),
             counterparty_port_id: attribute!(obj, "channel_close_confirm.counterparty_port_id"),
             counterparty_channel_id: some_attribute!(
@@ -404,7 +424,7 @@ impl TryFrom<RawObject> for Packet {
             destination_port: p_attribute!(obj, "packet_dst_port"),
             destination_channel: p_attribute!(obj, "packet_dst_channel"),
             data: vec![],
-            timeout_height: height_str.try_into()?,
+            timeout_height: height_str.as_str().try_into()?,
             timeout_timestamp: p_attribute!(obj, "packet_timeout_timestamp"),
         })
     }

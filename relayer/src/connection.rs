@@ -680,14 +680,13 @@ impl Connection {
 
 fn extract_connection_id(event: &IBCEvent) -> Result<&ConnectionId, ConnectionError> {
     match event {
-        IBCEvent::OpenInitConnection(ev) => Ok(ev.connection_id()),
-        IBCEvent::OpenTryConnection(ev) => Ok(ev.connection_id()),
-        IBCEvent::OpenAckConnection(ev) => Ok(ev.connection_id()),
-        IBCEvent::OpenConfirmConnection(ev) => Ok(ev.connection_id()),
-        _ => Err(ConnectionError::Failed(
-            "cannot extract connection_id from result".to_string(),
-        )),
+        IBCEvent::OpenInitConnection(ev) => ev.connection_id().as_ref(),
+        IBCEvent::OpenTryConnection(ev) => ev.connection_id().as_ref(),
+        IBCEvent::OpenAckConnection(ev) => ev.connection_id().as_ref(),
+        IBCEvent::OpenConfirmConnection(ev) => ev.connection_id().as_ref(),
+        _ => None,
     }
+    .ok_or_else(|| ConnectionError::Failed("cannot extract connection_id from result".to_string()))
 }
 
 /// Enumeration of proof carrying ICS3 message, helper for relayer.

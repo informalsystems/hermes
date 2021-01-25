@@ -19,7 +19,7 @@
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
-  - UX improvements for relayer txs ([#536, 540])
+  - UX improvements for relayer txs ([#536, #540])
 
 - [relayer]
   - Performance improvements ([#514], [#537])
@@ -33,6 +33,11 @@
 
 - [modules]
   - Fix for storing `ClientType` upon 'create-client' ([#513])
+
+### BREAKING CHANGES:
+
+- [modules]
+  - The `ibc::handler::Event` is removed and handlers now produce `ibc::events::IBCEvent`s ([#535])
 
 [#94]: https://github.com/informalsystems/ibc-rs/issues/94
 [#306]: https://github.com/informalsystems/ibc-rs/issues/306
@@ -50,6 +55,7 @@
 [#536]: https://github.com/informalsystems/ibc-rs/issues/536
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
+[#535]: https://github.com/informalsystems/ibc-rs/issues/535
 
 
 ## v0.0.6

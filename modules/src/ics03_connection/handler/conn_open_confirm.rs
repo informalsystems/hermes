@@ -1,11 +1,12 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
+use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::verify_proofs;
-use crate::ics03_connection::handler::ConnectionEvent::ConnOpenConfirm;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 
@@ -62,7 +63,12 @@ pub(crate) fn process(
         connection_id: Some(msg.connection_id().clone()),
         connection_end: new_conn_end,
     };
-    output.emit(ConnOpenConfirm(result.clone()));
+
+    let event_attributes = Attributes {
+        connection_id: result.connection_id.clone(),
+        ..Default::default()
+    };
+    output.emit(IBCEvent::OpenConfirmConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -72,7 +78,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::handler::EventType;
+    use crate::events::IBCEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
@@ -166,10 +172,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(
-                            e.tpe,
-                            EventType::Custom("connection_open_confirm".to_string())
-                        );
+                        assert!(matches!(e, &IBCEvent::OpenConfirmConnection(_)));
                     }
                 }
                 Err(e) => {

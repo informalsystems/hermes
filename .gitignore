@@ -19,3 +19,6 @@ Cargo.lock
 
 # Ignore VisualStudio
 .vscode
+
+# Ignore chain's data
+data
