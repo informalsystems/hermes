@@ -241,9 +241,9 @@ pub fn build_update_client_and_send(
 mod test {
     use std::str::FromStr;
 
+    use ibc::events::IBCEvent;
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
-    use ibc::events::IBCEvent;
 
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
