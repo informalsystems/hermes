@@ -252,6 +252,15 @@ the relayer `v0` loop.
     rrly -c loop_config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
     ```
 
+## Relayer listen mode
+
+The relayer can be started in listen mode:
+
+    ```shell script
+    rrly -c loop_config.toml listen ibc-0
+    ```
+It displays the `NewBlock` and IBC events received from the specified chain.
+
 ## Profiling the relayer
 
 The `relayer` crate provides a `time!` macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.
