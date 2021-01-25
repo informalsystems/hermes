@@ -1,12 +1,9 @@
+use std::thread;
+use std::time::Duration;
+
 use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
-
-use ibc_proto::ibc::core::channel::v1::{
-    MsgAcknowledgement as RawMsgAck, MsgRecvPacket as RawMsgRecvPacket,
-    MsgTimeout as RawMsgTimeout, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
 
 use ibc::{
     downcast,
@@ -22,26 +19,38 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
+use ibc_proto::ibc::core::channel::v1::{
+    MsgAcknowledgement as RawMsgAck, MsgRecvPacket as RawMsgRecvPacket,
+    MsgTimeout as RawMsgTimeout, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
 
 use crate::chain::handle::{ChainHandle, Subscription};
 use crate::channel::{Channel, ChannelError, ChannelSide};
 use crate::connection::ConnectionError;
-use crate::error::{Error, Kind};
-use crate::foreign_client::ForeignClient;
+use crate::error::Error;
+use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
-use std::thread;
-use std::time::Duration;
 
 #[derive(Debug, Error)]
 pub enum LinkError {
-    #[error("Failed")]
-    Failed,
+    #[error("failed with underlying error: {0}")]
+    Failed(String),
+
+    #[error("failed to construct packet proofs for chain {0} with error: {1}")]
+    PacketProofsConstructor(ChainId, Error),
+
+    #[error("failed during query to chain id {0} with underlying error: {1}")]
+    QueryError(ChainId, Error),
 
     #[error("ConnectionError:")]
     ConnectionError(#[from] ConnectionError),
 
     #[error("ChannelError:")]
     ChannelError(#[from] ChannelError),
+
+    #[error("Failed during a client operation: {0}:")]
+    ClientError(ForeignClientError),
 
     #[error("PacketError:")]
     PacketError(#[from] Error),
@@ -69,7 +78,7 @@ impl RelayPath {
         src_chain: Box<dyn ChainHandle>,
         dst_chain: Box<dyn ChainHandle>,
         channel: Channel,
-    ) -> Result<Self, Error> {
+    ) -> Result<Self, LinkError> {
         Ok(RelayPath {
             src_chain: src_chain.clone(),
             dst_chain: dst_chain.clone(),
@@ -125,25 +134,34 @@ impl RelayPath {
         &self.channel.dst_channel_id()
     }
 
-    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, Error> {
+    pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.dst_client_id().clone(),
             dst_chain: self.dst_chain(),
             src_chain: self.src_chain(),
         };
-        client.build_update_client(height)
+
+        client
+            .build_update_client(height)
+            .map_err(LinkError::ClientError)
     }
 
-    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, Error> {
+    pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.src_client_id().clone(),
             dst_chain: self.src_chain(),
             src_chain: self.dst_chain(),
         };
-        client.build_update_client(height)
+
+        client
+            .build_update_client(height)
+            .map_err(LinkError::ClientError)
     }
 
-    fn build_msg_from_event(&self, event: &IBCEvent) -> Result<(Option<Any>, Option<Any>), Error> {
+    fn build_msg_from_event(
+        &self,
+        event: &IBCEvent,
+    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         match event {
             IBCEvent::SendPacketChannel(send_packet_ev) => {
                 info!("{} => event {}", self.src_chain.id(), send_packet_ev);
@@ -157,7 +175,7 @@ impl RelayPath {
         }
     }
 
-    fn handle_packet_event(&mut self, event: &IBCEvent) -> Result<(), Error> {
+    fn handle_packet_event(&mut self, event: &IBCEvent) -> Result<(), LinkError> {
         let (packet, timeout) = self.build_msg_from_event(event)?;
 
         if let Some(msg) = packet {
@@ -210,7 +228,7 @@ impl RelayPath {
         self.timeout_msgs = vec![];
     }
 
-    fn relay_from_events(&mut self) -> Result<(), Error> {
+    fn relay_from_events(&mut self) -> Result<(), LinkError> {
         // Iterate through the IBC Events, build the message for each and collect all at same height.
         // Send a multi message transaction with these, prepending the client update
         for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
@@ -225,7 +243,10 @@ impl RelayPath {
 
             for _i in 0..MAX_ITER {
                 self.reset_buffers();
-                self.dst_height = self.dst_chain.query_latest_height()?;
+                self.dst_height = self
+                    .dst_chain
+                    .query_latest_height()
+                    .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
                 for event in self.all_events.clone() {
                     println!("{} => {:?}", self.src_chain.id(), event);
                     self.handle_packet_event(&event)?;
@@ -244,7 +265,7 @@ impl RelayPath {
         Ok(())
     }
 
-    fn send_update_client_and_msgs(&mut self) -> Result<(Vec<IBCEvent>, Vec<IBCEvent>), Error> {
+    fn send_update_client_and_msgs(&mut self) -> Result<(Vec<IBCEvent>, Vec<IBCEvent>), LinkError> {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
 
@@ -300,7 +321,7 @@ impl RelayPath {
         Ok((dst_tx_events, src_tx_events))
     }
 
-    fn target_height_and_send_packet_events(&mut self) -> Result<(), Error> {
+    fn target_height_and_send_packet_events(&mut self) -> Result<(), LinkError> {
         // Query packet commitments on source chain that have not been acknowledged
         let pc_request = QueryPacketCommitmentsRequest {
             port_id: self.src_port_id().to_string(),
@@ -355,9 +376,8 @@ impl RelayPath {
 
         let mut packet_sequences = vec![];
         for event in self.all_events.iter() {
-            let send_event = downcast!(event => IBCEvent::SendPacketChannel).ok_or_else(|| {
-                Kind::Query("packet events".into()).context("unexpected query tx response")
-            })?;
+            let send_event = downcast!(event => IBCEvent::SendPacketChannel)
+                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
             packet_sequences.append(&mut vec![send_event.packet.sequence]);
         }
         info!("received from query_txs {:?}", packet_sequences);
@@ -365,15 +385,17 @@ impl RelayPath {
         Ok(())
     }
 
-    fn target_height_and_write_ack_events(&mut self) -> Result<(), Error> {
+    fn target_height_and_write_ack_events(&mut self) -> Result<(), LinkError> {
         // Get the sequences of packets that have been acknowledged on source
         let pc_request = QueryPacketAcknowledgementsRequest {
             port_id: self.src_port_id().to_string(),
             channel_id: self.src_channel_id().to_string(),
             pagination: None,
         };
-        let (acks_on_source, query_height) =
-            self.src_chain.query_packet_acknowledgements(pc_request)?;
+        let (acks_on_source, query_height) = self
+            .src_chain
+            .query_packet_acknowledgements(pc_request)
+            .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         if acks_on_source.is_empty() {
             return Ok(());
@@ -396,7 +418,8 @@ impl RelayPath {
 
         let sequences: Vec<Sequence> = self
             .dst_chain
-            .query_unreceived_acknowledgement(request)?
+            .query_unreceived_acknowledgement(request)
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?
             .into_iter()
             .map(From::from)
             .collect();
@@ -411,31 +434,35 @@ impl RelayPath {
             return Ok(());
         }
 
-        self.all_events = self.src_chain.query_txs(QueryPacketEventDataRequest {
-            event_id: IBCEventType::WriteAck,
-            source_port_id: self.dst_port_id().clone(),
-            source_channel_id: self.dst_channel_id().clone(),
-            sequences,
-            height: query_height,
-        })?;
+        self.all_events = self
+            .src_chain
+            .query_txs(QueryPacketEventDataRequest {
+                event_id: IBCEventType::WriteAck,
+                source_port_id: self.dst_port_id().clone(),
+                source_channel_id: self.dst_channel_id().clone(),
+                sequences,
+                height: query_height,
+            })
+            .map_err(|e| LinkError::QueryError(self.src_chain.id(), e))?;
 
         let mut packet_sequences = vec![];
         for event in self.all_events.iter() {
             let write_ack_event = downcast!(event => IBCEvent::WriteAcknowledgementChannel)
-                .ok_or_else(|| {
-                    Kind::Query("packet events".into()).context("unexpected query tx response")
-                })?;
+                .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
             packet_sequences.append(&mut vec![write_ack_event.packet.sequence]);
         }
         info!("received from query_txs {:?}", packet_sequences);
         Ok(())
     }
 
-    fn build_recv_packet_and_timeout_msgs(&mut self) -> Result<(), Error> {
+    fn build_recv_packet_and_timeout_msgs(&mut self) -> Result<(), LinkError> {
         // Get the events for the send packets on source chain that have not been received on
         // destination chain (i.e. ack was not seen on source chain)
         self.target_height_and_send_packet_events()?;
-        self.dst_height = self.dst_chain.query_latest_height()?;
+        self.dst_height = self
+            .dst_chain
+            .query_latest_height()
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
         for event in self.all_events.iter_mut() {
             event.set_height(self.src_height);
@@ -446,11 +473,14 @@ impl RelayPath {
         Ok(())
     }
 
-    fn build_packet_ack_msgs(&mut self) -> Result<(), Error> {
+    fn build_packet_ack_msgs(&mut self) -> Result<(), LinkError> {
         // Get the sequences of packets that have been acknowledged on destination chain but still
         // have commitments on source chain (i.e. ack was not seen on source chain)
         self.target_height_and_write_ack_events()?;
-        self.dst_height = self.dst_chain.query_latest_height()?;
+        self.dst_height = self
+            .dst_chain
+            .query_latest_height()
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
         for event in self.all_events.iter_mut() {
             event.set_height(self.src_height);
@@ -461,12 +491,15 @@ impl RelayPath {
         Ok(())
     }
 
-    fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, Error> {
+    fn build_recv_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
         // Get signer
-        let signer = self
-            .dst_chain
-            .get_signer()
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let signer = self.dst_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from dst chain {} with error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
 
         let (_, proofs) = self
             .src_chain
@@ -477,14 +510,14 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| Kind::MalformedProof.context(e))?;
+            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
         let msg = MsgRecvPacket::new(packet.clone(), proofs.clone(), signer).map_err(|e| {
-            Kind::RecvPacket(
+            LinkError::Failed(format!(
+                "error while building the recv packet for src channel {} due to error {}",
                 packet.source_channel.clone(),
-                "error while building the recv packet".to_string(),
-            )
-            .context(e)
+                e
+            ))
         })?;
 
         info!(
@@ -496,12 +529,19 @@ impl RelayPath {
         Ok(msg.to_any::<RawMsgRecvPacket>())
     }
 
-    fn build_ack_packet(&self, event: &WriteAcknowledgement, height: Height) -> Result<Any, Error> {
+    fn build_ack_packet(
+        &self,
+        event: &WriteAcknowledgement,
+        height: Height,
+    ) -> Result<Any, LinkError> {
         // Get signer
-        let signer = self
-            .dst_chain
-            .get_signer()
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let signer = self.dst_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from dst chain {} with error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
 
         let packet = event.packet.clone();
         let (_, proofs) = self
@@ -513,16 +553,16 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| Kind::MalformedProof.context(e))?;
+            .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
         let msg =
             MsgAcknowledgement::new(packet.clone(), event.ack.clone(), proofs.clone(), signer)
                 .map_err(|e| {
-                    Kind::AckPacket(
+                    LinkError::Failed(format!(
+                        "error while building the ack packet for dst channel {} due to error {}",
                         packet.destination_channel.clone(),
-                        "error while building the ack packet".to_string(),
-                    )
-                    .context(e)
+                        e
+                    ))
                 })?;
 
         info!(
@@ -534,12 +574,15 @@ impl RelayPath {
         Ok(msg.to_any::<RawMsgAck>())
     }
 
-    fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, Error> {
+    fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
         // Get signer
-        let signer = self
-            .src_chain
-            .get_signer()
-            .map_err(|e| Kind::KeyBase.context(e))?;
+        let signer = self.src_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from src chain {} with error: {}",
+                self.src_chain.id(),
+                e
+            ))
+        })?;
 
         let (_, proofs) = self
             .dst_chain
@@ -550,15 +593,15 @@ impl RelayPath {
                 packet.sequence,
                 height,
             )
-            .map_err(|e| Kind::MalformedProof.context(e))?;
+            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain.id(), e))?;
 
         let msg = MsgTimeout::new(packet.clone(), packet.sequence, proofs.clone(), signer)
             .map_err(|e| {
-                Kind::TimeoutPacket(
+                LinkError::Failed(format!(
+                    "error while building the timeout packet for src channel {} due to error {}",
                     packet.source_channel.clone(),
-                    "error while building the timeout packet".to_string(),
-                )
-                .context(e)
+                    e
+                ))
             })?;
 
         info!(
@@ -573,7 +616,7 @@ impl RelayPath {
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
-    ) -> Result<(Option<Any>, Option<Any>), Error> {
+    ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let packet = event.packet.clone();
 
         // TODO - change event types to return ICS height
@@ -582,7 +625,10 @@ impl RelayPath {
             u64::from(event.height),
         );
 
-        let dst_height = self.dst_chain.query_latest_height()?;
+        let dst_height = self
+            .dst_chain
+            .query_latest_height()
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
         if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
             Ok((
                 None,
@@ -598,7 +644,7 @@ impl RelayPath {
         }
     }
 
-    fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, Error> {
+    fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
         // TODO - change event types to return ICS height
         let event_height = Height::new(
             ChainId::chain_version(self.src_chain.id().to_string().as_str()),
@@ -614,8 +660,14 @@ pub struct Link {
     pub b_to_a: RelayPath,
 }
 
+#[derive(Clone, Debug)]
+pub struct LinkParameters {
+    pub src_port_id: PortId,
+    pub src_channel_id: ChannelId,
+}
+
 impl Link {
-    pub fn new(channel: Channel) -> Result<Link, Error> {
+    pub fn new(channel: Channel) -> Result<Link, LinkError> {
         let a_chain = channel.src_chain();
         let b_chain = channel.dst_chain();
 
@@ -625,7 +677,7 @@ impl Link {
         })
     }
 
-    pub fn relay(&mut self) -> Result<(), Error> {
+    pub fn relay(&mut self) -> Result<(), LinkError> {
         info!("relaying packets for link {:#?}", self.a_to_b.channel);
         loop {
             self.a_to_b.relay_from_events()?;
@@ -639,54 +691,52 @@ impl Link {
         a_chain: Box<dyn ChainHandle>,
         b_chain: Box<dyn ChainHandle>,
         opts: &LinkParameters,
-    ) -> Result<Link, Error> {
+    ) -> Result<Link, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_channel = a_chain
             .query_channel(&opts.src_port_id, a_channel_id, Height::default())
             .map_err(|e| {
-                Kind::Packet(
+                LinkError::Failed(format!(
+                    "channel {} does not exist on chain {}; context={}",
                     a_channel_id.clone(),
-                    format!("channel does not exist on {}", a_chain.id()),
-                )
-                .context(e)
+                    a_chain.id(),
+                    e
+                ))
             })?;
 
         if !a_channel.state_matches(&ChannelState::Open) {
-            return Err(Kind::Packet(
+            return Err(LinkError::Failed(format!(
+                "channel {} on chain {} not in open state",
                 a_channel_id.clone(),
-                format!("channel on chain {} not in open state", a_chain.id()),
-            )
-            .into());
+                a_chain.id()
+            )));
         }
 
         let b_channel_id = a_channel.counterparty().channel_id.clone().ok_or_else(|| {
-            Kind::Packet(
-                a_channel_id.clone(),
-                format!("counterparty channel id not found for {}", a_channel_id),
-            )
+            LinkError::Failed(format!(
+                "counterparty channel id not found for {}",
+                a_channel_id
+            ))
         })?;
 
         if a_channel.connection_hops().is_empty() {
-            return Err(Kind::Packet(
+            return Err(LinkError::Failed(format!(
+                "channel {} on chain {} has no connection hops",
                 a_channel_id.clone(),
-                format!("channel on chain {} has no connection hops", a_chain.id()),
-            )
-            .into());
+                a_chain.id()
+            )));
         }
 
         let a_connection_id = a_channel.connection_hops()[0].clone();
         let a_connection = a_chain.query_connection(&a_connection_id, Height::zero())?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(Kind::Packet(
+            return Err(LinkError::Failed(format!(
+                "connection for channel {} on chain {} not in open state",
                 a_channel_id.clone(),
-                format!(
-                    "connection for channel on chain {} not in open state",
-                    a_chain.id()
-                ),
-            )
-            .into());
+                a_chain.id()
+            )));
         }
 
         let channel = Channel {
@@ -709,23 +759,17 @@ impl Link {
         Ok(Link::new(channel)?)
     }
 
-    pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IBCEvent>, Error> {
+    pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IBCEvent>, LinkError> {
         self.a_to_b.build_recv_packet_and_timeout_msgs()?;
         let (mut dst_res, mut src_res) = self.a_to_b.send_update_client_and_msgs()?;
         dst_res.append(&mut src_res);
         Ok(dst_res)
     }
 
-    pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IBCEvent>, Error> {
+    pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IBCEvent>, LinkError> {
         self.b_to_a.build_packet_ack_msgs()?;
         let (mut dst_res, mut src_res) = self.b_to_a.send_update_client_and_msgs()?;
         dst_res.append(&mut src_res);
         Ok(dst_res)
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct LinkParameters {
-    pub src_port_id: PortId,
-    pub src_channel_id: ChannelId,
 }
