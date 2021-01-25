@@ -60,7 +60,7 @@ pub trait ChannelKeeper {
             // initialize recv sequence number
             self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
             // initialize ack sequence number
-            self.store_next_sequence_ack(&(result.port_id.clone(), channel_id), 1)?;
+            self.store_next_sequence_ack(&(result.port_id, channel_id), 1)?;
         } else {
             //the handler processed this channel for channel open init
             self.store_channel(
