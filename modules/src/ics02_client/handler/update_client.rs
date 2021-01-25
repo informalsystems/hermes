@@ -1,10 +1,12 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClient, AnyClientState, AnyConsensusState, ClientDef};
 use crate::ics02_client::context::ClientReader;
 use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::handler::{ClientEvent, ClientResult};
+use crate::ics02_client::events::Attributes;
+use crate::ics02_client::handler::ClientResult;
 use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::ics24_host::identifier::ClientId;
 
@@ -52,24 +54,31 @@ pub fn process(
         .check_header_and_update_state(client_state, header)
         .map_err(|e| Kind::HeaderVerificationFailure.context(e.to_string()))?;
 
-    output.emit(ClientEvent::ClientUpdated(client_id.clone()));
-
-    Ok(output.with_result(ClientResult::Update(Result {
-        client_id,
+    let result = ClientResult::Update(Result {
+        client_id: client_id.clone(),
         client_state: new_client_state,
         consensus_state: new_consensus_state,
-    })))
+    });
+
+    let event_attributes = Attributes {
+        client_id,
+        ..Default::default()
+    };
+    output.emit(IBCEvent::UpdateClient(event_attributes.into()));
+
+    Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
+    use crate::events::IBCEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics02_client::error::Kind;
+    use crate::ics02_client::handler::dispatch;
     use crate::ics02_client::handler::ClientResult::{Create, Update};
-    use crate::ics02_client::handler::{dispatch, ClientEvent};
     use crate::ics02_client::header::Header;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
@@ -98,12 +107,13 @@ mod tests {
         match output {
             Ok(HandlerOutput {
                 result,
-                events,
+                mut events,
                 log,
             }) => {
-                assert_eq!(
-                    events,
-                    vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                assert_eq!(events.len(), 1);
+                let event = events.pop().unwrap();
+                assert!(
+                    matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                 );
                 assert!(log.is_empty());
                 // Check the result
@@ -178,12 +188,13 @@ mod tests {
             match output {
                 Ok(HandlerOutput {
                     result: _,
-                    events,
+                    mut events,
                     log,
                 }) => {
-                    assert_eq!(
-                        events,
-                        vec![ClientEvent::ClientUpdated(msg.client_id).into()]
+                    assert_eq!(events.len(), 1);
+                    let event = events.pop().unwrap();
+                    assert!(
+                        matches!(event, IBCEvent::UpdateClient(e) if e.client_id() == &msg.client_id)
                     );
                     assert!(log.is_empty());
                 }

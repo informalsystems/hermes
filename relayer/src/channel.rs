@@ -281,14 +281,13 @@ impl Channel {
 
 fn extract_channel_id(event: &IBCEvent) -> Result<&ChannelId, ChannelError> {
     match event {
-        IBCEvent::OpenInitChannel(ev) => Ok(ev.channel_id()),
-        IBCEvent::OpenTryChannel(ev) => Ok(ev.channel_id()),
-        IBCEvent::OpenAckChannel(ev) => Ok(ev.channel_id()),
-        IBCEvent::OpenConfirmChannel(ev) => Ok(ev.channel_id()),
-        _ => Err(ChannelError::Failed(
-            "cannot extract channel_id from result".to_string(),
-        )),
+        IBCEvent::OpenInitChannel(ev) => ev.channel_id().as_ref(),
+        IBCEvent::OpenTryChannel(ev) => ev.channel_id().as_ref(),
+        IBCEvent::OpenAckChannel(ev) => ev.channel_id().as_ref(),
+        IBCEvent::OpenConfirmChannel(ev) => ev.channel_id().as_ref(),
+        _ => None,
     }
+    .ok_or_else(|| ChannelError::Failed("cannot extract channel_id from result".to_string()))
 }
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
