@@ -78,9 +78,6 @@ pub enum Kind {
     #[error("the associated connection {0} is not OPEN ")]
     ConnectionNotOpen(ConnectionId),
 
-    #[error("the counterparty connection {0} does not exist in the context ")]
-    MissingConnectionCounterparty(ConnectionId),
-
     #[error("Undefined counterparty connection for {0}")]
     UndefinedConnectionCounterparty(ConnectionId),
 

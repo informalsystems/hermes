@@ -1,6 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use Kind::{ConnectionNotOpen, MissingConnectionCounterparty};
+use Kind::ConnectionNotOpen;
 
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -97,18 +97,18 @@ pub(crate) fn process(
     }
 
     //Channel capabilities
-    let cap_key;
+    //let cap_key;
     let cap = ctx.port_capability(&msg.port_id().clone());
-    let _cap_key =  match cap {
+    let channel_cap = match cap {
         Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                return Err(Kind::InvalidPortCapability.into());
+                Err(Kind::InvalidPortCapability)
             } else {
-                cap_key = key;
+                Ok(key)
             }
         }
-        None => return Err(Kind::NoPortCapability.into()),
-    };
+        None => Err(Kind::NoPortCapability),
+    }?;
 
     if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());
@@ -124,10 +124,7 @@ pub(crate) fn process(
         Kind::UndefinedConnectionCounterparty(msg.channel().connection_hops()[0].clone())
     })?;
 
-    let expected_connection_hops = match ctx.connection_end(ccid) {
-        Some(_c) => vec![ccid.clone()],
-        None => return Err(MissingConnectionCounterparty(ccid.clone()).into()),
-    };
+    let expected_connection_hops = vec![ccid.clone()];
 
     let expected_channel_end = ChannelEnd::new(
         State::Init,
@@ -137,10 +134,8 @@ pub(crate) fn process(
         msg.counterparty_version().clone(),
     );
 
-
     verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
         .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
-
 
     output.log("success: channel open try ");
 
@@ -149,7 +144,7 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_cap: cap_key,
+        channel_cap,
         channel_id,
         channel_end: new_channel_end,
     };

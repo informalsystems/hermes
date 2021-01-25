@@ -3,7 +3,7 @@
 //!
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
-use crate::ics04_channel::channel::{ChannelEnd, State};
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::Error;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics05_port::capabilities::Capability;
@@ -40,67 +40,33 @@ pub trait ChannelKeeper {
     fn next_channel_id(&mut self) -> ChannelId;
 
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
-        match result.channel_end.state() {
-            State::Init => {
-                let channel_id = self.next_channel_id();
-                self.store_channel(
-                    &(result.port_id.clone(), channel_id.clone()),
-                    &result.channel_end,
-                )?;
+        if result.channel_id.is_none() {
+            // If this is the first time the handler processed this channel
+            let channel_id = self.next_channel_id();
 
-                self.store_next_sequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
+            self.store_channel(
+                &(result.port_id.clone(), channel_id.clone()),
+                &result.channel_end,
+            )?;
 
-                self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
+            // associate also the channel end to its connection
+            self.store_connection_channels(
+                &result.channel_end.connection_hops()[0].clone(),
+                &(result.port_id.clone(), channel_id.clone()),
+            )?;
 
-                self.store_next_sequence_ack(&(result.port_id.clone(), channel_id.clone()), 1)?;
-
-                self.store_connection_channels(
-                    &result.channel_end.connection_hops()[0].clone(),
-                    &(result.port_id.clone(), channel_id),
-                )?;
-            }
-            State::TryOpen => {
-                if result.channel_id.is_none() {
-                    // If this is the first time the handler processed this channel
-                    let channel_id = self.next_channel_id();
-
-                    self.store_channel(
-                        &(result.port_id.clone(), channel_id.clone()),
-                        &result.channel_end,
-                    )?;
-
-                    // associate also the channel end to its connection
-                    self.store_connection_channels(
-                        &result.channel_end.connection_hops()[0].clone(),
-                        &(result.port_id.clone(), channel_id.clone()),
-                    )?;
-
-                    // initialize send sequence number
-                    self.store_next_sequence_send(
-                        &(result.port_id.clone(), channel_id.clone()),
-                        1,
-                    )?;
-                    // initialize recv sequence number
-                    self.store_next_sequence_recv(
-                        &(result.port_id.clone(), channel_id.clone()),
-                        1,
-                    )?;
-                    // initialize ack sequence number
-                    self.store_next_sequence_ack(&(result.port_id.clone(), channel_id), 1)?;
-                } else {
-                    //the handler processed this channel for channel open init
-                    self.store_channel(
-                        &(result.port_id.clone(), result.channel_id.clone().unwrap()),
-                        &result.channel_end,
-                    )?;
-                }
-            }
-            _ => {
-                self.store_channel(
-                    &(result.port_id, result.channel_id.clone().unwrap()),
-                    &result.channel_end,
-                )?;
-            }
+            // initialize send sequence number
+            self.store_next_sequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
+            // initialize recv sequence number
+            self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
+            // initialize ack sequence number
+            self.store_next_sequence_ack(&(result.port_id.clone(), channel_id), 1)?;
+        } else {
+            //the handler processed this channel for channel open init
+            self.store_channel(
+                &(result.port_id.clone(), result.channel_id.clone().unwrap()),
+                &result.channel_end,
+            )?;
         }
         Ok(())
     }

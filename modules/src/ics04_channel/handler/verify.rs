@@ -24,10 +24,9 @@ pub fn verify_proofs(
     let port_id = channel_end.counterparty().port_id().clone();
     let chan_id = channel_end.counterparty().channel_id().unwrap().clone();
 
-
     let client_state = ctx
-    .channel_client_state(&(port_id.clone(), chan_id.clone()))
-    .ok_or(Kind::MissingClientState)?;
+        .channel_client_state(&(port_id.clone(), chan_id.clone()))
+        .ok_or(Kind::MissingClientState)?;
 
     // // Fetch the client state (IBC client on the local/host chain).
     // let client_state = ctx.channel_client_state(&(port_id.clone(), chan_id.clone()));
