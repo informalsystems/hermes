@@ -2,16 +2,16 @@
 
 use Kind::ConnectionNotOpen;
 
+use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_proofs;
-use crate::ics04_channel::handler::ChannelEvent::ChanOpenTry;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-//use crate::ics24_host::identifier::ChannelId;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -97,7 +97,6 @@ pub(crate) fn process(
     }
 
     //Channel capabilities
-    //let cap_key;
     let cap = ctx.port_capability(&msg.port_id().clone());
     let channel_cap = match cap {
         Some(key) => {
@@ -149,17 +148,20 @@ pub(crate) fn process(
         channel_end: new_channel_end,
     };
 
-    output.emit(ChanOpenTry(result.clone()));
+    let event_attributes = Attributes {
+        channel_id: None,
+        ..Default::default()
+    };
+    output.emit(IBCEvent::OpenTryChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::events::IBCEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
-
-    use crate::handler::EventType;
 
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -299,7 +301,7 @@ mod tests {
             Test {
                 name: "Processing fails because no connection exists in the context".to_string(),
                 ctx: context.clone(),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try.clone())),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try.clone()),
                 want_pass: false,
             },
             Test {
@@ -308,7 +310,7 @@ mod tests {
                 ctx: context
                     .clone()
                     .with_connection(cid.clone(), init_conn_end.clone()),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try.clone())),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try.clone()),
                 want_pass: false,
             },
             Test {
@@ -330,7 +332,7 @@ mod tests {
                         chan_id.clone(),
                         init_chan_end2,
                     ),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2.clone())),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
                 want_pass: false,
             },
             Test {
@@ -352,7 +354,7 @@ mod tests {
                         chan_id.clone(),
                         init_chan_end3,
                     ),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2.clone())),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
                 want_pass: false,
             },
             Test {
@@ -374,7 +376,7 @@ mod tests {
                         chan_id.clone(),
                         init_chan_end.clone(),
                     ),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2.clone())),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
                 want_pass: false,
             },
             Test {
@@ -400,7 +402,7 @@ mod tests {
                         chan_id,
                         init_chan_end.clone(),
                     ),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try2)),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try2),
                 want_pass: true,
             },
             Test {
@@ -422,7 +424,7 @@ mod tests {
                         counterparty_chan_id,
                         init_chan_end,
                     ),
-                msg: ChannelMsg::ChannelOpenTry(Box::new(msg_chan_try)),
+                msg: ChannelMsg::ChannelOpenTry(msg_chan_try),
                 want_pass: true,
             },
         ]
@@ -450,7 +452,7 @@ mod tests {
                     assert_eq!(res.channel_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
-                        assert_eq!(e.tpe, EventType::Custom("channel_open_try".to_string()));
+                        assert!(matches!(e, &IBCEvent::OpenTryChannel(_)));
                     }
                 }
                 Err(e) => {
