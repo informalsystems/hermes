@@ -25,7 +25,7 @@ impl Runnable for TxCreateClientCmd {
         let config = app_config();
 
         let chains =
-            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
                 Ok(chains) => chains,
                 Err(e) => {
                     return Output::error(format!("{}", e)).exit();
@@ -71,7 +71,7 @@ impl Runnable for TxUpdateClientCmd {
         let config = app_config();
 
         let chains =
-            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
                 Ok(chains) => chains,
                 Err(e) => {
                     return Output::error(format!("{}", e)).exit();

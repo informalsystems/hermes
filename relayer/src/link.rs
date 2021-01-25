@@ -660,6 +660,13 @@ impl Link {
             .into());
         }
 
+        let b_channel_id = a_channel.counterparty().channel_id.clone().ok_or_else(|| {
+            Kind::Packet(
+                a_channel_id.clone(),
+                format!("counterparty channel id not found for {}", a_channel_id),
+            )
+        })?;
+
         if a_channel.connection_hops().is_empty() {
             return Err(Kind::Packet(
                 a_channel_id.clone(),
@@ -695,8 +702,8 @@ impl Link {
                 b_chain,
                 a_connection.counterparty().client_id().clone(),
                 a_connection.counterparty().connection_id().unwrap().clone(),
-                opts.dst_port_id.clone(),
-                opts.dst_channel_id.clone(),
+                a_channel.counterparty().port_id.clone(),
+                b_channel_id,
             ),
         };
         Ok(Link::new(channel)?)
@@ -721,6 +728,4 @@ impl Link {
 pub struct LinkParameters {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
-    pub dst_port_id: PortId,
-    pub dst_channel_id: ChannelId,
 }

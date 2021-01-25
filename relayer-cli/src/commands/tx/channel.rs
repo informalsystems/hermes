@@ -45,7 +45,7 @@ macro_rules! chan_open_cmd {
                 let config = app_config();
 
                 let chains = match chain_handlers_from_chain_id(
-                    config,
+                    &config,
                     &self.src_chain_id,
                     &self.dst_chain_id,
                 ) {

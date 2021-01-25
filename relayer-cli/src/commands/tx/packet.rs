@@ -20,14 +20,8 @@ pub struct TxRawPacketRecvCmd {
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the destination port")]
-    dst_port_id: PortId,
-
     #[options(free, required, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
-
-    #[options(free, required, help = "identifier of the destination channel")]
-    dst_channel_id: ChannelId,
 }
 
 impl Runnable for TxRawPacketRecvCmd {
@@ -35,7 +29,7 @@ impl Runnable for TxRawPacketRecvCmd {
         let config = app_config();
 
         let chains =
-            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
                 Ok(chains) => chains,
                 Err(e) => {
                     return Output::error(format!("{}", e)).exit();
@@ -45,8 +39,6 @@ impl Runnable for TxRawPacketRecvCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
-            dst_port_id: self.dst_port_id.clone(),
-            dst_channel_id: self.dst_channel_id.clone(),
         };
         let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
 
@@ -72,14 +64,8 @@ pub struct TxRawPacketAckCmd {
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, required, help = "identifier of the destination port")]
-    dst_port_id: PortId,
-
     #[options(free, required, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
-
-    #[options(free, required, help = "identifier of the destination channel")]
-    dst_channel_id: ChannelId,
 }
 
 impl Runnable for TxRawPacketAckCmd {
@@ -87,7 +73,7 @@ impl Runnable for TxRawPacketAckCmd {
         let config = app_config();
 
         let chains =
-            match chain_handlers_from_chain_id(config, &self.src_chain_id, &self.dst_chain_id) {
+            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
                 Ok(chains) => chains,
                 Err(e) => {
                     return Output::error(format!("{}", e)).exit();
@@ -97,8 +83,6 @@ impl Runnable for TxRawPacketAckCmd {
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
-            dst_port_id: self.dst_port_id.clone(),
-            dst_channel_id: self.dst_channel_id.clone(),
         };
         let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
 

@@ -18,7 +18,7 @@ pub struct ChainHandlePair {
 
 /// Create the source and destination chain handlers from the configuration and chain identifiers
 pub fn chain_handlers_from_chain_id(
-    config: config::Reader<CliApp>,
+    config: &config::Reader<CliApp>,
     src_chain_id: &ChainId,
     dst_chain_id: &ChainId,
 ) -> Result<ChainHandlePair, Error> {
