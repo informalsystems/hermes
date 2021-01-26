@@ -1,60 +1,68 @@
-use std::ops::Deref;
-
-use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
+use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics04_channel::channel::Order;
-use relayer::chain::runtime::ChainRuntime;
-use relayer::chain::CosmosSDKChain;
-use relayer::config::Config;
-use relayer::relay::channel_relay;
+use relayer::relay::{channel_relay, relay_on_new_link};
 
+use crate::commands::cli_utils::chain_handlers_from_chain_id;
+use crate::conclude::Output;
 use crate::prelude::*;
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use relayer::link::LinkParameters;
 
-#[derive(Command, Debug, Options)]
-pub struct StartCmd {}
+#[derive(Clone, Command, Debug, Options)]
+pub struct StartCmd {
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-impl StartCmd {
-    fn cmd(&self) -> Result<(), BoxError> {
-        let config = app_config().clone();
-        debug!("launching 'v0' command");
-        v0_task(&config)
-    }
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(help = "identifier of the source port", short = "p")]
+    src_port_id: Option<PortId>,
+
+    #[options(help = "identifier of the source channel", short = "c")]
+    src_channel_id: Option<ChannelId>,
 }
 
 impl Runnable for StartCmd {
     fn run(&self) {
-        self.cmd()
-            .unwrap_or_else(|e| fatal_error(app_reader().deref(), &*e))
+        let config = app_config();
+
+        let chains =
+            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
+                Ok(chains) => chains,
+                Err(e) => {
+                    return Output::error(format!("{}", e)).exit();
+                }
+            };
+
+        match (&self.src_port_id, &self.src_channel_id) {
+            (Some(src_port_id), Some(src_channel_id)) => channel_relay(
+                chains.src,
+                chains.dst,
+                &LinkParameters {
+                    src_port_id: src_port_id.clone(),
+                    src_channel_id: src_channel_id.clone(),
+                },
+            )
+            .unwrap(),
+            (None, None) => {
+                let ordering = Order::default(); // TODO - add to config
+                let relay_paths = &config
+                    .clone()
+                    .relay_paths(&self.src_chain_id, &self.dst_chain_id);
+
+                info!("Start relayer on {:?}", self);
+                match relay_paths {
+                    Some(paths) => {
+                        // Relay for a single channel, first on the connection between the two chains
+                        relay_on_new_link(chains.src, chains.dst, ordering, paths[0].clone())
+                            .unwrap()
+                    }
+                    None => Output::error(format!("No paths configured for {:?}", self)).exit(),
+                }
+            }
+            _ => Output::error(format!("Invalid parameters {:?}", self)).exit(),
+        }
     }
-}
-
-pub fn v0_task(config: &Config) -> Result<(), BoxError> {
-    // Relay for a single channel, first on the first connection in configuration
-    let conn = &config
-        .connections
-        .clone()
-        .ok_or("No connections configured")?[0];
-
-    let ordering = Order::default(); // TODO - add to config
-    let path = conn.paths.clone().ok_or("No paths configured")?[0].clone();
-
-    let src_chain_config = config
-        .find_chain(&conn.a_chain)
-        .cloned()
-        .ok_or("Configuration for source chain not found")?;
-
-    let dst_chain_config = config
-        .find_chain(&conn.b_chain)
-        .cloned()
-        .ok_or("Configuration for source chain not found")?;
-
-    let (src_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(src_chain_config)?;
-    let (dst_chain_handle, _) = ChainRuntime::<CosmosSDKChain>::spawn(dst_chain_config)?;
-
-    Ok(channel_relay(
-        src_chain_handle,
-        dst_chain_handle,
-        ordering,
-        path,
-    )?)
 }

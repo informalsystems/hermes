@@ -87,7 +87,7 @@ impl ChainHandle for ProdChainHandle {
         })
     }
 
-    fn subscribe(&self, _chain_id: ChainId) -> Result<Subscription, Error> {
+    fn subscribe(&self) -> Result<Subscription, Error> {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
     }
 

@@ -59,6 +59,17 @@ impl Config {
     pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
         self.chains.iter_mut().find(|c| c.id == *id)
     }
+    pub fn relay_paths(&self, src_chain: &ChainId, dst_chain: &ChainId) -> Option<Vec<RelayPath>> {
+        self.connections
+            .as_ref()?
+            .iter()
+            .find(|c| {
+                c.a_chain == *src_chain && c.b_chain == *dst_chain
+                    || c.a_chain == *dst_chain && c.b_chain == *src_chain
+            })?
+            .paths
+            .clone()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

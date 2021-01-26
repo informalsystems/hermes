@@ -53,7 +53,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
                 attr.counterparty_client_id = value.parse().unwrap()
             }
             // TODO: `Attributes` has 5 fields and we're only parsing 4
-            _ => panic!("unexpected attribute key: {}", key),
+            _ => {}
         }
     }
 

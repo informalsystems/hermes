@@ -46,7 +46,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
             CLIENT_TYPE_ATTRIBUTE_KEY => attr.client_type = value.parse().unwrap(),
             CONSENSUS_HEIGHT_ATTRIBUTE_KEY => attr.consensus_height = value.parse().unwrap(),
             // TODO: `Attributes` has 4 fields and we're only parsing 3
-            _ => panic!("unexpected attribute key: {}", key),
+            _ => {}
         }
     }
 

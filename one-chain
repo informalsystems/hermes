@@ -125,7 +125,7 @@ else
 fi
 
 # Start gaia
-$BINARY --home $CHAIN_DIR/$CHAIN_ID start --trace --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
+$BINARY --home $CHAIN_DIR/$CHAIN_ID start --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
 
 # Start gaia with trace
 # $BINARY --home $CHAIN_DIR/$CHAIN_ID start --trace --pruning=nothing --grpc.address="0.0.0.0:$GRPC_PORT" > $CHAIN_DIR/$CHAIN_ID.log 2>&1 &
