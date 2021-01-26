@@ -19,6 +19,7 @@ use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
+// TODO: refactor commands: why is chain_id an `Option`? simpler to give it `ChainId` type.
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -31,7 +32,10 @@ pub struct QueryClientStateCmd {
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
-    #[options(help = "whether proof is required", short = "p")]
+    #[options(
+        help = "whether proof is required; default: false (no proof)",
+        short = "p"
+    )]
     proof: Option<bool>,
 }
 
@@ -97,16 +101,24 @@ impl Runnable for QueryClientStateCmd {
 /// Query client consensus command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(free, help = "epoch of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "epoch of the client's consensus state to query"
+    )]
     consensus_epoch: Option<u64>,
 
-    #[options(free, help = "height of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "height of the client's consensus state to query"
+    )]
     consensus_height: Option<u64>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -205,7 +217,7 @@ fn validate_common_options(
         .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .find_chain(&chain_id)
-        .ok_or_else(|| "missing chain in configuration".to_string())?;
+        .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
     let client_id = client_id
         .as_ref()
@@ -219,10 +231,10 @@ fn validate_common_options(
 /// Query client connections command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConnectionsCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -246,7 +258,7 @@ impl QueryClientConnectionsCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let client_id = self
             .client_id
