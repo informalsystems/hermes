@@ -39,6 +39,16 @@ if ! [ -f $CONFIG_FILE ]; then
   usage
 fi
 
+if ! grep -q -s "$CHAIN_0_ID" "$CONFIG_FILE"; then
+  echo "error: configuration for chain [$CHAIN_0_ID] does not exist in file $CONFIG_FILE."
+  usage
+fi
+
+if ! grep -q -s "$CHAIN_1_ID" "$CONFIG_FILE"; then
+  echo "error: configuration for chain [$CHAIN_1_ID] does not exist in file $CONFIG_FILE."
+  usage
+fi
+
 GAIA_DATA="$(pwd)/data"
 
 # Ensure user understands what will be deleted

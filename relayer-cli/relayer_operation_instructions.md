@@ -256,9 +256,10 @@ the relayer `v0` loop.
 
 The relayer can be started in listen mode:
 
-    ```shell script
-    rrly -c loop_config.toml listen ibc-0
-    ```
+```shell script
+rrly -c loop_config.toml listen ibc-0
+```
+
 It displays the `NewBlock` and IBC events received from the specified chain.
 
 ## Profiling the relayer
