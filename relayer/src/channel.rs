@@ -1,11 +1,7 @@
 use prost_types::Any;
+use serde::Serialize;
 use thiserror::Error;
 use tracing::error;
-
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
 use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
@@ -16,6 +12,10 @@ use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
 use crate::chain::handle::ChainHandle;
 use crate::connection::Connection;
@@ -40,7 +40,7 @@ pub enum ChannelError {
     SubmitError(ChainId, Error),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ChannelSide {
     pub chain: Box<dyn ChainHandle>,
     client_id: ClientId,
@@ -87,7 +87,7 @@ impl ChannelSide {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Channel {
     pub ordering: Order,
     pub a_side: ChannelSide,
@@ -181,44 +181,56 @@ impl Channel {
 
         // Try chanOpenInit on a_chain
         let mut counter = 0;
+        let mut init_success = false;
         while counter < MAX_ITER {
             counter += 1;
             match self.flipped().build_chan_init_and_send() {
                 Err(e) => {
-                    error!("Failed ChanInit {:?}: {}", self.a_side, e);
+                    error!("Failed ChanInit {:?}: {:?}", self.a_side, e);
                     continue;
                 }
-                Ok(result) => {
-                    self.a_side.channel_id = extract_channel_id(&result)?.clone();
-                    println!("{}  {} => {:?}\n", done, a_chain.id(), result);
+                Ok(event) => {
+                    self.a_side.channel_id = extract_channel_id(&event)?.clone();
+                    println!("{}  {} => {:?}\n", done, a_chain.id(), event);
+                    init_success = true;
                     break;
                 }
             }
         }
 
+        // Check that the channel was created on a_chain
+        if !init_success {
+            return Err(ChannelError::Failed(format!(
+                "Failed to finish channel open init in {} iterations for {:?}",
+                MAX_ITER, self
+            )));
+        };
+
         // Try chanOpenTry on b_chain
         counter = 0;
+        let mut try_success = false;
         while counter < MAX_ITER {
             counter += 1;
             match self.build_chan_try_and_send() {
                 Err(e) => {
-                    error!("Failed ChanTry {:?}: {}", self.b_side, e);
+                    error!("Failed ChanTry {:?}: {:?}", self.b_side, e);
                     continue;
                 }
-                Ok(result) => match result {
-                    IBCEvent::ChainError(e) => {
-                        println!("Failed ChanTry {:?}: {}", self.b_side, e);
-                        continue;
-                    }
-
-                    _ => {
-                        self.b_side.channel_id = extract_channel_id(&result)?.clone();
-                        println!("{}  {} => {:?}\n", done, b_chain.id(), result);
-                        break;
-                    }
-                },
+                Ok(event) => {
+                    self.b_side.channel_id = extract_channel_id(&event)?.clone();
+                    println!("{}  {} => {:?}\n", done, b_chain.id(), event);
+                    try_success = true;
+                    break;
+                }
             }
         }
+
+        if !try_success {
+            return Err(ChannelError::Failed(format!(
+                "Failed to finish channel open try in {} iterations for {:?}",
+                MAX_ITER, self
+            )));
+        };
 
         counter = 0;
         while counter < MAX_ITER {
@@ -273,8 +285,8 @@ impl Channel {
         }
 
         Err(ChannelError::Failed(format!(
-            "Failed to finish channel handshake in {:?} iterations",
-            MAX_ITER
+            "Failed to finish channel handshake in {} iterations for {:?}",
+            MAX_ITER, self
         )))
     }
 
@@ -351,10 +363,9 @@ impl Channel {
 
         match result {
             IBCEvent::OpenInitChannel(_) => Ok(result),
-            IBCEvent::ChainError(e) => Err(ChannelError::Failed(format!(
-                "tx response event consists of an error: {}",
-                e
-            ))),
+            IBCEvent::ChainError(e) => {
+                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            }
             _ => panic!("internal error"),
         }
     }
@@ -505,7 +516,7 @@ impl Channel {
             .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel try
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenTryChannel(_))
@@ -513,7 +524,15 @@ impl Channel {
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan try event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenTryChannel(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 
     pub fn build_chan_ack(&self) -> Result<Vec<Any>, ChannelError> {
@@ -589,7 +608,7 @@ impl Channel {
             .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel ack
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenAckChannel(_))
@@ -597,7 +616,15 @@ impl Channel {
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan ack event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenAckChannel(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 
     pub fn build_chan_confirm(&self) -> Result<Vec<Any>, ChannelError> {
@@ -661,7 +688,7 @@ impl Channel {
             .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel confirm
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenConfirmChannel(_))
@@ -669,7 +696,15 @@ impl Channel {
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan confirm event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenConfirmChannel(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 }
 
