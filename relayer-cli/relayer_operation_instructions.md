@@ -6,7 +6,7 @@
 
     ```shell script
     git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/comsos/gaia
-    ~/go/src/github.com/comsos/gaia ; git co v3.0.0 ; make install
+    cd ~/go/src/github.com/comsos/gaia ; git co v3.0.0 ; make install
     ```
 
 2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
@@ -96,28 +96,28 @@ alias rrly='cargo run --bin relayer --'
     rrly -c loop_config.toml query connection end ibc-0 connection-0
     ```
 
-#### Channel CLIs:
+#### Channel Open CLIs:
 
 - init-none
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+    rrly -c loop_config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
     ```
 - init-try
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-try ibc-1 ibc-0 connection-0 transfer transfer defaultChannel channel-0
+    rrly -c loop_config.toml tx raw chan-open-try ibc-1 ibc-0 connection-0 transfer transfer defaultChannel channel-0
     ```
 
 - open-try
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
     ```
 - open-open
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-confirm ibc-1 ibc-0 connection-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-0 transfer transfer channel-0 channel-0
     ```
 
 - verify that the two ends are in Open state:
@@ -198,6 +198,49 @@ rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```
 
 The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
+
+#### Channel Close CLIs:
+Starting with channel in open-open:
+
+- close-open
+
+    ```shell script
+    rrly -c loop_config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
+    ```
+
+   Note: This command is currently rejected by cosmos-sdk transfer module. To make it work:
+   - clone cosmos-sdk
+       ```shell script
+       git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/comsos/cosmos-sdk
+       cd ~/go/src/github.com/comsos/cosmos-sdk
+       ```
+   - apply these diffs:
+       ```
+          --- a/x/ibc/applications/transfer/module.go
+          +++ b/x/ibc/applications/transfer/module.go
+          @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
+                  channelID string,
+           ) error {
+                  // Disallow user-initiated channel closing for transfer channels
+          -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+          +       return nil
+           }
+       ```
+   - add the line below as the last line in your `go.sum` in the gaia clone and rebuild:
+   ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
+
+- close-close
+
+    ```shell script
+    rrly -c loop_config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-0 transfer transfer channel-0 channel-0
+    ```
+
+- verify that the two ends are in Close state:
+
+      ```shell script
+      rrly -c loop_config.toml query channel end ibc-0 transfer channel-0
+      rrly -c loop_config.toml query channel end ibc-1 transfer channel-0
+      ```
 
 ### Relayer loop:
 
