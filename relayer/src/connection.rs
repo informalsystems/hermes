@@ -25,10 +25,10 @@ use crate::relay::MAX_ITER;
 
 #[derive(Debug, Error)]
 pub enum ConnectionError {
-    #[error("Failed")]
+    #[error("failed with underlying cause: {0}")]
     Failed(String),
 
-    #[error("constructor parameters do not match")]
+    #[error("constructor parameters do not match: underlying error: {0}")]
     ConstructorFailed(String),
 
     #[error("failed during a query to chain id {0} due to underlying error: {1}")]

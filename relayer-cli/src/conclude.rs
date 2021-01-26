@@ -26,6 +26,18 @@
 //! Output::error(format!("{}", e)).exit();
 //! ```
 //!
+//! #### Note:
+//! The resulting output that this approach generates is determined by the 'error' annotation given
+//! to the error object `Kind::Query`. If this error object comprises any positional arguments,
+//! e.g. as achieved by `Query(String, String)`, then it is important to cover these arguments
+//! in the `error` annotation, for instance:
+//! ```compile_fail
+//! #[derive(Debug, Error)]
+//! pub enum Kind {
+//!     #[error("failed with underlying causes: {0}, {1}")]
+//!     Query(String, String),  // ...
+//! ```
+//!
 //! - Exit from a query/tx with success:
 //!
 //! ```compile_fail

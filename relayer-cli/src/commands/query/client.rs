@@ -22,10 +22,10 @@ use crate::prelude::*;
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]

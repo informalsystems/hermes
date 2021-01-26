@@ -18,13 +18,13 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the port to query")]
+    #[options(free, required, help = "identifier of the port to query")]
     port_id: Option<String>,
 
-    #[options(free, help = "identifier of the channel to query")]
+    #[options(free, required, help = "identifier of the channel to query")]
     channel_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]

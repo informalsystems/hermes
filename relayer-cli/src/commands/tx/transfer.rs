@@ -17,20 +17,21 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
-    #[options(free, help = "identifier of the source chain")]
+    #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the destination chain")]
+    #[options(free, required, help = "identifier of the destination chain")]
     dest_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the source port")]
+    #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, help = "identifier of the source channel")]
+    #[options(free, required, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
     #[options(
         free,
+        required,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: u64,
