@@ -1,7 +1,11 @@
-use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::channel::{validate_version, ChannelEnd};
 use crate::ics04_channel::error::{Error, Kind};
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, PortId};
+use crate::{
+    address::{account_to_string, string_to_account},
+    ics24_host::error::ValidationError,
+};
 use crate::{proofs::Proofs, tx_msg::Msg};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
@@ -26,6 +30,24 @@ pub struct MsgChannelOpenTry {
     pub signer: AccountId,
 }
 
+impl MsgChannelOpenTry {
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn previous_channel_id(&self) -> &Option<ChannelId> {
+        &self.previous_channel_id
+    }
+    pub fn counterparty_version(&self) -> &String {
+        &self.counterparty_version
+    }
+    pub fn channel(&self) -> &ChannelEnd {
+        &self.channel
+    }
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
+}
 impl Msg for MsgChannelOpenTry {
     type ValidationError = Error;
 
@@ -39,6 +61,13 @@ impl Msg for MsgChannelOpenTry {
 
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
+    }
+
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        match self.channel().counterparty().channel_id() {
+            None => Err(ValidationKind::InvalidCounterpartyChannelId.into()),
+            Some(_c) => Ok(()),
+        }
     }
 }
 
@@ -69,7 +98,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             .transpose()
             .map_err(|e| Kind::IdentifierError.context(e))?;
 
-        Ok(MsgChannelOpenTry {
+        let msg = MsgChannelOpenTry {
             port_id: raw_msg
                 .port_id
                 .parse()
@@ -79,7 +108,12 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
             counterparty_version: validate_version(raw_msg.counterparty_version)?,
             proofs,
             signer,
-        })
+        };
+
+        match msg.validate_basic() {
+            Err(_e) => Err(Kind::InvalidCounterpartyChannelId.into()),
+            Ok(()) => Ok(msg),
+        }
     }
 }
 
@@ -104,6 +138,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_with_counterparty;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
 
@@ -116,7 +151,24 @@ pub mod test_util {
             counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                revision_number: 1,
+                revision_number: 0,
+                revision_height: proof_height,
+            }),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+
+    pub fn get_dummy_raw_msg_chan_open_try_with_counterparty(
+        proof_height: u64,
+    ) -> RawMsgChannelOpenTry {
+        RawMsgChannelOpenTry {
+            port_id: "port".to_string(),
+            previous_channel_id: "".to_string(),
+            channel: Some(get_dummy_raw_channel_end_with_counterparty()),
+            counterparty_version: "".to_string(),
+            proof_init: get_dummy_proof(),
+            proof_height: Some(Height {
+                revision_number: 0,
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),

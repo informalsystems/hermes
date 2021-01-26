@@ -234,6 +234,17 @@ impl MockContext {
         self
     }
 
+    pub fn with_channel_init(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        channel_end: ChannelEnd,
+    ) -> Self {
+        let mut channels = self.channels.clone();
+        channels.insert((port_id, chan_id), channel_end);
+        Self { channels, ..self }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -328,7 +339,7 @@ impl ChannelReader for MockContext {
         self.channels.get(pcid).cloned()
     }
 
-    fn connection_state(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
+    fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
         self.connections.get(cid).cloned()
     }
 
@@ -344,26 +355,30 @@ impl ChannelReader for MockContext {
         match channel {
             Some(v) => {
                 let cid = v.connection_hops().clone()[0].clone();
-                let conn = self.connection_state(&cid);
+                let conn = ChannelReader::connection_end(self, &cid);
                 match conn {
                     Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
-                    None => panic!(),
+                    _ => None,
                 }
             }
-            None => panic!(),
+            _ => None,
         }
     }
 
-    fn channel_consensus_state(
+    fn channel_client_consensus_state(
         &self,
         port_channel_id: &(PortId, ChannelId),
         height: Height,
     ) -> Option<AnyConsensusState> {
-        let channel = self.channel_end(port_channel_id).unwrap();
-        let cid = channel.connection_hops()[0].clone();
-        let conn = self.connection_state(&cid).unwrap();
-
-        ConnectionReader::client_consensus_state(self, conn.client_id(), height)
+        let channel_end = self.channel_end(port_channel_id);
+        match channel_end {
+            Some(channel) => {
+                let cid = channel.connection_hops()[0].clone();
+                let conn = ChannelReader::connection_end(self, &cid).unwrap();
+                ConnectionReader::client_consensus_state(self, conn.client_id(), height)
+            }
+            _ => None,
+        }
     }
 
     fn port_capability(&self, port_id: &PortId) -> Option<Capability> {

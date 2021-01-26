@@ -1,3 +1,4 @@
+use crate::ics24_host::error::ValidationError;
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
 
@@ -27,4 +28,8 @@ pub trait Msg: Clone {
     }
 
     fn get_signers(&self) -> Vec<AccountId>;
+
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        Ok(())
+    }
 }

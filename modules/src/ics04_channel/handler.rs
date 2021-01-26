@@ -9,7 +9,8 @@ use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
 pub mod chan_open_init;
-
+pub mod chan_open_try;
+mod verify;
 #[derive(Clone, Debug)]
 pub struct ChannelResult {
     pub port_id: PortId,
@@ -26,7 +27,7 @@ where
 {
     match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
-        // ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
+        ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
         // ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
         // ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
         _ => panic!(),
