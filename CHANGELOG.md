@@ -4,12 +4,14 @@
 
 
 ### FEATURES
-
 - Continous Integration (CI) end-to-end (e2e) testing ([#32])
 - Add support for streamlining releases ([#507])
+
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
   - JSON output for queries and txs ([#500])
+  - Implement command to perform the handshake for a new channel ([#557])
+
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
 
@@ -59,6 +61,7 @@
 [#536]: https://github.com/informalsystems/ibc-rs/issues/536
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
+[#557]: https://github.com/informalsystems/ibc-rs/issues/557
 
 
 ## v0.0.6
