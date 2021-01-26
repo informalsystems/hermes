@@ -3,6 +3,7 @@ use std::sync::Arc;
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::info;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::identifier::{ChannelId, PortId};
@@ -224,9 +225,29 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let dst_chain = CosmosSDKChain::bootstrap(dst_chain_config, rt).unwrap();
 
         // get the channel information from source chain
-        let channel = src_chain
+        let channel_res = src_chain
             .query_channel(&opts.port_id, &opts.channel_id, Height::zero())
-            .unwrap();
+            .map_err(|e| Kind::Query.context(e));
+
+        let channel = match channel_res {
+            Ok(c) => c,
+            Err(e) => {
+                return Output::error(format!(
+                    "failed to find the target channel ({}/{}) on src chain ({}) with error: {}",
+                    opts.port_id,
+                    opts.channel_id,
+                    src_chain.config().id,
+                    e
+                ))
+                .exit();
+            }
+        };
+
+        info!(
+            "Fetched from chain {} the following channel {:#?}",
+            src_chain.config().id,
+            channel
+        );
 
         // get the packet commitments on source chain
         let commitments_request = QueryPacketCommitmentsRequest {
@@ -235,18 +256,39 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             pagination: None,
         };
 
-        // extract the sequences
-        let sequences: Vec<u64> = src_chain
+        let seq_res = src_chain
             .query_packet_commitments(commitments_request)
-            .unwrap()
-            .0
-            .into_iter()
-            .map(|v| v.sequence)
-            .collect();
+            .map_err(|e| Kind::Query.context(e));
+
+        // extract the sequences
+        let sequences: Vec<u64> = match seq_res {
+            Ok(seqs) => seqs.0.into_iter().map(|v| v.sequence).collect(),
+            Err(e) => {
+                return Output::error(format!(
+                    "failed to fetch the packet commitments from src chain ({}) with error: {}",
+                    src_chain.config().id,
+                    e
+                ))
+                .exit()
+            }
+        };
+
+        let channel_id: String = match &channel.counterparty().channel_id {
+            None => {
+                return Output::error(format!(
+                    "The channel ({}/{}) has no counterparty (channel state is {:?})",
+                    opts.port_id,
+                    opts.channel_id,
+                    *channel.state()
+                ))
+                .exit()
+            }
+            Some(id) => id.to_string(),
+        };
 
         let request = QueryUnreceivedPacketsRequest {
             port_id: channel.counterparty().port_id().to_string(),
-            channel_id: channel.counterparty().channel_id().unwrap().to_string(),
+            channel_id,
             packet_commitment_sequences: sequences,
         };
 
