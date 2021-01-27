@@ -46,7 +46,7 @@ use ibc::ics07_tendermint::header::Header as TMHeader;
 
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -62,7 +62,9 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
+use ibc::ics02_client::raw::ConnectionIds;
 use ibc::ics04_channel::packet::Sequence;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
@@ -731,6 +733,36 @@ impl Chain for CosmosSDKChain {
             .collect();
 
         Ok(vec_ids)
+    }
+
+    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
+        crate::time!("query_connections");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connections(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let ids = response
+            .connections
+            .iter()
+            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .collect();
+
+        Ok(ids)
     }
 }
 

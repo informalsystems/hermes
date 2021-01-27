@@ -43,7 +43,9 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
+use ibc::ics02_client::raw::ConnectionIds;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -360,6 +362,9 @@ pub trait Chain: Sized {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
 
     fn build_packet_proofs(
         &self,

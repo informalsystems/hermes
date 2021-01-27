@@ -38,6 +38,8 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use ibc::ics02_client::raw::ConnectionIds;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -233,6 +235,10 @@ impl Chain for MockChain {
         &self,
         _request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_connections(&self, _request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
         unimplemented!()
     }
 
