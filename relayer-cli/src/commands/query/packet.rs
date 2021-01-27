@@ -43,7 +43,7 @@ impl QueryPacketCommitmentsCmd {
             .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the given chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.chain_id
                 )
             })?;
@@ -123,7 +123,7 @@ impl QueryPacketCommitmentCmd {
             .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the given chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.chain_id
                 )
             })?;
@@ -214,7 +214,7 @@ impl QueryUnreceivedPacketsCmd {
             .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the src chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.src_chain_id
                 )
             })?;
@@ -223,7 +223,7 @@ impl QueryUnreceivedPacketsCmd {
             .find_chain(&self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the dst chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.dst_chain_id
                 )
             })?;
@@ -263,7 +263,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             Ok(c) => c,
             Err(e) => {
                 return Output::error(format!(
-                    "failed to find the target channel ({}/{}) on src chain ({}) with error: {}",
+                    "failed to find channel ({}/{}) on chain ({}) with error: {}",
                     opts.port_id,
                     opts.channel_id,
                     src_chain.config().id,
@@ -273,8 +273,8 @@ impl Runnable for QueryUnreceivedPacketsCmd {
             }
         };
 
-        info!(
-            "Fetched from source chain {} the following channel {:#?}",
+        debug!(
+            "Fetched from source chain {} the following channel {:?}",
             src_chain.config().id,
             channel
         );
@@ -436,7 +436,7 @@ impl QueryPacketAcknowledgmentCmd {
             .find_chain(&self.chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the given chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.chain_id
                 )
             })?;
@@ -527,7 +527,7 @@ impl QueryUnreceivedAcknowledgementCmd {
             .find_chain(&self.src_chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the src chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.src_chain_id
                 )
             })?;
@@ -536,7 +536,7 @@ impl QueryUnreceivedAcknowledgementCmd {
             .find_chain(&self.dst_chain_id.parse().unwrap())
             .ok_or_else(|| {
                 format!(
-                    "missing configuration for the dst chain ({}) ",
+                    "missing configuration for chain ({}) ",
                     self.dst_chain_id
                 )
             })?;
@@ -586,8 +586,8 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
             }
         };
 
-        info!(
-            "Fetched from src chain {} the following channel {:#?}",
+        debug!(
+            "Fetched from src chain {} the following channel {:?}",
             src_chain.config().id,
             channel
         );
