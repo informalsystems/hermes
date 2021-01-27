@@ -51,21 +51,29 @@ pub enum TxRawCommands {
     #[options(help = "tx raw conn-confirm")]
     ConnConfirm(connection::TxRawConnConfirmCmd),
 
-    /// The `tx raw chan-init` subcommand
-    #[options(help = "tx raw chan-init")]
-    ChanInit(channel::TxRawChanInitCmd),
+    /// The `tx raw chan-open-init` subcommand
+    #[options(help = "tx raw chan-open-init")]
+    ChanOpenInit(channel::TxRawChanOpenInitCmd),
 
     /// The `tx raw chan-try` subcommand
-    #[options(help = "tx raw chan-try")]
-    ChanTry(channel::TxRawChanTryCmd),
+    #[options(help = "tx raw chan-open-try")]
+    ChanOpenTry(channel::TxRawChanOpenTryCmd),
 
-    /// The `tx raw chan-ack` subcommand
-    #[options(help = "tx raw chan-ack")]
-    ChanAck(channel::TxRawChanAckCmd),
+    /// The `tx raw chan-open-ack` subcommand
+    #[options(help = "tx raw chan-open-ack")]
+    ChanOpenAck(channel::TxRawChanOpenAckCmd),
 
-    /// The `tx raw chan-confirm` subcommand
-    #[options(help = "tx raw chan-confirm")]
-    ChanConfirm(channel::TxRawChanConfirmCmd),
+    /// The `tx raw chan-open-confirm` subcommand
+    #[options(help = "tx raw chan-open-confirm")]
+    ChanOpenConfirm(channel::TxRawChanOpenConfirmCmd),
+
+    /// The `tx raw chan-close-init` subcommand
+    #[options(help = "tx raw chan-close-init")]
+    ChanCloseInit(channel::TxRawChanCloseInitCmd),
+
+    /// The `tx raw chan-close-confirm` subcommand
+    #[options(help = "tx raw chan-close-confirm")]
+    ChanCloseConfirm(channel::TxRawChanCloseConfirmCmd),
 
     /// The `tx raw packet-send` subcommand
     #[options(help = "tx raw packet-send")]

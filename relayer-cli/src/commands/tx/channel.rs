@@ -11,10 +11,10 @@ use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
-macro_rules! chan_open_cmd {
-    ($chan_open_cmd:ident, $dbg_string:literal, $func:ident) => {
+macro_rules! tx_chan_cmd {
+    ($tx_chan_cmd:ident, $dbg_string:literal, $func:ident) => {
         #[derive(Clone, Command, Debug, Options)]
-        pub struct $chan_open_cmd {
+        pub struct $tx_chan_cmd {
             #[options(free, required, help = "identifier of the destination chain")]
             dst_chain_id: ChainId,
 
@@ -43,7 +43,7 @@ macro_rules! chan_open_cmd {
             ordering: Order,
         }
 
-        impl Runnable for $chan_open_cmd {
+        impl Runnable for $tx_chan_cmd {
             fn run(&self) {
                 let config = app_config();
 
@@ -89,21 +89,45 @@ macro_rules! chan_open_cmd {
 
                 match res {
                     Ok(receipt) => Output::success(receipt).exit(),
-                    Err(e) => Output::error(format!("{}", e)).exit(),
+                    Err(e) => Output::error(format!("{:?}", e)).exit(),
                 }
             }
         }
     };
 }
 
-chan_open_cmd!(TxRawChanInitCmd, "ChanOpenInit", build_chan_init_and_send);
+tx_chan_cmd!(
+    TxRawChanOpenInitCmd,
+    "ChanOpenInit",
+    build_chan_open_init_and_send
+);
 
-chan_open_cmd!(TxRawChanTryCmd, "ChanOpenTry", build_chan_try_and_send);
+tx_chan_cmd!(
+    TxRawChanOpenTryCmd,
+    "ChanOpenTry",
+    build_chan_open_try_and_send
+);
 
-chan_open_cmd!(TxRawChanAckCmd, "ChanOpenAck", build_chan_ack_and_send);
+tx_chan_cmd!(
+    TxRawChanOpenAckCmd,
+    "ChanOpenAck",
+    build_chan_open_ack_and_send
+);
 
-chan_open_cmd!(
-    TxRawChanConfirmCmd,
+tx_chan_cmd!(
+    TxRawChanOpenConfirmCmd,
     "ChanOpenConfirm",
-    build_chan_confirm_and_send
+    build_chan_open_confirm_and_send
+);
+
+tx_chan_cmd!(
+    TxRawChanCloseInitCmd,
+    "ChanCloseInit",
+    build_chan_close_init_and_send
+);
+
+tx_chan_cmd!(
+    TxRawChanCloseConfirmCmd,
+    "ChanCloseConfirm",
+    build_chan_close_confirm_and_send
 );

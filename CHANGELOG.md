@@ -10,6 +10,7 @@
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
   - JSON output for queries and txs ([#500])
+  - Implement commands for channel close init and confirm ([#538])
   - Implement command to perform the handshake for a new channel ([#557])
 
 - [relayer]
@@ -60,6 +61,7 @@
 [#535]: https://github.com/informalsystems/ibc-rs/issues/535
 [#536]: https://github.com/informalsystems/ibc-rs/issues/536
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
+[#538]: https://github.com/informalsystems/ibc-rs/issues/538
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
 [#554]: https://github.com/informalsystems/ibc-rs/issues/554
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
