@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use abscissa_core::{Command, Options, Runnable};
+use abscissa_core::{Command, Configurable, Options, Runnable};
 use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
@@ -15,10 +15,83 @@ use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::{ChainConfig, Config};
 
-use crate::conclude::Output;
+use crate::{commands::{self, CliCmd}, conclude::Output};
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
+/// Query client state command
+#[derive(Clone, Command, Debug, Options)]
+pub struct QueryAllClientsCmd {
+    #[options(free, help = "identifier of the chain to query")]
+    chain_id: Option<ChainId>,
+
+    #[options(help = "the chain height which this query should reflect", short = "h")]
+    height: Option<u64>,
+
+    #[options(help = "whether proof is required", short = "p")]
+    proof: Option<bool>,
+}
+
+#[derive(Debug)]
+struct QueryAllClientsOptions {
+    client_id: ClientId,
+    height: u64,
+    proof: bool,
+}
+
+
+
+// impl QueryAllClientsCmd {
+//     fn validate_options(
+//         &self,
+//         config: &Config,
+//     ) -> Result<(ChainConfig, QueryAllClientsOptions), String> {
+//         let (chain_config, client_id) =
+//             validate_common_options(&self.chain_id, &self.client_id, config)?;
+
+//         let opts = QueryClientStateOptions {
+//             client_id,
+//             height: self.height.unwrap_or(0_u64),
+//             proof: self.proof.unwrap_or(false),
+//         };
+//         Ok((chain_config, opts))
+//     }
+// }
+
+/// Command for querying a client's state.
+/// To run with proof:
+/// rrly -c cfg.toml query client all ibc-1 07-tendermint-0 --height 3
+///
+/// Run without proof:
+/// rrly -c cfg.toml query client all ibc-1 07-tendermint-0 --height 3 -p false
+impl Runnable for QueryAllClientsCmd {
+    fn run(&self) {
+        // let config = app_config();
+
+        // let (chain_config, opts) = match self.validate_options(&config) {
+        //     Err(err) => {
+        //         return Output::error(err).exit();
+        //     }
+        //     Ok(result) => result,
+        // };
+        // info!("Options {:?}", opts);
+
+        // let rt = Arc::new(TokioRuntime::new().unwrap());
+        // let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        // let height = ibc::Height::new(chain.id().version(), opts.height);
+
+        // let res: Result<AnyClientState, Error> = chain
+        //     .query(ClientState(opts.client_id), height, opts.proof)
+        //     .map_err(|e| Kind::Query.context(e).into())
+        //     .and_then(|v| {
+        //         AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
+        //     });
+        // match res {
+        //     Ok(cs) => Output::success(cs).exit(),
+        //     Err(e) => Output::error(format!("{}", e)).exit(),
+        // }
+    }
+}
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -299,9 +372,10 @@ impl Runnable for QueryClientConnectionsCmd {
 /// Tests
 #[cfg(test)]
 mod tests {
-    use relayer::config::parse;
-
     use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
+    // use crate::{commands::CliCmd, config::Config};
+    // use abscissa_core::Configurable;
+    use relayer::config::parse;
 
     #[test]
     fn parse_query_state_parameters() {
@@ -473,4 +547,28 @@ mod tests {
             }
         }
     }
+}
+
+#[test]
+fn test_run() {
+    let cmd = QueryClientConnectionsCmd {
+        chain_id: Some("ibc-0".to_string().parse().unwrap()),
+        client_id: Some("clientidone".to_string().parse().unwrap()),
+        height: Some(4),
+    };
+
+    // <CliCmd as Configurable<Config>>.process_config(&cmd,)
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/loop_config.toml"
+    );
+    let config = relayer::config::parse(path);
+    println!("{:?}", config);
+
+    assert!(config.is_ok());
+
+   <CliCmd as Configurable<Config>>::process_config(&CliCmd::Query(commands::query::QueryCmd::Client(commands::query::QueryClientCmds::Connections(cmd.clone()))),config.unwrap());
+
+    //let config = app_config();
+    cmd.run()
 }

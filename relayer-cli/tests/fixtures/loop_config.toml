@@ -1,0 +1,93 @@
+[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'info'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = 'D70AA79D44EC1F6010DD66EB77B2F207705B2646'
+
+[[chains.peers.light_clients]]
+peer_id = 'D70AA79D44EC1F6010DD66EB77B2F207705B2646'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = '5CE3C307D1D122008E8AC0BA5DC19A5892BCDF9F265A6892445F0F2E240B0686'
+trusted_height = '13'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/c/Documents/GitHub/ibc-rs/data/ibc-0/data/D70AA79D44EC1F6010DD66EB77B2F207705B2646'
+
+[[chains.peers.light_clients]]
+peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = '47B60AEEF4950A3A71C8A4B1B3D5F7E86557144B7FA0E0F97BC04C71F8D762A7'
+trusted_height = '14'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/c/Documents/GitHub/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://localhost:26557'
+grpc_addr = 'tcp://localhost:9091'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = '569BCD98A8C09FAD629AB96961D11CC39F1D87F6'
+
+[[chains.peers.light_clients]]
+peer_id = '569BCD98A8C09FAD629AB96961D11CC39F1D87F6'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = '8153087C88318ABE2A016806D6A524C990427D1C8BDFC8D692BA0D650D253CD2'
+trusted_height = '3'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/c/Documents/GitHub/ibc-rs/data/ibc-1/data/569BCD98A8C09FAD629AB96961D11CC39F1D87F6'
+
+[[chains.peers.light_clients]]
+peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = 'B525CCEE3E9449E5FBADA7C97FDE722CA7A7E4CEB4246FFF386401F53AA6B627'
+trusted_height = '4'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/c/Documents/GitHub/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+
