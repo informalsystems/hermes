@@ -185,14 +185,14 @@ pub struct QueryUnreceivedPacketsCmd {
         required,
         help = "identifier of the port to query on source chain"
     )]
-    port_id: PortId,
+    src_port_id: PortId,
 
     #[options(
         free,
         required,
         help = "identifier of the channel to query on source chain"
     )]
-    channel_id: ChannelId,
+    src_channel_id: ChannelId,
 }
 
 impl QueryUnreceivedPacketsCmd {
@@ -209,8 +209,8 @@ impl QueryUnreceivedPacketsCmd {
             .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
+            port_id: self.src_port_id.clone(),
+            channel_id: self.src_channel_id.clone(),
             height: 0_u64,
         };
 
@@ -483,14 +483,14 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         required,
         help = "identifier of the port to query on source chain"
     )]
-    port_id: PortId,
+    src_port_id: PortId,
 
     #[options(
         free,
         required,
         help = "identifier of the channel to query on source chain"
     )]
-    channel_id: ChannelId,
+    src_channel_id: ChannelId,
 }
 
 impl QueryUnreceivedAcknowledgementCmd {
@@ -507,8 +507,8 @@ impl QueryUnreceivedAcknowledgementCmd {
             .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
+            port_id: self.src_port_id.clone(),
+            channel_id: self.src_channel_id.clone(),
             height: 0_u64,
         };
 

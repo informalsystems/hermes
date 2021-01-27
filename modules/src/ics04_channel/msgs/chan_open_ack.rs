@@ -54,6 +54,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
             raw_msg.proof_try.into(),
             None,
             None,
+            None,
             raw_msg
                 .proof_height
                 .ok_or(Kind::MissingHeight)?

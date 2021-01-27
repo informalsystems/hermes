@@ -586,7 +586,7 @@ impl Chain for CosmosSDKChain {
         Ok((pc, height))
     }
 
-    /// Queries the packet commitment hashes associated with a channel.
+    /// Queries the unreceived packet sequences associated with a channel.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
@@ -644,7 +644,7 @@ impl Chain for CosmosSDKChain {
         Ok((pc, height))
     }
 
-    /// Queries the packet commitment hashes associated with a channel.
+    /// Queries the unreceived acknowledgements sequences associated with a channel.
     fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
