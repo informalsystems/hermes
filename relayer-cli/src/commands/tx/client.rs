@@ -27,9 +27,7 @@ impl Runnable for TxCreateClientCmd {
         let chains =
             match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
                 Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
+                Err(e) => return Output::error(format!("{}", e)).exit(),
             };
 
         let client = ForeignClient {

@@ -50,9 +50,7 @@ macro_rules! chan_open_cmd {
                     &self.dst_chain_id,
                 ) {
                     Ok(chains) => chains,
-                    Err(e) => {
-                        return Output::error(format!("{}", e)).exit();
-                    }
+                    Err(e) => return Output::error(format!("{}", e)).exit(),
                 };
 
                 // Retrieve the connection
