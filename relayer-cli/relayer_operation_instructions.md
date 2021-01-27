@@ -5,8 +5,8 @@
 1. Clone gaia:
 
     ```shell script
-    git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/comsos/gaia
-    cd ~/go/src/github.com/comsos/gaia ; git co v3.0.0 ; make install
+    git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
+    cd ~/go/src/github.com/cosmos/gaia ; git co v3.0.0 ; make install
     ```
 
 2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
@@ -200,19 +200,13 @@ rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
 
 #### Channel Close CLIs:
-Starting with channel in open-open:
 
-- close-open
-
-    ```shell script
-    rrly -c loop_config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
-    ```
-
-   Note: This command is currently rejected by cosmos-sdk transfer module. To make it work:
+__Note__: This command is currently rejected by cosmos-sdk transfer module. To
+make it work:
    - clone cosmos-sdk
        ```shell script
-       git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/comsos/cosmos-sdk
-       cd ~/go/src/github.com/comsos/cosmos-sdk
+       git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
+       cd ~/go/src/github.com/cosmos/cosmos-sdk
        ```
    - apply these diffs:
        ```
@@ -226,8 +220,20 @@ Starting with channel in open-open:
           +       return nil
            }
        ```
-   - add the line below as the last line in your `go.sum` in the gaia clone and rebuild:
+   - append the line below (watch for the placeholder `<your>`) as the last line
+     in your `go.mod` in the gaia clone:
+
    ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
+
+   - now `make build` and `make install` your local copy of gaia
+
+Starting with channel in open-open:
+
+- close-open
+
+    ```shell script
+    rrly -c loop_config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
+    ```
 
 - close-close
 
@@ -237,10 +243,10 @@ Starting with channel in open-open:
 
 - verify that the two ends are in Close state:
 
-      ```shell script
-      rrly -c loop_config.toml query channel end ibc-0 transfer channel-0
-      rrly -c loop_config.toml query channel end ibc-1 transfer channel-0
-      ```
+  ```shell script
+  rrly -c loop_config.toml query channel end ibc-0 transfer channel-0
+  rrly -c loop_config.toml query channel end ibc-1 transfer channel-0
+  ```
 
 ### Relayer loop:
 
