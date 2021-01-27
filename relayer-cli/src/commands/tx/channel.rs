@@ -36,7 +36,10 @@ macro_rules! tx_chan_cmd {
             #[options(free, required, help = "identifier of the source channel")]
             src_channel_id: ChannelId,
 
-            #[options(help = "the channel order", short = "o")]
+            #[options(
+                help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
+                short = "o"
+            )]
             ordering: Order,
         }
 
