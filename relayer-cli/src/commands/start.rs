@@ -1,13 +1,13 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::ics04_channel::channel::Order;
-use relayer::relay::{channel_relay, relay_on_new_link};
-
-use crate::commands::cli_utils::chain_handlers_from_chain_id;
-use crate::conclude::Output;
-use crate::prelude::*;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use relayer::link::LinkParameters;
+use relayer::relay::{channel_relay, relay_on_new_link};
+
+use crate::commands::cli_utils::ChainHandlePair;
+use crate::conclude::Output;
+use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct StartCmd {
@@ -28,13 +28,10 @@ impl Runnable for StartCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         match (&self.src_port_id, &self.src_channel_id) {
             (Some(src_port_id), Some(src_channel_id)) => channel_relay(
