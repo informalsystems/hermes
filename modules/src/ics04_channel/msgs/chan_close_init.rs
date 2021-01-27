@@ -1,42 +1,25 @@
+use std::convert::TryFrom;
+
+use tendermint::account::Id as AccountId;
+use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
+
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::tx_msg::Msg;
 
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
-use tendermint::account::Id as AccountId;
-use tendermint_proto::Protobuf;
-
-use std::convert::TryFrom;
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 
 ///
 /// Message definition for the first step in the channel close handshake (`ChanCloseInit` datagram).
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseInit {
-    port_id: PortId,
-    channel_id: ChannelId,
-    signer: AccountId,
-}
-
-impl MsgChannelCloseInit {
-    // todo: Constructor not used yet.
-    #[allow(dead_code)]
-    fn new(
-        port_id: String,
-        channel_id: String,
-        signer: AccountId,
-    ) -> Result<MsgChannelCloseInit, Error> {
-        Ok(Self {
-            port_id: port_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            channel_id: channel_id
-                .parse()
-                .map_err(|e| Kind::IdentifierError.context(e))?,
-            signer,
-        })
-    }
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub signer: AccountId,
 }
 
 impl Msg for MsgChannelCloseInit {
@@ -44,6 +27,10 @@ impl Msg for MsgChannelCloseInit {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -102,11 +89,12 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 
     use crate::ics04_channel::msgs::chan_close_init::test_util::get_dummy_raw_msg_chan_close_init;
     use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_close_init_msg() {
