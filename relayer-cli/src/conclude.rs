@@ -2,14 +2,14 @@
 //! from a CLI command. The main use-case for this module is to provide a consistent output for
 //! queries and transactions.
 //!
-//! The examples below rely on crate-private methods (for this reason, doctests do not compile).
+//! The examples below rely on crate-private methods (for this reason, doctests are ignored).
 //! They are intended for contributors to crate `relayer-cli`, and _not_ for users of this binary.
 //!
 //! ## Examples on how to use the quick-access constructors:
 //!
 //! - Exit from a query/tx with a `String` error:
 //!
-//! ```compile_fail
+//! ```ignore
 //! let e = String::from("error message");
 //! Output::error(e).exit();
 //! // or as an alternative:
@@ -21,7 +21,7 @@
 //! better to simplify the output and only write out the chain of error sources, which we can
 //! achieve with `format!("{}", e)`. The complete solution is as follows:
 //!
-//! ```compile_fail
+//! ```ignore
 //! let e: Error = Kind::Query.into();
 //! Output::error(format!("{}", e)).exit();
 //! ```
@@ -31,7 +31,7 @@
 //! to the error object `Kind::Query`. If this error object comprises any positional arguments,
 //! e.g. as achieved by `Query(String, String)`, then it is important to cover these arguments
 //! in the `error` annotation, for instance:
-//! ```compile_fail
+//! ```ignore
 //! #[derive(Debug, Error)]
 //! pub enum Kind {
 //!     #[error("failed with underlying causes: {0}, {1}")]
@@ -40,14 +40,14 @@
 //!
 //! - Exit from a query/tx with success:
 //!
-//! ```compile_fail
+//! ```ignore
 //! let cs = ChannelEnd::default();
 //! Output::success(cs).exit();
 //! ```
 //!
 //! - Exit from a query/tx with success and multiple objects in the result:
 //!
-//! ```compile_fail
+//! ```ignore
 //! let h = Height::default();
 //! let end = ConnectionEnd::default();
 //! Output::success(h).with_result(end).exit();
