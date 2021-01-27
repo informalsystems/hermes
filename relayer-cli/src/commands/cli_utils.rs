@@ -28,19 +28,21 @@ impl ChainHandlePair {
     }
 
     /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
-    /// and return the pair of associated handles. Accepts additionnal options.
+    /// and return the pair of associated handles. Accepts a `SpawnOptions` argument, which
+    /// is used to override each chain configuration before spawning its runtime.
     pub fn spawn_with(
         options: SpawnOptions,
         config: &config::Reader<CliApp>,
         src_chain_id: &ChainId,
         dst_chain_id: &ChainId,
     ) -> Result<Self, Error> {
-        chain_handlers_from_chain_id(options, config, src_chain_id, dst_chain_id)
+        spawn_chain_runtimes(options, config, src_chain_id, dst_chain_id)
     }
 }
 
-/// Create the source and destination chain handlers from the configuration and chain identifiers
-pub fn chain_handlers_from_chain_id(
+/// Spawn the source and destination chain runtime from the configuration and chain identifiers,
+/// and return the pair of associated handles.
+fn spawn_chain_runtimes(
     spawn_options: SpawnOptions,
     config: &config::Reader<CliApp>,
     src_chain_id: &ChainId,
