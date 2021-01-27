@@ -41,12 +41,7 @@ impl QueryPacketCommitmentsCmd {
     ) -> Result<(ChainConfig, QueryPacketOptions), String> {
         let dest_chain_config = config
             .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -121,12 +116,7 @@ impl QueryPacketCommitmentCmd {
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
             .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -212,21 +202,11 @@ impl QueryUnreceivedPacketsCmd {
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.src_chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.src_chain_id))?;
 
         let dst_chain_config = config
             .find_chain(&self.dst_chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.dst_chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -434,12 +414,7 @@ impl QueryPacketAcknowledgmentCmd {
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
             .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -525,21 +500,11 @@ impl QueryUnreceivedAcknowledgementCmd {
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.src_chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.src_chain_id))?;
 
         let dst_chain_config = config
             .find_chain(&self.dst_chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for chain ({}) ",
-                    self.dst_chain_id
-                )
-            })?;
+            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
