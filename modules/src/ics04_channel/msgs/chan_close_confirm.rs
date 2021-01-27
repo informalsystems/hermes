@@ -1,13 +1,16 @@
+use std::convert::{TryFrom, TryInto};
+
+use tendermint::account::Id as AccountId;
+use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
+
 use crate::address::{account_to_string, string_to_account};
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics24_host::identifier::{ChannelId, PortId};
 use crate::{proofs::Proofs, tx_msg::Msg};
 
-use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-use tendermint::account::Id as AccountId;
-use tendermint_proto::Protobuf;
-
-use std::convert::{TryFrom, TryInto};
+pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 
 ///
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
@@ -15,10 +18,10 @@ use std::convert::{TryFrom, TryInto};
 ///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseConfirm {
-    port_id: PortId,
-    channel_id: ChannelId,
-    proofs: Proofs,
-    signer: AccountId,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub proofs: Proofs,
+    pub signer: AccountId,
 }
 
 impl Msg for MsgChannelCloseConfirm {
@@ -26,6 +29,10 @@ impl Msg for MsgChannelCloseConfirm {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
+    }
+
+    fn type_url(&self) -> String {
+        TYPE_URL.to_string()
     }
 
     fn get_signers(&self) -> Vec<AccountId> {
@@ -84,9 +91,9 @@ impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
     pub fn get_dummy_raw_msg_chan_close_confirm(proof_height: u64) -> RawMsgChannelCloseConfirm {
@@ -105,12 +112,13 @@ pub mod test_util {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     use crate::ics04_channel::msgs::chan_close_confirm::test_util::get_dummy_raw_msg_chan_close_confirm;
     use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-    use ibc_proto::ibc::core::client::v1::Height;
-    use std::convert::TryFrom;
 
     #[test]
     fn parse_channel_close_confirm_msg() {

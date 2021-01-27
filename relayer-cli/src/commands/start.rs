@@ -37,32 +37,43 @@ impl Runnable for StartCmd {
             };
 
         match (&self.src_port_id, &self.src_channel_id) {
-            (Some(src_port_id), Some(src_channel_id)) => channel_relay(
-                chains.src,
-                chains.dst,
-                &LinkParameters {
-                    src_port_id: src_port_id.clone(),
-                    src_channel_id: src_channel_id.clone(),
-                },
-            )
-            .unwrap(),
+            (Some(src_port_id), Some(src_channel_id)) => {
+                match channel_relay(
+                    chains.src,
+                    chains.dst,
+                    &LinkParameters {
+                        src_port_id: src_port_id.clone(),
+                        src_channel_id: src_channel_id.clone(),
+                    },
+                ) {
+                    Ok(()) => Output::success(()).exit(),
+                    Err(e) => Output::error(e.to_string()).exit(),
+                }
+            }
             (None, None) => {
                 let ordering = Order::default(); // TODO - add to config
                 let relay_paths = &config
                     .clone()
                     .relay_paths(&self.src_chain_id, &self.dst_chain_id);
 
-                info!("Start relayer on {:?}", self);
                 match relay_paths {
                     Some(paths) => {
+                        info!("Start relayer on {:?}", self);
                         // Relay for a single channel, first on the connection between the two chains
-                        relay_on_new_link(chains.src, chains.dst, ordering, paths[0].clone())
-                            .unwrap()
+                        match relay_on_new_link(chains.src, chains.dst, ordering, paths[0].clone())
+                        {
+                            Ok(()) => Output::success(()).exit(),
+                            Err(e) => Output::error(e.to_string()).exit(),
+                        }
                     }
                     None => Output::error(format!("No paths configured for {:?}", self)).exit(),
                 }
             }
-            _ => Output::error(format!("Invalid parameters {:?}", self)).exit(),
+            _ => Output::error(format!(
+                "Invalid parameters, either both port and channel must be specified or none: {:?}",
+                self
+            ))
+            .exit(),
         }
     }
 }
