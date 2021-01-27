@@ -15,6 +15,5 @@
         - [Transactions](./transactions.md)
         - [Queries](./queries.md)
 - [Troubleshooting](./troubleshoot.md)
-  - [Common Issues](./common_issues.md)
 - [FAQ](./faq.md)
 ---
