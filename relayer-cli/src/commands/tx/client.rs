@@ -99,32 +99,37 @@ impl Runnable for TxUpdateClientCmd {
 #[cfg(test)]
 mod tests {
 
-use abscissa_core::Runnable;
+    use crate::commands::{
+        tx::{client::TxCreateClientCmd, TxCmd, TxRawCommands},
+        CliCmd,
+    };
+    use abscissa_core::Runnable;
     use ibc::ics24_host::identifier::ChainId;
     use relayer::config::Config;
-use crate::commands::{CliCmd, tx::{TxCmd, TxRawCommands, client::TxCreateClientCmd}};
 
+    #[test]
+    fn test_run() {
+        let cmd = TxCreateClientCmd {
+            dst_chain_id: ChainId::new("ibc".to_string().parse().unwrap(), 0),
+            src_chain_id: ChainId::new("ibc".to_string().parse().unwrap(), 1),
+        };
 
-#[test]
-fn test_run() {
-    let cmd = TxCreateClientCmd {
-        dst_chain_id: ChainId::new("ibc".to_string().parse().unwrap(),0),
-        src_chain_id: ChainId::new("ibc".to_string().parse().unwrap(),1),
-    };
+        // <CliCmd as Configurable<Config>>.process_config(&cmd,)
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/loop_config.toml"
+        );
+        let config = relayer::config::parse(path);
+        println!("{:?}", config);
 
-    // <CliCmd as Configurable<Config>>.process_config(&cmd,)
-    let path = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/loop_config.toml"
-    );
-    let config = relayer::config::parse(path);
-    println!("{:?}", config);
+        assert!(config.is_ok());
 
-    assert!(config.is_ok());
+        <CliCmd as abscissa_core::Configurable<Config>>::process_config(
+            &CliCmd::Tx(TxCmd::Raw(TxRawCommands::CreateClient(cmd.clone()))),
+            config.unwrap(),
+        );
 
-   <CliCmd as abscissa_core::Configurable<Config>>::process_config(&CliCmd::Tx(TxCmd::Raw(TxRawCommands::CreateClient(cmd.clone()))),config.unwrap());
-
-    //let config = app_config();
-    cmd.run();
-}
+        //let config = app_config();
+        cmd.run();
+    }
 }

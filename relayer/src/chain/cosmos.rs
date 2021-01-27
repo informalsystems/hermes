@@ -34,6 +34,7 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
@@ -698,6 +699,36 @@ impl Chain for CosmosSDKChain {
             result.append(&mut events);
         }
         Ok(result)
+    }
+
+    fn query_chain_clients(
+        &self,
+        request: QueryClientStatesRequest,
+    ) -> Result<Vec<ClientId>, Error> {
+        crate::time!("query_chain_clients");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+        let response = self
+            .block_on(client.client_states(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let vec_ids = response
+            .client_states
+            .iter()
+            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
+            .collect();
+
+        Ok(vec_ids)
     }
 
     fn query_connection_channels(

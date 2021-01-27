@@ -14,6 +14,7 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc::downcast;
@@ -233,6 +234,13 @@ impl Chain for MockChain {
         &self,
         _request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_chain_clients(
+        &self,
+        _request: QueryClientStatesRequest,
+    ) -> Result<Vec<ClientId>, Error> {
         unimplemented!()
     }
 

@@ -41,8 +41,8 @@ pub enum QueryClientCmds {
     #[options(help = "query client connections")]
     Connections(client::QueryClientConnectionsCmd),
 
-    /// The `query all clients` subcommand
-    #[options(help = "query all clients")]
+    /// The `query clients` subcommand
+    #[options(help = "query client all")]
     All(client::QueryAllClientsCmd),
 }
 
