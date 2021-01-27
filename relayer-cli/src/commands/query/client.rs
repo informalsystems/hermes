@@ -20,6 +20,8 @@ use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 // TODO: refactor commands: why is chain_id an `Option`? simpler to give it `ChainId` type.
+//  see the tx/client.rs or tx/packet.rs for simpler approaches.
+
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
@@ -214,7 +216,7 @@ fn validate_common_options(
 ) -> Result<(ChainConfig, ClientId), String> {
     let chain_id = chain_id
         .clone()
-        .ok_or_else(|| "missing chain parameter".to_string())?;
+        .ok_or_else(|| "missing chain identifier".to_string())?;
     let chain_config = config
         .find_chain(&chain_id)
         .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;

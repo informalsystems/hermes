@@ -53,7 +53,7 @@ impl QueryChannelEndCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let port_id = self
             .port_id
