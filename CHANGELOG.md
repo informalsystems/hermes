@@ -10,6 +10,7 @@
 - [relayer-cli]
   - Implement command to query the channels associated with a connection ([#505])
   - JSON output for queries and txs ([#500])
+  - Added 'required' annotation for CLIs queries & txs; better error display ([#555])
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
 
@@ -59,6 +60,7 @@
 [#536]: https://github.com/informalsystems/ibc-rs/issues/536
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
+[#555]: https://github.com/informalsystems/ibc-rs/issues/555
 
 
 ## v0.0.6
