@@ -2,10 +2,11 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
+use relayer::config::StoreConfig;
 use relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
-use crate::commands::cli_utils::chain_handlers_from_chain_id;
+use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 
@@ -24,13 +25,16 @@ impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &self.src_chain_id,
+            &self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let client = ForeignClient {
             dst_chain: chains.dst,
@@ -70,13 +74,16 @@ impl Runnable for TxUpdateClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &self.src_chain_id,
+            &self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let client = ForeignClient {
             dst_chain: chains.dst,

@@ -2,9 +2,10 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use relayer::config::StoreConfig;
 use relayer::link::{Link, LinkParameters};
 
-use crate::commands::cli_utils::chain_handlers_from_chain_id;
+use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -28,13 +29,16 @@ impl Runnable for TxRawPacketRecvCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &self.src_chain_id,
+            &self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
@@ -72,13 +76,16 @@ impl Runnable for TxRawPacketAckCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &self.src_chain_id,
+            &self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),

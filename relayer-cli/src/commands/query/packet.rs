@@ -59,9 +59,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -133,9 +131,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         let config = app_config();
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -223,9 +219,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let config = app_config();
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -357,9 +351,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -431,9 +423,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         let config = app_config();
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -521,9 +511,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let config = app_config();
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);

@@ -84,9 +84,7 @@ impl Runnable for QueryChannelEndCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
