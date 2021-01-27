@@ -4,21 +4,27 @@ In order to test the relayer against two chains, we provide a script that can st
 
 The script below starts two [`gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol.
 
+### Running the script
+
 To run the script, open a terminal and navigate to the `ibc-rs` repository folder
 
 ```bash
 cd ibc-rs
 ```
 
-Then run the following script with the parameters below:
+#### Configuration
+
+In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
+
+#### Start the chains
+
+Run the following script with the parameters below to start the chains:
 
 ```bash
-./dev-env ./relayer-cli/tests/fixtures/two_chains.toml ibc-0 ibc-1
+./dev-env two_chains.toml ibc-0 ibc-1
 ```
 
 The script will configure and start two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
-
-
 
 ```mermaid
 graph TD
@@ -75,5 +81,31 @@ Adding primary peers to light client configuration...
 Adding secondary peers to light client configuration...
 Importing keys...
 ```
+
+#### Data directory
+The script will also create a `data` directory in the current directory in order to install the chain store and configuration files for each chain.
+
+The `data` directory should have a tree structure similar to this
+
+```shell
+data
+├── ibc-0
+│   ├── config
+│   ├── data
+│   ├── keyring-test
+│   ├── key_seed.json
+│   └── validator_seed.json
+├── ibc-0.log
+├── ibc-1
+│   ├── config
+│   ├── data
+│   ├── keyring-test
+│   ├── key_seed.json
+│   └── validator_seed.json
+└── ibc-1.log
+
+```
+
+#### Next steps
 
 Now that you have two chains running with IBC support, you can run some relayer [commands](./commands.md)

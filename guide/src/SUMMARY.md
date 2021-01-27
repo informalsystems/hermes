@@ -11,6 +11,7 @@
     - [Local chains](./local_chains.md)
     - [Configuration](./config.md)
     - [Commands](./commands.md)
+        - [Light Clients](./light_clients.md)
         - [Transactions](./transactions.md)
         - [Queries](./queries.md)
 - [Troubleshooting](./troubleshoot.md)
