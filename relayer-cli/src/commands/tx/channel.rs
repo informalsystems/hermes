@@ -5,8 +5,9 @@ use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
 use relayer::channel::{Channel, ChannelSide};
+use relayer::config::StoreConfig;
 
-use crate::commands::cli_utils::chain_handlers_from_chain_id;
+use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
@@ -47,15 +48,15 @@ macro_rules! tx_chan_cmd {
             fn run(&self) {
                 let config = app_config();
 
-                let chains = match chain_handlers_from_chain_id(
+                let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+                let chains = match ChainHandlePair::spawn_with(
+                    spawn_options,
                     &config,
                     &self.src_chain_id,
                     &self.dst_chain_id,
                 ) {
                     Ok(chains) => chains,
-                    Err(e) => {
-                        return Output::error(format!("{}", e)).exit();
-                    }
+                    Err(e) => return Output::error(format!("{}", e)).exit(),
                 };
 
                 // Retrieve the connection

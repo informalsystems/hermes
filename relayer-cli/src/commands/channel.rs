@@ -3,12 +3,12 @@ use abscissa_core::{Command, Help, Options, Runnable};
 
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, PortId};
+use relayer::config::{RelayPath, StoreConfig};
 use relayer::relay::connect_with_new_channel;
 
 use crate::application::app_config;
-use crate::commands::cli_utils::chain_handlers_from_chain_id;
+use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;
-use relayer::config::RelayPath;
 
 /// `channel` subcommand
 #[derive(Command, Debug, Options, Runnable)]
@@ -44,13 +44,18 @@ impl Runnable for ChannelHandshakeCommand {
     fn run(&self) {
         let config = app_config();
 
-        let chains =
-            match chain_handlers_from_chain_id(&config, &self.src_chain_id, &self.dst_chain_id) {
-                Ok(chains) => chains,
-                Err(e) => {
-                    return Output::error(format!("{}", e)).exit();
-                }
-            };
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &self.src_chain_id,
+            &self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => {
+                return Output::error(format!("{}", e)).exit();
+            }
+        };
 
         let res = connect_with_new_channel(
             chains.src,
