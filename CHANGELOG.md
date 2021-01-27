@@ -22,6 +22,7 @@
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
   - UX improvements for relayer txs ([#536, #540, #554])
+  - Allow running standalone commands concurrently to the main relayer loop ([#501])
 
 - [relayer]
   - Performance improvements ([#514], [#537])
@@ -46,6 +47,7 @@
 [#306]: https://github.com/informalsystems/ibc-rs/issues/306
 [#470]: https://github.com/informalsystems/ibc-rs/issues/470
 [#500]: https://github.com/informalsystems/ibc-rs/issues/500
+[#501]: https://github.com/informalsystems/ibc-rs/issues/501
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
