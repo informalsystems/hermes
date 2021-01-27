@@ -11,19 +11,19 @@ mod packet;
 #[derive(Command, Debug, Options, Runnable)]
 pub enum QueryCmd {
     /// The `query client` subcommand
-    #[options(help = "query client")]
+    #[options(help = "query information about client(s)")]
     Client(QueryClientCmds),
 
     /// The `query connection` subcommand
-    #[options(help = "query connection")]
+    #[options(help = "query information about connection(s)")]
     Connection(QueryConnectionCmds),
 
     /// The `query channel` subcommand
-    #[options(help = "query channel")]
+    #[options(help = "query information about channel(s)")]
     Channel(QueryChannelCmds),
 
     /// The `query packet` subcommand
-    #[options(help = "query packets")]
+    #[options(help = "query information about packet(s)")]
     Packet(QueryPacketCmds),
 }
 
