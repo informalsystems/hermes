@@ -25,21 +25,10 @@ use crate::prelude::*;
 pub struct QueryAllClientsCmd {
     #[options(free, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
-
-    #[options(help = "whether proof is required", short = "p")]
-    proof: Option<bool>,
-}
-
-#[derive(Debug)]
-struct QueryAllClientsOptions {
-    proof: bool,
 }
 
 impl QueryAllClientsCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<(ChainConfig, QueryAllClientsOptions), String> {
+    fn validate_options(&self, config: &Config) -> Result<ChainConfig, String> {
         let chain_id = self
             .chain_id
             .clone()
@@ -49,10 +38,7 @@ impl QueryAllClientsCmd {
             .find_chain(&chain_id)
             .ok_or_else(|| "missing chain configuration for the given chain id".to_string())?;
 
-        let opts = QueryAllClientsOptions {
-            proof: self.proof.unwrap_or(false),
-        };
-        Ok((chain_config.clone(), opts))
+        Ok(chain_config.clone())
     }
 }
 
@@ -66,13 +52,12 @@ impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let (chain_config, opts) = match self.validate_options(&config) {
+        let chain_config = match self.validate_options(&config) {
             Err(err) => {
                 return Output::error(err).exit();
             }
             Ok(result) => result,
         };
-        info!("Options {:?}", opts);
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
