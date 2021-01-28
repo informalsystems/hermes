@@ -32,11 +32,7 @@ impl QueryAllClientsCmd {
 }
 
 /// Command for querying a client's state.
-/// To run with proof:
-/// rrly -c cfg.toml query client all ibc-1 --height 3
-///
-/// Run without proof:
-/// rrly -c cfg.toml query client all ibc-1 --height 3 -p false
+/// rrly -c cfg.toml query clients ibc-1  
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();
