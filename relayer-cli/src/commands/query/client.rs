@@ -6,7 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
+use ibc::ics03_connection::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
@@ -76,9 +76,7 @@ impl Runnable for QueryClientStateCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -176,9 +174,7 @@ impl Runnable for QueryClientConsensusCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -285,9 +281,7 @@ impl Runnable for QueryClientConnectionsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);

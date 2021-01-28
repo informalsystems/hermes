@@ -1,10 +1,13 @@
 //! `query` subcommand
 
+use crate::commands::query::channels::QueryChannelsCmd;
 use abscissa_core::{Command, Options, Runnable};
 
 mod channel;
+mod channels;
 mod client;
 mod connection;
+mod connections;
 mod packet;
 
 /// `query` subcommand
@@ -18,9 +21,17 @@ pub enum QueryCmd {
     #[options(help = "query information about connection(s)")]
     Connection(QueryConnectionCmds),
 
+    /// The `query connections` subcommand
+    #[options(help = "query the identifiers of all connection on a chain")]
+    Connections(connections::QueryConnectionsCmd),
+
     /// The `query channel` subcommand
     #[options(help = "query information about channel(s)")]
     Channel(QueryChannelCmds),
+
+    /// The `query channels` subcommand
+    #[options(help = "query the identifiers of all channels on a given chain")]
+    Channels(QueryChannelsCmd),
 
     /// The `query packet` subcommand
     #[options(help = "query information about packet(s)")]

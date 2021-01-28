@@ -84,9 +84,7 @@ impl Runnable for TxRawSendPacketCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Message {:?}", opts);
@@ -98,18 +96,14 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Runtime.context(e));
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
             .map_err(|e| Kind::Runtime.context(e));
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IBCEvent>, Error> =

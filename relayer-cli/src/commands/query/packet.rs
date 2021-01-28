@@ -59,9 +59,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -133,9 +131,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         let config = app_config();
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -185,14 +181,14 @@ pub struct QueryUnreceivedPacketsCmd {
         required,
         help = "identifier of the port to query on source chain"
     )]
-    port_id: PortId,
+    src_port_id: PortId,
 
     #[options(
         free,
         required,
         help = "identifier of the channel to query on source chain"
     )]
-    channel_id: ChannelId,
+    src_channel_id: ChannelId,
 }
 
 impl QueryUnreceivedPacketsCmd {
@@ -209,8 +205,8 @@ impl QueryUnreceivedPacketsCmd {
             .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
+            port_id: self.src_port_id.clone(),
+            channel_id: self.src_channel_id.clone(),
             height: 0_u64,
         };
 
@@ -223,9 +219,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
         let config = app_config();
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -357,9 +351,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -431,9 +423,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         let config = app_config();
 
         let (chain_config, opts, sequence) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -483,14 +473,14 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         required,
         help = "identifier of the port to query on source chain"
     )]
-    port_id: PortId,
+    src_port_id: PortId,
 
     #[options(
         free,
         required,
         help = "identifier of the channel to query on source chain"
     )]
-    channel_id: ChannelId,
+    src_channel_id: ChannelId,
 }
 
 impl QueryUnreceivedAcknowledgementCmd {
@@ -507,8 +497,8 @@ impl QueryUnreceivedAcknowledgementCmd {
             .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
 
         let opts = QueryPacketOptions {
-            port_id: self.port_id.clone(),
-            channel_id: self.channel_id.clone(),
+            port_id: self.src_port_id.clone(),
+            channel_id: self.src_channel_id.clone(),
             height: 0_u64,
         };
 
@@ -521,9 +511,7 @@ impl Runnable for QueryUnreceivedAcknowledgementCmd {
         let config = app_config();
 
         let (dst_chain_config, src_chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);

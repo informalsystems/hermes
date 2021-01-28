@@ -1,8 +1,8 @@
 use std::convert::TryFrom;
+use std::iter::FromIterator;
 use std::str::FromStr;
 
 use serde::Serialize;
-
 use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::Kind;
@@ -42,5 +42,17 @@ impl From<ConnectionIds> for RawClientConnections {
         RawClientConnections {
             connections: value.0.iter().map(|v| v.to_string()).collect(),
         }
+    }
+}
+
+impl FromIterator<ConnectionId> for ConnectionIds {
+    fn from_iter<T: IntoIterator<Item = ConnectionId>>(iter: T) -> Self {
+        let mut col = ConnectionIds(vec![]);
+
+        for id in iter {
+            col.0.push(id)
+        }
+
+        col
     }
 }

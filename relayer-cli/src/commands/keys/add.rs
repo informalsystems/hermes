@@ -47,9 +47,7 @@ impl Runnable for KeysAddCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
 
