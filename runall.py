@@ -949,10 +949,16 @@ def packet_ping_pong(c,
                      port_id: PortId = PortId('transfer')):
 
     seq_send_a = packet_send(c, side_a, side_b, port_id, a_chan)
+
+    split()
+
     seq_recv_a = packet_recv(c, side_b, side_a, port_id, b_chan)
+
     if seq_send_a != seq_recv_a:
         l.error(
             f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={seq_send_a} versus Received={seq_recv_a}')
+
+    split()
 
     # write the ack
     seq_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
@@ -960,13 +966,22 @@ def packet_ping_pong(c,
         l.error(
             f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_a} versus Ack={seq_ack_a}')
 
+    split()
+
     seq_send_b = packet_send(c, side_b, side_a, port_id, b_chan)
+
+    split()
+
     seq_recv_b = packet_recv(c, side_a, side_b, port_id, a_chan)
+
     if seq_send_b != seq_recv_b:
         l.error(
             f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={seq_send_b} versus Received={seq_recv_b}')
 
+    split()
+
     seq_ack_b = packet_ack(c, side_b, side_a, port_id, a_chan)
+
     if seq_recv_b != seq_ack_b:
         l.error(
             f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_b} versus Ack={seq_ack_b}')
@@ -988,6 +1003,8 @@ def run(c: Path):
 
     ibc1_chan_id, ibc0_chan_id = channel_handshake(
         c, IBC_1, IBC_0, ibc1_conn_id, ibc0_conn_id)
+
+    split()
 
     packet_ping_pong(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
 
