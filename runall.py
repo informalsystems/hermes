@@ -4,11 +4,13 @@ from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Calla
 
 import os
 import json
+import argparse
 import subprocess
 
 import logging as l
 
 from time import sleep
+from pathlib import Path
 from dataclasses import dataclass, fields as datafields, is_dataclass
 
 
@@ -356,15 +358,7 @@ def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: s
     return (a_conn_id, b_conn_id)
 
 
-def main():
-    l.basicConfig(
-        level=l.DEBUG,
-        format="[%(asctime)s] [%(levelname)8s] --- %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
-    )
-
-    c = 'config.toml'
-
+def run(c: Path):
     IBC_0 = 'ibc-0'
     IBC_1 = 'ibc-1'
 
@@ -375,6 +369,27 @@ def main():
 
     ibc0_conn_id, ibc1_conn_id = connection_handshake(c, IBC_1, IBC_0, ibc0_client_id, ibc1_client_id)
 
+
+def main():
+    l.basicConfig(
+        level=l.DEBUG,
+        format='[%(asctime)s] [%(levelname)8s] --- %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
+
+    parser = argparse.ArgumentParser(description='Test all relayer commands, end-to-end')
+    parser.add_argument('-c', '--config',
+        help='configuration file for the relayer',
+        metavar='CONFIG_FILE',
+        required=True,
+        type=Path)
+
+    args = parser.parse_args()
+
+    if not args.config.exists():
+        print(f'error: supplied configuration file does not exist: {args.config}')
+        exit(1)
+
+    run(args.config)
 
 if __name__ == "__main__":
     main()
