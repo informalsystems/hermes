@@ -22,4 +22,3 @@ Cargo.lock
 
 # Ignore chain's data
 data
-loop_config.toml
