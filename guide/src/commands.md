@@ -16,6 +16,10 @@ Commands to manage light client configuration. Allows adding and removing light 
 
 Command to submit transactions to configured chains
 
+**[Channels](./channels.md)**
+
+Commands to manage channels
+
 **[Queries](./queries.md)**
 
 Commands to execute queries on configured chains

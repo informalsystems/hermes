@@ -1,10 +1,10 @@
 # Light Clients
 
-Using the light client commands you can add and remove light client peers configuration for the relayer
+Using the `light` command you can add and remove light client peers information to the chain configuration.
 
 #### Show usage
 
-To see the available commands run:
+To see the available subcommands for the `light` command run:
 
 ```shell
 relayer help light

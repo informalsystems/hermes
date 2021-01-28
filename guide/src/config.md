@@ -2,11 +2,12 @@
 
 In order to run the relayer, you will need to have a configuration file.
 
-Currently the relayer does not store the configuration information in the local disk. The relayer currently also does not support adding the sections below programmatically. You will need to use a text editor to create the file and add content to it. 
-
 The format supported for the configuration file is [TOML](https://toml.io/en/)
 
 Every command executed through the relayer requires the configuration file localtion to be passed as a parameter.
+
+> Currently the relayer does not store the configuration information in the local disk. The relayer currently also does not support adding the sections below programmatically. You will need to use a text editor to create the file and add content to it.
+
 
 ```bash
 relayer -c config.toml [COMMAND]
@@ -100,7 +101,7 @@ For each chain configured you need to add a private key for that chain in order 
 
 ### Example configuration file
 
-Here is an full example of a configuration file with two [local chains](./local_chains.md) configured and light client peers added:
+Here is an full example of a configuration file with two chains configured and light client peers added:
 
 ```toml
 [global]
@@ -191,4 +192,4 @@ path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data
 
 ### Next Steps
 
-Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Local Testing`](./local_chains.md) section to learn how to perform some local testing connecting the relayer to two local chains.
+Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./two_chains.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.

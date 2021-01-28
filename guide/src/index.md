@@ -12,13 +12,13 @@ The introduction gives a brief overview about the IBC Relayer
 
 The getting started section can help you setup, configure and run the IBC Relayer
 
-**[Commands](./commands.md)**
-
-The commands will let you interact with the IBC Relayer using its command-line interface.
-
 **[Tutorials](./tutorials.md)**
 
 This section provides some tutorials on how to operate and test the relayer
+
+**[Commands Reference](./commands.md)**
+
+The commands will let you interact with the IBC Relayer using its command-line interface.
 
 **[Troubleshooting](./troubleshoot.md)**
 

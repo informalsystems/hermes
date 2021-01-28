@@ -2,12 +2,11 @@
 /* Globals */
 
 :root {
-    --sidebar-width: 220px;
+    --sidebar-width: 300px;
     --page-padding: 15px;
-    --content-max-width: 1280px;
+    --content-max-width: 750px;
     --menu-bar-height: 50px;
 }
-
 /* Themes */
 
 .ayu {
@@ -91,29 +90,29 @@
 }
 
 .light {
-    --bg: hsl(0, 0%, 100%);
-    --fg: #333333;
+    --bg: hsl(0, 0%, 97%);
+    --fg: #181818;
 
     --sidebar-bg: #335787;
     --sidebar-fg: #fcfcff;
     --sidebar-non-existant: #aaaaaa;
     --sidebar-active: #ffffff;
-    --sidebar-spacer: #f4f4f4;
+    --sidebar-spacer: #e5e5e5;
 
-    --scrollbar: #cccccc;
+    --scrollbar: var(--sidebar-fg);
 
-    --icons: #797979;
+    --icons: #2f2f2f;
     --icons-hover: #333333;
 
     --links: #267CB9;
 
-    --inline-code-color: #393730;
+    --inline-code-color: #2d2b26;
 
     --theme-popup-bg: #fafafa;
     --theme-popup-border: #cccccc;
     --theme-hover: #e6e6e6;
 
-    --quote-bg: hsl(214, 25%, 73%);
+    --quote-bg: hsl(212, 52%, 86%);
     --quote-border: hsl(220, 83%, 67%);
 
     --table-border-color: hsl(0, 0%, 95%);
