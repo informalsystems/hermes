@@ -47,13 +47,13 @@ WORKDIR /relayer
 COPY ci/simple_config.toml .
 
 # Copy setup script
-COPY ci/setup_relayer.sh .
+COPY ci/e2e.sh .
 
 # Copy key files
 COPY ci/chains/gaia/$RELEASE/ibc-0/key_seed.json ./key_seed_ibc-0.json
 COPY ci/chains/gaia/$RELEASE/ibc-1/key_seed.json ./key_seed_ibc-1.json
 
 # Make it executable
-RUN chmod +x setup_relayer.sh
+RUN chmod +x e2e.sh
 
 ENTRYPOINT ["/bin/sh"]
