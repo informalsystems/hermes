@@ -4,7 +4,7 @@ This folder contains the files required to run the End to end testing in [Github
 
 ## End to end (e2e) testing
 
-The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22) spins up two `gaia` chains (`ibc-0` and `ibc-1`) in Docker containers and one container that runs the relayer. There's a script that configures the relayer (e.g. configure light clients and add keys) and run transactions and queries. A successful run of this script ensures that the relayer is working properly with two chains that support `IBC`. 
+The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22) spins up two `gaia` chains (`ibc-0` and `ibc-1`) in Docker containers and one container that runs the relayer. There's a script that configures the relayer (e.g. configure light clients and add keys) and run transactions and queries. A successful run of this script ensures that the relayer is working properly with two chains that support `IBC`.
 
 ### Running an End to end (e2e) test locally
 
@@ -37,17 +37,17 @@ __Note__: This assumes you are running this the first time, if not, please ensur
     Creating ibc-0 ... done
     Creating relayer ... done
     ```
-   
+
     If you want to ensure they are all running properly you can use the command:
-   
+
     `docker-compose ps`
-   
+
     You should see the message below. Please ensure all containers are in a `Up` state
     ```shell
     Name                Command               State   Ports
     --------------------------------------------------------
-    ibc-0     gaiad start --home=/chain  ...   Up           
-    ibc-1     gaiad start --home=/chain  ...   Up           
+    ibc-0     gaiad start --home=/chain  ...   Up
+    ibc-1     gaiad start --home=/chain  ...   Up
     relayer   /bin/sh                          Up
     ```
 
@@ -61,7 +61,7 @@ __Note__: This assumes you are running this the first time, if not, please ensur
     If the script runs sucessfully you should see an output similar to this one:
 ```shell
 =================================================================================================================
-                                              INITIALIZE                                                         
+                                              INITIALIZE
 =================================================================================================================
 -----------------------------------------------------------------------------------------------------------------
 Show relayer version
@@ -77,7 +77,7 @@ Config: /relayer/simple_config.toml
     creating chain store folder: [/data/ibc-1]
 Waiting 20 seconds for chains to generate blocks...
 =================================================================================================================
-                                            CONFIGURATION                                                        
+                                            CONFIGURATION
 =================================================================================================================
 -----------------------------------------------------------------------------------------------------------------
 Add keys for chains
@@ -85,7 +85,7 @@ Add keys for chains
 key add result:  "Added key testkey (cosmos1tc3vcuxyyac0dmayf887v95tdg7qpyql48w7gj) on ibc-0 chain"
 key add result:  "Added key testkey (cosmos1zv3etpuk4n7p54r8fhsct0qys8eqf5zqw4pqp5) on ibc-1 chain"
 -----------------------------------------------------------------------------------------------------------------
-Set the primary peers for clients on each chain                                                                  
+Set the primary peers for clients on each chain
 -----------------------------------------------------------------------------------------------------------------
 Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 -p -y -f
      Success Added light client:
@@ -105,7 +105,7 @@ Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ib
   hash:     D5C190747A1A0805C4840FBF66EC3339E0C30520359EF36553508DBD775A6EEF
   primary:  true
 -----------------------------------------------------------------------------------------------------------------
-Set the secondary peers for clients on each chain                                                                
+Set the secondary peers for clients on each chain
 -----------------------------------------------------------------------------------------------------------------
 Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
      Success Added light client:
@@ -125,7 +125,7 @@ Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ib
   hash:     5377D2FDCD1886129AF32AABFDFC4C80112B2465F49814E91C25FD325DE54DCC
   primary:  false
 =================================================================================================================
-                                             CLIENTS                                                             
+                                             CLIENTS
 =================================================================================================================
 -----------------------------------------------------------------------------------------------------------------
 Create client transactions
@@ -170,11 +170,11 @@ If you need to generate configuration files for a new gaia release and new conta
 1. Move into the `ci` folder
 
     `cd ci`
-   
+
 
 2. Open the `build-ibc-chains.sh` file and change the release. Just replace the value for the `GAIA_BRANCH` parameter. For example to set it to release `v3.0.0` use:
     `GAIA_BRANCH="v3.0.0"`
-   
+
 
 3. Run the `build-ibc-chains.sh` script:
 
