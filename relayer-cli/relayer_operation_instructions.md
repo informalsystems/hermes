@@ -242,11 +242,14 @@ make it work:
    - now `make build` and `make install` your local copy of gaia
 
 
-First transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a Tx to `ibc-1` for a `MsgTransfer` packet
+First transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+Tx to `ibc-1` for a `MsgTransfer` packet.
+Make sure you're not relaying this packet (the relayer should not be running on
+this path).
 
-    ```shell script
-    rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
-    ```
+```shell script
+rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+```
   
 Starting with channel in open-open:
 
