@@ -1,12 +1,6 @@
-# Testing the relayer with two local chains
+### Start the local chains
 
-In order to test the relayer against two chains, we provide a script that can start two separate chains and configure them automatically. This is the easiest way to get started. 
-
-The script below starts two [`gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol.
-
-### Running the script
-
-To run the script, open a terminal and navigate to the `ibc-rs` repository folder
+To run the script to start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
 
 ```bash
 cd ibc-rs
@@ -16,7 +10,16 @@ cd ibc-rs
 
 In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
 
-#### Start the chains
+#### Stop and cleanup
+
+If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:
+
+```shell
+killall gaiad
+rm -rf data/
+```
+
+#### Run the script
 
 Run the following script with the parameters below to start the chains:
 
@@ -83,9 +86,9 @@ Importing keys...
 ```
 
 #### Data directory
-The script will also create a `data` directory in the current directory in order to install the chain store and configuration files for each chain.
+The script creates a `data` directory in the current directory in order. The `data` directory contains the chain stores and configuration files.
 
-The `data` directory should have a tree structure similar to this
+The `data` directory has a tree structure similar to the one below:
 
 ```shell
 data
@@ -106,6 +109,6 @@ data
 
 ```
 
-#### Next steps
+#### Next Steps
 
-Now that you have two chains running with IBC support, you can run some relayer [commands](./commands.md)
+In the next section [Relaying packets](./relay_packets.md) you will learn how to execute transactions and queries on the relayer in order to relay packets.
