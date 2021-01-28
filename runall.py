@@ -373,14 +373,14 @@ class TxChanOpenInitRes:
 class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
     src_chain_id: ChainId
     dst_chain_id: ChainId
-    dst_connection_id: ConnectionId
+    connection_id: ConnectionId
     dst_port_id: PortId
     src_port_id: PortId
     ordering: Optional[Ordering] = None
 
     def args(self) -> List[str]:
         args = [self.dst_chain_id, self.src_chain_id,
-                self.dst_connection_id,
+                self.connection_id,
                 self.dst_port_id, self.src_port_id,
                 "defaultChannel", "defaultChannel"]
 
@@ -396,12 +396,56 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
 
 
 @dataclass
+class TxChanOpenTryRes:
+    channel_id: ChannelId
+    connection_id: ConnectionId
+    counterparty_channel_id: ChannelId
+    counterparty_port_id: ChannelId
+    height: BlockHeight
+    port_id: PortId
+
+
+@cmd("tx raw chan-open-try")
+@dataclass
+class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    connection_id: ConnectionId
+    dst_port_id: PortId
+    src_port_id: PortId
+    src_channel_id: ChannelId
+    ordering: Optional[Ordering] = None
+
+    def args(self) -> List[str]:
+        args = [self.dst_chain_id, self.src_chain_id,
+                self.connection_id,
+                self.dst_port_id, self.src_port_id,
+                "defaultChannel", self.src_channel_id]
+
+        if self.ordering is not None:
+            args.extend(['--ordering', str(self.ordering)])
+
+        return args
+
+    def process(self, result: Any) -> TxChanOpenTryRes:
+        return from_dict(TxChanOpenTryRes, result[0]['OpenTryChannel'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class Remote:
+    channel_id: ChannelId
+    port_id: PortId
+
+
+@dataclass
 class ChannelEnd:
-    client_id: ClientId
-    counterparty: Counterparty
-    delay_period: int
+    connection_hops: list[Any]
+    ordering: str
+    remote: Remote
     state: str
-    versions: list[Version]
+    version: str
 
 
 @cmd("query channel end")
@@ -583,7 +627,7 @@ def chan_open_init(c,
                    ) -> ChannelId:
 
     cmd = TxChanOpenInit(src_chain_id=src, dst_chain_id=dst,
-                         dst_connection_id=dst_conn,
+                         connection_id=dst_conn,
                          dst_port_id=dst_port, src_port_id=src_port,
                          ordering=ordering)
 
@@ -593,14 +637,40 @@ def chan_open_init(c,
     return res.channel_id
 
 
+def chan_open_try(c,
+                  src: ChainId, dst: ChainId,
+                  src_conn: ConnectionId,
+                  src_chan: ChannelId,
+                  src_port: PortId = PortId('transfer'),
+                  dst_port: PortId = PortId('transfer'),
+                  ordering: Optional[Ordering] = None
+                  ) -> ChannelId:
+
+    cmd = TxChanOpenTry(src_chain_id=src, dst_chain_id=dst,
+                        connection_id=src_conn,
+                        dst_port_id=dst_port, src_port_id=src_port,
+                        src_channel_id=src_chan,
+                        ordering=ordering)
+
+    res = cmd.run(c).success()
+    l.info(
+        f'ChanOpenTry submitted to {dst} and obtained channel id {res.channel_id}')
+    return res.channel_id
+
+
 def channel_handshake(c,
                       side_a: ChainId, side_b: ChainId,
                       conn_a: ConnectionId, conn_b: ConnectionId,
                       ) -> Tuple[ChannelId, ChannelId]:
 
     a_chan_id = chan_open_init(c, side_a, side_b, conn_a)
-
+    split()
     query_channel_end(c, side_a, conn_a, a_chan_id)
+    split()
+
+    b_chan_id = chan_open_try(c, side_b, side_a, conn_b, a_chan_id)
+    split()
+    query_channel_end(c, side_b, conn_b, b_chan_id)
 
     return a_chan_id, a_chan_id
 
@@ -623,15 +693,18 @@ def run(c: Path):
     IBC_0 = ChainId('ibc-0')
     IBC_1 = ChainId('ibc-1')
 
-    ibc0_client_id = create_update_query_client(c, IBC_0, IBC_1)
-    ibc1_client_id = create_update_query_client(c, IBC_1, IBC_0)
+    # ibc0_client_id = create_update_query_client(c, IBC_0, IBC_1)
+    # ibc1_client_id = create_update_query_client(c, IBC_1, IBC_0)
 
-    split()
+    # split()
 
-    ibc0_conn_id, ibc1_conn_id = connection_handshake(
-        c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
+    # ibc0_conn_id, ibc1_conn_id = connection_handshake(
+    #     c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
 
-    chan_id = chan_open_init(c, IBC_0, IBC_1, ibc1_conn_id)
+    # channel_handshake(c, IBC_1, IBC_0, ibc1_conn_id, ibc0_conn_id)
+
+    channel_handshake(c, IBC_1, IBC_0, ConnectionId(
+        'connection-10'), ConnectionId('connection-10'))
 
 
 def main():
