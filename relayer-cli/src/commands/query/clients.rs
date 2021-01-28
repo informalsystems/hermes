@@ -31,7 +31,7 @@ impl QueryAllClientsCmd {
     }
 }
 
-/// Command for querying a client's state.
+/// Command for querying all clients.
 /// rrly -c cfg.toml query clients ibc-1  
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
