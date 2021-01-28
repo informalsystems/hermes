@@ -12,6 +12,7 @@
   - JSON output for queries and txs ([#500])
   - Implement commands for channel close init and confirm ([#538])
   - Implement command to perform the handshake for a new channel ([#557])
+  - Query all channels command ([#568])
 
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
@@ -67,6 +68,7 @@
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
 [#554]: https://github.com/informalsystems/ibc-rs/issues/554
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
+[#568]: https://github.com/informalsystems/ibc-rs/issues/568
 
 ## v0.0.6
 *December 23, 2020*

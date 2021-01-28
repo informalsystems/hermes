@@ -1,41 +1,32 @@
-pub(crate) mod cosmos;
-pub use cosmos::CosmosSDKChain;
-
-pub mod handle;
-pub mod runtime;
-
-#[cfg(test)]
-pub mod mock;
+use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-use std::{sync::Arc, thread};
-use tokio::runtime::Runtime as TokioRuntime;
-
 use prost_types::Any;
-
-use tendermint_proto::Protobuf;
-
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
+use tendermint_proto::Protobuf;
+use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-
+pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
@@ -43,7 +34,13 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+
+pub(crate) mod cosmos;
+pub mod handle;
+pub mod runtime;
+
+#[cfg(test)]
+pub mod mock;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -360,6 +357,8 @@ pub trait Chain: Sized {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error>;
+
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
 
     fn build_packet_proofs(
         &self,
