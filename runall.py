@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, List, Optional, TypedDict, TypeVar, Generic
+from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable
 
 import os
 import json
@@ -41,12 +41,6 @@ class CmdResult(Generic[T]):
         else:
             raise ExpectedSuccess(self.cmd, status, result)
 
-def cmd(name):
-    def decorator(klass):
-        klass.name = name
-        return dataclass(klass)
-    return decorator
-
 class Cmd(Generic[T]):
     name: str
 
@@ -72,6 +66,13 @@ class Cmd(Generic[T]):
 
         return CmdResult(cmd=self, result=json.loads(last_line))
 
+C = TypeVar('C', bound=Cmd)
+def cmd(name: str) -> Callable[[Type[C]], Type[C]]:
+    def decorator(klass: Type[C]) -> Type[C]:
+        klass.name = name
+        return klass
+    return decorator
+
 def from_dict(klass, dikt):
     if is_dataclass(klass):
         fields = datafields(klass)
@@ -92,6 +93,7 @@ class TxCreateClientRes:
     client_id: str
 
 @cmd("tx raw create-client")
+@dataclass
 class TxCreateClient(Cmd[TxCreateClientRes]):
     dst_chain_id: str
     src_chain_id: str
@@ -109,6 +111,7 @@ class TxUpdateClientRes:
     consensus_height: Height
 
 @cmd("tx raw update-client")
+@dataclass
 class TxUpdateClient(Cmd[TxUpdateClientRes]):
     dst_chain_id: str
     src_chain_id: str
@@ -127,6 +130,7 @@ class QueryClientStateRes:
     latest_height: Height
 
 @cmd("query client state")
+@dataclass
 class QueryClientState(Cmd[QueryClientStateRes]):
     chain_id: str
     client_id: str
