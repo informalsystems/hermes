@@ -282,6 +282,43 @@ class TxConnConfirm(Cmd[TxConnConfirmRes]):
 
 # -----------------------------------------------------------------------------
 
+@dataclass
+class Version:
+    features: list[str]
+    identifier: str
+
+
+@dataclass
+class Counterparty:
+    client_id: ClientId
+    connection_id: ConnectionId
+    prefix: list[int]
+
+
+@dataclass
+class QueryConnectionEndRes:
+    client_id: ClientId
+    counterparty: Counterparty
+    delay_period: int
+    state: str
+    versions: list[Version]
+
+
+@cmd("query connection end")
+@dataclass
+class QueryConnectionEnd(Cmd[QueryConnectionEndRes]):
+    chain_id: ChainId
+    connection_id: ConnectionId
+
+    def args(self) -> List[str]:
+        return [self.chain_id, self.connection_id]
+
+    def process(self, result: Any) -> TxConnConfirmRes:
+        return from_dict(QueryConnectionEndRes, result[0])
+
+
+# -----------------------------------------------------------------------------
+
 def split():
     sleep(0.5)
     print()
@@ -375,13 +412,40 @@ def connection_handshake(c, side_a: ChainId, side_b: ChainId, client_a: ClientId
             f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
 
     split()
+
     confirm_res = conn_confirm(
         c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
+
     if confirm_res != b_conn_id:
         l.error(
             f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
 
+    a_conn_end = query_connection_end(c, side_a, a_conn_id)
+    if a_conn_end.state != 'Open':
+        l.error(
+            f'Connection end with id {a_conn_id} is not in Open state, got: {a_conn_end.state}')
+
+    b_conn_end = query_connection_end(c, side_b, b_conn_id)
+    if b_conn_end.state != 'Open':
+        l.error(
+            f'Connection end with id {b_conn_id} is not in Open state, got: {b_conn_end.state}')
+
     return (a_conn_id, b_conn_id)
+
+
+# CONNECTION END query
+# =============================================================================
+
+def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> QueryConnectionEndRes:
+    cmd = QueryConnectionEnd(chain_id, conn_id)
+    res = cmd.run(c).success()
+
+    l.info(f'Status of connection end {conn_id}: {res}')
+
+    return res
+
+
+# =============================================================================
 
 
 def run(c: Path):
