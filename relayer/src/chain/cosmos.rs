@@ -62,7 +62,7 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
-use ibc::ics02_client::raw::ConnectionIds;
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics04_channel::packet::Sequence;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 

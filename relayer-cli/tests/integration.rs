@@ -14,7 +14,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use ibc::ics02_client::raw::ConnectionIds as DomainTypeClientConnections;
+use ibc::ics03_connection::raw::ConnectionIds as DomainTypeClientConnections;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections};

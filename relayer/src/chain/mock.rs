@@ -38,7 +38,7 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
-use ibc::ics02_client::raw::ConnectionIds;
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 /// The representation of a mocked chain as the relayer sees it.
