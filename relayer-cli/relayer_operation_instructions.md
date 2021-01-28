@@ -12,12 +12,12 @@
 2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
 
     ```shell script
-    ./dev-env <config.toml> <chain1> <chain2>
+    ./scripts/dev-env <config.toml> <chain1> <chain2>
     ```
     e.g.:
 
     ```shell
-    ./dev-env loop_config.toml ibc-0 ibc-1
+    ./scripts/dev-env loop_config.toml ibc-0 ibc-1
     ```
 
 #### Stop and cleanup
