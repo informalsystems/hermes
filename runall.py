@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable
+from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable, Tuple
 
 import os
 import json
@@ -28,7 +28,6 @@ class ExpectedSuccess(Exception):
 
 
 T = TypeVar('T')
-
 
 @dataclass
 class CmdResult(Generic[T]):
@@ -73,7 +72,6 @@ class Cmd(Generic[T]):
 
 C = TypeVar('C', bound=Cmd)
 
-
 def cmd(name: str) -> Callable[[Type[C]], Type[C]]:
     def decorator(klass: Type[C]) -> Type[C]:
         klass.name = name
@@ -82,7 +80,7 @@ def cmd(name: str) -> Callable[[Type[C]], Type[C]]:
     return decorator
 
 
-def from_dict(klass, dikt):
+def from_dict(klass, dikt) -> Any:
     if is_dataclass(klass):
         fields = datafields(klass)
         args = {f.name: from_dict(f.type, dikt[f.name]) for f in fields}
@@ -104,8 +102,8 @@ class TxCreateClientRes:
     client_id: str
 
 
-@cmd("tx raw create-client")
 @dataclass
+@cmd("tx raw create-client")
 class TxCreateClient(Cmd[TxCreateClientRes]):
     dst_chain_id: str
     src_chain_id: str
@@ -124,8 +122,8 @@ class TxUpdateClientRes:
     consensus_height: Height
 
 
-@cmd("tx raw update-client")
 @dataclass
+@cmd("tx raw update-client")
 class TxUpdateClient(Cmd[TxUpdateClientRes]):
     dst_chain_id: str
     src_chain_id: str
@@ -145,8 +143,8 @@ class QueryClientStateRes:
     latest_height: Height
 
 
-@cmd("query client state")
 @dataclass
+@cmd("query client state")
 class QueryClientState(Cmd[QueryClientStateRes]):
     chain_id: str
     client_id: str
@@ -341,16 +339,21 @@ def conn_confirm(c, src: str, dst: str, src_client: str, dst_client: str, src_co
     return res.connection_id
 
 
-def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: str) -> (str, str):
+def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: str) -> Tuple[str, str]:
     a_conn_id = conn_init(c, side_a, side_b, client_a, client_b)
+    split()
     b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
+    split()
     ack_res = conn_ack(c, side_a, side_b, client_a, client_b, b_conn_id, a_conn_id)
     if ack_res != a_conn_id:
         l.error(f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
+
+    split()
     confirm_res = conn_confirm(c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
     if confirm_res != b_conn_id:
         l.error(f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
-    return a_conn_id, b_conn_id
+
+    return (a_conn_id, b_conn_id)
 
 
 def main():
