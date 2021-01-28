@@ -68,7 +68,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })

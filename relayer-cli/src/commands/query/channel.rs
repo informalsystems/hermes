@@ -18,13 +18,13 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the port to query")]
+    #[options(free, required, help = "identifier of the port to query")]
     port_id: Option<String>,
 
-    #[options(free, help = "identifier of the channel to query")]
+    #[options(free, required, help = "identifier of the channel to query")]
     channel_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]
@@ -53,7 +53,7 @@ impl QueryChannelEndCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
             .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let port_id = self
             .port_id
@@ -84,9 +84,7 @@ impl Runnable for QueryChannelEndCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);

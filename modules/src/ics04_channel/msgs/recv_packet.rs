@@ -61,6 +61,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
             raw_msg.proof_commitment.into(),
             None,
             None,
+            None,
             raw_msg
                 .proof_height
                 .ok_or(Kind::MissingHeight)?

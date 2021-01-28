@@ -5,6 +5,19 @@
 //! See the `impl Configurable` below for how to specify the path to the
 //! application's configuration file.
 
+use std::path::PathBuf;
+
+use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
+
+use crate::commands::channel::ChannelCmds;
+use crate::config::Config;
+
+use self::{
+    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
+    start::StartCmd, tx::TxCmd, version::VersionCmd,
+};
+
+mod channel;
 mod cli_utils;
 mod config;
 mod keys;
@@ -14,15 +27,6 @@ mod query;
 mod start;
 mod tx;
 mod version;
-
-use self::{
-    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, version::VersionCmd,
-};
-
-use crate::config::Config;
-use abscissa_core::{Command, Configurable, FrameworkError, Help, Options, Runnable};
-use std::path::PathBuf;
 
 /// Cli Configuration Filename
 pub const CONFIG_FILE: &str = "relayer.toml";
@@ -37,6 +41,10 @@ pub enum CliCmd {
     /// The `start` subcommand
     #[options(help = "start the relayer (currently this refers to the v0 relayer)")]
     Start(StartCmd),
+
+    /// The `channel` subcommand
+    #[options(help = "channel functionality for managing channels")]
+    Channel(ChannelCmds),
 
     /// The `listen` subcommand
     #[options(help = "listen to IBC events")]

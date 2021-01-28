@@ -207,6 +207,16 @@ pub enum StoreConfig {
     },
 }
 
+impl StoreConfig {
+    pub fn disk(path: PathBuf) -> Self {
+        Self::Disk { path }
+    }
+
+    pub fn memory() -> Self {
+        Self::Memory { dummy: () }
+    }
+}
+
 /// Attempt to load and parse the TOML config file as a `Config`.
 pub fn parse(path: impl AsRef<Path>) -> Result<Config, error::Error> {
     let config_toml =
