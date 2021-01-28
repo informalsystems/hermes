@@ -17,16 +17,19 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionEndCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the connection to query")]
+    #[options(free, required, help = "identifier of the connection to query")]
     connection_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]
     height: Option<u64>,
 
-    #[options(help = "whether proof is required", short = "p")]
+    #[options(
+        help = "whether proof is required; default: false (no proof)",
+        short = "p"
+    )]
     proof: Option<bool>,
 }
 
@@ -49,7 +52,7 @@ impl QueryConnectionEndCmd {
 
         let chain_config = config
             .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let connection_id = self
             .connection_id
@@ -99,10 +102,10 @@ impl Runnable for QueryConnectionEndCmd {
 /// `cargo run --bin relayer -- -c simple_config.toml query connection channels ibc-0 connection-0`
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionChannelsCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the connection to query")]
+    #[options(free, required, help = "identifier of the connection to query")]
     connection_id: Option<String>,
 }
 
@@ -122,7 +125,7 @@ impl QueryConnectionChannelsCmd {
             .ok_or_else(|| "no chain chain identifier provided".to_string())?;
         let chain_config = config
             .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration for the given chain id".to_string())?;
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let connection_id = self
             .connection_id

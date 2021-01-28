@@ -30,7 +30,7 @@ use crate::relay::MAX_ITER;
 
 #[derive(Debug, Error)]
 pub enum ChannelError {
-    #[error("failed")]
+    #[error("failed with underlying cause: {0}")]
     Failed(String),
 
     #[error("failed during an operation on client ({0}) hosted by chain ({1}) with error: {2}")]
