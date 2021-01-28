@@ -434,6 +434,41 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
 
 
 @dataclass
+class TxChanOpenAckRes:
+    channel_id: ChannelId
+    connection_id: ConnectionId
+    counterparty_channel_id: ChannelId
+    counterparty_port_id: ChannelId
+    height: BlockHeight
+    port_id: PortId
+
+
+@cmd("tx raw chan-open-ack")
+@dataclass
+class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    connection_id: ConnectionId
+    dst_port_id: PortId
+    src_port_id: PortId
+    dst_channel_id: ChannelId
+    src_channel_id: ChannelId
+
+    def args(self) -> List[str]:
+        args = [self.dst_chain_id, self.src_chain_id,
+                self.connection_id,
+                self.dst_port_id, self.src_port_id,
+                self.dst_channel_id, self.src_channel_id]
+
+        return args
+
+    def process(self, result: Any) -> TxChanOpenAckRes:
+        return from_dict(TxChanOpenAckRes, result[0]['OpenAckChannel'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
 class Remote:
     channel_id: ChannelId
     port_id: PortId
@@ -578,6 +613,7 @@ def connection_handshake(c,
     if ack_res != a_conn_id:
         l.error(
             f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
+        exit(1)
 
     split()
 
@@ -587,16 +623,19 @@ def connection_handshake(c,
     if confirm_res != b_conn_id:
         l.error(
             f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
+        exit(1)
 
     a_conn_end = query_connection_end(c, side_a, a_conn_id)
     if a_conn_end.state != 'Open':
         l.error(
             f'Connection end with id {a_conn_id} is not in Open state, got: {a_conn_end.state}')
+        exit(1)
 
     b_conn_end = query_connection_end(c, side_b, b_conn_id)
     if b_conn_end.state != 'Open':
         l.error(
             f'Connection end with id {b_conn_id} is not in Open state, got: {b_conn_end.state}')
+        exit(1)
 
     return (a_conn_id, b_conn_id)
 
@@ -658,6 +697,27 @@ def chan_open_try(c,
     return res.channel_id
 
 
+def chan_open_ack(c,
+                  src: ChainId, dst: ChainId,
+                  dst_conn: ConnectionId,
+                  src_chan: ChannelId,
+                  dst_chan: ChannelId,
+                  src_port: PortId = PortId('transfer'),
+                  dst_port: PortId = PortId('transfer'),
+                  ) -> ChannelId:
+
+    cmd = TxChanOpenAck(src_chain_id=src, dst_chain_id=dst,
+                        connection_id=dst_conn,
+                        dst_port_id=dst_port, src_port_id=src_port,
+                        dst_channel_id=dst_chan,
+                        src_channel_id=src_chan)
+
+    res = cmd.run(c).success()
+    l.info(
+        f'ChanOpenAck submitted to {dst} and got channel id {res.channel_id}')
+    return res.channel_id
+
+
 def channel_handshake(c,
                       side_a: ChainId, side_b: ChainId,
                       conn_a: ConnectionId, conn_b: ConnectionId,
@@ -671,8 +731,16 @@ def channel_handshake(c,
     b_chan_id = chan_open_try(c, side_b, side_a, conn_b, a_chan_id)
     split()
     query_channel_end(c, side_b, conn_b, b_chan_id)
+    split()
 
-    return a_chan_id, a_chan_id
+    ack_res = chan_open_ack(c, side_a, side_b, conn_a, b_chan_id, a_chan_id)
+
+    if ack_res != a_chan_id:
+        l.error(
+            f'Incorrect channel id returned from chan open ack: expected=({a_chan_id}) got=({ack_res})')
+        exit(1)
+
+    return a_chan_id, b_chan_id
 
 # CHANNEL END query
 # =============================================================================
