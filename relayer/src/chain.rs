@@ -10,7 +10,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
-use ibc::Height as ICSHeight;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -22,7 +21,12 @@ use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc_proto::ibc::core::channel::v1::{PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest};
+use ibc::Height as ICSHeight;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
