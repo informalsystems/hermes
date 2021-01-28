@@ -5,55 +5,47 @@ use std::{
 
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
-
 use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
-use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
-
-use tendermint_proto::Protobuf;
-
-use tendermint_rpc::query::Query;
-
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
 use tendermint::consensus::Params;
-
 use tendermint_light_client::types::LightBlock as TMLightBlock;
+use tendermint_proto::Protobuf;
+use tendermint_rpc::query::Query;
 use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
-
-use ibc_proto::cosmos::base::v1beta1::Coin;
-
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
-// Support for GRPC
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tokio::runtime::Runtime as TokioRuntime;
+use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
+use ibc::ics04_channel::packet::Sequence;
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
-
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-
 use ibc::Height as ICSHeight;
-
-use super::Chain;
+// Support for GRPC
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
+use ibc_proto::cosmos::base::v1beta1::Coin;
+use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
@@ -62,9 +54,8 @@ use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
 use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
-use ibc::ics03_connection::raw::ConnectionIds;
-use ibc::ics04_channel::packet::Sequence;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+
+use super::Chain;
 
 // TODO size this properly
 const DEFAULT_MAX_GAS: u64 = 300000;
