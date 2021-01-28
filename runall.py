@@ -394,7 +394,10 @@ def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
 # CONNECTION handshake
 # =============================================================================
 
-def conn_init(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId) -> ConnectionId:
+def conn_init(c,
+              src: ChainId, dst: ChainId,
+              src_client: ClientId, dst_client: ClientId) -> ConnectionId:
+
     cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst,
                      src_client_id=src_client, dst_client_id=dst_client)
     res = cmd.run(c).success()
@@ -403,7 +406,11 @@ def conn_init(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: C
     return res.connection_id
 
 
-def conn_try(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId) -> ConnectionId:
+def conn_try(c,
+             src: ChainId, dst: ChainId,
+             src_client: ClientId, dst_client: ClientId,
+             src_conn: ConnectionId) -> ConnectionId:
+
     cmd = TxConnTry(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn)
     res = cmd.run(c).success()
@@ -412,7 +419,11 @@ def conn_try(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: Cl
     return res.connection_id
 
 
-def conn_ack(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
+def conn_ack(c,
+             src: ChainId, dst: ChainId,
+             src_client: ClientId, dst_client: ClientId,
+             src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
+
     cmd = TxConnAck(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
@@ -421,7 +432,11 @@ def conn_ack(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: Cl
     return res.connection_id
 
 
-def conn_confirm(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
+def conn_confirm(c,
+                 src: ChainId, dst: ChainId,
+                 src_client: ClientId, dst_client: ClientId,
+                 src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
+
     cmd = TxConnConfirm(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                         src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
@@ -430,7 +445,10 @@ def conn_confirm(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client
     return res.connection_id
 
 
-def connection_handshake(c, side_a: ChainId, side_b: ChainId, client_a: ClientId, client_b: ClientId) -> Tuple[ConnectionId, ConnectionId]:
+def connection_handshake(c,
+                         side_a: ChainId, side_b: ChainId,
+                         client_a: ClientId, client_b: ClientId) -> Tuple[ConnectionId, ConnectionId]:
+
     a_conn_id = conn_init(c, side_a, side_b, client_a, client_b)
     split()
     b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
