@@ -183,10 +183,85 @@ class TxConnInit(Cmd[TxConnInitRes]):
     dst_client_id: str
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn", "default-conn"]
+        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn",
+                "default-conn"]
 
     def process(self, result: Any) -> TxConnInitRes:
         return from_dict(TxConnInitRes, result[0]['OpenInitConnection'])
+
+
+# -----------------------------------------------------------------------------
+
+@dataclass
+class TxConnTryRes:
+    connection_id: str
+
+
+@cmd("tx raw conn-try")
+@dataclass
+class TxConnTry(Cmd[TxConnTryRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_client_id: str
+    dst_client_id: str
+    src_conn_id: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn",
+                self.src_conn_id]
+
+    def process(self, result: Any) -> TxConnTryRes:
+        return from_dict(TxConnTryRes, result[0]['OpenTryConnection'])
+
+
+# -----------------------------------------------------------------------------
+
+@dataclass
+class TxConnAckRes:
+    connection_id: str
+
+
+@cmd("tx raw conn-ack")
+@dataclass
+class TxConnAck(Cmd[TxConnAckRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_client_id: str
+    dst_client_id: str
+    src_conn_id: str
+    dst_conn_id: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, self.dst_conn_id,
+                self.src_conn_id]
+
+    def process(self, result: Any) -> TxConnAckRes:
+        return from_dict(TxConnAckRes, result[0]['OpenAckConnection'])
+
+
+# -----------------------------------------------------------------------------
+
+@dataclass
+class TxConnConfirmRes:
+    connection_id: str
+
+
+@cmd("tx raw conn-confirm")
+@dataclass
+class TxConnConfirm(Cmd[TxConnConfirmRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_client_id: str
+    dst_client_id: str
+    src_conn_id: str
+    dst_conn_id: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, self.dst_conn_id,
+                self.src_conn_id]
+
+    def process(self, result: Any) -> TxConnConfirmRes:
+        return from_dict(TxConnConfirmRes, result[0]['OpenConfirmConnection'])
 
 
 # -----------------------------------------------------------------------------
@@ -235,19 +310,47 @@ def create_update_query_client(c, dst: str, src: str) -> str:
 # CONNECTION handshake
 # =============================================================================
 
-def conn_init(c, side_a: str, side_b: str, client_a: str, client_b: str) -> str:
-    cmd = TxConnInit(src_chain_id=side_a, dst_chain_id=side_b, src_client_id=client_a, dst_client_id=client_b)
+def conn_init(c, src: str, dst: str, src_client: str, dst_client: str) -> str:
+    cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client)
     res = cmd.run(c).success()
-    l.info(f'Conn open init submitted side A {side_a} and obtained connection id {res.connection_id}')
-    return "b"
+    l.info(f'ConnOpen init submitted to {dst} and obtained connection id {res.connection_id}')
+    return res.connection_id
+
+
+def conn_try(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str) -> str:
+    cmd = TxConnTry(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
+                    src_conn_id=src_conn)
+    res = cmd.run(c).success()
+    l.info(f'ConnOpen try submitted to {dst} and obtained connection id {res.connection_id}')
+    return res.connection_id
+
+
+def conn_ack(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str, dst_conn: str) -> str:
+    cmd = TxConnAck(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
+                    src_conn_id=src_conn, dst_conn_id=dst_conn)
+    res = cmd.run(c).success()
+    l.info(f'ConnOpen ack submitted to {dst} and obtained connection id {res.connection_id}')
+    return res.connection_id
+
+
+def conn_confirm(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str, dst_conn: str) -> str:
+    cmd = TxConnConfirm(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
+                        src_conn_id=src_conn, dst_conn_id=dst_conn)
+    res = cmd.run(c).success()
+    l.info(f'ConnOpen confirm submitted to {dst} and obtained connection id {res.connection_id}')
+    return res.connection_id
 
 
 def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: str) -> (str, str):
-    conn_a = conn_init(c, side_a, side_b, client_a, client_b)
-    # conn_b = conn_try(c, side_b, side_a, client_b, client_a)
-    # ack_res = conn_ack(c, side_a, side_b, client_a, client_b)
-    # confirm_res = conn_confirm(c, side_b, side_a, client_b, client_a)
-    return conn_a, "b"
+    a_conn_id = conn_init(c, side_a, side_b, client_a, client_b)
+    b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
+    ack_res = conn_ack(c, side_a, side_b, client_a, client_b, b_conn_id, a_conn_id)
+    if ack_res != a_conn_id:
+        l.error(f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
+    confirm_res = conn_confirm(c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
+    if confirm_res != b_conn_id:
+        l.error(f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
+    return a_conn_id, b_conn_id
 
 
 def main():
