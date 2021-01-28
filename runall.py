@@ -375,7 +375,7 @@ def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientU
 def query_client_state(c, chain_id: ChainId, client_id: ClientId) -> Tuple[ClientId, ClientState]:
     cmd = QueryClientState(chain_id, client_id)
     res = cmd.run(c).success()
-    l.info(f'State of client {client_id} is: {res}')
+    l.debug(f'State of client {client_id} is: {res}')
     return client_id, res
 
 
@@ -488,7 +488,7 @@ def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> Connect
     cmd = QueryConnectionEnd(chain_id, conn_id)
     res = cmd.run(c).success()
 
-    l.info(f'Status of connection end {conn_id}: {res}')
+    l.debug(f'Status of connection end {conn_id}: {res}')
 
     return res
 
