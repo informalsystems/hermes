@@ -40,7 +40,7 @@ __Note__: This assumes you are running this the first time, if not, please ensur
 
     If you want to ensure they are all running properly you can use the command:
 
-    `docker-compose ps`
+    `docker-compose -f ci/docker-compose.yml ps`
 
     You should see the message below. Please ensure all containers are in a `Up` state
     ```shell
@@ -147,7 +147,7 @@ Jan 21 18:46:58.324  INFO relayer::event::monitor: running listener chain.id=ibc
 
 In order to clear up the testing environment and stop the containers you can run the command below
 
-`docker-compose down`
+`docker-compose -f ci/docker-compose.yml down`
 
 If the command executes successfully you should see the message below:
 
