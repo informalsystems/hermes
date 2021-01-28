@@ -62,5 +62,5 @@ echo "==========================================================================
 echo "                                             END-TO-END TESTS                                                    "
 echo "================================================================================================================="
 
-python3 ../scripts/e2e.py -c "$CONFIG_PATH" --cmd "$RELAYER_CMD"
+python ../scripts/e2e.py -c "$CONFIG_PATH" --cmd "$RELAYER_CMD"
 
