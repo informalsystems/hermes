@@ -22,6 +22,7 @@ use tonic::codegen::http::Uri;
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics04_channel::packet::Sequence;
 use ibc::ics07_tendermint::client_state::ClientState;
@@ -29,7 +30,7 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -45,6 +46,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
@@ -723,6 +725,36 @@ impl Chain for CosmosSDKChain {
             .collect();
 
         Ok(vec_ids)
+    }
+
+    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
+        crate::time!("query_connections");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connections(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let ids = response
+            .connections
+            .iter()
+            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .collect();
+
+        Ok(ids)
     }
 
     fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {

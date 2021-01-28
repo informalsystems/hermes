@@ -13,6 +13,7 @@ use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -27,6 +28,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
@@ -360,6 +362,9 @@ pub trait Chain: Sized {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
 
     fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
 

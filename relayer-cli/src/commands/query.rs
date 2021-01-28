@@ -7,6 +7,7 @@ mod channel;
 mod channels;
 mod client;
 mod connection;
+mod connections;
 mod packet;
 
 /// `query` subcommand
@@ -19,6 +20,10 @@ pub enum QueryCmd {
     /// The `query connection` subcommand
     #[options(help = "query information about connection(s)")]
     Connection(QueryConnectionCmds),
+
+    /// The `query connections` subcommand
+    #[options(help = "query the identifiers of all connection on a chain")]
+    Connections(connections::QueryConnectionsCmd),
 
     /// The `query channel` subcommand
     #[options(help = "query information about channel(s)")]

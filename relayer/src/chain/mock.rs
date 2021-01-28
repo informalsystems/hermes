@@ -5,21 +5,14 @@ use std::time::Duration;
 
 use crossbeam_channel as channel;
 use prost_types::Any;
-use tokio::runtime::Runtime;
-
 use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
-
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IBCEvent;
 use ibc::ics02_client::client_def::AnyClientState;
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -32,6 +25,13 @@ use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::test_utils::get_dummy_account_id;
 use ibc::Height;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::chain::{Chain, QueryResponse};
 use crate::config::ChainConfig;
@@ -234,6 +234,10 @@ impl Chain for MockChain {
         &self,
         _request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error> {
+        unimplemented!()
+    }
+
+    fn query_connections(&self, _request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
         unimplemented!()
     }
 

@@ -6,7 +6,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
+use ibc::ics03_connection::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
