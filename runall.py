@@ -809,15 +809,15 @@ def channel_handshake(c,
 
     a_chan_end = query_channel_end(c, side_a, conn_a, a_chan_id)
     if a_chan_end.state != 'Open':
-        l.error(
+        l.warn(
             f'Channel end with id {a_chan_id} on chain {side_a} is not in Open state, got: {a_chan_end.state}')
-        exit(1)
+        # exit(1)
 
     b_chan_end = query_channel_end(c, side_b, conn_b, a_chan_id)
     if b_chan_end.state != 'Open':
-        l.error(
+        l.warn(
             f'Channel end with id {b_chan_id} on chain {side_b} is not in Open state, got: {b_chan_end.state}')
-        exit(1)
+        # exit(1)
 
     return a_chan_id, b_chan_id
 
