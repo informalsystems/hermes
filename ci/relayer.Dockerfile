@@ -26,6 +26,7 @@ RUN cargo update
 
 # Build files
 RUN cargo build --workspace --all --release
+
 #####################################################
 ####                 Relayer image               ####
 #####################################################
@@ -34,8 +35,8 @@ LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
-# Add jq package
-RUN apt-get update -y && apt-get install jq -y
+# Add jq and Python 3
+RUN apt-get update -y && apt-get install python3 jq -y
 
 # Copy relayer executable
 COPY --from=build-env /repo/target/release/relayer /usr/bin/rrly

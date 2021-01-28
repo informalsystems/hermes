@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable, Tuple, NewType
+from typing import Any, List, Optional, TypeVar, Generic, Type, Callable, Tuple, NewType
 
 import os
 import json
@@ -195,7 +195,7 @@ class ClientState:
     trust_level: TrustLevel
     trusting_period: Duration
     unbonding_period: Duration
-    upgrade_path: list[str]
+    upgrade_path: List[str]
 
 
 @dataclass
@@ -328,7 +328,7 @@ class TxConnConfirm(Cmd[TxConnConfirmRes]):
 
 @dataclass
 class Version:
-    features: list[str]
+    features: List[str]
     identifier: str
 
 
@@ -336,7 +336,7 @@ class Version:
 class Counterparty:
     client_id: ClientId
     connection_id: ConnectionId
-    prefix: list[int]
+    prefix: List[int]
 
 
 @dataclass
@@ -345,7 +345,7 @@ class ConnectionEnd:
     counterparty: Counterparty
     delay_period: int
     state: str
-    versions: list[Version]
+    versions: List[Version]
 
 
 @cmd("query connection end")
@@ -516,7 +516,7 @@ class Remote:
 
 @dataclass
 class ChannelEnd:
-    connection_hops: list[Any]
+    connection_hops: List[Any]
     ordering: str
     remote: Remote
     state: str
