@@ -1,4 +1,4 @@
-# Local chains
+# Testing the relayer with two local chains
 
 In order to test the relayer against two chains, we provide a script that can start two separate chains and configure them automatically. This is the easiest way to get started. 
 

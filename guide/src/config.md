@@ -2,15 +2,16 @@
 
 In order to run the relayer, you will need to have a configuration file.
 
-Currently the relayer does not store the configuration information in the local disk. Every command executed through the relayer requires the configuration file localtion to be passed as a parameter.
-
-The relayer currently also does not support adding the sections below programmatically. You will need to use a text editor to create the file and add content to it. 
+Currently the relayer does not store the configuration information in the local disk. The relayer currently also does not support adding the sections below programmatically. You will need to use a text editor to create the file and add content to it. 
 
 The format supported for the configuration file is [TOML](https://toml.io/en/)
 
+Every command executed through the relayer requires the configuration file localtion to be passed as a parameter.
+
 ```bash
-relayer -c config.toml
+relayer -c config.toml [COMMAND]
 ```
+
 ## Sections
 
 Each configuration file should have one `global` and two `chains` sections (one for each chain).
@@ -77,8 +78,21 @@ trusting_period = '14days'
 
 ### Light clients
 
-The configuration file also store information about the light client peers, but this configuration is automatically added by the relayer to the configuration file when running the [`relayer light add`](./light_clients.md) command
+The configuration file also store information about the light client peers, but this configuration is automatically added by the relayer to the configuration file when running the `relayer light add` command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
 
+### Validate the configuration file
+
+If you want to validate the configuration file you can run the relayer command below:
+
+```shell
+relayer -c config.toml config validate
+```
+
+If the configuration file is valid the command above will show this message:
+
+```shell
+{"status":"success","result":[]}
+```
 
 ### Example configuration file
 
@@ -171,4 +185,6 @@ type = 'disk'
 path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 ```
 
-##
+### Next Steps
+
+Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Local Testing`](./local_chains.md) section to learn how to perform some local testing connecting the relayer to two local chains.

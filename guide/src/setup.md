@@ -56,3 +56,7 @@ SUBCOMMANDS:
     light      basic functionality for managing the lite clients
     keys       manage keys in the relayer for each chain
 ```
+
+### Next Steps
+
+Next, go to the [`Configuration`](./config.md) section to learn how to create a configuration file to be used by the relayer.
