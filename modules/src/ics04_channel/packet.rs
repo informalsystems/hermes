@@ -14,6 +14,7 @@ pub enum PacketMsgType {
     Recv,
     Ack,
     Timeout,
+    TimeoutOnClose,
 }
 
 impl std::fmt::Display for PacketMsgType {
@@ -22,6 +23,7 @@ impl std::fmt::Display for PacketMsgType {
             PacketMsgType::Recv => write!(f, "(PacketMsgType::Recv)"),
             PacketMsgType::Ack => write!(f, "(PacketMsgType::Ack)"),
             PacketMsgType::Timeout => write!(f, "(PacketMsgType::Timeout)"),
+            PacketMsgType::TimeoutOnClose => write!(f, "(PacketMsgType::TimeoutOnClose)"),
         }
     }
 }

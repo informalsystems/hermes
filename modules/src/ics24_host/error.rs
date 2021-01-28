@@ -24,6 +24,9 @@ pub enum ValidationKind {
 
     #[error("chain identifiers are expected to be in epoch format {id}")]
     ChainIdInvalidFormat { id: String },
+
+    #[error("Invalid channel id in counterparty")]
+    InvalidCounterpartyChannelId,
 }
 
 impl ValidationKind {

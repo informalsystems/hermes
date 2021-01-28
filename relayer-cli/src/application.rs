@@ -2,6 +2,7 @@
 
 use crate::components::Tracing;
 use crate::{commands::CliCmd, config::Config};
+
 use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
@@ -114,9 +115,25 @@ impl Application for CliApp {
             .map(|path| self.load_config(&path))
             .transpose()?
             .unwrap_or_default();
-        let tracing = Tracing::new(config.global)?;
 
-        Ok(vec![Box::new(terminal), Box::new(tracing)])
+        // For `start` cmd exclusively we disable JSON; otherwise output is JSON-only
+        let json_on = if let Some(c) = &command.command {
+            !matches!(c, CliCmd::Start(..))
+        } else {
+            true
+        };
+
+        if json_on {
+            let tracing = Tracing::new(config.global)?;
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
+        } else {
+            let alt_tracing = abscissa_core::trace::Tracing::new(
+                abscissa_core::trace::Config::from(config.global.log_level),
+                abscissa_core::terminal::ColorChoice::Auto,
+            )
+            .unwrap();
+            Ok(vec![Box::new(terminal), Box::new(alt_tracing)])
+        }
     }
 
     /// Get tracing configuration from command-line options

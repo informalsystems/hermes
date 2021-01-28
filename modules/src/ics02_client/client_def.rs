@@ -10,12 +10,13 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -74,6 +75,19 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Verify a `proof` that a channel state matches that of the input `channel_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_channel_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
@@ -488,6 +502,50 @@ impl ClientDef for AnyClient {
                     proof,
                     connection_id,
                     expected_connection_end,
+                )
+            }
+        }
+    }
+
+    fn verify_channel_state(
+        &self,
+        client_state: &AnyClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Tendermint)
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_channel_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    port_id,
+                    channel_id,
+                    expected_channel_end,
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Mock)
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_channel_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    port_id,
+                    channel_id,
+                    expected_channel_end,
                 )
             }
         }

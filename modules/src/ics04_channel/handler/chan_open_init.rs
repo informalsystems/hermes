@@ -35,7 +35,7 @@ pub(crate) fn process(
 
     // An IBC connection running on the local (host) chain should exist.
 
-    let connection_end = ctx.connection_state(&msg.channel().connection_hops()[0]);
+    let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
     let conn = connection_end
         .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;

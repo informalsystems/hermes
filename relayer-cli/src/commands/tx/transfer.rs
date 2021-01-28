@@ -4,7 +4,7 @@ use abscissa_core::{Command, Options, Runnable};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IBCEvent;
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use relayer::{
     chain::{Chain, CosmosSDKChain},
     config::Config,
@@ -17,20 +17,21 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawSendPacketCmd {
-    #[options(free, help = "identifier of the source chain")]
-    src_chain_id: String,
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the destination chain")]
-    dest_chain_id: String,
+    #[options(free, required, help = "identifier of the destination chain")]
+    dest_chain_id: ChainId,
 
-    #[options(free, help = "identifier of the source port")]
+    #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
 
-    #[options(free, help = "identifier of the source channel")]
+    #[options(free, required, help = "identifier of the source channel")]
     src_channel_id: ChannelId,
 
     #[options(
         free,
+        required,
         help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: u64,
@@ -48,11 +49,11 @@ pub struct TxRawSendPacketCmd {
 impl TxRawSendPacketCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
-            .find_chain(&self.src_chain_id.parse().unwrap())
+            .find_chain(&self.src_chain_id)
             .ok_or_else(|| "missing src chain configuration".to_string())?;
 
         let dest_chain_config = config
-            .find_chain(&self.dest_chain_id.parse().unwrap())
+            .find_chain(&self.dest_chain_id)
             .ok_or_else(|| "missing destination chain configuration".to_string())?;
 
         let denom = self
@@ -83,9 +84,7 @@ impl Runnable for TxRawSendPacketCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Message {:?}", opts);
@@ -97,18 +96,14 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Runtime.context(e));
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
             .map_err(|e| Kind::Runtime.context(e));
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => {
-                return Output::error(format!("{}", e)).exit();
-            }
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IBCEvent>, Error> =

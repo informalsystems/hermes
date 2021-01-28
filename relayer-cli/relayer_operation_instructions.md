@@ -5,30 +5,47 @@
 1. Clone gaia:
 
     ```shell script
-    git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/comsos/gaia
-    ~/go/src/github.com/comsos/gaia ; git co v3.0.0 ; make install
+    git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
+    cd ~/go/src/github.com/cosmos/gaia ; git co v3.0.0 ; make install
     ```
 
 2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
 
     ```shell script
-    ./dev-env <config.toml> <chain1> <chain2>
+    ./scripts/dev-env <config.toml> <chain1> <chain2>
     ```
     e.g.:
 
     ```shell
-    ./dev-env my_config.toml ibc-0 ibc-1
+    ./scripts/dev-env loop_config.toml ibc-0 ibc-1
     ```
+
+#### Stop and cleanup
+
+You can manually stop the two gaia instances and cleanup after them as follows:
+
+```shell
+killall gaiad
+rm -rf data/
+```
 
 ### CLI Step Relaying:
 
 You can use the relayer CLIs, below are some examples.
 
-**Note:** These instructions below assume that the `relayer-cli` binary
+**Note 1:** These instructions below assume that the `relayer-cli` binary
 can be executed as `rrly`, eg. by using an shell alias:
 
 ```shell script
-alias rrly='cargo run --bin relayer --'`
+alias rrly='cargo run --bin relayer --'
+```
+
+**Note 2:** In these instructions IDs `..-0` are used on `ibc-0` and `..-1` on `ibc-1`. You can control to some extent the ID generation by running some of these commands:
+```shell script
+rrly -c loop_config.toml tx raw create-client ibc-1 ibc-0
+rrly -c loop_config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
+rrly -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
+
 ```
 
 #### Client CLIs:
@@ -55,7 +72,7 @@ alias rrly='cargo run --bin relayer --'`
 - init-none:
 
     ```shell script
-    rrly -c loop_config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
+    rrly -c loop_config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 dummyconnection dummyconnection
     ```
 
     Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0`. Use in the `conn-try` CLI
@@ -63,59 +80,59 @@ alias rrly='cargo run --bin relayer --'`
 - init-try:
 
     ```shell script
-    rrly -c loop_config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection connection-0
+    rrly -c loop_config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 dummyconnection connection-0
     ```
 
-    Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-1`. Use in the `conn-ack` CLI
+    Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI
 
 - open-try:
 
     ```shell script
-    rrly -c loop_config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 connection-0 connection-0
+    rrly -c loop_config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 connection-0 connection-1
     ```
 
 - open-open:
 
     ```shell script
-    rrly -c loop_config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 connection-0 connection-0
+    rrly -c loop_config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 connection-1 connection-0
     ```
 
 - verify that the two ends are in Open state:
 
     ```shell script
-    rrly -c loop_config.toml query connection end ibc-1 connection-0
+    rrly -c loop_config.toml query connection end ibc-1 connection-1
     rrly -c loop_config.toml query connection end ibc-0 connection-0
     ```
 
-#### Channel CLIs:
+#### Channel Open CLIs:
 
 - init-none
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+    rrly -c loop_config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
     ```
 - init-try
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-try ibc-1 ibc-0 connection-0 transfer transfer defaultChannel channel-0
+    rrly -c loop_config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
     ```
 
 - open-try
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
     ```
 - open-open
 
     ```shell script
-    rrly -c loop_config.toml tx raw chan-confirm ibc-1 ibc-0 connection-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
     ```
 
 - verify that the two ends are in Open state:
 
     ```shell script
     rrly -c loop_config.toml query channel end ibc-0 transfer channel-0
-    rrly -c loop_config.toml query channel end ibc-1 transfer channel-0
+    rrly -c loop_config.toml query channel end ibc-1 transfer channel-1
     ```
 
 #### Query balances:
@@ -138,10 +155,16 @@ Note that the addresses used in the two commands above are configured in `dev-en
 
 First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 
-- send 1 packet to ibc-0
+- start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This results in a Tx to `ibc-0` for a `MsgTransfer` packet
 
     ```shell script
     rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+    ```
+
+- query packet commitments on ibc-0
+
+    ```shell script
+    rrly -c loop_config.toml query packet commitments ibc-0 transfer channel-0
     ```
 
 - query unreceived packets on ibc-1
@@ -153,19 +176,19 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 - send recv_packet to ibc-1
 
     ```shell script
-    rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
 - query unreceived acks on ibc-0
 
     ```shell script
-    rrly -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
+    rrly -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
     ```
 
 - send acknowledgement to ibc-0
 
     ```shell script
-    rrly -c loop_config.toml tx raw packet-ack  ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
     ```
 
 - send 1 packet with low timeout height offset to ibc-0
@@ -177,38 +200,124 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 - send timeout to ibc-0
 
     ```shell script
-    rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+    rrly -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
-Now, we'll send those samoleans back, from `ibc-1` to `ibc-1`.
+Send those samoleans back, from `ibc-1` to `ibc-1`.
 
 ```shell script
-rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C
-rrly -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
-rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 transfer transfer channel-0 channel-0
+rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+rrly -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```
 
-The `ibc/27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
+The `ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
+
+#### Channel Close CLIs:
+
+__Note__: This command is currently rejected by cosmos-sdk transfer module. To
+make it work:
+   - clone cosmos-sdk
+       ```shell script
+       git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
+       cd ~/go/src/github.com/cosmos/cosmos-sdk
+       ```
+   - apply these diffs:
+       ```
+          --- a/x/ibc/applications/transfer/module.go
+          +++ b/x/ibc/applications/transfer/module.go
+          @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
+                  channelID string,
+           ) error {
+                  // Disallow user-initiated channel closing for transfer channels
+          -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+          +       return nil
+           }
+       ```
+   - append the line below (watch for the placeholder `<your>`) as the last line
+     in your `go.mod` in the gaia clone:
+
+   ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
+
+   - now `make build` and `make install` your local copy of gaia
+
+
+First transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+Tx to `ibc-1` for a `MsgTransfer` packet.
+Make sure you're not relaying this packet (the relayer should not be running on
+this path).
+
+```shell script
+rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+```
+  
+Starting with channel in open-open:
+
+- close-open
+
+    ```shell script
+    rrly -c loop_config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+    ```
+
+- trigger timeout on close to ibc-1
+
+    ```shell script
+    rrly -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+    ```
+
+- close-close
+
+    ```shell script
+    rrly -c loop_config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+    ```
+
+- verify that the two ends are in Close state:
+
+  ```shell script
+  rrly -c loop_config.toml query channel end ibc-0 transfer channel-0
+  rrly -c loop_config.toml query channel end ibc-1 transfer channel-1
+  ```
 
 ### Relayer loop:
 
-Client, connection, channel handshake and packet relaying can pe done from the relayer loop
+Client, connection, channel handshake and packet relaying can pe done from 
+the relayer `v0` loop.
 
-- start the relayer, the relayer should create the clients, and do the handshake for the connection and channel. Once that is done it will sit in a loop, listening for events
+- start the relayer
+    - with new channel:
 
-    ```shell script
-    rrly -c loop_config.toml v-0
-    ```
+        ```shell script
+        rrly -c loop_config.toml start ibc-0 ibc-1
+        ```
+      The relayer should create the clients, and perform the handshake for new clients, connection and channel between the two chains on `transfer` port. Once that is finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.
 
-- use the CLI to send 2 packets to ibc0 chain:
+      Note: The configuration file should have the relay path specified, for example:
+      ```
+        [[connections]]
+        a_chain = 'ibc-0'
+        b_chain = 'ibc-1'
+
+        [[connections.paths]]
+        a_port = 'transfer'
+        b_port = 'transfer'
+      ```
+
+    - with existing channel:
+
+      ```shell script
+      rrly -c loop_config.toml start ibc-0 ibc-1 transfer channel-0
+      ```
+      The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.
+
+- in a separate terminal, use the CLI to send 2 packets to ibc0 chain:
 
     ```shell script
     rrly -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
-- use the CLI to send 2 packets to ibc0 chain:
+- use the CLI to send 2 packets to ibc1 chain:
 
     ```shell script
-    rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-2 transfer channel-0 9999 1000 -n 2
+    rrly -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
     ```
 
 - observe the output on the relayer terminal, verify that the send events are processed and the recv_packets are sent out.
@@ -217,10 +326,20 @@ Client, connection, channel handshake and packet relaying can pe done from the r
 
     ```shell script
     rrly -c loop_config.toml query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
-    rrly -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
-    rrly -c loop_config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
+    rrly -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    rrly -c loop_config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-1
     rrly -c loop_config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
     ```
+
+## Relayer listen mode
+
+The relayer can be started in listen mode:
+
+```shell script
+rrly -c loop_config.toml listen ibc-0
+```
+
+It displays the `NewBlock` and IBC events received from the specified chain.
 
 ## Profiling the relayer
 

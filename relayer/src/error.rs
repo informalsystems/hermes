@@ -112,7 +112,7 @@ pub enum Kind {
     #[error("Failed to build channel open confirm {0}: {1}")]
     ChanOpenConfirm(ChannelId, String),
 
-    /// Packet recv  failure
+    /// Packet build failure
     #[error("Failed to build packet {0}: {1}")]
     Packet(ChannelId, String),
 
