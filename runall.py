@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable, Tuple
+from typing import Any, List, Optional, TypedDict, TypeVar, Generic, Type, Callable, Tuple, NewType
 
 import os
 import json
@@ -98,17 +98,22 @@ class Height:
     revision_height: int
     revision_number: int
 
+ChainId = NewType('ChainId', str)
+ClientId = NewType('ClientId', str)
+ConnectionId = NewType('ConnectionId', str)
+
+# =============================================================================
 
 @dataclass
 class TxCreateClientRes:
-    client_id: str
+    client_id: ClientId
 
 
 @dataclass
 @cmd("tx raw create-client")
 class TxCreateClient(Cmd[TxCreateClientRes]):
-    dst_chain_id: str
-    src_chain_id: str
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id]
@@ -127,9 +132,9 @@ class TxUpdateClientRes:
 @dataclass
 @cmd("tx raw update-client")
 class TxUpdateClient(Cmd[TxUpdateClientRes]):
-    dst_chain_id: str
-    src_chain_id: str
-    dst_client_id: str
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
+    dst_client_id: ClientId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.dst_client_id]
@@ -148,8 +153,8 @@ class QueryClientStateRes:
 @dataclass
 @cmd("query client state")
 class QueryClientState(Cmd[QueryClientStateRes]):
-    chain_id: str
-    client_id: str
+    chain_id: ChainId
+    client_id: ClientId
     height: Optional[int] = None
     proof: bool = False
 
@@ -171,19 +176,21 @@ class QueryClientState(Cmd[QueryClientStateRes]):
 
 @dataclass
 class TxConnInitRes:
-    connection_id: str
+    connection_id: ConnectionId
 
 
 @cmd("tx raw conn-init")
 @dataclass
 class TxConnInit(Cmd[TxConnInitRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_client_id: str
-    dst_client_id: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_client_id: ClientId
+    dst_client_id: ClientId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn",
+        return [self.dst_chain_id, self.src_chain_id,
+                self.dst_client_id, self.src_client_id,
+                "default-conn",
                 "default-conn"]
 
     def process(self, result: Any) -> TxConnInitRes:
@@ -194,21 +201,22 @@ class TxConnInit(Cmd[TxConnInitRes]):
 
 @dataclass
 class TxConnTryRes:
-    connection_id: str
+    connection_id: ConnectionId
 
 
 @cmd("tx raw conn-try")
 @dataclass
 class TxConnTry(Cmd[TxConnTryRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_client_id: str
-    dst_client_id: str
-    src_conn_id: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_client_id: ClientId
+    dst_client_id: ClientId
+    src_conn_id: ConnectionId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn",
-                self.src_conn_id]
+        return [self.dst_chain_id, self.src_chain_id,
+                self.dst_client_id, self.src_client_id,
+                "default-conn", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnTryRes:
         return from_dict(TxConnTryRes, result[0]['OpenTryConnection'])
@@ -218,22 +226,23 @@ class TxConnTry(Cmd[TxConnTryRes]):
 
 @dataclass
 class TxConnAckRes:
-    connection_id: str
+    connection_id: ConnectionId
 
 
 @cmd("tx raw conn-ack")
 @dataclass
 class TxConnAck(Cmd[TxConnAckRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_client_id: str
-    dst_client_id: str
-    src_conn_id: str
-    dst_conn_id: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_client_id: ClientId
+    dst_client_id: ClientId
+    src_conn_id: ConnectionId
+    dst_conn_id: ConnectionId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, self.dst_conn_id,
-                self.src_conn_id]
+        return [self.dst_chain_id, self.src_chain_id,
+                self.dst_client_id, self.src_client_id,
+                self.dst_conn_id, self.src_conn_id]
 
     def process(self, result: Any) -> TxConnAckRes:
         return from_dict(TxConnAckRes, result[0]['OpenAckConnection'])
@@ -243,22 +252,23 @@ class TxConnAck(Cmd[TxConnAckRes]):
 
 @dataclass
 class TxConnConfirmRes:
-    connection_id: str
+    connection_id: ConnectionId
 
 
 @cmd("tx raw conn-confirm")
 @dataclass
 class TxConnConfirm(Cmd[TxConnConfirmRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_client_id: str
-    dst_client_id: str
-    src_conn_id: str
-    dst_conn_id: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_client_id: ClientId
+    dst_client_id: ClientId
+    src_conn_id: ConnectionId
+    dst_conn_id: ConnectionId
 
     def args(self) -> List[str]:
-        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, self.dst_conn_id,
-                self.src_conn_id]
+        return [self.dst_chain_id, self.src_chain_id,
+                self.dst_client_id, self.src_client_id,
+                self.dst_conn_id, self.src_conn_id]
 
     def process(self, result: Any) -> TxConnConfirmRes:
         return from_dict(TxConnConfirmRes, result[0]['OpenConfirmConnection'])
@@ -274,28 +284,28 @@ def split():
 # CLIENT creation and manipulation
 # =============================================================================
 
-def create_client(c, dst: str, src: str) -> TxCreateClientRes:
+def create_client(c, dst: ChainId, src: ChainId) -> TxCreateClientRes:
     cmd = TxCreateClient(dst_chain_id=dst, src_chain_id=src)
     client = cmd.run(c).success()
     l.info(f'Created client: {client.client_id}')
     return client
 
 
-def update_client(c, dst: str, src: str, client_id: str) -> TxUpdateClientRes:
+def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> TxUpdateClientRes:
     cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src, dst_client_id=client_id)
     res = cmd.run(c).success()
     l.info(f'Updated client to: {res.consensus_height}')
     return res
 
 
-def query_client_state(c, chain: str, id: str) -> Any:
-    cmd = QueryClientState(chain_id=chain, client_id=id)
+def query_client_state(c, chain_id: ChainId, client_id: ClientId) -> Any:
+    cmd = QueryClientState(chain_id, client_id)
     res = cmd.run(c).success()
     l.info(f'Client is at: {res.latest_height}')
     return res
 
 
-def create_update_query_client(c, dst: str, src: str) -> str:
+def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
     client = create_client(c, dst, src)
     split()
     query_client_state(c, dst, client.client_id)
@@ -310,14 +320,14 @@ def create_update_query_client(c, dst: str, src: str) -> str:
 # CONNECTION handshake
 # =============================================================================
 
-def conn_init(c, src: str, dst: str, src_client: str, dst_client: str) -> str:
+def conn_init(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId) -> ConnectionId:
     cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client)
     res = cmd.run(c).success()
     l.info(f'ConnOpen init submitted to {dst} and obtained connection id {res.connection_id}')
     return res.connection_id
 
 
-def conn_try(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str) -> str:
+def conn_try(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId) -> ConnectionId:
     cmd = TxConnTry(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn)
     res = cmd.run(c).success()
@@ -325,7 +335,7 @@ def conn_try(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: 
     return res.connection_id
 
 
-def conn_ack(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str, dst_conn: str) -> str:
+def conn_ack(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
     cmd = TxConnAck(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
@@ -333,7 +343,7 @@ def conn_ack(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: 
     return res.connection_id
 
 
-def conn_confirm(c, src: str, dst: str, src_client: str, dst_client: str, src_conn: str, dst_conn: str) -> str:
+def conn_confirm(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId, src_conn: ConnectionId, dst_conn: ConnectionId) -> ConnectionId:
     cmd = TxConnConfirm(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                         src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
@@ -341,7 +351,7 @@ def conn_confirm(c, src: str, dst: str, src_client: str, dst_client: str, src_co
     return res.connection_id
 
 
-def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: str) -> Tuple[str, str]:
+def connection_handshake(c, side_a: ChainId, side_b: ChainId, client_a: ClientId, client_b: ClientId) -> Tuple[ConnectionId, ConnectionId]:
     a_conn_id = conn_init(c, side_a, side_b, client_a, client_b)
     split()
     b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
@@ -359,8 +369,8 @@ def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: s
 
 
 def run(c: Path):
-    IBC_0 = 'ibc-0'
-    IBC_1 = 'ibc-1'
+    IBC_0 = ChainId('ibc-0')
+    IBC_1 = ChainId('ibc-1')
 
     ibc0_client_id = create_update_query_client(c, IBC_0, IBC_1)
     ibc1_client_id = create_update_query_client(c, IBC_1, IBC_0)
@@ -373,7 +383,7 @@ def run(c: Path):
 def main():
     l.basicConfig(
         level=l.DEBUG,
-        format='[%(asctime)s] [%(levelname)8s] --- %(message)s',
+        format='[%(asctime)s] [%(levelname)8s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
     parser = argparse.ArgumentParser(description='Test all relayer commands, end-to-end')
