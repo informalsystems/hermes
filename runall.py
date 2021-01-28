@@ -835,6 +835,127 @@ def query_channel_end(c, chain_id: ChainId, conn_id: ConnectionId, chan_id: Chan
 # =============================================================================
 
 
+# todo(romac): kindly move the code below to its rightful place
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxPacketSendRes:
+    sequence: str
+
+
+@cmd("tx raw packet-send")
+@dataclass
+class TxPacketSend(Cmd[TxPacketSendRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_port: str
+    src_channel: str
+
+    def args(self) -> List[str]:
+        return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
+
+    def process(self, result: Any) -> TxPacketSendRes:
+        return from_dict(TxPacketSendRes, result[0][0]['SendPacketChannel']['packet'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxPacketRecvRes:
+    sequence: str
+
+
+@cmd("tx raw packet-recv")
+@dataclass
+class TxPacketRecv(Cmd[TxPacketRecvRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_port: str
+    src_channel: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+
+    # todo: the output here is a list of [`UpdateClient`,`WriteAcknowledgementChannel`]
+    #   possible that the UpdateClient is missing, and then `WriteAcknowledgementChannel` will no longer be at index 1
+    #   so we might need a more sophisticated way to extract this event...
+    def process(self, result: Any) -> TxPacketRecvRes:
+        return from_dict(TxPacketRecvRes, result[0][1]['WriteAcknowledgementChannel']['packet'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxPacketAckRes:
+    sequence: str
+
+
+@cmd("tx raw packet-ack")
+@dataclass
+class TxPacketAck(Cmd[TxPacketAckRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_port: str
+    src_channel: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
+
+    # todo: same as for TxPacketRecv:
+    #   the output here is a list of [`UpdateClient`,`AcknowledgePacketChannel`]
+    #   possible that the UpdateClient is missing, and then `WriteAcknowledgementChannel` will no longer be at index 1
+    #   so we might need a more sophisticated way to extract this event...
+    def process(self, result: Any) -> TxPacketAckRes:
+        return from_dict(TxPacketAckRes, result[0][1]['AcknowledgePacketChannel']['packet'])
+
+# -----------------------------------------------------------------------------
+
+
+# TRANSFER (packet send)
+# =============================================================================
+def packet_send(c, src: str, dst: str, src_port: str, src_channel: str) -> str:
+    cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+    res = cmd.run(c).success()
+    l.info(f'PacketSend to {src} and obtained sequence number {res.sequence}')
+    return res.sequence
+
+def packet_recv(c, dst: str, src: str, src_port: str, src_channel: str) -> str:
+    cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+    res = cmd.run(c).success()
+    l.info(f'PacketRecv to {dst} done for sequence number {res.sequence}')
+    return res.sequence
+
+def packet_ack(c, dst: str, src: str, src_port: str, src_channel: str) -> str:
+    cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+    res = cmd.run(c).success()
+    l.info(f'PacketAck to {dst} done for sequence number {res.sequence}')
+    return res.sequence
+
+def packet_ping_pong(c, side_a: str, side_b: str, a_chan: str, b_chan: str):
+    seq_send_a = packet_send(c, side_a, side_b, "transfer", a_chan)
+    seq_recv_a = packet_recv(c, side_b, side_a, "transfer", b_chan)
+    if seq_send_a != seq_recv_a:
+        l.error(
+            f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={seq_send_a} versus Received={seq_recv_a}')
+    # write the ack
+    seq_ack_a = packet_ack(c, side_a, side_b, "transfer", a_chan)
+    if seq_recv_a != seq_ack_a:
+        l.error(
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_a} versus Ack={seq_ack_a}')
+
+    seq_send_b = packet_send(c, side_b, side_a, "transfer", b_chan)
+    seq_recv_b = packet_recv(c, side_a, side_b, "transfer", a_chan)
+    if seq_send_b != seq_recv_b:
+        l.error(
+            f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={seq_send_b} versus Received={seq_recv_b}')
+    seq_ack_b = packet_ack(c, side_b, side_a, "transfer", a_chan)
+    if seq_recv_b != seq_ack_b:
+        l.error(
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_b} versus Ack={seq_ack_b}')
+
+
+
 def run(c: Path):
     IBC_0 = ChainId('ibc-0')
     IBC_1 = ChainId('ibc-1')
@@ -851,6 +972,8 @@ def run(c: Path):
 
     ibc1_chan_id, ibc0_chan_id = channel_handshake(
         c, IBC_1, IBC_0, ibc1_conn_id, ibc0_conn_id)
+
+    packet_ping_pong(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
 
 
 def main():
