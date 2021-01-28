@@ -10,6 +10,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
+use ibc::Height as ICSHeight;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -21,11 +22,7 @@ use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::Height as ICSHeight;
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
+use ibc_proto::ibc::core::channel::v1::{PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
@@ -301,6 +298,7 @@ pub trait Chain: Sized {
                 CommitmentProofBytes::from(connection_proof),
                 client_proof,
                 consensus_proof,
+                None,
                 height.increment(),
             )
             .map_err(|_| Kind::MalformedProof)?,
@@ -329,8 +327,10 @@ pub trait Chain: Sized {
         let channel_proof =
             CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
 
-        Ok(Proofs::new(channel_proof, None, None, height.increment())
-            .map_err(|_| Kind::MalformedProof)?)
+        Ok(
+            Proofs::new(channel_proof, None, None, None, height.increment())
+                .map_err(|_| Kind::MalformedProof)?,
+        )
     }
 
     fn query_packet_commitments(
@@ -362,6 +362,8 @@ pub trait Chain: Sized {
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
 
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
@@ -371,6 +373,8 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
         let data: Path;
+        let mut channel_proof = None;
+
         match packet_type {
             PacketMsgType::Recv => {
                 data = Path::Commitments {
@@ -393,6 +397,16 @@ pub trait Chain: Sized {
                     sequence,
                 }
             }
+            PacketMsgType::TimeoutOnClose => {
+                data = Path::Receipts {
+                    port_id: port_id.clone(),
+                    channel_id: channel_id.clone(),
+                    sequence,
+                };
+                channel_proof = Some(CommitmentProofBytes::from(
+                    self.proven_channel(port_id, channel_id, height)?.1,
+                ));
+            }
         }
 
         let res = self
@@ -405,6 +419,7 @@ pub trait Chain: Sized {
             })?),
             None,
             None,
+            channel_proof,
             height.increment(),
         )
         .map_err(|_| Kind::MalformedProof)?;

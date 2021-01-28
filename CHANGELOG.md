@@ -12,10 +12,15 @@
   - JSON output for queries and txs ([#500])
   - Implement commands for channel close init and confirm ([#538])
   - Implement command to perform the handshake for a new channel ([#557])
-  - Query all connections CLI ([#553])
+  - Query all connections command ([#553])
+  - Query all channels command ([#568])
 
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
+  - Relay `MsgTimeoutOnClose` if counterparty channel state is `State::Closed`
+
+- [modules]
+  - Add `MsgTimeoutOnClose` message type ([#563])
 
 ### IMPROVEMENTS
 
@@ -26,6 +31,7 @@
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
   - UX improvements for relayer txs ([#536, #540, #554])
+  - Allow running standalone commands concurrently to the main relayer loop ([#501])
 
 - [relayer]
   - Performance improvements ([#514], [#537])
@@ -50,6 +56,7 @@
 [#306]: https://github.com/informalsystems/ibc-rs/issues/306
 [#470]: https://github.com/informalsystems/ibc-rs/issues/470
 [#500]: https://github.com/informalsystems/ibc-rs/issues/500
+[#501]: https://github.com/informalsystems/ibc-rs/issues/501
 [#505]: https://github.com/informalsystems/ibc-rs/issues/505
 [#507]: https://github.com/informalsystems/ibc-rs/issues/507
 [#511]: https://github.com/informalsystems/ibc-rs/pull/511
@@ -67,6 +74,8 @@
 [#554]: https://github.com/informalsystems/ibc-rs/issues/554
 [#553]: https://github.com/informalsystems/ibc-rs/issues/553
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
+[#563]: https://github.com/informalsystems/ibc-rs/issues/563
+[#568]: https://github.com/informalsystems/ibc-rs/issues/568
 
 ## v0.0.6
 *December 23, 2020*

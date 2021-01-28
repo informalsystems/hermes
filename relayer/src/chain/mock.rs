@@ -11,6 +11,7 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IBCEvent;
+use ibc::Height;
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
@@ -24,10 +25,10 @@ use ibc::ics24_host::Path;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::test_utils::get_dummy_account_id;
-use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
@@ -37,7 +38,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use crate::light_client::{LightClient, mock::LightClient as MockLightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -241,6 +242,10 @@ impl Chain for MockChain {
     }
 
     fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        unimplemented!()
+    }
+
+    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
         unimplemented!()
     }
 }

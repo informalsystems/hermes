@@ -133,6 +133,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 msg.proof_try.into(),
                 client_proof,
                 Option::from(consensus_proof_obj),
+                None,
                 proof_height,
             )
             .map_err(|e| Kind::InvalidProof.context(e))?,

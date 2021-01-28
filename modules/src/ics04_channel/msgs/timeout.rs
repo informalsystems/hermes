@@ -68,6 +68,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             raw_msg.proof_unreceived.into(),
             None,
             None,
+            None,
             raw_msg
                 .proof_height
                 .ok_or(Kind::MissingHeight)?
