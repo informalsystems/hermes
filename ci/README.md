@@ -4,7 +4,7 @@ This folder contains the files required to run the End to end testing in [Github
 
 ## End to end (e2e) testing
 
-The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22) spins up two `gaia` chains (`ibc-0` and `ibc-1`) in Docker containers and one container that runs the relayer. There's a script that configures the relayer (e.g. configure light clients and add keys) and run transactions and queries. A successful run of this script ensures that the relayer is working properly with two chains that support `IBC`.
+The [End to end (e2e) testing workflow](https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22) spins up two `gaia` chains (`ibc-0` and `ibc-1`) in Docker containers and one container that runs the relayer. There's a script that configures the relayer (e.g. configure light clients and add keys) and runs transactions and queries. A successful run of this script ensures that the relayer is working properly with two chains that support `IBC`.
 
 ### Running an End to end (e2e) test locally
 
