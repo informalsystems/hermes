@@ -94,6 +94,10 @@ If the configuration file is valid the command above will show this message:
 {"status":"success","result":[]}
 ```
 
+### Adding Private Keys
+
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./transactions.md), please refer to the [Keys](./keys.md) sections in order to learn how to add the private keys that will be used by the relayer.
+
 ### Example configuration file
 
 Here is an full example of a configuration file with two [local chains](./local_chains.md) configured and light client peers added:
