@@ -31,6 +31,7 @@ class ExpectedSuccess(Exception):
 
 T = TypeVar('T')
 
+
 @dataclass
 class CmdResult(Generic[T]):
     cmd: 'Cmd'
@@ -74,6 +75,7 @@ class Cmd(Generic[T]):
 
 C = TypeVar('C', bound=Cmd)
 
+
 def cmd(name: str) -> Callable[[Type[C]], Type[C]]:
     def decorator(klass: Type[C]) -> Type[C]:
         klass.name = name
@@ -98,11 +100,13 @@ class Height:
     revision_height: int
     revision_number: int
 
+
 ChainId = NewType('ChainId', str)
 ClientId = NewType('ClientId', str)
 ConnectionId = NewType('ConnectionId', str)
 
 # =============================================================================
+
 
 @dataclass
 class TxCreateClientRes:
@@ -161,8 +165,10 @@ class QueryClientState(Cmd[QueryClientStateRes]):
     def args(self) -> List[str]:
         args = []
 
-        if self.height is not None: args.extend(['--height', str(self.height)])
-        if self.proof: args.append('--proof')
+        if self.height is not None:
+            args.extend(['--height', str(self.height)])
+        if self.proof:
+            args.append('--proof')
 
         args.extend([self.chain_id, self.client_id])
 
@@ -292,7 +298,8 @@ def create_client(c, dst: ChainId, src: ChainId) -> TxCreateClientRes:
 
 
 def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> TxUpdateClientRes:
-    cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src, dst_client_id=client_id)
+    cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src,
+                         dst_client_id=client_id)
     res = cmd.run(c).success()
     l.info(f'Updated client to: {res.consensus_height}')
     return res
@@ -321,9 +328,11 @@ def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
 # =============================================================================
 
 def conn_init(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: ClientId) -> ConnectionId:
-    cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client)
+    cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst,
+                     src_client_id=src_client, dst_client_id=dst_client)
     res = cmd.run(c).success()
-    l.info(f'ConnOpen init submitted to {dst} and obtained connection id {res.connection_id}')
+    l.info(
+        f'ConnOpen init submitted to {dst} and obtained connection id {res.connection_id}')
     return res.connection_id
 
 
@@ -331,7 +340,8 @@ def conn_try(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: Cl
     cmd = TxConnTry(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn)
     res = cmd.run(c).success()
-    l.info(f'ConnOpen try submitted to {dst} and obtained connection id {res.connection_id}')
+    l.info(
+        f'ConnOpen try submitted to {dst} and obtained connection id {res.connection_id}')
     return res.connection_id
 
 
@@ -339,7 +349,8 @@ def conn_ack(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client: Cl
     cmd = TxConnAck(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                     src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
-    l.info(f'ConnOpen ack submitted to {dst} and obtained connection id {res.connection_id}')
+    l.info(
+        f'ConnOpen ack submitted to {dst} and obtained connection id {res.connection_id}')
     return res.connection_id
 
 
@@ -347,7 +358,8 @@ def conn_confirm(c, src: ChainId, dst: ChainId, src_client: ClientId, dst_client
     cmd = TxConnConfirm(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
                         src_conn_id=src_conn, dst_conn_id=dst_conn)
     res = cmd.run(c).success()
-    l.info(f'ConnOpen confirm submitted to {dst} and obtained connection id {res.connection_id}')
+    l.info(
+        f'ConnOpen confirm submitted to {dst} and obtained connection id {res.connection_id}')
     return res.connection_id
 
 
@@ -356,14 +368,18 @@ def connection_handshake(c, side_a: ChainId, side_b: ChainId, client_a: ClientId
     split()
     b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
     split()
-    ack_res = conn_ack(c, side_a, side_b, client_a, client_b, b_conn_id, a_conn_id)
+    ack_res = conn_ack(c, side_a, side_b, client_a,
+                       client_b, b_conn_id, a_conn_id)
     if ack_res != a_conn_id:
-        l.error(f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
+        l.error(
+            f'Incorrect connection id returned from conn ack: expected=({a_conn_id})/got=({ack_res})')
 
     split()
-    confirm_res = conn_confirm(c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
+    confirm_res = conn_confirm(
+        c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
     if confirm_res != b_conn_id:
-        l.error(f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
+        l.error(
+            f'Incorrect connection id returned from conn confirm: expected=({b_conn_id})/got=({confirm_res})')
 
     return (a_conn_id, b_conn_id)
 
@@ -377,7 +393,8 @@ def run(c: Path):
 
     split()
 
-    ibc0_conn_id, ibc1_conn_id = connection_handshake(c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
+    ibc0_conn_id, ibc1_conn_id = connection_handshake(
+        c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
 
 
 def main():
@@ -386,20 +403,23 @@ def main():
         format='[%(asctime)s] [%(levelname)8s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
-    parser = argparse.ArgumentParser(description='Test all relayer commands, end-to-end')
+    parser = argparse.ArgumentParser(
+        description='Test all relayer commands, end-to-end')
     parser.add_argument('-c', '--config',
-        help='configuration file for the relayer',
-        metavar='CONFIG_FILE',
-        required=True,
-        type=Path)
+                        help='configuration file for the relayer',
+                        metavar='CONFIG_FILE',
+                        required=True,
+                        type=Path)
 
     args = parser.parse_args()
 
     if not args.config.exists():
-        print(f'error: supplied configuration file does not exist: {args.config}')
+        print(
+            f'error: supplied configuration file does not exist: {args.config}')
         exit(1)
 
     run(args.config)
+
 
 if __name__ == "__main__":
     main()
