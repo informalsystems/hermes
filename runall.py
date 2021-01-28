@@ -120,6 +120,7 @@ ClientId = NewType('ClientId', str)
 ChannelId = NewType('ChannelId', str)
 ConnectionId = NewType('ConnectionId', str)
 
+Sequence = NewType('Sequence', str)
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
 
@@ -841,7 +842,7 @@ def query_channel_end(c, chain_id: ChainId, conn_id: ConnectionId, chan_id: Chan
 
 @dataclass
 class TxPacketSendRes:
-    sequence: str
+    sequence: Sequence
 
 
 @cmd("tx raw packet-send")
@@ -849,8 +850,8 @@ class TxPacketSendRes:
 class TxPacketSend(Cmd[TxPacketSendRes]):
     src_chain_id: str
     dst_chain_id: str
-    src_port: str
-    src_channel: str
+    src_port: PortId
+    src_channel: ChannelId
 
     def args(self) -> List[str]:
         return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
@@ -863,16 +864,16 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 
 @dataclass
 class TxPacketRecvRes:
-    sequence: str
+    sequence: Sequence
 
 
 @cmd("tx raw packet-recv")
 @dataclass
 class TxPacketRecv(Cmd[TxPacketRecvRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_port: str
-    src_channel: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_port: PortId
+    src_channel: ChannelId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
@@ -888,16 +889,16 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
 
 @dataclass
 class TxPacketAckRes:
-    sequence: str
+    sequence: Sequence
 
 
 @cmd("tx raw packet-ack")
 @dataclass
 class TxPacketAck(Cmd[TxPacketAckRes]):
-    src_chain_id: str
-    dst_chain_id: str
-    src_port: str
-    src_channel: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    src_port: PortId
+    src_channel: ChannelId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
@@ -914,46 +915,61 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
 
 # TRANSFER (packet send)
 # =============================================================================
-def packet_send(c, src: str, dst: str, src_port: str, src_channel: str) -> str:
-    cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+
+def packet_send(c, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+    cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst,
+                       src_port=src_port, src_channel=src_channel)
+
     res = cmd.run(c).success()
     l.info(f'PacketSend to {src} and obtained sequence number {res.sequence}')
     return res.sequence
 
-def packet_recv(c, dst: str, src: str, src_port: str, src_channel: str) -> str:
-    cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+
+def packet_recv(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+    cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst,
+                       src_port=src_port, src_channel=src_channel)
+
     res = cmd.run(c).success()
     l.info(f'PacketRecv to {dst} done for sequence number {res.sequence}')
     return res.sequence
 
-def packet_ack(c, dst: str, src: str, src_port: str, src_channel: str) -> str:
-    cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst, src_port=src_port, src_channel=src_channel)
+
+def packet_ack(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+    cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst,
+                      src_port=src_port, src_channel=src_channel)
+
     res = cmd.run(c).success()
     l.info(f'PacketAck to {dst} done for sequence number {res.sequence}')
     return res.sequence
 
-def packet_ping_pong(c, side_a: str, side_b: str, a_chan: str, b_chan: str):
-    seq_send_a = packet_send(c, side_a, side_b, "transfer", a_chan)
-    seq_recv_a = packet_recv(c, side_b, side_a, "transfer", b_chan)
+
+def packet_ping_pong(c,
+                     side_a: ChainId, side_b: ChainId,
+                     a_chan: ChannelId, b_chan: ChannelId,
+                     port_id: PortId = PortId('transfer')):
+
+    seq_send_a = packet_send(c, side_a, side_b, port_id, a_chan)
+    seq_recv_a = packet_recv(c, side_b, side_a, port_id, b_chan)
     if seq_send_a != seq_recv_a:
         l.error(
             f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={seq_send_a} versus Received={seq_recv_a}')
+
     # write the ack
-    seq_ack_a = packet_ack(c, side_a, side_b, "transfer", a_chan)
+    seq_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
     if seq_recv_a != seq_ack_a:
         l.error(
             f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_a} versus Ack={seq_ack_a}')
 
-    seq_send_b = packet_send(c, side_b, side_a, "transfer", b_chan)
-    seq_recv_b = packet_recv(c, side_a, side_b, "transfer", a_chan)
+    seq_send_b = packet_send(c, side_b, side_a, port_id, b_chan)
+    seq_recv_b = packet_recv(c, side_a, side_b, port_id, a_chan)
     if seq_send_b != seq_recv_b:
         l.error(
             f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={seq_send_b} versus Received={seq_recv_b}')
-    seq_ack_b = packet_ack(c, side_b, side_a, "transfer", a_chan)
+
+    seq_ack_b = packet_ack(c, side_b, side_a, port_id, a_chan)
     if seq_recv_b != seq_ack_b:
         l.error(
             f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_b} versus Ack={seq_ack_b}')
-
 
 
 def run(c: Path):
@@ -984,6 +1000,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         description='Test all relayer commands, end-to-end')
+
     parser.add_argument('-c', '--config',
                         help='configuration file for the relayer',
                         metavar='CONFIG_FILE',
