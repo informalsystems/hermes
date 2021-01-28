@@ -12,11 +12,11 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawPacketRecvCmd {
-    #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
-
     #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
@@ -59,11 +59,11 @@ impl Runnable for TxRawPacketRecvCmd {
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct TxRawPacketAckCmd {
-    #[options(free, required, help = "identifier of the source chain")]
-    src_chain_id: ChainId,
-
     #[options(free, required, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,

@@ -5,6 +5,7 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
+use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc::{
     downcast,
     events::{IBCEvent, IBCEventType},
@@ -21,8 +22,9 @@ use ibc::{
 };
 use ibc_proto::ibc::core::channel::v1::{
     MsgAcknowledgement as RawMsgAck, MsgRecvPacket as RawMsgRecvPacket,
-    MsgTimeout as RawMsgTimeout, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    MsgTimeout as RawMsgTimeout, MsgTimeoutOnClose as RawMsgTimeoutOnClose,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 
 use crate::chain::handle::{ChainHandle, Subscription};
@@ -613,6 +615,49 @@ impl RelayPath {
         Ok(msg.to_any::<RawMsgTimeout>())
     }
 
+    fn build_timeout_on_close_packet(
+        &self,
+        packet: &Packet,
+        height: Height,
+    ) -> Result<Any, LinkError> {
+        // Get signer
+        let signer = self.src_chain.get_signer().map_err(|e| {
+            LinkError::Failed(format!(
+                "could not retrieve signer from src chain {} with error: {}",
+                self.src_chain.id(),
+                e
+            ))
+        })?;
+
+        let (_, proofs) = self
+            .dst_chain
+            .build_packet_proofs(
+                PacketMsgType::TimeoutOnClose,
+                &packet.destination_port,
+                &packet.destination_channel,
+                packet.sequence,
+                height,
+            )
+            .map_err(|e| LinkError::PacketProofsConstructor(self.dst_chain.id(), e))?;
+
+        let msg = MsgTimeoutOnClose::new(packet.clone(), packet.sequence, proofs.clone(), signer)
+            .map_err(|e| {
+            LinkError::Failed(format!(
+                "error while building the timeout packet for src channel {} due to error {}",
+                packet.source_channel.clone(),
+                e
+            ))
+        })?;
+
+        info!(
+            "built timeout on close msg {}, proofs at height {:?}",
+            msg.packet,
+            proofs.height()
+        );
+
+        Ok(msg.to_any::<RawMsgTimeoutOnClose>())
+    }
+
     fn build_recv_or_timeout_from_send_packet_event(
         &self,
         event: &SendPacket,
@@ -629,7 +674,17 @@ impl RelayPath {
             .dst_chain
             .query_latest_height()
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
-        if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
+        let dst_channel = self
+            .dst_chain
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), dst_height)
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
+
+        if dst_channel.state_matches(&ChannelState::Closed) {
+            Ok((
+                None,
+                Some(self.build_timeout_on_close_packet(&event.packet, self.dst_height)?),
+            ))
+        } else if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
             Ok((
                 None,
                 Some(self.build_timeout_packet(&event.packet, self.dst_height)?),
@@ -705,9 +760,11 @@ impl Link {
                 ))
             })?;
 
-        if !a_channel.state_matches(&ChannelState::Open) {
+        if !a_channel.state_matches(&ChannelState::Open)
+            && !a_channel.state_matches(&ChannelState::Closed)
+        {
             return Err(LinkError::Failed(format!(
-                "channel {} on chain {} not in open state",
+                "channel {} on chain {} not in open or close state when packets and timeouts can be relayed",
                 a_channel_id.clone(),
                 a_chain.id()
             )));
@@ -767,8 +824,8 @@ impl Link {
     }
 
     pub fn build_and_send_ack_packet_messages(&mut self) -> Result<Vec<IBCEvent>, LinkError> {
-        self.b_to_a.build_packet_ack_msgs()?;
-        let (mut dst_res, mut src_res) = self.b_to_a.send_update_client_and_msgs()?;
+        self.a_to_b.build_packet_ack_msgs()?;
+        let (mut dst_res, mut src_res) = self.a_to_b.send_update_client_and_msgs()?;
         dst_res.append(&mut src_res);
         Ok(dst_res)
     }

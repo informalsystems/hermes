@@ -16,6 +16,10 @@
 
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
+  - Relay `MsgTimeoutOnClose` if counterparty channel state is `State::Closed`
+
+- [modules]
+  - Add `MsgTimeoutOnClose` message type ([#563])
 
 ### IMPROVEMENTS
 
@@ -68,6 +72,7 @@
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
 [#554]: https://github.com/informalsystems/ibc-rs/issues/554
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
+[#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
 
 ## v0.0.6
