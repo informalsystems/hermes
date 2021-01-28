@@ -11,6 +11,7 @@ import logging as l
 from time import sleep
 from dataclasses import dataclass, fields as datafields, is_dataclass
 
+
 class ExpectedSuccess(Exception):
     cmd: 'Cmd'
     status: str
@@ -25,7 +26,9 @@ class ExpectedSuccess(Exception):
             f"Command '{cmd}' failed. Expected 'success', got '{status}'. Message: {result}"
         )
 
+
 T = TypeVar('T')
+
 
 @dataclass
 class CmdResult(Generic[T]):
@@ -40,6 +43,7 @@ class CmdResult(Generic[T]):
             return self.cmd.process(result)
         else:
             raise ExpectedSuccess(self.cmd, status, result)
+
 
 class Cmd(Generic[T]):
     name: str
@@ -66,20 +70,26 @@ class Cmd(Generic[T]):
 
         return CmdResult(cmd=self, result=json.loads(last_line))
 
+
 C = TypeVar('C', bound=Cmd)
+
+
 def cmd(name: str) -> Callable[[Type[C]], Type[C]]:
     def decorator(klass: Type[C]) -> Type[C]:
         klass.name = name
         return klass
+
     return decorator
+
 
 def from_dict(klass, dikt):
     if is_dataclass(klass):
         fields = datafields(klass)
-        args = { f.name: from_dict(f.type, dikt[f.name]) for f in fields }
+        args = {f.name: from_dict(f.type, dikt[f.name]) for f in fields}
         return klass(**args)
     else:
         return dikt
+
 
 # =============================================================================
 
@@ -88,9 +98,11 @@ class Height:
     revision_height: int
     revision_number: int
 
+
 @dataclass
 class TxCreateClientRes:
     client_id: str
+
 
 @cmd("tx raw create-client")
 @dataclass
@@ -104,11 +116,13 @@ class TxCreateClient(Cmd[TxCreateClientRes]):
     def process(self, result: Any) -> TxCreateClientRes:
         return from_dict(TxCreateClientRes, result[0]['CreateClient'])
 
+
 # -----------------------------------------------------------------------------
 
 @dataclass
 class TxUpdateClientRes:
     consensus_height: Height
+
 
 @cmd("tx raw update-client")
 @dataclass
@@ -123,11 +137,13 @@ class TxUpdateClient(Cmd[TxUpdateClientRes]):
     def process(self, result: Any) -> TxUpdateClientRes:
         return from_dict(TxUpdateClientRes, result[0]['UpdateClient'])
 
+
 # -----------------------------------------------------------------------------
 
 @dataclass
 class QueryClientStateRes:
     latest_height: Height
+
 
 @cmd("query client state")
 @dataclass
@@ -140,7 +156,7 @@ class QueryClientState(Cmd[QueryClientStateRes]):
     def args(self) -> List[str]:
         args = []
 
-        if self.height != None: args.extend(['--height', str(self.height)])
+        if self.height is not None: args.extend(['--height', str(self.height)])
         if self.proof: args.append('--proof')
 
         args.extend([self.chain_id, self.client_id])
@@ -150,12 +166,37 @@ class QueryClientState(Cmd[QueryClientStateRes]):
     def process(self, result: Any) -> QueryClientStateRes:
         return from_dict(QueryClientStateRes, result[0])
 
+
+# -----------------------------------------------------------------------------
+
+@dataclass
+class TxConnInitRes:
+    connection_id: str
+
+
+@cmd("tx raw conn-init")
+@dataclass
+class TxConnInit(Cmd[TxConnInitRes]):
+    src_chain_id: str
+    dst_chain_id: str
+    src_client_id: str
+    dst_client_id: str
+
+    def args(self) -> List[str]:
+        return [self.dst_chain_id, self.src_chain_id, self.dst_client_id, self.src_client_id, "default-conn", "default-conn"]
+
+    def process(self, result: Any) -> TxConnInitRes:
+        return from_dict(TxConnInitRes, result[0]['OpenInitConnection'])
+
+
 # -----------------------------------------------------------------------------
 
 def split():
     sleep(0.5)
     print()
 
+
+# CLIENT creation and manipulation
 # =============================================================================
 
 def create_client(c, dst: str, src: str) -> TxCreateClientRes:
@@ -164,17 +205,20 @@ def create_client(c, dst: str, src: str) -> TxCreateClientRes:
     l.info(f'Created client: {client.client_id}')
     return client
 
+
 def update_client(c, dst: str, src: str, client_id: str) -> TxUpdateClientRes:
     cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src, dst_client_id=client_id)
     res = cmd.run(c).success()
     l.info(f'Updated client to: {res.consensus_height}')
     return res
 
+
 def query_client_state(c, chain: str, id: str) -> Any:
     cmd = QueryClientState(chain_id=chain, client_id=id)
     res = cmd.run(c).success()
     l.info(f'Client is at: {res.latest_height}')
     return res
+
 
 def create_update_query_client(c, dst: str, src: str) -> str:
     client = create_client(c, dst, src)
@@ -187,6 +231,25 @@ def create_update_query_client(c, dst: str, src: str) -> str:
     split()
     return client.client_id
 
+
+# CONNECTION handshake
+# =============================================================================
+
+def conn_init(c, side_a: str, side_b: str, client_a: str, client_b: str) -> str:
+    cmd = TxConnInit(src_chain_id=side_a, dst_chain_id=side_b, src_client_id=client_a, dst_client_id=client_b)
+    res = cmd.run(c).success()
+    l.info(f'Conn open init submitted side A {side_a} and obtained connection id {res.connection_id}')
+    return "b"
+
+
+def connection_handshake(c, side_a: str, side_b: str, client_a: str, client_b: str) -> (str, str):
+    conn_a = conn_init(c, side_a, side_b, client_a, client_b)
+    # conn_b = conn_try(c, side_b, side_a, client_b, client_a)
+    # ack_res = conn_ack(c, side_a, side_b, client_a, client_b)
+    # confirm_res = conn_confirm(c, side_b, side_a, client_b, client_a)
+    return conn_a, "b"
+
+
 def main():
     l.basicConfig(
         level=l.DEBUG,
@@ -194,7 +257,7 @@ def main():
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    c = 'stargate-5.toml'
+    c = 'config.toml'
 
     IBC_0 = 'ibc-0'
     IBC_1 = 'ibc-1'
@@ -204,6 +267,8 @@ def main():
 
     split()
 
+    ibc0_conn_id, ibc1_conn_id = connection_handshake(c, IBC_1, IBC_0, ibc0_client_id, ibc1_client_id)
+
+
 if __name__ == "__main__":
     main()
-
