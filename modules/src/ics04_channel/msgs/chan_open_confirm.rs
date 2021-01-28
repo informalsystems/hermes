@@ -41,7 +41,7 @@ impl MsgChannelOpenConfirm {
             channel_id: channel_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(proof_ack, None, None, proofs_height)
+            proofs: Proofs::new(proof_ack, None, None, None, proofs_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })
@@ -75,6 +75,7 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
 
         let proofs = Proofs::new(
             raw_msg.proof_ack.into(),
+            None,
             None,
             None,
             raw_msg

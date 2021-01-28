@@ -2,15 +2,12 @@ use std::fmt::Debug;
 use std::sync::Arc;
 
 use crossbeam_channel as channel;
-
 use dyn_clone::DynClone;
+use serde::{Serialize, Serializer};
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
 use ibc::{
     events::IBCEvent,
@@ -22,20 +19,20 @@ use ibc::{
     proofs::Proofs,
 };
 use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
-
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
-
-use super::QueryResponse;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+pub use prod::ProdChainHandle;
 
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
 
-mod prod;
+use super::QueryResponse;
 
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-pub use prod::ProdChainHandle;
+mod prod;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
 
@@ -326,4 +323,13 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
     ) -> Result<Vec<u64>, Error>;
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
+}
+
+impl Serialize for dyn ChainHandle {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        self.id().serialize(serializer)
+    }
 }

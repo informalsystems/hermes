@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
+use ibc::ics03_connection::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use relayer::chain::Chain;
 use relayer::chain::CosmosSDKChain;
 use relayer::config::{ChainConfig, Config};
@@ -71,19 +71,23 @@ impl Runnable for QueryAllClientsCmd {
         }
     }
 }
+
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
-    #[options(help = "whether proof is required", short = "p")]
+    #[options(
+        help = "whether proof is required; default: false (no proof)",
+        short = "p"
+    )]
     proof: Option<bool>,
 }
 
@@ -122,9 +126,7 @@ impl Runnable for QueryClientStateCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -149,16 +151,24 @@ impl Runnable for QueryClientStateCmd {
 /// Query client consensus command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(free, help = "epoch of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "epoch of the client's consensus state to query"
+    )]
     consensus_epoch: Option<u64>,
 
-    #[options(free, help = "height of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "height of the client's consensus state to query"
+    )]
     consensus_height: Option<u64>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -214,9 +224,7 @@ impl Runnable for QueryClientConsensusCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -248,16 +256,13 @@ impl Runnable for QueryClientConsensusCmd {
 }
 
 fn validate_common_options(
-    chain_id: &Option<ChainId>,
+    chain_id: &ChainId,
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id
-        .clone()
-        .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
         .find_chain(&chain_id)
-        .ok_or_else(|| "missing chain in configuration".to_string())?;
+        .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
     let client_id = client_id
         .as_ref()
@@ -271,10 +276,10 @@ fn validate_common_options(
 /// Query client connections command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConnectionsCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -292,13 +297,9 @@ impl QueryClientConnectionsCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
-        let chain_id = self
-            .chain_id
-            .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
-            .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let client_id = self
             .client_id
@@ -323,9 +324,7 @@ impl Runnable for QueryClientConnectionsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
         info!("Options {:?}", opts);
@@ -351,13 +350,14 @@ impl Runnable for QueryClientConnectionsCmd {
 /// Tests
 #[cfg(test)]
 mod tests {
-    use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
     use relayer::config::parse;
+
+    use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
 
     #[test]
     fn parse_query_state_parameters() {
         let default_params = QueryClientStateCmd {
-            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            chain_id: "ibc-0".to_string().parse().unwrap(),
             client_id: Some("ibconeclient".to_string().parse().unwrap()),
             height: None,
             proof: None,
@@ -376,17 +376,9 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "No chain specified".to_string(),
-                params: QueryClientStateCmd {
-                    chain_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientStateCmd {
-                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    chain_id: "notibc0oribc1".to_string().parse().unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -443,7 +435,7 @@ mod tests {
     #[test]
     fn parse_query_client_connections_parameters() {
         let default_params = QueryClientConnectionsCmd {
-            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            chain_id: "ibc-0".to_string().parse().unwrap(),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
         };
@@ -461,17 +453,9 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "No chain specified".to_string(),
-                params: QueryClientConnectionsCmd {
-                    chain_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientConnectionsCmd {
-                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    chain_id: "notibc0oribc1".to_string().parse().unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,

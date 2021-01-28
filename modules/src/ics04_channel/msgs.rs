@@ -20,6 +20,7 @@ pub mod chan_close_init;
 pub mod acknowledgement;
 pub mod recv_packet;
 pub mod timeout;
+pub mod timeout_on_close;
 
 /// Enumeration of all possible messages that the ICS4 protocol processes.
 #[derive(Clone, Debug, PartialEq)]
