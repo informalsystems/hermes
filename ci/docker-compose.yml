@@ -34,8 +34,8 @@ services:
     stdin_open: true
     tty: true
     build:
-      context: .
-      dockerfile: relayer.Dockerfile
+      context: ../
+      dockerfile: ci/relayer.Dockerfile
       args:
         RELEASE: v3.0.0
     environment:
