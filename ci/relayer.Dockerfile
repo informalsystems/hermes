@@ -51,7 +51,7 @@ COPY ci/simple_config.toml .
 COPY ci/e2e.sh .
 
 # Copy end-to-end testing script
-COPY scripts/e2e.py .
+COPY e2e ./e2e
 
 # Copy key files
 COPY ci/chains/gaia/$RELEASE/ibc-0/key_seed.json ./key_seed_ibc-0.json
