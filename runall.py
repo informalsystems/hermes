@@ -10,6 +10,7 @@ import subprocess
 import logging as l
 
 from time import sleep
+from enum import Enum
 from pathlib import Path
 from dataclasses import dataclass, fields as datafields, is_dataclass
 
@@ -113,11 +114,19 @@ class TrustLevel:
     numerator: int
 
 
+PortId = NewType('PortId', str)
 ChainId = NewType('ChainId', str)
 ClientId = NewType('ClientId', str)
+ChannelId = NewType('ChannelId', str)
 ConnectionId = NewType('ConnectionId', str)
+
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
+
+
+class Ordering(Enum):
+    UNORDERED = 'UNORDERED'
+    ORDERED = 'ORDERED'
 
 # =============================================================================
 
@@ -343,11 +352,73 @@ class QueryConnectionEnd(Cmd[ConnectionEnd]):
     def args(self) -> List[str]:
         return [self.chain_id, self.connection_id]
 
-    def process(self, result: Any) -> TxConnConfirmRes:
+    def process(self, result: Any) -> ConnectionEnd:
         return from_dict(ConnectionEnd, result[0])
 
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxChanOpenInitRes:
+    channel_id: ChannelId
+    connection_id: ConnectionId
+    counterparty_channel_id: Optional[ChannelId]
+    counterparty_port_id: PortId
+    height: BlockHeight
+    port_id: PortId
+
+
+@cmd("tx raw chan-open-init")
+@dataclass
+class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
+    dst_connection_id: ConnectionId
+    dst_port_id: PortId
+    src_port_id: PortId
+    ordering: Optional[Ordering] = None
+
+    def args(self) -> List[str]:
+        args = [self.dst_chain_id, self.src_chain_id,
+                self.dst_connection_id,
+                self.dst_port_id, self.src_port_id,
+                "defaultChannel", "defaultChannel"]
+
+        if self.ordering is not None:
+            args.extend(['--ordering', str(self.ordering)])
+
+        return args
+
+    def process(self, result: Any) -> TxChanOpenInitRes:
+        return from_dict(TxChanOpenInitRes, result[0]['OpenInitChannel'])
 
 # -----------------------------------------------------------------------------
+
+
+@dataclass
+class ChannelEnd:
+    client_id: ClientId
+    counterparty: Counterparty
+    delay_period: int
+    state: str
+    versions: list[Version]
+
+
+@cmd("query channel end")
+@dataclass
+class QueryChannelEnd(Cmd[ChannelEnd]):
+    chain_id: ChainId
+    connection_id: ConnectionId
+    channel_id: ChannelId
+
+    def args(self) -> List[str]:
+        return [self.chain_id, self.connection_id, self.channel_id]
+
+    def process(self, result: Any) -> ChannelEnd:
+        return from_dict(ChannelEnd, result[0])
+
+# -----------------------------------------------------------------------------
+
 
 def split():
     sleep(0.5)
@@ -489,6 +560,7 @@ def connection_handshake(c,
 # CONNECTION END query
 # =============================================================================
 
+
 def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> ConnectionEnd:
     cmd = QueryConnectionEnd(chain_id, conn_id)
     res = cmd.run(c).success()
@@ -497,6 +569,52 @@ def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> Connect
 
     return res
 
+
+# CHANNEL handshake
+# =============================================================================
+
+
+def chan_open_init(c,
+                   src: ChainId, dst: ChainId,
+                   dst_conn: ConnectionId,
+                   src_port: PortId = PortId('transfer'),
+                   dst_port: PortId = PortId('transfer'),
+                   ordering: Optional[Ordering] = None
+                   ) -> ChannelId:
+
+    cmd = TxChanOpenInit(src_chain_id=src, dst_chain_id=dst,
+                         dst_connection_id=dst_conn,
+                         dst_port_id=dst_port, src_port_id=src_port,
+                         ordering=ordering)
+
+    res = cmd.run(c).success()
+    l.info(
+        f'ChanOpenInit submitted to {dst} and obtained channel id {res.channel_id}')
+    return res.channel_id
+
+
+def channel_handshake(c,
+                      side_a: ChainId, side_b: ChainId,
+                      conn_a: ConnectionId, conn_b: ConnectionId,
+                      ) -> Tuple[ChannelId, ChannelId]:
+
+    a_chan_id = chan_open_init(c, side_a, side_b, conn_a)
+
+    query_channel_end(c, side_a, conn_a, a_chan_id)
+
+    return a_chan_id, a_chan_id
+
+# CHANNEL END query
+# =============================================================================
+
+
+def query_channel_end(c, chain_id: ChainId, conn_id: ConnectionId, chan_id: ChannelId) -> ChannelEnd:
+    cmd = QueryChannelEnd(chain_id, conn_id, chan_id)
+    res = cmd.run(c).success()
+
+    l.debug(f'Status of channel end {chan_id}: {res}')
+
+    return res
 
 # =============================================================================
 
@@ -512,6 +630,8 @@ def run(c: Path):
 
     ibc0_conn_id, ibc1_conn_id = connection_handshake(
         c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
+
+    chan_id = chan_open_init(c, IBC_0, IBC_1, ibc1_conn_id)
 
 
 def main():
