@@ -823,7 +823,7 @@ impl Channel {
             .map_err(|e| ChannelError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for channel close confirm
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::CloseConfirmChannel(_))
@@ -831,7 +831,15 @@ impl Channel {
             })
             .ok_or_else(|| {
                 ChannelError::Failed("no chan confirm event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::CloseConfirmChannel(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ChannelError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 }
 

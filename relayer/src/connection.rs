@@ -493,7 +493,7 @@ impl Connection {
             .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenTryConnection(_))
@@ -501,7 +501,15 @@ impl Connection {
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn try event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenTryConnection(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 
     /// Attempts to build a MsgConnOpenAck.
@@ -584,7 +592,7 @@ impl Connection {
             .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenAckConnection(_))
@@ -592,7 +600,15 @@ impl Connection {
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn ack event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenAckConnection(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 
     /// Attempts to build a MsgConnOpenConfirm.
@@ -666,7 +682,7 @@ impl Connection {
             .map_err(|e| ConnectionError::SubmitError(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm
-        events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IBCEvent::OpenConfirmConnection(_))
@@ -674,7 +690,15 @@ impl Connection {
             })
             .ok_or_else(|| {
                 ConnectionError::Failed("no conn confirm event was in the response".to_string())
-            })
+            })?;
+
+        match result {
+            IBCEvent::OpenConfirmConnection(_) => Ok(result),
+            IBCEvent::ChainError(e) => {
+                Err(ConnectionError::Failed(format!("tx response error: {}", e)))
+            }
+            _ => panic!("internal error"),
+        }
     }
 }
 
