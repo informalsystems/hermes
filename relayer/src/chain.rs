@@ -363,10 +363,7 @@ pub trait Chain: Sized {
     ) -> Result<Vec<ChannelId>, Error>;
 
     /// Performs a query to retrieve the identifiers of all clients associated with a chain.
-    fn query_chain_clients(
-        &self,
-        request: QueryClientStatesRequest,
-    ) -> Result<Vec<ClientId>, Error>;
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
 
     fn build_packet_proofs(
         &self,

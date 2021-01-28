@@ -701,10 +701,7 @@ impl Chain for CosmosSDKChain {
         Ok(result)
     }
 
-    fn query_chain_clients(
-        &self,
-        request: QueryClientStatesRequest,
-    ) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
         crate::time!("query_chain_clients");
 
         let grpc_addr =

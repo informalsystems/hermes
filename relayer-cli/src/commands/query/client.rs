@@ -24,15 +24,12 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryAllClientsCmd {
     #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    chain_id: ChainId,
 }
 
 impl QueryAllClientsCmd {
     fn validate_options(&self, config: &Config) -> Result<ChainConfig, String> {
-        let chain_id = self
-            .chain_id
-            .clone()
-            .ok_or_else(|| "no chain chain identifier provided".to_string())?;
+        let chain_id = self.chain_id.clone();
 
         let chain_config = config
             .find_chain(&chain_id)
@@ -65,7 +62,7 @@ impl Runnable for QueryAllClientsCmd {
         let req = QueryClientStatesRequest { pagination: None };
 
         let res: Result<_, Error> = chain
-            .query_chain_clients(req)
+            .query_clients(req)
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
@@ -355,8 +352,6 @@ impl Runnable for QueryClientConnectionsCmd {
 #[cfg(test)]
 mod tests {
     use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
-    // use crate::{commands::CliCmd, config::Config};
-    // use abscissa_core::Configurable;
     use relayer::config::parse;
 
     #[test]

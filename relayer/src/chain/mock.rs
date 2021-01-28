@@ -237,10 +237,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_chain_clients(
-        &self,
-        _request: QueryClientStatesRequest,
-    ) -> Result<Vec<ClientId>, Error> {
+    fn query_clients(&self, _request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
         unimplemented!()
     }
 
