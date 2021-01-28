@@ -35,7 +35,7 @@ services:
     tty: true
     build:
       context: .
-      dockerfile: ci/relayer.Dockerfile
+      dockerfile: relayer.Dockerfile
       args:
         RELEASE: v3.0.0
     environment:
