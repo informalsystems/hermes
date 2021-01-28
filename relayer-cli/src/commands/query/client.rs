@@ -525,27 +525,3 @@ mod tests {
         }
     }
 }
-
-// #[test]
-// fn test_run() {
-//     let cmd = QueryClientConnectionsCmd {
-//         chain_id: Some("ibc-0".to_string().parse().unwrap()),
-//         client_id: Some("clientidone".to_string().parse().unwrap()),
-//         height: Some(4),
-//     };
-
-//     // <CliCmd as Configurable<Config>>.process_config(&cmd,)
-//     let path = concat!(
-//         env!("CARGO_MANIFEST_DIR"),
-//         "/tests/fixtures/loop_config.toml"
-//     );
-//     let config = relayer::config::parse(path);
-//     println!("{:?}", config);
-
-//     assert!(config.is_ok());
-
-//    <CliCmd as Configurable<Config>>::process_config(&CliCmd::Query(commands::query::QueryCmd::Client(commands::query::QueryClientCmds::Connections(cmd.clone()))),config.unwrap());
-
-//     //let config = app_config();
-//     cmd.run()
-// }
