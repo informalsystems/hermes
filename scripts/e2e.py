@@ -29,9 +29,13 @@ class ExpectedSuccess(Exception):
             f"Command '{cmd}' failed. Expected 'success', got '{status}'. Message: {result}"
         )
 
+@dataclass
+class Config:
+    config_file: Path
+    relayer_cmd: str
+
 
 T = TypeVar('T')
-
 
 @dataclass
 class CmdResult(Generic[T]):
@@ -60,8 +64,8 @@ class Cmd(Generic[T]):
     def to_cmd(self) -> str:
         return f"{self.name} {' '.join(self.args())}"
 
-    def run(self, config: str) -> CmdResult[T]:
-        full_cmd = f'cargo run --bin relayer -- -c {config}'.split(' ')
+    def run(self, config: Config) -> CmdResult[T]:
+        full_cmd = f'{config.relayer_cmd} -c {config.config_file}'.split(' ')
         full_cmd.extend(self.name.split(' '))
         full_cmd.extend(self.args())
         l.debug(' '.join(full_cmd))
@@ -543,14 +547,14 @@ def split():
 # CLIENT creation and manipulation
 # =============================================================================
 
-def create_client(c, dst: ChainId, src: ChainId) -> ClientCreated:
+def create_client(c: Config, dst: ChainId, src: ChainId) -> ClientCreated:
     cmd = TxCreateClient(dst_chain_id=dst, src_chain_id=src)
     client = cmd.run(c).success()
     l.info(f'Created client: {client.client_id}')
     return client
 
 
-def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientUpdated:
+def update_client(c: Config, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientUpdated:
     cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src,
                          dst_client_id=client_id)
     res = cmd.run(c).success()
@@ -558,14 +562,14 @@ def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientU
     return res
 
 
-def query_client_state(c, chain_id: ChainId, client_id: ClientId) -> Tuple[ClientId, ClientState]:
+def query_client_state(c: Config, chain_id: ChainId, client_id: ClientId) -> Tuple[ClientId, ClientState]:
     cmd = QueryClientState(chain_id, client_id)
     res = cmd.run(c).success()
     l.debug(f'State of client {client_id} is: {res}')
     return client_id, res
 
 
-def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
+def create_update_query_client(c: Config, dst: ChainId, src: ChainId) -> ClientId:
     client = create_client(c, dst, src)
     split()
     query_client_state(c, dst, client.client_id)
@@ -580,7 +584,7 @@ def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
 # CONNECTION handshake
 # =============================================================================
 
-def conn_init(c,
+def conn_init(c: Config,
               src: ChainId, dst: ChainId,
               src_client: ClientId, dst_client: ClientId
               ) -> ConnectionId:
@@ -593,7 +597,7 @@ def conn_init(c,
     return res.connection_id
 
 
-def conn_try(c,
+def conn_try(c: Config,
              src: ChainId, dst: ChainId,
              src_client: ClientId, dst_client: ClientId,
              src_conn: ConnectionId
@@ -607,7 +611,7 @@ def conn_try(c,
     return res.connection_id
 
 
-def conn_ack(c,
+def conn_ack(c: Config,
              src: ChainId, dst: ChainId,
              src_client: ClientId, dst_client: ClientId,
              src_conn: ConnectionId, dst_conn: ConnectionId
@@ -621,7 +625,7 @@ def conn_ack(c,
     return res.connection_id
 
 
-def conn_confirm(c,
+def conn_confirm(c: Config,
                  src: ChainId, dst: ChainId,
                  src_client: ClientId, dst_client: ClientId,
                  src_conn: ConnectionId, dst_conn: ConnectionId
@@ -635,7 +639,7 @@ def conn_confirm(c,
     return res.connection_id
 
 
-def connection_handshake(c,
+def connection_handshake(c: Config,
                          side_a: ChainId, side_b: ChainId,
                          client_a: ClientId, client_b: ClientId
                          ) -> Tuple[ConnectionId, ConnectionId]:
@@ -680,7 +684,7 @@ def connection_handshake(c,
 # =============================================================================
 
 
-def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> ConnectionEnd:
+def query_connection_end(c: Config, chain_id: ChainId, conn_id: ConnectionId) -> ConnectionEnd:
     cmd = QueryConnectionEnd(chain_id, conn_id)
     res = cmd.run(c).success()
 
@@ -693,7 +697,7 @@ def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> Connect
 # =============================================================================
 
 
-def chan_open_init(c,
+def chan_open_init(c: Config,
                    src: ChainId, dst: ChainId,
                    dst_conn: ConnectionId,
                    src_port: PortId = PortId('transfer'),
@@ -712,7 +716,7 @@ def chan_open_init(c,
     return res.channel_id
 
 
-def chan_open_try(c,
+def chan_open_try(c: Config,
                   src: ChainId, dst: ChainId,
                   dst_conn: ConnectionId,
                   src_chan: ChannelId,
@@ -733,7 +737,7 @@ def chan_open_try(c,
     return res.channel_id
 
 
-def chan_open_ack(c,
+def chan_open_ack(c: Config,
                   src: ChainId, dst: ChainId,
                   dst_conn: ConnectionId,
                   src_chan: ChannelId,
@@ -754,7 +758,7 @@ def chan_open_ack(c,
     return res.channel_id
 
 
-def chan_open_confirm(c,
+def chan_open_confirm(c: Config,
                       src: ChainId, dst: ChainId,
                       dst_conn: ConnectionId,
                       src_chan: ChannelId,
@@ -775,7 +779,7 @@ def chan_open_confirm(c,
     return res.channel_id
 
 
-def channel_handshake(c,
+def channel_handshake(c: Config,
                       side_a: ChainId, side_b: ChainId,
                       conn_a: ConnectionId, conn_b: ConnectionId,
                       ) -> Tuple[ChannelId, ChannelId]:
@@ -825,7 +829,7 @@ def channel_handshake(c,
 # =============================================================================
 
 
-def query_channel_end(c, chain_id: ChainId, conn_id: ConnectionId, chan_id: ChannelId) -> ChannelEnd:
+def query_channel_end(c: Config, chain_id: ChainId, conn_id: ConnectionId, chan_id: ChannelId) -> ChannelEnd:
     cmd = QueryChannelEnd(chain_id, conn_id, chan_id)
     res = cmd.run(c).success()
 
@@ -916,7 +920,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
 # TRANSFER (packet send)
 # =============================================================================
 
-def packet_send(c, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
     cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst,
                        src_port=src_port, src_channel=src_channel)
 
@@ -925,7 +929,7 @@ def packet_send(c, src: ChainId, dst: ChainId, src_port: PortId, src_channel: Ch
     return res.sequence
 
 
-def packet_recv(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
     cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst,
                        src_port=src_port, src_channel=src_channel)
 
@@ -934,7 +938,7 @@ def packet_recv(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: Ch
     return res.sequence
 
 
-def packet_ack(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+def packet_ack(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
     cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst,
                       src_port=src_port, src_channel=src_channel)
 
@@ -943,7 +947,7 @@ def packet_ack(c, dst: ChainId, src: ChainId, src_port: PortId, src_channel: Cha
     return res.sequence
 
 
-def packet_ping_pong(c,
+def packet_ping_pong(c: Config,
                      side_a: ChainId, side_b: ChainId,
                      a_chan: ChannelId, b_chan: ChannelId,
                      port_id: PortId = PortId('transfer')):
@@ -987,7 +991,7 @@ def packet_ping_pong(c,
             f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_b} versus Ack={seq_ack_b}')
 
 
-def run(c: Path):
+def run(c: Config):
     IBC_0 = ChainId('ibc-0')
     IBC_1 = ChainId('ibc-1')
 
@@ -1024,6 +1028,11 @@ def main():
                         required=True,
                         type=Path)
 
+    parser.add_argument('--cmd',
+                        help='command to run the relayer',
+                        metavar='CMD',
+                        default='cargo run --bin relayer --')
+
     args = parser.parse_args()
 
     if not args.config.exists():
@@ -1031,7 +1040,9 @@ def main():
             f'error: supplied configuration file does not exist: {args.config}')
         exit(1)
 
-    run(args.config)
+    config = Config(config_file=args.config, relayer_cmd=args.cmd)
+
+    run(config)
 
 
 if __name__ == "__main__":
