@@ -19,9 +19,6 @@ use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
-// TODO: refactor commands: why is chain_id an `Option`? simpler to give it `ChainId` type.
-//  see the tx/client.rs or tx/packet.rs for simpler approaches.
-
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {

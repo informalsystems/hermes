@@ -6,6 +6,7 @@ use abscissa_core::{Command, Options, Runnable};
 mod channel;
 mod channels;
 mod client;
+mod clients;
 mod connection;
 mod connections;
 mod packet;
@@ -16,6 +17,9 @@ pub enum QueryCmd {
     /// The `query client` subcommand
     #[options(help = "query information about client(s)")]
     Client(QueryClientCmds),
+
+    #[options(help = "query clients")]
+    Clients(clients::QueryAllClientsCmd),
 
     /// The `query connection` subcommand
     #[options(help = "query information about connection(s)")]

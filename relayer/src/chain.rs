@@ -27,6 +27,7 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
@@ -363,9 +364,13 @@ pub trait Chain: Sized {
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<ChannelId>, Error>;
 
+    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
 
+    /// Performs a query to retrieve the identifiers of all channels.
     fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
 
     fn build_packet_proofs(
