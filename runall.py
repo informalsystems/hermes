@@ -101,41 +101,61 @@ class Height:
     revision_number: int
 
 
+@dataclass
+class Duration:
+    nanos: int
+    secs: int
+
+
+@dataclass
+class TrustLevel:
+    denominator: int
+    numerator: int
+
+
 ChainId = NewType('ChainId', str)
 ClientId = NewType('ClientId', str)
 ConnectionId = NewType('ConnectionId', str)
+ClientType = NewType('ClientType', str)
+BlockHeight = NewType('BlockHeight', str)
 
 # =============================================================================
 
 
 @dataclass
-class TxCreateClientRes:
+class ClientCreated:
     client_id: ClientId
+    client_type: ClientType
+    consensus_height: Height
+    height: BlockHeight
 
 
 @dataclass
 @cmd("tx raw create-client")
-class TxCreateClient(Cmd[TxCreateClientRes]):
+class TxCreateClient(Cmd[ClientCreated]):
     dst_chain_id: ChainId
     src_chain_id: ChainId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id]
 
-    def process(self, result: Any) -> TxCreateClientRes:
-        return from_dict(TxCreateClientRes, result[0]['CreateClient'])
+    def process(self, result: Any) -> ClientCreated:
+        return from_dict(ClientCreated, result[0]['CreateClient'])
 
 
 # -----------------------------------------------------------------------------
 
 @dataclass
-class TxUpdateClientRes:
+class ClientUpdated:
+    client_id: ClientId
+    client_type: ClientType
     consensus_height: Height
+    height: BlockHeight
 
 
 @dataclass
 @cmd("tx raw update-client")
-class TxUpdateClient(Cmd[TxUpdateClientRes]):
+class TxUpdateClient(Cmd[ClientUpdated]):
     dst_chain_id: ChainId
     src_chain_id: ChainId
     dst_client_id: ClientId
@@ -143,20 +163,30 @@ class TxUpdateClient(Cmd[TxUpdateClientRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.dst_client_id]
 
-    def process(self, result: Any) -> TxUpdateClientRes:
-        return from_dict(TxUpdateClientRes, result[0]['UpdateClient'])
+    def process(self, result: Any) -> ClientUpdated:
+        return from_dict(ClientUpdated, result[0]['UpdateClient'])
 
 
 # -----------------------------------------------------------------------------
 
+
 @dataclass
-class QueryClientStateRes:
+class ClientState:
+    allow_update_after_expiry: bool
+    allow_update_after_misbehaviour: bool
+    chain_id: ChainId
+    frozen_height: Height
     latest_height: Height
+    max_clock_drift: Duration
+    trust_level: TrustLevel
+    trusting_period: Duration
+    unbonding_period: Duration
+    upgrade_path: list[str]
 
 
 @dataclass
 @cmd("query client state")
-class QueryClientState(Cmd[QueryClientStateRes]):
+class QueryClientState(Cmd[ClientState]):
     chain_id: ChainId
     client_id: ClientId
     height: Optional[int] = None
@@ -174,8 +204,8 @@ class QueryClientState(Cmd[QueryClientStateRes]):
 
         return args
 
-    def process(self, result: Any) -> QueryClientStateRes:
-        return from_dict(QueryClientStateRes, result[0])
+    def process(self, result: Any) -> ClientState:
+        return from_dict(ClientState, result[0])
 
 
 # -----------------------------------------------------------------------------
@@ -296,7 +326,7 @@ class Counterparty:
 
 
 @dataclass
-class QueryConnectionEndRes:
+class ConnectionEnd:
     client_id: ClientId
     counterparty: Counterparty
     delay_period: int
@@ -306,7 +336,7 @@ class QueryConnectionEndRes:
 
 @cmd("query connection end")
 @dataclass
-class QueryConnectionEnd(Cmd[QueryConnectionEndRes]):
+class QueryConnectionEnd(Cmd[ConnectionEnd]):
     chain_id: ChainId
     connection_id: ConnectionId
 
@@ -314,7 +344,7 @@ class QueryConnectionEnd(Cmd[QueryConnectionEndRes]):
         return [self.chain_id, self.connection_id]
 
     def process(self, result: Any) -> TxConnConfirmRes:
-        return from_dict(QueryConnectionEndRes, result[0])
+        return from_dict(ConnectionEnd, result[0])
 
 
 # -----------------------------------------------------------------------------
@@ -327,14 +357,14 @@ def split():
 # CLIENT creation and manipulation
 # =============================================================================
 
-def create_client(c, dst: ChainId, src: ChainId) -> TxCreateClientRes:
+def create_client(c, dst: ChainId, src: ChainId) -> ClientCreated:
     cmd = TxCreateClient(dst_chain_id=dst, src_chain_id=src)
     client = cmd.run(c).success()
     l.info(f'Created client: {client.client_id}')
     return client
 
 
-def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> TxUpdateClientRes:
+def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> ClientUpdated:
     cmd = TxUpdateClient(dst_chain_id=dst, src_chain_id=src,
                          dst_client_id=client_id)
     res = cmd.run(c).success()
@@ -342,11 +372,11 @@ def update_client(c, dst: ChainId, src: ChainId, client_id: ClientId) -> TxUpdat
     return res
 
 
-def query_client_state(c, chain_id: ChainId, client_id: ClientId) -> Any:
+def query_client_state(c, chain_id: ChainId, client_id: ClientId) -> Tuple[ClientId, ClientState]:
     cmd = QueryClientState(chain_id, client_id)
     res = cmd.run(c).success()
-    l.info(f'Client is at: {res.latest_height}')
-    return res
+    l.info(f'State of client {client_id} is: {res}')
+    return client_id, res
 
 
 def create_update_query_client(c, dst: ChainId, src: ChainId) -> ClientId:
@@ -436,7 +466,7 @@ def connection_handshake(c, side_a: ChainId, side_b: ChainId, client_a: ClientId
 # CONNECTION END query
 # =============================================================================
 
-def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> QueryConnectionEndRes:
+def query_connection_end(c, chain_id: ChainId, conn_id: ConnectionId) -> ConnectionEnd:
     cmd = QueryConnectionEnd(chain_id, conn_id)
     res = cmd.run(c).success()
 
