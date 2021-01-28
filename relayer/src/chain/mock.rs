@@ -11,8 +11,9 @@ use tendermint::account::Id;
 use tendermint_testgen::light_block::TMLightBlock;
 
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryConnectionChannelsRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -237,6 +238,10 @@ impl Chain for MockChain {
     }
 
     fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+        unimplemented!()
+    }
+
+    fn query_channels(&self, _request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
         unimplemented!()
     }
 }
