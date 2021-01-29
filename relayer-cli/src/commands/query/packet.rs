@@ -29,9 +29,6 @@ pub struct QueryPacketCommitmentsCmd {
 
     #[options(free, required, help = "identifier of the channel to query")]
     channel_id: ChannelId,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 impl QueryPacketCommitmentsCmd {
@@ -46,7 +43,7 @@ impl QueryPacketCommitmentsCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts))
@@ -78,11 +75,10 @@ impl Runnable for QueryPacketCommitmentsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => {
+            Ok(cmts) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
-                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence).collect();
-
-                Output::success(seqs).with_result(json!(cs.1)).exit();
+                let seqs: Vec<u64> = cmts.0.iter().map(|ps| ps.sequence).collect();
+                Output::success(seqs).with_result(json!(cmts.1)).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -102,9 +98,6 @@ pub struct QueryPacketCommitmentCmd {
 
     #[options(free, required, help = "sequence of packet to query")]
     sequence: u64,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 impl QueryPacketCommitmentCmd {
@@ -119,7 +112,7 @@ impl QueryPacketCommitmentCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts, self.sequence.into()))
@@ -150,7 +143,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
-            Ok(cs) => Output::success(cs.1).exit(),
+            Ok(cmt) => Output::success(cmt.0).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -316,9 +309,6 @@ pub struct QueryPacketAcknowledgementsCmd {
 
     #[options(free, required, help = "identifier of the channel to query")]
     channel_id: ChannelId,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 impl QueryPacketAcknowledgementsCmd {
@@ -338,7 +328,7 @@ impl QueryPacketAcknowledgementsCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts))
@@ -373,7 +363,6 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Ok(ps) => {
                 // Transform the raw packet state into the list of acks. sequence numbers
                 let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
-
                 Output::success(seqs).with_result(json!(ps.1)).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -411,7 +400,7 @@ impl QueryPacketAcknowledgmentCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts, self.sequence.into()))
@@ -442,7 +431,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         );
 
         match res {
-            Ok(out) => Output::success(out).exit(),
+            Ok(ack) => Output::success(ack.0).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
