@@ -85,7 +85,7 @@ pub fn build_and_send_transfer_messages(
         None => Ok(events),
         Some(err) => {
             if let IBCEvent::ChainError(err) = err {
-                return Err(PacketError::Failed(format!("tx response error: {}", err)));
+                return Err(PacketError::Failed(format!("{}", err)));
             } else {
                 panic!("Internal error")
             }
