@@ -44,7 +44,7 @@ WORKDIR /$NAME
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
 
-COPY --chown=root:root ./chains/$CHAIN/$RELEASE/$NAME /chain
+COPY --chown=root:root ./chains/$CHAIN/$RELEASE/$NAME /chain/$CHAIN
 
 RUN tree -pug /chain
 
