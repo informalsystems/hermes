@@ -13,15 +13,24 @@ class Config:
     config_file: Path
     relayer_cmd: str
     log_level: str
+    max_retries: int = 5
 
 
 T = TypeVar('T')
 
 
+# Hack to check whether or not the command failed because of a RPC error
+def should_retry(result: Any) -> bool:
+    str_result = str(result).lower()
+    return 'rpc error' in str_result
+
+
 @dataclass
 class CmdResult(Generic[T]):
     cmd: 'Cmd'
+    config: Config
     result: Any
+    retries: int = 0
 
     def success(self) -> T:
         status = self.result.get('status') or 'unknown'
@@ -31,6 +40,10 @@ class CmdResult(Generic[T]):
             data = self.cmd.process(result)
             l.debug(str(data))
             return data
+        elif should_retry(result) and self.retries < self.config.max_retries:
+            l.warn(
+                'RPC error detected: retrying command ({self.retries + 1}/{self.config.max_retries})')
+            return self.cmd.retry(self.config, self.retries).success()
         else:
             raise ExpectedSuccess(self.cmd, status, result)
 
@@ -47,7 +60,7 @@ class Cmd(Generic[T]):
     def to_cmd(self) -> str:
         return f"{self.name} {' '.join(self.args())}"
 
-    def run(self, config: Config) -> CmdResult[T]:
+    def run(self, config: Config, retries: int = 0) -> CmdResult[T]:
         full_cmd = f'{config.relayer_cmd} -c {config.config_file}'.split(' ')
         full_cmd.extend(self.name.split(' '))
         full_cmd.extend(self.args())
@@ -58,7 +71,10 @@ class Cmd(Generic[T]):
         last_line = ''.join(lines[-1:])
         l.debug(last_line)
 
-        return CmdResult(cmd=self, result=json.loads(last_line))
+        return CmdResult(cmd=self, config=config, retries=retries, result=json.loads(last_line))
+
+    def retry(self, config: Config, retries: int) -> CmdResult[T]:
+        return self.run(config, retries + 1)
 
 
 C = TypeVar('C', bound=Cmd)
