@@ -1,6 +1,6 @@
 [package]
 name    = "ibc-relayer-cli"
-version = "0.0.6"
+version = "0.1.0"
 edition = "2018"
 authors = [
   "Informal Systems <hello@informal.systems>"
@@ -10,9 +10,9 @@ authors = [
 profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
-ibc         = { version = "0.0.6", path = "../modules" }
-ibc-proto   = { version = "0.6.0", path = "../proto" }
-ibc-relayer = { version = "0.0.6", path = "../relayer" }
+ibc         = { version = "0.1.0", path = "../modules" }
+ibc-proto   = { version = "0.1.0", path = "../proto" }
+ibc-relayer = { version = "0.1.0", path = "../relayer" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
