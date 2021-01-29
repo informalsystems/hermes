@@ -6,7 +6,8 @@
 set -eou pipefail
 GAIA_BRANCH="v3.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
-ONE_CHAIN="$(dirname "$0")/../scripts/one-chain"
+BASE_DIR="$(dirname $0)"
+ONE_CHAIN="$BASE_DIR/../scripts/one-chain"
 
 echo "*** Building config folders"
 
@@ -46,8 +47,8 @@ echo "*** Requirements"
 which docker
 
 echo "*** Create Docker image and upload to Docker Hub"
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f gaia.Dockerfile .
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f gaia.Dockerfile .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 
 read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
 docker push informaldev/ibc-0:$GAIA_BRANCH
