@@ -5,8 +5,8 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::prelude::*;
@@ -27,7 +27,7 @@ impl QueryConnectionsCmd {
     }
 }
 
-// rrly -c config.toml query connections ibc-0
+// hermes -c config.toml query connections ibc-0
 impl Runnable for QueryConnectionsCmd {
     fn run(&self) {
         let config = app_config();

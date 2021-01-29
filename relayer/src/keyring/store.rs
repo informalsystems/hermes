@@ -20,7 +20,7 @@ use tendermint::account::Id as AccountId;
 use crate::config::ChainConfig;
 use crate::keyring::errors::{Error, Kind};
 
-pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
+pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 

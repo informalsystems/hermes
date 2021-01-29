@@ -48,7 +48,7 @@ pub mod profiling {
 /// ## Example
 ///
 /// ```rust
-/// use relayer::time;
+/// use ibc_relayer::time;
 ///
 /// time!("full scope");
 ///

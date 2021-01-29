@@ -8,8 +8,8 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -70,7 +70,7 @@ impl QueryConnectionEndCmd {
     }
 }
 
-// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
+// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
@@ -99,7 +99,7 @@ impl Runnable for QueryConnectionEndCmd {
 
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
-/// `cargo run --bin relayer -- -c simple_config.toml query connection channels ibc-0 connection-0`
+/// `cargo run --bin hermes -- -c simple_config.toml query connection channels ibc-0 connection-0`
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionChannelsCmd {
     #[options(free, required, help = "identifier of the chain to query")]
@@ -171,7 +171,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
 #[cfg(test)]
 mod tests {
-    use relayer::config::parse;
+    use ibc_relayer::config::parse;
 
     use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
 
