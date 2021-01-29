@@ -1,5 +1,5 @@
 [package]
-name = "relayer"
+name    = "ibc-relayer"
 version = "0.0.6"
 edition = "2018"
 authors = [

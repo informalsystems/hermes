@@ -12,8 +12,8 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};

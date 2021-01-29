@@ -5,8 +5,8 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics24_host::identifier::ChainId;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};

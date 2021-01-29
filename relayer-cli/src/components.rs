@@ -1,5 +1,5 @@
 use abscissa_core::{Component, FrameworkError};
-use relayer::config::GlobalConfig;
+use ibc_relayer::config::GlobalConfig;
 use tracing_subscriber::fmt::{
     format::{Format, Json, JsonFields},
     time::SystemTime,

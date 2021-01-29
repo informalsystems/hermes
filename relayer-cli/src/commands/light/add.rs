@@ -4,7 +4,7 @@ use abscissa_core::{application::fatal_error, error::BoxError, Command, Options,
 
 use config::StoreConfig;
 use ibc::ics24_host::identifier::ChainId;
-use relayer::{
+use ibc_relayer::{
     config,
     config::{Config, LightClientConfig, PeersConfig},
     util::block_on,
@@ -171,7 +171,7 @@ fn add(mut config: Config, options: AddOptions) -> Result<(), BoxError> {
 
     // Write the updated configuration to disk
     let config_path = crate::config::config_path()?;
-    relayer::config::store(&config, config_path)?;
+    ibc_relayer::config::store(&config, config_path)?;
 
     status_ok!(
         "Success",

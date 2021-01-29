@@ -21,8 +21,8 @@ use ibc::ics03_connection::raw::ConnectionIds as DomainTypeClientConnections;
 use ibc::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
 use ibc::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::{ChannelEnds, ClientConnections};
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{default, ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{default, ChainConfig, Config};
 
 /// Configuration that connects to the informaldev/simd DockerHub image running on localhost.
 fn simd_config() -> Config {

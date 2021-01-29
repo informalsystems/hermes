@@ -4,8 +4,8 @@ use ibc::events::IBCEvent;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::Height;
-use relayer::channel::{Channel, ChannelSide};
-use relayer::config::StoreConfig;
+use ibc_relayer::channel::{Channel, ChannelSide};
+use ibc_relayer::config::StoreConfig;
 
 use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;

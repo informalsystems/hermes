@@ -8,8 +8,8 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ConnectionId;
 use ibc_proto::ibc::core::channel::v1::QueryConnectionChannelsRequest;
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -171,7 +171,7 @@ impl Runnable for QueryConnectionChannelsCmd {
 
 #[cfg(test)]
 mod tests {
-    use relayer::config::parse;
+    use ibc_relayer::config::parse;
 
     use crate::commands::query::connection::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
 

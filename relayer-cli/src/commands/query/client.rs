@@ -11,9 +11,9 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
-use relayer::chain::Chain;
-use relayer::chain::CosmosSDKChain;
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::Chain;
+use ibc_relayer::chain::CosmosSDKChain;
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -297,7 +297,7 @@ impl Runnable for QueryClientConnectionsCmd {
 /// Tests
 #[cfg(test)]
 mod tests {
-    use relayer::config::parse;
+    use ibc_relayer::config::parse;
 
     use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
 

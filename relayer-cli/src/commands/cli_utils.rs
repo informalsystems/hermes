@@ -1,9 +1,9 @@
 use abscissa_core::config;
 
 use ibc::ics24_host::identifier::ChainId;
-use relayer::chain::CosmosSDKChain;
-use relayer::{chain::handle::ChainHandle, config::StoreConfig};
-use relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
+use ibc_relayer::chain::CosmosSDKChain;
+use ibc_relayer::{chain::handle::ChainHandle, config::StoreConfig};
+use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
 
 use crate::application::CliApp;
 use crate::error::{Error, Kind};
