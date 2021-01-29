@@ -36,7 +36,7 @@ set -e
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="ibc-proto ibc"
+DEFAULT_CRATES="ibc-proto ibc ibc-relayer ibc-relayer-cli"
 
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
