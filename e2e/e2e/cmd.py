@@ -19,12 +19,6 @@ class Config:
 T = TypeVar('T')
 
 
-# Hack to check whether or not the command failed because of a RPC error
-def should_retry(result: Any) -> bool:
-    str_result = str(result).lower()
-    return 'rpc error' in str_result
-
-
 @dataclass
 class CmdResult(Generic[T]):
     cmd: 'Cmd'
@@ -40,9 +34,9 @@ class CmdResult(Generic[T]):
             data = self.cmd.process(result)
             l.debug(str(data))
             return data
-        elif should_retry(result) and self.retries < self.config.max_retries:
-            l.warn(
-                'RPC error detected: retrying command ({self.retries + 1}/{self.config.max_retries})')
+        elif self.retries < self.config.max_retries:
+            left = self.config.max_retries - self.retries
+            l.warn('Command failed: retrying (retryies left: {left})')
             return self.cmd.retry(self.config, self.retries).success()
         else:
             raise ExpectedSuccess(self.cmd, status, result)
