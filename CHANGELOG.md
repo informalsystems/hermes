@@ -4,6 +4,7 @@
 
 
 ### FEATURES
+
 - Continous Integration (CI) end-to-end (e2e) testing ([#32])
 - Add support for streamlining releases ([#507])
 

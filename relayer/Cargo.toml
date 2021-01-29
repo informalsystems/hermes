@@ -1,6 +1,6 @@
 [package]
 name    = "ibc-relayer"
-version = "0.0.6"
+version = "0.1.0"
 edition = "2018"
 authors = [
   "Informal Systems <hello@informal.systems>"
@@ -12,7 +12,7 @@ profiling = []
 [dependencies]
 subtle-encoding = "0.5"
 ibc = { path = "../modules" }
-ibc-proto = { version = "0.6.0", path = "../proto" }
+ibc-proto = { version = "0.7.0", path = "../proto" }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
