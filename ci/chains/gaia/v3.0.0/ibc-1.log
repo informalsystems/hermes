@@ -1,40 +1,40 @@
-[90m1:09PM[0m [32mINF[0m starting ABCI with Tendermint
-[90m1:09PM[0m [32mINF[0m Starting multiAppConn service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mproxy
-[90m1:09PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mquery [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m1:09PM[0m [32mINF[0m Starting localClient service [36mconnection=[0msnapshot [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m1:09PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mmempool [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m1:09PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mconsensus [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m1:09PM[0m [32mINF[0m Starting EventBus service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mevents
-[90m1:09PM[0m [32mINF[0m Starting PubSub service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mpubsub
-[90m1:09PM[0m [32mINF[0m Starting IndexerService service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mtxindex
-[90m1:09PM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m [36mheight=[0m0 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0m
-[90m1:09PM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m0 [36mmodule=[0mconsensus [36mstateHeight=[0m0 [36mstoreHeight=[0m0
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m0/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m1/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m2/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m3/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m4/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m5/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m6/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m7/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m8/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m9/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m10/11 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m asserted all invariants [36mduration=[0m0.744296 [36mheight=[0m0 [36mmodule=[0mx/crisis
-[90m1:09PM[0m [32mINF[0m created new capability [36mmodule=[0mibc [36mname=[0mports/transfer
-[90m1:09PM[0m [32mINF[0m port binded [36mmodule=[0mx/ibc/port [36mport=[0mtransfer
-[90m1:09PM[0m [32mINF[0m claimed capability [36mcapability=[0m1 [36mmodule=[0mtransfer [36mname=[0mports/transfer
-[90m1:09PM[0m [32mINF[0m Completed ABCI Handshake - Tendermint and App are synced [36mappHash=[0m [36mappHeight=[0m0 [36mmodule=[0mconsensus
-[90m1:09PM[0m [32mINF[0m Version info [36mblock=[0m11 [36mp2p=[0m8 [36msoftware=[0m
-[90m1:09PM[0m [32mINF[0m This node is a validator [36maddr=[0m3594F4C6C4F116B8D2302CE370E0B811BD107753 [36mmodule=[0mconsensus [36mpubKey=[0m9Gor+MrMvxPxSUL+6wuJTy9zIW0tNluboM80ZsK0UjU=
-[90m1:09PM[0m [32mINF[0m P2P Node ID [36mID=[0mbb10bfd30fedc1e123a778c151208f8f39fcbf87 [36mfile=[0mchains/gaia/v3.0.0/ibc-1/config/node_key.json [36mmodule=[0mp2p
-[90m1:09PM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m[] [36mmodule=[0mp2p
-[90m1:09PM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
-[90m1:09PM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"bb10bfd30fedc1e123a778c151208f8f39fcbf87","ip":"0.0.0.0","port":26656} [36mbook=[0mchains/gaia/v3.0.0/ibc-1/config/addrbook.json [36mmodule=[0mp2p
-[90m1:09PM[0m [32mINF[0m Starting Node service [36mimpl=[0m{"Logger":{}}
-[90m1:09PM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060
+[90m2:21PM[0m [32mINF[0m starting ABCI with Tendermint
+[90m2:21PM[0m [32mINF[0m Starting multiAppConn service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mproxy
+[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mquery [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0msnapshot [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mmempool [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mconsensus [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m2:21PM[0m [32mINF[0m Starting EventBus service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mevents
+[90m2:21PM[0m [32mINF[0m Starting PubSub service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mpubsub
+[90m2:21PM[0m [32mINF[0m Starting IndexerService service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mtxindex
+[90m2:21PM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m [36mheight=[0m0 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0m
+[90m2:21PM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m0 [36mmodule=[0mconsensus [36mstateHeight=[0m0 [36mstoreHeight=[0m0
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m0/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m1/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m2/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m3/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m4/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m5/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m6/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m7/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m8/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m9/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m10/11 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m asserted all invariants [36mduration=[0m0.611996 [36mheight=[0m0 [36mmodule=[0mx/crisis
+[90m2:21PM[0m [32mINF[0m created new capability [36mmodule=[0mibc [36mname=[0mports/transfer
+[90m2:21PM[0m [32mINF[0m port binded [36mmodule=[0mx/ibc/port [36mport=[0mtransfer
+[90m2:21PM[0m [32mINF[0m claimed capability [36mcapability=[0m1 [36mmodule=[0mtransfer [36mname=[0mports/transfer
+[90m2:21PM[0m [32mINF[0m Completed ABCI Handshake - Tendermint and App are synced [36mappHash=[0m [36mappHeight=[0m0 [36mmodule=[0mconsensus
+[90m2:21PM[0m [32mINF[0m Version info [36mblock=[0m11 [36mp2p=[0m8 [36msoftware=[0m
+[90m2:21PM[0m [32mINF[0m This node is a validator [36maddr=[0mF9C38B256B76FAFE74469297503C7372EA083A51 [36mmodule=[0mconsensus [36mpubKey=[0mZ7V0bEAFnOU8UlyaX3VUWBxdGMfy40dLShlHzWceeB0=
+[90m2:21PM[0m [32mINF[0m P2P Node ID [36mID=[0mee3fedd64bf5425a6ae3f9eaaefeb3c2b565494e [36mfile=[0mchains/gaia/v3.0.0/ibc-1/config/node_key.json [36mmodule=[0mp2p
+[90m2:21PM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m[] [36mmodule=[0mp2p
+[90m2:21PM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
+[90m2:21PM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"ee3fedd64bf5425a6ae3f9eaaefeb3c2b565494e","ip":"0.0.0.0","port":26656} [36mbook=[0mchains/gaia/v3.0.0/ibc-1/config/addrbook.json [36mmodule=[0mp2p
+[90m2:21PM[0m [32mINF[0m Starting Node service [36mimpl=[0m{"Logger":{}}
+[90m2:21PM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060
 Error: failed to listen on 0.0.0.0:26657: listen tcp 0.0.0.0:26657: bind: address already in use
-[90m1:09PM[0m [1m[31mERR[0m[0m pprof server error [36merr=[0m"listen tcp 127.0.0.1:6060: bind: address already in use"
+[90m2:21PM[0m [1m[31mERR[0m[0m pprof server error [36merr=[0m"listen tcp 127.0.0.1:6060: bind: address already in use"
 Usage:
   gaiad start [flags]
 
