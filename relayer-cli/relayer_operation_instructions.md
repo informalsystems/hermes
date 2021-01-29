@@ -9,7 +9,7 @@
     cd ~/go/src/github.com/cosmos/gaia ; git co v3.0.0 ; make install
     ```
 
-2. Start the gaia instances by running the `dev-env` script from the `ibc-rs` repo:
+2. Start the gaia instances by running the `dev-env` script from the `ibc-rs/scripts` repo:
 
     ```shell script
     ./scripts/dev-env <config.toml> <chain1> <chain2>
