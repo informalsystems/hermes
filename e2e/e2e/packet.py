@@ -147,10 +147,11 @@ def ping_pong(c: Config,
     split()
 
     # write the ack
-    seq_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
-    if pkt_recv_a.sequence != seq_ack_a.sequence:
+    pkt_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
+
+    if pkt_recv_a.sequence != pkt_ack_a.sequence:
         l.error(
-            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_a.sequence} versus Ack={seq_ack_a.sequence}')
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_a.sequence} versus Ack={pkt_ack_a.sequence}')
 
     split()
 
