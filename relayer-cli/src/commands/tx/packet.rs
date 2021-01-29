@@ -37,14 +37,17 @@ impl Runnable for TxRawPacketRecvCmd {
             &self.dst_chain_id,
         ) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("packet recv  {}", e)).exit(),
         };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
+        let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
+            Ok(link) => link,
+            Err(e) => return Output::error(format!("packet recv  {}", e)).exit(),
+        };
 
         let res: Result<Vec<IBCEvent>, Error> = link
             .build_and_send_recv_packet_messages()
@@ -52,7 +55,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("packet recv {}", e)).exit(),
         }
     }
 }
@@ -84,14 +87,17 @@ impl Runnable for TxRawPacketAckCmd {
             &self.dst_chain_id,
         ) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("{}", e)).exit(),
+            Err(e) => return Output::error(format!("packet ack {}", e)).exit(),
         };
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
+        let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
+            Ok(link) => link,
+            Err(e) => return Output::error(format!("packet ack {}", e)).exit(),
+        };
 
         let res: Result<Vec<IBCEvent>, Error> = link
             .build_and_send_ack_packet_messages()
@@ -99,7 +105,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Err(e) => Output::error(format!("packet ack {}", e)).exit(),
         }
     }
 }

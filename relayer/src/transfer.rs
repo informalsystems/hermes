@@ -1,4 +1,3 @@
-
 use crate::chain::{Chain, CosmosSDKChain};
 use thiserror::Error;
 use tracing::error;
@@ -16,7 +15,7 @@ use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 #[derive(Debug, Error)]
 pub enum PacketError {
-    #[error("failed")]
+    #[error("failed {0}")]
     Failed(String),
 
     #[error("key error")]
