@@ -172,7 +172,7 @@ class ChannelEnd:
 @dataclass
 class QueryChannelEnd(Cmd[ChannelEnd]):
     chain_id: ChainId
-    port_id: ConnectionId
+    port_id: PortId
     channel_id: ChannelId
 
     def args(self) -> List[str]:
