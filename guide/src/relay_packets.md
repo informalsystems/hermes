@@ -105,7 +105,8 @@ hermes -c loop_config.toml query channel end ibc-0 transfer channel-0
 
 ```shell
 hermes -c loop_config.toml query channel end ibc-1 transfer channel-1
-    ```
+```
+
 #### Query balances:
 
 - balance at ibc-0
