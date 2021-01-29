@@ -2,8 +2,8 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId};
-use relayer::config::StoreConfig;
-use relayer::foreign_client::ForeignClient;
+use ibc_relayer::config::StoreConfig;
+use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::application::app_config;
 use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
@@ -20,7 +20,7 @@ pub struct TxCreateClientCmd {
 }
 
 /// Sample to run this tx:
-///     `rrly -c loop_config.toml tx raw create-client ibc-0 ibc-1`
+///     `hermes -c loop_config.toml tx raw create-client ibc-0 ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();

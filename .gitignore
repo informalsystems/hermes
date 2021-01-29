@@ -22,3 +22,7 @@ Cargo.lock
 
 # Ignore chain's data
 data
+
+# Ignore Python artifacts
+.mypy_cache/
+__pycache__/

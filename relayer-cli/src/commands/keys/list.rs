@@ -1,7 +1,7 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use relayer::config::Config;
-use relayer::keys::list::{list_keys, KeysListOptions};
+use ibc_relayer::config::Config;
+use ibc_relayer::keys::list::{list_keys, KeysListOptions};
 
 use crate::application::app_config;
 use crate::conclude::Output;

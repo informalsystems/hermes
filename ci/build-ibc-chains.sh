@@ -6,30 +6,49 @@
 set -eou pipefail
 GAIA_BRANCH="v3.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
-echo "*** Building config folders"
-MONIKER=node_ibc_0 \
-CHAIN_ID=ibc-0 \
-CHAIN_IP=172.25.0.10 \
-CHAIN_HOME=./chains/gaia/$GAIA_BRANCH/ibc-0 \
-RPC_PORT=26657 \
-GRPC_PORT=9090 \
-CHAIN_SAMOLEANS=100000000000 \
-./bootstrap_gaia.sh
+BASE_DIR="$(dirname $0)"
+ONE_CHAIN="$BASE_DIR/../scripts/one-chain"
 
-MONIKER=node_ibc_1 \
-CHAIN_ID=ibc-1 \
-CHAIN_IP=172.25.0.11 \
-CHAIN_HOME=./chains/gaia/$GAIA_BRANCH/ibc-1 \
-RPC_PORT=26657 \
-GRPC_PORT=9090 \
-./bootstrap_gaia.sh
+echo "*** Building config folders"
+
+CHAIN_HOME="./chains/gaia/$GAIA_BRANCH"
+
+# Clean home dir if exists
+rm -Rf "$CHAIN_HOME"
+
+# Create home dir
+mkdir -p "$CHAIN_HOME"
+
+ls -allh "$CHAIN_HOME"
+
+# Check gaia version
+echo "-------------------------------------------------------------------------------------------------------------------"
+echo "Gaiad version"
+echo "-------------------------------------------------------------------------------------------------------------------"
+gaiad version --long
+
+MONIKER=node_ibc_0
+CHAIN_ID=ibc-0
+CHAIN_IP=172.25.0.10
+RPC_PORT=26657
+GRPC_PORT=9090
+CHAIN_SAMOLEANS=100000000000
+"$ONE_CHAIN" gaiad "$CHAIN_ID" "$CHAIN_HOME" "$RPC_PORT" 26656 6060 "$GRPC_PORT" "$CHAIN_SAMOLEANS"
+
+MONIKER=node_ibc_1
+CHAIN_ID=ibc-1
+CHAIN_IP=172.25.0.11
+RPC_PORT=26657
+GRPC_PORT=9090
+CHAIN_SAMOLEANS=100000000000
+"$ONE_CHAIN" gaiad "$CHAIN_ID" "$CHAIN_HOME" "$RPC_PORT" 26656 6060 "$GRPC_PORT" "$CHAIN_SAMOLEANS"
 
 echo "*** Requirements"
 which docker
 
 echo "*** Create Docker image and upload to Docker Hub"
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f gaia.Dockerfile .
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f gaia.Dockerfile .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
+docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 
 read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
 docker push informaldev/ibc-0:$GAIA_BRANCH

@@ -5,7 +5,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use relayer::{
+use ibc_relayer::{
     chain::{Chain, CosmosSDKChain},
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},

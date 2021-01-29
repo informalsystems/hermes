@@ -4,7 +4,7 @@ use abscissa_core::{application::fatal_error, error::BoxError, Command, Options,
 use tendermint_light_client::types::PeerId;
 
 use ibc::ics24_host::identifier::ChainId;
-use relayer::config::PeersConfig;
+use ibc_relayer::config::PeersConfig;
 
 use crate::conclude::Output;
 use crate::prelude::*;
@@ -105,7 +105,7 @@ impl RmCmd {
         };
 
         let config_path = crate::config::config_path()?;
-        relayer::config::store(&config, config_path)?;
+        ibc_relayer::config::store(&config, config_path)?;
 
         Output::success(format!("Removed light client peer(s) '{:?}'", rmd_peers)).exit();
 

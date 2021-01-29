@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics24_host::identifier::ChainId;
-use relayer::{config::ChainConfig, event::monitor::*};
+use ibc_relayer::{config::ChainConfig, event::monitor::*};
 
 use crate::prelude::*;
 

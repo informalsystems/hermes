@@ -9,7 +9,7 @@ services:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=ibc-0:9090  --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain/gaia --grpc.address=ibc-0:9090  --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.10
@@ -21,7 +21,7 @@ services:
 #      driver: none
     stdin_open: true
     tty: true
-    entrypoint: "gaiad start --home=/chain --grpc.address=ibc-1:9090 --pruning=nothing"
+    entrypoint: "gaiad start --home=/chain/gaia --grpc.address=ibc-1:9090 --pruning=nothing"
     networks:
       relaynet:
         ipv4_address: 172.25.0.11
@@ -34,7 +34,7 @@ services:
     stdin_open: true
     tty: true
     build:
-      context: .
+      context: ../
       dockerfile: ci/relayer.Dockerfile
       args:
         RELEASE: v3.0.0
