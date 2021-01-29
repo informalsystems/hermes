@@ -96,14 +96,14 @@ impl Runnable for TxRawSendPacketCmd {
                 .map_err(|e| Kind::Runtime.context(e));
         let src_chain = match src_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("packet send {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let dst_chain_res = CosmosSDKChain::bootstrap(opts.packet_dst_chain_config.clone(), rt)
             .map_err(|e| Kind::Runtime.context(e));
         let dst_chain = match dst_chain_res {
             Ok(chain) => chain,
-            Err(e) => return Output::error(format!("packet send {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IBCEvent>, Error> =
@@ -112,7 +112,7 @@ impl Runnable for TxRawSendPacketCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("packet send {}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
