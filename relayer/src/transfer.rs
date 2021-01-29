@@ -81,7 +81,7 @@ pub fn build_and_send_transfer_messages(
         .into_iter()
         .partition(|event| matches!(event, IBCEvent::ChainError(_e)));
 
-    if err_events.len() == 0 {
+    if err_events.is_empty() {
         Ok(ret_events)
     } else {
         match err_events[0].clone() {
