@@ -10,15 +10,28 @@ from .common import *
 
 
 @dataclass
-class TxPacketSendRes:
+class Packet:
     sequence: Sequence
+    source_port: PortId
+    source_channel: ChannelId
+    destination_port: PortId
+    destination_channel: ChannelId
+    data: bytes
+    timeout_height: Height
+    timeout_timestamp: Timestamp
+
+
+@dataclass
+class TxPacketSendRes:
+    height: BlockHeight
+    packet: Packet
 
 
 @cmd("tx raw packet-send")
 @dataclass
 class TxPacketSend(Cmd[TxPacketSendRes]):
-    src_chain_id: str
-    dst_chain_id: str
+    src_chain_id: ChainId
+    dst_chain_id: ChainId
     src_port: PortId
     src_channel: ChannelId
 
@@ -26,14 +39,17 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
         return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
 
     def process(self, result: Any) -> TxPacketSendRes:
-        return from_dict(TxPacketSendRes, result[0][0]['SendPacketChannel']['packet'])
+        entry = find_entry(result[0], 'SendPacketChannel')
+        return from_dict(TxPacketSendRes, entry)
 
 # -----------------------------------------------------------------------------
 
 
 @dataclass
 class TxPacketRecvRes:
-    sequence: Sequence
+    height: BlockHeight
+    packet: Packet
+    ack: bytes
 
 
 @cmd("tx raw packet-recv")
@@ -47,18 +63,17 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
-    # todo: the output here is a list of [`UpdateClient`,`WriteAcknowledgementChannel`]
-    #   possible that the UpdateClient is missing, and then `WriteAcknowledgementChannel` will no longer be at index 1
-    #   so we might need a more sophisticated way to extract this event...
     def process(self, result: Any) -> TxPacketRecvRes:
-        return from_dict(TxPacketRecvRes, result[0][1]['WriteAcknowledgementChannel']['packet'])
+        entry = find_entry(result[0], 'WriteAcknowledgementChannel')
+        return from_dict(TxPacketRecvRes, entry)
 
 # -----------------------------------------------------------------------------
 
 
 @dataclass
 class TxPacketAckRes:
-    sequence: Sequence
+    height: BlockHeight
+    packet: Packet
 
 
 @cmd("tx raw packet-ack")
@@ -72,44 +87,46 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
-    # todo: same as for TxPacketRecv:
-    #   the output here is a list of [`UpdateClient`,`AcknowledgePacketChannel`]
-    #   possible that the UpdateClient is missing, and then `WriteAcknowledgementChannel` will no longer be at index 1
-    #   so we might need a more sophisticated way to extract this event...
     def process(self, result: Any) -> TxPacketAckRes:
-        return from_dict(TxPacketAckRes, result[0][1]['AcknowledgePacketChannel']['packet'])
+        entry = find_entry(result[0], 'AcknowledgePacketChannel')
+        return from_dict(TxPacketAckRes, entry)
 
-# -----------------------------------------------------------------------------
-
-
+# =============================================================================
 # TRANSFER (packet send)
 # =============================================================================
 
-def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+
+def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
     cmd = TxPacketSend(src_chain_id=src, dst_chain_id=dst,
                        src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
-    l.info(f'PacketSend to {src} and obtained sequence number {res.sequence}')
-    return res.sequence
+    l.info(
+        f'PacketSend to {src} and obtained sequence number {res.packet.sequence}')
+
+    return res.packet
 
 
-def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
     cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst,
                        src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
-    l.info(f'PacketRecv to {dst} done for sequence number {res.sequence}')
-    return res.sequence
+    l.info(
+        f'PacketRecv to {dst} done for sequence number {res.packet.sequence}')
+
+    return res.packet
 
 
-def packet_ack(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Sequence:
+def packet_ack(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
     cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst,
                       src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
-    l.info(f'PacketAck to {dst} done for sequence number {res.sequence}')
-    return res.sequence
+    l.info(
+        f'PacketAck to {dst} done for sequence number {res.packet.sequence}')
+
+    return res.packet
 
 
 def ping_pong(c: Config,
@@ -117,40 +134,46 @@ def ping_pong(c: Config,
               a_chan: ChannelId, b_chan: ChannelId,
               port_id: PortId = PortId('transfer')):
 
-    seq_send_a = packet_send(c, side_a, side_b, port_id, a_chan)
+    pkt_send_a = packet_send(c, side_a, side_b, port_id, a_chan)
 
     split()
 
-    seq_recv_a = packet_recv(c, side_b, side_a, port_id, b_chan)
+    pkt_recv_a = packet_recv(c, side_b, side_a, port_id, b_chan)
 
-    if seq_send_a != seq_recv_a:
+    if pkt_send_a.sequence != pkt_recv_a.sequence:
         l.error(
-            f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={seq_send_a} versus Received={seq_recv_a}')
+            f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={pkt_send_a.sequence} versus Received={pkt_recv_a.sequence}')
 
     split()
 
     # write the ack
     seq_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
-    if seq_recv_a != seq_ack_a:
+    if pkt_recv_a.sequence != seq_ack_a.sequence:
         l.error(
-            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_a} versus Ack={seq_ack_a}')
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_a.sequence} versus Ack={seq_ack_a.sequence}')
 
     split()
 
-    seq_send_b = packet_send(c, side_b, side_a, port_id, b_chan)
+    pkt_send_b = packet_send(c, side_b, side_a, port_id, b_chan)
 
     split()
 
-    seq_recv_b = packet_recv(c, side_a, side_b, port_id, a_chan)
+    pkt_recv_b = packet_recv(c, side_a, side_b, port_id, a_chan)
 
-    if seq_send_b != seq_recv_b:
+    if pkt_send_b.sequence != pkt_recv_b.sequence:
         l.error(
-            f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={seq_send_b} versus Received={seq_recv_b}')
+            f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={pkt_send_b.sequence} versus Received={pkt_recv_b.sequence}')
 
     split()
 
-    seq_ack_b = packet_ack(c, side_b, side_a, port_id, a_chan)
+    pkt_ack_b = packet_ack(c, side_b, side_a, port_id, a_chan)
 
-    if seq_recv_b != seq_ack_b:
+    if pkt_recv_b.sequence != pkt_ack_b.sequence:
         l.error(
-            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={seq_recv_b} versus Ack={seq_ack_b}')
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_b.sequence} versus Ack={pkt_ack_b.sequence}')
+
+
+def find_entry(result: Any, key: str) -> Any:
+    for entry in result:
+        if key in entry:
+            return entry[key]

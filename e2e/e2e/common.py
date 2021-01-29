@@ -34,6 +34,7 @@ ChannelId = NewType('ChannelId', str)
 ConnectionId = NewType('ConnectionId', str)
 
 Sequence = NewType('Sequence', str)
+Timestamp = NewType('Timestamp', int)
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
 
