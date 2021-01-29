@@ -26,6 +26,7 @@ RUN cargo update
 
 # Build files
 RUN cargo build --workspace --all --release
+
 #####################################################
 ####                 Relayer image               ####
 #####################################################
@@ -34,8 +35,8 @@ LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
-# Add jq package
-RUN apt-get update -y && apt-get install jq -y
+# Add jq and Python 3
+RUN apt-get update -y && apt-get install python3 jq -y
 
 # Copy relayer executable
 COPY --from=build-env /repo/target/release/hermes /usr/bin/hermes
@@ -48,6 +49,9 @@ COPY ci/simple_config.toml .
 
 # Copy setup script
 COPY ci/e2e.sh .
+
+# Copy end-to-end testing script
+COPY e2e ./e2e
 
 # Copy key files
 COPY ci/chains/gaia/$RELEASE/ibc-0/key_seed.json ./key_seed_ibc-0.json

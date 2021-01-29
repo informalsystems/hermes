@@ -41,6 +41,7 @@ alias hermes='cargo run --bin hermes --'
 ```
 
 **Note 2:** In these instructions IDs `..-0` are used on `ibc-0` and `..-1` on `ibc-1`. You can control to some extent the ID generation by running some of these commands:
+
 ```shell script
 hermes -c loop_config.toml tx raw create-client ibc-1 ibc-0
 hermes -c loop_config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
@@ -217,29 +218,32 @@ The `ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199` denom
 
 __Note__: This command is currently rejected by cosmos-sdk transfer module. To
 make it work:
-   - clone cosmos-sdk
-       ```shell script
-       git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
-       cd ~/go/src/github.com/cosmos/cosmos-sdk
-       ```
-   - apply these diffs:
-       ```
-          --- a/x/ibc/applications/transfer/module.go
-          +++ b/x/ibc/applications/transfer/module.go
-          @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
-                  channelID string,
-           ) error {
-                  // Disallow user-initiated channel closing for transfer channels
-          -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
-          +       return nil
-           }
-       ```
-   - append the line below (watch for the placeholder `<your>`) as the last line
-     in your `go.mod` in the gaia clone:
 
-   ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
+   1. clone cosmos-sdk
 
-   - now `make build` and `make install` your local copy of gaia
+    ```shell script
+    git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
+    cd ~/go/src/github.com/cosmos/cosmos-sdk
+    ```
+       
+   2. apply these diffs:
+
+    ```diff
+    --- a/x/ibc/applications/transfer/module.go
+    +++ b/x/ibc/applications/transfer/module.go
+    @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
+            channelID string,
+     ) error {
+            // Disallow user-initiated channel closing for transfer channels
+    -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+    +       return nil
+     }
+    ```
+       
+   3. append the line below (watch for the placeholder `<your>`) as the last line
+     in your `go.mod` in the gaia clone, replace `github.com/cosmos/cosmos-sdk` by `/Users/<your>/go/src/github.com/cosmos/cosmos-sdk`
+
+   4. now `make build` and `make install` your local copy of gaia
 
 
 First transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
@@ -289,9 +293,11 @@ the relayer `v0` loop.
         ```shell script
         hermes -c loop_config.toml start ibc-0 ibc-1
         ```
+        
       The relayer should create the clients, and perform the handshake for new clients, connection and channel between the two chains on `transfer` port. Once that is finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.
 
       Note: The configuration file should have the relay path specified, for example:
+      
       ```
         [[connections]]
         a_chain = 'ibc-0'
@@ -307,6 +313,7 @@ the relayer `v0` loop.
       ```shell script
       hermes -c loop_config.toml start ibc-0 ibc-1 transfer channel-0
       ```
+      
       The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.
 
 - in a separate terminal, use the CLI to send 2 packets to ibc0 chain:
@@ -314,6 +321,7 @@ the relayer `v0` loop.
     ```shell script
     hermes -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
+    
 - use the CLI to send 2 packets to ibc1 chain:
 
     ```shell script
