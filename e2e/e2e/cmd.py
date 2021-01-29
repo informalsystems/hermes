@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 
-from typing import Any, List, Optional, TypeVar, Generic, Type, Callable, Tuple, NewType
-
 import json
-import subprocess
-
 import logging as l
-
-from pathlib import Path
+import subprocess
 from dataclasses import dataclass, fields as datafields, is_dataclass
+from pathlib import Path
+from typing import Any, List, TypeVar, Generic, Type, Callable
 
 
 @dataclass

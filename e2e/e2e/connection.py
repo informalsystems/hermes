@@ -1,9 +1,4 @@
-from typing import Any, List
-
-from time import sleep
-from dataclasses import dataclass
-
-import logging as l
+from typing import Tuple
 
 from .cmd import *
 from .common import *
@@ -17,10 +12,10 @@ class TxConnInitRes:
 @cmd("tx raw conn-init")
 @dataclass
 class TxConnInit(Cmd[TxConnInitRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
-    src_client_id: ClientId
+    src_chain_id: ChainId
     dst_client_id: ClientId
+    src_client_id: ClientId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
@@ -42,10 +37,10 @@ class TxConnTryRes:
 @cmd("tx raw conn-try")
 @dataclass
 class TxConnTry(Cmd[TxConnTryRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
-    src_client_id: ClientId
+    src_chain_id: ChainId
     dst_client_id: ClientId
+    src_client_id: ClientId
     src_conn_id: ConnectionId
 
     def args(self) -> List[str]:
@@ -67,12 +62,12 @@ class TxConnAckRes:
 @cmd("tx raw conn-ack")
 @dataclass
 class TxConnAck(Cmd[TxConnAckRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
-    src_client_id: ClientId
+    src_chain_id: ChainId
     dst_client_id: ClientId
-    src_conn_id: ConnectionId
+    src_client_id: ClientId
     dst_conn_id: ConnectionId
+    src_conn_id: ConnectionId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
@@ -93,12 +88,12 @@ class TxConnConfirmRes:
 @cmd("tx raw conn-confirm")
 @dataclass
 class TxConnConfirm(Cmd[TxConnConfirmRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
-    src_client_id: ClientId
+    src_chain_id: ChainId
     dst_client_id: ClientId
-    src_conn_id: ConnectionId
+    src_client_id: ClientId
     dst_conn_id: ConnectionId
+    src_conn_id: ConnectionId
 
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
@@ -145,18 +140,18 @@ class QueryConnectionEnd(Cmd[ConnectionEnd]):
     def process(self, result: Any) -> ConnectionEnd:
         return from_dict(ConnectionEnd, result[0])
 
+
 # =============================================================================
 # CONNECTION handshake
 # =============================================================================
 
 
 def conn_init(c: Config,
-              src: ChainId, dst: ChainId,
-              src_client: ClientId, dst_client: ClientId
+              dst: ChainId, src: ChainId,
+              dst_client: ClientId, src_client: ClientId
               ) -> ConnectionId:
-
-    cmd = TxConnInit(src_chain_id=src, dst_chain_id=dst,
-                     src_client_id=src_client, dst_client_id=dst_client)
+    cmd = TxConnInit(dst_chain_id=dst, src_chain_id=src,
+                     dst_client_id=dst_client, src_client_id=src_client)
     res = cmd.run(c).success()
     l.info(
         f'ConnOpen init submitted to {dst} and obtained connection id {res.connection_id}')
@@ -164,12 +159,11 @@ def conn_init(c: Config,
 
 
 def conn_try(c: Config,
-             src: ChainId, dst: ChainId,
-             src_client: ClientId, dst_client: ClientId,
+             dst: ChainId, src: ChainId,
+             dst_client: ClientId, src_client: ClientId,
              src_conn: ConnectionId
              ) -> ConnectionId:
-
-    cmd = TxConnTry(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
+    cmd = TxConnTry(dst_chain_id=dst, src_chain_id=src, dst_client_id=dst_client, src_client_id=src_client,
                     src_conn_id=src_conn)
     res = cmd.run(c).success()
     l.info(
@@ -178,13 +172,12 @@ def conn_try(c: Config,
 
 
 def conn_ack(c: Config,
-             src: ChainId, dst: ChainId,
-             src_client: ClientId, dst_client: ClientId,
-             src_conn: ConnectionId, dst_conn: ConnectionId
+             dst: ChainId, src: ChainId,
+             dst_client: ClientId, src_client: ClientId,
+             dst_conn: ConnectionId, src_conn: ConnectionId
              ) -> ConnectionId:
-
-    cmd = TxConnAck(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
-                    src_conn_id=src_conn, dst_conn_id=dst_conn)
+    cmd = TxConnAck(dst_chain_id=dst, src_chain_id=src, dst_client_id=dst_client, src_client_id=src_client,
+                    dst_conn_id=dst_conn, src_conn_id=src_conn)
     res = cmd.run(c).success()
     l.info(
         f'ConnOpen ack submitted to {dst} and obtained connection id {res.connection_id}')
@@ -192,13 +185,12 @@ def conn_ack(c: Config,
 
 
 def conn_confirm(c: Config,
-                 src: ChainId, dst: ChainId,
-                 src_client: ClientId, dst_client: ClientId,
-                 src_conn: ConnectionId, dst_conn: ConnectionId
+                 dst: ChainId, src: ChainId,
+                 dst_client: ClientId, src_client: ClientId,
+                 dst_conn: ConnectionId, src_conn: ConnectionId
                  ) -> ConnectionId:
-
-    cmd = TxConnConfirm(src_chain_id=src, dst_chain_id=dst, src_client_id=src_client, dst_client_id=dst_client,
-                        src_conn_id=src_conn, dst_conn_id=dst_conn)
+    cmd = TxConnConfirm(dst_chain_id=dst, src_chain_id=src, dst_client_id=dst_client, src_client_id=src_client,
+                        dst_conn_id=dst_conn, src_conn_id=src_conn)
     res = cmd.run(c).success()
     l.info(
         f'ConnOpen confirm submitted to {dst} and obtained connection id {res.connection_id}')
@@ -209,13 +201,12 @@ def handshake(c: Config,
               side_a: ChainId, side_b: ChainId,
               client_a: ClientId, client_b: ClientId
               ) -> Tuple[ConnectionId, ConnectionId]:
-
     a_conn_id = conn_init(c, side_a, side_b, client_a, client_b)
     split()
     b_conn_id = conn_try(c, side_b, side_a, client_b, client_a, a_conn_id)
     split()
-    ack_res = conn_ack(c, side_a, side_b, client_a,
-                       client_b, b_conn_id, a_conn_id)
+    ack_res = conn_ack(
+        c, side_a, side_b, client_a, client_b, a_conn_id, b_conn_id)
 
     if ack_res != a_conn_id:
         l.error(
@@ -225,7 +216,7 @@ def handshake(c: Config,
     split()
 
     confirm_res = conn_confirm(
-        c, side_b, side_a, client_b, client_a, a_conn_id, b_conn_id)
+        c, side_b, side_a, client_b, client_a, b_conn_id, a_conn_id)
 
     if confirm_res != b_conn_id:
         l.error(
@@ -244,7 +235,7 @@ def handshake(c: Config,
             f'Connection end with id {b_conn_id} is not in Open state, got: {b_conn_end.state}')
         exit(1)
 
-    return (a_conn_id, b_conn_id)
+    return a_conn_id, b_conn_id
 
 
 # =============================================================================

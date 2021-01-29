@@ -22,6 +22,7 @@ CHAIN_IP=172.25.0.11 \
 CHAIN_HOME=./chains/gaia/$GAIA_BRANCH/ibc-1 \
 RPC_PORT=26657 \
 GRPC_PORT=9090 \
+CHAIN_SAMOLEANS=100000000000 \
 ./bootstrap_gaia.sh
 
 echo "*** Requirements"

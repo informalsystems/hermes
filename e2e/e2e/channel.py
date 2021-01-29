@@ -1,9 +1,4 @@
-from typing import Any, List
-
-from time import sleep
-from dataclasses import dataclass
-
-import logging as l
+from typing import Optional, Tuple
 
 from .cmd import *
 from .common import *
@@ -22,8 +17,8 @@ class TxChanOpenInitRes:
 @cmd("tx raw chan-open-init")
 @dataclass
 class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     connection_id: ConnectionId
     dst_port_id: PortId
     src_port_id: PortId
@@ -43,6 +38,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
     def process(self, result: Any) -> TxChanOpenInitRes:
         return from_dict(TxChanOpenInitRes, result[0]['OpenInitChannel'])
 
+
 # -----------------------------------------------------------------------------
 
 
@@ -59,8 +55,8 @@ class TxChanOpenTryRes:
 @cmd("tx raw chan-open-try")
 @dataclass
 class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     connection_id: ConnectionId
     dst_port_id: PortId
     src_port_id: PortId
@@ -81,6 +77,7 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
     def process(self, result: Any) -> TxChanOpenTryRes:
         return from_dict(TxChanOpenTryRes, result[0]['OpenTryChannel'])
 
+
 # -----------------------------------------------------------------------------
 
 
@@ -97,8 +94,8 @@ class TxChanOpenAckRes:
 @cmd("tx raw chan-open-ack")
 @dataclass
 class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     connection_id: ConnectionId
     dst_port_id: PortId
     src_port_id: PortId
@@ -116,6 +113,7 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
     def process(self, result: Any) -> TxChanOpenAckRes:
         return from_dict(TxChanOpenAckRes, result[0]['OpenAckChannel'])
 
+
 # -----------------------------------------------------------------------------
 
 
@@ -132,8 +130,8 @@ class TxChanOpenConfirmRes:
 @cmd("tx raw chan-open-confirm")
 @dataclass
 class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     connection_id: ConnectionId
     dst_port_id: PortId
     src_port_id: PortId
@@ -150,6 +148,7 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
 
     def process(self, result: Any) -> TxChanOpenConfirmRes:
         return from_dict(TxChanOpenConfirmRes, result[0]['OpenConfirmChannel'])
+
 
 # -----------------------------------------------------------------------------
 
@@ -173,14 +172,15 @@ class ChannelEnd:
 @dataclass
 class QueryChannelEnd(Cmd[ChannelEnd]):
     chain_id: ChainId
-    connection_id: ConnectionId
+    port_id: ConnectionId
     channel_id: ChannelId
 
     def args(self) -> List[str]:
-        return [self.chain_id, self.connection_id, self.channel_id]
+        return [self.chain_id, self.port_id, self.channel_id]
 
     def process(self, result: Any) -> ChannelEnd:
         return from_dict(ChannelEnd, result[0])
+
 
 # =============================================================================
 # CHANNEL handshake
@@ -188,14 +188,13 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
 
 
 def chan_open_init(c: Config,
-                   src: ChainId, dst: ChainId,
+                   dst: ChainId, src: ChainId,
                    dst_conn: ConnectionId,
-                   src_port: PortId = PortId('transfer'),
                    dst_port: PortId = PortId('transfer'),
+                   src_port: PortId = PortId('transfer'),
                    ordering: Optional[Ordering] = None
                    ) -> ChannelId:
-
-    cmd = TxChanOpenInit(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxChanOpenInit(dst_chain_id=dst, src_chain_id=src,
                          connection_id=dst_conn,
                          dst_port_id=dst_port, src_port_id=src_port,
                          ordering=ordering)
@@ -207,15 +206,15 @@ def chan_open_init(c: Config,
 
 
 def chan_open_try(c: Config,
-                  src: ChainId, dst: ChainId,
+                  dst: ChainId,
+                  src: ChainId,
                   dst_conn: ConnectionId,
+                  dst_port: PortId,
+                  src_port: PortId,
                   src_chan: ChannelId,
-                  src_port: PortId = PortId('transfer'),
-                  dst_port: PortId = PortId('transfer'),
                   ordering: Optional[Ordering] = None
                   ) -> ChannelId:
-
-    cmd = TxChanOpenTry(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxChanOpenTry(dst_chain_id=dst, src_chain_id=src,
                         connection_id=dst_conn,
                         dst_port_id=dst_port, src_port_id=src_port,
                         src_channel_id=src_chan,
@@ -228,15 +227,14 @@ def chan_open_try(c: Config,
 
 
 def chan_open_ack(c: Config,
-                  src: ChainId, dst: ChainId,
+                  dst: ChainId, src: ChainId,
                   dst_conn: ConnectionId,
-                  src_chan: ChannelId,
+                  dst_port: PortId,
+                  src_port: PortId,
                   dst_chan: ChannelId,
-                  src_port: PortId = PortId('transfer'),
-                  dst_port: PortId = PortId('transfer'),
+                  src_chan: ChannelId,
                   ) -> ChannelId:
-
-    cmd = TxChanOpenAck(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxChanOpenAck(dst_chain_id=dst, src_chain_id=src,
                         connection_id=dst_conn,
                         dst_port_id=dst_port, src_port_id=src_port,
                         dst_channel_id=dst_chan,
@@ -248,16 +246,17 @@ def chan_open_ack(c: Config,
     return res.channel_id
 
 
-def chan_open_confirm(c: Config,
-                      src: ChainId, dst: ChainId,
-                      dst_conn: ConnectionId,
-                      src_chan: ChannelId,
-                      dst_chan: ChannelId,
-                      src_port: PortId = PortId('transfer'),
-                      dst_port: PortId = PortId('transfer'),
-                      ) -> ChannelId:
-
-    cmd = TxChanOpenConfirm(src_chain_id=src, dst_chain_id=dst,
+def chan_open_confirm(
+        c: Config,
+        dst: ChainId,
+        src: ChainId,
+        dst_conn: ConnectionId,
+        dst_port: PortId,
+        src_port: PortId,
+        dst_chan: ChannelId,
+        src_chan: ChannelId
+) -> ChannelId:
+    cmd = TxChanOpenConfirm(dst_chain_id=dst, src_chain_id=src,
                             connection_id=dst_conn,
                             dst_port_id=dst_port, src_port_id=src_port,
                             dst_channel_id=dst_chan,
@@ -273,17 +272,17 @@ def handshake(c: Config,
               side_a: ChainId, side_b: ChainId,
               conn_a: ConnectionId, conn_b: ConnectionId,
               ) -> Tuple[ChannelId, ChannelId]:
-
     a_chan_id = chan_open_init(c, dst=side_a, src=side_b, dst_conn=conn_a)
 
     split()
 
     b_chan_id = chan_open_try(
-        c, dst=side_b, src=side_a, dst_conn=conn_b, src_chan=a_chan_id)
+        c, dst=side_b, src=side_a, dst_conn=conn_b, dst_port=PortId('transfer'), src_port=PortId('transfer'),
+        src_chan=a_chan_id)
 
     split()
 
-    ack_res = chan_open_ack(c, dst=side_a, src=side_b,
+    ack_res = chan_open_ack(c, dst=side_a, src=side_b, dst_port=PortId('transfer'), src_port=PortId('transfer'),
                             dst_conn=conn_a, dst_chan=a_chan_id, src_chan=b_chan_id)
 
     if ack_res != a_chan_id:
@@ -292,7 +291,8 @@ def handshake(c: Config,
         exit(1)
 
     confirm_res = chan_open_confirm(
-        c, dst=side_b, src=side_a, dst_conn=conn_b, dst_chan=b_chan_id, src_chan=a_chan_id)
+        c, dst=side_b, src=side_a, dst_port=PortId('transfer'), src_port=PortId('transfer'),
+        dst_conn=conn_b, dst_chan=b_chan_id, src_chan=a_chan_id)
 
     if confirm_res != b_chan_id:
         l.error(
@@ -301,27 +301,28 @@ def handshake(c: Config,
 
     split()
 
-    a_chan_end = query_channel_end(c, side_a, conn_a, a_chan_id)
+    a_chan_end = query_channel_end(c, side_a, PortId('transfer'), a_chan_id)
     if a_chan_end.state != 'Open':
-        l.warn(
+        l.warning(
             f'Channel end with id {a_chan_id} on chain {side_a} is not in Open state, got: {a_chan_end.state}')
         # exit(1)
 
-    b_chan_end = query_channel_end(c, side_b, conn_b, a_chan_id)
+    b_chan_end = query_channel_end(c, side_b, PortId('transfer'), b_chan_id)
     if b_chan_end.state != 'Open':
-        l.warn(
+        l.warning(
             f'Channel end with id {b_chan_id} on chain {side_b} is not in Open state, got: {b_chan_end.state}')
         # exit(1)
 
     return a_chan_id, b_chan_id
+
 
 # =============================================================================
 # CHANNEL END query
 # =============================================================================
 
 
-def query_channel_end(c: Config, chain_id: ChainId, conn_id: ConnectionId, chan_id: ChannelId) -> ChannelEnd:
-    cmd = QueryChannelEnd(chain_id, conn_id, chan_id)
+def query_channel_end(c: Config, chain_id: ChainId, port: PortId, chan_id: ChannelId) -> ChannelEnd:
+    cmd = QueryChannelEnd(chain_id, port, chan_id)
     res = cmd.run(c).success()
 
     l.debug(f'Status of channel end {chan_id}: {res}')

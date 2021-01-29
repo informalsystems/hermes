@@ -1,7 +1,7 @@
-from time import sleep
-from enum import Enum
-from typing import NewType
 from dataclasses import dataclass
+from enum import Enum
+from time import sleep
+from typing import NewType
 
 
 @dataclass

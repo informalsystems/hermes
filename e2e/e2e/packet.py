@@ -1,10 +1,3 @@
-from typing import Any, List
-
-from time import sleep
-from dataclasses import dataclass
-
-import logging as l
-
 from .cmd import *
 from .common import *
 
@@ -55,8 +48,8 @@ class TxPacketRecvRes:
 @cmd("tx raw packet-recv")
 @dataclass
 class TxPacketRecv(Cmd[TxPacketRecvRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     src_port: PortId
     src_channel: ChannelId
 
@@ -79,8 +72,8 @@ class TxPacketAckRes:
 @cmd("tx raw packet-ack")
 @dataclass
 class TxPacketAck(Cmd[TxPacketAckRes]):
-    src_chain_id: ChainId
     dst_chain_id: ChainId
+    src_chain_id: ChainId
     src_port: PortId
     src_channel: ChannelId
 
@@ -108,7 +101,7 @@ def packet_send(c: Config, src: ChainId, dst: ChainId, src_port: PortId, src_cha
 
 
 def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
-    cmd = TxPacketRecv(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxPacketRecv(dst_chain_id=dst, src_chain_id=src,
                        src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
@@ -119,7 +112,7 @@ def packet_recv(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_cha
 
 
 def packet_ack(c: Config, dst: ChainId, src: ChainId, src_port: PortId, src_channel: ChannelId) -> Packet:
-    cmd = TxPacketAck(src_chain_id=src, dst_chain_id=dst,
+    cmd = TxPacketAck(dst_chain_id=dst, src_chain_id=src,
                       src_port=src_port, src_channel=src_channel)
 
     res = cmd.run(c).success()
@@ -138,20 +131,20 @@ def ping_pong(c: Config,
 
     split()
 
-    pkt_recv_a = packet_recv(c, side_b, side_a, port_id, b_chan)
+    pkt_recv_b = packet_recv(c, side_b, side_a, port_id, a_chan)
 
-    if pkt_send_a.sequence != pkt_recv_a.sequence:
+    if pkt_send_a.sequence != pkt_recv_b.sequence:
         l.error(
-            f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={pkt_send_a.sequence} versus Received={pkt_recv_a.sequence}')
+            f'Mismatched sequence numbers for path {side_a} -> {side_b} : Sent={pkt_send_a.sequence} versus Received={pkt_recv_b.sequence}')
 
     split()
 
     # write the ack
-    pkt_ack_a = packet_ack(c, side_a, side_b, port_id, a_chan)
+    pkt_ack_a = packet_ack(c, side_a, side_b, port_id, b_chan)
 
-    if pkt_recv_a.sequence != pkt_ack_a.sequence:
+    if pkt_recv_b.sequence != pkt_ack_a.sequence:
         l.error(
-            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_a.sequence} versus Ack={pkt_ack_a.sequence}')
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_b.sequence} versus Ack={pkt_ack_a.sequence}')
 
     split()
 
@@ -159,19 +152,19 @@ def ping_pong(c: Config,
 
     split()
 
-    pkt_recv_b = packet_recv(c, side_a, side_b, port_id, a_chan)
+    pkt_recv_a = packet_recv(c, side_a, side_b, port_id, b_chan)
 
-    if pkt_send_b.sequence != pkt_recv_b.sequence:
+    if pkt_send_b.sequence != pkt_recv_a.sequence:
         l.error(
-            f'Mismatched sequence numbers for path {side_b} -> {side_b} : Sent={pkt_send_b.sequence} versus Received={pkt_recv_b.sequence}')
+            f'Mismatched sequence numbers for path {side_b} -> {side_a} : Sent={pkt_send_b.sequence} versus Received={pkt_recv_a.sequence}')
 
     split()
 
     pkt_ack_b = packet_ack(c, side_b, side_a, port_id, a_chan)
 
-    if pkt_recv_b.sequence != pkt_ack_b.sequence:
+    if pkt_recv_a.sequence != pkt_ack_b.sequence:
         l.error(
-            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_b.sequence} versus Ack={pkt_ack_b.sequence}')
+            f'Mismatched sequence numbers for ack on path {side_a} -> {side_b} : Recv={pkt_recv_a.sequence} versus Ack={pkt_ack_b.sequence}')
 
 
 def find_entry(result: Any, key: str) -> Any:
