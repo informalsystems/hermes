@@ -32,17 +32,18 @@ hex = "0.4"
 crossbeam-channel = "0.5.0"
 
 [dependencies.tendermint-proto]
-version = "=0.17.1"
+version = "=0.18.0"
 
 [dependencies.tendermint]
-version = "=0.17.1"
+version = "=0.18.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.1"
+version = "=0.18.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.17.1"
+version = "=0.18.0"
+features = ["unstable"]
 
 [dependencies.abscissa_core]
 version = "0.5.2"
