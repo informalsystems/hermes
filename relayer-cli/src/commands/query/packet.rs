@@ -98,6 +98,9 @@ pub struct QueryPacketCommitmentCmd {
 
     #[options(free, required, help = "sequence of packet to query")]
     sequence: u64,
+
+    #[options(help = "height of the state to query", short = "h")]
+    height: Option<u64>,
 }
 
 impl QueryPacketCommitmentCmd {
@@ -112,7 +115,7 @@ impl QueryPacketCommitmentCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: 0_u64,
+            height: self.height.unwrap_or(0_u64),
         };
 
         Ok((dest_chain_config.clone(), opts, self.sequence.into()))
@@ -400,7 +403,7 @@ impl QueryPacketAcknowledgmentCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: 0_u64,
+            height: self.height.unwrap_or(0_u64),
         };
 
         Ok((dest_chain_config.clone(), opts, self.sequence.into()))
