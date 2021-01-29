@@ -15,11 +15,11 @@ use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 
 #[derive(Debug, Error)]
 pub enum PacketError {
-    #[error("failed {0}")]
+    #[error("failed with underlying cause: {0}")]
     Failed(String),
 
-    #[error("key error")]
-    KeyError(String),
+    #[error("key error with underlying cause: {0}")]
+    KeyError(Error),
 
     #[error(
         "failed during a transaction submission step to chain id {0} with underlying error: {1}"
@@ -46,11 +46,11 @@ pub fn build_and_send_transfer_messages(
 ) -> Result<Vec<IBCEvent>, PacketError> {
     let receiver = packet_dst_chain
         .get_signer()
-        .map_err(|_e| PacketError::KeyError("Key error".to_string()))?;
+        .map_err(|e| PacketError::KeyError(e))?;
 
     let sender = packet_src_chain
         .get_signer()
-        .map_err(|_e| PacketError::KeyError("Key error".to_string()))?;
+        .map_err(|e| PacketError::KeyError(e))?;
 
     let latest_height = packet_dst_chain
         .query_latest_height()
@@ -76,20 +76,19 @@ pub fn build_and_send_transfer_messages(
         .send_msgs(msgs)
         .map_err(|e| PacketError::SubmitError(packet_src_chain.id().clone(), e))?;
 
-    // Separate the error events from the packet send events
-    let (err_events, ret_events): (Vec<IBCEvent>, Vec<IBCEvent>) = events
-        .into_iter()
-        .partition(|event| matches!(event, IBCEvent::ChainError(_e)));
+    // Check if the chain rejected the transaction
+    let result = events
+        .iter()
+        .find(|event| matches!(event, IBCEvent::ChainError(_)));
 
-    if err_events.is_empty() {
-        Ok(ret_events)
-    } else {
-        match err_events[0].clone() {
-            IBCEvent::ChainError(e) => Err(PacketError::Failed(format!(
-                "tx response event consists of an error: {}",
-                e
-            ))),
-            _ => panic!("internal error"),
+    match result {
+        None => Ok(events),
+        Some(err) => {
+            if let IBCEvent::ChainError(err) = err {
+                return Err(PacketError::Failed(format!("{}", err)));
+            } else {
+                panic!("internal error")
+            }
         }
     }
 }

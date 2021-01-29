@@ -37,7 +37,7 @@ impl Runnable for TxRawPacketRecvCmd {
             &self.dst_chain_id,
         ) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("packet recv  {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
@@ -46,7 +46,7 @@ impl Runnable for TxRawPacketRecvCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("packet recv  {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IBCEvent>, Error> = link
@@ -55,7 +55,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("packet recv {}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -87,7 +87,7 @@ impl Runnable for TxRawPacketAckCmd {
             &self.dst_chain_id,
         ) {
             Ok(chains) => chains,
-            Err(e) => return Output::error(format!("packet ack {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let opts = LinkParameters {
@@ -96,7 +96,7 @@ impl Runnable for TxRawPacketAckCmd {
         };
         let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
             Ok(link) => link,
-            Err(e) => return Output::error(format!("packet ack {}", e)).exit(),
+            Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
         let res: Result<Vec<IBCEvent>, Error> = link
@@ -105,7 +105,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         match res {
             Ok(ev) => Output::success(ev).exit(),
-            Err(e) => Output::error(format!("packet ack {}", e)).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
