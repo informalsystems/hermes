@@ -87,7 +87,7 @@ pub fn build_and_send_transfer_messages(
             if let IBCEvent::ChainError(err) = err {
                 return Err(PacketError::Failed(format!("{}", err)));
             } else {
-                panic!("Internal error")
+                panic!("internal error")
             }
         }
     }
