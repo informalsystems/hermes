@@ -10,6 +10,48 @@ cd ibc-rs
 
 In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
 
+The following configuration file can be used for running the local chains:
+
+##### loop_config.toml
+```toml
+[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+
+gas = 200000
+max_msg_num = 4
+max_tx_size = 1048576
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://localhost:26557'
+grpc_addr = 'tcp://localhost:9091'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+```
+
 #### Stop and cleanup
 
 If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:
@@ -24,7 +66,7 @@ rm -rf data/
 Run the following script with the parameters below to start the chains:
 
 ```bash
-./dev-env two_chains.toml ibc-0 ibc-1
+./dev-env loop_config.toml ibc-0 ibc-1
 ```
 
 The script will configure and start two `gaiad` instances, one named `ibc-0` and the other `ibc-1`

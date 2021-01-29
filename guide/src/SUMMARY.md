@@ -1,6 +1,6 @@
 # Summary
 
-# IBC Relayer Guide
+# Hermes (IBC Relayer)
 
 ---
 - [Introduction](./index.md)
@@ -11,8 +11,8 @@
    - [Configuration](./config.md)
 - [Tutorials](./tutorials.md)
    - [Two Local Chains](./two_chains.md)
-     - [Install Gaia](./gaia.md)
-     - [Start local chains](./local_chains.md)
+     - [Installing Gaia](./gaia.md)
+     - [Starting the local chains](./local_chains.md)
      - [Relaying packets](./relay_packets.md)
 - [Commands Reference](./commands.md)
    - [Keys](./keys.md)

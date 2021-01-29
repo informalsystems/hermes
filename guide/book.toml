@@ -3,7 +3,7 @@ authors = ["Informal Systems Inc."]
 language = "en"
 multilingual = false
 src = "src"
-title = "IBC Relayer (Rust)"
+title = "Hermes Documentation"
 
 [preprocessor]
 [preprocessor.mermaid]
