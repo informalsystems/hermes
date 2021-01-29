@@ -1,0 +1,93 @@
+[90m9:18AM[0m [32mINF[0m starting ABCI with Tendermint
+[90m9:18AM[0m [32mINF[0m Starting multiAppConn service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mproxy
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mquery [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0msnapshot [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mmempool [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mconsensus [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting EventBus service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mevents
+[90m9:18AM[0m [32mINF[0m Starting PubSub service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mpubsub
+[90m9:18AM[0m [32mINF[0m Starting IndexerService service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mtxindex
+[90m9:18AM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m [36mheight=[0m0 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0m
+[90m9:18AM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m0 [36mmodule=[0mconsensus [36mstateHeight=[0m0 [36mstoreHeight=[0m0
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m0/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m1/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m2/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m3/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m4/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m5/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m6/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m7/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m8/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m9/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m10/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserted all invariants [36mduration=[0m2.390909 [36mheight=[0m0 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m created new capability [36mmodule=[0mibc [36mname=[0mports/transfer
+[90m9:18AM[0m [32mINF[0m port binded [36mmodule=[0mx/ibc/port [36mport=[0mtransfer
+[90m9:18AM[0m [32mINF[0m claimed capability [36mcapability=[0m1 [36mmodule=[0mtransfer [36mname=[0mports/transfer
+[90m9:18AM[0m [32mINF[0m Completed ABCI Handshake - Tendermint and App are synced [36mappHash=[0m [36mappHeight=[0m0 [36mmodule=[0mconsensus
+[90m9:18AM[0m [32mINF[0m Version info [36mblock=[0m11 [36mp2p=[0m8 [36msoftware=[0m
+[90m9:18AM[0m [32mINF[0m This node is a validator [36maddr=[0m574E7B0DC5C0C1D726059ADC9CF3EDCF06815C46 [36mmodule=[0mconsensus [36mpubKey=[0mSl/6UDZu7Ttd9MOsUnMO4xswFYfVbXyUDRRNbAXH2kQ=
+[90m9:18AM[0m [32mINF[0m P2P Node ID [36mID=[0mc15eddb601e66c008c241ccfc80f7cf3358cfa7f [36mfile=[0mchains/gaia/v3.0.0/ibc-1/config/node_key.json [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m[] [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"c15eddb601e66c008c241ccfc80f7cf3358cfa7f","ip":"0.0.0.0","port":26656} [36mbook=[0mchains/gaia/v3.0.0/ibc-1/config/addrbook.json [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Starting Node service [36mimpl=[0m{"Logger":{}}
+[90m9:18AM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060
+Error: failed to listen on 0.0.0.0:26657: listen tcp 0.0.0.0:26657: bind: address already in use
+[90m9:18AM[0m [1m[31mERR[0m[0m pprof server error [36merr=[0m"listen tcp 127.0.0.1:6060: bind: address already in use"
+Usage:
+  gaiad start [flags]
+
+Flags:
+      --abci string                                     specify abci transport (socket | grpc) (default "socket")
+      --address string                                  Listen address (default "tcp://0.0.0.0:26658")
+      --consensus.create_empty_blocks                   set this to false to only produce blocks when there are txs or when the AppHash changes (default true)
+      --consensus.create_empty_blocks_interval string   the possible interval between empty blocks (default "0s")
+      --consensus.double_sign_check_height int          how many blocks to look back to check existence of the node's consensus votes before joining consensus
+      --cpu-profile string                              Enable CPU profiling and write to the provided file
+      --db_backend string                               database backend: goleveldb | cleveldb | boltdb | rocksdb | badgerdb (default "goleveldb")
+      --db_dir string                                   database directory (default "data")
+      --fast_sync                                       fast blockchain syncing (default true)
+      --genesis_hash bytesHex                           optional SHA-256 hash of the genesis file
+      --grpc.address string                             the gRPC server address to listen on (default "0.0.0.0:9090")
+      --grpc.enable                                     Define if the gRPC server should be enabled (default true)
+      --halt-height uint                                Block height at which to gracefully halt the chain and shutdown the node
+      --halt-time uint                                  Minimum block time (in Unix seconds) at which to gracefully halt the chain and shutdown the node
+  -h, --help                                            help for start
+      --inter-block-cache                               Enable inter-block caching (default true)
+      --inv-check-period uint                           Assert registered invariants every N blocks
+      --min-retain-blocks uint                          Minimum block height offset during ABCI commit to prune Tendermint blocks
+      --minimum-gas-prices string                       Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 0.01photino;0.0001stake)
+      --moniker string                                  node name (default "localhost.localdomain")
+      --p2p.laddr string                                node listen address. (0.0.0.0:0 means any interface, any port) (default "tcp://0.0.0.0:26656")
+      --p2p.persistent_peers string                     comma-delimited ID@host:port persistent peers
+      --p2p.pex                                         enable/disable Peer-Exchange (default true)
+      --p2p.private_peer_ids string                     comma-delimited private peer IDs
+      --p2p.seed_mode                                   enable/disable seed mode
+      --p2p.seeds string                                comma-delimited ID@host:port seed nodes
+      --p2p.unconditional_peer_ids string               comma-delimited IDs of unconditional peers
+      --p2p.upnp                                        enable/disable UPNP port forwarding
+      --priv_validator_laddr string                     socket address to listen on for connections from external priv_validator process
+      --proxy_app string                                proxy app address, or one of: 'kvstore', 'persistent_kvstore', 'counter', 'counter_serial' or 'noop' for local testing. (default "tcp://127.0.0.1:26658")
+      --pruning string                                  Pruning strategy (default|nothing|everything|custom) (default "default")
+      --pruning-interval uint                           Height interval at which pruned heights are removed from disk (ignored if pruning is not 'custom')
+      --pruning-keep-every uint                         Offset heights to keep on disk after 'keep-every' (ignored if pruning is not 'custom')
+      --pruning-keep-recent uint                        Number of recent heights to keep on disk (ignored if pruning is not 'custom')
+      --rpc.grpc_laddr string                           GRPC listen address (BroadcastTx only). Port required
+      --rpc.laddr string                                RPC listen address. Port required (default "tcp://127.0.0.1:26657")
+      --rpc.pprof_laddr string                          pprof listen address (https://golang.org/pkg/net/http/pprof)
+      --rpc.unsafe                                      enabled unsafe rpc methods
+      --state-sync.snapshot-interval uint               State sync snapshot interval
+      --state-sync.snapshot-keep-recent uint32          State sync snapshot to keep (default 2)
+      --trace-store string                              Enable KVStore tracing to an output file
+      --transport string                                Transport protocol: socket, grpc (default "socket")
+      --unsafe-skip-upgrades ints                       Skip a set of upgrade heights to continue the old binary
+      --with-tendermint                                 Run abci app embedded in-process with tendermint (default true)
+      --x-crisis-skip-assert-invariants                 Skip x/crisis invariants check on startup
+
+Global Flags:
+      --home string         directory for config and data (default "/home/andy/.gaia")
+      --log_format string   The logging format (json|plain) (default "plain")
+      --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+      --trace               print out full stack trace on errors
+

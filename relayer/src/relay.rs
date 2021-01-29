@@ -12,7 +12,7 @@ use crate::link::{Link, LinkParameters};
 
 pub(crate) const MAX_ITER: u32 = 10;
 
-/// Used by the `rrly -c config.toml start ibc-0 ibc-1`
+/// Used by the `hermes -c config.toml start ibc-0 ibc-1`
 pub fn relay_on_new_link(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,
@@ -29,7 +29,7 @@ pub fn relay_on_new_link(
 }
 
 /// Relays packets over a specified channel
-/// Used by the `rrly -c config.toml start ibc-0 ibc-1 transfer channel-0`
+/// Used by the `hermes -c config.toml start ibc-0 ibc-1 transfer channel-0`
 pub fn channel_relay(
     a_chain: Box<dyn ChainHandle>,
     b_chain: Box<dyn ChainHandle>,
@@ -40,7 +40,7 @@ pub fn channel_relay(
 }
 
 /// Connects two ports of two chains creating new clients, connection and channel
-/// Used by the `rrly -c config.toml channel handshake ibc-0 ibc-1 transfer transfer `
+/// Used by the `hermes -c config.toml channel handshake ibc-0 ibc-1 transfer transfer `
 pub fn connect_with_new_channel(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,

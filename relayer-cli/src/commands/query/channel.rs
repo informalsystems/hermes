@@ -9,8 +9,8 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::Path::ChannelEnds;
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -90,7 +90,7 @@ impl Runnable for QueryChannelEndCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
 
@@ -116,7 +116,7 @@ impl Runnable for QueryChannelEndCmd {
 
 #[cfg(test)]
 mod tests {
-    use relayer::config::parse;
+    use ibc_relayer::config::parse;
 
     use crate::commands::query::channel::QueryChannelEndCmd;
 

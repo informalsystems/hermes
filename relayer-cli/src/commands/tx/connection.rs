@@ -2,8 +2,8 @@ use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use relayer::config::StoreConfig;
-use relayer::connection::{Connection, ConnectionSide};
+use ibc_relayer::config::StoreConfig;
+use ibc_relayer::connection::{Connection, ConnectionSide};
 
 use crate::commands::cli_utils::{ChainHandlePair, SpawnOptions};
 use crate::conclude::Output;

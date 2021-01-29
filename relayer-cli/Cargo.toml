@@ -1,5 +1,5 @@
 [package]
-name = "relayer-cli"
+name    = "ibc-relayer-cli"
 version = "0.0.6"
 edition = "2018"
 authors = [
@@ -7,12 +7,12 @@ authors = [
 ]
 
 [features]
-profiling = ["relayer/profiling"]
+profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
-relayer = { path = "../relayer" }
-ibc = { path = "../modules" }
-ibc-proto = { version = "0.6.0", path = "../proto" }
+ibc         = { version = "0.0.6", path = "../modules" }
+ibc-proto   = { version = "0.6.0", path = "../proto" }
+ibc-relayer = { version = "0.0.6", path = "../relayer" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"

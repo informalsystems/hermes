@@ -12,8 +12,8 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -29,9 +29,6 @@ pub struct QueryPacketCommitmentsCmd {
 
     #[options(free, required, help = "identifier of the channel to query")]
     channel_id: ChannelId,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 impl QueryPacketCommitmentsCmd {
@@ -46,14 +43,14 @@ impl QueryPacketCommitmentsCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts))
     }
 }
 
-// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitments ibc-0 transfer ibconexfer --height 3
+// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitments ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         let config = app_config();
@@ -78,11 +75,10 @@ impl Runnable for QueryPacketCommitmentsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cs) => {
+            Ok(cmts) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
-                let seqs: Vec<u64> = cs.0.iter().map(|ps| ps.sequence).collect();
-
-                Output::success(seqs).with_result(json!(cs.1)).exit();
+                let seqs: Vec<u64> = cmts.0.iter().map(|ps| ps.sequence).collect();
+                Output::success(seqs).with_result(json!(cmts.1)).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -137,7 +133,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
@@ -150,7 +146,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         );
 
         match res {
-            Ok(cs) => Output::success(cs.1).exit(),
+            Ok(cmt) => Output::success(cmt.0).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -316,9 +312,6 @@ pub struct QueryPacketAcknowledgementsCmd {
 
     #[options(free, required, help = "identifier of the channel to query")]
     channel_id: ChannelId,
-
-    #[options(help = "height of the state to query", short = "h")]
-    height: Option<u64>,
 }
 
 impl QueryPacketAcknowledgementsCmd {
@@ -338,14 +331,14 @@ impl QueryPacketAcknowledgementsCmd {
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
             channel_id: self.channel_id.clone(),
-            height: self.height.unwrap_or(0_u64),
+            height: 0_u64,
         };
 
         Ok((dest_chain_config.clone(), opts))
     }
 }
 
-// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgements ibc-0 transfer ibconexfer --height 3
+// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgements ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         let config = app_config();
@@ -373,7 +366,6 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             Ok(ps) => {
                 // Transform the raw packet state into the list of acks. sequence numbers
                 let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
-
                 Output::success(seqs).with_result(json!(ps.1)).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -429,7 +421,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
@@ -442,7 +434,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         );
 
         match res {
-            Ok(out) => Output::success(out).exit(),
+            Ok(ack) => Output::success(ack.0).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
