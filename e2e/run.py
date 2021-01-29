@@ -17,6 +17,12 @@ def run(c: Config):
     IBC_1 = ChainId('ibc-1')
 
     ibc0_client_id = client.create_update_query_client(c, IBC_0, IBC_1)
+
+    # Allocate first IDs on ibc-1
+    ibc1_client_id = client.create_client(c, IBC_1, IBC_0)
+    ibc1_conn_id = connection.conn_init(c, IBC_1, IBC_0, ibc1_client_id, ibc0_client_id)
+    ibc1_chan_id = channel.chan_open_init(c, dst=IBC_1, src=IBC_0, dst_conn=ibc1_conn_id)
+
     ibc1_client_id = client.create_update_query_client(c, IBC_1, IBC_0)
 
     split()
