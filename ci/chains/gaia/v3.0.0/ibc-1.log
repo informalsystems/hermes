@@ -1,40 +1,40 @@
-[90m2:21PM[0m [32mINF[0m starting ABCI with Tendermint
-[90m2:21PM[0m [32mINF[0m Starting multiAppConn service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mproxy
-[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mquery [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0msnapshot [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mmempool [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m2:21PM[0m [32mINF[0m Starting localClient service [36mconnection=[0mconsensus [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
-[90m2:21PM[0m [32mINF[0m Starting EventBus service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mevents
-[90m2:21PM[0m [32mINF[0m Starting PubSub service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mpubsub
-[90m2:21PM[0m [32mINF[0m Starting IndexerService service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mtxindex
-[90m2:21PM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m [36mheight=[0m0 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0m
-[90m2:21PM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m0 [36mmodule=[0mconsensus [36mstateHeight=[0m0 [36mstoreHeight=[0m0
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m0/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m1/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m2/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m3/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m4/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m5/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m6/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m7/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m8/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m9/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserting crisis invariants [36minv=[0m10/11 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m asserted all invariants [36mduration=[0m0.611996 [36mheight=[0m0 [36mmodule=[0mx/crisis
-[90m2:21PM[0m [32mINF[0m created new capability [36mmodule=[0mibc [36mname=[0mports/transfer
-[90m2:21PM[0m [32mINF[0m port binded [36mmodule=[0mx/ibc/port [36mport=[0mtransfer
-[90m2:21PM[0m [32mINF[0m claimed capability [36mcapability=[0m1 [36mmodule=[0mtransfer [36mname=[0mports/transfer
-[90m2:21PM[0m [32mINF[0m Completed ABCI Handshake - Tendermint and App are synced [36mappHash=[0m [36mappHeight=[0m0 [36mmodule=[0mconsensus
-[90m2:21PM[0m [32mINF[0m Version info [36mblock=[0m11 [36mp2p=[0m8 [36msoftware=[0m
-[90m2:21PM[0m [32mINF[0m This node is a validator [36maddr=[0mF9C38B256B76FAFE74469297503C7372EA083A51 [36mmodule=[0mconsensus [36mpubKey=[0mZ7V0bEAFnOU8UlyaX3VUWBxdGMfy40dLShlHzWceeB0=
-[90m2:21PM[0m [32mINF[0m P2P Node ID [36mID=[0mee3fedd64bf5425a6ae3f9eaaefeb3c2b565494e [36mfile=[0mchains/gaia/v3.0.0/ibc-1/config/node_key.json [36mmodule=[0mp2p
-[90m2:21PM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m[] [36mmodule=[0mp2p
-[90m2:21PM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
-[90m2:21PM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"ee3fedd64bf5425a6ae3f9eaaefeb3c2b565494e","ip":"0.0.0.0","port":26656} [36mbook=[0mchains/gaia/v3.0.0/ibc-1/config/addrbook.json [36mmodule=[0mp2p
-[90m2:21PM[0m [32mINF[0m Starting Node service [36mimpl=[0m{"Logger":{}}
-[90m2:21PM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060
+[90m9:18AM[0m [32mINF[0m starting ABCI with Tendermint
+[90m9:18AM[0m [32mINF[0m Starting multiAppConn service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mproxy
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mquery [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0msnapshot [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mmempool [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting localClient service [36mconnection=[0mconsensus [36mimpl=[0m"marshaling error: json: unsupported type: abcicli.Callback" [36mmodule=[0mabci-client
+[90m9:18AM[0m [32mINF[0m Starting EventBus service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mevents
+[90m9:18AM[0m [32mINF[0m Starting PubSub service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mpubsub
+[90m9:18AM[0m [32mINF[0m Starting IndexerService service [36mimpl=[0m{"Logger":{}} [36mmodule=[0mtxindex
+[90m9:18AM[0m [32mINF[0m ABCI Handshake App Info [36mhash=[0m [36mheight=[0m0 [36mmodule=[0mconsensus [36mprotocol-version=[0m0 [36msoftware-version=[0m
+[90m9:18AM[0m [32mINF[0m ABCI Replay Blocks [36mappHeight=[0m0 [36mmodule=[0mconsensus [36mstateHeight=[0m0 [36mstoreHeight=[0m0
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m0/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m1/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m2/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m3/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m4/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m5/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m6/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m7/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m8/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m9/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserting crisis invariants [36minv=[0m10/11 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m asserted all invariants [36mduration=[0m2.390909 [36mheight=[0m0 [36mmodule=[0mx/crisis
+[90m9:18AM[0m [32mINF[0m created new capability [36mmodule=[0mibc [36mname=[0mports/transfer
+[90m9:18AM[0m [32mINF[0m port binded [36mmodule=[0mx/ibc/port [36mport=[0mtransfer
+[90m9:18AM[0m [32mINF[0m claimed capability [36mcapability=[0m1 [36mmodule=[0mtransfer [36mname=[0mports/transfer
+[90m9:18AM[0m [32mINF[0m Completed ABCI Handshake - Tendermint and App are synced [36mappHash=[0m [36mappHeight=[0m0 [36mmodule=[0mconsensus
+[90m9:18AM[0m [32mINF[0m Version info [36mblock=[0m11 [36mp2p=[0m8 [36msoftware=[0m
+[90m9:18AM[0m [32mINF[0m This node is a validator [36maddr=[0m574E7B0DC5C0C1D726059ADC9CF3EDCF06815C46 [36mmodule=[0mconsensus [36mpubKey=[0mSl/6UDZu7Ttd9MOsUnMO4xswFYfVbXyUDRRNbAXH2kQ=
+[90m9:18AM[0m [32mINF[0m P2P Node ID [36mID=[0mc15eddb601e66c008c241ccfc80f7cf3358cfa7f [36mfile=[0mchains/gaia/v3.0.0/ibc-1/config/node_key.json [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Adding persistent peers [36maddrs=[0m[] [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Adding unconditional peer ids [36mids=[0m[] [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Add our address to book [36maddr=[0m{"id":"c15eddb601e66c008c241ccfc80f7cf3358cfa7f","ip":"0.0.0.0","port":26656} [36mbook=[0mchains/gaia/v3.0.0/ibc-1/config/addrbook.json [36mmodule=[0mp2p
+[90m9:18AM[0m [32mINF[0m Starting Node service [36mimpl=[0m{"Logger":{}}
+[90m9:18AM[0m [32mINF[0m Starting pprof server [36mladdr=[0mlocalhost:6060
 Error: failed to listen on 0.0.0.0:26657: listen tcp 0.0.0.0:26657: bind: address already in use
-[90m2:21PM[0m [1m[31mERR[0m[0m pprof server error [36merr=[0m"listen tcp 127.0.0.1:6060: bind: address already in use"
+[90m9:18AM[0m [1m[31mERR[0m[0m pprof server error [36merr=[0m"listen tcp 127.0.0.1:6060: bind: address already in use"
 Usage:
   gaiad start [flags]
 
@@ -58,7 +58,7 @@ Flags:
       --inv-check-period uint                           Assert registered invariants every N blocks
       --min-retain-blocks uint                          Minimum block height offset during ABCI commit to prune Tendermint blocks
       --minimum-gas-prices string                       Minimum gas prices to accept for transactions; Any fee in a tx must meet this minimum (e.g. 0.01photino;0.0001stake)
-      --moniker string                                  node name (default "Tycho")
+      --moniker string                                  node name (default "localhost.localdomain")
       --p2p.laddr string                                node listen address. (0.0.0.0:0 means any interface, any port) (default "tcp://0.0.0.0:26656")
       --p2p.persistent_peers string                     comma-delimited ID@host:port persistent peers
       --p2p.pex                                         enable/disable Peer-Exchange (default true)
@@ -86,7 +86,7 @@ Flags:
       --x-crisis-skip-assert-invariants                 Skip x/crisis invariants check on startup
 
 Global Flags:
-      --home string         directory for config and data (default "/Users/coromac/.gaia")
+      --home string         directory for config and data (default "/home/andy/.gaia")
       --log_format string   The logging format (json|plain) (default "plain")
       --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
       --trace               print out full stack trace on errors
