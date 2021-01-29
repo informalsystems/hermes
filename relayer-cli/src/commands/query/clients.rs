@@ -32,7 +32,7 @@ impl QueryAllClientsCmd {
 }
 
 /// Command for querying all clients.
-/// rrly -c cfg.toml query clients ibc-1  
+/// hermes -c cfg.toml query clients ibc-1  
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();

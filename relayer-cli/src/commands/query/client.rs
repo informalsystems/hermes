@@ -64,10 +64,10 @@ impl QueryClientStateCmd {
 
 /// Command for querying a client's state.
 /// To run with proof:
-/// rrly -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3
+/// hermes -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3
 ///
 /// Run without proof:
-/// rrly -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3 -p false
+/// hermes -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3 -p false
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
@@ -162,10 +162,10 @@ impl QueryClientConsensusCmd {
 
 /// Implementation of the query for a client's consensus state at a certain height.
 /// Run with proof:
-/// rrly -c cfg.toml query client consensus ibc-0 ibconeclient 22
+/// hermes -c cfg.toml query client consensus ibc-0 ibconeclient 22
 ///
 /// Run without proof:
-/// rrly -c cfg.toml query client consensus ibc-0 ibconeclient 22 -p false
+/// hermes -c cfg.toml query client consensus ibc-0 ibconeclient 22 -p false
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();

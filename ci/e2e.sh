@@ -2,7 +2,7 @@
 
 set -e
 
-RELAYER_CMD=/usr/bin/rrly
+RELAYER_CMD=/usr/bin/hermes
 
 echo "================================================================================================================="
 echo "                                              INITIALIZE                                                         "
@@ -31,29 +31,29 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_A" key_seed_"$CHAIN_A".json
-rrly -c "$CONFIG_PATH" keys add "$CHAIN_B" key_seed_"$CHAIN_B".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" key_seed_"$CHAIN_A".json
+hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" key_seed_"$CHAIN_B".json
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Set the primary peers for clients on each chain                                                                  "
 echo "-----------------------------------------------------------------------------------------------------------------"
-LIGHT_ADD_CHAIN_A="rrly -c $CONFIG_PATH light add tcp://$CHAIN_A:$CHAIN_A_PORT -c $CHAIN_A -s $CHAIN_A_HOME -p -y -f"
+LIGHT_ADD_CHAIN_A="hermes -c $CONFIG_PATH light add tcp://$CHAIN_A:$CHAIN_A_PORT -c $CHAIN_A -s $CHAIN_A_HOME -p -y -f"
 echo "Executing: $LIGHT_ADD_CHAIN_A"
 bash -c "$LIGHT_ADD_CHAIN_A"
 sleep 2
 echo "-----------------------------------------------------------------------------------------------------------------"
-LIGHT_ADD_CHAIN_B="rrly -c $CONFIG_PATH light add tcp://$CHAIN_B:$CHAIN_B_PORT -c $CHAIN_B -s $CHAIN_B_HOME -p -y -f"
+LIGHT_ADD_CHAIN_B="hermes -c $CONFIG_PATH light add tcp://$CHAIN_B:$CHAIN_B_PORT -c $CHAIN_B -s $CHAIN_B_HOME -p -y -f"
 echo "Executing: $LIGHT_ADD_CHAIN_B"
 bash -c "$LIGHT_ADD_CHAIN_B"
 sleep 2
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Set the secondary peers for clients on each chain                                                                "
 echo "-----------------------------------------------------------------------------------------------------------------"
-LIGHT_ADD_CHAIN_A_PEER="rrly -c $CONFIG_PATH light add tcp://$CHAIN_A:$CHAIN_A_PORT -c $CHAIN_A -s $CHAIN_A_HOME --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y"
+LIGHT_ADD_CHAIN_A_PEER="hermes -c $CONFIG_PATH light add tcp://$CHAIN_A:$CHAIN_A_PORT -c $CHAIN_A -s $CHAIN_A_HOME --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y"
 echo "Executing: $LIGHT_ADD_CHAIN_A_PEER"
 bash -c "$LIGHT_ADD_CHAIN_A_PEER"
 sleep 2
 echo "-----------------------------------------------------------------------------------------------------------------"
-LIGHT_ADD_CHAIN_B_PEER="rrly -c $CONFIG_PATH light add tcp://$CHAIN_B:$CHAIN_B_PORT -c $CHAIN_B -s $CHAIN_B_HOME --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E -y"
+LIGHT_ADD_CHAIN_B_PEER="hermes -c $CONFIG_PATH light add tcp://$CHAIN_B:$CHAIN_B_PORT -c $CHAIN_B -s $CHAIN_B_HOME --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E -y"
 echo "Executing: $LIGHT_ADD_CHAIN_B_PEER"
 bash -c "$LIGHT_ADD_CHAIN_B_PEER"
 sleep 2
@@ -65,11 +65,11 @@ echo "--------------------------------------------------------------------------
 echo "Create client transactions"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Creating $CHAIN_B client on chain $CHAIN_A"
-rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
+hermes -c "$CONFIG_PATH" tx raw create-client "$CHAIN_A" "$CHAIN_B"
 echo "-----------------------------------------------------------------------------------------------------------------"
 # shellcheck disable=SC2027
 echo "Creating $CHAIN_A client on chain $CHAIN_B"
-rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
+hermes -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 
 # TODO: jq -r '.result[].CreateClient.client_id')
 
@@ -78,10 +78,10 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "Query clients"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "querying "$CHAIN_B"_client on chain "$CHAIN_A"..."
-#rrly -c "$CONFIG_PATH" query client state "$CHAIN_A" "$CHAIN_B"_client
+#hermes -c "$CONFIG_PATH" query client state "$CHAIN_A" "$CHAIN_B"_client
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "querying "$CHAIN_A"_client on chain "$CHAIN_B"..."
-#rrly -c "$CONFIG_PATH" query client state "$CHAIN_B" "$CHAIN_A"_client
+#hermes -c "$CONFIG_PATH" query client state "$CHAIN_B" "$CHAIN_A"_client
 #
 #echo "================================================================================================================="
 #echo "                                             CONNECTIONS                                                         "
@@ -90,7 +90,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Connection Init transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw conn-init \
+#hermes -c "$CONFIG_PATH" tx raw conn-init \
 #        "$CHAIN_A" \
 #        "$CHAIN_B" \
 #        "$CHAIN_B"_client \
@@ -101,7 +101,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Connection Open Try transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw conn-try \
+#hermes -c "$CONFIG_PATH" tx raw conn-try \
 #        "$CHAIN_B" \
 #        "$CHAIN_A" \
 #        "$CHAIN_A"_client \
@@ -112,7 +112,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Connection Open Ack transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw conn-ack \
+#hermes -c "$CONFIG_PATH" tx raw conn-ack \
 #        "$CHAIN_A" \
 #        "$CHAIN_B" \
 #        "$CHAIN_B"_client \
@@ -123,7 +123,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Connection Open Confirm transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw conn-confirm \
+#hermes -c "$CONFIG_PATH" tx raw conn-confirm \
 #        "$CHAIN_B" \
 #        "$CHAIN_A" \
 #        "$CHAIN_A"_client \
@@ -134,9 +134,9 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Query connection - Verify that the two ends are in Open state"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" query connection end "$CHAIN_A" conn_"$CHAIN_A"_to_"$CHAIN_B"
+#hermes -c "$CONFIG_PATH" query connection end "$CHAIN_A" conn_"$CHAIN_A"_to_"$CHAIN_B"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" query connection end "$CHAIN_B" conn_"$CHAIN_B"_to_"$CHAIN_A"
+#hermes -c "$CONFIG_PATH" query connection end "$CHAIN_B" conn_"$CHAIN_B"_to_"$CHAIN_A"
 #
 #echo "================================================================================================================="
 #echo "                                                CHANNELS                                                         "
@@ -145,7 +145,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Channel Open Init transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw chan-init \
+#hermes -c "$CONFIG_PATH" tx raw chan-init \
 #        "$CHAIN_A" \
 #        "$CHAIN_B" \
 #        conn_"$CHAIN_A"_to_"$CHAIN_B" \
@@ -157,7 +157,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Channel Open Try transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH"  tx raw chan-try \
+#hermes -c "$CONFIG_PATH"  tx raw chan-try \
 #        "$CHAIN_B" \
 #        "$CHAIN_A" \
 #        conn_"$CHAIN_B"_to_"$CHAIN_A" \
@@ -169,7 +169,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Channel Open Ack transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" tx raw chan-ack \
+#hermes -c "$CONFIG_PATH" tx raw chan-ack \
 #        "$CHAIN_A" \
 #        "$CHAIN_B" \
 #        conn_"$CHAIN_A"_to_"$CHAIN_B" \
@@ -181,7 +181,7 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Channel Open Confirm transaction"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH"  tx raw chan-confirm \
+#hermes -c "$CONFIG_PATH"  tx raw chan-confirm \
 #        "$CHAIN_B" \
 #        "$CHAIN_A" \
 #        conn_"$CHAIN_B"_to_"$CHAIN_A" \
@@ -193,6 +193,6 @@ rrly -c "$CONFIG_PATH" tx raw create-client "$CHAIN_B" "$CHAIN_A"
 #echo "-----------------------------------------------------------------------------------------------------------------"
 #echo "Query channel - Verify that the two ends are in Open state"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" query channel end "$CHAIN_A" transfer chan_"$CHAIN_A"_to_"$CHAIN_B"
+#hermes -c "$CONFIG_PATH" query channel end "$CHAIN_A" transfer chan_"$CHAIN_A"_to_"$CHAIN_B"
 #echo "-----------------------------------------------------------------------------------------------------------------"
-#rrly -c "$CONFIG_PATH" query channel end "$CHAIN_B" transfer chan_"$CHAIN_B"_to_"$CHAIN_A"
+#hermes -c "$CONFIG_PATH" query channel end "$CHAIN_B" transfer chan_"$CHAIN_B"_to_"$CHAIN_A"

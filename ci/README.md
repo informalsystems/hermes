@@ -87,7 +87,7 @@ key add result:  "Added key testkey (cosmos1zv3etpuk4n7p54r8fhsct0qys8eqf5zqw4pq
 -----------------------------------------------------------------------------------------------------------------
 Set the primary peers for clients on each chain
 -----------------------------------------------------------------------------------------------------------------
-Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 -p -y -f
+Executing: hermes -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 -p -y -f
      Success Added light client:
   chain id: ibc-0
   address:  tcp://ibc-0:26657
@@ -96,7 +96,7 @@ Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ib
   hash:     22639F0B84C0E95D51AB70D900E7BC0CBFBDF642F3F945093FF7AEB8120CC8DC
   primary:  true
 -----------------------------------------------------------------------------------------------------------------
-Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ibc-1 -s /data/ibc-1 -p -y -f
+Executing: hermes -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ibc-1 -s /data/ibc-1 -p -y -f
      Success Added light client:
   chain id: ibc-1
   address:  tcp://ibc-1:26657
@@ -107,7 +107,7 @@ Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ib
 -----------------------------------------------------------------------------------------------------------------
 Set the secondary peers for clients on each chain
 -----------------------------------------------------------------------------------------------------------------
-Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
+Executing: hermes -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ibc-0 -s /data/ibc-0 --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
      Success Added light client:
   chain id: ibc-0
   address:  tcp://ibc-0:26657
@@ -116,7 +116,7 @@ Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-0:26657 -c ib
   hash:     463691EED61772C333D38C5DC5F267946341F98ADE8EF9FBBE501A96022E5F1A
   primary:  false
 -----------------------------------------------------------------------------------------------------------------
-Executing: rrly -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ibc-1 -s /data/ibc-1 --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E -y
+Executing: hermes -c /relayer/simple_config.toml light add tcp://ibc-1:26657 -c ibc-1 -s /data/ibc-1 --peer-id A885BB3D3DFF6101188B462466AE926E7A6CD51E -y
      Success Added light client:
   chain id: ibc-1
   address:  tcp://ibc-1:26657

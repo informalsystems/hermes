@@ -90,7 +90,7 @@ impl Runnable for QueryChannelEndCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
 

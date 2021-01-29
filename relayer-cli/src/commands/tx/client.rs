@@ -20,7 +20,7 @@ pub struct TxCreateClientCmd {
 }
 
 /// Sample to run this tx:
-///     `rrly -c loop_config.toml tx raw create-client ibc-0 ibc-1`
+///     `hermes -c loop_config.toml tx raw create-client ibc-0 ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
