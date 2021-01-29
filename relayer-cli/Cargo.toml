@@ -11,8 +11,8 @@ profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
 ibc         = { version = "0.1.0", path = "../modules" }
-ibc-proto   = { version = "0.1.0", path = "../proto" }
 ibc-relayer = { version = "0.1.0", path = "../relayer" }
+ibc-proto   = { version = "0.7.0", path = "../proto" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"

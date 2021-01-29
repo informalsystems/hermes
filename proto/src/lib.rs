@@ -6,7 +6,7 @@
 #![deny(warnings, trivial_casts, trivial_numeric_casts, unused_import_braces)]
 #![allow(clippy::large_enum_variant)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.4.0")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.7.0")]
 
 /// The version (commit hash) of the Cosmos SDK used when generating this library.
 pub const COSMOS_SDK_VERSION: &str = include_str!("prost/COSMOS_SDK_COMMIT");
