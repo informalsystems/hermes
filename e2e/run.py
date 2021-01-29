@@ -39,11 +39,6 @@ def run(c: Config):
 
 
 def main():
-    l.basicConfig(
-        level=l.DEBUG,
-        format='[%(asctime)s] [%(levelname)8s] %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S')
-
     parser = argparse.ArgumentParser(
         description='Test all relayer commands, end-to-end')
 
@@ -54,9 +49,16 @@ def main():
                         type=Path)
 
     parser.add_argument('--cmd',
-                        help='command to run the relayer',
+                        help='command to run the relayer (default: cargo run --bin relayer --)',
                         metavar='CMD',
                         default='cargo run --bin relayer --')
+
+    parser.add_argument('--log-level',
+                        help='minimum log level (default: debug)',
+                        metavar='LOG',
+                        choices=['notset', 'debug', 'info',
+                                 'warning', 'error', 'critical'],
+                        default='debug')
 
     args = parser.parse_args()
 
@@ -65,7 +67,13 @@ def main():
             f'error: supplied configuration file does not exist: {args.config}')
         exit(1)
 
-    config = Config(config_file=args.config, relayer_cmd=args.cmd)
+    config = Config(config_file=args.config, relayer_cmd=args.cmd,
+                    log_level=args.log_level.upper())
+
+    l.basicConfig(
+        level=config.log_level,
+        format='[%(asctime)s] [%(levelname)8s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
 
     run(config)
 

@@ -15,6 +15,7 @@ from dataclasses import dataclass, fields as datafields, is_dataclass
 class Config:
     config_file: Path
     relayer_cmd: str
+    log_level: str
 
 
 T = TypeVar('T')
@@ -30,7 +31,9 @@ class CmdResult(Generic[T]):
         result = self.result.get('result') or {}
 
         if status == "success":
-            return self.cmd.process(result)
+            data = self.cmd.process(result)
+            l.debug(str(data))
+            return data
         else:
             raise ExpectedSuccess(self.cmd, status, result)
 
