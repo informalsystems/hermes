@@ -10,7 +10,7 @@ use abscissa_core::{error::BoxError, EntryPoint, Options};
 
 use crate::commands::CliCmd;
 
-pub use relayer::config::Config;
+pub use ibc_relayer::config::Config;
 
 /// Get the path to configuration file
 pub fn config_path() -> Result<PathBuf, BoxError> {

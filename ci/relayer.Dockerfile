@@ -38,7 +38,7 @@ ARG RELEASE
 RUN apt-get update -y && apt-get install jq -y
 
 # Copy relayer executable
-COPY --from=build-env /repo/target/release/relayer /usr/bin/rrly
+COPY --from=build-env /repo/target/release/hermes /usr/bin/hermes
 
 # Relayer folder
 WORKDIR /relayer

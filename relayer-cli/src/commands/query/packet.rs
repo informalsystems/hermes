@@ -12,8 +12,8 @@ use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
-use relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
-use relayer::config::{ChainConfig, Config};
+use ibc_relayer::chain::{Chain, CosmosSDKChain, QueryPacketOptions};
+use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -53,7 +53,7 @@ impl QueryPacketCommitmentsCmd {
     }
 }
 
-// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitments ibc-0 transfer ibconexfer --height 3
+// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitments ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         let config = app_config();
@@ -137,7 +137,7 @@ impl Runnable for QueryPacketCommitmentCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 
@@ -345,7 +345,7 @@ impl QueryPacketAcknowledgementsCmd {
     }
 }
 
-// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgements ibc-0 transfer ibconexfer --height 3
+// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgements ibc-0 transfer ibconexfer --height 3
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         let config = app_config();
@@ -429,7 +429,7 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
+        // cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
 

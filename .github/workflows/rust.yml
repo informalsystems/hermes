@@ -71,11 +71,11 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: -p relayer-cli --bins
+          args: -p ibc-relayer-cli --bins
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p relayer-cli --test acceptance --no-fail-fast -- --ignored
+          args: -p ibc-relayer-cli --test acceptance --no-fail-fast -- --ignored
 
   test-coverage:
     runs-on: ubuntu-latest
