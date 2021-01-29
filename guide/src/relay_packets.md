@@ -71,37 +71,41 @@ hermes -c loop_config.toml query connection end ibc-1 connection-1
 hermes -c loop_config.toml query connection end ibc-0 connection-0
 ```
 
-#### Channel Open CLIs:
+#### 3. Channel Open 
 
-- init-none
+#### 3.1 chan-open-init
 
-    ```shell script
-    hermes -c loop_config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+```shell
+hermes -c loop_config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+```
+
+#### 3.2 chan-open-try
+
+```shell
+hermes -c loop_config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
+```
+
+#### 3.3 chan-open-ack
+
+```shell
+hermes -c loop_config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+```
+
+#### 3.4 chan-open-confirm
+
+```shell
+hermes -c loop_config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+```
+
+#### 3.5 verify that the two ends are in `Open` state:
+
+```shell
+hermes -c loop_config.toml query channel end ibc-0 transfer channel-0
+```
+
+```shell
+hermes -c loop_config.toml query channel end ibc-1 transfer channel-1
     ```
-- init-try
-
-    ```shell script
-    hermes -c loop_config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
-    ```
-
-- open-try
-
-    ```shell script
-    hermes -c loop_config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
-    ```
-- open-open
-
-    ```shell script
-    hermes -c loop_config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
-    ```
-
-- verify that the two ends are in Open state:
-
-    ```shell script
-    hermes -c loop_config.toml query channel end ibc-0 transfer channel-0
-    hermes -c loop_config.toml query channel end ibc-1 transfer channel-1
-    ```
-
 #### Query balances:
 
 - balance at ibc-0
