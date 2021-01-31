@@ -1,6 +1,6 @@
 # Configuration
 
-In order to run the relayer, you will need to have a configuration file.
+In order to run `Hermes`, you will need to have a configuration file.
 
 The format supported for the configuration file is [TOML](https://toml.io/en/)
 
