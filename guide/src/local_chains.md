@@ -1,4 +1,4 @@
-### Start the local chains
+# Start the local chains
 
 To run the script to start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
 
@@ -6,13 +6,30 @@ To run the script to start the local chains, open a terminal and navigate to the
 cd ibc-rs
 ```
 
-#### Configuration
+#### Stop and cleanup
+
+If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:
+
+Kill all `gaiad` processes:
+
+```shell
+killall gaiad
+```
+
+Remove the `data` directory (if present)
+```shell
+rm -rf data/
+```
+
+> __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 26657 or port 9090), please ensure you stop them first before proceeding to the next step.
+
+### Configuration file
 
 In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
 
-The following configuration file can be used for running the local chains:
+The following configuration file in the `scripts` folder can be used for running the local chains:
 
-##### loop_config.toml
+#### loop_config.toml
 ```toml
 [global]
 timeout = '10s'
@@ -52,22 +69,21 @@ numerator = '1'
 denominator = '3'
 ```
 
-#### Stop and cleanup
+### Running the script to start the chains
 
-If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:
+If you are currently in the `ibc-rs` repository folder, please change to the `scripts` folder:
 
 ```shell
-killall gaiad
-rm -rf data/
+cd scripts
 ```
 
-#### Run the script
-
-Run the following script with the parameters below to start the chains:
+Then run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
 
 ```bash
 ./dev-env loop_config.toml ibc-0 ibc-1
 ```
+
+> __NOTE__: If the script above prompts you to delete the data folder just say `yes`
 
 The script will configure and start two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
 
@@ -82,9 +98,10 @@ graph TD
 If the script runs successfully you should see a message similar to the one below in the terminal:
 
 ```shell
-$ ./dev-env ./relayer-cli/tests/fixtures/two_chains.toml ibc-0 ibc-1
+$ ./dev-env loop_chains.toml ibc-0 ibc-1
 
-GAIA VERSION INFO: 3.0.0
+GAIA VERSION INFO: 4.0.0
+
 Generating gaia configurations...
 Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
 Change settings in config.toml file...
@@ -118,16 +135,18 @@ balances:
 pagination:
   next_key: null
   total: "0"
-ibc-0 initialized. Watch file /home/user/development/github.com/informalsystems/ibc-rs/data/ibc-0.log to see its execution.
-ibc-1 initialized. Watch file /home/user/development/github.com/informalsystems/ibc-rs/data/ibc-1.log to see its execution.
+ibc-0 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-0.log to see its execution.
+ibc-1 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-1.log to see its execution.
 Building the Rust relayer...
 Removing light client peers from configuration...
 Adding primary peers to light client configuration...
 Adding secondary peers to light client configuration...
 Importing keys...
+Done!
+
 ```
 
-#### Data directory
+### Data directory
 The script creates a `data` directory in the current directory in order. The `data` directory contains the chain stores and configuration files.
 
 The `data` directory has a tree structure similar to the one below:
@@ -153,4 +172,4 @@ data
 
 #### Next Steps
 
-In the next section [Relaying packets](./relay_packets.md) you will learn how to execute transactions and queries on the relayer in order to relay packets.
+In the next section ["Relaying packets"](./relay_packets.md) you will learn how to execute transactions and queries on the relayer in order to relay packets.

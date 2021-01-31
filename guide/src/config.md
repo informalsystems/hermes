@@ -10,7 +10,7 @@ Every command executed through the relayer requires the configuration file local
 
 
 ```bash
-relayer -c config.toml [COMMAND]
+hermes -c config.toml [COMMAND]
 ```
 
 ## Sections
@@ -86,7 +86,7 @@ The configuration file also store information about the light client peers, but 
 If you want to validate the configuration file you can run the relayer command below:
 
 ```shell
-relayer -c config.toml config validate
+hermes -c config.toml config validate
 ```
 
 If the configuration file is valid the command above will show this message:

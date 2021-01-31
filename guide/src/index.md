@@ -1,32 +1,32 @@
 # IBC Relayer Guide
 
-This guide can be used to help you setup, configure and operate the IBC Relayer to transfer packets between two IBC enabled chains.
+This guide can be used to help you setup, configure and operate Hermes to transfer packets between two IBC enabled chains.
 
 ## Sections
 ---
 **[Introduction](./relayer.md)**
 
-- The introduction gives a brief overview about the IBC Relayer
+- The introduction gives a brief overview about Hermes
 
 **[Getting Started](./getting_started.md)**
 
-- The getting started section can help you setup, configure and run the IBC Relayer
+- The getting started section can help you setup, configure and run Hermes
 
 **[Tutorials](./tutorials.md)**
 
-- This section provides some tutorials on how to operate and test the relayer
+- This section provides some tutorials on how to operate and test Hermes
 
 **[Commands Reference](./commands.md)**
 
-- The commands will let you interact with the IBC Relayer using its command-line interface.
+- The commands will let you interact with Hermes using its command-line interface.
 
 **[Troubleshooting](./troubleshoot.md)**
 
-- This section has the most frequently asked questions related to the IBC Relayer.
+- This section provides some troubleshooting tips to help you solve the issues when running Hermes
 
 **[Frequently Asked Questions](./faq.md)**
 
-- This section provides some troubleshooting tips to help you solve the issues when running the IBC Relayer
+- This section has the most frequently asked questions related to Hermes operation and functionality
 
 **[Glossary](./glossary.md)**
 
@@ -35,7 +35,7 @@ This guide can be used to help you setup, configure and operate the IBC Relayer 
 ---
 
 **Other References and Useful Links:**
-* [Relayer Github repository](https://github.com/informalsystems/ibc-rs) — The official Github repository for the IBC Relayer
+* [Relayer Github repository](https://github.com/informalsystems/ibc-rs) — The official Github repository for Hermes ()
 * [IBC Github repository](https://github.com/cosmos/ics) - The official repository for the Inter-blockchain protocol (IBC)
   
 ## Disclaimer

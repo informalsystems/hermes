@@ -1,6 +1,6 @@
 # Commands
 
-The `Commands` section presents the commands current available in the IBC Relayer 
+The `Commands` section presents the commands current available in Hermes
 
 ## Sections
 
