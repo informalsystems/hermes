@@ -2,7 +2,8 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use serde::Serialize;
-use tendermint_light_client::types::TrustThreshold;
+
+use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
@@ -198,7 +199,7 @@ impl From<ClientState> for RawClientState {
 mod tests {
     use std::time::Duration;
 
-    use tendermint_light_client::types::TrustThreshold;
+    use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
     use crate::ics07_tendermint::client_state::ClientState;

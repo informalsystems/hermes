@@ -4,6 +4,7 @@
 
 
 ### FEATURES
+
 - Continous Integration (CI) end-to-end (e2e) testing ([#32])
 - Add support for streamlining releases ([#507])
 
@@ -25,9 +26,9 @@
 
 ### IMPROVEMENTS
 
-- Update to `tendermint-rs` v0.17.1 ([#517])
+- Update to `tendermint-rs` v0.18.0 ([#517], [#583])
 - Update to `tokio` 1.0, `prost` 0.7 and `tonic` 0.4 ([#527])
-  
+
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
@@ -78,6 +79,7 @@
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
+[#583]: https://github.com/informalsystems/ibc-rs/issues/583
 
 ## v0.0.6
 *December 23, 2020*

@@ -44,7 +44,10 @@ impl Runnable for TxRawPacketRecvCmd {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
+        let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
+            Ok(link) => link,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let res: Result<Vec<IBCEvent>, Error> = link
             .build_and_send_recv_packet_messages()
@@ -91,7 +94,10 @@ impl Runnable for TxRawPacketAckCmd {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
         };
-        let mut link = Link::new_from_opts(chains.src, chains.dst, &opts).unwrap();
+        let mut link = match Link::new_from_opts(chains.src, chains.dst, &opts) {
+            Ok(link) => link,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
         let res: Result<Vec<IBCEvent>, Error> = link
             .build_and_send_ack_packet_messages()

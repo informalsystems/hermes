@@ -1,6 +1,6 @@
 [package]
-name = "ibc-proto"
-version = "0.6.0"
+name    = "ibc-proto"
+version = "0.7.0"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -30,4 +30,4 @@ thiserror = "1.0"
 tonic = "0.4"
 
 [dependencies.tendermint-proto]
-version = "=0.17.1"
+version = "=0.18.0"
