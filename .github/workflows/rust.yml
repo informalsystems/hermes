@@ -53,30 +53,6 @@ jobs:
           command: test
           args: --all-features --no-fail-fast
 
-  test-integration-stable:
-    runs-on: ubuntu-latest
-    services:
-      simd:
-        image: informaldev/simd
-        ports:
-          - 1317:1317
-          - 26656:26656
-          - 26657:26657
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p ibc-relayer-cli --bins
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-relayer-cli --test acceptance --no-fail-fast -- --ignored
-
   test-coverage:
     runs-on: ubuntu-latest
     steps:
