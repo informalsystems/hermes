@@ -335,7 +335,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 <ul>
 <li>
 <p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
@@ -365,7 +365,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </li>
 <li>
 <p>send 1 packet with low timeout height offset to ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
 </code></pre>
 </li>
 <li>
@@ -375,7 +375,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </li>
 </ul>
 <p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-1</code>.</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
 hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 </code></pre>
@@ -416,7 +416,7 @@ Tx to <code>ibc-1</code> for a <code>MsgTransfer</code> packet.
 Make sure you're not relaying this packet (the relayer should not be running on
 this path).</li>
 </ul>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
 </code></pre>
 <p>Starting with channel in open-open:</p>
 <ul>
@@ -467,12 +467,12 @@ b_port = 'transfer'
 <ul>
 <li>
 <p>in a separate terminal, use the packet send command to send 2 packets to <code>ibc0</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
 </code></pre>
 </li>
 <li>
 <p>use the CLI to send 2 packets to <code>ibc1</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
 </code></pre>
 </li>
 <li>

@@ -804,7 +804,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 <ul>
 <li>
 <p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
@@ -834,7 +834,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </li>
 <li>
 <p>send 1 packet with low timeout height offset to ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
 </code></pre>
 </li>
 <li>
@@ -844,7 +844,7 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </li>
 </ul>
 <p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-1</code>.</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
 hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 </code></pre>
@@ -885,7 +885,7 @@ Tx to <code>ibc-1</code> for a <code>MsgTransfer</code> packet.
 Make sure you're not relaying this packet (the relayer should not be running on
 this path).</li>
 </ul>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
 </code></pre>
 <p>Starting with channel in open-open:</p>
 <ul>
@@ -936,12 +936,12 @@ b_port = 'transfer'
 <ul>
 <li>
 <p>in a separate terminal, use the packet send command to send 2 packets to <code>ibc0</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
 </code></pre>
 </li>
 <li>
 <p>use the CLI to send 2 packets to <code>ibc1</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
 </code></pre>
 </li>
 <li>
@@ -1422,7 +1422,229 @@ FLAGS:
 </code></pre>
 <p>We have now successfully established a connection between the two chains!</p>
 <h1><a class="header" href="#channel" id="channel">Channel</a></h1>
-<h1><a class="header" href="#packet" id="packet">Packet</a></h1>
+<h1><a class="header" href="#packet-tx-commands" id="packet-tx-commands">Packet Tx Commands</a></h1>
+<h2><a class="header" href="#fungible-token-transfer" id="fungible-token-transfer">Fungible token transfer</a></h2>
+<p>The <code>tx raw ft-transfer</code> command can be used to send ICS-20 fungible token transfer packets.
+<strong>NOTE:</strong> This command is meant to be used for testing the packet features of the relayer.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw ft-transfer &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Send a fungible token transfer test transaction (ICS20 MsgTransfer)
+
+POSITIONAL ARGUMENTS:
+    src_chain_id              identifier of the source chain
+    dest_chain_id             identifier of the destination chain
+    src_port_id               identifier of the source port
+    src_channel_id            identifier of the source channel
+    amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
+    height_offset             timeout in number of blocks since current
+
+FLAGS:
+    -d, --denom DENOM         denomination of the coins to send
+    -n, --number-msgs NUMBER-MSGS
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Send two transfer packets from the <code>transfer</code> module and <code>channel-0</code> of <code>ibc-0</code> to <code>ibc-1</code>. Each transfer if for <code>9999</code> samoleans (default denomination) and a timeout offset of <code>10</code> blocks. The transfer fee is paid by the relayer account on <code>ibc-1</code>.</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      {
+        &quot;SendPacketChannel&quot;: {
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;7B22616...&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 7,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      },
+      {
+        &quot;SendPacketChannel&quot;: {
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;7B22616...&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 8,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      }
+    ]
+  ]
+}
+</code></pre>
+<p>The transfer packets are stored on <code>ibc-0</code> and can be relayed.</p>
+<h2><a class="header" href="#relay-receive-and-timeout-packets" id="relay-receive-and-timeout-packets">Relay receive and timeout packets</a></h2>
+<p>The <code>tx raw packet-recv</code> command can be used to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw packet-recv &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay receive or timeout packets
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    src_port_id               identifier of the source port
+    src_channel_id            identifier of the source channel
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p><strong>NOTE</strong>: The relayer prepends a client update message before the receive messages.</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      {
+        &quot;UpdateClient&quot;: {
+          &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+          &quot;client_type&quot;: &quot;Tendermint&quot;,
+          &quot;consensus_height&quot;: {
+            &quot;revision_height&quot;: 25049,
+            &quot;revision_number&quot;: 0
+          },
+          &quot;height&quot;: &quot;1&quot;
+        }
+      },
+      {
+        &quot;WriteAcknowledgementChannel&quot;: {
+          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;7B22616...&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 7,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      },
+      {
+        &quot;WriteAcknowledgementChannel&quot;: {
+          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;7B22616...&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 8,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      }
+    ]
+  ]
+}
+</code></pre>
+<p>Both packets have been relayed to <code>ibc-1</code> and acknowledged.</p>
+<h2><a class="header" href="#relay-acknowledgment-packets" id="relay-acknowledgment-packets">Relay acknowledgment packets</a></h2>
+<p>The <code>tx raw packet-ack</code> command can be used to relay acknowledgments to the original source of the packets.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw packet-recv &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay receive or timeout packets
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    src_port_id               identifier of the source port
+    src_channel_id            identifier of the source channel
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p><strong>NOTE</strong>: The relayer prepends a client update message before the acknowledgments.</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      {
+        &quot;UpdateClient&quot;: {
+          &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+          &quot;client_type&quot;: &quot;Tendermint&quot;,
+          &quot;consensus_height&quot;: {
+            &quot;revision_height&quot;: 25673,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;height&quot;: &quot;1&quot;
+        }
+      },
+      {
+        &quot;AcknowledgePacketChannel&quot;: {
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 7,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      },
+      {
+        &quot;AcknowledgePacketChannel&quot;: {
+          &quot;height&quot;: &quot;1&quot;,
+          &quot;packet&quot;: {
+            &quot;data&quot;: &quot;&quot;,
+            &quot;destination_channel&quot;: &quot;channel-1&quot;,
+            &quot;destination_port&quot;: &quot;transfer&quot;,
+            &quot;sequence&quot;: 8,
+            &quot;source_channel&quot;: &quot;channel-0&quot;,
+            &quot;source_port&quot;: &quot;transfer&quot;,
+            &quot;timeout_height&quot;: {
+              &quot;revision_height&quot;: 25041,
+              &quot;revision_number&quot;: 1
+            },
+            &quot;timeout_timestamp&quot;: 0
+          }
+        }
+      }
+    ]
+  ]
+}
+</code></pre>
+<p>Both acknowledgments have been received on <code>ibc-0</code>.</p>
 <h1><a class="header" href="#relay-path-setup-and-packet-streaming" id="relay-path-setup-and-packet-streaming">Relay Path Setup and Packet Streaming</a></h1>
 <p>The <code>start</code> command can be used to send packet transactions triggered by IBC packet events that occur for a given channel. This is also referred to packet streaming.
 A new channel can be established or an existing one can be specified.</p>
@@ -1837,7 +2059,7 @@ FLAGS:
   ]
 }
 </code></pre>
-<h1><a class="header" href="#packet-1" id="packet-1">Packet</a></h1>
+<h1><a class="header" href="#packet" id="packet">Packet</a></h1>
 <h1><a class="header" href="#events" id="events">Events</a></h1>
 <h1><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h1>
 <p>These are some of the most common issues you may encounter when running the relayer. Here are some troubleshooting tips to help you solve the issues.</p>
