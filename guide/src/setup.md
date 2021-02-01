@@ -47,11 +47,11 @@ If you run the `hermes` without any additional parameters you should see the usa
 
 ```shell
 $ ./target/release/hermes
-ibc-relayer-cli 0.1.0
+hermes 0.1.0
 Informal Systems <hello@informal.systems>
 
 USAGE:
-    ibc-relayer-cli <SUBCOMMAND>
+    hermes <SUBCOMMAND>
 
 SUBCOMMANDS:
     help       get usage information
@@ -63,6 +63,14 @@ SUBCOMMANDS:
     tx         create IBC transactions on configured chains
     light      basic functionality for managing the lite clients
     keys       manage keys in the relayer for each chain
+```
+
+### Creating an alias for the executable
+
+It might be easier to create an alias for `hermes` so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
+
+```shell
+alias hermes='cargo run --release --bin hermes --'
 ```
 
 ### Next Steps
