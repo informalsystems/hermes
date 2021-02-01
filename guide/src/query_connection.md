@@ -7,7 +7,7 @@ USAGE:
     hermes query connections <OPTIONS>
 
 DESCRIPTION:
-    query the identifiers of all connection on a chain
+    query the identifiers of all connections on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query

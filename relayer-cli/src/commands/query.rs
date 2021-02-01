@@ -26,7 +26,7 @@ pub enum QueryCmd {
     Connection(QueryConnectionCmds),
 
     /// The `query connections` subcommand
-    #[options(help = "query the identifiers of all connection on a chain")]
+    #[options(help = "query the identifiers of all connections on a chain")]
     Connections(connections::QueryConnectionsCmd),
 
     /// The `query channel` subcommand
