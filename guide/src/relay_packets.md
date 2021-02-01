@@ -23,19 +23,17 @@ if the command is successful a message similar to the one below is displayed `st
 ```json
 {
     "status": "success",
-    "result": [
-        {
-            "CreateClient": {
-                "client_id": "07-tendermint-0",
-                "client_type": "Tendermint",
-                "consensus_height": {
-                    "revision_height": 9082,
-                    "revision_number": 1
-                },
-                "height": "1"
-            }
+    "result": {
+        "CreateClient": {
+            "client_id": "07-tendermint-0",
+            "client_type": "Tendermint",
+            "consensus_height": {
+                "revision_height": 9082,
+                "revision_number": 1
+            },
+            "height": "1"
         }
-    ]
+    }
 }
 ```
 
@@ -52,42 +50,40 @@ should show a message similar to the one below:
 ```json
 {
     "status": "success",
-    "result": [
-        {
-            "type": "Tendermint",
-            "allow_update_after_expiry": false,
-            "allow_update_after_misbehaviour": false,
-            "chain_id": "ibc-1",
-            "frozen_height": {
-                "revision_height": 0,
-                "revision_number": 0
-            },
-            "latest_height": {
-                "revision_height": 9082,
-                "revision_number": 1
-            },
-            "max_clock_drift": {
-                "nanos": 0,
-                "secs": 3
-            },
-            "trust_level": {
-                "denominator": "3",
-                "numerator": "1"
-            },
-            "trusting_period": {
-                "nanos": 0,
-                "secs": 1209600
-            },
-            "unbonding_period": {
-                "nanos": 0,
-                "secs": 1814400
-            },
-            "upgrade_path": [
-                "upgrade",
-                "upgradedIBCState"
-            ]
-        }
-    ]
+    "result": {
+        "type": "Tendermint",
+        "allow_update_after_expiry": false,
+        "allow_update_after_misbehaviour": false,
+        "chain_id": "ibc-1",
+        "frozen_height": {
+            "revision_height": 0,
+            "revision_number": 0
+        },
+        "latest_height": {
+            "revision_height": 9082,
+            "revision_number": 1
+        },
+        "max_clock_drift": {
+            "nanos": 0,
+            "secs": 3
+        },
+        "trust_level": {
+            "denominator": "3",
+            "numerator": "1"
+        },
+        "trusting_period": {
+            "nanos": 0,
+            "secs": 1209600
+        },
+        "unbonding_period": {
+            "nanos": 0,
+            "secs": 1814400
+        },
+        "upgrade_path": [
+            "upgrade",
+            "upgradedIBCState"
+        ]
+    }
 }
 ```
 
@@ -105,19 +101,17 @@ As before, if the (second) command is successful a message with `status:success`
 ```json
 {
     "status": "success",
-    "result": [
-        {
-            "CreateClient": {
-                "client_id": "07-tendermint-1",
-                "client_type": "Tendermint",
-                "consensus_height": {
-                    "revision_height": 9505,
-                    "revision_number": 0
-                },
-                "height": "1"
-            }
+    "result": {
+        "CreateClient": {
+            "client_id": "07-tendermint-1",
+            "client_type": "Tendermint",
+            "consensus_height": {
+                "revision_height": 9505,
+                "revision_number": 0
+            },
+            "height": "1"
         }
-    ]
+    }
 }
 ```
 

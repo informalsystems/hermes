@@ -28,19 +28,17 @@ $ hermes -c config.toml tx raw create-client ibc-0 ibc-1 | jq
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "CreateClient": {
-        "client_id": "07-tendermint-0",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 18,
-          "revision_number": 1
-        },
-        "height": "1"
-      }
+  "result": {
+    "CreateClient": {
+      "client_id": "07-tendermint-0",
+      "client_type": "Tendermint",
+      "consensus_height": {
+        "revision_height": 18,
+        "revision_number": 1
+      },
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 
@@ -73,19 +71,17 @@ $ hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "UpdateClient": {
-        "client_id": "07-tendermint-0",
-        "client_type": "Tendermint",
-        "consensus_height": {
-          "revision_height": 273,
-          "revision_number": 1
-        },
-        "height": "1"
-      }
+  "result": {
+    "UpdateClient": {
+      "client_id": "07-tendermint-0",
+      "client_type": "Tendermint",
+      "consensus_height": {
+        "revision_height": 273,
+        "revision_number": 1
+      },
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 

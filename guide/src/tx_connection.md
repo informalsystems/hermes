@@ -34,17 +34,15 @@ $ hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermi
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenInitConnection": {
-        "client_id": "07-tendermint-0",
-        "connection_id": "connection-0",
-        "counterparty_client_id": "07-tendermint-1",
-        "counterparty_connection_id": null,
-        "height": "1"
-      }
+  "result": {
+    "OpenInitConnection": {
+      "client_id": "07-tendermint-0",
+      "connection_id": "connection-0",
+      "counterparty_client_id": "07-tendermint-1",
+      "counterparty_connection_id": null,
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 
@@ -84,17 +82,15 @@ $ hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermin
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenTryConnection": {
-        "client_id": "07-tendermint-1",
-        "connection_id": "connection-1",
-        "counterparty_client_id": "07-tendermint-0",
-        "counterparty_connection_id": "connection-0",
-        "height": "1"
-      }
+  "result": {
+    "OpenTryConnection": {
+      "client_id": "07-tendermint-1",
+      "connection_id": "connection-1",
+      "counterparty_client_id": "07-tendermint-0",
+      "counterparty_connection_id": "connection-0",
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 
@@ -135,17 +131,15 @@ $ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermin
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenAckConnection": {
-        "client_id": "07-tendermint-0",
-        "connection_id": "connection-0",
-        "counterparty_client_id": "07-tendermint-1",
-        "counterparty_connection_id": "connection-1",
-        "height": "1"
-      }
+  "result": {
+    "OpenAckConnection": {
+      "client_id": "07-tendermint-0",
+      "connection_id": "connection-0",
+      "counterparty_client_id": "07-tendermint-1",
+      "counterparty_connection_id": "connection-1",
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 
@@ -186,17 +180,15 @@ $ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tende
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenConfirmConnection": {
-        "client_id": "07-tendermint-1",
-        "connection_id": "connection-1",
-        "counterparty_client_id": "07-tendermint-0",
-        "counterparty_connection_id": "connection-0",
-        "height": "1"
-      }
+  "result": {
+    "OpenConfirmConnection": {
+      "client_id": "07-tendermint-1",
+      "connection_id": "connection-1",
+      "counterparty_client_id": "07-tendermint-0",
+      "counterparty_connection_id": "connection-0",
+      "height": "1"
     }
-  ]
+  }
 }
 ```
 

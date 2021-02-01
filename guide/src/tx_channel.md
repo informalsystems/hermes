@@ -35,18 +35,16 @@ $ hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer 
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenInitChannel": {
-        "channel_id": "channel-0",
-        "connection_id": "connection-0",
-        "counterparty_channel_id": null,
-        "counterparty_port_id": "transfer",
-        "height": "1",
-        "port_id": "transfer"
-      }
+  "result": {
+    "OpenInitChannel": {
+      "channel_id": "channel-0",
+      "connection_id": "connection-0",
+      "counterparty_channel_id": null,
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
     }
-  ]
+  }
 }
 ```
 
@@ -88,18 +86,16 @@ $ hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer t
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenTryChannel": {
-        "channel_id": "channel-1",
-        "connection_id": "connection-1",
-        "counterparty_channel_id": "channel-0",
-        "counterparty_port_id": "transfer",
-        "height": "1",
-        "port_id": "transfer"
-      }
+  "result": {
+    "OpenTryChannel": {
+      "channel_id": "channel-1",
+      "connection_id": "connection-1",
+      "counterparty_channel_id": "channel-0",
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
     }
-  ]
+  }
 }
 ```
 
@@ -142,18 +138,16 @@ $ hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer t
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenAckChannel": {
-        "channel_id": "channel-0",
-        "connection_id": "connection-0",
-        "counterparty_channel_id": "channel-1",
-        "counterparty_port_id": "transfer",
-        "height": "1",
-        "port_id": "transfer"
-      }
+  "result": {
+    "OpenAckChannel": {
+      "channel_id": "channel-0",
+      "connection_id": "connection-0",
+      "counterparty_channel_id": "channel-1",
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
     }
-  ]
+  }
 }
 ```
 
@@ -197,20 +191,17 @@ $ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transf
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "OpenConfirmChannel": {
-        "channel_id": "channel-1",
-        "connection_id": "connection-1",
-        "counterparty_channel_id": "channel-0",
-        "counterparty_port_id": "transfer",
-        "height": "1",
-        "port_id": "transfer"
-      }
+  "result": {
+    "OpenConfirmChannel": {
+      "channel_id": "channel-1",
+      "connection_id": "connection-1",
+      "counterparty_channel_id": "channel-0",
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
     }
-  ]
+  }
 }
-2
 ```
 
 We have now successfully opened a channel over an existing connection between the two chains.

@@ -22,7 +22,7 @@ class TxConnInit(Cmd[TxConnInitRes]):
                 self.dst_client_id, self.src_client_id]
 
     def process(self, result: Any) -> TxConnInitRes:
-        return from_dict(TxConnInitRes, result[0]['OpenInitConnection'])
+        return from_dict(TxConnInitRes, result['OpenInitConnection'])
 
 
 # -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class TxConnTry(Cmd[TxConnTryRes]):
                 "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnTryRes:
-        return from_dict(TxConnTryRes, result[0]['OpenTryConnection'])
+        return from_dict(TxConnTryRes, result['OpenTryConnection'])
 
 
 # -----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ class TxConnAck(Cmd[TxConnAckRes]):
                 "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnAckRes:
-        return from_dict(TxConnAckRes, result[0]['OpenAckConnection'])
+        return from_dict(TxConnAckRes, result['OpenAckConnection'])
 
 
 # -----------------------------------------------------------------------------
@@ -101,7 +101,7 @@ class TxConnConfirm(Cmd[TxConnConfirmRes]):
                 "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnConfirmRes:
-        return from_dict(TxConnConfirmRes, result[0]['OpenConfirmConnection'])
+        return from_dict(TxConnConfirmRes, result['OpenConfirmConnection'])
 
 
 # -----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ class QueryConnectionEnd(Cmd[ConnectionEnd]):
         return [self.chain_id, self.connection_id]
 
     def process(self, result: Any) -> ConnectionEnd:
-        return from_dict(ConnectionEnd, result[0])
+        return from_dict(ConnectionEnd, result)
 
 
 # =============================================================================

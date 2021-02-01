@@ -35,7 +35,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenInitRes:
-        return from_dict(TxChanOpenInitRes, result[0]['OpenInitChannel'])
+        return from_dict(TxChanOpenInitRes, result['OpenInitChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenTryRes:
-        return from_dict(TxChanOpenTryRes, result[0]['OpenTryChannel'])
+        return from_dict(TxChanOpenTryRes, result['OpenTryChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenAckRes:
-        return from_dict(TxChanOpenAckRes, result[0]['OpenAckChannel'])
+        return from_dict(TxChanOpenAckRes, result['OpenAckChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenConfirmRes:
-        return from_dict(TxChanOpenConfirmRes, result[0]['OpenConfirmChannel'])
+        return from_dict(TxChanOpenConfirmRes, result['OpenConfirmChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
         return [self.chain_id, self.port_id, self.channel_id]
 
     def process(self, result: Any) -> ChannelEnd:
-        return from_dict(ChannelEnd, result[0])
+        return from_dict(ChannelEnd, result)
 
 
 # =============================================================================

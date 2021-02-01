@@ -79,7 +79,11 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
-                Output::success(seqs).with_result(json!(height)).exit();
+                Output::success(json!({
+                    "seqs": seqs,
+                    "height": height
+                }))
+                .exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -367,10 +371,14 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(ps) => {
+            Ok((packet_state, height)) => {
                 // Transform the raw packet state into the list of acks. sequence numbers
-                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
-                Output::success(seqs).with_result(json!(ps.1)).exit();
+                let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
+                Output::success(json!({
+                    "height": height,
+                    "seqs": seqs
+                }))
+                .exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
