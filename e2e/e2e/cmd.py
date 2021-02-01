@@ -36,7 +36,7 @@ class CmdResult(Generic[T]):
             return data
         elif self.retries < self.config.max_retries:
             left = self.config.max_retries - self.retries
-            l.warn('Command failed: retrying (retryies left: {left})')
+            l.warn(f'Command failed: retrying (retries left: {left})')
             return self.cmd.retry(self.config, self.retries).success()
         else:
             raise ExpectedSuccess(self.cmd, status, result)
