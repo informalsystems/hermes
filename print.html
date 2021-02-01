@@ -1260,6 +1260,22 @@ POSITIONAL ARGUMENTS:
 <p>The client with identifier <code>07-tendermint-0</code> has been updated with the consensus state at height <code>1-273</code>.</p>
 <h1><a class="header" href="#connection-handshake" id="connection-handshake">Connection Handshake</a></h1>
 <p>The <code>tx raw</code> commands can be used to establish a connection between two clients.</p>
+<center>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    participant A as ibc-1
+    participant B as ibc-0
+    Note over A, B: No connection
+    A-&gt;&gt;B: ConnectionOpenInit
+    Note over B: connection: connection-0 &lt;br /&gt; counterparty: none
+    B-&gt;&gt;A: ConnectionOpenTry
+    Note over A: connection: connection-1 &lt;br /&gt; counterparty: connection-0
+    A-&gt;&gt;B: ConnectionOpenAck
+    note over B: connection: connection-0 &lt;br /&gt; counterparty: connection-1
+    B-&gt;&gt;A: ConnectionOpenConfirm
+    Note over A, B: Connection open
+</code></pre>
+</center>
 <h2><a class="header" href="#connection-init" id="connection-init">Connection Init</a></h2>
 <p>Use the <code>conn-init</code> command to initialize a new connection on a chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -1406,6 +1422,22 @@ FLAGS:
 <p>We have now successfully established a connection between the two chains.</p>
 <h1><a class="header" href="#channel-handshake" id="channel-handshake">Channel Handshake</a></h1>
 <p>The <code>tx raw</code> commands can be used to establish a channel for a given connection.</p>
+<center>
+<pre><code class="language-mermaid">sequenceDiagram
+    autonumber
+    participant A as ibc-1
+    participant B as ibc-0
+    Note over A, B: No channel
+    A-&gt;&gt;B: ChannelOpenInit
+    Note over B: channel: channel-0 &lt;br /&gt; counterparty: none
+    B-&gt;&gt;A: ChannelOpenTry
+    Note over A: channel: channel-1 &lt;br /&gt; counterparty: channel-0
+    A-&gt;&gt;B: ChannelOpenAck
+    note over B: channel: channel-0 &lt;br /&gt; counterparty: channel-1
+    B-&gt;&gt;A: ChannelOpenConfirm
+    Note over A, B: Channel open
+</code></pre>
+</center>
 <h2><a class="header" href="#channel-open-init" id="channel-open-init">Channel Open Init</a></h2>
 <p>Use the <code>chan-open-init</code> command to initialize a new channel.</p>
 <pre><code class="language-shell">USAGE:
