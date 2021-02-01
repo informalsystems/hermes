@@ -106,3 +106,12 @@ jobs:
         with:
           name: code-coverage-report
           path: cobertura.xml
+
+  test-end-to-end:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
