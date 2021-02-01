@@ -11,7 +11,7 @@ USAGE:
     hermes tx raw conn-init <OPTIONS>
 
 DESCRIPTION:
-    Initialize a connection attempt on chain A
+    Initialize a connection (ConnectionOpenInit)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -61,7 +61,7 @@ USAGE:
     hermes tx raw conn-try <OPTIONS>
 
 DESCRIPTION:
-    Relay notice of a connection attempt on chain A to chain B
+    Relay the connection attempt (ConnectionOpenTry)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -111,7 +111,7 @@ USAGE:
     hermes tx raw conn-ack <OPTIONS>
 
 DESCRIPTION:
-    Relay acceptance of a connection attempt from chain B back to chain A
+    Relay acknowledgment of a connection attempt (ConnectionOpenAck)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -125,6 +125,8 @@ FLAGS:
 ```
 
 __Example__
+
+We can now acknowledge on `ibc-0` that `ibc-1` has accepted the connection attempt:
 
 ```shell
 $ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
@@ -153,14 +155,14 @@ Note that the field `counterparty_connection_id` now points to the connection on
 ## Connection Confirm
 
 Use the `conn-confirm` command to confirm that the connection has been acknowledged,
-and finish the handshake.
+and finish the handshake, after which the connection is open on both chains.
 
 ```shell
 USAGE:
     hermes tx raw conn-confirm <OPTIONS>
 
 DESCRIPTION:
-    Confirm opening of a connection on chain A to chain B, after which the connection is open on both chains
+    Confirm opening of a connection (ConnectionOpenConfirm)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -174,6 +176,8 @@ FLAGS:
 ```
 
 __Example__
+
+Confirm on `ibc-1` that `ibc-0` has accepted the connection attempt.
 
 ```shell
 $ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
