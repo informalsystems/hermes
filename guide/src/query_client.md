@@ -158,7 +158,7 @@ The connections associated with a given client can be queried `query client conn
 
 ```shell
 USAGE:
-    ibc-relayer-cli query client connections <OPTIONS>
+    hermes query client connections <OPTIONS>
 
 DESCRIPTION:
     query client connections
@@ -173,7 +173,9 @@ FLAGS:
 
 __Example__
 
-Query the state of client `07-tendermint-2` on `ibc-1`:
+Query the connections of client `07-tendermint-2` on `ibc-1`:
 
 ```shell
+$ hermes query client connections ibc-1 07-terndermint-2
+{"status":"success","result":[[]]}
 ```
