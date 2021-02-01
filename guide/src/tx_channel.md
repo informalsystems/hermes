@@ -2,6 +2,26 @@
 
 The `tx raw` commands can be used to establish a channel for a given connection.
 
+<center>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as ibc-1
+    participant B as ibc-0
+    Note over A, B: No channel
+    A->>B: ChannelOpenInit
+    Note over B: channel: channel-0 <br /> counterparty: none
+    B->>A: ChannelOpenTry
+    Note over A: channel: channel-1 <br /> counterparty: channel-0
+    A->>B: ChannelOpenAck
+    note over B: channel: channel-0 <br /> counterparty: channel-1
+    B->>A: ChannelOpenConfirm
+    Note over A, B: Channel open
+```
+
+</center>
+
 ## Channel Open Init
 
 Use the `chan-open-init` command to initialize a new channel.

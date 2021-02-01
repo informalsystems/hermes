@@ -2,6 +2,26 @@
 
 The `tx raw` commands can be used to establish a connection between two clients.
 
+<center>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as ibc-1
+    participant B as ibc-0
+    Note over A, B: No connection
+    A->>B: ConnectionOpenInit
+    Note over B: connection: connection-0 <br /> counterparty: none
+    B->>A: ConnectionOpenTry
+    Note over A: connection: connection-1 <br /> counterparty: connection-0
+    A->>B: ConnectionOpenAck
+    note over B: connection: connection-0 <br /> counterparty: connection-1
+    B->>A: ConnectionOpenConfirm
+    Note over A, B: Connection open
+```
+
+</center>
+
 ## Connection Init
 
 Use the `conn-init` command to initialize a new connection on a chain.
