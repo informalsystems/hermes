@@ -1,0 +1,1926 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Hermes Documentation</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes (IBC Relayer)</li><li class="spacer"></li><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="relayer.html"><strong aria-hidden="true">1.1.</strong> What is a relayer?</a></li></ol></li><li class="chapter-item expanded "><a href="getting_started.html"><strong aria-hidden="true">2.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="pre_requisites.html"><strong aria-hidden="true">2.1.</strong> Pre-requisites</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.2.</strong> Setup</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">2.3.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="two_chains.html"><strong aria-hidden="true">3.1.</strong> Two Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gaia.html"><strong aria-hidden="true">3.1.1.</strong> Installing Gaia</a></li><li class="chapter-item expanded "><a href="local_chains.html"><strong aria-hidden="true">3.1.2.</strong> Starting the local chains</a></li><li class="chapter-item expanded "><a href="relay_packets.html"><strong aria-hidden="true">3.1.3.</strong> Relaying packets</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="commands.html"><strong aria-hidden="true">4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="keys.html"><strong aria-hidden="true">4.1.</strong> Keys</a></li><li class="chapter-item expanded "><a href="light_clients.html"><strong aria-hidden="true">4.2.</strong> Light Clients</a></li><li class="chapter-item expanded "><a href="transactions.html"><strong aria-hidden="true">4.3.</strong> Raw Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tx_client.html"><strong aria-hidden="true">4.3.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="tx_connection.html"><strong aria-hidden="true">4.3.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="tx_channel.html"><strong aria-hidden="true">4.3.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="tx_packet.html"><strong aria-hidden="true">4.3.4.</strong> Packet</a></li></ol></li><li class="chapter-item expanded "><a href="relayer_loop.html"><strong aria-hidden="true">4.4.</strong> Relayer Path Setup and Streaming</a></li><li class="chapter-item expanded "><a href="queries.html"><strong aria-hidden="true">4.5.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="query_client.html"><strong aria-hidden="true">4.5.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="query_connection.html"><strong aria-hidden="true">4.5.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="query_channel.html"><strong aria-hidden="true">4.5.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="query_packet.html"><strong aria-hidden="true">4.5.4.</strong> Packet</a></li></ol></li><li class="chapter-item expanded "><a href="events.html"><strong aria-hidden="true">4.6.</strong> Events</a></li></ol></li><li class="chapter-item expanded "><a href="troubleshoot.html"><strong aria-hidden="true">5.</strong> Troubleshooting</a></li><li class="chapter-item expanded "><a href="faq.html"><strong aria-hidden="true">6.</strong> FAQ</a></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Hermes Documentation</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#ibc-relayer-guide" id="ibc-relayer-guide">IBC Relayer Guide</a></h1>
+<p>This guide can be used to help you setup, configure and operate Hermes to transfer packets between two IBC enabled chains.</p>
+<h2><a class="header" href="#sections" id="sections">Sections</a></h2>
+<hr />
+<p><strong><a href="./relayer.html">Introduction</a></strong></p>
+<ul>
+<li>The introduction gives a brief overview about Hermes</li>
+</ul>
+<p><strong><a href="./getting_started.html">Getting Started</a></strong></p>
+<ul>
+<li>The getting started section can help you setup, configure and run Hermes</li>
+</ul>
+<p><strong><a href="./tutorials.html">Tutorials</a></strong></p>
+<ul>
+<li>This section provides some tutorials on how to operate and test Hermes</li>
+</ul>
+<p><strong><a href="./commands.html">Commands Reference</a></strong></p>
+<ul>
+<li>The commands will let you interact with Hermes using its command-line interface.</li>
+</ul>
+<p><strong><a href="./troubleshoot.html">Troubleshooting</a></strong></p>
+<ul>
+<li>This section provides some troubleshooting tips to help you solve the issues when running Hermes</li>
+</ul>
+<p><strong><a href="./faq.html">Frequently Asked Questions</a></strong></p>
+<ul>
+<li>This section has the most frequently asked questions related to Hermes operation and functionality</li>
+</ul>
+<p><strong><a href="./glossary.html">Glossary</a></strong></p>
+<ul>
+<li>This section provides some definitions to terms used throughout this guide</li>
+</ul>
+<hr />
+<p><strong>Other References and Useful Links:</strong></p>
+<ul>
+<li><a href="https://github.com/informalsystems/ibc-rs">Relayer Github repository</a> — The official Github repository for Hermes ()</li>
+<li><a href="https://github.com/cosmos/ics">IBC Github repository</a> - The official repository for the Inter-blockchain protocol (IBC)</li>
+</ul>
+<h2><a class="header" href="#disclaimer" id="disclaimer">Disclaimer</a></h2>
+<blockquote>
+<p>THIS PROJECT IS UNDER HEAVY DEVELOPMENT AND IS NOT IN A WORKING STAGE NOW, USE AT YOUR OWN RISK.</p>
+</blockquote>
+<h1><a class="header" href="#what-is-a-relayer" id="what-is-a-relayer">What is a relayer?</a></h1>
+<p>A relayer is an off-chain process responsible for relaying IBC datagrams between two or more chains by scanning their states and submitting transactions. </p>
+<p>This is because in the IBC architecture, modules are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
+<h1><a class="header" href="#getting-started" id="getting-started">Getting Started</a></h1>
+<p>In order to run Hermes, please ensure you have all the <a href="./pre_requisites.html">pre-requisites</a> installed on your machine.</p>
+<p>Once you have all the pre-requisites installed on your machine, you can <a href="./setup.html">build and run Hermes</a> on your machine.</p>
+<blockquote>
+<p>The instructions on this guide have been tested on <code>Linux</code> and <code>MacOS</code> environments. Most of the commands should work on both environments. Even though you can build and run the relayer on <code>Windows</code> (since we develop it in Rust and it supports cross platform compilation) we have not tested the relayer on <code>Windows</code> and we do not support this environment at this time.</p>
+</blockquote>
+<h1><a class="header" href="#pre-requisites" id="pre-requisites">Pre-requisites</a></h1>
+<p>The IBC Relayer is developed with the <a href="">Rust</a> programming language. In order to build and run the relayer you need to install and configure <code>Rust</code> in your machine.</p>
+<p>For instructions on how to install <code>Rust</code> on your machine please follow their official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>. </p>
+<p>The provided instructions will install all the Rust toolchain including <code>rustc</code>, <code>cargo</code>, and <code>rustup</code> that are required to build the project.</p>
+<h3><a class="header" href="#testing-the-installation" id="testing-the-installation">Testing the installation</a></h3>
+<p>After you install the <code>Rust</code> toolchain you can execute the following command:</p>
+<pre><code class="language-shell">cargo version
+</code></pre>
+<p>This should display the <code>cargo</code> version and confirm the proper installation.</p>
+<h3><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h3>
+<p>Next, go to the <a href="./setup.html"><code>Setup</code></a> section to learn how to build the relayer.</p>
+<h1><a class="header" href="#building-the-relayer" id="building-the-relayer">Building the Relayer</a></h1>
+<p>In order to build and run Hermes, please follow the steps below:</p>
+<blockquote>
+<p>NOTE: This assumes you have installed all the <a href="./pre-requisites.html">pre-requisites</a> on your machine.</p>
+</blockquote>
+<h3><a class="header" href="#clone-the-repository" id="clone-the-repository">Clone the repository</a></h3>
+<p>Open a terminal and clone the repository:</p>
+<pre><code class="language-shell">git clone https://github.com/informalsystems/ibc-rs.git`
+</code></pre>
+<p>Change to the repository directory</p>
+<pre><code class="language-shell">cd ibc-rs
+</code></pre>
+<h3><a class="header" href="#checkout-the-latest-release" id="checkout-the-latest-release">Checkout the latest release</a></h3>
+<p>Go to the <a href="https://github.com/informalsystems/ibc-rs/releases">ibc-rs releases</a> page to see what is the most recent release.</p>
+<p>Then checkout the release, for example if the most recent release is <code>v0.1.0</code> then execute the command:</p>
+<pre><code class="language-shell">git checkout v0.1.0
+</code></pre>
+<h3><a class="header" href="#building-with-cargo-build" id="building-with-cargo-build">Building with <code>cargo build</code></a></h3>
+<p>This command will build all the projects from the <a href="https://github.com/informalsystems/ibc-rs"><strong><code>ibc-rs</code></strong></a> repository including the <a href="https://github.com/informalsystems/ibc-rs/tree/master/modules"><strong><code>ibc</code></strong></a> modules crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer"><strong><code>ibc-relayer</code></strong></a> crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/proto"><strong><code>proto</code></strong></a> crate, and the <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> tool.</p>
+<pre><code class="language-shell">cargo build --workspace --all --release
+</code></pre>
+<p>If the build is successful, the <code>hermes</code> executable will be located in the following location:</p>
+<pre><code class="language-shell">./target/release/hermes
+</code></pre>
+<h3><a class="header" href="#running-for-the-first-time" id="running-for-the-first-time">Running for the first time</a></h3>
+<p>If you run the <code>hermes</code> without any additional parameters you should see the usage and help information:</p>
+<pre><code class="language-shell">$ ./target/release/hermes
+hermes 0.1.0
+Informal Systems &lt;hello@informal.systems&gt;
+
+USAGE:
+    hermes &lt;SUBCOMMAND&gt;
+
+SUBCOMMANDS:
+    help       get usage information
+    start      start the relayer (currently this refers to the v0 relayer)
+    listen     listen to IBC events
+    config     manipulate the relayer configuration
+    version    display version information
+    query      query state from chain
+    tx         create IBC transactions on configured chains
+    light      basic functionality for managing the lite clients
+    keys       manage keys in the relayer for each chain
+</code></pre>
+<h3><a class="header" href="#creating-an-alias-for-the-executable" id="creating-an-alias-for-the-executable">Creating an alias for the executable</a></h3>
+<p>It might be easier to create an alias for <code>hermes</code> so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:</p>
+<pre><code class="language-shell">alias hermes='cargo run --release --bin hermes --'
+</code></pre>
+<h3><a class="header" href="#next-steps-1" id="next-steps-1">Next Steps</a></h3>
+<p>Next, go to the <a href="./config.html"><code>Configuration</code></a> section to learn how to create a configuration file to be used by <code>Hermes</code>.</p>
+<h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
+<p>In order to run <code>Hermes</code>, you will need to have a configuration file.</p>
+<p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a></p>
+<p>Every command executed through the relayer requires the configuration file location to be passed as a parameter.</p>
+<blockquote>
+<p>Currently the relayer does not store the configuration information in the local disk. In addition, with the exception of the light client configuration, current relayer does not support managing the configuration file programmatically. You will need to use a text editor to create the file and add content to it.</p>
+</blockquote>
+<pre><code class="language-bash">hermes -c config.toml [COMMAND]
+</code></pre>
+<h2><a class="header" href="#sections-1" id="sections-1">Sections</a></h2>
+<p>The configuration file must have one <code>global</code>. And it must contain one <code>chains</code> section for each chain.</p>
+<h3><a class="header" href="#global" id="global">[global]</a></h3>
+<p>The global section has parameters that apply globally to the relayer operation.</p>
+<h4><a class="header" href="#parameters" id="parameters">Parameters</a></h4>
+<ul>
+<li>
+<p><strong>timeout</strong>: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is <code>10s</code> (10 seconds)</p>
+</li>
+<li>
+<p><strong>strategy</strong>: Specify the strategy to be used by the relayer. Currently only <code>naive</code> is supported</p>
+</li>
+<li>
+<p><strong>log_level</strong>: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is <code>info</code>.</p>
+</li>
+</ul>
+<p>Here's an example for the <code>global</code> section:</p>
+<pre><code class="language-toml">[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'info'
+</code></pre>
+<h3><a class="header" href="#chains" id="chains">[[chains]]</a></h3>
+<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client configuration peers for the chain.</p>
+<h4><a class="header" href="#parameters-1" id="parameters-1">Parameters</a></h4>
+<ul>
+<li>
+<p><strong>id</strong>: Specify the chain ID. For example <code>ibc-0</code></p>
+</li>
+<li>
+<p><strong>rpc_addr</strong>: Specify the RPC address and port where the chain RPC server listens on. For example <code>tcp://localhost:26657</code></p>
+</li>
+<li>
+<p><strong>grpc_addr</strong>: Specify the GRPC address and port where the chain GRPC server listens on. For example <code>tcp://localhost:9090</code></p>
+</li>
+<li>
+<p><strong>account_prefix</strong>: Specify the prefix used by the chain. For example <code>cosmos</code></p>
+</li>
+<li>
+<p><strong>key_name</strong>: Specify the name of the private key JSON file. This is the filename for the private key used to sign transactions on this chain. Don't specify the file extension, for example if the filename for the private key is <code>testkey.json</code>, specify only <code>testkey</code> for this parameter.</p>
+</li>
+<li>
+<p><strong>store_prefix</strong>: Specify the store prefix used by the on-chain IBC modules. For example <code>ibc</code>.</p>
+</li>
+<li>
+<p><strong>gas</strong>: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is <code>300000</code></p>
+</li>
+<li>
+<p><strong>clock_drift</strong>: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is <code>5s</code></p>
+</li>
+<li>
+<p><strong>trusting_period</strong>: Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is <code>14days</code> (336 hours)</p>
+</li>
+</ul>
+<p>For example if you want to add a configuration for a chain named <code>ibc-0</code>:</p>
+<pre><code class="language-toml">[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+</code></pre>
+<h3><a class="header" href="#light-clients" id="light-clients">Light clients</a></h3>
+<p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> relayer command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
+<h3><a class="header" href="#validate-the-configuration-file" id="validate-the-configuration-file">Validate the configuration file</a></h3>
+<p>If you want to validate the configuration file you can run the command below:</p>
+<pre><code class="language-shell">hermes -c config.toml config validate
+</code></pre>
+<p>If the configuration file is valid the command above shows this message:</p>
+<pre><code class="language-shell">{&quot;status&quot;:&quot;success&quot;,&quot;result&quot;:[]}
+</code></pre>
+<h3><a class="header" href="#adding-private-keys" id="adding-private-keys">Adding Private Keys</a></h3>
+<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that will be used by the relayer.</p>
+<h3><a class="header" href="#example-configuration-file" id="example-configuration-file">Example configuration file</a></h3>
+<p>Here is an full example of a configuration file with two chains configured and light client peers added:</p>
+<pre><code class="language-toml">[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
+
+[[chains.peers.light_clients]]
+peer_id = '66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = 'A24F654188BC3FC9EFE589FB33D513CE9AC86BFA48B063BDBF1D769750713E09'
+trusted_height = '15'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
+
+[[chains.peers.light_clients]]
+peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = '44E7C90BFA53256AD72B84286BFDA70FE87BBC7C0D80A1DB199C72A4FBE88FB6'
+trusted_height = '16'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://localhost:26557'
+grpc_addr = 'tcp://localhost:9091'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
+
+[[chains.peers.light_clients]]
+peer_id = '28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = '66BD0E5ED1FA2022A036782F7D8444DB98DC0326B379BCA6BA75864295D1C910'
+trusted_height = '4'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
+
+[[chains.peers.light_clients]]
+peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = '0325BFAA36407D1F11966AEC57D34131CB27B370D3698F284F09152ADE3423C4'
+trusted_height = '5'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+
+[[connections]]
+a_chain = &quot;ibc1&quot;
+b_chain = &quot;ibc0&quot;
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+</code></pre>
+<h3><a class="header" href="#next-steps-2" id="next-steps-2">Next Steps</a></h3>
+<p>Now that you learned how to build the relayer and how to create a configuration file, you can go to the <a href="./two_chains.html"><code>Two Chains</code></a> tutorial to learn how to perform some local testing connecting the relayer to two local chains.</p>
+<h1><a class="header" href="#tutorials" id="tutorials">Tutorials</a></h1>
+<p>This section includes tutorials for some common relayer uses cases.</p>
+<h2><a class="header" href="#basic-tutorials" id="basic-tutorials">Basic tutorials</a></h2>
+<p><strong><a href="./two_chains.html">Two Local Chains</a></strong></p>
+<p>In this tutorial you will learn how to start two local <a href="https://github.com/cosmos/gaia"><code>Cosmos Gaia</code></a> chains that support the <code>IBC</code> protocol and start relaying packets between them.</p>
+<h1><a class="header" href="#tutorial-relayer-with-two-local-chains" id="tutorial-relayer-with-two-local-chains">Tutorial: Relayer with two local chains</a></h1>
+<p>In this tutorial we will show how you can test the relayer against two chains, we provide a script that can start two separate chains and configure them automatically. This is the easiest way to get started.</p>
+<p>The script starts two <a href="https://github.com/cosmos/gaia"><code>gaia</code></a> chains that support the <code>IBC</code> protocol.</p>
+<p>Follow the steps in this tutorial section starting with the <a href="./gaia.html">Install Gaia</a> section.</p>
+<h1><a class="header" href="#install-gaia" id="install-gaia">Install Gaia</a></h1>
+<p>The script to start the chains requires gaia to be installed.</p>
+<h4><a class="header" href="#clone-gaia" id="clone-gaia">Clone gaia</a></h4>
+<p>Clone the repository from Github:</p>
+<pre><code class="language-shell">git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
+</code></pre>
+<h4><a class="header" href="#build-and-install" id="build-and-install">Build and Install</a></h4>
+<p>Run the <code>make</code> command to build and install <code>gaiad</code></p>
+<pre><code class="language-shell">cd ~/go/src/github.com/cosmos/gaia
+git checkout v3.0.0
+make install
+</code></pre>
+<p>If the command above is successful you can run the following command to ensure it was properly installed:</p>
+<pre><code class="language-shell">gaiad version
+</code></pre>
+<h4><a class="header" href="#next-steps-3" id="next-steps-3">Next Steps</a></h4>
+<p>In the next section you will learn how to <a href="./local_chains.html">start two local chains</a></p>
+<h1><a class="header" href="#start-the-local-chains" id="start-the-local-chains">Start the local chains</a></h1>
+<p>To start the local chains, open a terminal and navigate to the <code>ibc-rs</code> repository folder</p>
+<pre><code class="language-bash">cd ibc-rs
+</code></pre>
+<h4><a class="header" href="#stop-and-cleanup" id="stop-and-cleanup">Stop and cleanup</a></h4>
+<p>If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:</p>
+<p>Kill all <code>gaiad</code> processes:</p>
+<pre><code class="language-shell">killall gaiad
+</code></pre>
+<p>Remove the <code>data</code> directory (if present)</p>
+<pre><code class="language-shell">rm -rf data/
+</code></pre>
+<blockquote>
+<p><strong>NOTE</strong>: If you have any <code>Docker</code> containers running that might be using the same ports as <code>gaiad</code> (e.g. port 26657 or port 9090), please ensure you stop them first before proceeding to the next step.</p>
+</blockquote>
+<h3><a class="header" href="#configuration-file" id="configuration-file">Configuration file</a></h3>
+<p>In order to run the script, you will need a <code>TOML</code> configuration file to be passed as a parameter. Please check the <a href="./config.html"><code>Configuration</code></a> section for more information about the relayer configuration file.</p>
+<p>The following configuration file in the <code>ibc-rs</code> repository folder can be used for running the local chains:</p>
+<h4><a class="header" href="#config_exampletoml" id="config_exampletoml">config_example.toml</a></h4>
+<pre><code class="language-toml">[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://localhost:26557'
+grpc_addr = 'tcp://localhost:9091'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 3000000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+</code></pre>
+<h3><a class="header" href="#running-the-script-to-start-the-chains" id="running-the-script-to-start-the-chains">Running the script to start the chains</a></h3>
+<p>From the <code>ibc-rs</code> repository folder run the following script with the parameters below to start the chains (<code>ibc-0</code> and <code>ibc-1</code>) and configure the light client peers:</p>
+<pre><code class="language-bash">./scripts/dev-env config.toml ibc-0 ibc-1
+</code></pre>
+<blockquote>
+<p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just say <code>yes</code></p>
+</blockquote>
+<p>The script configures and starts two <code>gaiad</code> instances, one named <code>ibc-0</code> and the other <code>ibc-1</code></p>
+<pre><code class="language-mermaid">graph TD
+    A[dev-env] --&gt;|run| C(start chains)
+    C --&gt;|gaiad| D[ibc-0]
+    C --&gt;|gaiad| F[ibc-1]
+            
+</code></pre>
+<p>If the script runs successfully you should see a message similar to the one below in the terminal:</p>
+<pre><code class="language-shell">$ ./scripts/dev-env chains.toml ibc-0 ibc-1
+
+GAIA VERSION INFO: 4.0.0
+
+Generating gaia configurations...
+Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
+Change settings in config.toml file...
+balances:
+- amount: &quot;0&quot;
+  denom: stake
+pagination:
+  next_key: null
+  total: &quot;0&quot;
+balances:
+- amount: &quot;100000000000&quot;
+  denom: samoleans
+- amount: &quot;100000000000&quot;
+  denom: stake
+pagination:
+  next_key: null
+  total: &quot;0&quot;
+Creating gaiad instance: home=./data | chain-id=ibc-1 | p2p=:26556 | rpc=:26557 | profiling=:6061 | grpc=:9091 | samoleans=:100000000000
+Change settings in config.toml file...
+balances:
+- amount: &quot;0&quot;
+  denom: stake
+pagination:
+  next_key: null
+  total: &quot;0&quot;
+balances:
+- amount: &quot;100000000000&quot;
+  denom: samoleans
+- amount: &quot;100000000000&quot;
+  denom: stake
+pagination:
+  next_key: null
+  total: &quot;0&quot;
+ibc-0 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-0.log to see its execution.
+ibc-1 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-1.log to see its execution.
+Building the Rust relayer...
+Removing light client peers from configuration...
+Adding primary peers to light client configuration...
+Adding secondary peers to light client configuration...
+Importing keys...
+Done!
+
+</code></pre>
+<h3><a class="header" href="#data-directory" id="data-directory">Data directory</a></h3>
+<p>The script creates a <code>data</code> directory in the current directory in order. The <code>data</code> directory contains the chain stores and configuration files.</p>
+<p>The <code>data</code> directory has a tree structure similar to the one below:</p>
+<pre><code class="language-shell">data
+├── ibc-0
+│   ├── config
+│   ├── data
+│   ├── keyring-test
+│   ├── key_seed.json
+│   └── validator_seed.json
+├── ibc-0.log
+├── ibc-1
+│   ├── config
+│   ├── data
+│   ├── keyring-test
+│   ├── key_seed.json
+│   └── validator_seed.json
+└── ibc-1.log
+
+</code></pre>
+<h4><a class="header" href="#next-steps-4" id="next-steps-4">Next Steps</a></h4>
+<p>In the next section <a href="./relay_packets.html">&quot;Relaying packets&quot;</a> you will learn how to execute transactions and queries on the relayer in order to relay packets.</p>
+<h1><a class="header" href="#relaying-packets" id="relaying-packets">Relaying packets</a></h1>
+<p>In this section we will configure everything needed in order to relay packets, such as clients, connections, and channels.</p>
+<h2><a class="header" href="#steps-to-start-relaying-packets-using-tx-raw-commands" id="steps-to-start-relaying-packets-using-tx-raw-commands">Steps to start relaying packets using <code>tx raw</code> commands</a></h2>
+<p>In order to start relaying packets please follow the steps below:</p>
+<h3><a class="header" href="#1-client" id="1-client">1. Client</a></h3>
+<h4><a class="header" href="#11-create-client" id="11-create-client">1.1. <code>create-client</code></a></h4>
+<p>First you will need to create a client for each chain:</p>
+<p>This command submits a transaction to a destination chain (<code>ibc-0</code>) with a request to create a client for a source chain (<code>ibc-1</code>):</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw create-client ibc-0 ibc-1
+</code></pre>
+<p>if the command is successful a message similar to the one below is displayed <code>status:success</code>:</p>
+<pre><code class="language-json">{
+    &quot;status&quot;: &quot;success&quot;,
+    &quot;result&quot;: [
+        {
+            &quot;CreateClient&quot;: {
+                &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+                &quot;client_type&quot;: &quot;Tendermint&quot;,
+                &quot;consensus_height&quot;: {
+                    &quot;revision_height&quot;: 9082,
+                    &quot;revision_number&quot;: 1
+                },
+                &quot;height&quot;: &quot;1&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+<blockquote>
+<p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands</p>
+</blockquote>
+<p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> and also specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
+<pre><code class="language-shell">hermes -c config.toml query client state ibc-0 07-tendermint-0
+</code></pre>
+<p>should show a message similar to the one below:</p>
+<pre><code class="language-json">{
+    &quot;status&quot;: &quot;success&quot;,
+    &quot;result&quot;: [
+        {
+            &quot;type&quot;: &quot;Tendermint&quot;,
+            &quot;allow_update_after_expiry&quot;: false,
+            &quot;allow_update_after_misbehaviour&quot;: false,
+            &quot;chain_id&quot;: &quot;ibc-1&quot;,
+            &quot;frozen_height&quot;: {
+                &quot;revision_height&quot;: 0,
+                &quot;revision_number&quot;: 0
+            },
+            &quot;latest_height&quot;: {
+                &quot;revision_height&quot;: 9082,
+                &quot;revision_number&quot;: 1
+            },
+            &quot;max_clock_drift&quot;: {
+                &quot;nanos&quot;: 0,
+                &quot;secs&quot;: 3
+            },
+            &quot;trust_level&quot;: {
+                &quot;denominator&quot;: &quot;3&quot;,
+                &quot;numerator&quot;: &quot;1&quot;
+            },
+            &quot;trusting_period&quot;: {
+                &quot;nanos&quot;: 0,
+                &quot;secs&quot;: 1209600
+            },
+            &quot;unbonding_period&quot;: {
+                &quot;nanos&quot;: 0,
+                &quot;secs&quot;: 1814400
+            },
+            &quot;upgrade_path&quot;: [
+                &quot;upgrade&quot;,
+                &quot;upgradedIBCState&quot;
+            ]
+        }
+    ]
+}
+</code></pre>
+<p>Now let's do the same (*) for <code>ibc-1</code> as the destination chain:</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw create-client ibc-1 ibc-0
+</code></pre>
+<p>Take note of the <code>client_id</code> allocated for this client. In the examples we assume is <code>07-tendermint-1</code>.</p>
+<p><strong>Note</strong>: You can create a client on <code>ibc-1</code> and the chain will assign <code>07-tendermint-1</code> as its <code>client_id</code></p>
+<p>As before, if the (second) command is successful a message with <code>status:success</code> is displayed:</p>
+<pre><code class="language-json">{
+    &quot;status&quot;: &quot;success&quot;,
+    &quot;result&quot;: [
+        {
+            &quot;CreateClient&quot;: {
+                &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+                &quot;client_type&quot;: &quot;Tendermint&quot;,
+                &quot;consensus_height&quot;: {
+                    &quot;revision_height&quot;: 9505,
+                    &quot;revision_number&quot;: 0
+                },
+                &quot;height&quot;: &quot;1&quot;
+            }
+        }
+    ]
+}
+</code></pre>
+<h4><a class="header" href="#12-update-client" id="12-update-client">1.2 <code>update-client</code></a></h4>
+<p>Client states can be updated by sending an <code>update-client</code> transaction:</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0
+hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
+</code></pre>
+<h3><a class="header" href="#2-connection" id="2-connection">2. Connection</a></h3>
+<h4><a class="header" href="#21-conn-init" id="21-conn-init">2.1 <code>conn-init</code></a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+</code></pre>
+<p>Take note of the ID allocated by the chain, e.g. <code>connection-0</code> on <code>ibc-0</code> in order to use it in the <code>conn-try</code> command below.</p>
+<h4><a class="header" href="#22-conn-try" id="22-conn-try">2.2 <code>conn-try</code></a></h4>
+<p><strong>Note</strong>: If this is the first connection to be created on <code>ibc-1</code>, prior to the <code>conn-try</code> command, you can send a <code>conn-init</code> to <code>ibc-1</code> and the chain will allocate <code>connection-0</code>. This will ensure that the next available ID, <code>connection-1</code>, will be allocated in <code>conn-try</code>.</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+</code></pre>
+<p>To send a <code>conn-try</code> message to <code>ibc-1</code>:</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
+</code></pre>
+<p>Take note of the ID allocated by the chain, e.g. <code>connection-1</code> on <code>ibc-1</code>. Use in the <code>conn-ack</code> CLI</p>
+<h4><a class="header" href="#23-conn-ack" id="23-conn-ack">2.3 conn-ack</a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
+</code></pre>
+<h4><a class="header" href="#24-conn-confirm" id="24-conn-confirm">2.4 conn-confirm</a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
+</code></pre>
+<h4><a class="header" href="#25-query-connection" id="25-query-connection">2.5 query connection</a></h4>
+<p>To verify that the two ends are in <code>Open</code> state:</p>
+<pre><code class="language-shell">hermes -c config.toml query connection end ibc-1 connection-1
+</code></pre>
+<pre><code class="language-shell">hermes -c config.toml query connection end ibc-0 connection-0
+</code></pre>
+<h3><a class="header" href="#3-channel" id="3-channel">3. Channel</a></h3>
+<h4><a class="header" href="#31-chan-open-init" id="31-chan-open-init">3.1 chan-open-init</a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+</code></pre>
+<h4><a class="header" href="#32-chan-open-try" id="32-chan-open-try">3.2 chan-open-try</a></h4>
+<p><strong>Note</strong>: If this is the first channel to be created on <code>ibc-1</code>, prior to the <code>chan-open-try</code> command, you can send a <code>chan-open-init</code> to <code>ibc-1</code> and the chain will allocate <code>channel-0</code>. This will ensure that the next available ID, <code>channel-1</code>, will be allocated in <code>chan-open-try</code>.</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
+</code></pre>
+<p>To send the <code>chan-open-try</code> message to <code>ibc-1</code>:</p>
+<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
+</code></pre>
+<p>Take note of the ID allocated by the chain, e.g. <code>channel-1</code> on <code>ibc-1</code>. Use in the <code>chan-open-ack</code> CLI</p>
+<h4><a class="header" href="#33-chan-open-ack" id="33-chan-open-ack">3.3 chan-open-ack</a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+</code></pre>
+<h4><a class="header" href="#34-chan-open-confirm" id="34-chan-open-confirm">3.4 chan-open-confirm</a></h4>
+<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+</code></pre>
+<h4><a class="header" href="#35-query-channel" id="35-query-channel">3.5 query channel</a></h4>
+<p>To verify that the two ends are in <code>Open</code> state:</p>
+<pre><code class="language-shell">hermes -c config.toml query channel end ibc-0 transfer channel-0
+</code></pre>
+<pre><code class="language-shell">hermes -c config.toml query channel end ibc-1 transfer channel-1
+</code></pre>
+<h3><a class="header" href="#5-packets" id="5-packets">5 Packets</a></h3>
+<h4><a class="header" href="#51-query-balances" id="51-query-balances">5.1 Query balances:</a></h4>
+<ul>
+<li>
+<p>balance at ibc-0</p>
+<pre><code class="language-shellscript">gaiad --node tcp://localhost:26657 query bank balances $(gaiad --home data/ibc-0 keys --keyring-backend=&quot;test&quot; show user -a)
+</code></pre>
+</li>
+<li>
+<p>balance at ibc-1</p>
+<pre><code class="language-shellscript">gaiad --node tcp://localhost:26557 query bank balances $(gaiad --home data/ibc-1 keys --keyring-backend=&quot;test&quot; show user -a)
+</code></pre>
+</li>
+</ul>
+<p>Note that the addresses used in the two commands above are configured in <code>dev-env</code>.</p>
+<h4><a class="header" href="#52-packet-relaying" id="52-packet-relaying">5.2 Packet relaying:</a></h4>
+<p>First, we'll send 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>.</p>
+<ul>
+<li>
+<p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+</code></pre>
+</li>
+<li>
+<p>query packet commitments on ibc-0</p>
+<pre><code class="language-shellscript">hermes -c config.toml query packet commitments ibc-0 transfer channel-0
+</code></pre>
+</li>
+<li>
+<p>query unreceived packets on ibc-1</p>
+<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+<li>
+<p>send recv_packet to ibc-1</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+<li>
+<p>query unreceived acks on ibc-0</p>
+<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+</code></pre>
+</li>
+<li>
+<p>send acknowledgement to ibc-0</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
+</code></pre>
+</li>
+<li>
+<p>send 1 packet with low timeout height offset to ibc-0</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+</code></pre>
+</li>
+<li>
+<p>send timeout to ibc-0</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+</ul>
+<p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-1</code>.</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
+</code></pre>
+<p>The <code>ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
+<h3><a class="header" href="#6-test-commands" id="6-test-commands">6 Test commands</a></h3>
+<h4><a class="header" href="#61-channel-close-commands" id="61-channel-close-commands">6.1 Channel Close Commands:</a></h4>
+<p><strong>Note</strong>: This command is currently rejected by the <code>cosmos-sdk</code> transfer module. To
+make it work:</p>
+<ul>
+<li>clone cosmos-sdk
+<pre><code class="language-shellscript">git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
+cd ~/go/src/github.com/cosmos/cosmos-sdk
+</code></pre>
+</li>
+<li>apply these diffs:
+<pre><code>   --- a/x/ibc/applications/transfer/module.go
+   +++ b/x/ibc/applications/transfer/module.go
+   @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
+           channelID string,
+    ) error {
+           // Disallow user-initiated channel closing for transfer channels
+   -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, &quot;user cannot close channel&quot;)
+   +       return nil
+    }
+</code></pre>
+</li>
+<li>append the line below (watch for the placeholder <code>&lt;your&gt;</code>) as the last line
+in your <code>go.mod</code> in the gaia clone:</li>
+</ul>
+<p><code>replace github.com/cosmos/cosmos-sdk =&gt; /Users/&lt;your&gt;/go/src/github.com/cosmos/cosmos-sdk</code></p>
+<ul>
+<li>now <code>make build</code> and <code>make install</code> your local copy of gaia</li>
+</ul>
+<p>In order to test the correct operation during the channel close, perform the steps below.</p>
+<ul>
+<li>transfer of 5555 samoleans from <code>ibc-1</code> to <code>ibc-0</code>. This results in a
+Tx to <code>ibc-1</code> for a <code>MsgTransfer</code> packet.
+Make sure you're not relaying this packet (the relayer should not be running on
+this path).</li>
+</ul>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+</code></pre>
+<p>Starting with channel in open-open:</p>
+<ul>
+<li>
+<p>close-open</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+</code></pre>
+</li>
+<li>
+<p>trigger timeout on close to ibc-1</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+</code></pre>
+</li>
+<li>
+<p>close-close</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+</code></pre>
+</li>
+<li>
+<p>verify that the two ends are in Close state:</p>
+<pre><code class="language-shellscript">hermes -c config.toml query channel end ibc-0 transfer channel-0
+hermes -c config.toml query channel end ibc-1 transfer channel-1
+</code></pre>
+</li>
+</ul>
+<h2><a class="header" href="#relaying-packets-using-the-event-listening-mode" id="relaying-packets-using-the-event-listening-mode">Relaying packets using the event listening mode</a></h2>
+<p>In this mode the relayer listens to IBC packet events and forwards packet transactions. The relayer can start this over a new or existing channel.</p>
+<h3><a class="header" href="#with-client-connection-and-channel-setup" id="with-client-connection-and-channel-setup">With client, connection and channel setup</a></h3>
+<p>The relayer can perform client creation, connection and channel handshake by configuring a relay path in the configuration  file. For example, you can specify that a channel between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> should be created by including the following in the configuration file:</p>
+<pre><code class="language-toml">[[connections]]
+a_chain = &quot;ibc1&quot;
+b_chain = &quot;ibc0&quot;
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+</code></pre>
+<p>Then start the relayer over this path:</p>
+<pre><code class="language-shellscript"> hermes -c config.toml start ibc-0 ibc-1
+</code></pre>
+<p>The relayer creates the clients, and perform the handshake for a new connection and channel between the two chains on <code>transfer</code> port. Once finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.</p>
+<h3><a class="header" href="#with-existing-channel" id="with-existing-channel">With existing channel</a></h3>
+<p>The relayer can be started by specifying an existing channel</p>
+<pre><code class="language-shellscript"> hermes -c config.toml start ibc-0 ibc-1 transfer channel-0
+</code></pre>
+<p>The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.</p>
+<h3><a class="header" href="#packet-relaying" id="packet-relaying">Packet relaying</a></h3>
+<ul>
+<li>
+<p>in a separate terminal, use the packet send command to send 2 packets to <code>ibc0</code> chain:</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+</code></pre>
+</li>
+<li>
+<p>use the CLI to send 2 packets to <code>ibc1</code> chain:</p>
+<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+</code></pre>
+</li>
+<li>
+<p>observe the output on the relayer terminal, verify that the send events are processed, and the <code>recv_packet</code> -s are sent out.</p>
+</li>
+<li>
+<p>query the unreceived packets on <code>ibc0</code> and <code>ibc1</code> from a different terminal</p>
+<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
+hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
+hermes -c config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
+hermes -c config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+</ul>
+<h2><a class="header" href="#relayer-listen-mode" id="relayer-listen-mode">Relayer listen mode</a></h2>
+<p>The relayer can be started in listen mode:</p>
+<pre><code class="language-shellscript">hermes -c config.toml listen ibc-0
+</code></pre>
+<p>It displays the <code>NewBlock</code> and IBC events received from the specified chain.</p>
+<h2><a class="header" href="#profiling-the-relayer" id="profiling-the-relayer">Profiling the relayer</a></h2>
+<p>The <code>relayer</code> crate provides a <code>time!</code> macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.</p>
+<h3><a class="header" href="#setup" id="setup">Setup</a></h3>
+<p>The <code>time!</code> macro has no effect unless the <code>profiling</code> feature of the <code>relayer</code> crate is enabled.</p>
+<p>To enable it, one must compile the <code>relayer-cli</code> crate with the <code>--features=profiling</code> flag.</p>
+<p>a) One way is to build the <code>relayer</code> binary and update the <code>hermes</code> alias to point to the executable:</p>
+<pre><code class="language-shellscript">$ cd relayer-cli/
+$ cargo build --features=profiling
+$ cd ..
+$ alias hermes=target/debug/relayer
+</code></pre>
+<p>b) Alternatively, one can use the <code>cargo run</code> command and update the alias accordingly:</p>
+<pre><code class="language-shellscript">$ alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
+</code></pre>
+<p>The <code>--manifest-path=relayer-cli/Cargo.toml</code> flag is needed for <code>cargo run</code> to accept the <code>--features</code> flag.</p>
+<h3><a class="header" href="#example" id="example">Example</a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn my_function(x: u32) -&gt; u32 {
+    time!(&quot;myfunction: x={}&quot;, x); // A
+
+    std::thread::sleep(Duration::from_secs(1));
+
+    {
+        time!(&quot;inner operation&quot;); // B
+
+        std::thread::sleep(Duration::from_secs(2));
+
+        // timer B ends here
+    }
+
+    x + 1
+
+    // timer A ends here
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h4><a class="header" href="#output" id="output">Output</a></h4>
+<pre><code>Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
+Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - start
+Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
+Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
+</code></pre>
+<h2><a class="header" href="#parametrizing-the-log-output-level" id="parametrizing-the-log-output-level">Parametrizing the log output level</a></h2>
+<p>The relayer configuration file, called <code>config.toml</code> in the examples above
+permits parametrization of output verbosity via the knob called <code>log_level</code>.
+Relevant snippet:</p>
+<pre><code class="language-toml">[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+</code></pre>
+<p>Valid options for <code>log_level</code> are: 'error', 'warn', 'info', 'debug', 'trace'.
+These levels correspond to the tracing sub-component of the relayer-cli, <a href="https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html">see
+here</a>.</p>
+<p>The relayer will <em>always</em> print a last line summarizing the result of its
+operation for queries of transactions. In addition to  this last line,
+arbitrary debug, info, or other outputs may be produced.  Example, with
+<code>log_level = 'debug'</code>:</p>
+<pre><code class="language-bash">Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.070&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: abscissa_core::terminal::component::Terminal (v0.5.2)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.071&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: relayer_cli::components::Tracing (v0.0.6)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.078&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;Options QueryClientConsensusOptions { client_id: ClientId(\&quot;07-tendermint-X\&quot;), revision_number: 0, revision_height: 1, height: 0, proof: true }&quot;},&quot;target&quot;:&quot;relayer_cli::commands::query::client&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.080&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;resolving host=\&quot;localhost\&quot;&quot;},&quot;target&quot;:&quot;hyper::client::connect::dns&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.083&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;connecting to [::1]:26657&quot;},&quot;target&quot;:&quot;hyper::client::connect::http&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.083&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;connecting to 127.0.0.1:26657&quot;},&quot;target&quot;:&quot;hyper::client::connect::http&quot;}
+{&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
+</code></pre>
+<p>For the same command, with <code>log_level = 'error'</code>, just the last line will be
+produced:</p>
+<pre><code class="language-bash">   Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+{&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
+</code></pre>
+<h4><a class="header" href="#next-steps-5" id="next-steps-5">Next steps</a></h4>
+<p>Now that you have two chains running with IBC support and can execute commands on then, you can refer to the <a href="./commands.html">Commands Reference</a> section to learn more about individual commands.</p>
+<h1><a class="header" href="#commands" id="commands">Commands</a></h1>
+<p>The <code>Commands</code> section presents the commands current available in Hermes</p>
+<h2><a class="header" href="#sections-2" id="sections-2">Sections</a></h2>
+<p><strong><a href="./keys.html">Keys</a></strong></p>
+<p>Commands to manage keys (private keys) for each chain.</p>
+<p><strong><a href="./light_clients.html">Light Clients</a></strong></p>
+<p>Commands to manage light client configuration. Allows adding and removing light client peers.</p>
+<p><strong><a href="./transactions.html">Raw Transactions</a></strong></p>
+<p>Command to submit transactions to configured chains</p>
+<p><strong><a href="./relayer_loop.html">Relayer</a></strong></p>
+<p>Commands to manage channels</p>
+<p><strong><a href="./queries.html">Queries</a></strong></p>
+<p>Commands to execute queries on configured chains</p>
+<p><strong><a href="./events.html">Events</a></strong></p>
+<p>Commands to listen for IBC events</p>
+<h1><a class="header" href="#adding-keys-to-the-relayer" id="adding-keys-to-the-relayer">Adding Keys to the Relayer</a></h1>
+<p>Using the <code>keys</code> command you can add and list keys. </p>
+<h4><a class="header" href="#show-usage" id="show-usage">Show usage</a></h4>
+<p>To see the available subcommands for the <code>keys</code> command run:</p>
+<pre><code class="language-shell">hermes help keys
+</code></pre>
+<p>Currently there are two subcommands supported <code>add</code> and <code>list</code>:</p>
+<pre><code class="language-shell">USAGE:
+    hermes-cli keys &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    manage keys in the relayer for each chain
+
+SUBCOMMANDS:
+    help       get usage information
+    add        adds a key to a configured chain
+    list       list keys configured on a chain
+</code></pre>
+<h3><a class="header" href="#key-seed-file-private-key" id="key-seed-file-private-key">Key Seed file (Private Key)</a></h3>
+<p>In order to execute the command below you need a private key file (JSON). The private key file will be used to sign the transactions submitted by the relayer to the chain.</p>
+<p>The private key file can be obtained by using the <code>keys add</code> on a Cosmos chain, for example for a <code>gaia</code> chain the command is:</p>
+<pre><code class="language-shell">gaiad keys add ...
+</code></pre>
+<p>The command outputs a JSON similar to the one below. You can save this file (e.g. key_seed.json) and use it to add to the relayer</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;user&quot;,
+  &quot;type&quot;: &quot;local&quot;,
+  &quot;address&quot;: &quot;cosmos1tc3vcuxyyac0dmayf887t95tdg7qpyql48w7gj&quot;,
+  &quot;pubkey&quot;: &quot;cosmospub1addwnpepqgg7ng4ycm60pdxfzdfh4hjvkwcr3da59mr8k883vsstx60ruv7kur4525u&quot;,
+  &quot;mnemonic&quot;: &quot;[24 words mnemonic]&quot;
+}
+</code></pre>
+<blockquote>
+<p><strong>WARNING</strong>: Currently the relayer does NOT support a <code>keyring</code> store to securely store the private key file. The key file will be stored on the local file system in the user <strong>$HOME</strong> folder under <code>$HOME/.rrly</code></p>
+</blockquote>
+<h3><a class="header" href="#adding-keys" id="adding-keys">Adding Keys</a></h3>
+<p>In order to add a key to a chain use the <code>keys add</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes keys add &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    adds a key to a configured chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+    file                      the key path and filename
+
+</code></pre>
+<h4><a class="header" href="#add-a-private-key-to-a-chain" id="add-a-private-key-to-a-chain">Add a private key to a chain</a></h4>
+<p>To add a private key file to a chain:</p>
+<pre><code class="language-shell">hermes -c config keys add [CHAIN_ID] [PRIVATE_KEY_FILE]
+</code></pre>
+<p>If the command is successful a message similar to the one below will be displayed:</p>
+<pre><code class="language-json">{&quot;status&quot;:&quot;success&quot;,&quot;result&quot;:[&quot;Added key testkey ([ADDRESS]) on [CHAIN ID] chain&quot;]}
+</code></pre>
+<h3><a class="header" href="#list-keys" id="list-keys">List keys</a></h3>
+<p>In order to list the private keys added to chains use the <code>keys list</code> command</p>
+<pre><code class="language-shell">USAGE:
+    hermes keys list &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    list keys configured on a chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain
+</code></pre>
+<h4><a class="header" href="#listing-the-private-key-that-was-added-to-a-chain" id="listing-the-private-key-that-was-added-to-a-chain">Listing the private key that was added to a chain</a></h4>
+<p>To list the private key file that was added to a chain:</p>
+<pre><code class="language-shell">hermes -c config keys list [CHAIN_ID]
+</code></pre>
+<p>If the command is successful a message similar to the one below will be displayed:</p>
+<pre><code class="language-json">{&quot;status&quot;:&quot;success&quot;,&quot;result&quot;:[&quot;chain: [CHAIN_ID] -&gt; testkey ([ADDRESS])&quot;]}
+</code></pre>
+<h1><a class="header" href="#light-clients-1" id="light-clients-1">Light Clients</a></h1>
+<p>Using the <code>light</code> command you can add and remove light client peers information to the chain configuration.</p>
+<h4><a class="header" href="#show-usage-1" id="show-usage-1">Show usage</a></h4>
+<p>To see the available subcommands for the <code>light</code> command run:</p>
+<pre><code class="language-shell">hermes help light
+</code></pre>
+<p>Currently there are two subcommands supported <code>add</code> and <code>rm</code>:</p>
+<pre><code class="language-shell">USAGE:
+    hermes light &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    basic functionality for managing the lite clients
+
+SUBCOMMANDS:
+    add        add a light client peer for a given chain
+    rm         remove a light client peer for a given chain
+
+</code></pre>
+<h3><a class="header" href="#adding-light-client-peers" id="adding-light-client-peers">Adding Light Client Peers</a></h3>
+<p>In order to add light client peers use the <code>add</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes light add &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    add a light client peer for a given chain
+
+POSITIONAL ARGUMENTS:
+    address                   RPC network address (required)
+                              
+FLAGS:
+    -c, --chain-id CHAIN-ID   identifier of the chain (required)
+    -s, --store STORE         path to light client store for this peer (required)
+    -p, --primary             whether this is the primary peer
+    -f, --force               allow overriding an existing peer
+    -y, --yes                 skip confirmation
+    --peer-id PEER-ID         override peer id (optional)
+    --height HEIGHT           override height (optional)
+    --hash HASH               override hash (optional)
+</code></pre>
+<h4><a class="header" href="#set-the-primary-light-client-peer-for-a-chain" id="set-the-primary-light-client-peer-for-a-chain">Set the Primary Light Client Peer for a Chain</a></h4>
+<p>In order to add a light client peer for a given chain execute the following command:</p>
+<pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] -p -y -f
+</code></pre>
+<h4><a class="header" href="#set-the-secondary-light-client-peer-for-a-chain" id="set-the-secondary-light-client-peer-for-a-chain">Set the Secondary Light Client Peer for a Chain</a></h4>
+<p>In order to add a light client peer for a given chain execute the following command:</p>
+<pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
+</code></pre>
+<p><strong>Note</strong>: The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
+<h3><a class="header" href="#removing-light-client-peers" id="removing-light-client-peers">Removing Light Client Peers</a></h3>
+<p>In order to add light client peers use the <code>rm</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes light rm &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    remove a light client peer for a given chain
+
+POSITIONAL ARGUMENTS:
+    peer_id                   identifiers of peers to remove
+                              
+FLAGS:
+    -c, --chain-id CHAIN-ID   identifier of the chain to remove peers from
+    -f, --force               force removal of primary peer
+    --all                     remove all peers, implies --force
+    -y, --yes                 skip confirmation
+
+</code></pre>
+<h4><a class="header" href="#removing-all-light-client-peers-from-a-chain" id="removing-all-light-client-peers-from-a-chain">Removing all light client peers from a chain</a></h4>
+<p>In order to remove all light peers configuration from a chain execute the following command:</p>
+<pre><code class="language-shell">hermes -c [CONFIG_FILE] light rm -c [CHAIN_ID] -y --all
+</code></pre>
+<h1><a class="header" href="#transactions" id="transactions">Transactions</a></h1>
+<h1><a class="header" href="#client" id="client">Client</a></h1>
+<p>The <code>tx raw</code> commands can be used to create and update the on-chain IBC clients.</p>
+<h2><a class="header" href="#create-client" id="create-client">Create Client</a></h2>
+<p>Use the <code>create-client</code> command to create a new client.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw create-client &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    tx raw create-client
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Create a new client of <code>ibc-1</code> on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw create-client ibc-0 ibc-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;CreateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 18,
+          &quot;revision_number&quot;: 1
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>A new client is created with identifier <code>07-tendermint-0</code></p>
+<h2><a class="header" href="#update-client" id="update-client">Update Client</a></h2>
+<p>Use the <code>update-client</code> command to update an existing client with a new consensus state.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw update-client &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    tx raw update-client
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_client_id             identifier of the client to be updated on destination chain
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Update the client on <code>ibc-0</code> with latest header of <code>ibc-1</code></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;UpdateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 273,
+          &quot;revision_number&quot;: 1
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>The client with identifier <code>07-tendermint-0</code> has been updated with the consensus state at height <code>1-273</code>.</p>
+<h1><a class="header" href="#connection-handshake" id="connection-handshake">Connection Handshake</a></h1>
+<p>The <code>tx raw</code> commands can be used to establish a connection between two clients.</p>
+<h2><a class="header" href="#connection-init" id="connection-init">Connection Init</a></h2>
+<p>Use the <code>conn-init</code> command to initialize a new connection on a chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw conn-init &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Initialize a connection attempt on chain A
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_client_id             identifier of the destination client
+    src_client_id             identifier of the source client
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Given that a two clients was previously created on chain <code>ibc-0</code> with identifier <code>07-tendermint-0</code>,
+respectively on chain <code>ibc-1</code> with identifier <code>07-tendermint-1</code>, we can initialize a connection between
+the two clients.</p>
+<p>First, let's initialize the connection on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenInitConnection&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;connection_id&quot;: &quot;connection-0&quot;,
+        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;counterparty_connection_id&quot;: null,
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.
+Note that the <code>counterparty_connection_id</code> field is currently empty.</p>
+<h2><a class="header" href="#connection-try" id="connection-try">Connection Try</a></h2>
+<p>Use the <code>conn-try</code> command to establish a counterparty to the connection on the other chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw conn-try &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay notice of a connection attempt on chain A to chain B
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_client_id             identifier of the destination client
+    src_client_id             identifier of the source client
+
+FLAGS:
+    -s, --src-connection-id SRC-CONNECTION-ID
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Let's now create the counterparty to <code>connection-0</code> on chain <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenTryConnection&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;connection_id&quot;: &quot;connection-1&quot;,
+        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.
+Note that the field <code>counterparty_connection_id</code> points to the connection on <code>ibc-0</code>.</p>
+<h2><a class="header" href="#connection-ack" id="connection-ack">Connection Ack</a></h2>
+<p>Use the <code>conn-ack</code> command to acknowledge the connection on the initial chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw conn-ack &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay acceptance of a connection attempt from chain B back to chain A
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_client_id             identifier of the destination client
+    src_client_id             identifier of the source client
+
+FLAGS:
+    -d, --dst-connection-id DST-CONNECTION-ID
+    -s, --src-connection-id SRC-CONNECTION-ID
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenAckConnection&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;connection_id&quot;: &quot;connection-0&quot;,
+        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;counterparty_connection_id&quot;: &quot;connection-1&quot;,
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
+<h2><a class="header" href="#connection-confirm" id="connection-confirm">Connection Confirm</a></h2>
+<p>Use the <code>conn-confirm</code> command to confirm that the connection has been acknowledged,
+and finish the handshake.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw conn-confirm &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Confirm opening of a connection on chain A to chain B, after which the connection is open on both chains
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_client_id             identifier of the destination client
+    src_client_id             identifier of the source client
+
+FLAGS:
+    -d, --dst-connection-id DST-CONNECTION-ID
+    -s, --src-connection-id SRC-CONNECTION-ID
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenConfirmConnection&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;connection_id&quot;: &quot;connection-1&quot;,
+        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+        &quot;height&quot;: &quot;1&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>We have now successfully established a connection between the two chains!</p>
+<h1><a class="header" href="#channel" id="channel">Channel</a></h1>
+<h1><a class="header" href="#packet" id="packet">Packet</a></h1>
+<h1><a class="header" href="#relay-path-setup-and-packet-streaming" id="relay-path-setup-and-packet-streaming">Relay Path Setup and Packet Streaming</a></h1>
+<p>The <code>start</code> command can be used to send packet transactions triggered by IBC packet events that occur for a given channel. This is also referred to packet streaming.
+A new channel can be established or an existing one can be specified.</p>
+<pre><code class="language-shellscript">USAGE:
+    hermes start &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    start the relayer (currently this refers to the v0 relayer)
+
+POSITIONAL ARGUMENTS:
+    src_chain_id              identifier of the source chain
+    dst_chain_id              identifier of the destination chain
+
+FLAGS:
+    -p, --src-port-id SRC-PORT-ID
+    -c, --src-channel-id SRC-CHANNEL-ID
+</code></pre>
+<h2><a class="header" href="#start-with-new-channel" id="start-with-new-channel">Start with New Channel</a></h2>
+<p>Use the <code>stert</code> command without flags to create new clients on <code>source</code> and <code>destination</code> chains, and new connection and new channel between the two chains.
+<strong>Note</strong>: Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-shellscript">hermes -c config.toml ibc-0 ibc-1
+</code></pre>
+<p>The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.</p>
+<h2><a class="header" href="#start-on-existing-channel" id="start-on-existing-channel">Start on Existing Channel</a></h2>
+<p>Use the <code>start</code> command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.</p>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-shellscript">hermes -c config.toml ibc-0 ibc-1 -p transfer -c channel-0
+</code></pre>
+<p><strong>Note</strong>: Finishing uncompleted handshakes can only be achieved using the <code>tx raw</code> CLIs.</p>
+<h2><a class="header" href="#packet-streaming" id="packet-streaming">Packet Streaming</a></h2>
+<p>After the relayer is started using the <code>start</code> command, it listens to IBC packet events for the channel. Assuming the events are coming from a <code>source</code> chain, the relayer builds packets based on these events, packets that are then sent either to the <code>source</code> chain or the counterparty (<code>destination</code>) chain. Current events and actions are:</p>
+<ul>
+<li><code>send_packet</code>: the relayer builds a packet message with the <code>packet</code> obtained from the event and any required proofs obtained from the counterparty of the chain where the message is sent. The concrete packet is:
+<ul>
+<li><code>MsgRecvPacket</code>, sent to <code>destination</code> chain if the channel is in open state on the <code>destination</code> chain, and a timeout has not occurred,</li>
+<li><code>MsgTimeout</code>, sent to the <code>source</code> chain if the channel is in open state on the <code>destination</code> chain, but a timeout has occurred.</li>
+<li><code>MsgTimeoutOnClose</code>, sent to the <code>source</code> chain if the channel is in closed state on the <code>destination</code> chain.</li>
+</ul>
+</li>
+<li><code>write_acknowledgement</code>: the relayer builds a <code>MsgAcknowledgement</code> packet that is sent to the <code>destination</code> chain.</li>
+</ul>
+<h2><a class="header" href="#relay-path-setup" id="relay-path-setup">Relay Path Setup</a></h2>
+<p>The <code>channel handshake</code> command can be used to establish a new channel that uses a new connection and new clients. There is no requirement for the ports to be configured in the configuration file (i.e. <code>connections</code> section may be missing).</p>
+<p><strong>Note</strong>: Reuse of existing clients and/or connections is not supported in the current version.</p>
+<pre><code class="language-shellscript">USAGE:
+    hermes channel handshake &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    tx raw
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -o, --ordering ORDERING   the channel order
+</code></pre>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-shellscript">hermes -c config.toml channel handshake ibc-0 ibc-1 transfer transfer
+</code></pre>
+<h1><a class="header" href="#queries" id="queries">Queries</a></h1>
+<h1><a class="header" href="#query-clients" id="query-clients">Query Clients</a></h1>
+<p>The <code>query clients</code> command can be used to query the identifiers of all clients on a given chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query clients &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query clients
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query all clients on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query clients ibc-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      &quot;07-tendermint-0&quot;,
+      &quot;07-tendermint-1&quot;,
+      &quot;07-tendermint-2&quot;,
+      &quot;07-tendermint-3&quot;
+    ]
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#query-client-data" id="query-client-data">Query Client Data</a></h1>
+<p>The <code>query client</code> commands can be used to query the information about a specific client.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query client &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    query information about client(s)
+
+SUBCOMMANDS:
+    state      query client full state
+    consensus  query client consensus
+    connections query client connections
+</code></pre>
+<h2><a class="header" href="#query-the-client-state" id="query-the-client-state">Query the client state</a></h2>
+<p>The client state can be queried with the <code>query client state</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query client state &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query client full state
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    client_id                 identifier of the client to query
+
+FLAGS:
+    -h, --height HEIGHT       the chain height which this query should reflect
+    -p, --proof PROOF         whether proof is required; default: false (no proof)
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the state of client <code>07-tendermint-2</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query client state ibc-1 07-tendermint-2 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;type&quot;: &quot;Tendermint&quot;,
+      &quot;allow_update_after_expiry&quot;: false,
+      &quot;allow_update_after_misbehaviour&quot;: false,
+      &quot;chain_id&quot;: &quot;ibc-0&quot;,
+      &quot;frozen_height&quot;: {
+        &quot;revision_height&quot;: 0,
+        &quot;revision_number&quot;: 0
+      },
+      &quot;latest_height&quot;: {
+        &quot;revision_height&quot;: 948,
+        &quot;revision_number&quot;: 0
+      },
+      &quot;max_clock_drift&quot;: {
+        &quot;nanos&quot;: 0,
+        &quot;secs&quot;: 3
+      },
+      &quot;trust_level&quot;: {
+        &quot;denominator&quot;: &quot;3&quot;,
+        &quot;numerator&quot;: &quot;1&quot;
+      },
+      &quot;trusting_period&quot;: {
+        &quot;nanos&quot;: 0,
+        &quot;secs&quot;: 1209600
+      },
+      &quot;unbonding_period&quot;: {
+        &quot;nanos&quot;: 0,
+        &quot;secs&quot;: 1814400
+      },
+      &quot;upgrade_path&quot;: [
+        &quot;upgrade&quot;,
+        &quot;upgradedIBCState&quot;
+      ]
+    }
+  ]
+}
+</code></pre>
+<h2><a class="header" href="#query-the-client-consensus-state" id="query-the-client-consensus-state">Query the client consensus state</a></h2>
+<p>The consensus state at a given height can be queried with the <code>query client consensus</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query client consensus &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query client consensus
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    client_id                 identifier of the client to query
+    consensus_epoch           epoch of the client's consensus state to query
+    consensus_height          height of the client's consensus state to query
+
+FLAGS:
+    -h, --height HEIGHT       the chain height which this query should reflect
+    -p, --proof PROOF         whether proof is required
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the state of client <code>07-tendermint-2</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;type&quot;: &quot;Tendermint&quot;,
+      &quot;next_validators_hash&quot;: &quot;61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33&quot;,
+      &quot;root&quot;: &quot;82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8&quot;,
+      &quot;timestamp&quot;: &quot;2021-02-01T13:42:30.30536Z&quot;
+    }
+  ]
+}
+</code></pre>
+<h2><a class="header" href="#query-the-identifiers-of-all-connections-associated-with-a-given-client" id="query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></h2>
+<p>The connections associated with a given client can be queried with the <code>query client connections</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query client connections &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query client connections
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    client_id                 identifier of the client to query
+
+FLAGS:
+    -h, --height HEIGHT       the chain height which this query should reflect
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the connections of client <code>07-tendermint-0</code> on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">$ hermes query client connections ibc-0 07-terndermint-0
+{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      &quot;connection-0&quot;,
+      &quot;connection-1&quot;,
+      &quot;connection-2&quot;
+    ]
+  ]
+}```
+</code></pre>
+<h1><a class="header" href="#query-connections" id="query-connections">Query Connections</a></h1>
+<p>The <code>query connections</code> command can be used to query the identifiers of all clients on a given chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query connections &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query the identifiers of all connections on a chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query all connections on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query connections ibc-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      &quot;connection-0&quot;,
+      &quot;connection-1&quot;,
+      &quot;connection-2&quot;,
+      &quot;connection-3&quot;
+    ]
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#query-connection-data" id="query-connection-data">Query Connection Data</a></h1>
+<p>The <code>query connection</code> commands can be used to query the information about a specific connection.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query connection &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    query information about connection(s)
+
+SUBCOMMANDS:
+    end        query connection end
+    channels   query connection channels
+</code></pre>
+<h2><a class="header" href="#query-the-connection-end-data" id="query-the-connection-end-data">Query the connection end data</a></h2>
+<p>The connection end data can be queried with the <code>query connection end</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query connection end &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query connection end
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    connection_id             identifier of the connection to query
+
+FLAGS:
+    -h, --height HEIGHT       height of the state to query
+    -p, --proof PROOF         whether proof is required; default: false (no proof)
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the connection end of connection <code>connection-1</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query connection end ibc-1 connection-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;client_id&quot;: &quot;07-tendermint-2&quot;,
+      &quot;counterparty&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;connection_id&quot;: &quot;connection-0&quot;,
+        &quot;prefix&quot;: &quot;ibc&quot;
+      },
+      &quot;delay_period&quot;: 0,
+      &quot;state&quot;: &quot;Open&quot;,
+      &quot;versions&quot;: [
+        {
+          &quot;features&quot;: [
+            &quot;ORDER_ORDERED&quot;,
+            &quot;ORDER_UNORDERED&quot;
+          ],
+          &quot;identifier&quot;: &quot;1&quot;
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h2><a class="header" href="#query-the-identifiers-of-all-channels-associated-with-a-given-connection" id="query-the-identifiers-of-all-channels-associated-with-a-given-connection">Query the identifiers of all channels associated with a given connection</a></h2>
+<p>The identifiers of the channels associated with a given connection
+can be queried with the <code>query connection channels</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query connection channels &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query connection channels
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    connection_id             identifier of the connection to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the channels associated with connection <code>connection-1</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query connection channels ibc-1 connection-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      &quot;channel-1&quot;
+    ]
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#query-channels" id="query-channels">Query Channels</a></h1>
+<p>The <code>query channels</code> command can be used to query the identifiers of all channels on a given chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query channels &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query the identifiers of all channels on a chain
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query all channels on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query channels ibc-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    [
+      &quot;channel-0&quot;,
+      &quot;channel-1&quot;,
+      &quot;channel-2&quot;,
+      &quot;channel-3&quot;
+    ]
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#query-channel-data" id="query-channel-data">Query Channel Data</a></h1>
+<p>The <code>query channel</code> commands can be used to query the information about a specific channel.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query channel &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    query information about channel(s)
+
+SUBCOMMANDS:
+    end        query channel end
+</code></pre>
+<h2><a class="header" href="#query-the-channel-end-data" id="query-the-channel-end-data">Query the channel end data</a></h2>
+<p>The channel end data can be queried with the <code>query channel end</code> command:</p>
+<pre><code class="language-shell">USAGE:
+    hermes query channel end &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query channel end
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    port_id                   identifier of the port to query
+    channel_id                identifier of the channel to query
+
+FLAGS:
+    -h, --height HEIGHT       height of the state to query
+    -p, --proof PROOF         whether proof is required
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the channel end of channel <code>channel-1</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query channel end ibc-1 channel-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;connection_hops&quot;: [
+        &quot;connection-1&quot;
+      ],
+      &quot;ordering&quot;: &quot;Unordered&quot;,
+      &quot;remote&quot;: {
+        &quot;channel_id&quot;: &quot;channel-0&quot;,
+        &quot;port_id&quot;: &quot;transfer&quot;
+      },
+      &quot;state&quot;: &quot;Open&quot;,
+      &quot;version&quot;: &quot;ics20-1&quot;
+    }
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#packet-1" id="packet-1">Packet</a></h1>
+<h1><a class="header" href="#events" id="events">Events</a></h1>
+<h1><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h1>
+<p>These are some of the most common issues you may encounter when running the relayer. Here are some troubleshooting tips to help you solve the issues.</p>
+<blockquote>
+<p>[TODO]</p>
+</blockquote>
+<h1><a class="header" href="#frequently-asked-questions" id="frequently-asked-questions">Frequently Asked Questions</a></h1>
+<p>Here are some of the most frequently asked questions concerning Hermes operating and functionality</p>
+<h4><a class="header" href="#can-i-connect-more-than-two-chains-using-hermes-" id="can-i-connect-more-than-two-chains-using-hermes-">Can I connect more than two chains using Hermes ?</a></h4>
+<p>[ANSWER]</p>
+<h1><a class="header" href="#glossary" id="glossary">Glossary</a></h1>
+<p>These are some of the definitions used in this guide: </p>
+<table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody>
+<tr><td>IBC transaction</td><td>A transaction that includes IBC datagrams (including packets). This is constructed by the relayer and sent over the physical network to a chain according to the chain rules. For example, for tendermint chains a broadcast_tx_commit request is sent to a tendermint RPC server.</td></tr>
+<tr><td>IBC datagram</td><td>An element of the transaction payload sent by the relayer; it includes client, connection, channel and IBC packet data. Multiple IBC datagrams may be included in an IBC transaction.</td></tr>
+<tr><td>IBC packet</td><td>A particular type of IBC datagram that includes the application packet and its commitment proof.</td></tr>
+<tr><td>IBC Client</td><td>Client code running on chain, typically only the light client verification related functionality.</td></tr>
+<tr><td>Relayer Light Client</td><td>Full light client functionality, including connecting to at least one provider (full node), storing and verifying headers, etc.</td></tr>
+<tr><td>Source chain</td><td>The chain from which the relayer reads data to fill an IBC datagram.</td></tr>
+<tr><td>Destination chain</td><td>The chain where the relayer submits transactions that include the IBC datagram.</td></tr>
+</tbody></table>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="mermaid.min.js"></script>
+        
+        <script type="text/javascript" src="mermaid-init.js"></script>
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
