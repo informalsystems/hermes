@@ -23,7 +23,10 @@ chainBvars == <<chainBstore, packetDatagramsChainB, appPacketSeqChainB>>
 vars == <<chainAstore, packetDatagramsChainA, appPacketSeqChainA,
           chainBstore, packetDatagramsChainB, appPacketSeqChainB,
           packetLog, accounts, escrowAccounts>>
-          
+
+Heights == 1..MaxHeight
+NativeDenominations == {NativeDenominationChainA, NativeDenominationChainB}   
+AllDenominations == Seq(ChannelIDs \union PortIDs \union NativeDenominations)       
           
 (***************************************************************************
  Instances of ICS20Chain
@@ -327,6 +330,20 @@ SumOverBankAccountsWithPrefixedDenoms(chainID) ==
 (***************************************************************************
  Properties and invariants
  ***************************************************************************)
+ 
+\* Type invariant
+TypeOK ==
+    /\ chainAstore \in ChainStores(Heights, MaxPacketSeq, MaxBalance, NativeDenominations)
+    /\ chainBstore \in ChainStores(Heights, MaxPacketSeq, MaxBalance, NativeDenominations)
+    /\ appPacketSeqChainA \in 1..(MaxPacketSeq + 1)
+    /\ appPacketSeqChainB \in 1..(MaxPacketSeq + 1)
+    /\ packetDatagramsChainA \in Seq(Datagrams(Heights, MaxPacketSeq, MaxBalance, NativeDenominations))
+    /\ packetDatagramsChainB \in Seq(Datagrams(Heights, MaxPacketSeq, MaxBalance, NativeDenominations))
+    /\ packetLog \in Seq(PacketLogEntries(Heights, MaxPacketSeq, MaxBalance, NativeDenominations))
+    /\ DOMAIN accounts \subseteq ChainIDs \X AllDenominations 
+    /\ \A accountID \in DOMAIN accounts : accounts[accountID] \in 0..MaxBalance
+    /\ DOMAIN escrowAccounts \subseteq EscrowAccountsDomain
+    /\ \A accountID \in DOMAIN escrowAccounts : escrowAccounts[accountID] \in 0..MaxBalance  
 
 \* There are MaxBalance coins of the native denomination in bank and escrow accounts 
 \* for a given chain
@@ -365,5 +382,5 @@ ICS20Prop ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 23 16:41:48 CET 2020 by ilinastoilkovska
+\* Last modified Mon Feb 01 12:38:47 CET 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska
