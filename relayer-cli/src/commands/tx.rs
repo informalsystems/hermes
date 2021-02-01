@@ -28,64 +28,62 @@ pub enum TxRawCommands {
     Help(Help<Self>),
 
     /// The `tx raw create-client` subcommand submits a MsgCreateClient in a transaction to a chain
-    #[options(help = "tx raw create-client")]
+    #[options(help = "Create a client for source chain on destination chain")]
     CreateClient(TxCreateClientCmd),
 
     /// The `tx raw update-client` subcommand submits a MsgUpdateClient in a transaction to a chain
-    #[options(help = "tx raw update-client")]
+    #[options(help = "Update the specified client on destination chain")]
     UpdateClient(TxUpdateClientCmd),
 
     /// The `tx raw conn-init` subcommand
-    #[options(help = "Initialize a connection attempt on chain A")]
+    #[options(help = "Initialize a connection (ConnectionOpenInit)")]
     ConnInit(connection::TxRawConnInitCmd),
 
     /// The `tx raw conn-try` subcommand
-    #[options(help = "Relay notice of a connection attempt on chain A to chain B")]
+    #[options(help = "Relay the connection attempt (ConnectionOpenTry)")]
     ConnTry(connection::TxRawConnTryCmd),
 
     /// The `tx raw conn-ack` subcommand
-    #[options(help = "Relay acceptance of a connection attempt from chain B back to chain A")]
+    #[options(help = "Relay acknowledgment of a connection attempt (ConnectionOpenAck)")]
     ConnAck(connection::TxRawConnAckCmd),
 
     /// The `tx raw conn-confirm` subcommand
-    #[options(
-        help = "Confirm opening of a connection on chain A to chain B, after which the connection is open on both chains"
-    )]
+    #[options(help = "Confirm opening of a connection (ConnectionOpenConfirm)")]
     ConnConfirm(connection::TxRawConnConfirmCmd),
 
     /// The `tx raw chan-open-init` subcommand
-    #[options(help = "tx raw chan-open-init")]
+    #[options(help = "Initialize a channel (ChannelOpenInit)")]
     ChanOpenInit(channel::TxRawChanOpenInitCmd),
 
     /// The `tx raw chan-try` subcommand
-    #[options(help = "tx raw chan-open-try")]
+    #[options(help = "Relay the channel attempt (ChannelOpenTry)")]
     ChanOpenTry(channel::TxRawChanOpenTryCmd),
 
     /// The `tx raw chan-open-ack` subcommand
-    #[options(help = "tx raw chan-open-ack")]
+    #[options(help = "Relay acknowledgment of a channel attempt (ChannelOpenAck)")]
     ChanOpenAck(channel::TxRawChanOpenAckCmd),
 
     /// The `tx raw chan-open-confirm` subcommand
-    #[options(help = "tx raw chan-open-confirm")]
+    #[options(help = "Confirm opening of a channel (ChannelOpenConfirm)")]
     ChanOpenConfirm(channel::TxRawChanOpenConfirmCmd),
 
     /// The `tx raw chan-close-init` subcommand
-    #[options(help = "tx raw chan-close-init")]
+    #[options(help = "Initiate the closing of a channel (ChannelCloseInit)")]
     ChanCloseInit(channel::TxRawChanCloseInitCmd),
 
     /// The `tx raw chan-close-confirm` subcommand
-    #[options(help = "tx raw chan-close-confirm")]
+    #[options(help = "Confirm the closing of a channel (ChannelCloseConfirm)")]
     ChanCloseConfirm(channel::TxRawChanCloseConfirmCmd),
 
     /// The `tx raw packet-send` subcommand
-    #[options(help = "tx raw packet-send")]
-    PacketSend(transfer::TxRawSendPacketCmd),
+    #[options(help = "Send a fungible token transfer test transaction (ICS20 MsgTransfer)")]
+    FtTransfer(transfer::TxICS20MsgTransferCmd),
 
     /// The `tx raw packet-recv` subcommand
-    #[options(help = "tx raw packet-recv")]
+    #[options(help = "Relay receive or timeout packets")]
     PacketRecv(packet::TxRawPacketRecvCmd),
 
     /// The `tx raw packet-ack` subcommand
-    #[options(help = "tx raw packet-ack")]
+    #[options(help = "Relay acknowledgment packets")]
     PacketAck(packet::TxRawPacketAckCmd),
 }
