@@ -91,13 +91,16 @@ should show a message similar to the one below:
 }
 ```
 
-Now let's do the same for `ibc-1` as the destination chain:
+Now let's do the same (*) for `ibc-1` as the destination chain:
 
 ```shell
 hermes -c config.toml tx raw create-client ibc-1 ibc-0
 ```
+Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1`.
 
-As before, it the command is successful a message with `status:success` is displayed:
+__Note__: You can create a client on `ibc-1` and the chain will assign `07-tendermint-1` as its `client_id`
+
+As before, if the (second) command is successful a message with `status:success` is displayed:
 
 ```json
 {
@@ -138,6 +141,13 @@ hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint
 Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0` in order to use it in the `conn-try` command below.
 
 #### 2.2 `conn-try`
+__Note__: If this is the first connection to be created on `ibc-1`, prior to the `conn-try` command, you can send a `conn-init` to `ibc-1` and the chain will allocate `connection-0`. This will ensure that the next available ID, `connection-1`, will be allocated in `conn-try`.
+
+```shell
+hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 dummyconnection dummyconnection
+```
+
+To send a `conn-try` message to `ibc-1`:
 
 ```shell
 hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 dummyconnection connection-0
@@ -178,10 +188,19 @@ hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer tr
 ```
 
 #### 3.2 chan-open-try
+__Note__: If this is the first channel to be created on `ibc-1`, prior to the `chan-open-try` command, you can send a `chan-open-init` to `ibc-1` and the chain will allocate `channel-0`. This will ensure that the next available ID, `channel-1`, will be allocated in `chan-open-try`.
+
+```shell
+hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
+```
+
+To send the `chan-open-try` message to `ibc-1`:
 
 ```shell
 hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
 ```
+
+Take note of the ID allocated by the chain, e.g. `channel-1` on `ibc-1`. Use in the `chan-open-ack` CLI
 
 #### 3.3 chan-open-ack
 
