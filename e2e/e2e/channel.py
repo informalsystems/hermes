@@ -27,8 +27,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
     def args(self) -> List[str]:
         args = [self.dst_chain_id, self.src_chain_id,
                 self.connection_id,
-                self.dst_port_id, self.src_port_id,
-                "defaultChannel", "defaultChannel"]
+                self.dst_port_id, self.src_port_id]
 
         if self.ordering is not None:
             args.extend(['--ordering', str(self.ordering)])
@@ -67,7 +66,7 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
         args = [self.dst_chain_id, self.src_chain_id,
                 self.connection_id,
                 self.dst_port_id, self.src_port_id,
-                "defaultChannel", self.src_channel_id]
+                "-s", self.src_channel_id]
 
         if self.ordering is not None:
             args.extend(['--ordering', str(self.ordering)])
@@ -106,7 +105,8 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
         args = [self.dst_chain_id, self.src_chain_id,
                 self.connection_id,
                 self.dst_port_id, self.src_port_id,
-                self.dst_channel_id, self.src_channel_id]
+                "-d", self.dst_channel_id,
+                "-s", self.src_channel_id]
 
         return args
 
@@ -142,7 +142,8 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
         args = [self.dst_chain_id, self.src_chain_id,
                 self.connection_id,
                 self.dst_port_id, self.src_port_id,
-                self.dst_channel_id, self.src_channel_id]
+                "-d", self.dst_channel_id,
+                "-s", self.src_channel_id]
 
         return args
 
@@ -153,13 +154,13 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
 # -----------------------------------------------------------------------------
 
 
-@dataclass
+@ dataclass
 class Remote:
     channel_id: ChannelId
     port_id: PortId
 
 
-@dataclass
+@ dataclass
 class ChannelEnd:
     connection_hops: List[Any]
     ordering: str
@@ -168,8 +169,8 @@ class ChannelEnd:
     version: str
 
 
-@cmd("query channel end")
-@dataclass
+@ cmd("query channel end")
+@ dataclass
 class QueryChannelEnd(Cmd[ChannelEnd]):
     chain_id: ChainId
     port_id: PortId
