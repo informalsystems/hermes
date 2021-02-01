@@ -344,7 +344,7 @@ impl Runnable for TxRawChanCloseInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: Ordering::default(),
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
