@@ -87,12 +87,13 @@ $ hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermin
   "status": "success",
   "result": [
     {
-      "type": "OpenTryConnection",
-      "client_id": "07-tendermint-1",
-      "connection_id": "connection-1",
-      "counterparty_client_id": "07-tendermint-0",
-      "counterparty_connection_id": "connection-0",
-      "height": "1"
+      "OpenTryConnection": {
+        "client_id": "07-tendermint-1",
+        "connection_id": "connection-1",
+        "counterparty_client_id": "07-tendermint-0",
+        "counterparty_connection_id": "connection-0",
+        "height": "1"
+      }
     }
   ]
 }
@@ -134,13 +135,14 @@ $ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermin
 {
   "status": "success",
   "result": [
-  {
-      "type": "OpenAckConnection",
-      "client_id": "07-tendermint-0",
-      "connection_id": "connection-0",
-      "counterparty_client_id": "07-tendermint-1",
-      "counterparty_connection_id": "connection-1",
-      "height": "1"
+    {
+      "OpenAckConnection": {
+        "client_id": "07-tendermint-0",
+        "connection_id": "connection-0",
+        "counterparty_client_id": "07-tendermint-1",
+        "counterparty_connection_id": "connection-1",
+        "height": "1"
+      }
     }
   ]
 }
@@ -183,12 +185,13 @@ $ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tende
   "status": "success",
   "result": [
     {
-      "type": "OpenConfirmConnection",
-      "client_id": "07-tendermint-1",
-      "connection_id": "connection-1",
-      "counterparty_client_id": "07-tendermint-0",
-      "counterparty_connection_id": "connection-0",
-      "height": "1"
+      "OpenConfirmConnection": {
+        "client_id": "07-tendermint-1",
+        "connection_id": "connection-1",
+        "counterparty_client_id": "07-tendermint-0",
+        "counterparty_connection_id": "connection-0",
+        "height": "1"
+      }
     }
   ]
 }
