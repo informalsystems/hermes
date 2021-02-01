@@ -9,7 +9,7 @@ class Packet:
     source_channel: ChannelId
     destination_port: PortId
     destination_channel: ChannelId
-    data: bytes
+    data: Hex
     timeout_height: Height
     timeout_timestamp: Timestamp
 
@@ -42,7 +42,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 class TxPacketRecvRes:
     height: BlockHeight
     packet: Packet
-    ack: bytes
+    ack: Hex
 
 
 @cmd("tx raw packet-recv")

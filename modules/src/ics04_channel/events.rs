@@ -491,6 +491,7 @@ impl std::fmt::Display for ReceivePacket {
 pub struct WriteAcknowledgement {
     pub height: block::Height,
     pub packet: Packet,
+    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub ack: Vec<u8>,
 }
 

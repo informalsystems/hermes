@@ -116,7 +116,7 @@ class Version:
 class Counterparty:
     client_id: ClientId
     connection_id: ConnectionId
-    prefix: bytes
+    prefix: str
 
 
 @dataclass

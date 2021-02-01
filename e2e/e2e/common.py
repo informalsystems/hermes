@@ -33,6 +33,7 @@ ClientId = NewType('ClientId', str)
 ChannelId = NewType('ChannelId', str)
 ConnectionId = NewType('ConnectionId', str)
 
+Hex = NewType('Hex', str)
 Sequence = NewType('Sequence', str)
 Timestamp = NewType('Timestamp', int)
 ClientType = NewType('ClientType', str)

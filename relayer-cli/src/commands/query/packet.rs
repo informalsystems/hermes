@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
 use serde_json::json;
+use subtle_encoding::{Encoding, Hex};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
@@ -75,10 +76,10 @@ impl Runnable for QueryPacketCommitmentsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(cmts) => {
+            Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
-                let seqs: Vec<u64> = cmts.0.iter().map(|ps| ps.sequence).collect();
-                Output::success(seqs).with_result(json!(cmts.1)).exit();
+                let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
+                Output::success(seqs).with_result(json!(height)).exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -139,14 +140,17 @@ impl Runnable for QueryPacketCommitmentCmd {
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Recv,
-            &opts.port_id,
-            &opts.channel_id,
+            opts.port_id,
+            opts.channel_id,
             sequence,
             Height::new(0, opts.height),
         );
 
         match res {
-            Ok(cmt) => Output::success(cmt.0).exit(),
+            Ok((bytes, _proofs)) => {
+                let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
+                Output::success(hex).exit()
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -427,14 +431,17 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
 
         let res = chain.build_packet_proofs(
             PacketMsgType::Ack,
-            &opts.port_id,
-            &opts.channel_id,
+            opts.port_id,
+            opts.channel_id,
             sequence,
             Height::new(0, opts.height),
         );
 
         match res {
-            Ok(ack) => Output::success(ack.0).exit(),
+            Ok((bytes, _proofs)) => {
+                let hex = Hex::upper_case().encode_to_string(bytes).unwrap();
+                Output::success(hex).exit()
+            }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
