@@ -1276,7 +1276,7 @@ POSITIONAL ARGUMENTS:
     hermes tx raw conn-init &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    Initialize a connection attempt on chain A
+    Initialize a connection (ConnectionOpenInit)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -1313,7 +1313,7 @@ Note that the <code>counterparty_connection_id</code> field is currently empty.<
     hermes tx raw conn-try &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    Relay notice of a connection attempt on chain A to chain B
+    Relay the connection attempt (ConnectionOpenTry)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -1351,7 +1351,7 @@ Note that the field <code>counterparty_connection_id</code> points to the connec
     hermes tx raw conn-ack &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    Relay acceptance of a connection attempt from chain B back to chain A
+    Relay acknowledgment of a connection attempt (ConnectionOpenAck)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -1364,6 +1364,7 @@ FLAGS:
     -s, --src-conn-id ID      identifier of the source connection (required)
 </code></pre>
 <p><strong>Example</strong></p>
+<p>We can now acknowledge on <code>ibc-0</code> that <code>ibc-1</code> has accepted the connection attempt:</p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
 </code></pre>
 <pre><code class="language-json">{
@@ -1384,12 +1385,12 @@ FLAGS:
 <p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
 <h2><a class="header" href="#connection-confirm" id="connection-confirm">Connection Confirm</a></h2>
 <p>Use the <code>conn-confirm</code> command to confirm that the connection has been acknowledged,
-and finish the handshake.</p>
+and finish the handshake, after which the connection is open on both chains.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw conn-confirm &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    Confirm opening of a connection on chain A to chain B, after which the connection is open on both chains
+    Confirm opening of a connection (ConnectionOpenConfirm)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -1402,6 +1403,7 @@ FLAGS:
     -s, --src-conn-id ID      identifier of the source connection (required)
 </code></pre>
 <p><strong>Example</strong></p>
+<p>Confirm on <code>ibc-1</code> that <code>ibc-0</code> has accepted the connection attempt.</p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
 </code></pre>
 <pre><code class="language-json">{
@@ -1524,6 +1526,7 @@ FLAGS:
     -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
+<p>We can now acknowledge on <code>ibc-0</code> that <code>ibc-1</code> has accepted the opening of the channel:</p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
 </code></pre>
 <pre><code class="language-json">{
@@ -1565,6 +1568,8 @@ FLAGS:
     -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
+<p>Confirm on <code>ibc-1</code> that <code>ibc-0</code> has accepted the opening of the channel,
+after which the channel is open on both chains.</p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
 </code></pre>
 <pre><code class="language-json">{
