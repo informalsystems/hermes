@@ -159,7 +159,7 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 - start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This results in a Tx to `ibc-0` for a `MsgTransfer` packet
 
     ```shell script
-    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+    hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
     ```
 
 - query packet commitments on ibc-0
@@ -195,7 +195,7 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 - send 1 packet with low timeout height offset to ibc-0
 
     ```shell script
-    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+    hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
     ```
 
 - send timeout to ibc-0
@@ -207,7 +207,7 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 Send those samoleans back, from `ibc-1` to `ibc-1`.
 
 ```shell script
-hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
 hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```
@@ -252,7 +252,7 @@ Make sure you're not relaying this packet (the relayer should not be running on
 this path).
 
 ```shell script
-hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
 ```
   
 Starting with channel in open-open:
@@ -319,13 +319,13 @@ the relayer `v0` loop.
 - in a separate terminal, use the CLI to send 2 packets to ibc0 chain:
 
     ```shell script
-    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
     
 - use the CLI to send 2 packets to ibc1 chain:
 
     ```shell script
-    hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
     ```
 
 - observe the output on the relayer terminal, verify that the send events are processed and the recv_packets are sent out.

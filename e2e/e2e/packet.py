@@ -20,7 +20,7 @@ class TxPacketSendRes:
     packet: Packet
 
 
-@cmd("tx raw packet-send")
+@cmd("tx raw ft-transfer")
 @dataclass
 class TxPacketSend(Cmd[TxPacketSendRes]):
     src_chain_id: ChainId
