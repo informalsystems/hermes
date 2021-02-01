@@ -154,7 +154,7 @@ $ hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
 ```
 
 ## Query the identifiers of all connections associated with a given client 
-The connections associated with a given client can be queried `query client connections` command:
+The connections associated with a given client can be queried with the `query client connections` command:
 
 ```shell
 USAGE:
@@ -173,9 +173,17 @@ FLAGS:
 
 __Example__
 
-Query the connections of client `07-tendermint-2` on `ibc-1`:
+Query the connections of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-$ hermes query client connections ibc-1 07-terndermint-2
-{"status":"success","result":[[]]}
-```
+$ hermes query client connections ibc-0 07-terndermint-0
+{
+  "status": "success",
+  "result": [
+    [
+      "connection-0",
+      "connection-1",
+      "connection-2"
+    ]
+  ]
+}```
