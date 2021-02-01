@@ -54,7 +54,7 @@ should show a message similar to the one below:
     "status": "success",
     "result": [
         {
-            "AnyClientState": "Tendermint",
+            "type": "Tendermint",
             "allow_update_after_expiry": false,
             "allow_update_after_misbehaviour": false,
             "chain_id": "ibc-1",

@@ -76,7 +76,7 @@ $ hermes -c config.toml query client state ibc-1 07-tendermint-2 | jq
   "status": "success",
   "result": [
     {
-      "AnyClientState": "Tendermint",
+      "type": "Tendermint",
       "allow_update_after_expiry": false,
       "allow_update_after_misbehaviour": false,
       "chain_id": "ibc-0",
@@ -144,7 +144,7 @@ $ hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
   "status": "success",
   "result": [
     {
-      "AnyConsensusState": "Tendermint",
+      "type": "Tendermint",
       "next_validators_hash": "61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33",
       "root": "82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8",
       "timestamp": "2021-02-01T13:42:30.30536Z"
