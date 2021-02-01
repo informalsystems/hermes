@@ -34,6 +34,7 @@
   - Add `packet-send` CLI ([#470])
   - UX improvements for relayer txs ([#536, #540, #554])
   - Allow running standalone commands concurrently to the main relayer loop ([#501])
+  - Remove the simd-based integration tests ([#593])
 
 - [relayer]
   - Performance improvements ([#514], [#537])
@@ -80,6 +81,7 @@
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
 [#583]: https://github.com/informalsystems/ibc-rs/issues/583
+[#593]: https://github.com/informalsystems/ibc-rs/issues/593
 
 ## v0.0.6
 *December 23, 2020*
