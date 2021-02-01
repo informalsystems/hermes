@@ -15,7 +15,6 @@ use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(tag = "type")]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
