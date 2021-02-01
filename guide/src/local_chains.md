@@ -27,9 +27,9 @@ rm -rf data/
 
 In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
 
-The following configuration file in the `scripts` folder can be used for running the local chains:
+The following configuration file in the `ibc-rs` repository folder can be used for running the local chains:
 
-#### config.toml
+#### config_example.toml
 ```toml
 [global]
 timeout = '10s'
@@ -43,10 +43,7 @@ grpc_addr = 'tcp://localhost:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-
-gas = 200000
-max_msg_num = 4
-max_tx_size = 1048576
+gas = 3000000
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -61,17 +58,26 @@ grpc_addr = 'tcp://localhost:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
+gas = 3000000
 clock_drift = '5s'
 trusting_period = '14days'
 
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
 ```
 
 ### Running the script to start the chains
 
-From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
+From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`) and configure the light client peers:
 
 ```bash
 ./scripts/dev-env config.toml ibc-0 ibc-1
