@@ -1,6 +1,6 @@
 # Install Gaia
 
-The script to start the chains depend on gaia being installed on the machine.
+The script to start the chains requires gaia to be installed.
 
 #### Clone gaia
 

@@ -1,6 +1,6 @@
 # Tutorials
 
-In this section we can find some tutorials in order to learn some common uses for the relayer.
+This section includes tutorials for some common relayer uses cases.
 
 ## Basic tutorials
 

@@ -17,7 +17,7 @@
     e.g.:
 
     ```shell
-    ./scripts/dev-env loop_config.toml ibc-0 ibc-1
+    ./scripts/dev-env config.toml ibc-0 ibc-1
     ```
 
 #### Stop and cleanup
@@ -43,9 +43,9 @@ alias hermes='cargo run --bin hermes --'
 **Note 2:** In these instructions IDs `..-0` are used on `ibc-0` and `..-1` on `ibc-1`. You can control to some extent the ID generation by running some of these commands:
 
 ```shell script
-hermes -c loop_config.toml tx raw create-client ibc-1 ibc-0
-hermes -c loop_config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
-hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
+hermes -c config.toml tx raw create-client ibc-1 ibc-0
+hermes -c config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
+hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
 
 ```
 
@@ -54,18 +54,18 @@ hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transf
 - create client:
 
     ```shell script
-    hermes -c loop_config.toml tx raw create-client ibc-0 ibc-1
-    hermes -c loop_config.toml tx raw create-client ibc-1 ibc-0
+    hermes -c config.toml tx raw create-client ibc-0 ibc-1
+    hermes -c config.toml tx raw create-client ibc-1 ibc-0
 
-    hermes -c loop_config.toml query client state ibc-0 07-tendermint-0
-    hermes -c loop_config.toml query client state ibc-1 07-tendermint-0
+    hermes -c config.toml query client state ibc-0 07-tendermint-0
+    hermes -c config.toml query client state ibc-1 07-tendermint-0
     ```
 
 - update client
 
     ```shell script
-    hermes -c loop_config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0
-    hermes -c loop_config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-0
+    hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0
+    hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-0
     ```
 
 #### Connection CLIs:
@@ -73,7 +73,7 @@ hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transf
 - init-none:
 
     ```shell script
-    hermes -c loop_config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 dummyconnection dummyconnection
+    hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 dummyconnection dummyconnection
     ```
 
     Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0`. Use in the `conn-try` CLI
@@ -81,7 +81,7 @@ hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transf
 - init-try:
 
     ```shell script
-    hermes -c loop_config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 dummyconnection connection-0
+    hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 dummyconnection connection-0
     ```
 
     Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI
@@ -89,20 +89,20 @@ hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transf
 - open-try:
 
     ```shell script
-    hermes -c loop_config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 connection-0 connection-1
+    hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 connection-0 connection-1
     ```
 
 - open-open:
 
     ```shell script
-    hermes -c loop_config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 connection-1 connection-0
+    hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 connection-1 connection-0
     ```
 
 - verify that the two ends are in Open state:
 
     ```shell script
-    hermes -c loop_config.toml query connection end ibc-1 connection-1
-    hermes -c loop_config.toml query connection end ibc-0 connection-0
+    hermes -c config.toml query connection end ibc-1 connection-1
+    hermes -c config.toml query connection end ibc-0 connection-0
     ```
 
 #### Channel Open CLIs:
@@ -110,30 +110,30 @@ hermes -c loop_config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transf
 - init-none
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+    hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
     ```
 - init-try
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
+    hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
     ```
 
 - open-try
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+    hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
     ```
 - open-open
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+    hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
     ```
 
 - verify that the two ends are in Open state:
 
     ```shell script
-    hermes -c loop_config.toml query channel end ibc-0 transfer channel-0
-    hermes -c loop_config.toml query channel end ibc-1 transfer channel-1
+    hermes -c config.toml query channel end ibc-0 transfer channel-0
+    hermes -c config.toml query channel end ibc-1 transfer channel-1
     ```
 
 #### Query balances:
@@ -159,57 +159,57 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 - start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This results in a Tx to `ibc-0` for a `MsgTransfer` packet
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
     ```
 
 - query packet commitments on ibc-0
 
     ```shell script
-    hermes -c loop_config.toml query packet commitments ibc-0 transfer channel-0
+    hermes -c config.toml query packet commitments ibc-0 transfer channel-0
     ```
 
 - query unreceived packets on ibc-1
 
     ```shell script
-    hermes -c loop_config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
     ```
 
 - send recv_packet to ibc-1
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+    hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
 - query unreceived acks on ibc-0
 
     ```shell script
-    hermes -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
     ```
 
 - send acknowledgement to ibc-0
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
+    hermes -c config.toml tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
     ```
 
 - send 1 packet with low timeout height offset to ibc-0
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
     ```
 
 - send timeout to ibc-0
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+    hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
 Send those samoleans back, from `ibc-1` to `ibc-1`.
 
 ```shell script
-hermes -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
-hermes -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
-hermes -c loop_config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
+hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 ```
 
 The `ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
@@ -252,7 +252,7 @@ Make sure you're not relaying this packet (the relayer should not be running on
 this path).
 
 ```shell script
-hermes -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
 ```
   
 Starting with channel in open-open:
@@ -260,26 +260,26 @@ Starting with channel in open-open:
 - close-open
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+    hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
     ```
 
 - trigger timeout on close to ibc-1
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+    hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
     ```
 
 - close-close
 
     ```shell script
-    hermes -c loop_config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+    hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
     ```
 
 - verify that the two ends are in Close state:
 
   ```shell script
-  hermes -c loop_config.toml query channel end ibc-0 transfer channel-0
-  hermes -c loop_config.toml query channel end ibc-1 transfer channel-1
+  hermes -c config.toml query channel end ibc-0 transfer channel-0
+  hermes -c config.toml query channel end ibc-1 transfer channel-1
   ```
 
 ### Relayer loop:
@@ -291,7 +291,7 @@ the relayer `v0` loop.
     - with new channel:
 
         ```shell script
-        hermes -c loop_config.toml start ibc-0 ibc-1
+        hermes -c config.toml start ibc-0 ibc-1
         ```
         
       The relayer should create the clients, and perform the handshake for new clients, connection and channel between the two chains on `transfer` port. Once that is finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.
@@ -311,7 +311,7 @@ the relayer `v0` loop.
     - with existing channel:
 
       ```shell script
-      hermes -c loop_config.toml start ibc-0 ibc-1 transfer channel-0
+      hermes -c config.toml start ibc-0 ibc-1 transfer channel-0
       ```
       
       The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.
@@ -319,13 +319,13 @@ the relayer `v0` loop.
 - in a separate terminal, use the CLI to send 2 packets to ibc0 chain:
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+    hermes -c config.toml tx raw packet-send ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
     
 - use the CLI to send 2 packets to ibc1 chain:
 
     ```shell script
-    hermes -c loop_config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+    hermes -c config.toml tx raw packet-send ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
     ```
 
 - observe the output on the relayer terminal, verify that the send events are processed and the recv_packets are sent out.
@@ -333,10 +333,10 @@ the relayer `v0` loop.
 - query the unreceived packets on ibc0 and ibc1 from a different terminal
 
     ```shell script
-    hermes -c loop_config.toml query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
-    hermes -c loop_config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
-    hermes -c loop_config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-1
-    hermes -c loop_config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+    hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
+    hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+    hermes -c config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-1
+    hermes -c config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
     ```
 
 ## Relayer listen mode
@@ -344,7 +344,7 @@ the relayer `v0` loop.
 The relayer can be started in listen mode:
 
 ```shell script
-hermes -c loop_config.toml listen ibc-0
+hermes -c config.toml listen ibc-0
 ```
 
 It displays the `NewBlock` and IBC events received from the specified chain.
@@ -409,7 +409,7 @@ Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - ela
 
 ## Parametrizing the log output level
 
-The relayer configuration file, called `loop_config.toml` in the examples above
+The relayer configuration file, called `config.toml` in the examples above
 permits parametrization of output verbosity via the knob called `log_level`.
 Relevant snippet: 
 
@@ -430,7 +430,7 @@ arbitrary debug, info, or other outputs may be produced.  Example, with
 `log_level = 'debug'`:
 
 ```bash
-Running `target/debug/relayer -c loop_config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
 {"timestamp":"Jan 20 19:21:52.070","level":"DEBUG","fields":{"message":"registered component: abscissa_core::terminal::component::Terminal (v0.5.2)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.071","level":"DEBUG","fields":{"message":"registered component: relayer_cli::components::Tracing (v0.0.6)"},"target":"abscissa_core::component::registry"}
 {"timestamp":"Jan 20 19:21:52.078","level":"INFO","fields":{"message":"Options QueryClientConsensusOptions { client_id: ClientId(\"07-tendermint-X\"), revision_number: 0, revision_height: 1, height: 0, proof: true }"},"target":"relayer_cli::commands::query::client"}
@@ -444,6 +444,6 @@ For the same command, with `log_level = 'error'`, just the last line will be
 produced:
 
 ```bash
-   Running `target/debug/relayer -c loop_config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+   Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
 {"status":"error","result":["query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)"]}
 ```

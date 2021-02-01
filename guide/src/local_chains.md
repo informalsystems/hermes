@@ -1,6 +1,6 @@
 # Start the local chains
 
-To run the script to start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
+To start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
 
 ```bash
 cd ibc-rs
@@ -29,7 +29,7 @@ In order to run the script, you will need a `TOML` configuration file to be pass
 
 The following configuration file in the `scripts` folder can be used for running the local chains:
 
-#### loop_config.toml
+#### config.toml
 ```toml
 [global]
 timeout = '10s'
@@ -71,21 +71,15 @@ denominator = '3'
 
 ### Running the script to start the chains
 
-If you are currently in the `ibc-rs` repository folder, please change to the `scripts` folder:
-
-```shell
-cd scripts
-```
-
-Then run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
+From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
 
 ```bash
-./dev-env loop_config.toml ibc-0 ibc-1
+./scripts/dev-env config.toml ibc-0 ibc-1
 ```
 
 > __NOTE__: If the script above prompts you to delete the data folder just say `yes`
 
-The script will configure and start two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
+The script configures and starts two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
 
 ```mermaid
 graph TD
@@ -98,7 +92,7 @@ graph TD
 If the script runs successfully you should see a message similar to the one below in the terminal:
 
 ```shell
-$ ./dev-env loop_chains.toml ibc-0 ibc-1
+$ ./scripts/dev-env chains.toml ibc-0 ibc-1
 
 GAIA VERSION INFO: 4.0.0
 
