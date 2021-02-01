@@ -44,7 +44,7 @@ class TxConnTry(Cmd[TxConnTryRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
                 self.dst_client_id, self.src_client_id,
-                "--src-connection-id", self.src_conn_id]
+                "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnTryRes:
         return from_dict(TxConnTryRes, result[0]['OpenTryConnection'])
@@ -70,8 +70,8 @@ class TxConnAck(Cmd[TxConnAckRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
                 self.dst_client_id, self.src_client_id,
-                "--dst-connection-id", self.dst_conn_id,
-                "--src-connection-id", self.src_conn_id]
+                "-d", self.dst_conn_id,
+                "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnAckRes:
         return from_dict(TxConnAckRes, result[0]['OpenAckConnection'])
@@ -97,8 +97,8 @@ class TxConnConfirm(Cmd[TxConnConfirmRes]):
     def args(self) -> List[str]:
         return [self.dst_chain_id, self.src_chain_id,
                 self.dst_client_id, self.src_client_id,
-                "--dst-connection-id", self.dst_conn_id,
-                "--src-connection-id", self.src_conn_id]
+                "-d", self.dst_conn_id,
+                "-s", self.src_conn_id]
 
     def process(self, result: Any) -> TxConnConfirmRes:
         return from_dict(TxConnConfirmRes, result[0]['OpenConfirmConnection'])

@@ -92,8 +92,13 @@ pub struct TxRawConnTryCmd {
     #[options(free, required, help = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(required, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
 }
 
 impl Runnable for TxRawConnTryCmd {
@@ -107,7 +112,7 @@ impl Runnable for TxRawConnTryCmd {
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
-                        self.src_connection_id.clone(),
+                        self.src_conn_id.clone(),
                     ),
                     b_side: ConnectionSide::new(
                         chains.dst,
@@ -134,11 +139,21 @@ pub struct TxRawConnAckCmd {
     #[options(free, required, help = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(required, help = "identifier of the destination connection")]
-    dst_connection_id: ConnectionId,
+    #[options(
+        required,
+        help = "identifier of the destination connection (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_conn_id: ConnectionId,
 
-    #[options(required, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
 }
 
 impl Runnable for TxRawConnAckCmd {
@@ -152,12 +167,12 @@ impl Runnable for TxRawConnAckCmd {
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
-                        self.src_connection_id.clone(),
+                        self.src_conn_id.clone(),
                     ),
                     b_side: ConnectionSide::new(
                         chains.dst,
                         self.dst_client_id.clone(),
-                        self.dst_connection_id.clone(),
+                        self.dst_conn_id.clone(),
                     ),
                 }
             }
@@ -179,11 +194,21 @@ pub struct TxRawConnConfirmCmd {
     #[options(free, required, help = "identifier of the source client")]
     src_client_id: ClientId,
 
-    #[options(required, help = "identifier of the destination connection")]
-    dst_connection_id: ConnectionId,
+    #[options(
+        required,
+        help = "identifier of the destination connection (required)",
+        short = "d",
+        meta = "ID"
+    )]
+    dst_conn_id: ConnectionId,
 
-    #[options(required, help = "identifier of the source connection")]
-    src_connection_id: ConnectionId,
+    #[options(
+        required,
+        help = "identifier of the source connection (required)",
+        short = "s",
+        meta = "ID"
+    )]
+    src_conn_id: ConnectionId,
 }
 
 impl Runnable for TxRawConnConfirmCmd {
@@ -197,12 +222,12 @@ impl Runnable for TxRawConnConfirmCmd {
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
-                        self.src_connection_id.clone(),
+                        self.src_conn_id.clone(),
                     ),
                     b_side: ConnectionSide::new(
                         chains.dst,
                         self.dst_client_id.clone(),
-                        self.dst_connection_id.clone(),
+                        self.dst_conn_id.clone(),
                     ),
                 }
             }

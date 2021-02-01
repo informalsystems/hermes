@@ -43,7 +43,7 @@ pub struct TxICS20MsgTransferCmd {
     denom: Option<String>,
 
     #[options(help = "number of messages to send", short = "n")]
-    number_msgs: Option<usize>
+    number_msgs: Option<usize>,
 }
 
 impl TxICS20MsgTransferCmd {
