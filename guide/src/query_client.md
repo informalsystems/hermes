@@ -3,7 +3,7 @@ The `query clients` command can be used to query the identifiers of all clients 
 
 ```shell
 USAGE:
-    ibc-relayer-cli query clients <OPTIONS>
+    hermes query clients <OPTIONS>
 
 DESCRIPTION:
     query clients
@@ -18,6 +18,9 @@ Query all clients on `ibc-1`:
 
 ```shell
 $ hermes -c config.toml query clients ibc-1 | jq
+```
+
+```json
 {
   "status": "success",
   "result": [
@@ -72,6 +75,9 @@ Query the state of client `07-tendermint-2` on `ibc-1`:
 
 ```shell
 $ hermes -c config.toml query client state ibc-1 07-tendermint-2 | jq
+```
+
+```json
 {
   "status": "success",
   "result": [
@@ -140,6 +146,9 @@ Query the state of client `07-tendermint-2` on `ibc-1`:
 
 ```shell
 $ hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
+```
+
+```json
 {
   "status": "success",
   "result": [

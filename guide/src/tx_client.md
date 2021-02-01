@@ -23,6 +23,9 @@ Create a new client of `ibc-1` on `ibc-0`:
 
 ```shell
 $ hermes -c config.toml tx raw create-client ibc-0 ibc-1 | jq
+```
+
+```json
 {
   "status": "success",
   "result": [
@@ -65,6 +68,9 @@ Update the client on `ibc-0` with latest header of `ibc-1`
 
 ```shell
 $ hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
+```
+
+```json
 {
   "status": "success",
   "result": [

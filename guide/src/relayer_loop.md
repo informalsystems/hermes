@@ -30,6 +30,12 @@ The relayer creates a new client on each chain and then established a new connec
 
 ## Start on Existing Channel
 Use the `start` command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.
+
+__Example__:
+```shell script
+hermes -c config.toml ibc-0 ibc-1 -p transfer -c channel-0
+```
+
 __Note__: Finishing uncompleted handshakes can only be achieved using the `tx raw` CLIs.
 
 ## Packet Streaming
@@ -64,5 +70,5 @@ FLAGS:
 
 __Example__:
 ```shell script
-hermes -c config.toml ibc-0 ibc-1
+hermes -c config.toml channel handshake ibc-0 ibc-1 transfer transfer
 ```
