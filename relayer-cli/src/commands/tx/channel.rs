@@ -334,12 +334,6 @@ pub struct TxRawChanCloseInitCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanCloseInitCmd {
@@ -350,7 +344,7 @@ impl Runnable for TxRawChanCloseInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Ordering::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -403,12 +397,6 @@ pub struct TxRawChanCloseConfirmCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanCloseConfirmCmd {
@@ -419,7 +407,7 @@ impl Runnable for TxRawChanCloseConfirmCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),

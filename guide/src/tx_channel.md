@@ -11,7 +11,7 @@ USAGE:
     hermes tx raw chan-open-init <OPTIONS>
 
 DESCRIPTION:
-    Initialize a channel on chain B (dst) from chain A (src)
+    Initialize a channel (ChannelOpenInit)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -63,7 +63,7 @@ USAGE:
     hermes tx raw chan-open-try <OPTIONS>
 
 DESCRIPTION:
-    Try opening the channel on chain A (dst) from the chain B (src)
+    Relay the channel attempt (ChannelOpenTry)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -116,7 +116,7 @@ USAGE:
     hermes tx raw chan-open-ack <OPTIONS>
 
 DESCRIPTION:
-    Mark the channel end as open on chain B (dst) from chain A (src)
+    Relay acknowledgment of a channel attempt (ChannelOpenAck)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -168,7 +168,7 @@ USAGE:
     hermes tx raw chan-open-confirm <OPTIONS>
 
 DESCRIPTION:
-    Mark the channel end as open on chain A (dst) from chain B (src)
+    Confirm opening of a channel (ChannelOpenConfirm)
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -210,3 +210,69 @@ $ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transf
 
 We have now successfully opened a channel over an existing connection between the two chains.
 
+
+## Channel Close Init
+
+Use the `chan-close-init` command to initialize the closure of a channel.
+
+```shell
+USAGE:
+    hermes tx raw chan-close-init <OPTIONS>
+
+DESCRIPTION:
+    Initiate the closing of a channel (ChannelCloseInit)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+```
+
+__Example__
+
+```shell
+$ hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+```
+
+```json
+// TODO
+```
+
+## Channel Close Confirm
+
+Use the `chan-close-confirm` command to confirm the closure of a channel.
+
+```shell
+USAGE:
+    hermes tx raw chan-close-confirm <OPTIONS>
+
+DESCRIPTION:
+    Confirm the closing of a channel (ChannelCloseConfirm)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+```
+
+__Example__
+
+```shell
+$ hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
+```
+
+```json
+// TODO
+```
