@@ -180,9 +180,8 @@ POSITIONAL ARGUMENTS:
     src_client_id             identifier of the source client
 </code></pre>
 <p><strong>Example</strong></p>
-<p>Given that a two clients was previously created on chain <code>ibc-0</code> with identifier <code>07-tendermint-0</code>,
-respectively on chain <code>ibc-1</code> with identifier <code>07-tendermint-1</code>, we can initialize a connection between
-the two clients.</p>
+<p>Given that two clients were previously created with identifier <code>07-tendermint-0</code> on chain <code>ibc-0</code> and
+identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can initialize a connection between the two clients.</p>
 <p>First, let's initialize the connection on <code>ibc-0</code>:</p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
@@ -218,7 +217,7 @@ POSITIONAL ARGUMENTS:
     src_client_id             identifier of the source client
 
 FLAGS:
-    -s, --src-connection-id SRC-CONNECTION-ID
+    -s, --src-conn-id ID      identifier of the source connection (required)
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Let's now create the counterparty to <code>connection-0</code> on chain <code>ibc-1</code>:</p>
@@ -256,8 +255,8 @@ POSITIONAL ARGUMENTS:
     src_client_id             identifier of the source client
 
 FLAGS:
-    -d, --dst-connection-id DST-CONNECTION-ID
-    -s, --src-connection-id SRC-CONNECTION-ID
+    -d, --dst-conn-id ID      identifier of the destination connection (required)
+    -s, --src-conn-id ID      identifier of the source connection (required)
 </code></pre>
 <p><strong>Example</strong></p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
@@ -294,8 +293,8 @@ POSITIONAL ARGUMENTS:
     src_client_id             identifier of the source client
 
 FLAGS:
-    -d, --dst-connection-id DST-CONNECTION-ID
-    -s, --src-connection-id SRC-CONNECTION-ID
+    -d, --dst-conn-id ID      identifier of the destination connection (required)
+    -s, --src-conn-id ID      identifier of the source connection (required)
 </code></pre>
 <p><strong>Example</strong></p>
 <pre><code class="language-shell">$ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
@@ -315,7 +314,7 @@ FLAGS:
   ]
 }
 </code></pre>
-<p>We have now successfully established a connection between the two chains!</p>
+<p>We have now successfully established a connection between the two chains.</p>
 
                     </main>
 

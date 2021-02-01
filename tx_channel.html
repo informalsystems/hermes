@@ -163,7 +163,219 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#channel" id="channel">Channel</a></h1>
+                        <h1><a class="header" href="#channel-handshake" id="channel-handshake">Channel Handshake</a></h1>
+<p>The <code>tx raw</code> commands can be used to establish a channel for a given connection.</p>
+<h2><a class="header" href="#channel-open-init" id="channel-open-init">Channel Open Init</a></h2>
+<p>Use the <code>chan-open-init</code> command to initialize a new channel.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-open-init &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Initialize a channel (ChannelOpenInit)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
+</code></pre>
+<p><strong>Example</strong></p>
+<p>First, let's initialize the channel on <code>ibc-0</code> using an existing connection identified by <code>connection-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenInitChannel&quot;: {
+        &quot;channel_id&quot;: &quot;channel-0&quot;,
+        &quot;connection_id&quot;: &quot;connection-0&quot;,
+        &quot;counterparty_channel_id&quot;: null,
+        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;port_id&quot;: &quot;transfer&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.
+Note that the <code>counterparty_channel_id</code> field is currently empty.</p>
+<h2><a class="header" href="#channel-open-try" id="channel-open-try">Channel Open Try</a></h2>
+<p>Use the <code>chan-open-try</code> command to establish a counterparty to the channel on the other chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-open-try &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay the channel attempt (ChannelOpenTry)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -s, --src-chan-id ID      identifier of the source channel (required)
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Let's now create the counterparty to <code>channel-0</code> on chain <code>ibc-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenTryChannel&quot;: {
+        &quot;channel_id&quot;: &quot;channel-1&quot;,
+        &quot;connection_id&quot;: &quot;connection-1&quot;,
+        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;port_id&quot;: &quot;transfer&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.
+Note that the field <code>counterparty_channel_id</code> points to the channel on <code>ibc-0</code>.</p>
+<h2><a class="header" href="#channel-open-ack" id="channel-open-ack">Channel Open Ack</a></h2>
+<p>Use the <code>chan-open-ack</code> command to acknowledge the channel on the initial chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-open-ack &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Relay acknowledgment of a channel attempt (ChannelOpenAck)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenAckChannel&quot;: {
+        &quot;channel_id&quot;: &quot;channel-0&quot;,
+        &quot;connection_id&quot;: &quot;connection-0&quot;,
+        &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
+        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;port_id&quot;: &quot;transfer&quot;
+      }
+    }
+  ]
+}
+</code></pre>
+<p>Note that the field <code>counterparty_channel_id</code> now points to the channel on <code>ibc-1</code>.</p>
+<h2><a class="header" href="#channel-open-confirm" id="channel-open-confirm">Channel Open Confirm</a></h2>
+<p>Use the <code>chan-open-confirm</code> command to confirm that the channel has been acknowledged,
+and finish the handshake, after which the channel is open on both chains.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-open-confirm &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Confirm opening of a channel (ChannelOpenConfirm)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    {
+      &quot;OpenConfirmChannel&quot;: {
+        &quot;channel_id&quot;: &quot;channel-1&quot;,
+        &quot;connection_id&quot;: &quot;connection-1&quot;,
+        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;port_id&quot;: &quot;transfer&quot;
+      }
+    }
+  ]
+}
+2
+</code></pre>
+<p>We have now successfully opened a channel over an existing connection between the two chains.</p>
+<h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>
+<p>Use the <code>chan-close-init</code> command to initialize the closure of a channel.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-close-init &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Initiate the closing of a channel (ChannelCloseInit)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+</code></pre>
+<pre><code class="language-json">// TODO
+</code></pre>
+<h2><a class="header" href="#channel-close-confirm" id="channel-close-confirm">Channel Close Confirm</a></h2>
+<p>Use the <code>chan-close-confirm</code> command to confirm the closure of a channel.</p>
+<pre><code class="language-shell">USAGE:
+    hermes tx raw chan-close-confirm &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    Confirm the closing of a channel (ChannelCloseConfirm)
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the destination chain
+    src_chain_id              identifier of the source chain
+    dst_conn_id               identifier of the destination connection
+    dst_port_id               identifier of the destination port
+    src_port_id               identifier of the source port
+
+FLAGS:
+    -d, --dst-chan-id ID      identifier of the destination channel (required)
+    -s, --src-chan-id ID      identifier of the source channel (required)
+</code></pre>
+<p><strong>Example</strong></p>
+<pre><code class="language-shell">$ hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
+</code></pre>
+<pre><code class="language-json">// TODO
+</code></pre>
 
                     </main>
 
