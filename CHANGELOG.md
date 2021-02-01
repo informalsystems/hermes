@@ -45,6 +45,8 @@
   - `MsgConnectionOpenAck` testing improvements ([#306])
 
 ### BUG FIXES:
+- [relayer-cli]
+  - Help and usage commands show 'hermes' for executable name ([#590])
 
 - [modules]
   - Fix for storing `ClientType` upon 'create-client' ([#513])
@@ -81,6 +83,7 @@
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
 [#583]: https://github.com/informalsystems/ibc-rs/issues/583
+[#590]: https://github.com/informalsystems/ibc-rs/issues/590
 [#593]: https://github.com/informalsystems/ibc-rs/issues/593
 
 ## v0.0.6
