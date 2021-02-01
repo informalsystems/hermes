@@ -181,12 +181,10 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;channel-0&quot;,
-      &quot;channel-1&quot;,
-      &quot;channel-2&quot;,
-      &quot;channel-3&quot;
-    ]
+    &quot;channel-0&quot;,
+    &quot;channel-1&quot;,
+    &quot;channel-2&quot;,
+    &quot;channel-3&quot;
   ]
 }
 </code></pre>
@@ -224,20 +222,18 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;connection_hops&quot;: [
-        &quot;connection-1&quot;
-      ],
-      &quot;ordering&quot;: &quot;Unordered&quot;,
-      &quot;remote&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      },
-      &quot;state&quot;: &quot;Open&quot;,
-      &quot;version&quot;: &quot;ics20-1&quot;
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;connection_hops&quot;: [
+      &quot;connection-1&quot;
+    ],
+    &quot;ordering&quot;: &quot;Unordered&quot;,
+    &quot;remote&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
+    },
+    &quot;state&quot;: &quot;Open&quot;,
+    &quot;version&quot;: &quot;ics20-1&quot;
+  }
 }
 </code></pre>
 

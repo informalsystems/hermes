@@ -181,12 +181,10 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;07-tendermint-0&quot;,
-      &quot;07-tendermint-1&quot;,
-      &quot;07-tendermint-2&quot;,
-      &quot;07-tendermint-3&quot;
-    ]
+    &quot;07-tendermint-0&quot;,
+    &quot;07-tendermint-1&quot;,
+    &quot;07-tendermint-2&quot;,
+    &quot;07-tendermint-3&quot;
   ]
 }
 </code></pre>
@@ -225,42 +223,40 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;type&quot;: &quot;Tendermint&quot;,
-      &quot;allow_update_after_expiry&quot;: false,
-      &quot;allow_update_after_misbehaviour&quot;: false,
-      &quot;chain_id&quot;: &quot;ibc-0&quot;,
-      &quot;frozen_height&quot;: {
-        &quot;revision_height&quot;: 0,
-        &quot;revision_number&quot;: 0
-      },
-      &quot;latest_height&quot;: {
-        &quot;revision_height&quot;: 948,
-        &quot;revision_number&quot;: 0
-      },
-      &quot;max_clock_drift&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 3
-      },
-      &quot;trust_level&quot;: {
-        &quot;denominator&quot;: &quot;3&quot;,
-        &quot;numerator&quot;: &quot;1&quot;
-      },
-      &quot;trusting_period&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 1209600
-      },
-      &quot;unbonding_period&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 1814400
-      },
-      &quot;upgrade_path&quot;: [
-        &quot;upgrade&quot;,
-        &quot;upgradedIBCState&quot;
-      ]
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;type&quot;: &quot;Tendermint&quot;,
+    &quot;allow_update_after_expiry&quot;: false,
+    &quot;allow_update_after_misbehaviour&quot;: false,
+    &quot;chain_id&quot;: &quot;ibc-0&quot;,
+    &quot;frozen_height&quot;: {
+      &quot;revision_height&quot;: 0,
+      &quot;revision_number&quot;: 0
+    },
+    &quot;latest_height&quot;: {
+      &quot;revision_height&quot;: 948,
+      &quot;revision_number&quot;: 0
+    },
+    &quot;max_clock_drift&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 3
+    },
+    &quot;trust_level&quot;: {
+      &quot;denominator&quot;: &quot;3&quot;,
+      &quot;numerator&quot;: &quot;1&quot;
+    },
+    &quot;trusting_period&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 1209600
+    },
+    &quot;unbonding_period&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 1814400
+    },
+    &quot;upgrade_path&quot;: [
+      &quot;upgrade&quot;,
+      &quot;upgradedIBCState&quot;
+    ]
+  }
 }
 </code></pre>
 <h2><a class="header" href="#query-the-client-consensus-state" id="query-the-client-consensus-state">Query the client consensus state</a></h2>
@@ -287,14 +283,12 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;type&quot;: &quot;Tendermint&quot;,
-      &quot;next_validators_hash&quot;: &quot;61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33&quot;,
-      &quot;root&quot;: &quot;82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8&quot;,
-      &quot;timestamp&quot;: &quot;2021-02-01T13:42:30.30536Z&quot;
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;type&quot;: &quot;Tendermint&quot;,
+    &quot;next_validators_hash&quot;: &quot;61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33&quot;,
+    &quot;root&quot;: &quot;82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8&quot;,
+    &quot;timestamp&quot;: &quot;2021-02-01T13:42:30.30536Z&quot;
+  }
 }
 </code></pre>
 <h2><a class="header" href="#query-the-identifiers-of-all-connections-associated-with-a-given-client" id="query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></h2>
@@ -318,11 +312,9 @@ FLAGS:
 {
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;connection-0&quot;,
-      &quot;connection-1&quot;,
-      &quot;connection-2&quot;
-    ]
+    &quot;connection-0&quot;,
+    &quot;connection-1&quot;,
+    &quot;connection-2&quot;
   ]
 }```
 </code></pre>

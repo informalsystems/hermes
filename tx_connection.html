@@ -187,17 +187,15 @@ identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can init
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenInitConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;counterparty_connection_id&quot;: null,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenInitConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;counterparty_connection_id&quot;: null,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.
@@ -225,17 +223,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenTryConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenTryConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.
@@ -264,17 +260,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenAckConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-1&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenAckConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-1&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
@@ -303,17 +297,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenConfirmConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenConfirmConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>We have now successfully established a connection between the two chains.</p>

@@ -645,19 +645,17 @@ Done!
 <p>if the command is successful a message similar to the one below is displayed <code>status:success</code>:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;CreateClient&quot;: {
-                &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-                &quot;client_type&quot;: &quot;Tendermint&quot;,
-                &quot;consensus_height&quot;: {
-                    &quot;revision_height&quot;: 9082,
-                    &quot;revision_number&quot;: 1
-                },
-                &quot;height&quot;: &quot;1&quot;
-            }
+    &quot;result&quot;: {
+        &quot;CreateClient&quot;: {
+            &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+            &quot;client_type&quot;: &quot;Tendermint&quot;,
+            &quot;consensus_height&quot;: {
+                &quot;revision_height&quot;: 9082,
+                &quot;revision_number&quot;: 1
+            },
+            &quot;height&quot;: &quot;1&quot;
         }
-    ]
+    }
 }
 </code></pre>
 <blockquote>
@@ -669,42 +667,40 @@ Done!
 <p>should show a message similar to the one below:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;type&quot;: &quot;Tendermint&quot;,
-            &quot;allow_update_after_expiry&quot;: false,
-            &quot;allow_update_after_misbehaviour&quot;: false,
-            &quot;chain_id&quot;: &quot;ibc-1&quot;,
-            &quot;frozen_height&quot;: {
-                &quot;revision_height&quot;: 0,
-                &quot;revision_number&quot;: 0
-            },
-            &quot;latest_height&quot;: {
-                &quot;revision_height&quot;: 9082,
-                &quot;revision_number&quot;: 1
-            },
-            &quot;max_clock_drift&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 3
-            },
-            &quot;trust_level&quot;: {
-                &quot;denominator&quot;: &quot;3&quot;,
-                &quot;numerator&quot;: &quot;1&quot;
-            },
-            &quot;trusting_period&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 1209600
-            },
-            &quot;unbonding_period&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 1814400
-            },
-            &quot;upgrade_path&quot;: [
-                &quot;upgrade&quot;,
-                &quot;upgradedIBCState&quot;
-            ]
-        }
-    ]
+    &quot;result&quot;: {
+        &quot;type&quot;: &quot;Tendermint&quot;,
+        &quot;allow_update_after_expiry&quot;: false,
+        &quot;allow_update_after_misbehaviour&quot;: false,
+        &quot;chain_id&quot;: &quot;ibc-1&quot;,
+        &quot;frozen_height&quot;: {
+            &quot;revision_height&quot;: 0,
+            &quot;revision_number&quot;: 0
+        },
+        &quot;latest_height&quot;: {
+            &quot;revision_height&quot;: 9082,
+            &quot;revision_number&quot;: 1
+        },
+        &quot;max_clock_drift&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 3
+        },
+        &quot;trust_level&quot;: {
+            &quot;denominator&quot;: &quot;3&quot;,
+            &quot;numerator&quot;: &quot;1&quot;
+        },
+        &quot;trusting_period&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 1209600
+        },
+        &quot;unbonding_period&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 1814400
+        },
+        &quot;upgrade_path&quot;: [
+            &quot;upgrade&quot;,
+            &quot;upgradedIBCState&quot;
+        ]
+    }
 }
 </code></pre>
 <p>Now let's do the same (*) for <code>ibc-1</code> as the destination chain:</p>
@@ -715,19 +711,17 @@ Done!
 <p>As before, if the (second) command is successful a message with <code>status:success</code> is displayed:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;CreateClient&quot;: {
-                &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-                &quot;client_type&quot;: &quot;Tendermint&quot;,
-                &quot;consensus_height&quot;: {
-                    &quot;revision_height&quot;: 9505,
-                    &quot;revision_number&quot;: 0
-                },
-                &quot;height&quot;: &quot;1&quot;
-            }
+    &quot;result&quot;: {
+        &quot;CreateClient&quot;: {
+            &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+            &quot;client_type&quot;: &quot;Tendermint&quot;,
+            &quot;consensus_height&quot;: {
+                &quot;revision_height&quot;: 9505,
+                &quot;revision_number&quot;: 0
+            },
+            &quot;height&quot;: &quot;1&quot;
         }
-    ]
+    }
 }
 </code></pre>
 <h4><a class="header" href="#12-update-client" id="12-update-client">1.2 <code>update-client</code></a></h4>
@@ -1217,19 +1211,17 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;CreateClient&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;client_type&quot;: &quot;Tendermint&quot;,
-        &quot;consensus_height&quot;: {
-          &quot;revision_height&quot;: 18,
-          &quot;revision_number&quot;: 1
-        },
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;CreateClient&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;client_type&quot;: &quot;Tendermint&quot;,
+      &quot;consensus_height&quot;: {
+        &quot;revision_height&quot;: 18,
+        &quot;revision_number&quot;: 1
+      },
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new client is created with identifier <code>07-tendermint-0</code></p>
@@ -1252,19 +1244,17 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;UpdateClient&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;client_type&quot;: &quot;Tendermint&quot;,
-        &quot;consensus_height&quot;: {
-          &quot;revision_height&quot;: 273,
-          &quot;revision_number&quot;: 1
-        },
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;UpdateClient&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;client_type&quot;: &quot;Tendermint&quot;,
+      &quot;consensus_height&quot;: {
+        &quot;revision_height&quot;: 273,
+        &quot;revision_number&quot;: 1
+      },
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>The client with identifier <code>07-tendermint-0</code> has been updated with the consensus state at height <code>1-273</code>.</p>
@@ -1292,17 +1282,15 @@ identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can init
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenInitConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;counterparty_connection_id&quot;: null,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenInitConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;counterparty_connection_id&quot;: null,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.
@@ -1330,17 +1318,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenTryConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenTryConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.
@@ -1369,17 +1355,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenAckConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-1&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenAckConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-1&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
@@ -1408,17 +1392,15 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenConfirmConnection&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
-        &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
-        &quot;height&quot;: &quot;1&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenConfirmConnection&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;counterparty_connection_id&quot;: &quot;connection-0&quot;,
+      &quot;height&quot;: &quot;1&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>We have now successfully established a connection between the two chains.</p>
@@ -1448,18 +1430,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenInitChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_channel_id&quot;: null,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenInitChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: null,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.
@@ -1489,18 +1469,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenTryChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenTryChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.
@@ -1531,18 +1509,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenAckChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenAckChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>Note that the field <code>counterparty_channel_id</code> now points to the channel on <code>ibc-1</code>.</p>
@@ -1574,20 +1550,17 @@ after which the channel is open on both chains.</p>
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenConfirmChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenConfirmChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
-2
 </code></pre>
 <p>We have now successfully opened a channel over an existing connection between the two chains.</p>
 <h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>
@@ -1667,44 +1640,42 @@ FLAGS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;SendPacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;SendPacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+    {
+      &quot;SendPacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;SendPacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
@@ -1731,57 +1702,55 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;UpdateClient&quot;: {
-          &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-          &quot;client_type&quot;: &quot;Tendermint&quot;,
-          &quot;consensus_height&quot;: {
-            &quot;revision_height&quot;: 25049,
-            &quot;revision_number&quot;: 0
+    {
+      &quot;UpdateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 25049,
+          &quot;revision_number&quot;: 0
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    },
+    {
+      &quot;WriteAcknowledgementChannel&quot;: {
+        &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
           },
-          &quot;height&quot;: &quot;1&quot;
-        }
-      },
-      {
-        &quot;WriteAcknowledgementChannel&quot;: {
-          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;WriteAcknowledgementChannel&quot;: {
-          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;WriteAcknowledgementChannel&quot;: {
+        &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
@@ -1808,55 +1777,53 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;UpdateClient&quot;: {
-          &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-          &quot;client_type&quot;: &quot;Tendermint&quot;,
-          &quot;consensus_height&quot;: {
-            &quot;revision_height&quot;: 25673,
+    {
+      &quot;UpdateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 25673,
+          &quot;revision_number&quot;: 1
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    },
+    {
+      &quot;AcknowledgePacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
             &quot;revision_number&quot;: 1
           },
-          &quot;height&quot;: &quot;1&quot;
-        }
-      },
-      {
-        &quot;AcknowledgePacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;AcknowledgePacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;AcknowledgePacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
@@ -1943,12 +1910,10 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;07-tendermint-0&quot;,
-      &quot;07-tendermint-1&quot;,
-      &quot;07-tendermint-2&quot;,
-      &quot;07-tendermint-3&quot;
-    ]
+    &quot;07-tendermint-0&quot;,
+    &quot;07-tendermint-1&quot;,
+    &quot;07-tendermint-2&quot;,
+    &quot;07-tendermint-3&quot;
   ]
 }
 </code></pre>
@@ -1987,42 +1952,40 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;type&quot;: &quot;Tendermint&quot;,
-      &quot;allow_update_after_expiry&quot;: false,
-      &quot;allow_update_after_misbehaviour&quot;: false,
-      &quot;chain_id&quot;: &quot;ibc-0&quot;,
-      &quot;frozen_height&quot;: {
-        &quot;revision_height&quot;: 0,
-        &quot;revision_number&quot;: 0
-      },
-      &quot;latest_height&quot;: {
-        &quot;revision_height&quot;: 948,
-        &quot;revision_number&quot;: 0
-      },
-      &quot;max_clock_drift&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 3
-      },
-      &quot;trust_level&quot;: {
-        &quot;denominator&quot;: &quot;3&quot;,
-        &quot;numerator&quot;: &quot;1&quot;
-      },
-      &quot;trusting_period&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 1209600
-      },
-      &quot;unbonding_period&quot;: {
-        &quot;nanos&quot;: 0,
-        &quot;secs&quot;: 1814400
-      },
-      &quot;upgrade_path&quot;: [
-        &quot;upgrade&quot;,
-        &quot;upgradedIBCState&quot;
-      ]
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;type&quot;: &quot;Tendermint&quot;,
+    &quot;allow_update_after_expiry&quot;: false,
+    &quot;allow_update_after_misbehaviour&quot;: false,
+    &quot;chain_id&quot;: &quot;ibc-0&quot;,
+    &quot;frozen_height&quot;: {
+      &quot;revision_height&quot;: 0,
+      &quot;revision_number&quot;: 0
+    },
+    &quot;latest_height&quot;: {
+      &quot;revision_height&quot;: 948,
+      &quot;revision_number&quot;: 0
+    },
+    &quot;max_clock_drift&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 3
+    },
+    &quot;trust_level&quot;: {
+      &quot;denominator&quot;: &quot;3&quot;,
+      &quot;numerator&quot;: &quot;1&quot;
+    },
+    &quot;trusting_period&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 1209600
+    },
+    &quot;unbonding_period&quot;: {
+      &quot;nanos&quot;: 0,
+      &quot;secs&quot;: 1814400
+    },
+    &quot;upgrade_path&quot;: [
+      &quot;upgrade&quot;,
+      &quot;upgradedIBCState&quot;
+    ]
+  }
 }
 </code></pre>
 <h2><a class="header" href="#query-the-client-consensus-state" id="query-the-client-consensus-state">Query the client consensus state</a></h2>
@@ -2049,14 +2012,12 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;type&quot;: &quot;Tendermint&quot;,
-      &quot;next_validators_hash&quot;: &quot;61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33&quot;,
-      &quot;root&quot;: &quot;82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8&quot;,
-      &quot;timestamp&quot;: &quot;2021-02-01T13:42:30.30536Z&quot;
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;type&quot;: &quot;Tendermint&quot;,
+    &quot;next_validators_hash&quot;: &quot;61B504627364047439A253FFBDD5D384B31D29611BD4B2ABA2636C232ABADA33&quot;,
+    &quot;root&quot;: &quot;82EFC9F24C8B595BDADBFE1576B473648DD8EBC76F30DC21201539FCCE15A9F8&quot;,
+    &quot;timestamp&quot;: &quot;2021-02-01T13:42:30.30536Z&quot;
+  }
 }
 </code></pre>
 <h2><a class="header" href="#query-the-identifiers-of-all-connections-associated-with-a-given-client" id="query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></h2>
@@ -2080,11 +2041,9 @@ FLAGS:
 {
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;connection-0&quot;,
-      &quot;connection-1&quot;,
-      &quot;connection-2&quot;
-    ]
+    &quot;connection-0&quot;,
+    &quot;connection-1&quot;,
+    &quot;connection-2&quot;
   ]
 }```
 </code></pre>
@@ -2106,12 +2065,10 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;connection-0&quot;,
-      &quot;connection-1&quot;,
-      &quot;connection-2&quot;,
-      &quot;connection-3&quot;
-    ]
+    &quot;connection-0&quot;,
+    &quot;connection-1&quot;,
+    &quot;connection-2&quot;,
+    &quot;connection-3&quot;
   ]
 }
 </code></pre>
@@ -2149,27 +2106,25 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;client_id&quot;: &quot;07-tendermint-2&quot;,
-      &quot;counterparty&quot;: {
-        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;prefix&quot;: &quot;ibc&quot;
-      },
-      &quot;delay_period&quot;: 0,
-      &quot;state&quot;: &quot;Open&quot;,
-      &quot;versions&quot;: [
-        {
-          &quot;features&quot;: [
-            &quot;ORDER_ORDERED&quot;,
-            &quot;ORDER_UNORDERED&quot;
-          ],
-          &quot;identifier&quot;: &quot;1&quot;
-        }
-      ]
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;client_id&quot;: &quot;07-tendermint-2&quot;,
+    &quot;counterparty&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;prefix&quot;: &quot;ibc&quot;
+    },
+    &quot;delay_period&quot;: 0,
+    &quot;state&quot;: &quot;Open&quot;,
+    &quot;versions&quot;: [
+      {
+        &quot;features&quot;: [
+          &quot;ORDER_ORDERED&quot;,
+          &quot;ORDER_UNORDERED&quot;
+        ],
+        &quot;identifier&quot;: &quot;1&quot;
+      }
+    ]
+  }
 }
 </code></pre>
 <h2><a class="header" href="#query-the-identifiers-of-all-channels-associated-with-a-given-connection" id="query-the-identifiers-of-all-channels-associated-with-a-given-connection">Query the identifiers of all channels associated with a given connection</a></h2>
@@ -2192,9 +2147,7 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;channel-1&quot;
-    ]
+    &quot;channel-1&quot;
   ]
 }
 </code></pre>
@@ -2216,12 +2169,10 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      &quot;channel-0&quot;,
-      &quot;channel-1&quot;,
-      &quot;channel-2&quot;,
-      &quot;channel-3&quot;
-    ]
+    &quot;channel-0&quot;,
+    &quot;channel-1&quot;,
+    &quot;channel-2&quot;,
+    &quot;channel-3&quot;
   ]
 }
 </code></pre>
@@ -2259,20 +2210,18 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;connection_hops&quot;: [
-        &quot;connection-1&quot;
-      ],
-      &quot;ordering&quot;: &quot;Unordered&quot;,
-      &quot;remote&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      },
-      &quot;state&quot;: &quot;Open&quot;,
-      &quot;version&quot;: &quot;ics20-1&quot;
-    }
-  ]
+  &quot;result&quot;: {
+    &quot;connection_hops&quot;: [
+      &quot;connection-1&quot;
+    ],
+    &quot;ordering&quot;: &quot;Unordered&quot;,
+    &quot;remote&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
+    },
+    &quot;state&quot;: &quot;Open&quot;,
+    &quot;version&quot;: &quot;ics20-1&quot;
+  }
 }
 </code></pre>
 <h1><a class="header" href="#packet" id="packet">Packet</a></h1>

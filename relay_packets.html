@@ -176,19 +176,17 @@
 <p>if the command is successful a message similar to the one below is displayed <code>status:success</code>:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;CreateClient&quot;: {
-                &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-                &quot;client_type&quot;: &quot;Tendermint&quot;,
-                &quot;consensus_height&quot;: {
-                    &quot;revision_height&quot;: 9082,
-                    &quot;revision_number&quot;: 1
-                },
-                &quot;height&quot;: &quot;1&quot;
-            }
+    &quot;result&quot;: {
+        &quot;CreateClient&quot;: {
+            &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+            &quot;client_type&quot;: &quot;Tendermint&quot;,
+            &quot;consensus_height&quot;: {
+                &quot;revision_height&quot;: 9082,
+                &quot;revision_number&quot;: 1
+            },
+            &quot;height&quot;: &quot;1&quot;
         }
-    ]
+    }
 }
 </code></pre>
 <blockquote>
@@ -200,42 +198,40 @@
 <p>should show a message similar to the one below:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;type&quot;: &quot;Tendermint&quot;,
-            &quot;allow_update_after_expiry&quot;: false,
-            &quot;allow_update_after_misbehaviour&quot;: false,
-            &quot;chain_id&quot;: &quot;ibc-1&quot;,
-            &quot;frozen_height&quot;: {
-                &quot;revision_height&quot;: 0,
-                &quot;revision_number&quot;: 0
-            },
-            &quot;latest_height&quot;: {
-                &quot;revision_height&quot;: 9082,
-                &quot;revision_number&quot;: 1
-            },
-            &quot;max_clock_drift&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 3
-            },
-            &quot;trust_level&quot;: {
-                &quot;denominator&quot;: &quot;3&quot;,
-                &quot;numerator&quot;: &quot;1&quot;
-            },
-            &quot;trusting_period&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 1209600
-            },
-            &quot;unbonding_period&quot;: {
-                &quot;nanos&quot;: 0,
-                &quot;secs&quot;: 1814400
-            },
-            &quot;upgrade_path&quot;: [
-                &quot;upgrade&quot;,
-                &quot;upgradedIBCState&quot;
-            ]
-        }
-    ]
+    &quot;result&quot;: {
+        &quot;type&quot;: &quot;Tendermint&quot;,
+        &quot;allow_update_after_expiry&quot;: false,
+        &quot;allow_update_after_misbehaviour&quot;: false,
+        &quot;chain_id&quot;: &quot;ibc-1&quot;,
+        &quot;frozen_height&quot;: {
+            &quot;revision_height&quot;: 0,
+            &quot;revision_number&quot;: 0
+        },
+        &quot;latest_height&quot;: {
+            &quot;revision_height&quot;: 9082,
+            &quot;revision_number&quot;: 1
+        },
+        &quot;max_clock_drift&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 3
+        },
+        &quot;trust_level&quot;: {
+            &quot;denominator&quot;: &quot;3&quot;,
+            &quot;numerator&quot;: &quot;1&quot;
+        },
+        &quot;trusting_period&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 1209600
+        },
+        &quot;unbonding_period&quot;: {
+            &quot;nanos&quot;: 0,
+            &quot;secs&quot;: 1814400
+        },
+        &quot;upgrade_path&quot;: [
+            &quot;upgrade&quot;,
+            &quot;upgradedIBCState&quot;
+        ]
+    }
 }
 </code></pre>
 <p>Now let's do the same (*) for <code>ibc-1</code> as the destination chain:</p>
@@ -246,19 +242,17 @@
 <p>As before, if the (second) command is successful a message with <code>status:success</code> is displayed:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
-    &quot;result&quot;: [
-        {
-            &quot;CreateClient&quot;: {
-                &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-                &quot;client_type&quot;: &quot;Tendermint&quot;,
-                &quot;consensus_height&quot;: {
-                    &quot;revision_height&quot;: 9505,
-                    &quot;revision_number&quot;: 0
-                },
-                &quot;height&quot;: &quot;1&quot;
-            }
+    &quot;result&quot;: {
+        &quot;CreateClient&quot;: {
+            &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+            &quot;client_type&quot;: &quot;Tendermint&quot;,
+            &quot;consensus_height&quot;: {
+                &quot;revision_height&quot;: 9505,
+                &quot;revision_number&quot;: 0
+            },
+            &quot;height&quot;: &quot;1&quot;
         }
-    ]
+    }
 }
 </code></pre>
 <h4><a class="header" href="#12-update-client" id="12-update-client">1.2 <code>update-client</code></a></h4>

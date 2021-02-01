@@ -189,18 +189,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenInitChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_channel_id&quot;: null,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenInitChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: null,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.
@@ -230,18 +228,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenTryChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenTryChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.
@@ -272,18 +268,16 @@ FLAGS:
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenAckChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-0&quot;,
-        &quot;connection_id&quot;: &quot;connection-0&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenAckChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
 </code></pre>
 <p>Note that the field <code>counterparty_channel_id</code> now points to the channel on <code>ibc-1</code>.</p>
@@ -315,20 +309,17 @@ after which the channel is open on both chains.</p>
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
-  &quot;result&quot;: [
-    {
-      &quot;OpenConfirmChannel&quot;: {
-        &quot;channel_id&quot;: &quot;channel-1&quot;,
-        &quot;connection_id&quot;: &quot;connection-1&quot;,
-        &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
-        &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
-        &quot;height&quot;: &quot;1&quot;,
-        &quot;port_id&quot;: &quot;transfer&quot;
-      }
+  &quot;result&quot;: {
+    &quot;OpenConfirmChannel&quot;: {
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
+      &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+      &quot;height&quot;: &quot;1&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
     }
-  ]
+  }
 }
-2
 </code></pre>
 <p>We have now successfully opened a channel over an existing connection between the two chains.</p>
 <h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>

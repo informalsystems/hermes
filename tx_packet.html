@@ -192,44 +192,42 @@ FLAGS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;SendPacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;SendPacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+    {
+      &quot;SendPacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;SendPacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
@@ -256,57 +254,55 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;UpdateClient&quot;: {
-          &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
-          &quot;client_type&quot;: &quot;Tendermint&quot;,
-          &quot;consensus_height&quot;: {
-            &quot;revision_height&quot;: 25049,
-            &quot;revision_number&quot;: 0
+    {
+      &quot;UpdateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 25049,
+          &quot;revision_number&quot;: 0
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    },
+    {
+      &quot;WriteAcknowledgementChannel&quot;: {
+        &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
           },
-          &quot;height&quot;: &quot;1&quot;
-        }
-      },
-      {
-        &quot;WriteAcknowledgementChannel&quot;: {
-          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;WriteAcknowledgementChannel&quot;: {
-          &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;7B22616...&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;WriteAcknowledgementChannel&quot;: {
+        &quot;ack&quot;: &quot;7B22726573756C74223A2241513D3D227D&quot;,
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;7B22616...&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
@@ -333,55 +329,53 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: [
-    [
-      {
-        &quot;UpdateClient&quot;: {
-          &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
-          &quot;client_type&quot;: &quot;Tendermint&quot;,
-          &quot;consensus_height&quot;: {
-            &quot;revision_height&quot;: 25673,
+    {
+      &quot;UpdateClient&quot;: {
+        &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+        &quot;client_type&quot;: &quot;Tendermint&quot;,
+        &quot;consensus_height&quot;: {
+          &quot;revision_height&quot;: 25673,
+          &quot;revision_number&quot;: 1
+        },
+        &quot;height&quot;: &quot;1&quot;
+      }
+    },
+    {
+      &quot;AcknowledgePacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 7,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
             &quot;revision_number&quot;: 1
           },
-          &quot;height&quot;: &quot;1&quot;
-        }
-      },
-      {
-        &quot;AcknowledgePacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 7,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
-        }
-      },
-      {
-        &quot;AcknowledgePacketChannel&quot;: {
-          &quot;height&quot;: &quot;1&quot;,
-          &quot;packet&quot;: {
-            &quot;data&quot;: &quot;&quot;,
-            &quot;destination_channel&quot;: &quot;channel-1&quot;,
-            &quot;destination_port&quot;: &quot;transfer&quot;,
-            &quot;sequence&quot;: 8,
-            &quot;source_channel&quot;: &quot;channel-0&quot;,
-            &quot;source_port&quot;: &quot;transfer&quot;,
-            &quot;timeout_height&quot;: {
-              &quot;revision_height&quot;: 25041,
-              &quot;revision_number&quot;: 1
-            },
-            &quot;timeout_timestamp&quot;: 0
-          }
+          &quot;timeout_timestamp&quot;: 0
         }
       }
-    ]
+    },
+    {
+      &quot;AcknowledgePacketChannel&quot;: {
+        &quot;height&quot;: &quot;1&quot;,
+        &quot;packet&quot;: {
+          &quot;data&quot;: &quot;&quot;,
+          &quot;destination_channel&quot;: &quot;channel-1&quot;,
+          &quot;destination_port&quot;: &quot;transfer&quot;,
+          &quot;sequence&quot;: 8,
+          &quot;source_channel&quot;: &quot;channel-0&quot;,
+          &quot;source_port&quot;: &quot;transfer&quot;,
+          &quot;timeout_height&quot;: {
+            &quot;revision_height&quot;: 25041,
+            &quot;revision_number&quot;: 1
+          },
+          &quot;timeout_timestamp&quot;: 0
+        }
+      }
+    }
   ]
 }
 </code></pre>
