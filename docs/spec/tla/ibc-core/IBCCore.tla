@@ -15,6 +15,8 @@ CONSTANTS MaxHeight, \* maximal height of all the chains in the system
           ConnectionDatagramsRelayer2, \* toggle generation of connection datagrams for Relayer2
           ChannelDatagramsRelayer1, \* toggle generation of channel datagrams for Relayer1
           ChannelDatagramsRelayer2, \* toggle generation of channel datagrams for Relayer2
+          PacketDatagramsRelayer1, \* toggle generation of packet datagrams for Relayer1
+          PacketDatagramsRelayer2, \* toggle generation of packet datagrams for Relayer2
           ChannelOrdering \* indicate whether the channels are ordered or unordered
 
 VARIABLES chainAstore, \* chain store of ChainA
@@ -62,6 +64,7 @@ Relayer1 == INSTANCE ICS18Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer1,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer1,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer1,
+                 GeneratePacketDatagrams <- PacketDatagramsRelayer1,
                  relayerHeights <- relayer1Heights
                  
 \* Relayer2 -- Instance of ICS18Relayer.tla      
@@ -69,6 +72,7 @@ Relayer2 == INSTANCE ICS18Relayer
             WITH GenerateClientDatagrams <- ClientDatagramsRelayer2,
                  GenerateConnectionDatagrams <- ConnectionDatagramsRelayer2,
                  GenerateChannelDatagrams <- ChannelDatagramsRelayer2,
+                 GeneratePacketDatagrams <- PacketDatagramsRelayer2,
                  relayerHeights <- relayer2Heights
 
 \* We suppose there are two chains that communicate, ChainA and ChainB
@@ -565,5 +569,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:32:04 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jan 29 16:47:49 CET 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska

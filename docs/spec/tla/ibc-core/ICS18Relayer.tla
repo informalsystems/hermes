@@ -9,11 +9,13 @@ EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
 
 CONSTANTS GenerateClientDatagrams, \* toggle generation of client datagrams
           GenerateConnectionDatagrams, \* toggle generation of connection datagrams
-          GenerateChannelDatagrams \* toggle generation of channel datagrams
+          GenerateChannelDatagrams, \* toggle generation of channel datagrams
+          GeneratePacketDatagrams \* toggle generation of packet datagrams
 
 ASSUME /\ GenerateClientDatagrams \in BOOLEAN 
        /\ GenerateConnectionDatagrams \in BOOLEAN 
-       /\ GenerateChannelDatagrams \in BOOLEAN 
+       /\ GenerateChannelDatagrams \in BOOLEAN
+       /\ GeneratePacketDatagrams \in BOOLEAN
 
 CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
           MaxVersion, \* maximal connection / channel version (we assume versions are integers)
@@ -30,7 +32,8 @@ VARIABLES chainAstore, \* store of ChainA
           packetLog \* packet log
           
 vars == <<chainAstore, chainBstore, outgoingDatagrams, outgoingPacketDatagrams, relayerHeights, packetLog>>
-Heights == 1..MaxHeight \* set of possible heights of the chains in the system                     
+Heights == 1..MaxHeight \* set of possible heights of the chains in the system
+Versions == 1..MaxVersion \* set of possible connection versions                     
 
 GetChainByID(chainID) ==
     IF chainID = "chainA"
@@ -119,8 +122,9 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
                 counterpartyClientID |-> GetCounterpartyClientID(srcChainID) \* "clB" 
             ])}
     
-        ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
-                                                   \/ dstConnectionEnd.state = "INIT" THEN 
+        ELSE IF /\ srcClientHeight /= nullHeight
+                /\ srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
+                                                      \/ dstConnectionEnd.state = "INIT" THEN 
             {AsDatagram([
                 type |-> "ConnOpenTry",
                 desiredConnectionID |-> srcConnectionEnd.counterpartyConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
@@ -132,8 +136,9 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
                 consensusHeight |-> srcClientHeight
             ])}
          
-        ELSE IF srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
-                                                      \/ dstConnectionEnd.state = "TRYOPEN" THEN
+        ELSE IF /\ srcClientHeight /= nullHeight
+                /\ srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
+                                                         \/ dstConnectionEnd.state = "TRYOPEN" THEN
             {AsDatagram([
                 type |-> "ConnOpenAck",
                 connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
@@ -369,6 +374,7 @@ CreateDatagrams ==
         /\ Relay(srcChainID, dstChainID)
         /\ \/ /\ packetLog /= AsPacketLog(<<>>)
               /\ Head(packetLog).srcChainID = srcChainID
+              /\ GeneratePacketDatagrams
               \* packet datagrams   
               /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
               /\ packetLog' = Tail(packetLog)
@@ -409,10 +415,10 @@ Fairness ==
 \* Type invariant
 TypeOK ==
     /\ relayerHeights \in [ChainIDs -> Heights \union {nullHeight}]
-    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)]
-    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(MaxHeight, MaxPacketSeq, MaxVersion))]
+    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(Heights, MaxPacketSeq, Versions)]
+    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(Heights, MaxPacketSeq, Versions))]
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:50:40 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jan 29 16:47:03 CET 2021 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

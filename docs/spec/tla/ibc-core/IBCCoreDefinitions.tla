@@ -284,7 +284,7 @@ Min(S) == CHOOSE x \in S: \A y \in S: y >= x
       
     Note: we omit channel versions and connection hops.
  ***************************************************************************)   
-ChannelEnds(channelOrdering, maxPacketSeq, maxVersion) ==
+ChannelEnds(channelOrdering, maxPacketSeq) ==
     IF channelOrdering = "UNORDERED"
     THEN \* set of unordered channels
          [
@@ -312,12 +312,12 @@ ChannelEnds(channelOrdering, maxPacketSeq, maxVersion) ==
 (******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
  Sets of packet commitments, packet receipts, packet acknowledgements.
  ***************************************************************************)
-PacketCommitments(maxHeight, maxPacketSeq) ==
+PacketCommitments(Heights, maxPacketSeq) ==
     [
         portID : PortIDs,
         channelID : ChannelIDs, 
         sequence : 1..maxPacketSeq, 
-        timeoutHeight : 1..maxHeight
+        timeoutHeight : Heights
     ] <: {PacketCommitmentType} 
     
 PacketReceipts(maxPacketSeq) ==
@@ -362,24 +362,24 @@ PacketAcknowledgements(maxPacketSeq) ==
     - channelEnd : a channel end record 
       Stores data about the channel associated with this connection end.  
  ***************************************************************************)
-ConnectionEnds(channelOrdering, maxPacketSeq, maxVersion) ==
+ConnectionEnds(channelOrdering, maxPacketSeq, Versions) ==
     [
         state : ConnectionStates,
         connectionID : ConnectionIDs \union {nullConnectionID},
         counterpartyConnectionID : ConnectionIDs \union {nullConnectionID},
         clientID : ClientIDs \union {nullClientID},
         counterpartyClientID : ClientIDs \union {nullClientID},
-        versions : SUBSET 1..maxVersion, 
-        channelEnd : ChannelEnds(channelOrdering, maxPacketSeq, maxVersion)
+        versions : (SUBSET Versions) \ {{}}, 
+        channelEnd : ChannelEnds(channelOrdering, maxPacketSeq)
     ] <: {ConnectionEndType} 
     
 (********************************* Packets *********************************
  A set of packets.
  ***************************************************************************)
-Packets(maxHeight, maxPacketSeq) ==
+Packets(Heights, maxPacketSeq) ==
     [
         sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight,
+        timeoutHeight : Heights,
         srcPortID : PortIDs,
         srcChannelID : ChannelIDs,
         dstPortID : PortIDs,
@@ -414,29 +414,29 @@ Packets(maxHeight, maxPacketSeq) ==
     - packetsToAcknowledge : a sequence of packets 
       
  ***************************************************************************)
-ChainStores(maxHeight, channelOrdering, maxPacketSeq, maxVersion) ==    
+ChainStores(Heights, channelOrdering, maxPacketSeq, Versions) ==    
     [
-        height : 1..maxHeight,
-        counterpartyClientHeights : SUBSET(1..maxHeight),
-        connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq, maxVersion),
-        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq)),
+        height : Heights,
+        counterpartyClientHeights : SUBSET(Heights),
+        connectionEnd : ConnectionEnds(channelOrdering, maxPacketSeq, Versions),
+        packetCommitments : SUBSET(PacketCommitments(Heights, maxPacketSeq)),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)), 
         packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
-        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq))
+        packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq))
     ] <: {ChainStoreType}
 
 (******************************** Datagrams ********************************
  A set of datagrams.
  ***************************************************************************)
-Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
+Datagrams(Heights, maxPacketSeq, Versions) ==
     [
         type : {"ClientCreate"}, 
         clientID : ClientIDs, 
-        height : 1..maxHeight
+        height : Heights
     ] \union [
         type : {"ClientUpdate"}, 
         clientID : ClientIDs, 
-        height : 1..maxHeight
+        height : Heights
     ] \union [
         type : {"ConnOpenInit"}, 
         connectionID : ConnectionIDs, 
@@ -449,18 +449,18 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
         counterpartyConnectionID : ConnectionIDs, 
         clientID : ClientIDs, 
         counterpartyClientID : ClientIDs, 
-        versions : SUBSET 1..maxVersion, 
-        proofHeight : 1..maxHeight, 
-        consensusHeight : 1..maxHeight
+        versions : SUBSET (Versions), 
+        proofHeight : Heights, 
+        consensusHeight : Heights
     ] \union [
         type : {"ConnOpenAck"}, 
         connectionID : ConnectionIDs, 
-        proofHeight : 1..maxHeight, 
-        consensusHeight : 1..maxHeight 
+        proofHeight : Heights, 
+        consensusHeight : Heights
     ] \union [
         type : {"ConnOpenConfirm"}, 
         connectionID : ConnectionIDs, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ] \union [
         type : {"ChanOpenInit"}, 
         portID : PortIDs,
@@ -473,17 +473,17 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
         channelID : ChannelIDs, 
         counterpartyPortID : PortIDs,
         counterpartyChannelID : ChannelIDs, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ] \union [
         type : {"ChanOpenAck"}, 
         portID : PortIDs,
         channelID : ChannelIDs, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ] \union [
         type : {"ChanOpenConfirm"}, 
         portID : PortIDs,
         channelID : ChannelIDs, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ] \union [
         type : {"ChanCloseInit"}, 
         portID : PortIDs,
@@ -492,16 +492,16 @@ Datagrams(maxHeight, maxPacketSeq, maxVersion) ==
         type : {"ChanCloseConfirm"},
         portID : PortIDs, 
         channelID : ChannelIDs, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ] \union [
         type : {"PacketRecv"}, 
-        packet : Packets(maxHeight, maxPacketSeq), 
-        proofHeight : 1..maxHeight
+        packet : Packets(Heights, maxPacketSeq), 
+        proofHeight : Heights
     ] \union [
         type : {"PacketAck"}, 
-        packet : Packets(maxHeight, maxPacketSeq), 
+        packet : Packets(Heights, maxPacketSeq), 
         acknowledgement : BOOLEAN, 
-        proofHeight : 1..maxHeight
+        proofHeight : Heights
     ]
     <: {DatagramType}
     
@@ -511,26 +511,26 @@ NullDatagram ==
 (**************************** PacketLogEntries *****************************
  A set of packet log entries.
  ***************************************************************************)
-PacketLogEntries(maxHeight, maxPacketSeq) == 
+PacketLogEntries(Heights, maxPacketSeq) == 
     [
         type : {"PacketSent"},
         srcChainID : ChainIDs,  
         sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight
+        timeoutHeight : Heights
     ] \union [
         type : {"PacketRecv"},
         srcChainID : ChainIDs,  
         sequence : 1..maxPacketSeq,
         portID : PortIDs,
         channelID : ChannelIDs,
-        timeoutHeight : 1..maxHeight
+        timeoutHeight : Heights
     ] \union [
         type : {"WriteAck"},
         srcChainID : ChainIDs,  
         sequence : 1..maxPacketSeq,
         portID : PortIDs,
         channelID : ChannelIDs,
-        timeoutHeight : 1..maxHeight,
+        timeoutHeight : Heights,
         acknowledgement : BOOLEAN
     ]
     <: {PacketLogEntryType}
@@ -591,7 +591,7 @@ InitOrderedChannelEnd ==
 \*      - clientID, counterpartyClientID are uninitialized  
 \*      - versions is an arbitrary subset of the set {1, .., maxVersion}   
 \*      - channelEnd is initialized based on channelOrdering      
-InitConnectionEnds(maxVersion, channelOrdering) ==
+InitConnectionEnds(Versions, channelOrdering) ==
     IF channelOrdering = "ORDERED"
     THEN [
             state : {"UNINIT"},
@@ -599,7 +599,7 @@ InitConnectionEnds(maxVersion, channelOrdering) ==
             clientID : {nullClientID},
             counterpartyConnectionID : {nullConnectionID},
             counterpartyClientID : {nullClientID},
-            versions : (SUBSET 1..maxVersion) \ {{}},
+            versions : (SUBSET Versions) \ {{}},
             channelEnd : {InitOrderedChannelEnd}
          ]
     ELSE [
@@ -608,7 +608,7 @@ InitConnectionEnds(maxVersion, channelOrdering) ==
             clientID : {nullClientID},
             counterpartyConnectionID : {nullConnectionID},
             counterpartyClientID : {nullClientID},
-            versions : (SUBSET 1..maxVersion) \ {{}},
+            versions : (SUBSET Versions) \ {{}},
             channelEnd : {InitUnorderedChannelEnd}
          ]   
 
@@ -616,11 +616,11 @@ InitConnectionEnds(maxVersion, channelOrdering) ==
 \*      - height is initialized to 1
 \*      - the counterparty light client is uninitialized
 \*      - the connection end is initialized to InitConnectionEnd 
-InitChainStore(maxVersion, channelOrdering) == 
+InitChainStore(Versions, channelOrdering) == 
     [
         height : {1},
         counterpartyClientHeights : {AsSetInt({})}, 
-        connectionEnd : InitConnectionEnds(maxVersion, channelOrdering),
+        connectionEnd : InitConnectionEnds(Versions, channelOrdering),
         
         packetCommitments : {AsSetPacketCommitment({})},
         packetReceipts : {AsSetPacketReceipt({})}, 

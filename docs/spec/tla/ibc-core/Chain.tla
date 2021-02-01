@@ -20,6 +20,7 @@ VARIABLES chainStore, \* chain store, containing client heights, a connection en
 vars == <<chainStore, incomingDatagrams, incomingPacketDatagrams, 
            history, packetLog, appPacketSeq>>
 Heights == 1..MaxHeight \* set of possible heights of the chains in the system          
+Versions == 1..MaxVersion \* set of possible connection versions
 
 (***************************************************************************
  Client update operators
@@ -152,16 +153,19 @@ SendPacket ==
     \* enabled if appPacketSeq is not bigger than MaxPacketSeq 
     /\ appPacketSeq <= MaxPacketSeq
     \* Create a packet: Abstract away from packet data, ports, and timestamp. 
-    \* Assume timeoutHeight is MaxHeight + 1
+    \* Assume timeoutHeight is MaxHeight
     /\ LET packet == AsPacket([
         sequence |-> appPacketSeq,
-        timeoutHeight |-> MaxHeight + 1,
+        timeoutHeight |-> MaxHeight,
         srcPortID |-> chainStore.connectionEnd.channelEnd.portID,
         srcChannelID |-> chainStore.connectionEnd.channelEnd.channelID,
         dstPortID |-> chainStore.connectionEnd.channelEnd.counterpartyPortID,
         dstChannelID |-> chainStore.connectionEnd.channelEnd.counterpartyChannelID]) IN
+      LET updatedChainStore == WritePacketCommitment(chainStore, packet) IN
+        \* if writing the packet commitment was successful
+        /\ chainStore /= updatedChainStore   
         \* update chain store with packet committment
-        /\ chainStore' = WritePacketCommitment(chainStore, packet)
+        /\ chainStore' = updatedChainStore
         \* log sent packet
         /\ packetLog' = Append(packetLog, AsPacketLogEntry([
                                                 type |-> "PacketSent", 
@@ -219,7 +223,7 @@ HandleIncomingDatagrams ==
 \*  - pendingDatagrams for each chain is empty
 \*  - the packetSeq is set to 1
 Init == 
-    /\ chainStore \in InitChainStore(MaxVersion, ChannelOrdering)
+    /\ chainStore \in InitChainStore(Versions, ChannelOrdering)
     /\ incomingDatagrams = AsSetDatagrams({})
     /\ incomingPacketDatagrams = AsSeqDatagrams(<<>>)
     /\ history = InitHistory
@@ -248,12 +252,12 @@ Fairness ==
 \* Type invariant   
 \* ChainStores, Datagrams, PacketLogEntries are defined in IBCCoreDefinitions.tla        
 TypeOK ==    
-    /\ chainStore \in ChainStores(MaxHeight, ChannelOrdering, MaxPacketSeq, MaxVersion)
-    /\ incomingDatagrams \in SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)
-    /\ incomingPacketDatagrams \in Seq(Datagrams(MaxHeight, MaxPacketSeq, MaxVersion))
+    /\ chainStore \in ChainStores(Heights, ChannelOrdering, MaxPacketSeq, Versions)
+    /\ incomingDatagrams \in SUBSET Datagrams(Heights, MaxPacketSeq, Versions)
+    /\ incomingPacketDatagrams \in Seq(Datagrams(Heights, MaxPacketSeq, Versions))
     /\ history \in Histories
-    /\ appPacketSeq \in 1..MaxPacketSeq
-    /\ packetLog \in Seq(PacketLogEntries(MaxHeight, MaxPacketSeq))
+    /\ appPacketSeq \in 1..(MaxPacketSeq + 1)
+    /\ packetLog \in Seq(PacketLogEntries(Heights, MaxPacketSeq))
     
 (***************************************************************************
  Properties
@@ -265,5 +269,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:40:51 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jan 29 16:25:59 CET 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska
