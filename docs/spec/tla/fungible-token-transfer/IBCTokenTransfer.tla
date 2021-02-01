@@ -203,7 +203,7 @@ Next ==
 Fairness ==
     /\ ChainA!Fairness
     /\ ChainB!Fairness
-    /\ WF_vars(ChainAction)    
+    /\ WF_vars(Next)    
     
 Spec == Init /\ [][Next]_vars /\ Fairness             
 
@@ -382,5 +382,5 @@ ICS20Prop ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 12:38:47 CET 2021 by ilinastoilkovska
+\* Last modified Mon Feb 01 19:31:30 CET 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:00:24 CEST 2020 by ilinastoilkovska

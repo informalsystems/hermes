@@ -172,7 +172,7 @@ Next ==
     \/ UNCHANGED vars
         
 Fairness ==
-    /\ WF_vars(SendPacket)
+    /\ WF_vars(Next)
     
 (***************************************************************************
  Invariants
@@ -186,5 +186,5 @@ TypeOK ==
         
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 12:05:47 CET 2021 by ilinastoilkovska
+\* Last modified Mon Feb 01 19:31:22 CET 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska
