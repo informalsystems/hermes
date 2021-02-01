@@ -4,9 +4,9 @@ In order to run `Hermes`, you will need to have a configuration file.
 
 The format supported for the configuration file is [TOML](https://toml.io/en/)
 
-Every command executed through the relayer requires the configuration file localtion to be passed as a parameter.
+Every command executed through the relayer requires the configuration file location to be passed as a parameter.
 
-> Currently the relayer does not store the configuration information in the local disk. The relayer currently also does not support adding the sections below programmatically. You will need to use a text editor to create the file and add content to it.
+> Currently the relayer does not store the configuration information in the local disk. In addition, with the exception of the light client configuration, current relayer does not support managing the configuration file programmatically. You will need to use a text editor to create the file and add content to it.
 
 
 ```bash
@@ -15,11 +15,11 @@ hermes -c config.toml [COMMAND]
 
 ## Sections
 
-Each configuration file should have one `global` and two `chains` sections (one for each chain).
+The configuration file must have one `global`. And it must contain one `chains` section for each chain.
 
 ### [global]
 
-The global section has parameters that apply globally concerning the relayer operation.
+The global section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
@@ -40,7 +40,7 @@ log_level = 'info'
 
 ### [[chains]]
 
-A `chains` section has parameters related to a chain that the relayer can send transactions and execute queries. It also has parameters related to the light client configuration peers for the chain.
+A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client configuration peers for the chain.
 
 #### Parameters
 
@@ -54,7 +54,7 @@ A `chains` section has parameters related to a chain that the relayer can send t
   
 * __key_name__: Specify the name of the private key JSON file. This is the filename for the private key used to sign transactions on this chain. Don't specify the file extension, for example if the filename for the private key is `testkey.json`, specify only `testkey` for this parameter.
   
-* __store_prefix__: Specify the prefix that will be used by the chain store. For example `ibc`.
+* __store_prefix__: Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
 
 * __gas__: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
 
@@ -79,17 +79,17 @@ trusting_period = '14days'
 
 ### Light clients
 
-The configuration file also store information about the light client peers, but this configuration is automatically added by the relayer to the configuration file when running the `relayer light add` command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
+The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the `relayer light add` relayer command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
 
 ### Validate the configuration file
 
-If you want to validate the configuration file you can run the relayer command below:
+If you want to validate the configuration file you can run the command below:
 
 ```shell
 hermes -c config.toml config validate
 ```
 
-If the configuration file is valid the command above will show this message:
+If the configuration file is valid the command above shows this message:
 
 ```shell
 {"status":"success","result":[]}
