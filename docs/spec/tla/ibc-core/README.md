@@ -209,4 +209,4 @@ To import the specification in the TLA+ toolbox and run TLC:
 
 #### Basic checks
 
-We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 3 minutes and the property `IBCDelivery` in 5 minutes.
+We ran TLC using the constants defined in `IBCCore.cfg` and verified the invariant `TypeOK` in 3 minutes and the property `IBCSafety` in 5 minutes.
