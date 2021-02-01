@@ -133,6 +133,8 @@ FLAGS:
 
 __Example__
 
+We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the channel:
+
 ```shell
 $ hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
 ```
@@ -184,6 +186,9 @@ FLAGS:
 ```
 
 __Example__
+
+Confirm on `ibc-1` that `ibc-0` has accepted the opening of the channel,
+after which the channel is open on both chains.
 
 ```shell
 $ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
