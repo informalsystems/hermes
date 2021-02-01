@@ -11,44 +11,144 @@ use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 macro_rules! conn_open_cmd {
-    ($conn_open_cmd:ident, $dbg_string:literal, $func:ident) => {
-        #[derive(Clone, Command, Debug, Options)]
-        pub struct $conn_open_cmd {
-            #[options(free, required, help = "identifier of the destination chain")]
-            dst_chain_id: ChainId,
+    ($dbg_string:literal, $func:ident, $self:expr, $conn:expr) => {
+        let config = app_config();
 
-            #[options(free, required, help = "identifier of the source chain")]
-            src_chain_id: ChainId,
+        let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
+        let chains = match ChainHandlePair::spawn_with(
+            spawn_options,
+            &config,
+            &$self.src_chain_id,
+            &$self.dst_chain_id,
+        ) {
+            Ok(chains) => chains,
+            Err(e) => return Output::error(format!("{}", e)).exit(),
+        };
 
-            #[options(free, required, help = "identifier of the destination client")]
-            dst_client_id: ClientId,
+        let connection = $conn(chains);
 
-            #[options(free, required, help = "identifier of the source client")]
-            src_client_id: ClientId,
+        info!("Message {}: {:?}", $dbg_string, connection);
 
-            #[options(free, required, help = "identifier of the destination connection")]
-            dst_connection_id: ConnectionId,
+        let res: Result<IBCEvent, Error> =
+            connection.$func().map_err(|e| Kind::Tx.context(e).into());
 
-            #[options(free, required, help = "identifier of the source connection")]
-            src_connection_id: ConnectionId,
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    };
+}
 
-        impl Runnable for $conn_open_cmd {
-            fn run(&self) {
-                let config = app_config();
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnInitCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-                let spawn_options = SpawnOptions::override_store_config(StoreConfig::memory());
-                let chains = match ChainHandlePair::spawn_with(
-                    spawn_options,
-                    &config,
-                    &self.src_chain_id,
-                    &self.dst_chain_id,
-                ) {
-                    Ok(chains) => chains,
-                    Err(e) => return Output::error(format!("{}", e)).exit(),
-                };
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-                let connection = Connection {
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+}
+
+impl Runnable for TxRawConnInitCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenInit",
+            build_conn_init_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnTryCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(required, help = "identifier of the source connection")]
+    src_connection_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnTryCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenTry",
+            build_conn_try_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        self.src_connection_id.clone(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        ConnectionId::default(),
+                    ),
+                }
+            }
+        );
+    }
+}
+
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnAckCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
+
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
+
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(required, help = "identifier of the destination connection")]
+    dst_connection_id: ConnectionId,
+
+    #[options(required, help = "identifier of the source connection")]
+    src_connection_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnAckCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenAck",
+            build_conn_ack_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
                     a_side: ConnectionSide::new(
                         chains.src,
                         self.src_client_id.clone(),
@@ -59,30 +159,53 @@ macro_rules! conn_open_cmd {
                         self.dst_client_id.clone(),
                         self.dst_connection_id.clone(),
                     ),
-                };
-
-                info!("Message {}: {:?}", $dbg_string, connection);
-
-                let res: Result<IBCEvent, Error> =
-                    connection.$func().map_err(|e| Kind::Tx.context(e).into());
-
-                match res {
-                    Ok(receipt) => Output::success(receipt).exit(),
-                    Err(e) => Output::error(format!("{}", e)).exit(),
                 }
             }
-        }
-    };
+        );
+    }
 }
 
-conn_open_cmd!(TxRawConnInitCmd, "ConnOpenInit", build_conn_init_and_send);
+#[derive(Clone, Command, Debug, Options)]
+pub struct TxRawConnConfirmCmd {
+    #[options(free, required, help = "identifier of the destination chain")]
+    dst_chain_id: ChainId,
 
-conn_open_cmd!(TxRawConnTryCmd, "ConnOpenTry", build_conn_try_and_send);
+    #[options(free, required, help = "identifier of the source chain")]
+    src_chain_id: ChainId,
 
-conn_open_cmd!(TxRawConnAckCmd, "ConnOpenAck", build_conn_ack_and_send);
+    #[options(free, required, help = "identifier of the destination client")]
+    dst_client_id: ClientId,
 
-conn_open_cmd!(
-    TxRawConnConfirmCmd,
-    "ConnOpenConfirm",
-    build_conn_confirm_and_send
-);
+    #[options(free, required, help = "identifier of the source client")]
+    src_client_id: ClientId,
+
+    #[options(required, help = "identifier of the destination connection")]
+    dst_connection_id: ConnectionId,
+
+    #[options(required, help = "identifier of the source connection")]
+    src_connection_id: ConnectionId,
+}
+
+impl Runnable for TxRawConnConfirmCmd {
+    fn run(&self) {
+        conn_open_cmd!(
+            "ConnOpenConfirm",
+            build_conn_confirm_and_send,
+            self,
+            |chains: ChainHandlePair| {
+                Connection {
+                    a_side: ConnectionSide::new(
+                        chains.src,
+                        self.src_client_id.clone(),
+                        self.src_connection_id.clone(),
+                    ),
+                    b_side: ConnectionSide::new(
+                        chains.dst,
+                        self.dst_client_id.clone(),
+                        self.dst_connection_id.clone(),
+                    ),
+                }
+            }
+        );
+    }
+}

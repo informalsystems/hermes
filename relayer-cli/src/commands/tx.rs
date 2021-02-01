@@ -36,19 +36,21 @@ pub enum TxRawCommands {
     UpdateClient(TxUpdateClientCmd),
 
     /// The `tx raw conn-init` subcommand
-    #[options(help = "tx raw conn-init")]
+    #[options(help = "Initialize a connection attempt on chain A")]
     ConnInit(connection::TxRawConnInitCmd),
 
     /// The `tx raw conn-try` subcommand
-    #[options(help = "tx raw conn-try")]
+    #[options(help = "Relay notice of a connection attempt on chain A to chain B")]
     ConnTry(connection::TxRawConnTryCmd),
 
     /// The `tx raw conn-ack` subcommand
-    #[options(help = "tx raw conn-ack")]
+    #[options(help = "Relay acceptance of a connection attempt from chain B back to chain A")]
     ConnAck(connection::TxRawConnAckCmd),
 
     /// The `tx raw conn-confirm` subcommand
-    #[options(help = "tx raw conn-confirm")]
+    #[options(
+        help = "Confirm opening of a connection on chain A to chain B, after which the connection is open on both chains"
+    )]
     ConnConfirm(connection::TxRawConnConfirmCmd),
 
     /// The `tx raw chan-open-init` subcommand

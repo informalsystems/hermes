@@ -44,7 +44,7 @@ alias hermes='cargo run --bin hermes --'
 
 ```shell script
 hermes -c config.toml tx raw create-client ibc-1 ibc-0
-hermes -c config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 dummyconnection dummyconnection
+hermes -c config.toml tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0
 hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
 
 ```
@@ -73,7 +73,7 @@ hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer tr
 - init-none:
 
     ```shell script
-    hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 dummyconnection dummyconnection
+    hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
     ```
 
     Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0`. Use in the `conn-try` CLI
@@ -81,7 +81,7 @@ hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer tr
 - init-try:
 
     ```shell script
-    hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 dummyconnection connection-0
+    hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0
     ```
 
     Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI
@@ -89,13 +89,13 @@ hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer tr
 - open-try:
 
     ```shell script
-    hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 connection-0 connection-1
+    hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
     ```
 
 - open-open:
 
     ```shell script
-    hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 connection-1 connection-0
+    hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
     ```
 
 - verify that the two ends are in Open state:
