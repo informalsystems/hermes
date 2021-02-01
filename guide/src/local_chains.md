@@ -1,6 +1,6 @@
 # Start the local chains
 
-To run the script to start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
+To start the local chains, open a terminal and navigate to the `ibc-rs` repository folder
 
 ```bash
 cd ibc-rs
@@ -27,9 +27,9 @@ rm -rf data/
 
 In order to run the script, you will need a `TOML` configuration file to be passed as a parameter. Please check the [`Configuration`](./config.md) section for more information about the relayer configuration file.
 
-The following configuration file in the `scripts` folder can be used for running the local chains:
+The following configuration file in the `ibc-rs` repository folder can be used for running the local chains:
 
-#### loop_config.toml
+#### config_example.toml
 ```toml
 [global]
 timeout = '10s'
@@ -43,10 +43,7 @@ grpc_addr = 'tcp://localhost:9090'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
-
-gas = 200000
-max_msg_num = 4
-max_tx_size = 1048576
+gas = 3000000
 clock_drift = '5s'
 trusting_period = '14days'
 
@@ -61,31 +58,34 @@ grpc_addr = 'tcp://localhost:9091'
 account_prefix = 'cosmos'
 key_name = 'testkey'
 store_prefix = 'ibc'
+gas = 3000000
 clock_drift = '5s'
 trusting_period = '14days'
 
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
 ```
 
 ### Running the script to start the chains
 
-If you are currently in the `ibc-rs` repository folder, please change to the `scripts` folder:
-
-```shell
-cd scripts
-```
-
-Then run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
+From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`) and configure the light client peers:
 
 ```bash
-./dev-env loop_config.toml ibc-0 ibc-1
+./scripts/dev-env config.toml ibc-0 ibc-1
 ```
 
 > __NOTE__: If the script above prompts you to delete the data folder just say `yes`
 
-The script will configure and start two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
+The script configures and starts two `gaiad` instances, one named `ibc-0` and the other `ibc-1`
 
 ```mermaid
 graph TD
@@ -98,7 +98,7 @@ graph TD
 If the script runs successfully you should see a message similar to the one below in the terminal:
 
 ```shell
-$ ./dev-env loop_chains.toml ibc-0 ibc-1
+$ ./scripts/dev-env chains.toml ibc-0 ibc-1
 
 GAIA VERSION INFO: 4.0.0
 

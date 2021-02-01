@@ -12,11 +12,11 @@ Commands to manage keys (private keys) for each chain.
 
 Commands to manage light client configuration. Allows adding and removing light client peers.
 
-**[Transactions](./transactions.md)**
+**[Raw Transactions](./transactions.md)**
 
 Command to submit transactions to configured chains
 
-**[Channels](./channels.md)**
+**[Relayer](./relayer_loop.md)**
 
 Commands to manage channels
 

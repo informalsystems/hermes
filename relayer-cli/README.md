@@ -17,9 +17,9 @@ relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_
 
 relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_client_id
 
-relayer-cli -c config.toml tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id -d src_connection_id
+relayer-cli -c config.toml tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id
 
-relayer-cli -c config.toml tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id dest_connection_id src_connection_id
+relayer-cli -c config.toml tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id -s src_connection_id
 ```
 Note: This is work in progress, more commands will be implemented and tested with gaia `cosmos-test-stargate` chains.
 
@@ -47,7 +47,7 @@ Note: This is work in progress, more commands will be implemented and tested wit
     
 *  Run the transaction command. In this example, it will try to initialize an `ibczeroconn2` connection on chain `ibc-1`
 
-   `$ cargo run --bin hermes -- -c ./relayer-cli/tests/fixtures/two_chains.toml tx raw conn-init ibc-1 ibc-0 ibczeroclient ibconeclient ibczeroconn2 -d ibconeconn`
+   `$ cargo run --bin hermes -- -c ./relayer-cli/tests/fixtures/two_chains.toml tx raw conn-init ibc-1 ibc-0 ibczeroclient ibconeclient`
 
     If you get an empty response it means the tx worked
 

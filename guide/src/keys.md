@@ -7,14 +7,14 @@ Using the `keys` command you can add and list keys.
 To see the available subcommands for the `keys` command run:
 
 ```shell
-relayer help keys
+hermes help keys
 ```
 
 Currently there are two subcommands supported `add` and `list`:
 
 ```shell
 USAGE:
-    relayer-cli keys <SUBCOMMAND>
+    hermes-cli keys <SUBCOMMAND>
 
 DESCRIPTION:
     manage keys in the relayer for each chain
@@ -56,7 +56,7 @@ In order to add a key to a chain use the `keys add` command:
 
 ```shell
 USAGE:
-    relayer-cli keys add <OPTIONS>
+    hermes keys add <OPTIONS>
 
 DESCRIPTION:
     adds a key to a configured chain
@@ -72,7 +72,7 @@ POSITIONAL ARGUMENTS:
 To add a private key file to a chain:
 
 ```shell
-relayer -c config keys add [CHAIN_ID] [PRIVATE_KEY_FILE]
+hermes -c config keys add [CHAIN_ID] [PRIVATE_KEY_FILE]
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -87,7 +87,7 @@ In order to list the private keys added to chains use the `keys list` command
 
 ```shell
 USAGE:
-    relayer-cli keys list <OPTIONS>
+    hermes keys list <OPTIONS>
 
 DESCRIPTION:
     list keys configured on a chain
@@ -101,7 +101,7 @@ POSITIONAL ARGUMENTS:
 To list the private key file that was added to a chain:
 
 ```shell
-relayer -c config keys list [CHAIN_ID]
+hermes -c config keys list [CHAIN_ID]
 ```
 
 If the command is successful a message similar to the one below will be displayed:

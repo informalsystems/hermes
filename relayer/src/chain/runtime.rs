@@ -630,7 +630,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result =
             self.chain
-                .build_packet_proofs(packet_type, &port_id, &channel_id, sequence, height);
+                .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
         reply_to
             .send(result)
