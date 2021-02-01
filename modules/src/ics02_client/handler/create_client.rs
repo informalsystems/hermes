@@ -56,7 +56,7 @@ mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
 
-    use tendermint_light_client::types::TrustThreshold;
+    use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IBCEvent;
     use crate::handler::HandlerOutput;

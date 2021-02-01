@@ -1,6 +1,6 @@
 [package]
 name    = "ibc-relayer-cli"
-version = "0.0.6"
+version = "0.1.0"
 edition = "2018"
 authors = [
   "Informal Systems <hello@informal.systems>"
@@ -10,9 +10,9 @@ authors = [
 profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
-ibc         = { version = "0.0.6", path = "../modules" }
-ibc-proto   = { version = "0.6.0", path = "../proto" }
-ibc-relayer = { version = "0.0.6", path = "../relayer" }
+ibc         = { version = "0.1.0", path = "../modules" }
+ibc-relayer = { version = "0.1.0", path = "../relayer" }
+ibc-proto   = { version = "0.7.0", path = "../proto" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
@@ -32,17 +32,18 @@ hex = "0.4"
 crossbeam-channel = "0.5.0"
 
 [dependencies.tendermint-proto]
-version = "=0.17.1"
+version = "=0.18.0"
 
 [dependencies.tendermint]
-version = "=0.17.1"
+version = "=0.18.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.1"
+version = "=0.18.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.17.1"
+version = "=0.18.0"
+features = ["unstable"]
 
 [dependencies.abscissa_core]
 version = "0.5.2"
