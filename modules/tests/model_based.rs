@@ -4,12 +4,14 @@ mod state;
 use ibc::ics02_client::client_def::AnyHeader;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::error::{Error as ICS02Error, Kind as ICS02ErrorKind};
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
-use ibc::ics18_relayer::error::Kind as ICS18ErrorKind;
+use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
+use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
 use ibc::ics26_routing::msgs::ICS26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
@@ -17,6 +19,7 @@ use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::Height;
 use state::{ActionOutcome, ActionType, State};
+use std::error::Error;
 use std::fmt::Debug;
 use tendermint::account::Id as AccountId;
 
@@ -119,7 +122,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id,
+                    client_id: client_id.clone(),
                     header,
                     signer,
                 }));
@@ -134,13 +137,18 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                         assert!(result.is_ok(), "UpdateOK outcome expected");
                     }
                     ActionOutcome::UpdateClientNotFound => {
-                        assert!(result.is_err(), "UpdateClientNotFound outcome expected");
-                        todo!()
+                        let handler_error_kind = Self::extract_ics02_handler_error_kind(result);
+                        assert!(matches!(
+                            handler_error_kind,
+                            ICS02ErrorKind::ClientNotFound(id) if id == client_id
+                        ));
                     }
                     ActionOutcome::UpdateHeightVerificationFailure => {
-                        let error =
-                            result.expect_err("UpdateHeightVerificationFailure outcome expected");
-                        assert!(matches!(error.kind(), ICS18ErrorKind::TransactionFailed));
+                        let handler_error_kind = Self::extract_ics02_handler_error_kind(result);
+                        assert!(matches!(
+                            handler_error_kind,
+                            ICS02ErrorKind::HeaderVerificationFailure
+                        ));
                     }
                 }
                 true
@@ -156,6 +164,30 @@ impl ICS02TestExecutor {
 
     fn mock_header(&self, height: u64) -> MockHeader {
         MockHeader(Height::new(self.version, height))
+    }
+
+    fn extract_ics02_handler_error_kind(result: Result<(), ICS18Error>) -> ICS02ErrorKind {
+        let ics18_error = result.expect_err("ICS18 error expected");
+        assert!(matches!(
+            ics18_error.kind(),
+            ICS18ErrorKind::TransactionFailed
+        ));
+        let ics26_error = ics18_error
+            .source()
+            .expect("expected source in ICS18 error")
+            .downcast_ref::<ICS26Error>()
+            .expect("ICS18 source should be an ICS26 error");
+        assert!(matches!(
+            ics26_error.kind(),
+            ICS26ErrorKind::HandlerRaisedError,
+        ));
+        ics26_error
+            .source()
+            .expect("expected source in ICS26 error")
+            .downcast_ref::<ICS02Error>()
+            .expect("ICS26 source should be an ICS02 error")
+            .kind()
+            .clone()
     }
 }
 
