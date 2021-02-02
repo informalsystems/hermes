@@ -184,13 +184,13 @@ FLAGS:
 <p>Use the <code>stert</code> command without flags to create new clients on <code>source</code> and <code>destination</code> chains, and new connection and new channel between the two chains.
 <strong>Note</strong>: Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.</p>
 <p><strong>Example</strong>:</p>
-<pre><code class="language-shellscript">hermes -c config.toml ibc-0 ibc-1
+<pre><code class="language-shellscript">hermes ibc-0 ibc-1
 </code></pre>
 <p>The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.</p>
 <h2><a class="header" href="#start-on-existing-channel" id="start-on-existing-channel">Start on Existing Channel</a></h2>
 <p>Use the <code>start</code> command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.</p>
 <p><strong>Example</strong>:</p>
-<pre><code class="language-shellscript">hermes -c config.toml ibc-0 ibc-1 -p transfer -c channel-0
+<pre><code class="language-shellscript">hermes ibc-0 ibc-1 -p transfer -c channel-0
 </code></pre>
 <p><strong>Note</strong>: Finishing uncompleted handshakes can only be achieved using the <code>tx raw</code> CLIs.</p>
 <h2><a class="header" href="#packet-streaming" id="packet-streaming">Packet Streaming</a></h2>
@@ -224,7 +224,7 @@ FLAGS:
     -o, --ordering ORDERING   the channel order
 </code></pre>
 <p><strong>Example</strong>:</p>
-<pre><code class="language-shellscript">hermes -c config.toml channel handshake ibc-0 ibc-1 transfer transfer
+<pre><code class="language-shellscript">hermes channel handshake ibc-0 ibc-1 transfer transfer
 </code></pre>
 
                     </main>

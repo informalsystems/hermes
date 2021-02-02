@@ -194,7 +194,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-0</code> for the sequence numbers of packets that still have commitments on <code>ibc-0</code> and that were sent on <code>transfer</code> port and <code>channel-0</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet commitments ibc-0 transfer channel-0 | jq
+<pre><code class="language-shell">$ hermes query packet commitments ibc-0 transfer channel-0 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -230,7 +230,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-0</code> for the commitment of packet with sequence <code>3</code> sent on <code>transfer</code> port and <code>channel-0</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet commitment ibc-0 transfer channel-0 3 | jq
+<pre><code class="language-shell">$ hermes query packet commitment ibc-0 transfer channel-0 3 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -252,7 +252,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-1</code> for the sequence numbers of packets acknowledged that were received on <code>transfer</code> port and <code>channel-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet acks ibc-1 transfer channel-1 | jq
+<pre><code class="language-shell">$ hermes query packet acks ibc-1 transfer channel-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -288,7 +288,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-1</code> for the acknowledgment of packet with sequence <code>2</code> received on <code>transfer</code> port and <code>channel-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet ack ibc-1 transfer channel-1 2 | jq
+<pre><code class="language-shell">$ hermes query packet ack ibc-1 transfer channel-1 2 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -311,7 +311,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-1</code> for the sequence numbers of packets sent on <code>ibc-0</code> on <code>transfer</code> port and <code>channel-0</code> but not yet received:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
+<pre><code class="language-shell">$ hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -338,7 +338,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query <code>ibc-0</code> for the sequence numbers of packets received on <code>ibc-1</code> on <code>transfer</code> port and <code>channel-1</code> but not yet acknowledged on <code>ibc-0</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
+<pre><code class="language-shell">$ hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,

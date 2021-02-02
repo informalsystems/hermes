@@ -227,7 +227,7 @@ b_port = 'transfer'
 </code></pre>
 <h3><a class="header" href="#running-the-script-to-start-the-chains" id="running-the-script-to-start-the-chains">Running the script to start the chains</a></h3>
 <p>From the <code>ibc-rs</code> repository folder run the following script with the parameters below to start the chains (<code>ibc-0</code> and <code>ibc-1</code>) and configure the light client peers:</p>
-<pre><code class="language-bash">./scripts/dev-env config.toml ibc-0 ibc-1
+<pre><code class="language-bash">./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
 </code></pre>
 <blockquote>
 <p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just say <code>yes</code></p>
@@ -237,7 +237,6 @@ b_port = 'transfer'
     A[dev-env] --&gt;|run| C(start chains)
     C --&gt;|gaiad| D[ibc-0]
     C --&gt;|gaiad| F[ibc-1]
-            
 </pre>
 <p>If the script runs successfully you should see a message similar to the one below in the terminal:</p>
 <pre><code class="language-shell">$ ./scripts/dev-env chains.toml ibc-0 ibc-1
@@ -246,7 +245,7 @@ GAIA VERSION INFO: 4.0.0
 
 Generating gaia configurations...
 Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
-Change settings in config.toml file...
+Change settings in ~/.hermes/config.toml file...
 balances:
 - amount: &quot;0&quot;
   denom: stake
@@ -262,7 +261,7 @@ pagination:
   next_key: null
   total: &quot;0&quot;
 Creating gaiad instance: home=./data | chain-id=ibc-1 | p2p=:26556 | rpc=:26557 | profiling=:6061 | grpc=:9091 | samoleans=:100000000000
-Change settings in config.toml file...
+Change settings in ~/.hermes/config.toml file...
 balances:
 - amount: &quot;0&quot;
   denom: stake

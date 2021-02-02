@@ -176,7 +176,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query all channels on <code>ibc-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query channels ibc-1 | jq
+<pre><code class="language-shell">$ hermes query channels ibc-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -218,7 +218,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query the channel end of channel <code>channel-1</code> on <code>ibc-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query channel end ibc-1 channel-1 | jq
+<pre><code class="language-shell">$ hermes query channel end ibc-1 channel-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,

@@ -202,7 +202,7 @@ POSITIONAL ARGUMENTS:
 <p>Given that two clients were previously created with identifier <code>07-tendermint-0</code> on chain <code>ibc-0</code> and
 identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can initialize a connection between the two clients.</p>
 <p>First, let's initialize the connection on <code>ibc-0</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+<pre><code class="language-shell">$ hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -238,7 +238,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Let's now create the counterparty to <code>connection-0</code> on chain <code>ibc-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
+<pre><code class="language-shell">$ hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -275,7 +275,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>We can now acknowledge on <code>ibc-0</code> that <code>ibc-1</code> has accepted the connection attempt:</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
+<pre><code class="language-shell">$ hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -312,7 +312,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Confirm on <code>ibc-1</code> that <code>ibc-0</code> has accepted the connection attempt.</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
+<pre><code class="language-shell">$ hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,

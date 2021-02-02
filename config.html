@@ -165,16 +165,19 @@
                     <main>
                         <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>In order to run <code>Hermes</code>, you will need to have a configuration file.</p>
-<p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a></p>
-<p>Every command executed through the relayer requires the configuration file location to be passed as a parameter.</p>
+<p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a>.</p>
+<p>By default, <code>Hermes</code> expect the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
+<p>This can be overriden by supplying the <code>-c</code> flag when invoking hermes, before the
+name of the command to run, eg. <code>hermes -c my_config.toml query connection channels ibc-1 connection-1</code>.</p>
 <blockquote>
-<p>Currently the relayer does not store the configuration information in the local disk. In addition, with the exception of the light client configuration, current relayer does not support managing the configuration file programmatically. You will need to use a text editor to create the file and add content to it.</p>
+<p>With the exception of the light client configuration, current relayer does not support managing the configuration file programmatically.
+You will need to use a text editor to create the file and add content to it.</p>
 </blockquote>
-<pre><code class="language-bash">hermes -c config.toml [COMMAND]
+<pre><code class="language-bash">hermes [-c CONFIG_FILE] COMMAND
 </code></pre>
 <h2><a class="header" href="#sections" id="sections">Sections</a></h2>
-<p>The configuration file must have one <code>global</code>. And it must contain one <code>chains</code> section for each chain.</p>
-<h3><a class="header" href="#global" id="global">[global]</a></h3>
+<p>The configuration file must have one <code>global</code> section, as well as contain one <code>chains</code> section for each chain.</p>
+<h3><a class="header" href="#global" id="global"><code>[global]</code></a></h3>
 <p>The global section has parameters that apply globally to the relayer operation.</p>
 <h4><a class="header" href="#parameters" id="parameters">Parameters</a></h4>
 <ul>
@@ -240,13 +243,6 @@ trusting_period = '14days'
 </code></pre>
 <h3><a class="header" href="#light-clients" id="light-clients">Light clients</a></h3>
 <p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> relayer command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
-<h3><a class="header" href="#validate-the-configuration-file" id="validate-the-configuration-file">Validate the configuration file</a></h3>
-<p>If you want to validate the configuration file you can run the command below:</p>
-<pre><code class="language-shell">hermes -c config.toml config validate
-</code></pre>
-<p>If the configuration file is valid the command above shows this message:</p>
-<pre><code class="language-shell">{&quot;status&quot;:&quot;success&quot;,&quot;result&quot;:[]}
-</code></pre>
 <h3><a class="header" href="#adding-private-keys" id="adding-private-keys">Adding Private Keys</a></h3>
 <p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that will be used by the relayer.</p>
 <h3><a class="header" href="#example-configuration-file" id="example-configuration-file">Example configuration file</a></h3>

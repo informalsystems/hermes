@@ -171,7 +171,7 @@
 <h4><a class="header" href="#11-create-client" id="11-create-client">1.1. <code>create-client</code></a></h4>
 <p>First you will need to create a client for each chain:</p>
 <p>This command submits a transaction to a destination chain (<code>ibc-0</code>) with a request to create a client for a source chain (<code>ibc-1</code>):</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw create-client ibc-0 ibc-1
+<pre><code class="language-shell">hermes tx raw create-client ibc-0 ibc-1
 </code></pre>
 <p>if the command is successful a message similar to the one below is displayed <code>status:success</code>:</p>
 <pre><code class="language-json">{
@@ -193,7 +193,7 @@
 <p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands</p>
 </blockquote>
 <p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> and also specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
-<pre><code class="language-shell">hermes -c config.toml query client state ibc-0 07-tendermint-0
+<pre><code class="language-shell">hermes query client state ibc-0 07-tendermint-0
 </code></pre>
 <p>should show a message similar to the one below:</p>
 <pre><code class="language-json">{
@@ -235,7 +235,7 @@
 }
 </code></pre>
 <p>Now let's do the same (*) for <code>ibc-1</code> as the destination chain:</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw create-client ibc-1 ibc-0
+<pre><code class="language-shell">hermes tx raw create-client ibc-1 ibc-0
 </code></pre>
 <p>Take note of the <code>client_id</code> allocated for this client. In the examples we assume is <code>07-tendermint-1</code>.</p>
 <p><strong>Note</strong>: You can create a client on <code>ibc-1</code> and the chain will assign <code>07-tendermint-1</code> as its <code>client_id</code></p>
@@ -257,57 +257,57 @@
 </code></pre>
 <h4><a class="header" href="#12-update-client" id="12-update-client">1.2 <code>update-client</code></a></h4>
 <p>Client states can be updated by sending an <code>update-client</code> transaction:</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0
-hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
+<pre><code class="language-shell">hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0
+hermes tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </code></pre>
 <h3><a class="header" href="#2-connection" id="2-connection">2. Connection</a></h3>
 <h4><a class="header" href="#21-conn-init" id="21-conn-init">2.1 <code>conn-init</code></a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+<pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-0</code> on <code>ibc-0</code> in order to use it in the <code>conn-try</code> command below.</p>
 <h4><a class="header" href="#22-conn-try" id="22-conn-try">2.2 <code>conn-try</code></a></h4>
 <p><strong>Note</strong>: If this is the first connection to be created on <code>ibc-1</code>, prior to the <code>conn-try</code> command, you can send a <code>conn-init</code> to <code>ibc-1</code> and the chain will allocate <code>connection-0</code>. This will ensure that the next available ID, <code>connection-1</code>, will be allocated in <code>conn-try</code>.</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+<pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
 <p>To send a <code>conn-try</code> message to <code>ibc-1</code>:</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
+<pre><code class="language-shell">hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-1</code> on <code>ibc-1</code>. Use in the <code>conn-ack</code> CLI</p>
 <h4><a class="header" href="#23-conn-ack" id="23-conn-ack">2.3 conn-ack</a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
+<pre><code class="language-shell">hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
 </code></pre>
 <h4><a class="header" href="#24-conn-confirm" id="24-conn-confirm">2.4 conn-confirm</a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
+<pre><code class="language-shell">hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
 </code></pre>
 <h4><a class="header" href="#25-query-connection" id="25-query-connection">2.5 query connection</a></h4>
 <p>To verify that the two ends are in <code>Open</code> state:</p>
-<pre><code class="language-shell">hermes -c config.toml query connection end ibc-1 connection-1
+<pre><code class="language-shell">hermes query connection end ibc-1 connection-1
 </code></pre>
-<pre><code class="language-shell">hermes -c config.toml query connection end ibc-0 connection-0
+<pre><code class="language-shell">hermes query connection end ibc-0 connection-0
 </code></pre>
 <h3><a class="header" href="#3-channel" id="3-channel">3. Channel</a></h3>
 <h4><a class="header" href="#31-chan-open-init" id="31-chan-open-init">3.1 chan-open-init</a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
+<pre><code class="language-shell">hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
 </code></pre>
 <h4><a class="header" href="#32-chan-open-try" id="32-chan-open-try">3.2 chan-open-try</a></h4>
 <p><strong>Note</strong>: If this is the first channel to be created on <code>ibc-1</code>, prior to the <code>chan-open-try</code> command, you can send a <code>chan-open-init</code> to <code>ibc-1</code> and the chain will allocate <code>channel-0</code>. This will ensure that the next available ID, <code>channel-1</code>, will be allocated in <code>chan-open-try</code>.</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
+<pre><code class="language-shell">hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
 </code></pre>
 <p>To send the <code>chan-open-try</code> message to <code>ibc-1</code>:</p>
-<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
+<pre><code class="language-shell">hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>channel-1</code> on <code>ibc-1</code>. Use in the <code>chan-open-ack</code> CLI</p>
 <h4><a class="header" href="#33-chan-open-ack" id="33-chan-open-ack">3.3 chan-open-ack</a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+<pre><code class="language-shell">hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 </code></pre>
 <h4><a class="header" href="#34-chan-open-confirm" id="34-chan-open-confirm">3.4 chan-open-confirm</a></h4>
-<pre><code class="language-shell">hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+<pre><code class="language-shell">hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
 </code></pre>
 <h4><a class="header" href="#35-query-channel" id="35-query-channel">3.5 query channel</a></h4>
 <p>To verify that the two ends are in <code>Open</code> state:</p>
-<pre><code class="language-shell">hermes -c config.toml query channel end ibc-0 transfer channel-0
+<pre><code class="language-shell">hermes query channel end ibc-0 transfer channel-0
 </code></pre>
-<pre><code class="language-shell">hermes -c config.toml query channel end ibc-1 transfer channel-1
+<pre><code class="language-shell">hermes query channel end ibc-1 transfer channel-1
 </code></pre>
 <h3><a class="header" href="#5-packets" id="5-packets">5 Packets</a></h3>
 <h4><a class="header" href="#51-query-balances" id="51-query-balances">5.1 Query balances:</a></h4>
@@ -329,49 +329,49 @@ hermes -c config.toml tx raw update-client ibc-1 ibc-0 07-tendermint-1
 <ul>
 <li>
 <p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
 <p>query packet commitments on ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml query packet commitments ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes query packet commitments ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
 <p>query unreceived packets on ibc-1</p>
-<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
 <p>send recv_packet to ibc-1</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
 <p>query unreceived acks on ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+<pre><code class="language-shellscript">hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
 <li>
 <p>send acknowledgement to ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
+<pre><code class="language-shellscript">hermes tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
 <li>
 <p>send 1 packet with low timeout height offset to ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
 </code></pre>
 </li>
 <li>
 <p>send timeout to ibc-0</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 </ul>
 <p>Send those samoleans back, from <code>ibc-1</code> to <code>ibc-1</code>.</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
-hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
-hermes -c config.toml tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 1000 -n 1 -d ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 </code></pre>
 <p>The <code>ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
 <h3><a class="header" href="#6-test-commands" id="6-test-commands">6 Test commands</a></h3>
@@ -410,29 +410,29 @@ Tx to <code>ibc-1</code> for a <code>MsgTransfer</code> packet.
 Make sure you're not relaying this packet (the relayer should not be running on
 this path).</li>
 </ul>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
 </code></pre>
 <p>Starting with channel in open-open:</p>
 <ul>
 <li>
 <p>close-open</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+<pre><code class="language-shellscript">hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 </code></pre>
 </li>
 <li>
 <p>trigger timeout on close to ibc-1</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+<pre><code class="language-shellscript">hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
 <li>
 <p>close-close</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+<pre><code class="language-shellscript">hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
 </code></pre>
 </li>
 <li>
 <p>verify that the two ends are in Close state:</p>
-<pre><code class="language-shellscript">hermes -c config.toml query channel end ibc-0 transfer channel-0
-hermes -c config.toml query channel end ibc-1 transfer channel-1
+<pre><code class="language-shellscript">hermes query channel end ibc-0 transfer channel-0
+hermes query channel end ibc-1 transfer channel-1
 </code></pre>
 </li>
 </ul>
@@ -449,24 +449,24 @@ a_port = 'transfer'
 b_port = 'transfer'
 </code></pre>
 <p>Then start the relayer over this path:</p>
-<pre><code class="language-shellscript"> hermes -c config.toml start ibc-0 ibc-1
+<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1
 </code></pre>
 <p>The relayer creates the clients, and perform the handshake for a new connection and channel between the two chains on <code>transfer</code> port. Once finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.</p>
 <h3><a class="header" href="#with-existing-channel" id="with-existing-channel">With existing channel</a></h3>
 <p>The relayer can be started by specifying an existing channel</p>
-<pre><code class="language-shellscript"> hermes -c config.toml start ibc-0 ibc-1 transfer channel-0
+<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1 transfer channel-0
 </code></pre>
 <p>The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.</p>
 <h3><a class="header" href="#packet-relaying" id="packet-relaying">Packet relaying</a></h3>
 <ul>
 <li>
 <p>in a separate terminal, use the packet send command to send 2 packets to <code>ibc0</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
 </code></pre>
 </li>
 <li>
 <p>use the CLI to send 2 packets to <code>ibc1</code> chain:</p>
-<pre><code class="language-shellscript">hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
 </code></pre>
 </li>
 <li>
@@ -474,16 +474,16 @@ b_port = 'transfer'
 </li>
 <li>
 <p>query the unreceived packets on <code>ibc0</code> and <code>ibc1</code> from a different terminal</p>
-<pre><code class="language-shellscript">hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
-hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
-hermes -c config.toml query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
-hermes -c config.toml query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+<pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
+hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
+hermes query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
+hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 </ul>
 <h2><a class="header" href="#relayer-listen-mode" id="relayer-listen-mode">Relayer listen mode</a></h2>
 <p>The relayer can be started in listen mode:</p>
-<pre><code class="language-shellscript">hermes -c config.toml listen ibc-0
+<pre><code class="language-shellscript">hermes listen ibc-0
 </code></pre>
 <p>It displays the <code>NewBlock</code> and IBC events received from the specified chain.</p>
 <h2><a class="header" href="#profiling-the-relayer" id="profiling-the-relayer">Profiling the relayer</a></h2>
@@ -531,9 +531,10 @@ Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - e
 Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
 </code></pre>
 <h2><a class="header" href="#parametrizing-the-log-output-level" id="parametrizing-the-log-output-level">Parametrizing the log output level</a></h2>
-<p>The relayer configuration file, called <code>config.toml</code> in the examples above
-permits parametrization of output verbosity via the knob called <code>log_level</code>.
-Relevant snippet:</p>
+<p>The relayer configuration file permits parametrization of output verbosity via the knob called <code>log_level</code>.
+This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but can be overriden in all commands
+with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
+<p>Relevant snippet:</p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
@@ -546,7 +547,7 @@ here</a>.</p>
 operation for queries of transactions. In addition to  this last line,
 arbitrary debug, info, or other outputs may be produced.  Example, with
 <code>log_level = 'debug'</code>:</p>
-<pre><code class="language-bash">Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+<pre><code class="language-bash">Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
 {&quot;timestamp&quot;:&quot;Jan 20 19:21:52.070&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: abscissa_core::terminal::component::Terminal (v0.5.2)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
 {&quot;timestamp&quot;:&quot;Jan 20 19:21:52.071&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: relayer_cli::components::Tracing (v0.0.6)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
 {&quot;timestamp&quot;:&quot;Jan 20 19:21:52.078&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;Options QueryClientConsensusOptions { client_id: ClientId(\&quot;07-tendermint-X\&quot;), revision_number: 0, revision_height: 1, height: 0, proof: true }&quot;},&quot;target&quot;:&quot;relayer_cli::commands::query::client&quot;}
@@ -557,7 +558,7 @@ arbitrary debug, info, or other outputs may be produced.  Example, with
 </code></pre>
 <p>For the same command, with <code>log_level = 'error'</code>, just the last line will be
 produced:</p>
-<pre><code class="language-bash">   Running `target/debug/relayer -c config.toml query client consensus ibc-0 07-tendermint-X 0 1`
+<pre><code class="language-bash">   Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
 {&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
 </code></pre>
 <h4><a class="header" href="#next-steps" id="next-steps">Next steps</a></h4>

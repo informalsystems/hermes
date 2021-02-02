@@ -180,7 +180,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Create a new client of <code>ibc-1</code> on <code>ibc-0</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw create-client ibc-0 ibc-1 | jq
+<pre><code class="language-shell">$ hermes tx raw create-client ibc-0 ibc-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -213,7 +213,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Update the client on <code>ibc-0</code> with latest header of <code>ibc-1</code></p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
+<pre><code class="language-shell">$ hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,

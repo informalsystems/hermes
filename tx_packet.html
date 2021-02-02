@@ -187,7 +187,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Send two transfer packets from the <code>transfer</code> module and <code>channel-0</code> of <code>ibc-0</code> to <code>ibc-1</code>. Each transfer if for <code>9999</code> samoleans (default denomination) and a timeout offset of <code>10</code> blocks. The transfer fee is paid by the relayer account on <code>ibc-1</code>.</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
+<pre><code class="language-shell">$ hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -249,7 +249,7 @@ POSITIONAL ARGUMENTS:
 <p><strong>Example</strong></p>
 <p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the receive messages.</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
+<pre><code class="language-shell">$ hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -324,7 +324,7 @@ POSITIONAL ARGUMENTS:
 <p><strong>Example</strong></p>
 <p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the acknowledgments.</p>
-<pre><code class="language-shell">$ hermes -c config.toml tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
+<pre><code class="language-shell">$ hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,

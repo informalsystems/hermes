@@ -176,7 +176,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query all clients on <code>ibc-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query clients ibc-1 | jq
+<pre><code class="language-shell">$ hermes query clients ibc-1 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
@@ -219,7 +219,7 @@ FLAGS:
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Query the state of client <code>07-tendermint-2</code> on <code>ibc-1</code>:</p>
-<pre><code class="language-shell">$ hermes -c config.toml query client state ibc-1 07-tendermint-2 | jq
+<pre><code class="language-shell">$ hermes query client state ibc-1 07-tendermint-2 | jq
 </code></pre>
 <pre><code class="language-json">{
   &quot;status&quot;: &quot;success&quot;,
