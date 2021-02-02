@@ -34,6 +34,5 @@ TBD:
 - monitor and submit misbehaviour for clients
 - use IBC light clients other than Tendermint such as Solo Machine
 - support non-cosmos-SDK chains
-- submit IBC client unfreezing proposals
 - sending an UpgradePlan proposal for an IBC breaking upgrade
 - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
