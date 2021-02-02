@@ -7,6 +7,7 @@ use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
+use ibc::ics18_relayer::error::Kind as ICS18ErrorKind;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics26_routing::msgs::ICS26Envelope;
@@ -47,14 +48,22 @@ impl ICS02TestExecutor {
 
 impl modelator::TestExecutor<State> for ICS02TestExecutor {
     fn check_initial_state(&mut self, state: State) -> bool {
-        let type_is_null = state.action.action_type == ActionType::Null;
-        let outcome_is_null = state.action_outcome == ActionOutcome::Null;
-        type_is_null && outcome_is_null
+        assert_eq!(
+            state.action.action_type,
+            ActionType::Null,
+            "unexpected action type"
+        );
+        assert_eq!(
+            state.action_outcome,
+            ActionOutcome::Null,
+            "unexpected action outcome"
+        );
+        true
     }
 
     fn check_next_state(&mut self, state: State) -> bool {
         match state.action.action_type {
-            ActionType::Null => panic!("next state action type cannot be null"),
+            ActionType::Null => panic!("unexpected action type"),
             ActionType::CreateClient => {
                 // get action parameters
                 let height = state
@@ -70,13 +79,23 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 // create dummy signer
                 let signer = self.dummy_signer();
 
-                // create ICS26 message
+                // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state,
                     consensus_state,
                     signer,
                 }));
-                self.ctx.deliver(msg).unwrap();
+                let result = self.ctx.deliver(msg);
+
+                // check the expected outcome: client create always succeeds
+                assert_eq!(
+                    state.action_outcome,
+                    ActionOutcome::CreateOK,
+                    "unexpected action outcome"
+                );
+                if let Err(e) = result {
+                    panic!("{:?}", e);
+                }
                 true
             }
             ActionType::UpdateClient => {
@@ -98,13 +117,32 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 // create dummy signer
                 let signer = self.dummy_signer();
 
-                // create ICS26 message
+                // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id,
                     header,
                     signer,
                 }));
-                self.ctx.deliver(msg).unwrap();
+                let result = self.ctx.deliver(msg);
+
+                match state.action_outcome {
+                    ActionOutcome::Null | ActionOutcome::CreateOK => {
+                        panic!("unexpected action outcome")
+                    }
+                    ActionOutcome::UpdateOK => {
+                        // check that there were no errors
+                        assert!(result.is_ok(), "UpdateOK outcome expected");
+                    }
+                    ActionOutcome::UpdateClientNotFound => {
+                        assert!(result.is_err(), "UpdateClientNotFound outcome expected");
+                        todo!()
+                    }
+                    ActionOutcome::UpdateHeightVerificationFailure => {
+                        let error =
+                            result.expect_err("UpdateHeightVerificationFailure outcome expected");
+                        assert!(matches!(error.kind(), ICS18ErrorKind::TransactionFailed));
+                    }
+                }
                 true
             }
         }
