@@ -16,6 +16,12 @@ jobs:
         with:
           mdbook-version: "0.4.6"
 
+      - name: Setup mdBook-mermaid
+        - uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: mdbook-mermaid
+          
       - run: |
           cd guide
           mdbook build
