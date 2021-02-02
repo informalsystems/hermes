@@ -1,0 +1,23 @@
+[
+    {
+        "action": {
+            "type": "Null"
+        },
+        "actionOutcome": "Null"
+    },
+    {
+        "action": {
+            "height": 1,
+            "type": "CreateClient"
+        },
+        "actionOutcome": "CreateOK"
+    },
+    {
+        "action": {
+            "clientId": 1,
+            "height": 2,
+            "type": "UpdateClient"
+        },
+        "actionOutcome": "UpdateOK"
+    }
+]
