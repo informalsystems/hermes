@@ -1,6 +1,6 @@
 # Channel Handshake
 
-The `tx raw` commands can be used to establish a channel for a given connection.
+The `tx raw` commands can be used to establish a channel for a given connection. Only `unordered` channels are currently supported.
 
 <center>
 
@@ -42,9 +42,6 @@ POSITIONAL ARGUMENTS:
     dst_conn_id               identifier of the destination connection
     dst_port_id               identifier of the destination port
     src_port_id               identifier of the source port
-
-FLAGS:
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 ```
 
 __Example__
@@ -95,7 +92,6 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 ```
 
 __Example__
@@ -147,7 +143,6 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -d, --dst-chan-id ID      identifier of the destination channel (required)
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 ```
 
 __Example__
@@ -199,7 +194,6 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -d, --dst-chan-id ID      identifier of the destination channel (required)
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 ```
 
 __Example__

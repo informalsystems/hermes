@@ -66,12 +66,6 @@ pub struct TxRawChanOpenInitCmd {
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenInitCmd {
@@ -82,7 +76,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -127,12 +121,6 @@ pub struct TxRawChanOpenTryCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenTryCmd {
@@ -143,7 +131,7 @@ impl Runnable for TxRawChanOpenTryCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -196,12 +184,6 @@ pub struct TxRawChanOpenAckCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenAckCmd {
@@ -212,7 +194,7 @@ impl Runnable for TxRawChanOpenAckCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
@@ -265,12 +247,6 @@ pub struct TxRawChanOpenConfirmCmd {
         meta = "ID"
     )]
     src_chan_id: ChannelId,
-
-    #[options(
-        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
-        short = "o"
-    )]
-    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenConfirmCmd {
@@ -281,7 +257,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: self.ordering,
+                    ordering: Order::default(),
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),
