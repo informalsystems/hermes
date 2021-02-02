@@ -1,2 +1,2 @@
 test:
-	cargo t -- --nocapture main
+	cargo t --features mocks -- --nocapture main

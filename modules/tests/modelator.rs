@@ -10,9 +10,9 @@ pub trait TestExecutor<S> {
     fn check_next_state(&mut self, state: S) -> bool;
 }
 
-pub fn test_driver<E, S, P>(mut test_executor: E, path: P) -> Result<()>
+pub fn test_driver<E, S, P>(mut executor: E, path: P) -> Result<()>
 where
-    E: TestExecutor<S>,
+    E: TestExecutor<S> + Debug,
     S: DeserializeOwned + Debug + Clone,
     P: AsRef<Path>,
 {
@@ -24,8 +24,8 @@ where
     let mut states = states.into_iter();
 
     if let Some(state) = states.next() {
-        if !test_executor.check_initial_state(state.clone()) {
-            return Err(eyre!("check failed on initial state {:?}", state));
+        if !executor.check_initial_state(state.clone()) {
+            return Err(eyre!("check failed on initial state:\n{:#?}", state));
         }
     } else {
         println!("WARNING: test file {:?} had 0 states", path.as_ref());
@@ -33,8 +33,12 @@ where
     }
 
     for state in states {
-        if !test_executor.check_next_state(state.clone()) {
-            return Err(eyre!("check failed on state {:?}", state));
+        if !executor.check_next_state(state.clone()) {
+            return Err(eyre!(
+                "check failed on state:\n{:#?}\n\nexecutor:\n{:#?}",
+                state,
+                executor
+            ));
         }
     }
     Ok(())

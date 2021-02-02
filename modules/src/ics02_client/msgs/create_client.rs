@@ -22,9 +22,9 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgCreateAnyClient {
-    client_state: AnyClientState,
-    consensus_state: AnyConsensusState,
-    signer: AccountId,
+    pub client_state: AnyClientState,
+    pub consensus_state: AnyConsensusState,
+    pub signer: AccountId,
 }
 
 impl MsgCreateAnyClient {
