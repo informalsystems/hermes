@@ -1,14 +1,23 @@
 [
     {
-        "action": {"type": "Null"},
+        "action": {
+            "type": "Null"
+        },
         "actionOutcome": "Null"
     },
     {
-        "action": {"height": 1, "type": "CreateClient"},
+        "action": {
+            "height": 1,
+            "type": "CreateClient"
+        },
         "actionOutcome": "CreateOK"
     },
     {
-        "action": {"clientId": 1, "height": 1, "type": "UpdateClient"},
+        "action": {
+            "clientId": 1,
+            "height": 1,
+            "type": "UpdateClient"
+        },
         "actionOutcome": "UpdateHeightVerificationFailure"
     }
 ]
