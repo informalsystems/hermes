@@ -14,7 +14,7 @@
     },
     {
         "action": {
-            "clientId": 1,
+            "clientId": 0,
             "height": 1,
             "type": "UpdateClient"
         },

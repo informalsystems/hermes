@@ -2,9 +2,9 @@
 
 EXTENDS Integers, FiniteSets
 
-\* max client identifier
-CONSTANT MaxClientId
-ASSUME MaxClientId > 0
+\* max number of client to be created
+CONSTANT MaxClients
+ASSUME MaxClients > 0
 \* max height which clients can reach
 CONSTANT MaxHeight
 ASSUME MaxHeight > 0
@@ -12,7 +12,7 @@ ASSUME MaxHeight > 0
 \* set of client data
 VARIABLE clients
 \* counter used to generate client identifiers
-VARIABLE nextClientId
+VARIABLE clientIdCounter
 \* last action performed
 VARIABLE action
 \* string with the outcome of the last operation
@@ -31,7 +31,7 @@ AsAction(a) == a <: ActionType
 (****************** END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
 \* set of possible client identifiers
-ClientIds == 1..MaxClientId
+ClientIds == 0..(MaxClients - 1)
 \* set of possible heights
 Heights == 1..MaxHeight
 \* if a client has a null height then the client does not exist
@@ -67,16 +67,16 @@ SetClientHeight(clientId, clientHeight) ==
 
 CreateClient(clientHeight) ==
     \* check if the client exists (it shouldn't)
-    IF ClientExists(nextClientId) THEN
+    IF ClientExists(clientIdCounter) THEN
         \* if the client to be created already exists,
         \* then there's an error in the model
         /\ actionOutcome' = "ModelError"
-        /\ UNCHANGED <<clients, nextClientId>>
+        /\ UNCHANGED <<clients, clientIdCounter>>
     ELSE
         \* set the new client's height to `clientHeight`
-        /\ clients' = SetClientHeight(nextClientId, clientHeight)
-        \* update `nextClientId`
-        /\ nextClientId' = nextClientId + 1
+        /\ clients' = SetClientHeight(clientIdCounter, clientHeight)
+        \* update `clientIdCounter`
+        /\ clientIdCounter' = clientIdCounter + 1
         \* set `outcome`
         /\ actionOutcome' = "CreateOK"
 
@@ -90,51 +90,51 @@ UpdateClient(clientId, clientHeight) ==
             /\ clients' = SetClientHeight(clientId, clientHeight)
             \* set outcome
             /\ actionOutcome' = "UpdateOK"
-            /\ UNCHANGED <<nextClientId>>
+            /\ UNCHANGED <<clientIdCounter>>
         ELSE
             /\ actionOutcome' = "UpdateHeightVerificationFailure"
-            /\ UNCHANGED <<clients, nextClientId>>
+            /\ UNCHANGED <<clients, clientIdCounter>>
     ELSE
         \* if the client does not exist, then return an error
         /\ actionOutcome' = "UpdateClientNotFound"
-        /\ UNCHANGED <<clients, nextClientId>>
+        /\ UNCHANGED <<clients, clientIdCounter>>
 
 CreateClientAction ==
-    \* only create client if the model constant `MaxClientId` allows it
-    /\ nextClientId < MaxClientId
+    \* only create client if the model constant `MaxClients` allows it
+    /\ clientIdCounter \in ClientIds
     \* select a height for the client to be created at
     /\ \E clientHeight \in Heights:
+        /\ CreateClient(clientHeight)
         /\ action' = AsAction([type |-> "CreateClient",
                                height |-> clientHeight])
-        /\ CreateClient(clientHeight)
 
 UpdateClientAction ==
     \* select a client to be updated (which may not exist)
     \E clientId \in ClientIds:
         \* select a height for the client to be updated
         \E clientHeight \in Heights:
+            /\ UpdateClient(clientId, clientHeight)
             /\ action' = AsAction([type |-> "UpdateClient",
                                    clientId |-> clientId,
                                    height |-> clientHeight])
-            /\ UpdateClient(clientId, clientHeight)
 
  Init ==
     /\ clients = [clientId \in ClientIds |-> NullHeight]
-    /\ nextClientId = 1
+    /\ clientIdCounter = 0
     /\ action = AsAction([type |-> "Null"])
     /\ actionOutcome = "Null"
 
 Next ==
     \/ CreateClientAction
     \/ UpdateClientAction
-    \/ UNCHANGED <<clients, nextClientId, action, actionOutcome>>
+    \/ UNCHANGED <<clients, clientIdCounter, action, actionOutcome>>
 
 (***************************************************************************
  Invariants
  ***************************************************************************)
 
 TypeOK ==
-    /\ nextClientId \in ClientIds \union {MaxClientId + 1}
+    /\ clientIdCounter \in 0..MaxClients
     /\ clients \in [ClientIds -> Heights \union {NullHeight}]
     /\ action \in Actions
     /\ actionOutcome \in ActionOutcomes

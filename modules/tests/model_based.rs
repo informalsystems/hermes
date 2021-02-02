@@ -80,7 +80,6 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 true
             }
             ActionType::UpdateClient => {
-                // TODO: rename clientId to clientCounter in the model
                 // get action parameters
                 let client_id = state
                     .action
@@ -122,13 +121,19 @@ impl ICS02TestExecutor {
     }
 }
 
+const TESTS_DIR: &str = "tests/support/model_based";
+
 #[test]
 fn main() {
-    let path = "tests/support/model_based/test.json";
-    let test_executor = ICS02TestExecutor::new();
-    // we should be able to just return the `Result` once the following issue
-    // is fixed: https://github.com/rust-lang/rust/issues/43301
-    if let Err(e) = modelator::test_driver(test_executor, path) {
-        panic!("{:?}", e);
+    let tests = vec!["UpdateOKTest", "UpdateHeightVerificationFailureTest"];
+
+    for test in tests {
+        let path = format!("{}/{}.json", TESTS_DIR, test);
+        let test_executor = ICS02TestExecutor::new();
+        // we should be able to just return the `Result` once the following issue
+        // is fixed: https://github.com/rust-lang/rust/issues/43301
+        if let Err(e) = modelator::test_driver(test_executor, path) {
+            panic!("{:?}", e);
+        }
     }
 }

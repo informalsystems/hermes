@@ -31,5 +31,7 @@ pub enum ActionType {
 pub enum ActionOutcome {
     Null,
     CreateOK,
+    UpdateOK,
+    UpdateClientNotFound,
     UpdateHeightVerificationFailure,
 }
