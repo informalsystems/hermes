@@ -163,7 +163,7 @@ a > .hljs {
     text-decoration: none;
     width: 90px;
     border-radius: 5px;
-    background-color: var(--sidebar-bg);
+    background-color: var(--nav-chapter);
 }
 
 .previous {
