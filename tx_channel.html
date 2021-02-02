@@ -164,7 +164,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#channel-handshake" id="channel-handshake">Channel Handshake</a></h1>
-<p>The <code>tx raw</code> commands can be used to establish a channel for a given connection.</p>
+<p>The <code>tx raw</code> commands can be used to establish a channel for a given connection. Only <code>unordered</code> channels are currently supported.</p>
 <center>
 <pre class="mermaid">sequenceDiagram
     autonumber
@@ -198,9 +198,6 @@ POSITIONAL ARGUMENTS:
     dst_conn_id               identifier of the destination connection
     dst_port_id               identifier of the destination port
     src_port_id               identifier of the source port
-
-FLAGS:
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
 <p>First, let's initialize the channel on <code>ibc-0</code> using an existing connection identified by <code>connection-0</code>:</p>
@@ -239,7 +236,6 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Let's now create the counterparty to <code>channel-0</code> on chain <code>ibc-1</code>:</p>
@@ -279,7 +275,6 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -d, --dst-chan-id ID      identifier of the destination channel (required)
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
 <p>We can now acknowledge on <code>ibc-0</code> that <code>ibc-1</code> has accepted the opening of the channel:</p>
@@ -319,7 +314,6 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -d, --dst-chan-id ID      identifier of the destination channel (required)
     -s, --src-chan-id ID      identifier of the source channel (required)
-    -o, --ordering ORDERING   the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`
 </code></pre>
 <p><strong>Example</strong></p>
 <p>Confirm on <code>ibc-1</code> that <code>ibc-0</code> has accepted the opening of the channel,
