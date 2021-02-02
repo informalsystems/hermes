@@ -257,7 +257,19 @@ $ hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer
 ```
 
 ```json
-// TODO
+{
+  "status": "success",
+  "result": {
+    "CloseInitChannel": {
+      "channel_id": "channel-1",
+      "connection_id": "connection-1",
+      "counterparty_channel_id": "channel-3",
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
+    }
+  }
+}
 ```
 
 ## Channel Close Confirm
@@ -290,5 +302,17 @@ $ hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 trans
 ```
 
 ```json
-// TODO
+{
+  "status": "success",
+  "result": {
+    "CloseConfirmChannel": {
+      "channel_id": "channel-3",
+      "connection_id": "connection-3",
+      "counterparty_channel_id": "channel-1",
+      "counterparty_port_id": "transfer",
+      "height": "1",
+      "port_id": "transfer"
+    }
+  }
+}
 ```

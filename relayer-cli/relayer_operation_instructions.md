@@ -241,7 +241,11 @@ make it work:
     ```
        
    3. append the line below (watch for the placeholder `<your>`) as the last line
-     in your `go.mod` in the gaia clone, replace `github.com/cosmos/cosmos-sdk` by `/Users/<your>/go/src/github.com/cosmos/cosmos-sdk`
+     in your `go.mod` in the gaia clone:
+
+     ```
+     replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk
+     ```
 
    4. now `make build` and `make install` your local copy of gaia
 
