@@ -1378,11 +1378,14 @@ POSITIONAL ARGUMENTS:
     participant B as ibc-0
     Note over A, B: No connection
     A-&gt;&gt;B: ConnectionOpenInit
-    Note over B: connection: connection-0 &lt;br /&gt; counterparty: none
+    Note over B: connection: connection-0
+    Note over B: counterparty: none
     B-&gt;&gt;A: ConnectionOpenTry
-    Note over A: connection: connection-1 &lt;br /&gt; counterparty: connection-0
+    Note over A: connection: connection-1
+    Note over A: counterparty: connection-0
     A-&gt;&gt;B: ConnectionOpenAck
-    note over B: connection: connection-0 &lt;br /&gt; counterparty: connection-1
+    note over B: connection: connection-0
+    note over B: counterparty: connection-1
     B-&gt;&gt;A: ConnectionOpenConfirm
     Note over A, B: Connection open
 </code></pre>
@@ -1540,11 +1543,14 @@ FLAGS:
     participant B as ibc-0
     Note over A, B: No channel
     A-&gt;&gt;B: ChannelOpenInit
-    Note over B: channel: channel-0 &lt;br /&gt; counterparty: none
+    Note over B: channel: channel-0
+    Note over B: channel: counterparty: none
     B-&gt;&gt;A: ChannelOpenTry
-    Note over A: channel: channel-1 &lt;br /&gt; counterparty: channel-0
+    Note over A: channel: channel-1
+    Note over A: channel: counterparty: channel-0
     A-&gt;&gt;B: ChannelOpenAck
-    note over B: channel: channel-0 &lt;br /&gt; counterparty: channel-1
+    note over B: channel: channel-0
+    note over B: counterparty: channel-1
     B-&gt;&gt;A: ChannelOpenConfirm
     Note over A, B: Channel open
 </code></pre>
