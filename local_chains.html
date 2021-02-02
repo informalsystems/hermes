@@ -233,12 +233,12 @@ b_port = 'transfer'
 <p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just say <code>yes</code></p>
 </blockquote>
 <p>The script configures and starts two <code>gaiad</code> instances, one named <code>ibc-0</code> and the other <code>ibc-1</code></p>
-<pre><code class="language-mermaid">graph TD
+<pre class="mermaid">graph TD
     A[dev-env] --&gt;|run| C(start chains)
     C --&gt;|gaiad| D[ibc-0]
     C --&gt;|gaiad| F[ibc-1]
             
-</code></pre>
+</pre>
 <p>If the script runs successfully you should see a message similar to the one below in the terminal:</p>
 <pre><code class="language-shell">$ ./scripts/dev-env chains.toml ibc-0 ibc-1
 

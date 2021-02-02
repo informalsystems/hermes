@@ -445,7 +445,7 @@ trusted_height = '15'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
+path = '/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
 
 [[chains.peers.light_clients]]
 peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
@@ -456,7 +456,7 @@ trusted_height = '16'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+path = '/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
 
 [[chains]]
 id = 'ibc-1'
@@ -485,7 +485,7 @@ trusted_height = '4'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
+path = '/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
 
 [[chains.peers.light_clients]]
 peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
@@ -496,7 +496,7 @@ trusted_height = '5'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 
 [[connections]]
 a_chain = &quot;ibc1&quot;
@@ -604,12 +604,12 @@ b_port = 'transfer'
 <p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just say <code>yes</code></p>
 </blockquote>
 <p>The script configures and starts two <code>gaiad</code> instances, one named <code>ibc-0</code> and the other <code>ibc-1</code></p>
-<pre><code class="language-mermaid">graph TD
+<pre class="mermaid">graph TD
     A[dev-env] --&gt;|run| C(start chains)
     C --&gt;|gaiad| D[ibc-0]
     C --&gt;|gaiad| F[ibc-1]
             
-</code></pre>
+</pre>
 <p>If the script runs successfully you should see a message similar to the one below in the terminal:</p>
 <pre><code class="language-shell">$ ./scripts/dev-env chains.toml ibc-0 ibc-1
 
@@ -1372,7 +1372,7 @@ POSITIONAL ARGUMENTS:
 <h1><a class="header" href="#connection-handshake" id="connection-handshake">Connection Handshake</a></h1>
 <p>The <code>tx raw</code> commands can be used to establish a connection between two clients.</p>
 <center>
-<pre><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">sequenceDiagram
     autonumber
     participant A as ibc-1
     participant B as ibc-0
@@ -1388,7 +1388,7 @@ POSITIONAL ARGUMENTS:
     note over B: counterparty: connection-1
     B-&gt;&gt;A: ConnectionOpenConfirm
     Note over A, B: Connection open
-</code></pre>
+</pre>
 </center>
 <h2><a class="header" href="#connection-init" id="connection-init">Connection Init</a></h2>
 <p>Use the <code>conn-init</code> command to initialize a new connection on a chain.</p>
@@ -1537,7 +1537,7 @@ FLAGS:
 <h1><a class="header" href="#channel-handshake" id="channel-handshake">Channel Handshake</a></h1>
 <p>The <code>tx raw</code> commands can be used to establish a channel for a given connection.</p>
 <center>
-<pre><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">sequenceDiagram
     autonumber
     participant A as ibc-1
     participant B as ibc-0
@@ -1553,7 +1553,7 @@ FLAGS:
     note over B: counterparty: channel-1
     B-&gt;&gt;A: ChannelOpenConfirm
     Note over A, B: Channel open
-</code></pre>
+</pre>
 </center>
 <h2><a class="header" href="#channel-open-init" id="channel-open-init">Channel Open Init</a></h2>
 <p>Use the <code>chan-open-init</code> command to initialize a new channel.</p>
@@ -2650,8 +2650,7 @@ POSITIONAL ARGUMENTS:
     ],
 }
 </code></pre>
-<h1><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h1>
-<p>These are some of the most common issues you may encounter when running the relayer. Here are some troubleshooting tips to help you solve the issues.</p>
+<h1><a class="header" href="#help" id="help">Help</a></h1>
 <blockquote>
 <p>[TODO]</p>
 </blockquote>

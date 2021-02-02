@@ -166,7 +166,7 @@
                         <h1><a class="header" href="#connection-handshake" id="connection-handshake">Connection Handshake</a></h1>
 <p>The <code>tx raw</code> commands can be used to establish a connection between two clients.</p>
 <center>
-<pre><code class="language-mermaid">sequenceDiagram
+<pre class="mermaid">sequenceDiagram
     autonumber
     participant A as ibc-1
     participant B as ibc-0
@@ -182,7 +182,7 @@
     note over B: counterparty: connection-1
     B-&gt;&gt;A: ConnectionOpenConfirm
     Note over A, B: Connection open
-</code></pre>
+</pre>
 </center>
 <h2><a class="header" href="#connection-init" id="connection-init">Connection Init</a></h2>
 <p>Use the <code>conn-init</code> command to initialize a new connection on a chain.</p>
