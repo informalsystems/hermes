@@ -169,14 +169,14 @@ pub struct QueryUnreceivedPacketsCmd {
     #[options(
         free,
         required,
-        help = "identifier of the chain to query the unreceived sequences (dst chain)"
+        help = "identifier of the chain to query the unreceived sequences"
     )]
     dst_chain_id: String,
 
     #[options(
         free,
         required,
-        help = "identifier of the chain where sent sequences are queried (source chain)"
+        help = "identifier of the chain where sent sequences are queried"
     )]
     src_chain_id: String,
 
@@ -372,7 +372,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 
         match res {
             Ok((packet_state, height)) => {
-                // Transform the raw packet state into the list of acks. sequence numbers
+                // Transform the raw packet state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
                 Output::success(json!({
                     "height": height,
@@ -464,14 +464,14 @@ pub struct QueryUnreceivedAcknowledgementCmd {
     #[options(
         free,
         required,
-        help = "identifier of the chain to query the unreceived acks (dst chain)"
+        help = "identifier of the chain to query the unreceived acknowledgments"
     )]
     dst_chain_id: String,
 
     #[options(
         free,
         required,
-        help = "identifier of the chain where received sequences are queried (source chain)"
+        help = "identifier of the chain where received sequences are queried"
     )]
     src_chain_id: String,
 

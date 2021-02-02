@@ -1,6 +1,6 @@
 # Query Connections
 
-The `query connections` command can be used to query the identifiers of all clients on a given chain.
+The `query connections` command can be used to query the identifiers of all connections on a given chain.
 
 ```shell
 USAGE:
