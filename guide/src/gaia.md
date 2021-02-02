@@ -2,6 +2,8 @@
 
 The script to start the chains requires gaia to be installed.
 
+> __NOTE__: This assumes you have `Golang` programming language installed on your machine. If not, please ensure you install before proceeding.
+
 #### Clone gaia
 
 Clone the repository from Github:
@@ -26,6 +28,6 @@ If the command above is successful you can run the following command to ensure i
 gaiad version
 ```
 
-#### Next Steps
+## Next Steps
 
 In the next section you will learn how to [start two local chains](./local_chains.md)
