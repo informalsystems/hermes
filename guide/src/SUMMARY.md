@@ -30,7 +30,6 @@
      - [Channel](./query_channel.md)
      - [Packet](./query_packet.md)
    - [Relayer in Listen Mode](./listen.md)
-- [Troubleshooting](./troubleshoot.md)
-- [FAQ](./faq.md)
+- [Help](help.md)
 - [Glossary](./glossary.md)
 ---

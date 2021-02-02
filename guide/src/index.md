@@ -20,13 +20,10 @@ This guide can be used to help you setup, configure and operate Hermes to transf
 
 - The commands will let you interact with Hermes using its command-line interface.
 
-**[Troubleshooting](./troubleshoot.md)**
+**[Help](./help.md)**
 
-- This section provides some troubleshooting tips to help you solve the issues when running Hermes
-
-**[Frequently Asked Questions](./faq.md)**
-
-- This section has the most frequently asked questions related to Hermes operation and functionality
+- This part provides guidelines regarding troubleshooting, feature request, and 
+  general resources for getting help.
 
 **[Glossary](./glossary.md)**
 
