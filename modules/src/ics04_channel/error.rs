@@ -81,7 +81,7 @@ pub enum Kind {
     #[error("Undefined counterparty connection for {0}")]
     UndefinedConnectionCounterparty(ConnectionId),
 
-    #[error("Channel chain verification fails")]
+    #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
     #[error("No client state associated with the channel")]
@@ -98,6 +98,12 @@ pub enum Kind {
 
     #[error("Client not found in chan open verification")]
     ClientNotFound,
+
+    #[error("Channel is in {0} state which is not allowed for open_ack")]
+    InvalidChannelState(ChannelId),
+
+    #[error("Channel chain verification fails on ChannelOpenAck for ChannelOpenTry")]
+    FailedChanneOpenAckVerification,
 }
 
 impl Kind {

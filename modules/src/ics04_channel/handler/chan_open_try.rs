@@ -133,12 +133,18 @@ pub(crate) fn process(
         msg.counterparty_version().clone(),
     );
 
-    verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
-        .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
+    verify_proofs(
+        ctx,
+        &new_channel_end,
+        &conn,
+        &expected_channel_end,
+        &msg.proofs(),
+    )
+    .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
 
     output.log("success: channel open try ");
 
-    // Transition the connection end to the new state & pick a version.
+    // Transition the channel end to the new state & pick a version.
     new_channel_end.set_state(State::TryOpen);
 
     let result = ChannelResult {
@@ -459,7 +465,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "chan_open_init: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "chan_open_try: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

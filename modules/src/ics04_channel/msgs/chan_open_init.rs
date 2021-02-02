@@ -32,11 +32,6 @@ impl MsgChannelOpenInit {
     pub fn channel(&self) -> &ChannelEnd {
         &self.channel
     }
-
-    // /// Setter for `connection_id`. Amenable to chaining, since it consumes the input message.
-    // pub fn with_connection_id(self, connection_hops: Vec<ConnectionId>) -> Self {
-    //     MsgChannelOpenInit { channel.connection_hops, ..self }
-    // }
 }
 
 impl Msg for MsgChannelOpenInit {

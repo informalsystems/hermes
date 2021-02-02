@@ -25,6 +25,27 @@ pub struct MsgChannelOpenAck {
     pub signer: AccountId,
 }
 
+impl MsgChannelOpenAck {
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+
+    pub fn counterparty_channel_id(&self) -> &ChannelId {
+        &self.counterparty_channel_id
+    }
+    pub fn counterparty_version(&self) -> &String {
+        &self.counterparty_version
+    }
+
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
+}
+
 impl Msg for MsgChannelOpenAck {
     type ValidationError = Error;
 
@@ -108,8 +129,8 @@ pub mod test_util {
     pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
         RawMsgChannelOpenAck {
             port_id: "port".to_string(),
-            channel_id: "testchannel".to_string(),
-            counterparty_channel_id: "cpartychannel".to_string(),
+            channel_id: "channel-0".to_string(),
+            counterparty_channel_id: "channel-1".to_string(),
             counterparty_version: "v1".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
