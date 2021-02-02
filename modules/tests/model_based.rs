@@ -32,19 +32,15 @@ struct ICS02TestExecutor {
 impl ICS02TestExecutor {
     fn new() -> Self {
         let version = 1;
+        let max_history_size = 1;
+        let initial_height = 0;
         let ctx = MockContext::new(
             ChainId::new("mock".to_string(), version),
             HostType::Mock,
-            1,
-            Height::new(version, 0),
+            // HostType::SyntheticTendermint,
+            max_history_size,
+            Height::new(version, initial_height),
         );
-        // let ctx = MockContext::new(
-        //     ChainId::new("mock".to_string(), cv),
-        //     HostType::SyntheticTendermint,
-        //     1,
-        //     Height::new(cv, 0),
-        // );
-
         Self { version, ctx }
     }
 }
