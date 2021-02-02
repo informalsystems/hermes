@@ -10,8 +10,6 @@ function get_mermaid_theme() {
   }
 }
 
-console.log(get_mermaid_theme());
-
 mermaid.initialize({
   startOnLoad: true,
   theme: get_mermaid_theme()
