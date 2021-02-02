@@ -94,10 +94,13 @@
     --fg: #181818;
 
     --sidebar-bg: #335787;
-    --sidebar-fg: #fcfcff;
+    --sidebar-fg: #ffffff;
     --sidebar-non-existant: #aaaaaa;
-    --sidebar-active: #ffffff;
+    --sidebar-active: #9cefff;
     --sidebar-spacer: #e5e5e5;
+
+    --buttons: #898989;
+    --buttons-active: #8faaef;
 
     --scrollbar: var(--sidebar-fg);
 

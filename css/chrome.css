@@ -211,11 +211,11 @@ pre > .buttons {
     right: 5px;
     top: 5px;
 
-    color: var(--sidebar-fg);
+    color: var(--buttons);
     cursor: pointer;
 }
 pre > .buttons :hover {
-    color: var(--sidebar-active);
+    color: var(--buttons-active);
 }
 pre > .buttons i {
     margin-left: 8px;
