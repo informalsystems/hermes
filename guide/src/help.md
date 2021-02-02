@@ -6,11 +6,11 @@ resources for getting help with `hermes`.
 ### Troubleshooting
 For troubleshooting, we recommend a few ideas that could be of help:
 
-- [configure](config) the `log_level` so that the relayer will print
+- [configure][config] the `log_level` so that the relayer will print
   more useful information that could help with debugging;
-- consult the [list of reported issues](issues) and search by relevant keywords 
+- consult the [list of reported issues][issues] and search by relevant keywords
   to see if you're dealing with a known problem;
-- lastly, we would be grateful if you can submit a [bug report](bug-report) 
+- lastly, we would be grateful if you can submit a [bug report][bug-report]
   discussing any problem you find, and from there on we can look at the 
   problem together. 
 
@@ -18,7 +18,7 @@ For troubleshooting, we recommend a few ideas that could be of help:
 ### New Feature Request
 
 If you would like a feature to be added to `hermes`, don't hesitate 
-to open a discussion about that via the [feature request](feature-request) 
+to open a discussion about that via the [feature request][feature-request]
 issue template.
 
 
@@ -32,5 +32,5 @@ Twitter we're [@informalinc][twitter].
 [twitter]: https://twitter.com/informalinc
 [twitter-image]: https://abs.twimg.com/errors/logo23x19.png
 [website]: https://informal.systems
-[config]: config.html#global
+[config]: ./config.html#global
 [issues]: https://github.com/informalsystems/ibc-rs/issues
