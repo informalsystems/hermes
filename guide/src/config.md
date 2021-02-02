@@ -136,7 +136,7 @@ trusted_height = '15'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
+path = '/ibc-rs/data/ibc-0/data/66E3B7083DF9DD1FC57A611929BF4C505E34AA88'
 
 [[chains.peers.light_clients]]
 peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
@@ -147,7 +147,7 @@ trusted_height = '16'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+path = '/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
 
 [[chains]]
 id = 'ibc-1'
@@ -176,7 +176,7 @@ trusted_height = '4'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
+path = '/ibc-rs/data/ibc-1/data/28ED8856CBACA85DA866AB99F50DB22A58DA35F4'
 
 [[chains.peers.light_clients]]
 peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
@@ -187,7 +187,7 @@ trusted_height = '5'
 
 [chains.peers.light_clients.store]
 type = 'disk'
-path = '/home/andy/development/github.com/informalsystems/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 
 [[connections]]
 a_chain = "ibc1"
