@@ -68,7 +68,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 let height = state
                     .action
                     .height
-                    .expect("update client action should have a height");
+                    .expect("create client action should have a height");
 
                 // create client and consensus state from parameters
                 let client_state = AnyClientState::Mock(MockClientState(self.mock_header(height)));
@@ -92,10 +92,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                     ActionOutcome::CreateOK,
                     "unexpected action outcome"
                 );
-                if let Err(e) = result {
-                    panic!("{:?}", e);
-                }
-                true
+                result.is_ok()
             }
             ActionType::UpdateClient => {
                 // get action parameters
@@ -130,24 +127,20 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                     }
                     ActionOutcome::UpdateOK => {
                         // check that there were no errors
-                        assert!(result.is_ok(), "UpdateOK outcome expected");
+                        result.is_ok()
                     }
                     ActionOutcome::UpdateClientNotFound => {
-                        let handler_error_kind = Self::extract_ics02_handler_error_kind(result);
-                        assert!(matches!(
+                        let handler_error_kind = self.extract_ics02_handler_error_kind(result);
+                        matches!(
                             handler_error_kind,
                             ICS02ErrorKind::ClientNotFound(id) if id == client_id
-                        ));
+                        )
                     }
                     ActionOutcome::UpdateHeightVerificationFailure => {
-                        let handler_error_kind = Self::extract_ics02_handler_error_kind(result);
-                        assert!(matches!(
-                            handler_error_kind,
-                            ICS02ErrorKind::HeaderVerificationFailure
-                        ));
+                        let handler_error_kind = self.extract_ics02_handler_error_kind(result);
+                        handler_error_kind == ICS02ErrorKind::HeaderVerificationFailure
                     }
                 }
-                true
             }
         }
     }
@@ -162,7 +155,7 @@ impl ICS02TestExecutor {
         MockHeader(Height::new(self.version, height))
     }
 
-    fn extract_ics02_handler_error_kind(result: Result<(), ICS18Error>) -> ICS02ErrorKind {
+    fn extract_ics02_handler_error_kind(&self, result: Result<(), ICS18Error>) -> ICS02ErrorKind {
         let ics18_error = result.expect_err("ICS18 error expected");
         assert!(matches!(
             ics18_error.kind(),
