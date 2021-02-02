@@ -11,11 +11,14 @@ sequenceDiagram
     participant B as ibc-0
     Note over A, B: No connection
     A->>B: ConnectionOpenInit
-    Note over B: connection: connection-0 <br /> counterparty: none
+    Note over B: connection: connection-0
+    Note over B: counterparty: none
     B->>A: ConnectionOpenTry
-    Note over A: connection: connection-1 <br /> counterparty: connection-0
+    Note over A: connection: connection-1
+    Note over A: counterparty: connection-0
     A->>B: ConnectionOpenAck
-    note over B: connection: connection-0 <br /> counterparty: connection-1
+    note over B: connection: connection-0
+    note over B: counterparty: connection-1
     B->>A: ConnectionOpenConfirm
     Note over A, B: Connection open
 ```
