@@ -165,6 +165,9 @@
                     <main>
                         <h1><a class="header" href="#install-gaia" id="install-gaia">Install Gaia</a></h1>
 <p>The script to start the chains requires gaia to be installed.</p>
+<blockquote>
+<p><strong>NOTE</strong>: This assumes you have <code>Golang</code> programming language installed on your machine. If not, please ensure you install before proceeding.</p>
+</blockquote>
 <h4><a class="header" href="#clone-gaia" id="clone-gaia">Clone gaia</a></h4>
 <p>Clone the repository from Github:</p>
 <pre><code class="language-shell">git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
@@ -172,13 +175,13 @@
 <h4><a class="header" href="#build-and-install" id="build-and-install">Build and Install</a></h4>
 <p>Run the <code>make</code> command to build and install <code>gaiad</code></p>
 <pre><code class="language-shell">cd ~/go/src/github.com/cosmos/gaia
-git checkout v3.0.0
+git checkout v4.0.0
 make install
 </code></pre>
 <p>If the command above is successful you can run the following command to ensure it was properly installed:</p>
 <pre><code class="language-shell">gaiad version
 </code></pre>
-<h4><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h4>
+<h2><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h2>
 <p>In the next section you will learn how to <a href="./local_chains.html">start two local chains</a></p>
 
                     </main>

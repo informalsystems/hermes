@@ -262,6 +262,7 @@ general resources for getting help.</li>
 <p>The instructions on this guide have been tested on <code>Linux</code> and <code>MacOS</code> environments. Most of the commands should work on both environments. Even though you can build and run the relayer on <code>Windows</code> (since we develop it in Rust and it supports cross platform compilation) we have not tested the relayer on <code>Windows</code> and we do not support this environment at this time.</p>
 </blockquote>
 <h1><a class="header" href="#pre-requisites" id="pre-requisites">Pre-requisites</a></h1>
+<h2><a class="header" href="#1-rust" id="1-rust">1. Rust</a></h2>
 <p>The IBC Relayer is developed with the <a href="">Rust</a> programming language. In order to build and run the relayer you need to install and configure <code>Rust</code> in your machine.</p>
 <p>For instructions on how to install <code>Rust</code> on your machine please follow their official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>. </p>
 <p>The provided instructions will install all the Rust toolchain including <code>rustc</code>, <code>cargo</code>, and <code>rustup</code> that are required to build the project.</p>
@@ -270,8 +271,11 @@ general resources for getting help.</li>
 <pre><code class="language-shell">cargo version
 </code></pre>
 <p>This should display the <code>cargo</code> version and confirm the proper installation.</p>
-<h3><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h3>
-<p>Next, go to the <a href="./setup.html"><code>Setup</code></a> section to learn how to build the relayer.</p>
+<h2><a class="header" href="#2-golang" id="2-golang">2. Golang</a></h2>
+<p>You will also need the <strong>Go</strong> programming language installed and configured in your machine. This is a requirement for the the section <a href="./gaia.html">Installing Gaia</a> in the <a href="./two_chains.html">Two Local Chains</a> tutorial. </p>
+<p>To install and configure Golang in your machine please follow the <a href="https://golang.org/doc/install">Golang official documentation</a></p>
+<h2><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h2>
+<p>Next, go to the <a href="./setup.html">Setup</a> section to learn how to build the relayer.</p>
 <h1><a class="header" href="#building-the-relayer" id="building-the-relayer">Building the Relayer</a></h1>
 <p>In order to build and run Hermes, please follow the steps below:</p>
 <blockquote>
@@ -512,6 +516,9 @@ b_port = 'transfer'
 <p>Follow the steps in this tutorial section starting with the <a href="./gaia.html">Install Gaia</a> section.</p>
 <h1><a class="header" href="#install-gaia" id="install-gaia">Install Gaia</a></h1>
 <p>The script to start the chains requires gaia to be installed.</p>
+<blockquote>
+<p><strong>NOTE</strong>: This assumes you have <code>Golang</code> programming language installed on your machine. If not, please ensure you install before proceeding.</p>
+</blockquote>
 <h4><a class="header" href="#clone-gaia" id="clone-gaia">Clone gaia</a></h4>
 <p>Clone the repository from Github:</p>
 <pre><code class="language-shell">git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
@@ -519,13 +526,13 @@ b_port = 'transfer'
 <h4><a class="header" href="#build-and-install" id="build-and-install">Build and Install</a></h4>
 <p>Run the <code>make</code> command to build and install <code>gaiad</code></p>
 <pre><code class="language-shell">cd ~/go/src/github.com/cosmos/gaia
-git checkout v3.0.0
+git checkout v4.0.0
 make install
 </code></pre>
 <p>If the command above is successful you can run the following command to ensure it was properly installed:</p>
 <pre><code class="language-shell">gaiad version
 </code></pre>
-<h4><a class="header" href="#next-steps-3" id="next-steps-3">Next Steps</a></h4>
+<h2><a class="header" href="#next-steps-3" id="next-steps-3">Next Steps</a></h2>
 <p>In the next section you will learn how to <a href="./local_chains.html">start two local chains</a></p>
 <h1><a class="header" href="#start-the-local-chains" id="start-the-local-chains">Start the local chains</a></h1>
 <p>To start the local chains, open a terminal and navigate to the <code>ibc-rs</code> repository folder</p>
