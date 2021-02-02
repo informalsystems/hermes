@@ -1,228 +1,6 @@
-# Relaying packets
+# 4. Relay Packets
 
-In this section we will configure everything needed in order to relay packets, such as clients, connections, and channels.
-
-## Steps to start relaying packets using `tx raw` commands
-
-In order to start relaying packets please follow the steps below:
-
-### 1. Client
-
-#### 1.1. `create-client`
-
-First you will need to create a client for each chain:
-
-This command submits a transaction to a destination chain (`ibc-0`) with a request to create a client for a source chain (`ibc-1`):
-
-```shell
-hermes tx raw create-client ibc-0 ibc-1
-```
-
-if the command is successful a message similar to the one below is displayed `status:success`:
-
-```json
-{
-    "status": "success",
-    "result": {
-        "CreateClient": {
-            "client_id": "07-tendermint-0",
-            "client_type": "Tendermint",
-            "consensus_height": {
-                "revision_height": 9082,
-                "revision_number": 1
-            },
-            "height": "1"
-        }
-    }
-}
-```
-
-> Note: Please note the `client_id` value returned. You will need that for other commands
-> 
-You can also execute a __query__ to view the client state on destination chain `ibc-0` and also specifying the `client_id` value `07-tendermint-0`:
-
-```shell
-hermes query client state ibc-0 07-tendermint-0
-```
-
-should show a message similar to the one below:
-
-```json
-{
-    "status": "success",
-    "result": {
-        "type": "Tendermint",
-        "allow_update_after_expiry": false,
-        "allow_update_after_misbehaviour": false,
-        "chain_id": "ibc-1",
-        "frozen_height": {
-            "revision_height": 0,
-            "revision_number": 0
-        },
-        "latest_height": {
-            "revision_height": 9082,
-            "revision_number": 1
-        },
-        "max_clock_drift": {
-            "nanos": 0,
-            "secs": 3
-        },
-        "trust_level": {
-            "denominator": "3",
-            "numerator": "1"
-        },
-        "trusting_period": {
-            "nanos": 0,
-            "secs": 1209600
-        },
-        "unbonding_period": {
-            "nanos": 0,
-            "secs": 1814400
-        },
-        "upgrade_path": [
-            "upgrade",
-            "upgradedIBCState"
-        ]
-    }
-}
-```
-
-Now let's do the same (*) for `ibc-1` as the destination chain:
-
-```shell
-hermes tx raw create-client ibc-1 ibc-0
-```
-Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1`.
-
-__Note__: You can create a client on `ibc-1` and the chain will assign `07-tendermint-1` as its `client_id`
-
-As before, if the (second) command is successful a message with `status:success` is displayed:
-
-```json
-{
-    "status": "success",
-    "result": {
-        "CreateClient": {
-            "client_id": "07-tendermint-1",
-            "client_type": "Tendermint",
-            "consensus_height": {
-                "revision_height": 9505,
-                "revision_number": 0
-            },
-            "height": "1"
-        }
-    }
-}
-```
-
-#### 1.2 `update-client`
-
-Client states can be updated by sending an `update-client` transaction:
-
-```shell
-hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0
-hermes tx raw update-client ibc-1 ibc-0 07-tendermint-1
-```
-
-### 2. Connection
-
-#### 2.1 `conn-init`
-
-```shell
-hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
-```
-
-Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0` in order to use it in the `conn-try` command below.
-
-#### 2.2 `conn-try`
-
-__Note__: If this is the first connection to be created on `ibc-1`, prior to the `conn-try` command, you can send a `conn-init` to `ibc-1` and the chain will allocate `connection-0`. This will ensure that the next available ID, `connection-1`, will be allocated in `conn-try`.
-
-```shell
-hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
-```
-
-To send a `conn-try` message to `ibc-1`:
-
-```shell
-hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
-```
-
-Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI
-
-#### 2.3 conn-ack
-
-```shell
-hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
-```
-
-#### 2.4 conn-confirm
-
-```shell
-hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
-```
-
-#### 2.5 query connection
-
-To verify that the two ends are in `Open` state:
-
-```shell
-hermes query connection end ibc-1 connection-1
-```
-
-```shell
-hermes query connection end ibc-0 connection-0
-```
-
-### 3. Channel 
-
-#### 3.1 chan-open-init
-
-```shell
-hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
-```
-
-#### 3.2 chan-open-try
-__Note__: If this is the first channel to be created on `ibc-1`, prior to the `chan-open-try` command, you can send a `chan-open-init` to `ibc-1` and the chain will allocate `channel-0`. This will ensure that the next available ID, `channel-1`, will be allocated in `chan-open-try`.
-
-```shell
-hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
-```
-
-To send the `chan-open-try` message to `ibc-1`:
-
-```shell
-hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
-```
-
-Take note of the ID allocated by the chain, e.g. `channel-1` on `ibc-1`. Use in the `chan-open-ack` CLI
-
-#### 3.3 chan-open-ack
-
-```shell
-hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
-```
-
-#### 3.4 chan-open-confirm
-
-```shell
-hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
-```
-
-#### 3.5 query channel
-To verify that the two ends are in `Open` state:
-
-```shell
-hermes query channel end ibc-0 transfer channel-0
-```
-
-```shell
-hermes query channel end ibc-1 transfer channel-1
-```
-
-### 5 Packets
-
-#### 5.1 Query balances:
+### 4.1 Query balances:
 
 - balance at ibc-0
 
@@ -238,7 +16,7 @@ hermes query channel end ibc-1 transfer channel-1
 
 Note that the addresses used in the two commands above are configured in `dev-env`.
 
-#### 5.2 Packet relaying:
+### 4.2 Packet relaying:
 
 First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
 
@@ -300,8 +78,9 @@ hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 
 The `ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199` denominator above can be obtained by querying the balance at `ibc-1` after the transfer from `ibc-0` to `ibc-1` is concluded.
 
-### 6 Test commands
-#### 6.1 Channel Close Commands:
+### 5. Test commands
+
+#### 5.1 Channel Close Commands:
 
 __Note__: This command is currently rejected by the `cosmos-sdk` transfer module. To
 make it work:
@@ -332,9 +111,9 @@ make it work:
 In order to test the correct operation during the channel close, perform the steps below.
 
 - transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
-Tx to `ibc-1` for a `MsgTransfer` packet.
-Make sure you're not relaying this packet (the relayer should not be running on
-this path).
+  Tx to `ibc-1` for a `MsgTransfer` packet.
+  Make sure you're not relaying this packet (the relayer should not be running on
+  this path).
 
 ```shell script
 hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
@@ -536,6 +315,6 @@ produced:
 {"status":"error","result":["query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)"]}
 ```
 
-#### Next steps
+## Next steps
 
 Now that you have two chains running with IBC support and can execute commands on then, you can refer to the [Commands Reference](./commands.md) section to learn more about individual commands.

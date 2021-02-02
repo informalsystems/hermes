@@ -171,4 +171,4 @@ data
 
 #### Next Steps
 
-In the next section ["Relaying packets"](./relay_packets.md) you will learn how to execute transactions and queries on the relayer in order to relay packets.
+In the next section ["Connecting the chains"](./connect_chains.md) you will learn how to execute transactions and queries on the relayer in order to relay packets.
