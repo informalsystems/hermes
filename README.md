@@ -4,6 +4,7 @@
 [![End to End testing][e2e-image]][e2e-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
+![Rust 1.49+][rustc-version]
 
 Rust implementation of Interblockchain Communication (IBC) **modules** and 
 **relayer**. The relayer is split into two crates: a library, and the 
@@ -16,8 +17,8 @@ Includes [TLA+ specifications](/docs/spec).
 | Crate name    |   Type   |     Version       | Docs |
 | ------------- |:------:|:-------------:| -----:|
 | [ibc (modules)](./modules) | lib|  [![IBC Crate][ibc-crate-image]][ibc-crate-link] | [![Docs][ibc-docs-image]][ibc-docs-link] |
-| [relayer](./relayer)      | lib |  [![Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![Docs][relayer-docs-image]][relayer-docs-link] |
-| [relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
+| [ibc-relayer](./relayer)      | lib |  [![Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![Docs][relayer-docs-image]][relayer-docs-link] |
+| [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
 
 
 ## Requirements 
@@ -82,3 +83,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
+[rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
