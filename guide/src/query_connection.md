@@ -1,6 +1,6 @@
 # Query Connections
 
-The `query connections` command can be used to query the identifiers of all clients on a given chain.
+The `query connections` command can be used to query the identifiers of all connections on a given chain.
 
 ```shell
 USAGE:
@@ -25,12 +25,10 @@ $ hermes -c config.toml query connections ibc-1 | jq
 {
   "status": "success",
   "result": [
-    [
-      "connection-0",
-      "connection-1",
-      "connection-2",
-      "connection-3"
-    ]
+    "connection-0",
+    "connection-1",
+    "connection-2",
+    "connection-3"
   ]
 }
 ```
@@ -82,27 +80,25 @@ $ hermes -c config.toml query connection end ibc-1 connection-1 | jq
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "client_id": "07-tendermint-2",
-      "counterparty": {
-        "client_id": "07-tendermint-1",
-        "connection_id": "connection-0",
-        "prefix": "ibc"
-      },
-      "delay_period": 0,
-      "state": "Open",
-      "versions": [
-        {
-          "features": [
-            "ORDER_ORDERED",
-            "ORDER_UNORDERED"
-          ],
-          "identifier": "1"
-        }
-      ]
-    }
-  ]
+  "result": {
+    "client_id": "07-tendermint-2",
+    "counterparty": {
+      "client_id": "07-tendermint-1",
+      "connection_id": "connection-0",
+      "prefix": "ibc"
+    },
+    "delay_period": 0,
+    "state": "Open",
+    "versions": [
+      {
+        "features": [
+          "ORDER_ORDERED",
+          "ORDER_UNORDERED"
+        ],
+        "identifier": "1"
+      }
+    ]
+  }
 }
 ```
 
@@ -135,9 +131,7 @@ $ hermes -c config.toml query connection channels ibc-1 connection-1 | jq
 {
   "status": "success",
   "result": [
-    [
-      "channel-1"
-    ]
+    "channel-1"
   ]
 }
 ```

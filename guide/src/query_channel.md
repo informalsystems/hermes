@@ -25,12 +25,10 @@ $ hermes -c config.toml query channels ibc-1 | jq
 {
   "status": "success",
   "result": [
-    [
-      "channel-0",
-      "channel-1",
-      "channel-2",
-      "channel-3"
-    ]
+    "channel-0",
+    "channel-1",
+    "channel-2",
+    "channel-3"
   ]
 }
 ```
@@ -82,20 +80,18 @@ $ hermes -c config.toml query channel end ibc-1 channel-1 | jq
 ```json
 {
   "status": "success",
-  "result": [
-    {
-      "connection_hops": [
-        "connection-1"
-      ],
-      "ordering": "Unordered",
-      "remote": {
-        "channel_id": "channel-0",
-        "port_id": "transfer"
-      },
-      "state": "Open",
-      "version": "ics20-1"
-    }
-  ]
+  "result": {
+    "connection_hops": [
+      "connection-1"
+    ],
+    "ordering": "Unordered",
+    "remote": {
+      "channel_id": "channel-0",
+      "port_id": "transfer"
+    },
+    "state": "Open",
+    "version": "ics20-1"
+  }
 }
 ```
 

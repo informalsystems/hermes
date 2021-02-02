@@ -37,44 +37,42 @@ $ hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1
 {
   "status": "success",
   "result": [
-    [
-      {
-        "SendPacketChannel": {
-          "height": "1",
-          "packet": {
-            "data": "7B22616...",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 7,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
-        }
-      },
-      {
-        "SendPacketChannel": {
-          "height": "1",
-          "packet": {
-            "data": "7B22616...",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 8,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
+    {
+      "SendPacketChannel": {
+        "height": "1",
+        "packet": {
+          "data": "7B22616...",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 7,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
+            "revision_number": 1
+          },
+          "timeout_timestamp": 0
         }
       }
-    ]
+    },
+    {
+      "SendPacketChannel": {
+        "height": "1",
+        "packet": {
+          "data": "7B22616...",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 8,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
+            "revision_number": 1
+          },
+          "timeout_timestamp": 0
+        }
+      }
+    }
   ]
 }
 ```
@@ -113,57 +111,55 @@ $ hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
 {
   "status": "success",
   "result": [
-    [
-      {
-        "UpdateClient": {
-          "client_id": "07-tendermint-1",
-          "client_type": "Tendermint",
-          "consensus_height": {
-            "revision_height": 25049,
-            "revision_number": 0
+    {
+      "UpdateClient": {
+        "client_id": "07-tendermint-1",
+        "client_type": "Tendermint",
+        "consensus_height": {
+          "revision_height": 25049,
+          "revision_number": 0
+        },
+        "height": "1"
+      }
+    },
+    {
+      "WriteAcknowledgementChannel": {
+        "ack": "7B22726573756C74223A2241513D3D227D",
+        "height": "1",
+        "packet": {
+          "data": "7B22616...",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 7,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
+            "revision_number": 1
           },
-          "height": "1"
-        }
-      },
-      {
-        "WriteAcknowledgementChannel": {
-          "ack": "7B22726573756C74223A2241513D3D227D",
-          "height": "1",
-          "packet": {
-            "data": "7B22616...",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 7,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
-        }
-      },
-      {
-        "WriteAcknowledgementChannel": {
-          "ack": "7B22726573756C74223A2241513D3D227D",
-          "height": "1",
-          "packet": {
-            "data": "7B22616...",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 8,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
+          "timeout_timestamp": 0
         }
       }
-    ]
+    },
+    {
+      "WriteAcknowledgementChannel": {
+        "ack": "7B22726573756C74223A2241513D3D227D",
+        "height": "1",
+        "packet": {
+          "data": "7B22616...",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 8,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
+            "revision_number": 1
+          },
+          "timeout_timestamp": 0
+        }
+      }
+    }
   ]
 }
 ```
@@ -202,55 +198,53 @@ $ hermes -c config.toml tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
 {
   "status": "success",
   "result": [
-    [
-      {
-        "UpdateClient": {
-          "client_id": "07-tendermint-0",
-          "client_type": "Tendermint",
-          "consensus_height": {
-            "revision_height": 25673,
+    {
+      "UpdateClient": {
+        "client_id": "07-tendermint-0",
+        "client_type": "Tendermint",
+        "consensus_height": {
+          "revision_height": 25673,
+          "revision_number": 1
+        },
+        "height": "1"
+      }
+    },
+    {
+      "AcknowledgePacketChannel": {
+        "height": "1",
+        "packet": {
+          "data": "",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 7,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
             "revision_number": 1
           },
-          "height": "1"
-        }
-      },
-      {
-        "AcknowledgePacketChannel": {
-          "height": "1",
-          "packet": {
-            "data": "",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 7,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
-        }
-      },
-      {
-        "AcknowledgePacketChannel": {
-          "height": "1",
-          "packet": {
-            "data": "",
-            "destination_channel": "channel-1",
-            "destination_port": "transfer",
-            "sequence": 8,
-            "source_channel": "channel-0",
-            "source_port": "transfer",
-            "timeout_height": {
-              "revision_height": 25041,
-              "revision_number": 1
-            },
-            "timeout_timestamp": 0
-          }
+          "timeout_timestamp": 0
         }
       }
-    ]
+    },
+    {
+      "AcknowledgePacketChannel": {
+        "height": "1",
+        "packet": {
+          "data": "",
+          "destination_channel": "channel-1",
+          "destination_port": "transfer",
+          "sequence": 8,
+          "source_channel": "channel-0",
+          "source_port": "transfer",
+          "timeout_height": {
+            "revision_height": 25041,
+            "revision_number": 1
+          },
+          "timeout_timestamp": 0
+        }
+      }
+    }
   ]
 }
 ```

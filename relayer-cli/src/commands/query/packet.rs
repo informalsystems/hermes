@@ -79,7 +79,11 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok((packet_states, height)) => {
                 // Transform the raw packet commitm. state into the list of sequence numbers
                 let seqs: Vec<u64> = packet_states.iter().map(|ps| ps.sequence).collect();
-                Output::success(seqs).with_result(json!(height)).exit();
+                Output::success(json!({
+                    "seqs": seqs,
+                    "height": height
+                }))
+                .exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -165,14 +169,14 @@ pub struct QueryUnreceivedPacketsCmd {
     #[options(
         free,
         required,
-        help = "identifier of the chain to query the unreceived sequences (dst chain)"
+        help = "identifier of the chain to query the unreceived sequences"
     )]
     dst_chain_id: String,
 
     #[options(
         free,
         required,
-        help = "identifier of the chain where sent sequences are queried (source chain)"
+        help = "identifier of the chain where sent sequences are queried"
     )]
     src_chain_id: String,
 
@@ -367,10 +371,14 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
             .map_err(|e| Kind::Query.context(e).into());
 
         match res {
-            Ok(ps) => {
-                // Transform the raw packet state into the list of acks. sequence numbers
-                let seqs: Vec<u64> = ps.0.iter().map(|ps| ps.sequence).collect();
-                Output::success(seqs).with_result(json!(ps.1)).exit();
+            Ok((packet_state, height)) => {
+                // Transform the raw packet state into the list of sequence numbers
+                let seqs: Vec<u64> = packet_state.iter().map(|ps| ps.sequence).collect();
+                Output::success(json!({
+                    "height": height,
+                    "seqs": seqs
+                }))
+                .exit();
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
@@ -456,14 +464,14 @@ pub struct QueryUnreceivedAcknowledgementCmd {
     #[options(
         free,
         required,
-        help = "identifier of the chain to query the unreceived acks (dst chain)"
+        help = "identifier of the chain to query the unreceived acknowledgments"
     )]
     dst_chain_id: String,
 
     #[options(
         free,
         required,
-        help = "identifier of the chain where received sequences are queried (source chain)"
+        help = "identifier of the chain where received sequences are queried"
     )]
     src_chain_id: String,
 

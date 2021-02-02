@@ -86,18 +86,18 @@ pub enum QueryPacketCmds {
     Commitment(packet::QueryPacketCommitmentCmd),
 
     /// The `query packet acks` subcommand
-    #[options(help = "query packet acks")]
+    #[options(help = "query packet acknowledgments")]
     Acks(packet::QueryPacketAcknowledgementsCmd),
 
     /// The `query packet ack` subcommand
-    #[options(help = "query packet ack")]
+    #[options(help = "query packet acknowledgment")]
     Ack(packet::QueryPacketAcknowledgmentCmd),
 
     /// The `query packet unreceived-packets` subcommand
-    #[options(help = "query packet unreceived-packets")]
+    #[options(help = "query unreceived packets")]
     UnreceivedPackets(packet::QueryUnreceivedPacketsCmd),
 
     /// The `query packet unreceived-acks` subcommand
-    #[options(help = "query packet unreceived-acks")]
+    #[options(help = "query unreceived acknowledgments")]
     UnreceivedAcks(packet::QueryUnreceivedAcknowledgementCmd),
 }

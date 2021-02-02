@@ -35,7 +35,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenInitRes:
-        return from_dict(TxChanOpenInitRes, result[0]['OpenInitChannel'])
+        return from_dict(TxChanOpenInitRes, result['OpenInitChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -74,7 +74,7 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenTryRes:
-        return from_dict(TxChanOpenTryRes, result[0]['OpenTryChannel'])
+        return from_dict(TxChanOpenTryRes, result['OpenTryChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenAckRes:
-        return from_dict(TxChanOpenAckRes, result[0]['OpenAckChannel'])
+        return from_dict(TxChanOpenAckRes, result['OpenAckChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -148,7 +148,81 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
         return args
 
     def process(self, result: Any) -> TxChanOpenConfirmRes:
-        return from_dict(TxChanOpenConfirmRes, result[0]['OpenConfirmChannel'])
+        return from_dict(TxChanOpenConfirmRes, result['OpenConfirmChannel'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxChanCloseInitRes:
+    channel_id: ChannelId
+    connection_id: ConnectionId
+    counterparty_channel_id: ChannelId
+    counterparty_port_id: ChannelId
+    height: BlockHeight
+    port_id: PortId
+
+
+@cmd("tx raw chan-close-init")
+@dataclass
+class TxChanCloseInit(Cmd[TxChanCloseInitRes]):
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
+    dst_conn_id: ConnectionId
+    dst_port_id: PortId
+    src_port_id: PortId
+    dst_chan_id: ChannelId
+    src_chan_id: ChannelId
+
+    def args(self) -> List[str]:
+        args = [self.dst_chain_id, self.src_chain_id,
+                self.dst_conn_id,
+                self.dst_port_id, self.src_port_id,
+                "-d", self.dst_chan_id,
+                "-s", self.src_chan_id]
+
+        return args
+
+    def process(self, result: Any) -> TxChanCloseInitRes:
+        print(result)
+        return from_dict(TxChanCloseConfirmRes, result['CloseInitChannel'])
+
+# -----------------------------------------------------------------------------
+
+
+@dataclass
+class TxChanCloseConfirmRes:
+    channel_id: ChannelId
+    connection_id: ConnectionId
+    counterparty_channel_id: ChannelId
+    counterparty_port_id: ChannelId
+    height: BlockHeight
+    port_id: PortId
+
+
+@cmd("tx raw chan-close-confirm")
+@dataclass
+class TxChanCloseConfirm(Cmd[TxChanCloseConfirmRes]):
+    dst_chain_id: ChainId
+    src_chain_id: ChainId
+    dst_conn_id: ConnectionId
+    dst_port_id: PortId
+    src_port_id: PortId
+    dst_chan_id: ChannelId
+    src_chan_id: ChannelId
+
+    def args(self) -> List[str]:
+        args = [self.dst_chain_id, self.src_chain_id,
+                self.dst_conn_id,
+                self.dst_port_id, self.src_port_id,
+                "-d", self.dst_chan_id,
+                "-s", self.src_chan_id]
+
+        return args
+
+    def process(self, result: Any) -> TxChanCloseConfirmRes:
+        print(result)
+        return from_dict(TxChanCloseConfirmRes, result['CloseConfirmChannel'])
 
 
 # -----------------------------------------------------------------------------
@@ -180,7 +254,7 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
         return [self.chain_id, self.port_id, self.channel_id]
 
     def process(self, result: Any) -> ChannelEnd:
-        return from_dict(ChannelEnd, result[0])
+        return from_dict(ChannelEnd, result)
 
 
 # =============================================================================
@@ -268,11 +342,83 @@ def chan_open_confirm(
         f'ChanOpenConfirm submitted to {dst} and got channel id {res.channel_id}')
     return res.channel_id
 
+# =============================================================================
+# CHANNEL close
+# =============================================================================
 
-def handshake(c: Config,
-              side_a: ChainId, side_b: ChainId,
-              conn_a: ConnectionId, conn_b: ConnectionId,
-              ) -> Tuple[ChannelId, ChannelId]:
+
+def chan_close_init(
+        c: Config,
+        dst: ChainId,
+        src: ChainId,
+        dst_conn: ConnectionId,
+        dst_port: PortId,
+        src_port: PortId,
+        dst_chan: ChannelId,
+        src_chan: ChannelId
+) -> ChannelId:
+    cmd = TxChanCloseInit(dst_chain_id=dst, src_chain_id=src,
+                          dst_conn_id=dst_conn,
+                          dst_port_id=dst_port, src_port_id=src_port,
+                          dst_chan_id=dst_chan,
+                          src_chan_id=src_chan)
+
+    res = cmd.run(c).success()
+    l.info(
+        f'ChannelCloseInit submitted to {dst} and got channel id {res.channel_id}')
+    return res.channel_id
+
+
+def chan_close_confirm(
+        c: Config,
+        dst: ChainId,
+        src: ChainId,
+        dst_conn: ConnectionId,
+        dst_port: PortId,
+        src_port: PortId,
+        dst_chan: ChannelId,
+        src_chan: ChannelId
+) -> ChannelId:
+    cmd = TxChanCloseConfirm(dst_chain_id=dst, src_chain_id=src,
+                             dst_conn_id=dst_conn,
+                             dst_port_id=dst_port, src_port_id=src_port,
+                             dst_chan_id=dst_chan,
+                             src_chan_id=src_chan)
+
+    res = cmd.run(c).success()
+    l.info(
+        f'ChannelCloseConfirm submitted to {dst} and got channel id {res.channel_id}')
+    return res.channel_id
+
+
+def close(
+        c: Config,
+        dst: ChainId,
+        src: ChainId,
+        dst_conn: ConnectionId,
+        src_conn: ConnectionId,
+        dst_chan: ChannelId,
+        src_chan: ChannelId,
+        dst_port: PortId = PortId('transfer'),
+        src_port: PortId = PortId('transfer'),
+):
+    chan_close_init(c, dst, src, dst_conn, dst_port,
+                    src_port, dst_chan, src_chan)
+
+    chan_close_confirm(c, src, dst, src_conn, src_port,
+                       dst_port, src_chan, dst_chan)
+
+
+# =============================================================================
+# CHANNEL handshake
+# =============================================================================
+
+
+def handshake(
+    c: Config,
+    side_a: ChainId, side_b: ChainId,
+    conn_a: ConnectionId, conn_b: ConnectionId,
+) -> Tuple[ChannelId, ChannelId]:
     a_chan_id = chan_open_init(c, dst=side_a, src=side_b, dst_conn=conn_a)
 
     split()
