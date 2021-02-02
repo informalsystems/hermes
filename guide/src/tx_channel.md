@@ -11,11 +11,14 @@ sequenceDiagram
     participant B as ibc-0
     Note over A, B: No channel
     A->>B: ChannelOpenInit
-    Note over B: channel: channel-0 <br /> counterparty: none
+    Note over B: channel: channel-0
+    Note over B: channel: counterparty: none
     B->>A: ChannelOpenTry
-    Note over A: channel: channel-1 <br /> counterparty: channel-0
+    Note over A: channel: channel-1
+    Note over A: channel: counterparty: channel-0
     A->>B: ChannelOpenAck
-    note over B: channel: channel-0 <br /> counterparty: channel-1
+    note over B: channel: channel-0
+    note over B: counterparty: channel-1
     B->>A: ChannelOpenConfirm
     Note over A, B: Channel open
 ```
