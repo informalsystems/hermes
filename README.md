@@ -8,14 +8,15 @@
 
 Rust implementation of Interblockchain Communication (IBC) **modules** and 
 **relayer**. The relayer is split into two crates: a library, and the 
-relayer CLI comprising the main binary, called `hermes` (see the table below).
+relayer CLI comprising the main binary, called `hermes`.
+See the table below.
 
 Includes [TLA+ specifications](/docs/spec).
 
 > TODO: update the crate and docs links below (for relayer and relayer-cli).
 
-| Crate name    |   Type   |     Version       | Docs |
-| ------------- |:------:|:-------------:| -----:|
+| Crate name    |   Type   |     Version       | Docs   |
+|:-------------:|:------:|:-------------:|:-----:|
 | [ibc (modules)](./modules) | lib|  [![IBC Crate][ibc-crate-image]][ibc-crate-link] | [![Docs][ibc-docs-image]][ibc-docs-link] |
 | [ibc-relayer](./relayer)      | lib |  [![Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![Docs][relayer-docs-image]][relayer-docs-link] |
 | [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
@@ -28,7 +29,8 @@ Developed with the latest stable version of Rust: `1.49.0`.
 
 ## Relayer guide
 
-> TODO
+The main relayer CLI binary, called `hermes`, has a comprehensive guide at
+[hermes.informal.systems](http://hermes.informal.systems).
 
 ## Contributing
 
