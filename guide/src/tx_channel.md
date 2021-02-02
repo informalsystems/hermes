@@ -52,7 +52,7 @@ __Example__
 First, let's initialize the channel on `ibc-0` using an existing connection identified by `connection-0`:
 
 ```shell
-$ hermes -c config.toml tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer | jq
+$ hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer | jq
 ```
 
 ```json
@@ -103,7 +103,7 @@ __Example__
 Let's now create the counterparty to `channel-0` on chain `ibc-1`:
 
 ```shell
-$ hermes -c config.toml tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0 | jq
+$ hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0 | jq
 ```
 
 ```json
@@ -155,7 +155,7 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the channel:
 
 ```shell
-$ hermes -c config.toml tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+$ hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
 ```
 
 ```json
@@ -208,7 +208,7 @@ Confirm on `ibc-1` that `ibc-0` has accepted the opening of the channel,
 after which the channel is open on both chains.
 
 ```shell
-$ hermes -c config.toml tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
+$ hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0 | jq
 ```
 
 ```json
@@ -256,7 +256,7 @@ FLAGS:
 __Example__
 
 ```shell
-$ hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+$ hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
 ```
 
 ```json
@@ -301,7 +301,7 @@ FLAGS:
 __Example__
 
 ```shell
-$ hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
+$ hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
 ```
 
 ```json

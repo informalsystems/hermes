@@ -41,7 +41,7 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets that still have commitments on `ibc-0` and that were sent on `transfer` port and `channel-0`:
 
 ```shell
-$ hermes -c config.toml query packet commitments ibc-0 transfer channel-0 | jq
+$ hermes query packet commitments ibc-0 transfer channel-0 | jq
 ```
 
 ```json
@@ -87,7 +87,7 @@ __Example__
 Query `ibc-0` for the commitment of packet with sequence `3` sent on `transfer` port and `channel-0`:
 
 ```shell
-$ hermes -c config.toml query packet commitment ibc-0 transfer channel-0 3 | jq
+$ hermes query packet commitment ibc-0 transfer channel-0 3 | jq
 ```
 
 ```json
@@ -119,7 +119,7 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets acknowledged that were received on `transfer` port and `channel-1`:
 
 ```shell
-$ hermes -c config.toml query packet acks ibc-1 transfer channel-1 | jq
+$ hermes query packet acks ibc-1 transfer channel-1 | jq
 ```
 
 ```json
@@ -165,7 +165,7 @@ __Example__
 Query `ibc-1` for the acknowledgment of packet with sequence `2` received on `transfer` port and `channel-1`:
 
 ```shell
-$ hermes -c config.toml query packet ack ibc-1 transfer channel-1 2 | jq
+$ hermes query packet ack ibc-1 transfer channel-1 2 | jq
 ```
 
 ```json
@@ -198,7 +198,7 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets sent on `ibc-0` on `transfer` port and `channel-0` but not yet received:
 
 ```shell
-$ hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
+$ hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
 ```
 
 ```json
@@ -235,7 +235,7 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets received on `ibc-1` on `transfer` port and `channel-1` but not yet acknowledged on `ibc-0`:
 
 ```shell
-$ hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
+$ hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
 ```
 
 ```json

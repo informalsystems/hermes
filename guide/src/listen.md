@@ -18,7 +18,7 @@ __Example__
 Start the relayer in listen mode for `ibc-0` events and observe the output:
 
 ```shell
-$ hermes -c config.toml listen ibc-0
+$ hermes listen ibc-0
 
 [relayer-cli/src/commands/listen.rs:45] event_batch = EventBatch {
     chain_id: ChainId {

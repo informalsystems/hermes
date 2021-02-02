@@ -24,7 +24,7 @@ __Note__: Reusing existing clients or connection is not possible with the curren
 
 __Example__:
 ```shell script
-hermes -c config.toml ibc-0 ibc-1
+hermes ibc-0 ibc-1
 ```
 The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.
 
@@ -33,7 +33,7 @@ Use the `start` command and specify the source port and channel identifier of a 
 
 __Example__:
 ```shell script
-hermes -c config.toml ibc-0 ibc-1 -p transfer -c channel-0
+hermes ibc-0 ibc-1 -p transfer -c channel-0
 ```
 
 __Note__: Finishing uncompleted handshakes can only be achieved using the `tx raw` CLIs.
@@ -70,5 +70,5 @@ FLAGS:
 
 __Example__:
 ```shell script
-hermes -c config.toml channel handshake ibc-0 ibc-1 transfer transfer
+hermes channel handshake ibc-0 ibc-1 transfer transfer
 ```

@@ -18,7 +18,7 @@ __Example__
 Query all channels on `ibc-1`:
 
 ```shell
-$ hermes -c config.toml query channels ibc-1 | jq
+$ hermes query channels ibc-1 | jq
 ```
 
 ```json
@@ -74,7 +74,7 @@ __Example__
 Query the channel end of channel `channel-1` on `ibc-1`:
 
 ```shell
-$ hermes -c config.toml query channel end ibc-1 channel-1 | jq
+$ hermes query channel end ibc-1 channel-1 | jq
 ```
 
 ```json

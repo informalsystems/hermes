@@ -2,31 +2,34 @@
 
 In order to run `Hermes`, you will need to have a configuration file.
 
-The format supported for the configuration file is [TOML](https://toml.io/en/)
+The format supported for the configuration file is [TOML](https://toml.io/en/).
 
-Every command executed through the relayer requires the configuration file location to be passed as a parameter.
+By default, `Hermes` expect the configuration file to be located at `$HOME/.hermes/config.toml`.
 
-> Currently the relayer does not store the configuration information in the local disk. In addition, with the exception of the light client configuration, current relayer does not support managing the configuration file programmatically. You will need to use a text editor to create the file and add content to it.
+This can be overriden by supplying the `-c` flag when invoking hermes, before the
+name of the command to run, eg. `hermes -c my_config.toml query connection channels ibc-1 connection-1`.
 
+> With the exception of the light client configuration, current relayer does not support managing the configuration file programmatically.
+> You will need to use a text editor to create the file and add content to it.
 
 ```bash
-hermes -c config.toml [COMMAND]
+hermes [-c CONFIG_FILE] COMMAND
 ```
 
 ## Sections
 
-The configuration file must have one `global`. And it must contain one `chains` section for each chain.
+The configuration file must have one `global` section, as well as contain one `chains` section for each chain.
 
-### [global]
+### `[global]`
 
 The global section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
 * __timeout__: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is `10s` (10 seconds)
-  
+
 * __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported
-  
+
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
 
 Here's an example for the `global` section:
@@ -45,20 +48,20 @@ A `chains` section includes parameters related to a chain and the full node to w
 #### Parameters
 
 * __id__: Specify the chain ID. For example `ibc-0`
-  
+
 * __rpc_addr__: Specify the RPC address and port where the chain RPC server listens on. For example `tcp://localhost:26657`
-  
+
 * __grpc_addr__: Specify the GRPC address and port where the chain GRPC server listens on. For example `tcp://localhost:9090`
-  
+
 * __account_prefix__: Specify the prefix used by the chain. For example `cosmos`
-  
+
 * __key_name__: Specify the name of the private key JSON file. This is the filename for the private key used to sign transactions on this chain. Don't specify the file extension, for example if the filename for the private key is `testkey.json`, specify only `testkey` for this parameter.
-  
+
 * __store_prefix__: Specify the store prefix used by the on-chain IBC modules. For example `ibc`.
 
 * __gas__: Specify the maximum amount of gas to be used as the gas limit for a transaction. Default value is `300000`
 
-* __clock_drift__: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`  
+* __clock_drift__: Specify the maximum amount of time to tolerate a clock drift. The clock drift parameter defines how much new (untrusted) header's Time can drift into the future. Default value is `5s`
 
 * __trusting_period__: Specify the amount of time to be used as the trusting period. It should be significantly less than the unbonding period (e.g. unbonding period = 3 weeks, trusting period = 2 weeks). Default value is `14days` (336 hours)
 
@@ -80,20 +83,6 @@ trusting_period = '14days'
 ### Light clients
 
 The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the `relayer light add` relayer command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
-
-### Validate the configuration file
-
-If you want to validate the configuration file you can run the command below:
-
-```shell
-hermes -c config.toml config validate
-```
-
-If the configuration file is valid the command above shows this message:
-
-```shell
-{"status":"success","result":[]}
-```
 
 ### Adding Private Keys
 

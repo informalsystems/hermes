@@ -13,13 +13,13 @@ In order to run the Relayer please ensure you have [Rust installed on your machi
 There are a few `tx raw` commands that build IBC datagrams and submit them to the chains (`dest_chain_id` below).
 
 ```shell script
-relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_client_id
+relayer-cli tx raw create-client dest_chain_id src_chain_id dest_client_id
 
-relayer-cli -c config.toml tx raw create-client dest_chain_id src_chain_id dest_client_id
+relayer-cli tx raw create-client dest_chain_id src_chain_id dest_client_id
 
-relayer-cli -c config.toml tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id
+relayer-cli tx raw conn-init dest_chain_id src_chain_id dest_client_id src_client_id
 
-relayer-cli -c config.toml tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id -s src_connection_id
+relayer-cli tx raw conn-try dest_chain_id src_chain_id dest_client_id src_client_id -s src_connection_id
 ```
 Note: This is work in progress, more commands will be implemented and tested with gaia `cosmos-test-stargate` chains.
 

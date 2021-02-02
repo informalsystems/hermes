@@ -80,7 +80,7 @@ b_port = 'transfer'
 From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`) and configure the light client peers:
 
 ```bash
-./scripts/dev-env config.toml ibc-0 ibc-1
+./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
 ```
 
 > __NOTE__: If the script above prompts you to delete the data folder just say `yes`
@@ -92,7 +92,6 @@ graph TD
     A[dev-env] -->|run| C(start chains)
     C -->|gaiad| D[ibc-0]
     C -->|gaiad| F[ibc-1]
-            
 ```
 
 If the script runs successfully you should see a message similar to the one below in the terminal:
@@ -104,7 +103,7 @@ GAIA VERSION INFO: 4.0.0
 
 Generating gaia configurations...
 Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
-Change settings in config.toml file...
+Change settings in ~/.hermes/config.toml file...
 balances:
 - amount: "0"
   denom: stake
@@ -120,7 +119,7 @@ pagination:
   next_key: null
   total: "0"
 Creating gaiad instance: home=./data | chain-id=ibc-1 | p2p=:26556 | rpc=:26557 | profiling=:6061 | grpc=:9091 | samoleans=:100000000000
-Change settings in config.toml file...
+Change settings in ~/.hermes/config.toml file...
 balances:
 - amount: "0"
   denom: stake

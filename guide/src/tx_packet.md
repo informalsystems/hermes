@@ -30,7 +30,7 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` samoleans (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the relayer account on `ibc-1`.
 
 ```shell
-$ hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
+$ hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 10 -n 2 | jq
 ```
 
 ```json
@@ -104,7 +104,7 @@ Send the two transfer packets to the module bound to the `transfer` port and the
 __NOTE__: The relayer prepends a client update message before the receive messages.
 
 ```shell
-$ hermes -c config.toml tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
+$ hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
 ```
 
 ```json
@@ -191,7 +191,7 @@ Send the two transfer packets to the module bound to the `transfer` port and the
 __NOTE__: The relayer prepends a client update message before the acknowledgments.
 
 ```shell
-$ hermes -c config.toml tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
+$ hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
 ```
 
 ```json

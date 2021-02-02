@@ -17,7 +17,7 @@ __Example__
 Query all clients on `ibc-1`:
 
 ```shell
-$ hermes -c config.toml query clients ibc-1 | jq
+$ hermes query clients ibc-1 | jq
 ```
 
 ```json
@@ -72,7 +72,7 @@ __Example__
 Query the state of client `07-tendermint-2` on `ibc-1`:
 
 ```shell
-$ hermes -c config.toml query client state ibc-1 07-tendermint-2 | jq
+$ hermes query client state ibc-1 07-tendermint-2 | jq
 ```
 
 ```json

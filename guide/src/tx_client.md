@@ -22,7 +22,7 @@ __Example__
 Create a new client of `ibc-1` on `ibc-0`:
 
 ```shell
-$ hermes -c config.toml tx raw create-client ibc-0 ibc-1 | jq
+$ hermes tx raw create-client ibc-0 ibc-1 | jq
 ```
 
 ```json
@@ -65,7 +65,7 @@ __Example__
 Update the client on `ibc-0` with latest header of `ibc-1`
 
 ```shell
-$ hermes -c config.toml tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
+$ hermes tx raw update-client ibc-0 ibc-1 07-tendermint-0  | jq
 ```
 
 ```json

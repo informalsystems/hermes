@@ -13,8 +13,8 @@ use crate::commands::channel::ChannelCmds;
 use crate::config::Config;
 
 use self::{
-    config::ConfigCmd, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
-    start::StartCmd, tx::TxCmd, version::VersionCmd,
+    keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
+    version::VersionCmd,
 };
 
 mod channel;
@@ -28,8 +28,15 @@ mod start;
 mod tx;
 mod version;
 
-/// Cli Configuration Filename
-pub const CONFIG_FILE: &str = "relayer.toml";
+/// Default configuration file path
+pub fn default_config_file() -> Option<PathBuf> {
+    dirs_next::home_dir().map(|home| home.join(".hermes/config.toml"))
+}
+
+// TODO: Re-add the `config` subcommand
+// /// The `config` subcommand
+// #[options(help = "manipulate the relayer configuration")]
+// Config(ConfigCmd),
 
 /// Cli Subcommands
 #[derive(Command, Debug, Options, Runnable)]
@@ -49,10 +56,6 @@ pub enum CliCmd {
     /// The `listen` subcommand
     #[options(help = "listen to IBC events")]
     Listen(ListenCmd),
-
-    /// The `config` subcommand
-    #[options(help = "manipulate the relayer configuration")]
-    Config(ConfigCmd),
 
     /// The `version` subcommand
     #[options(help = "display version information")]
@@ -79,16 +82,8 @@ pub enum CliCmd {
 impl Configurable<Config> for CliCmd {
     /// Location of the configuration file
     fn config_path(&self) -> Option<PathBuf> {
-        // Check if the config file exists, and if it does not, ignore it.
-        // If you'd like for a missing configuration file to be a hard error
-        // instead, always return `Some(CONFIG_FILE)` here.
-        let filename = PathBuf::from(CONFIG_FILE);
-
-        if filename.exists() {
-            Some(filename)
-        } else {
-            None
-        }
+        let filename = default_config_file();
+        filename.filter(|f| f.exists())
     }
 
     /// Apply changes to the config after it's been loaded, e.g. overriding
