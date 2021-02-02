@@ -2080,7 +2080,7 @@ FLAGS:
 }```
 </code></pre>
 <h1><a class="header" href="#query-connections" id="query-connections">Query Connections</a></h1>
-<p>The <code>query connections</code> command can be used to query the identifiers of all clients on a given chain.</p>
+<p>The <code>query connections</code> command can be used to query the identifiers of all connections on a given chain.</p>
 <pre><code class="language-shell">USAGE:
     hermes query connections &lt;OPTIONS&gt;
 
@@ -2256,7 +2256,192 @@ FLAGS:
   }
 }
 </code></pre>
-<h1><a class="header" href="#packet" id="packet">Packet</a></h1>
+<h1><a class="header" href="#packet-queries" id="packet-queries">Packet Queries</a></h1>
+<p>The <code>query packet</code> command can be used to query some information about packets.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet &lt;SUBCOMMAND&gt;
+
+DESCRIPTION:
+    query information about packet(s)
+
+SUBCOMMANDS:
+    commitments query packet commitments
+    commitment query packet commitment
+    acks       query packet acknowledgments
+    ack        query packet acknowledgment
+    unreceived-packets query unreceived packets
+    unreceived-acks query unreceived acknowledgments
+</code></pre>
+<h1><a class="header" href="#packet-commitments" id="packet-commitments">Packet Commitments</a></h1>
+<p>The <code>query packet commitments</code> can be used to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet commitments &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query packet commitments
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    port_id                   identifier of the port to query
+    channel_id                identifier of the channel to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-0</code> for the sequence numbers of packets that still have commitments on <code>ibc-0</code> and that were sent on <code>transfer</code> port and <code>channel-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet commitments ibc-0 transfer channel-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;height&quot;: {
+      &quot;revision_height&quot;: 139,
+      &quot;revision_number&quot;: 0
+    },
+    &quot;seqs&quot;: [
+      1,
+      2,
+      3
+    ]
+  }
+}
+</code></pre>
+<h1><a class="header" href="#packet-commitment-with-sequence" id="packet-commitment-with-sequence">Packet Commitment with Sequence</a></h1>
+<p>The <code>query packet commitment</code> can be used to query the commitment raw value of a packet with a given sequence number.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet commitment &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query packet commitment
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    port_id                   identifier of the port to query
+    channel_id                identifier of the channel to query
+    sequence                  sequence of packet to query
+
+FLAGS:
+    -h, --height HEIGHT       height of the state to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-0</code> for the commitment of packet with sequence <code>3</code> sent on <code>transfer</code> port and <code>channel-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet commitment ibc-0 transfer channel-0 3 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: &quot;F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC&quot;
+}
+</code></pre>
+<h1><a class="header" href="#packet-acknowledgments" id="packet-acknowledgments">Packet Acknowledgments</a></h1>
+<p>The <code>query packet acknowledgments</code> can be used to query the sequence numbers of all packets that have been acknowledged.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet acks &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query packet acknowledgments
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    port_id                   identifier of the port to query
+    channel_id                identifier of the channel to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-1</code> for the sequence numbers of packets acknowledged that were received on <code>transfer</code> port and <code>channel-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet acks ibc-1 transfer channel-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;height&quot;: {
+      &quot;revision_height&quot;: 397,
+      &quot;revision_number&quot;: 1
+    },
+    &quot;seqs&quot;: [
+      1,
+      2,
+      3
+    ]
+  }
+}
+</code></pre>
+<h1><a class="header" href="#packet-acknowledgment-with-sequence" id="packet-acknowledgment-with-sequence">Packet Acknowledgment with Sequence</a></h1>
+<p>The <code>query packet acknowledgment</code> can be used to query the acknowledgment value of a packet with a given sequence number.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet ack &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query packet acknowledgment
+
+POSITIONAL ARGUMENTS:
+    chain_id                  identifier of the chain to query
+    port_id                   identifier of the port to query
+    channel_id                identifier of the channel to query
+    sequence                  sequence of packet to query
+
+FLAGS:
+    -h, --height HEIGHT       height of the state to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-1</code> for the acknowledgment of packet with sequence <code>2</code> received on <code>transfer</code> port and <code>channel-1</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet ack ibc-1 transfer channel-1 2 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: &quot;08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C&quot;
+}
+</code></pre>
+<h1><a class="header" href="#unreceived-packets" id="unreceived-packets">Unreceived Packets</a></h1>
+<p>The <code>query packet unreceived-packets</code> can be used to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet unreceived-packets &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query unreceived packets
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the chain to query the unreceived sequences
+    src_chain_id              identifier of the chain where sent sequences are queried
+    src_port_id               identifier of the port to query on source chain
+    src_channel_id            identifier of the channel to query on source chain
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-1</code> for the sequence numbers of packets sent on <code>ibc-0</code> on <code>transfer</code> port and <code>channel-0</code> but not yet received:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    1,
+    2,
+    3
+  ]
+}
+</code></pre>
+<h1><a class="header" href="#unreceived-acknowledgments" id="unreceived-acknowledgments">Unreceived Acknowledgments</a></h1>
+<p>The <code>query packet unreceived-acks</code> can be used to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.</p>
+<pre><code class="language-shell">USAGE:
+    hermes query packet unreceived-acks &lt;OPTIONS&gt;
+
+DESCRIPTION:
+    query unreceived acknowledgments
+
+POSITIONAL ARGUMENTS:
+    dst_chain_id              identifier of the chain to query the unreceived acknowledgments
+    src_chain_id              identifier of the chain where received sequences are queried
+    src_port_id               identifier of the port to query on source chain
+    src_channel_id            identifier of the channel to query on source chain
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query <code>ibc-0</code> for the sequence numbers of packets received on <code>ibc-1</code> on <code>transfer</code> port and <code>channel-1</code> but not yet acknowledged on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">$ hermes -c config.toml query packet unreceived-acks ibc-0 ibc-1 transfer channel-1 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: [
+    1,
+    2,
+    3
+  ]
+}
+</code></pre>
 <h1><a class="header" href="#events" id="events">Events</a></h1>
 <h1><a class="header" href="#troubleshooting" id="troubleshooting">Troubleshooting</a></h1>
 <p>These are some of the most common issues you may encounter when running the relayer. Here are some troubleshooting tips to help you solve the issues.</p>
