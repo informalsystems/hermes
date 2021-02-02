@@ -33,7 +33,7 @@
      - [Connection](./query_connection.md)
      - [Channel](./query_channel.md)
      - [Packet](./query_packet.md)
-   - [Relayer in Listen Mode](./listen.md)
+   - [Relayer Listen Mode](./listen.md)
 - [Help](help.md)
 - [Glossary](./glossary.md)
 ---

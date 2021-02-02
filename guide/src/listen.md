@@ -1,4 +1,4 @@
-# Relayer in Listen Mode
+# Relayer Listen Mode
 
 The relayer can be started in `listen` mode to display the events emitted by a given chain. `NewBlock` and IBC events are shown.
 
