@@ -167,13 +167,9 @@
 <p>To start the local chains, open a terminal and navigate to the <code>ibc-rs</code> repository folder</p>
 <pre><code class="language-bash">cd ibc-rs
 </code></pre>
-<h4><a class="header" href="#stop-and-cleanup" id="stop-and-cleanup">Stop and cleanup</a></h4>
-<p>If this is not the first time you are running the script, you can manually stop the two gaia instances and clean up the data executing the following commands:</p>
-<p>Kill all <code>gaiad</code> processes:</p>
+<h3><a class="header" href="#stop-existing-gaiad-processes" id="stop-existing-gaiad-processes">Stop existing <code>gaiad</code> processes</a></h3>
+<p>If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all <code>gaiad</code> processes:</p>
 <pre><code class="language-shell">killall gaiad
-</code></pre>
-<p>Remove the <code>data</code> directory (if present)</p>
-<pre><code class="language-shell">rm -rf data/
 </code></pre>
 <blockquote>
 <p><strong>NOTE</strong>: If you have any <code>Docker</code> containers running that might be using the same ports as <code>gaiad</code> (e.g. port 26657 or port 9090), please ensure you stop them first before proceeding to the next step.</p>
@@ -181,7 +177,7 @@
 <h3><a class="header" href="#configuration-file" id="configuration-file">Configuration file</a></h3>
 <p>In order to run the script, you will need a <code>TOML</code> configuration file to be passed as a parameter. Please check the <a href="./config.html"><code>Configuration</code></a> section for more information about the relayer configuration file.</p>
 <p>The following configuration file in the <code>ibc-rs</code> repository folder can be used for running the local chains:</p>
-<h4><a class="header" href="#config_exampletoml" id="config_exampletoml">config_example.toml</a></h4>
+<p><strong>config.toml</strong></p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
@@ -225,27 +221,33 @@ b_chain = 'ibc-1'
 a_port = 'transfer'
 b_port = 'transfer'
 </code></pre>
+<h4><a class="header" href="#saving-the-configuration-file" id="saving-the-configuration-file">Saving the configuration file</a></h4>
+<h5><a class="header" href="#create-the-configtoml-file" id="create-the-configtoml-file">Create the config.toml file</a></h5>
+<pre><code class="language-shell">mkdir -p $HOME/.hermes &amp;&amp; touch $HOME/.hermes/config.toml
+</code></pre>
+<h5><a class="header" href="#add-content-to-the-configuration-file" id="add-content-to-the-configuration-file">Add content to the configuration file:</a></h5>
+<p>You can use your preferred text editor. If using <code>vi</code> you can run:</p>
+<pre><code class="language-shell">vi ~/.hermes/config.toml
+</code></pre>
+<p>Then just <strong><code>copy</code></strong> the content for <code>config.toml</code> above and <strong><code>paste</code></strong> into this file.</p>
 <h3><a class="header" href="#running-the-script-to-start-the-chains" id="running-the-script-to-start-the-chains">Running the script to start the chains</a></h3>
 <p>From the <code>ibc-rs</code> repository folder run the following script with the parameters below to start the chains (<code>ibc-0</code> and <code>ibc-1</code>) and configure the light client peers:</p>
 <pre><code class="language-bash">./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
 </code></pre>
 <blockquote>
-<p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just say <code>yes</code></p>
+<p><strong>NOTE</strong>: If the script above prompts you to delete the data folder just answer <strong>'yes'</strong></p>
 </blockquote>
-<p>The script configures and starts two <code>gaiad</code> instances, one named <code>ibc-0</code> and the other <code>ibc-1</code></p>
+<p>The script configures and starts two <strong><code>gaiad</code></strong> instances, one named <strong><code>ibc-0</code></strong> and the other <strong><code>ibc-1</code></strong></p>
 <pre class="mermaid">graph TD
     A[dev-env] --&gt;|run| C(start chains)
     C --&gt;|gaiad| D[ibc-0]
     C --&gt;|gaiad| F[ibc-1]
 </pre>
 <p>If the script runs successfully you should see a message similar to the one below in the terminal:</p>
-<pre><code class="language-shell">$ ./scripts/dev-env chains.toml ibc-0 ibc-1
-
-GAIA VERSION INFO: 4.0.0
-
+<pre><code class="language-shell">GAIA VERSION INFO: 4.0.0
 Generating gaia configurations...
 Creating gaiad instance: home=./data | chain-id=ibc-0 | p2p=:26656 | rpc=:26657 | profiling=:6060 | grpc=:9090 | samoleans=:100000000000
-Change settings in ~/.hermes/config.toml file...
+Change settings in config.toml file...
 balances:
 - amount: &quot;0&quot;
   denom: stake
@@ -261,7 +263,7 @@ pagination:
   next_key: null
   total: &quot;0&quot;
 Creating gaiad instance: home=./data | chain-id=ibc-1 | p2p=:26556 | rpc=:26557 | profiling=:6061 | grpc=:9091 | samoleans=:100000000000
-Change settings in ~/.hermes/config.toml file...
+Change settings in config.toml file...
 balances:
 - amount: &quot;0&quot;
   denom: stake
@@ -276,19 +278,18 @@ balances:
 pagination:
   next_key: null
   total: &quot;0&quot;
-ibc-0 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-0.log to see its execution.
-ibc-1 initialized. Watch file /home/andy/development/github.com/informalsystems/ibc-rs/scripts/data/ibc-1.log to see its execution.
+ibc-0 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-0.log to see its execution.
+ibc-1 initialized. Watch file /dev/github.com/informalsystems/ibc-rs/data/ibc-1.log to see its execution.
 Building the Rust relayer...
 Removing light client peers from configuration...
 Adding primary peers to light client configuration...
 Adding secondary peers to light client configuration...
 Importing keys...
 Done!
-
 </code></pre>
 <h3><a class="header" href="#data-directory" id="data-directory">Data directory</a></h3>
-<p>The script creates a <code>data</code> directory in the current directory in order. The <code>data</code> directory contains the chain stores and configuration files.</p>
-<p>The <code>data</code> directory has a tree structure similar to the one below:</p>
+<p>The script creates a <strong><code>data</code></strong> directory in the current directory in order. The <strong><code>data</code></strong> directory contains the chain stores and configuration files.</p>
+<p>The <strong><code>data</code></strong> directory has a tree structure similar to the one below:</p>
 <pre><code class="language-shell">data
 ├── ibc-0
 │   ├── config
@@ -306,8 +307,22 @@ Done!
 └── ibc-1.log
 
 </code></pre>
+<h3><a class="header" href="#homehermes-directory" id="homehermes-directory">$HOME/.hermes directory</a></h3>
+<p>By the default <code>hermes</code> expects the configuration file to be in the <strong><code>$HOME/.hermes</code></strong> folder. </p>
+<p>It also stores the private keys for each chain in this folder as outlined in the <a href="./keys.html">Keys</a> section. </p>
+<p>After executing the <strong><code>dev-env</code></strong> script, this is how the folder should look like:</p>
+<pre><code class="language-shell">$HOME/.hermes/
+├── config.toml
+└── keys
+    ├── ibc-0
+    │   └── keyring-test
+    │       └── testkey.json
+    └── ibc-1
+        └── keyring-test
+            └── testkey.json
+</code></pre>
 <h4><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h4>
-<p>In the next section <a href="./connect_chains.html">&quot;Connecting the chains&quot;</a> you will learn how to execute transactions and queries on the relayer in order to relay packets.</p>
+<p>In the next section, <a href="./connect_chains.html">&quot;Connecting the chains&quot;</a>, you will learn how to execute transactions and queries on the relayer in order to relay packets.</p>
 
                     </main>
 
