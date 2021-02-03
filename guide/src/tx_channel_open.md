@@ -1,4 +1,4 @@
-# Channel Handshake
+# Channel Open Handshake
 
 The `tx raw` commands can be used to establish a channel for a given connection. Only `unordered` channels are currently supported.
 
