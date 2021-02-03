@@ -1,33 +1,4 @@
 #####################################################
-####                 Build image                 ####
-#####################################################
-FROM rust:slim AS build-env
-
-# Output Rust version
-RUN cargo --version
-
-# Set working dir
-WORKDIR /repo
-
-# Cache dependencies
-COPY Cargo.toml .
-COPY ./modules/Cargo.toml ./modules
-COPY ./relayer/Cargo.toml ./relayer
-COPY ./relayer-cli/Cargo.toml ./relayer-cli
-COPY ./proto/Cargo.toml ./proto
-
-RUN cargo fetch
-
-# Copy project files
-COPY . .
-
-# Update packages
-RUN cargo update
-
-# Build files
-RUN cargo build --workspace --all --release
-
-#####################################################
 ####                 Relayer image               ####
 #####################################################
 FROM rust:slim
@@ -35,11 +6,11 @@ LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
-# Add jq and Python 3
-RUN apt-get update -y && apt-get install python3 jq -y
+# Add Python 3
+RUN apt-get update -y && apt-get install python3 -y
 
 # Copy relayer executable
-COPY --from=build-env /repo/target/release/hermes /usr/bin/hermes
+COPY ./hermes /usr/bin/hermes
 
 # Relayer folder
 WORKDIR /relayer

@@ -5,7 +5,7 @@
 
 ### FEATURES
 
-- Continous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32],[#602])
+- Continous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32], [#582], [#602])
 - Add support for streamlining releases ([#507])
 
 - [relayer-cli]
@@ -82,6 +82,7 @@
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
+[#582]: https://github.com/informalsystems/ibc-rs/issues/582
 [#583]: https://github.com/informalsystems/ibc-rs/issues/583
 [#590]: https://github.com/informalsystems/ibc-rs/issues/590
 [#593]: https://github.com/informalsystems/ibc-rs/issues/593
