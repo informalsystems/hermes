@@ -173,61 +173,61 @@
 <tr><td><code>Cl</code></td><td>client related</td></tr>
 <tr><td><code>Conn</code></td><td>connection related</td></tr>
 <tr><td><code>Chan</code></td><td>channel related</td></tr>
-<tr><td><code>..Handshake..</code></td><td>can execute all transactions required to finish a handshake from a single command</td></tr>
-<tr><td><code>..-&lt;msg&gt;-A</code></td><td>building and sending <code>msg</code> from a command that scans chain state</td></tr>
-<tr><td><code>..-&lt;msg&gt;-P</code></td><td>building and sending <code>msg</code> from IBC event, doesn't apply to <code>..-Init</code> and <code>FT-Transfer</code> features</td></tr>
+<tr><td><code>.._Handshake_..</code></td><td>can execute all transactions required to finish a handshake from a single command</td></tr>
+<tr><td><code>.._&lt;msg&gt;_A</code></td><td>building and sending <code>msg</code> from a command that scans chain state</td></tr>
+<tr><td><code>.._&lt;msg&gt;_P</code></td><td>building and sending <code>msg</code> from IBC event; doesn't apply to <code>.._Init</code> and <code>FT_Transfer</code> features</td></tr>
 </tbody></table>
 <p><strong>Feature comparison between Hermes and the Go relayer</strong> </p>
 <table><thead><tr><th>Features \      Status</th><th align="center">Hermes</th><th align="center">Cosmos Go</th><th align="left">Feature Details</th></tr></thead><tbody>
 <tr><td>Restart</td><td align="center">❌</td><td align="center">✅</td><td align="left">replays any IBC events that happened before restart</td></tr>
-<tr><td>Multiple-Paths</td><td align="center">❌</td><td align="center">✅</td><td align="left">relays on multiple paths concurrently</td></tr>
+<tr><td>Multiple_Paths</td><td align="center">❌</td><td align="center">✅</td><td align="left">relays on multiple paths concurrently</td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Cl-Tendermint-Create</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client creation</td></tr>
-<tr><td>Cl-Tendermint-Update</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client update</td></tr>
-<tr><td>Cl-Tendermint-Upgrade</td><td align="center">❌</td><td align="center">✅</td><td align="left">tendermint light client upgrade</td></tr>
+<tr><td>Cl_Tendermint_Create</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client creation</td></tr>
+<tr><td>Cl_Tendermint_Update</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client update</td></tr>
+<tr><td>Cl_Tendermint_Upgrade</td><td align="center">❌</td><td align="center">✅</td><td align="left">tendermint light client upgrade</td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Conn-Handshake-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn-Handshake-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Chan-Handshake-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Handshake-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn_Handshake_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn_Handshake_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan_Handshake_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Handshake_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Conn-Open-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Conn-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Try_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Try_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Ack_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Ack_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Confirm_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn_Open_Confirm_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Chan-Open-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Try_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Try_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Ack_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Ack_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Confirm_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Open_Confirm_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Chan-Close-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Close-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Chan-Close-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan_Close_Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Close_Confirm_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Close_Confirm_P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>FT-Transfer</td><td align="center">✅</td><td align="center">✅</td><td align="left">can submit an ICS-20 fungible token transfer message</td></tr>
-<tr><td>Packet-Recv-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet-Recv-P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet-Timeout-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet-Timeout-P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
-<tr><td>Packet-TimeoutClose-A</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
-<tr><td>Packet-TimeoutClose-P</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
+<tr><td>FT_Transfer</td><td align="center">✅</td><td align="center">✅</td><td align="left">can submit an ICS-20 fungible token transfer message</td></tr>
+<tr><td>Packet_Recv_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet_Recv_P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet_Timeout_A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet_Timeout_P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet_TimeoutClose_A</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
+<tr><td>Packet_TimeoutClose_P</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Upgrade-Plan-Proposal</td><td align="center">❌</td><td align="center">✅</td><td align="left">submit <code>UpgradePlan</code> proposals for IBC breaking upgrades</td></tr>
-<tr><td>Cl-Unfreeze-Proposal</td><td align="center">❌</td><td align="center">❌</td><td align="left">submit IBC client unfreezing proposals</td></tr>
-<tr><td>Cl-Misbehavior</td><td align="center">❌</td><td align="center">❌</td><td align="left">monitors and submits IBC client misbehavior</td></tr>
+<tr><td>Upgrade_Plan_Proposal</td><td align="center">❌</td><td align="center">✅</td><td align="left">submit <code>UpgradePlan</code> proposals for IBC breaking upgrades</td></tr>
+<tr><td>Cl_Unfreeze_Proposal</td><td align="center">❌</td><td align="center">❌</td><td align="left">submit IBC client unfreezing proposals</td></tr>
+<tr><td>Cl_Misbehavior</td><td align="center">❌</td><td align="center">❌</td><td align="left">monitors and submits IBC client misbehavior</td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Cl-Non-Tendermint</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non-tendermint IBC light clients</td></tr>
-<tr><td>Chain-Non-Cosmos</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non-cosmos-SDK chains</td></tr>
+<tr><td>Cl_Non_Tendermint</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non tendermint IBC light clients</td></tr>
+<tr><td>Chain_Non_Cosmos</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non cosmos-SDK chains</td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
-<tr><td>Mgmt-Static</td><td align="center">✅</td><td align="center">✅</td><td align="left">provides means for configuration prior to being started</td></tr>
-<tr><td>Mgmt-Dynamic</td><td align="center">❌</td><td align="center">❌</td><td align="left">provides means for configuration and monitorig during runtime</td></tr>
+<tr><td>Mgmt_Static</td><td align="center">✅</td><td align="center">✅</td><td align="left">provides means for configuration prior to being started</td></tr>
+<tr><td>Mgmt_Dynamic</td><td align="center">❌</td><td align="center">❌</td><td align="left">provides means for configuration and monitoring during runtime</td></tr>
 </tbody></table>
 
                     </main>
