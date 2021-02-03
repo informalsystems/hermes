@@ -55,9 +55,13 @@ ConnectionStates == {
     "Open"
 }
 
+\* data kept per cliennt
+Client == [
+    height: ClientHeights \union {NullHeight}
+]
 \* mapping from client identifier to its height
 Clients == [
-    ClientIds -> ClientHeights \union {NullHeight}
+    ClientIds -> Client
 ]
 \* data kept per connection
 Connection == [
@@ -77,6 +81,10 @@ Chain == [
     clientIdCounter: 0..MaxClientsPerChain,
     connections: Connections,
     connectionIdCounter: 0..MaxConnectionsPerChain
+]
+\* mapping from chain identifier to its data
+Chains == [
+    ChainIds -> Chain
 ]
 
 \* set of possible actions
@@ -121,29 +129,29 @@ ActionOutcomes == {
  Specification
  ***************************************************************************)
 
-\* retrieves `clientId`'s height
-GetClientHeight(clients, clientId) ==
+\* retrieves `clientId`'s data
+GetClient(clients, clientId) ==
     clients[clientId]
 
-\* check if a `clientId` exists
+\* check if `clientId` exists
 ClientExists(clients, clientId) ==
-    GetClientHeight(clients, clientId) /= NullHeight
+    GetClient(clients, clientId).height /= NullHeight
 
-\* update the heigth of `clientId` to `clientHeight`
-SetClientHeight(clients, clientId, clientHeight) ==
-    [clients EXCEPT ![clientId] = clientHeight]
+\* update `clientId`'s data
+SetClient(clients, clientId, client) ==
+    [clients EXCEPT ![clientId] = client]
 
 \* retrieves `connectionId`'s data
 GetConnection(connections, connectionId) ==
     connections[connectionId]
 
-\* check if a `connectionId` exists
+\* check if `connectionId` exists
 ConnectionExists(connections, connectionId) ==
     GetConnection(connections, connectionId).state /= "Uninit"
 
-\* update the `connectionId`'s data
-SetConnection(connections, connectionId, connectionData) ==
-    [connections EXCEPT ![connectionId] = connectionData]
+\* update `connectionId`'s data
+SetConnection(connections, connectionId, connection) ==
+    [connections EXCEPT ![connectionId] = connection]
 
 CreateClient(chainId, clientHeight) ==
     LET chain == chains[chainId] IN
@@ -157,10 +165,12 @@ CreateClient(chainId, clientHeight) ==
         /\ UNCHANGED <<chains>>
     ELSE
         \* if it doesn't, create it
+        LET client == [
+            height |-> clientHeight
+        ] IN
+        \* update the chain
         LET updatedChain == [chain EXCEPT
-            \* initialize the client's height to `clientHeight`
-            !.clients = SetClientHeight(clients, clientIdCounter, clientHeight),
-            \* update `clientIdCounter`
+            !.clients = SetClient(clients, clientIdCounter, client),
             !.clientIdCounter = clientIdCounter + 1
         ] IN
         \* update `chains` and set the outcome
@@ -173,12 +183,16 @@ UpdateClient(chainId, clientId, clientHeight) ==
     \* check if the client exists
     IF ClientExists(clients, clientId) THEN
         \* if the client exists, check its height
-        IF GetClientHeight(clients, clientId) < clientHeight THEN
+        LET client == GetClient(clients, clientId) IN
+        IF client.height < clientHeight THEN
             \* if the client's height is lower than the one being updated to
             \* then, update the client
+            LET updatedClient == [client EXCEPT
+                !.height = clientHeight
+            ] IN
+            \* update the chain
             LET updatedChain == [chain EXCEPT
-                \* set the client's height to `clientHeight`
-                !.clients = SetClientHeight(clients, clientId, clientHeight)
+                !.clients = SetClient(clients, clientId, updatedClient)
             ] IN
             \* update `chains` and set the outcome
             /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
@@ -209,17 +223,16 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
             /\ UNCHANGED <<chains>>
         ELSE
             \* if it doesn't, create it
-            LET connectionData == [
+            LET connection == [
                 state |-> "Init",
                 clientId |-> clientId,
                 counterpartyClientId |-> counterpartyClientId,
                 connectionId |-> connectionIdCounter,
                 counterpartyConnectionId |-> NullConnectionId
             ] IN
+            \* update the chain
             LET updatedChain == [chain EXCEPT
-                \* initialize the connection's data
-                !.connections = SetConnection(connections, connectionIdCounter, connectionData),
-                \* update `clientIdCounter`
+                !.connections = SetConnection(connections, connectionIdCounter, connection),
                 !.connectionIdCounter = connectionIdCounter + 1
             ] IN
             \* update `chains` and set the outcome
@@ -271,18 +284,22 @@ ConnectionOpenInitAction ==
                                counterpartyClientId |-> counterpartyClientId])
 
 Init ==
-    \* create an empty chain
-    LET emptyConnection == [
+    \* create an null client and a null connection
+    LET nullClient == [
+        height |-> NullHeight
+    ] IN
+    LET nullConnection == [
         state |-> "Uninit",
         clientId |-> NullClientId,
         counterpartyClientId |-> NullClientId,
         connectionId |-> NullConnectionId,
         counterpartyConnectionId |-> NullConnectionId
     ] IN
+    \* create an empty chain
     LET emptyChain == [
-        clients |-> [clientId \in ClientIds |-> NullHeight],
+        clients |-> [clientId \in ClientIds |-> nullClient],
         clientIdCounter |-> 0,
-        connections |-> [connectionId \in ConnectionIds |-> emptyConnection],
+        connections |-> [connectionId \in ConnectionIds |-> nullConnection],
         connectionIdCounter |-> 0
     ] IN
     /\ chains = [chainId \in ChainIds |-> emptyChain]
@@ -300,7 +317,7 @@ Next ==
  ***************************************************************************)
 
 TypeOK ==
-    /\ chains \in [ChainIds -> Chain]
+    /\ chains \in Chains
     /\ action \in Actions
     /\ actionOutcome \in ActionOutcomes
 
