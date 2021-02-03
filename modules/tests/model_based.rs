@@ -140,13 +140,13 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 let result = ctx.deliver(msg);
 
                 // check the expected outcome: client create always succeeds
-                assert_eq!(
-                    state.action_outcome,
-                    ActionOutcome::CreateOK,
-                    "unexpected action outcome"
-                );
-                // the implementaion matches the model if no error occurs
-                result.is_ok()
+                match state.action_outcome {
+                    ActionOutcome::ICS02OK => {
+                        // the implementaion matches the model if no error occurs
+                        result.is_ok()
+                    }
+                    action => panic!("unexpected action outcome {:?}", action),
+                }
             }
             ActionType::UpdateClient => {
                 // get action parameters
@@ -182,15 +182,13 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 }));
                 let result = ctx.deliver(msg);
 
+                // check the expected outcome
                 match state.action_outcome {
-                    ActionOutcome::Null | ActionOutcome::CreateOK => {
-                        panic!("unexpected action outcome")
-                    }
-                    ActionOutcome::UpdateOK => {
+                    ActionOutcome::ICS02OK => {
                         // the implementaion matches the model if no error occurs
                         result.is_ok()
                     }
-                    ActionOutcome::UpdateClientNotFound => {
+                    ActionOutcome::ICS02ClientNotFound => {
                         let handler_error_kind =
                             Self::extract_handler_error_kind::<ICS02ErrorKind>(result);
                         // the implementaion matches the model if there's an
@@ -200,14 +198,18 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                             ICS02ErrorKind::ClientNotFound(id) if id == client_id
                         )
                     }
-                    ActionOutcome::UpdateHeightVerificationFailure => {
+                    ActionOutcome::ICS02HeaderVerificationFailure => {
                         let handler_error_kind =
                             Self::extract_handler_error_kind::<ICS02ErrorKind>(result);
                         // the implementaion matches the model if there's an
                         // error matching the expected outcome
                         handler_error_kind == ICS02ErrorKind::HeaderVerificationFailure
                     }
+                    action => panic!("unexpected action outcome {:?}", action),
                 }
+            }
+            ActionType::ConnectionOpenInit => {
+                todo!()
             }
         }
     }

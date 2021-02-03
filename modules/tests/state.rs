@@ -28,13 +28,16 @@ pub enum ActionType {
     Null,
     CreateClient,
     UpdateClient,
+    ConnectionOpenInit,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
     Null,
-    CreateOK,
-    UpdateOK,
-    UpdateClientNotFound,
-    UpdateHeightVerificationFailure,
+    #[serde(alias = "ICS02_OK")]
+    ICS02OK,
+    #[serde(alias = "ICS02_ClientNotFound")]
+    ICS02ClientNotFound,
+    #[serde(alias = "ICS02_HeaderVerificationFailure")]
+    ICS02HeaderVerificationFailure,
 }

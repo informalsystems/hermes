@@ -11,7 +11,7 @@
             "height": 1,
             "type": "CreateClient"
         },
-        "actionOutcome": "CreateOK"
+        "actionOutcome": "ICS02_OK"
     },
     {
         "action": {
@@ -20,6 +20,6 @@
             "height": 1,
             "type": "UpdateClient"
         },
-        "actionOutcome": "UpdateHeightVerificationFailure"
+        "actionOutcome": "ICS02_HeaderVerificationFailure"
     }
 ]
