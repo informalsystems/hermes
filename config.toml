@@ -83,3 +83,10 @@ trusted_height = '31'
 type = 'disk'
 path = '/Users/coromac/Informal/Code/Current/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
