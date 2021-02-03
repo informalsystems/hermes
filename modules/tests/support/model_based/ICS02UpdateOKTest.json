@@ -9,51 +9,51 @@
         "action": {
             "chainId": "chain-B",
             "height": 1,
-            "type": "CreateClient"
+            "type": "ICS02CreateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02CreateOK"
     },
     {
         "action": {
             "chainId": "chain-B",
             "clientId": 0,
             "height": 2,
-            "type": "UpdateClient"
+            "type": "ICS02UpdateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02UpdateOK"
     },
     {
         "action": {
             "chainId": "chain-A",
             "height": 1,
-            "type": "CreateClient"
+            "type": "ICS02CreateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02CreateOK"
     },
     {
         "action": {
             "chainId": "chain-A",
             "clientId": 0,
             "height": 2,
-            "type": "UpdateClient"
+            "type": "ICS02UpdateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02UpdateOK"
     },
     {
         "action": {
             "chainId": "chain-A",
             "height": 1,
-            "type": "CreateClient"
+            "type": "ICS02CreateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02CreateOK"
     },
     {
         "action": {
             "chainId": "chain-A",
             "clientId": 1,
             "height": 2,
-            "type": "UpdateClient"
+            "type": "ICS02UpdateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02UpdateOK"
     }
 ]

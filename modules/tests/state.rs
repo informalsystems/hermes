@@ -17,27 +17,30 @@ pub struct Action {
     #[serde(alias = "chainId")]
     pub chain_id: Option<String>,
 
+    pub height: Option<u64>,
+
     #[serde(alias = "clientId")]
     pub client_id: Option<u64>,
 
-    pub height: Option<u64>,
+    #[serde(alias = "counterpartyClientId")]
+    pub counterparty_client_id: Option<u64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionType {
     Null,
-    CreateClient,
-    UpdateClient,
-    ConnectionOpenInit,
+    ICS02CreateClient,
+    ICS02UpdateClient,
+    ICS03ConnectionOpenInit,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
     Null,
-    #[serde(alias = "ICS02_OK")]
-    ICS02OK,
-    #[serde(alias = "ICS02_ClientNotFound")]
+    ICS02CreateOK,
+    ICS02UpdateOK,
     ICS02ClientNotFound,
-    #[serde(alias = "ICS02_HeaderVerificationFailure")]
     ICS02HeaderVerificationFailure,
+    ICS03ConnectionOpenInitOK,
+    ICS03MissingClient,
 }

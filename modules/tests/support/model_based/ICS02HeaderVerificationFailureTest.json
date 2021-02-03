@@ -1,0 +1,25 @@
+[
+    {
+        "action": {
+            "type": "Null"
+        },
+        "actionOutcome": "Null"
+    },
+    {
+        "action": {
+            "chainId": "chain-B",
+            "height": 1,
+            "type": "ICS02CreateClient"
+        },
+        "actionOutcome": "ICS02CreateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-B",
+            "clientId": 0,
+            "height": 1,
+            "type": "ICS02UpdateClient"
+        },
+        "actionOutcome": "ICS02HeaderVerificationFailure"
+    }
+]

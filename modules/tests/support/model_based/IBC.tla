@@ -92,18 +92,18 @@ NullActions == [
     type: {"Null"}
 ] <: {ActionType}
 CreateClientActions == [
-    type: {"CreateClient"},
+    type: {"ICS02CreateClient"},
     chainId: ChainIds,
     height: ClientHeights
 ] <: {ActionType}
 UpdateClientActions == [
-    type: {"UpdateClient"},
+    type: {"ICS02UpdateClient"},
     chainId: ChainIds,
     clientId: ClientIds,
     height: ClientHeights
 ] <: {ActionType}
 ConnectionOpenInitActions == [
-    type: {"ConnectionOpenInit"},
+    type: {"ICS03ConnectionOpenInit"},
     chainId: ChainIds,
     clientId: ClientIds,
     counterpartyClientId: ClientIds
@@ -117,11 +117,12 @@ Actions ==
 \* set of possible action outcomes
 ActionOutcomes == {
     "Null",
-    "ICS02_OK",
-    "ICS02_ClientNotFound",
-    "ICS02_HeaderVerificationFailure",
-    "ICS03_OK",
-    "ICS03_MissingClient",
+    "ICS02CreateOK",
+    "ICS02UpdateOK",
+    "ICS02ClientNotFound",
+    "ICS02HeaderVerificationFailure",
+    "ICS03ConnectionOpenInitOK",
+    "ICS03MissingClient",
     "ModelError"
 }
 
@@ -175,7 +176,7 @@ CreateClient(chainId, clientHeight) ==
         ] IN
         \* update `chains` and set the outcome
         /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-        /\ actionOutcome' = "ICS02_OK"
+        /\ actionOutcome' = "ICS02CreateOK"
 
 UpdateClient(chainId, clientId, clientHeight) ==
     LET chain == chains[chainId] IN
@@ -196,15 +197,15 @@ UpdateClient(chainId, clientId, clientHeight) ==
             ] IN
             \* update `chains` and set the outcome
             /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-            /\ actionOutcome' = "ICS02_OK"
+            /\ actionOutcome' = "ICS02UpdateOK"
         ELSE
             \* if the client's height is at least as high as the one being
             \* updated to, then set an error outcome
-            /\ actionOutcome' = "ICS02_HeaderVerificationFailure"
+            /\ actionOutcome' = "ICS02HeaderVerificationFailure"
             /\ UNCHANGED <<chains>>
     ELSE
         \* if the client does not exist, then set an error outcome
-        /\ actionOutcome' = "ICS02_ClientNotFound"
+        /\ actionOutcome' = "ICS02ClientNotFound"
         /\ UNCHANGED <<chains>>
 
 ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
@@ -237,10 +238,10 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
             ] IN
             \* update `chains` and set the outcome
             /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-            /\ actionOutcome' = "ICS03_OK"
+            /\ actionOutcome' = "ICS03ConnectionOpenInitOK"
     ELSE
         \* if the client does not exist, then set an error outcome
-        /\ actionOutcome' = "ICS03_MissingClient"
+        /\ actionOutcome' = "ICS03MissingClient"
         /\ UNCHANGED <<chains>>
 
 CreateClientAction ==
@@ -251,7 +252,7 @@ CreateClientAction ==
         \* only create client if the model constant `MaxClientsPerChain` allows it
         /\ chains[chainId].clientIdCounter \in ClientIds
         /\ CreateClient(chainId, clientHeight)
-        /\ action' = AsAction([type |-> "CreateClient",
+        /\ action' = AsAction([type |-> "ICS02CreateClient",
                                chainId |-> chainId,
                                height |-> clientHeight])
 
@@ -263,7 +264,7 @@ UpdateClientAction ==
     \* select a height for the client to be updated
     \E clientHeight \in ClientHeights:
         /\ UpdateClient(chainId, clientId, clientHeight)
-        /\ action' = AsAction([type |-> "UpdateClient",
+        /\ action' = AsAction([type |-> "ICS02UpdateClient",
                                chainId |-> chainId,
                                clientId |-> clientId,
                                height |-> clientHeight])
@@ -278,7 +279,7 @@ ConnectionOpenInitAction ==
         \* only create connection if the model constant `MaxConnectionsPerChain` allows it
         /\ chains[chainId].connectionIdCounter \in ConnectionIds
         /\ ConnectionOpenInit(chainId, clientId, counterpartyClientId)
-        /\ action' = AsAction([type |-> "ConnectionOpenInit",
+        /\ action' = AsAction([type |-> "ICS03ConnectionOpenInit",
                                chainId |-> chainId,
                                clientId |-> clientId,
                                counterpartyClientId |-> counterpartyClientId])

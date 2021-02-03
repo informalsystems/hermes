@@ -7,19 +7,19 @@
     },
     {
         "action": {
-            "chainId": "chain-B",
+            "chainId": "chain-A",
             "height": 1,
-            "type": "CreateClient"
+            "type": "ICS02CreateClient"
         },
-        "actionOutcome": "ICS02_OK"
+        "actionOutcome": "ICS02CreateOK"
     },
     {
         "action": {
             "chainId": "chain-B",
             "clientId": 0,
-            "height": 1,
-            "type": "UpdateClient"
+            "counterpartyClientId": 0,
+            "type": "ICS03ConnectionOpenInit"
         },
-        "actionOutcome": "ICS02_HeaderVerificationFailure"
+        "actionOutcome": "ICS03MissingClient"
     }
 ]

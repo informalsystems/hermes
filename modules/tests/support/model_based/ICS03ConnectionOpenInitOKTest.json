@@ -1,0 +1,25 @@
+[
+    {
+        "action": {
+            "type": "Null"
+        },
+        "actionOutcome": "Null"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "height": 1,
+            "type": "ICS02CreateClient"
+        },
+        "actionOutcome": "ICS02CreateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "clientId": 0,
+            "counterpartyClientId": 0,
+            "type": "ICS03ConnectionOpenInit"
+        },
+        "actionOutcome": "ICS03ConnectionOpenInitOK"
+    }
+]
