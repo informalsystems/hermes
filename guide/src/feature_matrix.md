@@ -14,7 +14,6 @@ __Legend__:
 | `..Handshake..`   | can execute all transactions required to finish a handshake from a single command                |
 | `..-<msg>-A`      | building and sending `msg` from a command that scans chain state                                 |
 | `..-<msg>-P`      | building and sending `msg` from IBC event, doesn't apply to `..-Init` and `FT-Transfer` features |
->>>>>>> Stashed changes
 
 __Feature comparison between Hermes and the Go relayer__ 
 
