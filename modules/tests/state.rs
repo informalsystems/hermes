@@ -14,6 +14,9 @@ pub struct Action {
     #[serde(alias = "type")]
     pub action_type: ActionType,
 
+    #[serde(alias = "chainId")]
+    pub chain_id: Option<String>,
+
     #[serde(alias = "clientId")]
     pub client_id: Option<u64>,
 

@@ -7,6 +7,7 @@
     },
     {
         "action": {
+            "chainId": "chain-B",
             "height": 1,
             "type": "CreateClient"
         },
@@ -14,7 +15,42 @@
     },
     {
         "action": {
+            "chainId": "chain-B",
             "clientId": 0,
+            "height": 2,
+            "type": "UpdateClient"
+        },
+        "actionOutcome": "UpdateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "height": 1,
+            "type": "CreateClient"
+        },
+        "actionOutcome": "CreateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "clientId": 0,
+            "height": 2,
+            "type": "UpdateClient"
+        },
+        "actionOutcome": "UpdateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "height": 1,
+            "type": "CreateClient"
+        },
+        "actionOutcome": "CreateOK"
+    },
+    {
+        "action": {
+            "chainId": "chain-A",
+            "clientId": 1,
             "height": 2,
             "type": "UpdateClient"
         },

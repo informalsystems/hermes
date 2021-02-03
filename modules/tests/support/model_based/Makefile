@@ -1,6 +1,6 @@
+check:
+	apalache-mc check --inv=ModelNeverErrors ICS02.tla
+
 test:
 	apalache-mc check ICS02Tests.tla
-
-check:
-	apalache-mc check ICS02.tla
 

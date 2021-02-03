@@ -1,6 +1,6 @@
 ------------------------- MODULE ICS02Tests ---------------------------
 
-EXTENDS ICS02
+EXTENDS IBC
 
 CreateOK ==
     /\ actionOutcome = "CreateOK"

@@ -19,150 +19,51 @@ use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::Height;
 use state::{ActionOutcome, ActionType, State};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
 use tendermint::account::Id as AccountId;
 
+// all chains use the same version
+const VERSION: u64 = 0;
+
 #[derive(Debug)]
 struct ICS02TestExecutor {
-    version: u64,
-    ctx: MockContext,
+    // mapping from chain identifier to its context
+    contexts: HashMap<String, MockContext>,
 }
 
 impl ICS02TestExecutor {
     fn new() -> Self {
-        let version = 1;
-        let max_history_size = 1;
-        let initial_height = 0;
-        let ctx = MockContext::new(
-            ChainId::new("mock".to_string(), version),
-            HostType::Mock,
-            // HostType::SyntheticTendermint,
-            max_history_size,
-            Height::new(version, initial_height),
-        );
-        Self { version, ctx }
-    }
-}
-
-impl modelator::TestExecutor<State> for ICS02TestExecutor {
-    fn check_initial_state(&mut self, state: State) -> bool {
-        assert_eq!(
-            state.action.action_type,
-            ActionType::Null,
-            "unexpected action type"
-        );
-        assert_eq!(
-            state.action_outcome,
-            ActionOutcome::Null,
-            "unexpected action outcome"
-        );
-        true
-    }
-
-    fn check_next_state(&mut self, state: State) -> bool {
-        match state.action.action_type {
-            ActionType::Null => panic!("unexpected action type"),
-            ActionType::CreateClient => {
-                // get action parameters
-                let height = state
-                    .action
-                    .height
-                    .expect("create client action should have a height");
-
-                // create client and consensus state from parameters
-                let client_state = AnyClientState::Mock(MockClientState(self.mock_header(height)));
-                let consensus_state =
-                    AnyConsensusState::Mock(MockConsensusState(self.mock_header(height)));
-
-                // create dummy signer
-                let signer = self.dummy_signer();
-
-                // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state,
-                    consensus_state,
-                    signer,
-                }));
-                let result = self.ctx.deliver(msg);
-
-                // check the expected outcome: client create always succeeds
-                assert_eq!(
-                    state.action_outcome,
-                    ActionOutcome::CreateOK,
-                    "unexpected action outcome"
-                );
-                // the implementaion matches the model if no error occurs
-                result.is_ok()
-            }
-            ActionType::UpdateClient => {
-                // get action parameters
-                let client_id = state
-                    .action
-                    .client_id
-                    .expect("update client action should have a client identifier");
-                let height = state
-                    .action
-                    .height
-                    .expect("update client action should have a height");
-
-                // create client id and header from action parameters
-                let client_id = ClientId::new(ClientType::Mock, client_id)
-                    .expect("it should be possible to create the client identifier");
-                let header = AnyHeader::Mock(self.mock_header(height));
-
-                // create dummy signer
-                let signer = self.dummy_signer();
-
-                // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
-                    client_id: client_id.clone(),
-                    header,
-                    signer,
-                }));
-                let result = self.ctx.deliver(msg);
-
-                match state.action_outcome {
-                    ActionOutcome::Null | ActionOutcome::CreateOK => {
-                        panic!("unexpected action outcome")
-                    }
-                    ActionOutcome::UpdateOK => {
-                        // the implementaion matches the model if no error occurs
-                        result.is_ok()
-                    }
-                    ActionOutcome::UpdateClientNotFound => {
-                        let handler_error_kind =
-                            self.extract_handler_error_kind::<ICS02ErrorKind>(result);
-                        // the implementaion matches the model if there's an
-                        // error matching the expected outcome
-                        matches!(
-                            handler_error_kind,
-                            ICS02ErrorKind::ClientNotFound(id) if id == client_id
-                        )
-                    }
-                    ActionOutcome::UpdateHeightVerificationFailure => {
-                        let handler_error_kind =
-                            self.extract_handler_error_kind::<ICS02ErrorKind>(result);
-                        // the implementaion matches the model if there's an
-                        // error matching the expected outcome
-                        handler_error_kind == ICS02ErrorKind::HeaderVerificationFailure
-                    }
-                }
-            }
+        Self {
+            contexts: Default::default(),
         }
     }
-}
 
-impl ICS02TestExecutor {
-    fn dummy_signer(&self) -> AccountId {
+    /// Find the `MockContext` of a given `chain_id`.
+    /// If no context is found, a new one is created.
+    fn get_chain_context_or_init(&mut self, chain_id: String) -> &mut MockContext {
+        self.contexts.entry(chain_id.clone()).or_insert_with(|| {
+            let max_history_size = 1;
+            let initial_height = 0;
+            MockContext::new(
+                ChainId::new(chain_id, VERSION),
+                HostType::Mock,
+                max_history_size,
+                Height::new(VERSION, initial_height),
+            )
+        })
+    }
+
+    fn dummy_signer() -> AccountId {
         AccountId::new([0; 20])
     }
 
-    fn mock_header(&self, height: u64) -> MockHeader {
-        MockHeader(Height::new(self.version, height))
+    fn mock_header(height: u64) -> MockHeader {
+        MockHeader(Height::new(VERSION, height))
     }
 
-    fn extract_handler_error_kind<K>(&self, result: Result<(), ICS18Error>) -> K
+    fn extract_handler_error_kind<K>(result: Result<(), ICS18Error>) -> K
     where
         K: Clone + Debug + Display + Into<anomaly::BoxError> + 'static,
     {
@@ -187,6 +88,128 @@ impl ICS02TestExecutor {
             .expect("ICS26 source should be an error")
             .kind()
             .clone()
+    }
+}
+
+impl modelator::TestExecutor<State> for ICS02TestExecutor {
+    fn check_initial_state(&mut self, state: State) -> bool {
+        assert_eq!(
+            state.action.action_type,
+            ActionType::Null,
+            "unexpected action type"
+        );
+        assert_eq!(
+            state.action_outcome,
+            ActionOutcome::Null,
+            "unexpected action outcome"
+        );
+        true
+    }
+
+    fn check_next_state(&mut self, state: State) -> bool {
+        match state.action.action_type {
+            ActionType::Null => panic!("unexpected action type"),
+            ActionType::CreateClient => {
+                // get action parameters
+                let chain_id = state
+                    .action
+                    .chain_id
+                    .expect("create client action should have a chain identifier");
+                let height = state
+                    .action
+                    .height
+                    .expect("create client action should have a height");
+
+                // get chain's context
+                let ctx = self.get_chain_context_or_init(chain_id);
+
+                // create client and consensus state from parameters
+                let client_state = AnyClientState::Mock(MockClientState(Self::mock_header(height)));
+                let consensus_state =
+                    AnyConsensusState::Mock(MockConsensusState(Self::mock_header(height)));
+
+                // create dummy signer
+                let signer = Self::dummy_signer();
+
+                // create ICS26 message and deliver it
+                let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+                    client_state,
+                    consensus_state,
+                    signer,
+                }));
+                let result = ctx.deliver(msg);
+
+                // check the expected outcome: client create always succeeds
+                assert_eq!(
+                    state.action_outcome,
+                    ActionOutcome::CreateOK,
+                    "unexpected action outcome"
+                );
+                // the implementaion matches the model if no error occurs
+                result.is_ok()
+            }
+            ActionType::UpdateClient => {
+                // get action parameters
+                let chain_id = state
+                    .action
+                    .chain_id
+                    .expect("update client action should have a chain identifier");
+                let client_id = state
+                    .action
+                    .client_id
+                    .expect("update client action should have a client identifier");
+                let height = state
+                    .action
+                    .height
+                    .expect("update client action should have a height");
+
+                // get chain's context
+                let ctx = self.get_chain_context_or_init(chain_id);
+
+                // create client id and header from action parameters
+                let client_id = ClientId::new(ClientType::Mock, client_id)
+                    .expect("it should be possible to create the client identifier");
+                let header = AnyHeader::Mock(Self::mock_header(height));
+
+                // create dummy signer
+                let signer = Self::dummy_signer();
+
+                // create ICS26 message and deliver it
+                let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                    client_id: client_id.clone(),
+                    header,
+                    signer,
+                }));
+                let result = ctx.deliver(msg);
+
+                match state.action_outcome {
+                    ActionOutcome::Null | ActionOutcome::CreateOK => {
+                        panic!("unexpected action outcome")
+                    }
+                    ActionOutcome::UpdateOK => {
+                        // the implementaion matches the model if no error occurs
+                        result.is_ok()
+                    }
+                    ActionOutcome::UpdateClientNotFound => {
+                        let handler_error_kind =
+                            Self::extract_handler_error_kind::<ICS02ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
+                        matches!(
+                            handler_error_kind,
+                            ICS02ErrorKind::ClientNotFound(id) if id == client_id
+                        )
+                    }
+                    ActionOutcome::UpdateHeightVerificationFailure => {
+                        let handler_error_kind =
+                            Self::extract_handler_error_kind::<ICS02ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
+                        handler_error_kind == ICS02ErrorKind::HeaderVerificationFailure
+                    }
+                }
+            }
+        }
     }
 }
 
