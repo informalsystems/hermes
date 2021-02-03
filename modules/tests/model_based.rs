@@ -4,7 +4,7 @@ mod state;
 use ibc::ics02_client::client_def::AnyHeader;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
-use ibc::ics02_client::error::{Error as ICS02Error, Kind as ICS02ErrorKind};
+use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
@@ -20,7 +20,7 @@ use ibc::mock::host::HostType;
 use ibc::Height;
 use state::{ActionOutcome, ActionType, State};
 use std::error::Error;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
@@ -92,6 +92,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                     ActionOutcome::CreateOK,
                     "unexpected action outcome"
                 );
+                // the implementaion matches the model if no error occurs
                 result.is_ok()
             }
             ActionType::UpdateClient => {
@@ -126,18 +127,24 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                         panic!("unexpected action outcome")
                     }
                     ActionOutcome::UpdateOK => {
-                        // check that there were no errors
+                        // the implementaion matches the model if no error occurs
                         result.is_ok()
                     }
                     ActionOutcome::UpdateClientNotFound => {
-                        let handler_error_kind = self.extract_ics02_handler_error_kind(result);
+                        let handler_error_kind =
+                            self.extract_handler_error_kind::<ICS02ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
                         matches!(
                             handler_error_kind,
                             ICS02ErrorKind::ClientNotFound(id) if id == client_id
                         )
                     }
                     ActionOutcome::UpdateHeightVerificationFailure => {
-                        let handler_error_kind = self.extract_ics02_handler_error_kind(result);
+                        let handler_error_kind =
+                            self.extract_handler_error_kind::<ICS02ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
                         handler_error_kind == ICS02ErrorKind::HeaderVerificationFailure
                     }
                 }
@@ -155,7 +162,10 @@ impl ICS02TestExecutor {
         MockHeader(Height::new(self.version, height))
     }
 
-    fn extract_ics02_handler_error_kind(&self, result: Result<(), ICS18Error>) -> ICS02ErrorKind {
+    fn extract_handler_error_kind<K>(&self, result: Result<(), ICS18Error>) -> K
+    where
+        K: Clone + Debug + Display + Into<anomaly::BoxError> + 'static,
+    {
         let ics18_error = result.expect_err("ICS18 error expected");
         assert!(matches!(
             ics18_error.kind(),
@@ -173,8 +183,8 @@ impl ICS02TestExecutor {
         ics26_error
             .source()
             .expect("expected source in ICS26 error")
-            .downcast_ref::<ICS02Error>()
-            .expect("ICS26 source should be an ICS02 error")
+            .downcast_ref::<anomaly::Error<K>>()
+            .expect("ICS26 source should be an error")
             .kind()
             .clone()
     }
