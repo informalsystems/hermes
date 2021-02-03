@@ -87,7 +87,6 @@ jobs:
         with:
           toolchain: stable
           override: true
-      - run: echo "hello"
       - uses: actions-rs/cargo@v1
         with:
           command: build
