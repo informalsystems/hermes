@@ -5,38 +5,38 @@ More details and feature comparison between the Rust and Go relayer implementati
 
 ## Supported Features
 
-- establish a new relaying path (new clients, connection and unordered channel handshake)
-- relay from packet events on a newly created, or an existing relaying path
+- Establish a new relaying path (new clients, connection and unordered channel handshake)
+- Relay from packet events on a newly created, or an existing relaying path
 
   __Limitations:__
-   - only one path per relayer instance
-   - relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup
+   - Only one path per relayer instance
+   - Relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup
 
 - individual commands that build and send transactions for:
-    - creating and updating IBC Tendermint light clients
-    - sending connection open handshake datagrams
-    - sending channel open handshake datagrams
-    - sending channel closing handshake datagrams
-    - initiating a cross chain transfer (mainly for testing)
-    - relaying sent packets, acknowledgments and timeouts
+    - Creating and updating IBC Tendermint light clients
+    - Sending connection open handshake datagrams
+    - Sending channel open handshake datagrams
+    - Sending channel closing handshake datagrams
+    - Initiating a cross chain transfer (mainly for testing)
+    - Relaying sent packets, acknowledgments and timeouts
 
 ## Upcoming / Unsupported Features
 
 Planned features:
-- support for client upgrade and unfreezing
-- connection handshake using existing clients and/or existing connection that is not in `Open` state
-- channel handshake using existing clients, opened connection, and/ or existing channel that is not in `Open` state
-- passive mode: relay from all IBC events
-- support for relayer restart
-- support for multiple paths
-- close-to-0 configuration relayer
-- relayer support for management application (add RPC server)
+- Support for client upgrade and unfreezing
+- Connection handshake using existing clients and/or existing connection that is not in `Open` state
+- Channel handshake using existing clients, opened connection, and/ or existing channel that is not in `Open` state
+- Passive mode: relay from all IBC events
+- Support for relayer restart
+- Support for multiple paths
+- Close-to-0 configuration relayer
+- Relayer support for management application (add RPC server)
 
 Not planned:
-- relayer management application
-- create clients with user chosen parameters (such as UpgradePath)
-- monitor and submit misbehaviour for clients
-- use IBC light clients other than Tendermint such as Solo Machine
-- support non cosmos-SDK chains
-- sending an UpgradePlan proposal for an IBC breaking upgrade
-- upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
+- Relayer management application
+- Create clients with user chosen parameters (such as UpgradePath)
+- Monitor and submit misbehaviour for clients
+- Use IBC light clients other than Tendermint such as Solo Machine
+- Support non cosmos-SDK chains
+- Sending an UpgradePlan proposal for an IBC breaking upgrade
+- Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
