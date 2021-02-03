@@ -37,8 +37,6 @@ pub fn process(
         .ok_or_else(|| Kind::ClientNotFound(client_id.clone()))?;
 
     let client_def = AnyClient::from_client_type(client_type);
-    // ClientType ClientState ConsensusState
-    //  X           X           X
 
     // Read client state from the host chain store.
     let client_state = ctx

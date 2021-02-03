@@ -394,9 +394,9 @@ impl ChannelKeeper for MockContext {
     fn next_channel_id(&mut self) -> ChannelId {
         let prefix = ChannelId::default().to_string();
         let suffix = self.channel_ids_counter;
+        let channel_id = ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap();
         self.channel_ids_counter += 1;
-
-        ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        channel_id
     }
 
     fn store_channel(
@@ -499,9 +499,10 @@ impl ConnectionKeeper for MockContext {
     fn next_connection_id(&mut self) -> ConnectionId {
         let prefix = ConnectionId::default().to_string();
         let suffix = self.connection_ids_counter;
+        let connection_id =
+            ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap();
         self.connection_ids_counter += 1;
-
-        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        connection_id
     }
 
     fn store_connection(
