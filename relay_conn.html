@@ -165,21 +165,21 @@
                     <main>
                         <h1><a class="header" href="#2-connection-handshake" id="2-connection-handshake">2. Connection Handshake</a></h1>
 <h3><a class="header" href="#21-conn-init" id="21-conn-init">2.1 <code>conn-init</code></a></h3>
+<p>Initialize a new connection on <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-0</code> on <code>ibc-0</code> in order to use it in the <code>conn-try</code> command below.</p>
 <h3><a class="header" href="#22-conn-try" id="22-conn-try">2.2 <code>conn-try</code></a></h3>
-<p><strong>Note</strong>: If this is the first connection to be created on <code>ibc-1</code>, prior to the <code>conn-try</code> command, you can send a <code>conn-init</code> to <code>ibc-1</code> and the chain will allocate <code>connection-0</code>. This will ensure that the next available ID, <code>connection-1</code>, will be allocated in <code>conn-try</code>.</p>
-<pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
-</code></pre>
-<p>To send a <code>conn-try</code> message to <code>ibc-1</code>:</p>
+<p>Send a connection try to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-1</code> on <code>ibc-1</code>. Use in the <code>conn-ack</code> CLI</p>
 <h3><a class="header" href="#23-conn-ack" id="23-conn-ack">2.3 conn-ack</a></h3>
+<p>Send a connection open acknowledgment to <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
 </code></pre>
 <h3><a class="header" href="#24-conn-confirm" id="24-conn-confirm">2.4 conn-confirm</a></h3>
+<p>Send the open confirmation to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
 </code></pre>
 <h3><a class="header" href="#25-query-connection" id="25-query-connection">2.5 query connection</a></h3>
@@ -189,7 +189,7 @@
 <pre><code class="language-shell">hermes query connection end ibc-0 connection-0
 </code></pre>
 <h2><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h2>
-<p>In the next section, we'll <a href="./relay_channel.html">Open the Channel</a></p>
+<p>In the next section, we'll <a href="./relay_channel.html">establish a new channel</a></p>
 
                     </main>
 

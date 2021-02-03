@@ -583,14 +583,6 @@ trusting_period = '14days'
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
-
-[[connections]]
-a_chain = 'ibc-0'
-b_chain = 'ibc-1'
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
 </code></pre>
 <h4><a class="header" href="#saving-the-configuration-file" id="saving-the-configuration-file">Saving the configuration file</a></h4>
 <h5><a class="header" href="#create-the-configtoml-file" id="create-the-configtoml-file">Create the config.toml file</a></h5>
@@ -695,10 +687,84 @@ Done!
 <h4><a class="header" href="#next-steps-4" id="next-steps-4">Next Steps</a></h4>
 <p>In the next section, <a href="./connect_chains.html">&quot;Connecting the chains&quot;</a>, you will learn how to execute transactions and queries on the relayer in order to relay packets.</p>
 <h1><a class="header" href="#connecting-the-chains" id="connecting-the-chains">Connecting the chains</a></h1>
-<p>In this section we will configure everything needed in order to relay packets, such as clients, connections, and channels.</p>
-<blockquote>
-<p><strong>NOTE</strong>: The commands below assume you are in the scripts folder =&gt; <strong><code>ibc-rs/scripts</code></strong></p>
-</blockquote>
+<p>In the rest of this section we will show how to create the clients, establish a connection and a channel between the two chains, and relay packets over the channel. But first, a note on identifiers.</p>
+<h2><a class="header" href="#identifiers" id="identifiers">Identifiers</a></h2>
+<p>A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.</p>
+<p>Chains allocate identifiers using a chain specific allocation scheme.
+Currently, cosmos-SDK implementation uses:</p>
+<ul>
+<li>
+<p><code>07-tendermint-&lt;n&gt;</code> for tendermint clients</p>
+<ul>
+<li>For example <code>07-tendermin-0</code> is assigned to the first client created on <code>ibc-1</code>:
+<pre><code class="language-shell">hermes tx raw create-client ibc-1 ibc-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;CreateClient&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;client_type&quot;: &quot;Tendermint&quot;,
+      &quot;consensus_height&quot;: {
+        &quot;revision_height&quot;: 44895,
+        &quot;revision_number&quot;: 0
+      },
+      &quot;height&quot;: &quot;1&quot;
+    }
+  }
+}
+</code></pre>
+We will create a second client on <code>ibc-1</code> with identifier <code>07-tendermint-1</code> in the client tutorial.</li>
+</ul>
+</li>
+<li>
+<p><code>connection-&lt;n&gt;</code> for connections</p>
+<ul>
+<li>For example <code>connection-0</code> is assigned to the first connection created on <code>ibc-1</code>:
+<pre><code class="language-shell">tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+ &quot;status&quot;: &quot;success&quot;,
+ &quot;result&quot;: {
+   &quot;OpenInitConnection&quot;: {
+     &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+     &quot;connection_id&quot;: &quot;connection-0&quot;,
+     &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+     &quot;counterparty_connection_id&quot;: null,
+     &quot;height&quot;: &quot;1&quot;
+   }
+ }
+}
+</code></pre>
+We will create a second connection on <code>ibc-1</code> with identifier <code>connection-1</code> in the connection tutorial.</li>
+</ul>
+</li>
+<li>
+<p><code>channel-&lt;n&gt;</code> for channels</p>
+<ul>
+<li>For example <code>channel-0</code> is assigned to the first channel created on <code>ibc-1</code>:
+<pre><code class="language-shell">hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer | jq
+</code></pre>
+<pre><code class="language-json">{
+&quot;status&quot;: &quot;success&quot;,
+&quot;result&quot;: {
+  &quot;OpenInitChannel&quot;: {
+    &quot;channel_id&quot;: &quot;channel-2&quot;,
+    &quot;connection_id&quot;: &quot;connection-0&quot;,
+    &quot;counterparty_channel_id&quot;: null,
+    &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+    &quot;height&quot;: &quot;1&quot;,
+    &quot;port_id&quot;: &quot;transfer&quot;
+  }
+}
+}
+</code></pre>
+We will create a second channel on <code>ibc-1</code> with identifier <code>channel-1</code> in the channel tutorial.</li>
+</ul>
+</li>
+</ul>
+<p>In the following tutorials the <code>ibc-0</code> and <code>ibc-1</code> chains are setup and configured. For clarity, the tutorials run on a setup where the identifiers allocated to the client, connection and channel on <code>ibc-0</code> are <code>07-tendermint-0</code>, <code>connection-0</code> and <code>channel-0</code> respectively. Identifiers allocated to the client, connection and channel on <code>ibc-1</code> are <code>07-tendermint-1</code>, <code>connection-1</code> and <code>channel-1</code> respectively.</p>
+<p>If you want to ensure you get the same identifiers while following the tutorial, run the above three commands once on <code>ibc-1</code> before going over the next sections.</p>
 <h2><a class="header" href="#steps-to-start-relaying-packets-between-the-two-local-chains" id="steps-to-start-relaying-packets-between-the-two-local-chains">Steps to start relaying packets between the two local chains</a></h2>
 <p>In order to start relaying packets please follow the steps below:</p>
 <ul>
@@ -740,7 +806,7 @@ Done!
 }
 </code></pre>
 <blockquote>
-<p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands</p>
+<p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands.</p>
 </blockquote>
 <p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> and also specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
 <pre><code class="language-shell">hermes query client state ibc-0 07-tendermint-0
@@ -788,8 +854,7 @@ Done!
 <pre><code class="language-shell">hermes tx raw create-client ibc-1 ibc-0
 </code></pre>
 <p>Take note of the <code>client_id</code> allocated for this client. In the examples we assume is <code>07-tendermint-1</code>.</p>
-<p><strong>Note</strong>: You can create a client on <code>ibc-1</code> and the chain will assign <code>07-tendermint-1</code> as its <code>client_id</code></p>
-<p>As before, if the (second) command is successful a message with <code>status:success</code> is displayed:</p>
+<p>As before, if the command is successful a message with <code>status:success</code> is displayed:</p>
 <pre><code class="language-json">{
     &quot;status&quot;: &quot;success&quot;,
     &quot;result&quot;: {
@@ -815,21 +880,21 @@ Done!
 <p>In the next section, we'll establish the <a href="./relay_conn.html">Connection Handshake</a></p>
 <h1><a class="header" href="#2-connection-handshake" id="2-connection-handshake">2. Connection Handshake</a></h1>
 <h3><a class="header" href="#21-conn-init" id="21-conn-init">2.1 <code>conn-init</code></a></h3>
+<p>Initialize a new connection on <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-0</code> on <code>ibc-0</code> in order to use it in the <code>conn-try</code> command below.</p>
 <h3><a class="header" href="#22-conn-try" id="22-conn-try">2.2 <code>conn-try</code></a></h3>
-<p><strong>Note</strong>: If this is the first connection to be created on <code>ibc-1</code>, prior to the <code>conn-try</code> command, you can send a <code>conn-init</code> to <code>ibc-1</code> and the chain will allocate <code>connection-0</code>. This will ensure that the next available ID, <code>connection-1</code>, will be allocated in <code>conn-try</code>.</p>
-<pre><code class="language-shell">hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
-</code></pre>
-<p>To send a <code>conn-try</code> message to <code>ibc-1</code>:</p>
+<p>Send a connection try to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-0 07-tendermint-1 -s connection-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>connection-1</code> on <code>ibc-1</code>. Use in the <code>conn-ack</code> CLI</p>
 <h3><a class="header" href="#23-conn-ack" id="23-conn-ack">2.3 conn-ack</a></h3>
+<p>Send a connection open acknowledgment to <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1
 </code></pre>
 <h3><a class="header" href="#24-conn-confirm" id="24-conn-confirm">2.4 conn-confirm</a></h3>
+<p>Send the open confirmation to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0
 </code></pre>
 <h3><a class="header" href="#25-query-connection" id="25-query-connection">2.5 query connection</a></h3>
@@ -839,23 +904,23 @@ Done!
 <pre><code class="language-shell">hermes query connection end ibc-0 connection-0
 </code></pre>
 <h2><a class="header" href="#next-steps-6" id="next-steps-6">Next Steps</a></h2>
-<p>In the next section, we'll <a href="./relay_channel.html">Open the Channel</a></p>
-<h1><a class="header" href="#3-open-the-channel" id="3-open-the-channel">3. Open the Channel</a></h1>
+<p>In the next section, we'll <a href="./relay_channel.html">establish a new channel</a></p>
+<h1><a class="header" href="#3-channel-handshake" id="3-channel-handshake">3. Channel Handshake</a></h1>
 <h3><a class="header" href="#31-chan-open-init" id="31-chan-open-init">3.1 chan-open-init</a></h3>
+<p>Initialize a new channel on <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
 </code></pre>
 <h3><a class="header" href="#32-chan-open-try" id="32-chan-open-try">3.2 chan-open-try</a></h3>
-<p><strong>Note</strong>: If this is the first channel to be created on <code>ibc-1</code>, prior to the <code>chan-open-try</code> command, you can send a <code>chan-open-init</code> to <code>ibc-1</code> and the chain will allocate <code>channel-0</code>. This will ensure that the next available ID, <code>channel-1</code>, will be allocated in <code>chan-open-try</code>.</p>
-<pre><code class="language-shell">hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
-</code></pre>
-<p>To send the <code>chan-open-try</code> message to <code>ibc-1</code>:</p>
+<p>Send a channel open try to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
 </code></pre>
 <p>Take note of the ID allocated by the chain, e.g. <code>channel-1</code> on <code>ibc-1</code>. Use in the <code>chan-open-ack</code> CLI</p>
 <h3><a class="header" href="#33-chan-open-ack" id="33-chan-open-ack">3.3 chan-open-ack</a></h3>
+<p>Send a channel open acknowledgment to <code>ibc-0</code>:</p>
 <pre><code class="language-shell">hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 </code></pre>
 <h3><a class="header" href="#34-chan-open-confirm" id="34-chan-open-confirm">3.4 chan-open-confirm</a></h3>
+<p>Send the open confirmation to <code>ibc-1</code>:</p>
 <pre><code class="language-shell">hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
 </code></pre>
 <h3><a class="header" href="#35-query-channel" id="35-query-channel">3.5 query channel</a></h3>
@@ -865,7 +930,7 @@ Done!
 <pre><code class="language-shell">hermes query channel end ibc-1 transfer channel-1
 </code></pre>
 <h2><a class="header" href="#next-steps-7" id="next-steps-7">Next Steps</a></h2>
-<p>In the next section, we'll start to <a href="./relay_packet.html">Relay Packets</a></p>
+<p>In the next section, we'll start to <a href="./relay_packet.html">relay packets</a></p>
 <h1><a class="header" href="#4-relay-packets" id="4-relay-packets">4. Relay Packets</a></h1>
 <h3><a class="header" href="#41-query-balances" id="41-query-balances">4.1 Query balances:</a></h3>
 <ul>

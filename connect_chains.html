@@ -164,10 +164,84 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#connecting-the-chains" id="connecting-the-chains">Connecting the chains</a></h1>
-<p>In this section we will configure everything needed in order to relay packets, such as clients, connections, and channels.</p>
-<blockquote>
-<p><strong>NOTE</strong>: The commands below assume you are in the scripts folder =&gt; <strong><code>ibc-rs/scripts</code></strong></p>
-</blockquote>
+<p>In the rest of this section we will show how to create the clients, establish a connection and a channel between the two chains, and relay packets over the channel. But first, a note on identifiers.</p>
+<h2><a class="header" href="#identifiers" id="identifiers">Identifiers</a></h2>
+<p>A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.</p>
+<p>Chains allocate identifiers using a chain specific allocation scheme.
+Currently, cosmos-SDK implementation uses:</p>
+<ul>
+<li>
+<p><code>07-tendermint-&lt;n&gt;</code> for tendermint clients</p>
+<ul>
+<li>For example <code>07-tendermin-0</code> is assigned to the first client created on <code>ibc-1</code>:
+<pre><code class="language-shell">hermes tx raw create-client ibc-1 ibc-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;CreateClient&quot;: {
+      &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+      &quot;client_type&quot;: &quot;Tendermint&quot;,
+      &quot;consensus_height&quot;: {
+        &quot;revision_height&quot;: 44895,
+        &quot;revision_number&quot;: 0
+      },
+      &quot;height&quot;: &quot;1&quot;
+    }
+  }
+}
+</code></pre>
+We will create a second client on <code>ibc-1</code> with identifier <code>07-tendermint-1</code> in the client tutorial.</li>
+</ul>
+</li>
+<li>
+<p><code>connection-&lt;n&gt;</code> for connections</p>
+<ul>
+<li>For example <code>connection-0</code> is assigned to the first connection created on <code>ibc-1</code>:
+<pre><code class="language-shell">tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0 | jq
+</code></pre>
+<pre><code class="language-json">{
+ &quot;status&quot;: &quot;success&quot;,
+ &quot;result&quot;: {
+   &quot;OpenInitConnection&quot;: {
+     &quot;client_id&quot;: &quot;07-tendermint-0&quot;,
+     &quot;connection_id&quot;: &quot;connection-0&quot;,
+     &quot;counterparty_client_id&quot;: &quot;07-tendermint-0&quot;,
+     &quot;counterparty_connection_id&quot;: null,
+     &quot;height&quot;: &quot;1&quot;
+   }
+ }
+}
+</code></pre>
+We will create a second connection on <code>ibc-1</code> with identifier <code>connection-1</code> in the connection tutorial.</li>
+</ul>
+</li>
+<li>
+<p><code>channel-&lt;n&gt;</code> for channels</p>
+<ul>
+<li>For example <code>channel-0</code> is assigned to the first channel created on <code>ibc-1</code>:
+<pre><code class="language-shell">hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer | jq
+</code></pre>
+<pre><code class="language-json">{
+&quot;status&quot;: &quot;success&quot;,
+&quot;result&quot;: {
+  &quot;OpenInitChannel&quot;: {
+    &quot;channel_id&quot;: &quot;channel-2&quot;,
+    &quot;connection_id&quot;: &quot;connection-0&quot;,
+    &quot;counterparty_channel_id&quot;: null,
+    &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
+    &quot;height&quot;: &quot;1&quot;,
+    &quot;port_id&quot;: &quot;transfer&quot;
+  }
+}
+}
+</code></pre>
+We will create a second channel on <code>ibc-1</code> with identifier <code>channel-1</code> in the channel tutorial.</li>
+</ul>
+</li>
+</ul>
+<p>In the following tutorials the <code>ibc-0</code> and <code>ibc-1</code> chains are setup and configured. For clarity, the tutorials run on a setup where the identifiers allocated to the client, connection and channel on <code>ibc-0</code> are <code>07-tendermint-0</code>, <code>connection-0</code> and <code>channel-0</code> respectively. Identifiers allocated to the client, connection and channel on <code>ibc-1</code> are <code>07-tendermint-1</code>, <code>connection-1</code> and <code>channel-1</code> respectively.</p>
+<p>If you want to ensure you get the same identifiers while following the tutorial, run the above three commands once on <code>ibc-1</code> before going over the next sections.</p>
 <h2><a class="header" href="#steps-to-start-relaying-packets-between-the-two-local-chains" id="steps-to-start-relaying-packets-between-the-two-local-chains">Steps to start relaying packets between the two local chains</a></h2>
 <p>In order to start relaying packets please follow the steps below:</p>
 <ul>
