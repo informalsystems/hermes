@@ -46,10 +46,6 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --workspace --all-targets
-      - uses: actions-rs/cargo@v1
-        with:
           command: test
           args: --all-features --no-fail-fast
 
@@ -91,10 +87,12 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - run: echo "hello"
       - uses: actions-rs/cargo@v1
         with:
           command: build
           args: --workspace --all-targets --release
+      - run: cp ./target/release/hermes ci/
       - name: Build relayer image
         run: docker-compose -f ci/docker-compose.yml build relayer
       - name: Start chains and relayer
