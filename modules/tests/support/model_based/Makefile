@@ -1,6 +1,5 @@
 check:
-	apalache-mc check --inv=ModelNeverErrors ICS02.tla
+	apalache-mc check --inv=ModelNeverErrors IBC.tla
 
 test:
-	apalache-mc check ICS02Tests.tla
-
+	apalache-mc check IBCTests.tla
