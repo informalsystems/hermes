@@ -214,49 +214,49 @@ More details and feature comparison between the Rust and Go relayer implementati
 <h2><a class="header" href="#supported-features" id="supported-features">Supported Features</a></h2>
 <ul>
 <li>
-<p>establish a new relaying path (new clients, connection and unordered channel handshake)</p>
+<p>Establish a new relaying path (new clients, connection and unordered channel handshake)</p>
 </li>
 <li>
-<p>relay from packet events on a newly created, or an existing relaying path</p>
+<p>Relay from packet events on a newly created, or an existing relaying path</p>
 <p><strong>Limitations:</strong></p>
 <ul>
-<li>only one path per relayer instance</li>
-<li>relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup</li>
+<li>Only one path per relayer instance</li>
+<li>Relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup</li>
 </ul>
 </li>
 <li>
 <p>individual commands that build and send transactions for:</p>
 <ul>
-<li>creating and updating IBC Tendermint light clients</li>
-<li>sending connection open handshake datagrams</li>
-<li>sending channel open handshake datagrams</li>
-<li>sending channel closing handshake datagrams</li>
-<li>initiating a cross chain transfer (mainly for testing)</li>
-<li>relaying sent packets, acknowledgments and timeouts</li>
+<li>Creating and updating IBC Tendermint light clients</li>
+<li>Sending connection open handshake datagrams</li>
+<li>Sending channel open handshake datagrams</li>
+<li>Sending channel closing handshake datagrams</li>
+<li>Initiating a cross chain transfer (mainly for testing)</li>
+<li>Relaying sent packets, acknowledgments and timeouts</li>
 </ul>
 </li>
 </ul>
 <h2><a class="header" href="#upcoming--unsupported-features" id="upcoming--unsupported-features">Upcoming / Unsupported Features</a></h2>
 <p>Planned features:</p>
 <ul>
-<li>support for client upgrade and unfreezing</li>
-<li>connection handshake using existing clients and/or existing connection that is not in <code>Open</code> state</li>
-<li>channel handshake using existing clients, opened connection, and/ or existing channel that is not in <code>Open</code> state</li>
-<li>passive mode: relay from all IBC events</li>
-<li>support for relayer restart</li>
-<li>support for multiple paths</li>
-<li>close-to-0 configuration relayer</li>
-<li>relayer support for management application (add RPC server)</li>
+<li>Support for client upgrade and unfreezing</li>
+<li>Connection handshake using existing clients and/or existing connection that is not in <code>Open</code> state</li>
+<li>Channel handshake using existing clients, opened connection, and/ or existing channel that is not in <code>Open</code> state</li>
+<li>Passive mode: relay from all IBC events</li>
+<li>Support for relayer restart</li>
+<li>Support for multiple paths</li>
+<li>Close-to-0 configuration relayer</li>
+<li>Relayer support for management application (add RPC server)</li>
 </ul>
 <p>Not planned:</p>
 <ul>
-<li>relayer management application</li>
-<li>create clients with user chosen parameters (such as UpgradePath)</li>
-<li>monitor and submit misbehaviour for clients</li>
-<li>use IBC light clients other than Tendermint such as Solo Machine</li>
-<li>support non cosmos-SDK chains</li>
-<li>sending an UpgradePlan proposal for an IBC breaking upgrade</li>
-<li>upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes</li>
+<li>Relayer management application</li>
+<li>Create clients with user chosen parameters (such as UpgradePath)</li>
+<li>Monitor and submit misbehaviour for clients</li>
+<li>Use IBC light clients other than Tendermint such as Solo Machine</li>
+<li>Support non cosmos-SDK chains</li>
+<li>Sending an UpgradePlan proposal for an IBC breaking upgrade</li>
+<li>Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes</li>
 </ul>
 <h1><a class="header" href="#feature-matrix-implementation-comparison" id="feature-matrix-implementation-comparison">Feature Matrix, Implementation Comparison</a></h1>
 <p>This section gives more details on some of the features and implementation status for the Hermes Rust and the Cosoms Go relayers.</p>
