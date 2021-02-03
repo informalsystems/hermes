@@ -6,11 +6,13 @@ LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
+WORKDIR /repo
+
 # Add Python 3
 RUN apt-get update -y && apt-get install python3 -y
 
 # Copy relayer executable
-COPY ./hermes /usr/bin/hermes
+COPY ./target/release/hermes /usr/bin/hermes
 
 # Relayer folder
 WORKDIR /relayer
