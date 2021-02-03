@@ -31,7 +31,7 @@ if the command is successful a message similar to the one below will be displaye
 }
 ```
 
-> Note: Please note the `client_id` value returned. You will need that for other commands
+> Note: Please note the `client_id` value returned. You will need that for other commands.
 
 You can also execute a __query__ to view the client state on destination chain `ibc-0` and also specifying the `client_id` value `07-tendermint-0`:
 
@@ -89,9 +89,7 @@ hermes tx raw create-client ibc-1 ibc-0
 
 Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1`.
 
-__Note__: You can create a client on `ibc-1` and the chain will assign `07-tendermint-1` as its `client_id`
-
-As before, if the (second) command is successful a message with `status:success` is displayed:
+As before, if the command is successful a message with `status:success` is displayed:
 
 ```json
 {

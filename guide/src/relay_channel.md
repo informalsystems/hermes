@@ -1,20 +1,15 @@
-# 3. Open the Channel
+# 3. Channel Handshake
 
 ### 3.1 chan-open-init
 
+Initialize a new channel on `ibc-0`:
 ```shell
 hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer defaultChannel defaultChannel
 ```
 
 ### 3.2 chan-open-try
-__Note__: If this is the first channel to be created on `ibc-1`, prior to the `chan-open-try` command, you can send a `chan-open-init` to `ibc-1` and the chain will allocate `channel-0`. This will ensure that the next available ID, `channel-1`, will be allocated in `chan-open-try`.
 
-```shell
-hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer defaultChannel defaultChannel
-```
-
-To send the `chan-open-try` message to `ibc-1`:
-
+Send a channel open try to `ibc-1`:
 ```shell
 hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer defaultChannel channel-0
 ```
@@ -23,12 +18,14 @@ Take note of the ID allocated by the chain, e.g. `channel-1` on `ibc-1`. Use in 
 
 ### 3.3 chan-open-ack
 
+Send a channel open acknowledgment to `ibc-0`:
 ```shell
 hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 ```
 
 ### 3.4 chan-open-confirm
 
+Send the open confirmation to `ibc-1`:
 ```shell
 hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
 ```
@@ -46,4 +43,4 @@ hermes query channel end ibc-1 transfer channel-1
 
 ## Next Steps
 
-In the next section, we'll start to [Relay Packets](./relay_packet.md)
+In the next section, we'll start to [relay packets](./relay_packet.md)

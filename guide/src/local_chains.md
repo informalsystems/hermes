@@ -59,14 +59,6 @@ trusting_period = '14days'
 [chains.trust_threshold]
 numerator = '1'
 denominator = '3'
-
-[[connections]]
-a_chain = 'ibc-0'
-b_chain = 'ibc-1'
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
 ```
 
 #### Saving the configuration file
