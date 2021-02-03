@@ -20,7 +20,7 @@ More details and feature comparison between the Rust and Go relayer implementati
     - initiating a cross chain transfer (mainly for testing)
     - relaying sent packets, acknowledgments and timeouts
 
-## Upcoming/ Unsupported Features
+## Upcoming / Unsupported Features
 
 Planned features:
 - support for client upgrade and unfreezing
