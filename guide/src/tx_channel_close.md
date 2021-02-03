@@ -1,4 +1,3 @@
-[WIP]
 # Channel Close Handshake
 
 ## Channel Close Init
