@@ -6,6 +6,7 @@
 - [Introduction](./index.md)
     - [What is a relayer?](./relayer.md)
 - [Features](./features.md)
+    - [Feature Matrix](./feature_matrix.md)
 - [Getting Started](./getting_started.md)
    - [Pre-requisites](./pre_requisites.md)
    - [Installation](./installation.md)
