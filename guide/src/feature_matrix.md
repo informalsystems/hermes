@@ -1,6 +1,7 @@
 # Feature Matrix, Implementation Comparison
 
-This section gives more details on some of the features and implementation status for the Hermes Rust and the Cosoms Go relayers.
+This section gives more details on some of the features and implementation 
+status for the Hermes Rust and the [Cosmos Go relayer][cosmos-go-relayer].
 
 
 | Features \      Status | Hermes | Cosmos Go |
@@ -124,3 +125,5 @@ __Legend__:
 - Management-Static: provides means for configuration prior to being started
 - Management-Dynamic: provides means for configuration and monitorig during runtime
 
+
+[cosmos-go-relayer]: https://github.com/cosmos/relayer
