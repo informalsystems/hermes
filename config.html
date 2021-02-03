@@ -166,7 +166,7 @@
                         <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>In order to run Hermes, you will need to have a configuration file.</p>
 <p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a>.</p>
-<p>By default, Hermes expect the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
+<p>By default, Hermes expects the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
 <p>This can be overriden by supplying the <code>-c</code> flag when invoking <code>hermes</code>, before the
 name of the command to run, eg. <code>hermes -c my_config.toml query connection channels ibc-1 connection-1</code>.</p>
 <blockquote>
@@ -176,16 +176,16 @@ You will need to use a text editor to create the file and add content to it.</p>
 <pre><code class="language-bash">hermes [-c CONFIG_FILE] COMMAND
 </code></pre>
 <h2><a class="header" href="#sections" id="sections">Sections</a></h2>
-<p>The configuration file must have one <code>global</code> section, as well as contain one <code>chains</code> section for each chain.</p>
+<p>The configuration file must have one <code>global</code> section, and one <code>chains</code> section for each chain.</p>
 <h3><a class="header" href="#global" id="global"><code>[global]</code></a></h3>
 <p>The global section has parameters that apply globally to the relayer operation.</p>
 <h4><a class="header" href="#parameters" id="parameters">Parameters</a></h4>
 <ul>
 <li>
-<p><strong>timeout</strong>: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is <code>10s</code> (10 seconds)</p>
+<p><strong>timeout</strong>: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is <code>10s</code> (10 seconds).</p>
 </li>
 <li>
-<p><strong>strategy</strong>: Specify the strategy to be used by the relayer. Currently only <code>naive</code> is supported</p>
+<p><strong>strategy</strong>: Specify the strategy to be used by the relayer. Currently only <code>naive</code> is supported.</p>
 </li>
 <li>
 <p><strong>log_level</strong>: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is <code>info</code>.
@@ -193,14 +193,14 @@ For more information on parametrizing the log output, see the section
 <a href="./help.html#parametrizing-the-log-output-level">help/log-level</a>.</p>
 </li>
 </ul>
-<p>Here's an example for the <code>global</code> section:</p>
+<p>Here is an example for the <code>global</code> section:</p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
 log_level = 'info'
 </code></pre>
 <h3><a class="header" href="#chains" id="chains">[[chains]]</a></h3>
-<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client configuration peers for the chain.</p>
+<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client peers configured for the chain.</p>
 <h4><a class="header" href="#parameters-1" id="parameters-1">Parameters</a></h4>
 <ul>
 <li>
@@ -244,11 +244,11 @@ clock_drift = '5s'
 trusting_period = '14days'
 </code></pre>
 <h3><a class="header" href="#light-clients" id="light-clients">Light clients</a></h3>
-<p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> relayer command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
+<p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
 <h3><a class="header" href="#adding-private-keys" id="adding-private-keys">Adding Private Keys</a></h3>
-<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that will be used by the relayer.</p>
+<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that are used by the relayer.</p>
 <h3><a class="header" href="#example-configuration-file" id="example-configuration-file">Example configuration file</a></h3>
-<p>Here is an full example of a configuration file with two chains configured and light client peers added:</p>
+<p>Here is a full example of a configuration file with two chains configured and light client peers added:</p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
@@ -333,14 +333,6 @@ trusted_height = '5'
 [chains.peers.light_clients.store]
 type = 'disk'
 path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
-
-[[connections]]
-a_chain = &quot;ibc1&quot;
-b_chain = &quot;ibc0&quot;
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
 </code></pre>
 <h3><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h3>
 <p>Now that you learned how to build the relayer and how to create a configuration file, you can go to the <a href="./two_chains.html"><code>Two Chains</code></a> tutorial to learn how to perform some local testing connecting the relayer to two local chains.</p>

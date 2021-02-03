@@ -183,7 +183,7 @@
 </ul>
 <p><strong><a href="./commands.html">Commands Reference</a></strong></p>
 <ul>
-<li>The commands will let you interact with Hermes using its command-line interface.</li>
+<li>The commands let you interact with Hermes using its command line interface.</li>
 </ul>
 <p><strong><a href="./help.html">Help</a></strong></p>
 <ul>
@@ -193,7 +193,7 @@ requesting a feature, and getting in touch with us.</li>
 </ul>
 <p><strong><a href="./glossary.html">Glossary</a></strong></p>
 <ul>
-<li>This section provides some definitions to terms used throughout this guide</li>
+<li>This section provides some definitions of terms used throughout the guide</li>
 </ul>
 <hr />
 <p><strong>Other References and Useful Links:</strong></p>
@@ -206,8 +206,8 @@ requesting a feature, and getting in touch with us.</li>
 <p>THIS PROJECT IS UNDER HEAVY DEVELOPMENT AND IS NOT IN A WORKING STAGE NOW, USE AT YOUR OWN RISK.</p>
 </blockquote>
 <h1><a class="header" href="#what-is-a-relayer" id="what-is-a-relayer">What is a relayer?</a></h1>
-<p>A relayer is an off-chain process responsible for relaying IBC datagrams between two or more chains by scanning their states and submitting transactions. </p>
-<p>This is because in the IBC architecture, modules are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
+<p>A relayer is an off-chain process responsible for relaying IBC datagrams between any two chains by scanning chain states and submitting transactions.</p>
+<p>This is because in the IBC architecture, chain modules are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
 <h1><a class="header" href="#features" id="features">Features</a></h1>
 <p>[WIP]</p>
 <h2><a class="header" href="#supported-features" id="supported-features">Supported Features</a></h2>
@@ -264,8 +264,8 @@ requesting a feature, and getting in touch with us.</li>
 </blockquote>
 <h1><a class="header" href="#pre-requisites" id="pre-requisites">Pre-requisites</a></h1>
 <h2><a class="header" href="#1-rust" id="1-rust">1. Rust</a></h2>
-<p>The IBC Relayer is developed with the <a href="">Rust</a> programming language. In order to build and run the relayer you need to install and configure <code>Rust</code> in your machine.</p>
-<p>For instructions on how to install <code>Rust</code> on your machine please follow their official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>. </p>
+<p>The IBC Relayer is developed with the <a href="">Rust</a> programming language. In order to build and run the relayer you need to install and configure <code>Rust</code> on your machine.</p>
+<p>For instructions on how to install <code>Rust</code> on your machine please follow the official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>.</p>
 <p>The provided instructions will install all the Rust toolchain including <code>rustc</code>, <code>cargo</code>, and <code>rustup</code> that are required to build the project.</p>
 <h3><a class="header" href="#testing-the-installation" id="testing-the-installation">Testing the installation</a></h3>
 <p>After you install the <code>Rust</code> toolchain you can execute the following command:</p>
@@ -273,8 +273,8 @@ requesting a feature, and getting in touch with us.</li>
 </code></pre>
 <p>This should display the <code>cargo</code> version and confirm the proper installation.</p>
 <h2><a class="header" href="#2-golang" id="2-golang">2. Golang</a></h2>
-<p>You will also need the <strong>Go</strong> programming language installed and configured in your machine. This is a requirement for the the section <a href="./gaia.html">Installing Gaia</a> in the <a href="./two_chains.html">Two Local Chains</a> tutorial. </p>
-<p>To install and configure Golang in your machine please follow the <a href="https://golang.org/doc/install">Golang official documentation</a></p>
+<p>You will also need the <strong>Go</strong> programming language installed and configured on your machine. This is a requirement for the the section <a href="./gaia.html">Installing Gaia</a> in the <a href="./two_chains.html">Two Local Chains</a> tutorial.</p>
+<p>To install and configure Golang on your machine please follow the <a href="https://golang.org/doc/install">Golang official documentation</a></p>
 <h2><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h2>
 <p>Next, go to the <a href="./setup.html">Setup</a> section to learn how to build the relayer.</p>
 <h1><a class="header" href="#building-the-relayer" id="building-the-relayer">Building the Relayer</a></h1>
@@ -283,7 +283,7 @@ requesting a feature, and getting in touch with us.</li>
 <p>NOTE: This assumes you have installed all the <a href="./pre-requisites.html">pre-requisites</a> on your machine.</p>
 </blockquote>
 <h3><a class="header" href="#clone-the-repository" id="clone-the-repository">Clone the repository</a></h3>
-<p>Open a terminal and clone the repository:</p>
+<p>Open a terminal and clone the following <code>ibc-rs</code> repository:</p>
 <pre><code class="language-shell">git clone https://github.com/informalsystems/ibc-rs.git`
 </code></pre>
 <p>Change to the repository directory</p>
@@ -295,7 +295,7 @@ requesting a feature, and getting in touch with us.</li>
 <pre><code class="language-shell">git checkout v0.1.0
 </code></pre>
 <h3><a class="header" href="#building-with-cargo-build" id="building-with-cargo-build">Building with <code>cargo build</code></a></h3>
-<p>This command will build all the projects from the <a href="https://github.com/informalsystems/ibc-rs"><strong><code>ibc-rs</code></strong></a> repository including the <a href="https://github.com/informalsystems/ibc-rs/tree/master/modules"><strong><code>ibc</code></strong></a> modules crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer"><strong><code>ibc-relayer</code></strong></a> crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/proto"><strong><code>proto</code></strong></a> crate, and the <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> tool.</p>
+<p>This command builds all the projects from the <a href="https://github.com/informalsystems/ibc-rs"><strong><code>ibc-rs</code></strong></a> repository including the <a href="https://github.com/informalsystems/ibc-rs/tree/master/modules"><strong><code>ibc</code></strong></a> modules crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer"><strong><code>ibc-relayer</code></strong></a> crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/proto"><strong><code>proto</code></strong></a> crate, and the <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> tool.</p>
 <pre><code class="language-shell">cargo build --workspace --all --release
 </code></pre>
 <p>If the build is successful, the <code>hermes</code> executable will be located in the following location:</p>
@@ -312,25 +312,25 @@ USAGE:
 
 SUBCOMMANDS:
     help       get usage information
-    start      start the relayer (currently this refers to the v0 relayer)
-    listen     listen to IBC events
-    config     manipulate the relayer configuration
-    version    display version information
-    query      query state from chain
-    tx         create IBC transactions on configured chains
-    light      basic functionality for managing the lite clients
     keys       manage keys in the relayer for each chain
+    light      basic functionality for managing the light clients
+    start      start the relayer
+    channel    channel functionality for managing channels
+    query      query state from chain
+    tx         create and send IBC transactions
+    listen     listen to and display IBC events emitted by a chain
+    version    display version information
 </code></pre>
 <h3><a class="header" href="#creating-an-alias-for-the-executable" id="creating-an-alias-for-the-executable">Creating an alias for the executable</a></h3>
 <p>It might be easier to create an alias for <code>hermes</code> so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:</p>
 <pre><code class="language-shell">alias hermes='cargo run --release --bin hermes --'
 </code></pre>
 <h3><a class="header" href="#next-steps-1" id="next-steps-1">Next Steps</a></h3>
-<p>Next, go to the <a href="./config.html"><code>Configuration</code></a> section to learn how to create a configuration file to be used by <code>Hermes</code>.</p>
+<p>Go to the <a href="./config.html"><code>Configuration</code></a> section to learn how to create a configuration file to be used by <code>Hermes</code>.</p>
 <h1><a class="header" href="#configuration" id="configuration">Configuration</a></h1>
 <p>In order to run Hermes, you will need to have a configuration file.</p>
 <p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a>.</p>
-<p>By default, Hermes expect the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
+<p>By default, Hermes expects the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
 <p>This can be overriden by supplying the <code>-c</code> flag when invoking <code>hermes</code>, before the
 name of the command to run, eg. <code>hermes -c my_config.toml query connection channels ibc-1 connection-1</code>.</p>
 <blockquote>
@@ -340,16 +340,16 @@ You will need to use a text editor to create the file and add content to it.</p>
 <pre><code class="language-bash">hermes [-c CONFIG_FILE] COMMAND
 </code></pre>
 <h2><a class="header" href="#sections-1" id="sections-1">Sections</a></h2>
-<p>The configuration file must have one <code>global</code> section, as well as contain one <code>chains</code> section for each chain.</p>
+<p>The configuration file must have one <code>global</code> section, and one <code>chains</code> section for each chain.</p>
 <h3><a class="header" href="#global" id="global"><code>[global]</code></a></h3>
 <p>The global section has parameters that apply globally to the relayer operation.</p>
 <h4><a class="header" href="#parameters" id="parameters">Parameters</a></h4>
 <ul>
 <li>
-<p><strong>timeout</strong>: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is <code>10s</code> (10 seconds)</p>
+<p><strong>timeout</strong>: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is <code>10s</code> (10 seconds).</p>
 </li>
 <li>
-<p><strong>strategy</strong>: Specify the strategy to be used by the relayer. Currently only <code>naive</code> is supported</p>
+<p><strong>strategy</strong>: Specify the strategy to be used by the relayer. Currently only <code>naive</code> is supported.</p>
 </li>
 <li>
 <p><strong>log_level</strong>: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is <code>info</code>.
@@ -357,14 +357,14 @@ For more information on parametrizing the log output, see the section
 <a href="./help.html#parametrizing-the-log-output-level">help/log-level</a>.</p>
 </li>
 </ul>
-<p>Here's an example for the <code>global</code> section:</p>
+<p>Here is an example for the <code>global</code> section:</p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
 log_level = 'info'
 </code></pre>
 <h3><a class="header" href="#chains" id="chains">[[chains]]</a></h3>
-<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client configuration peers for the chain.</p>
+<p>A <code>chains</code> section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client peers configured for the chain.</p>
 <h4><a class="header" href="#parameters-1" id="parameters-1">Parameters</a></h4>
 <ul>
 <li>
@@ -408,11 +408,11 @@ clock_drift = '5s'
 trusting_period = '14days'
 </code></pre>
 <h3><a class="header" href="#light-clients" id="light-clients">Light clients</a></h3>
-<p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> relayer command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
+<p>The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the <code>relayer light add</code> command. Please see the <a href="./light_clients.html">Light Clients</a> section to learn how to configure them.</p>
 <h3><a class="header" href="#adding-private-keys" id="adding-private-keys">Adding Private Keys</a></h3>
-<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that will be used by the relayer.</p>
+<p>For each chain configured you need to add a private key for that chain in order to submit <a href="./transactions.html">transactions</a>, please refer to the <a href="./keys.html">Keys</a> sections in order to learn how to add the private keys that are used by the relayer.</p>
 <h3><a class="header" href="#example-configuration-file" id="example-configuration-file">Example configuration file</a></h3>
-<p>Here is an full example of a configuration file with two chains configured and light client peers added:</p>
+<p>Here is a full example of a configuration file with two chains configured and light client peers added:</p>
 <pre><code class="language-toml">[global]
 timeout = '10s'
 strategy = 'naive'
@@ -497,14 +497,6 @@ trusted_height = '5'
 [chains.peers.light_clients.store]
 type = 'disk'
 path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
-
-[[connections]]
-a_chain = &quot;ibc1&quot;
-b_chain = &quot;ibc0&quot;
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
 </code></pre>
 <h3><a class="header" href="#next-steps-2" id="next-steps-2">Next Steps</a></h3>
 <p>Now that you learned how to build the relayer and how to create a configuration file, you can go to the <a href="./two_chains.html"><code>Two Chains</code></a> tutorial to learn how to perform some local testing connecting the relayer to two local chains.</p>
