@@ -66,7 +66,7 @@ __Legend__:
 | `Cl`              | client related                                                                                   |
 | `Conn`            | connection related                                                                               |
 | `Chan`            | channel related                                                                                  |
-| `..-Handshake-..` | can execute all transactions required to finish a handshake from a single command                |
+| `..Handshake..`   | can execute all transactions required to finish a handshake from a single command                |
 | `..-<msg>-A`      | building and sending `msg` from a command that scans chain state                                 |
 | `..-<msg>-P`      | building and sending `msg` from IBC event, doesn't apply to `..-Init` and `FT-Transfer` features |
 
@@ -114,7 +114,7 @@ __Legend__:
 - Packet-TimeoutClose-A
 - Packet-TimeoutClose-P
 
-- Upgrade-Plan-Proposal: submit `UpgradePlan` proposals for an IBC breaking upgrades
+- Upgrade-Plan-Proposal: submit `UpgradePlan` proposals for IBC breaking upgrades
 - Cl-Unfreeze-Proposal: submit IBC client unfreezing proposals
 - Cl-Misbehavior: monitors and submits IBC client misbehavior
 
