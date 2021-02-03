@@ -91,7 +91,7 @@ jobs:
         with:
           command: build
           args: --workspace --all-targets
-      - run: cp ./target/release/hermes ci/
+      - run: cp ./target/debug/hermes .
       - name: Build relayer image
         run: docker-compose -f ci/docker-compose.yml build relayer
       - name: Start chains and relayer

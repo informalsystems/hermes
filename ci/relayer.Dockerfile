@@ -12,7 +12,7 @@ WORKDIR /repo
 RUN apt-get update -y && apt-get install python3 -y
 
 # Copy relayer executable
-COPY ./target/release/hermes /usr/bin/hermes
+COPY ./hermes /usr/bin/hermes
 
 # Relayer folder
 WORKDIR /relayer
