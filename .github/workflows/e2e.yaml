@@ -13,7 +13,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --workspace --all-targets
+          args: --workspace
       - run: cp ./target/debug/hermes .
       - name: Build relayer image
         run: docker-compose -f ci/docker-compose.yml build relayer
