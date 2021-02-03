@@ -6,10 +6,15 @@
 ![Rust Stable][rustc-image]
 ![Rust 1.49+][rustc-version]
 
-Rust implementation of Interblockchain Communication (IBC) **modules** and 
-**relayer**. The relayer is split into two crates: a library, and the 
-relayer CLI comprising the main binary, called `hermes`.
-See the table below.
+Rust implementation of the Inter-Blockchain Communication (IBC) protocol.
+
+This project consists of the following crates:
+ 
+ - The [`ibc`](https://docs.rs/ibc) crate defines the main data structures and on-chain logic  for the IBC protocol.
+- The [`ibc-relayer`](https://docs.rs/ibc-relayer) crate provides an implementation of an IBC relayer, as a library.
+- [`hermes`](https://hermes.informal.systems) is a command-line interface for the IBC relayer provided by this project.
+
+See the table below for details.
 
 Includes [TLA+ specifications](/docs/spec).
 
@@ -82,7 +87,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
 [e2e-image]: https://github.com/informalsystems/ibc-rs/workflows/End%20to%20End%20testing/badge.svg
 [e2e-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22
-[license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
+[license-image]: https://img.shields.io/badge/license-Apache_2.0-blue.svg
 [license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 [rustc-version]: https://img.shields.io/badge/rustc-1.49+-blue.svg
