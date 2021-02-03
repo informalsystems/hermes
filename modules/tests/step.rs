@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct State {
+pub struct Step {
     pub action: Action,
 
     #[serde(alias = "actionOutcome")]

@@ -1,5 +1,5 @@
 mod modelator;
-mod state;
+mod step;
 
 use ibc::ics02_client::client_def::AnyHeader;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
@@ -24,10 +24,10 @@ use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::Height;
-use state::{ActionOutcome, ActionType, State};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
+use step::{ActionOutcome, ActionType, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
@@ -133,31 +133,31 @@ impl ICS02TestExecutor {
     }
 }
 
-impl modelator::TestExecutor<State> for ICS02TestExecutor {
-    fn check_initial_state(&mut self, state: State) -> bool {
+impl modelator::TestExecutor<Step> for ICS02TestExecutor {
+    fn initial_step(&mut self, step: Step) -> bool {
         assert_eq!(
-            state.action.action_type,
+            step.action.action_type,
             ActionType::Null,
             "unexpected action type"
         );
         assert_eq!(
-            state.action_outcome,
+            step.action_outcome,
             ActionOutcome::Null,
             "unexpected action outcome"
         );
         true
     }
 
-    fn check_next_state(&mut self, state: State) -> bool {
-        match state.action.action_type {
+    fn next_step(&mut self, step: Step) -> bool {
+        match step.action.action_type {
             ActionType::Null => panic!("unexpected action type"),
             ActionType::ICS02CreateClient => {
                 // get action parameters
-                let chain_id = state
+                let chain_id = step
                     .action
                     .chain_id
                     .expect("create client action should have a chain identifier");
-                let height = state
+                let height = step
                     .action
                     .height
                     .expect("create client action should have a height");
@@ -174,7 +174,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 let result = ctx.deliver(msg);
 
                 // check the expected outcome: client create always succeeds
-                match state.action_outcome {
+                match step.action_outcome {
                     ActionOutcome::ICS02CreateOK => {
                         // the implementaion matches the model if no error occurs
                         result.is_ok()
@@ -184,15 +184,15 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
             }
             ActionType::ICS02UpdateClient => {
                 // get action parameters
-                let chain_id = state
+                let chain_id = step
                     .action
                     .chain_id
                     .expect("update client action should have a chain identifier");
-                let client_id = state
+                let client_id = step
                     .action
                     .client_id
                     .expect("update client action should have a client identifier");
-                let height = state
+                let height = step
                     .action
                     .height
                     .expect("update client action should have a height");
@@ -209,7 +209,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 let result = ctx.deliver(msg);
 
                 // check the expected outcome
-                match state.action_outcome {
+                match step.action_outcome {
                     ActionOutcome::ICS02UpdateOK => {
                         // the implementaion matches the model if no error occurs
                         result.is_ok()
@@ -236,15 +236,15 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
             }
             ActionType::ICS03ConnectionOpenInit => {
                 // get action parameters
-                let chain_id = state
+                let chain_id = step
                     .action
                     .chain_id
                     .expect("connection open init action should have a chain identifier");
-                let client_id = state
+                let client_id = step
                     .action
                     .client_id
                     .expect("connection open init action should have a client identifier");
-                let counterparty_client_id = state.action.counterparty_client_id.expect(
+                let counterparty_client_id = step.action.counterparty_client_id.expect(
                     "connection open init action should have a counterparty client identifier",
                 );
 
@@ -264,7 +264,7 @@ impl modelator::TestExecutor<State> for ICS02TestExecutor {
                 let result = ctx.deliver(msg);
 
                 // check the expected outcome
-                match state.action_outcome {
+                match step.action_outcome {
                     ActionOutcome::ICS03ConnectionOpenInitOK => {
                         // the implementaion matches the model if no error occurs
                         result.is_ok()
