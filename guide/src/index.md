@@ -22,8 +22,9 @@ This guide can be used to help you setup, configure and operate Hermes to transf
 
 **[Help](./help.md)**
 
-- This part provides guidelines regarding troubleshooting, feature request, and 
-  general resources for getting help.
+- This part provides general resources and guidelines regarding 
+  troubleshooting: profiling `hermes`, log level configuration, submitting a bug,
+  requesting a feature, and getting in touch with us.
 
 **[Glossary](./glossary.md)**
 

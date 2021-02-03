@@ -41,5 +41,4 @@
    - [Relayer Listen Mode](./listen.md)
 - [Help](help.md)
 - [Glossary](./glossary.md)
-- [Miscellaneous](./miscellaneous.md)
 ---

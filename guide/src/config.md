@@ -31,6 +31,8 @@ The global section has parameters that apply globally to the relayer operation.
 * __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported
 
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
+For more information on parametrizing the log output, see the section
+  [help/log-level][log-level].
 
 Here's an example for the `global` section:
 
@@ -190,3 +192,5 @@ b_port = 'transfer'
 ### Next Steps
 
 Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./two_chains.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
+
+[log-level]: ./help.html#parametrizing-the-log-output-level
