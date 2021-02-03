@@ -18,7 +18,7 @@ This guide can be used to help you setup, configure and operate Hermes to transf
 
 **[Commands Reference](./commands.md)**
 
-- The commands will let you interact with Hermes using its command-line interface.
+- The commands let you interact with Hermes using its command line interface.
 
 **[Help](./help.md)**
 
@@ -28,7 +28,7 @@ This guide can be used to help you setup, configure and operate Hermes to transf
 
 **[Glossary](./glossary.md)**
 
-- This section provides some definitions to terms used throughout this guide
+- This section provides some definitions of terms used throughout the guide
 
 ---
 

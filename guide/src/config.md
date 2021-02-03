@@ -4,7 +4,7 @@ In order to run Hermes, you will need to have a configuration file.
 
 The format supported for the configuration file is [TOML](https://toml.io/en/).
 
-By default, Hermes expect the configuration file to be located at `$HOME/.hermes/config.toml`.
+By default, Hermes expects the configuration file to be located at `$HOME/.hermes/config.toml`.
 
 This can be overriden by supplying the `-c` flag when invoking `hermes`, before the
 name of the command to run, eg. `hermes -c my_config.toml query connection channels ibc-1 connection-1`.
@@ -18,7 +18,7 @@ hermes [-c CONFIG_FILE] COMMAND
 
 ## Sections
 
-The configuration file must have one `global` section, as well as contain one `chains` section for each chain.
+The configuration file must have one `global` section, and one `chains` section for each chain.
 
 ### `[global]`
 
@@ -26,15 +26,15 @@ The global section has parameters that apply globally to the relayer operation.
 
 #### Parameters
 
-* __timeout__: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is `10s` (10 seconds)
+* __timeout__: Specify the maximum amount of time (duration) that the operations should take before timing out. Default value is `10s` (10 seconds).
 
-* __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported
+* __strategy__: Specify the strategy to be used by the relayer. Currently only `naive` is supported.
 
 * __log_level__: Specify the verbosity for the relayer logging output. Valid options are 'error', 'warn', 'info', 'debug', 'trace'. Default value is `info`.
 For more information on parametrizing the log output, see the section
   [help/log-level][log-level].
 
-Here's an example for the `global` section:
+Here is an example for the `global` section:
 
 ```toml
 [global]
@@ -45,7 +45,7 @@ log_level = 'info'
 
 ### [[chains]]
 
-A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client configuration peers for the chain.
+A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client peers configured for the chain.
 
 #### Parameters
 
@@ -84,15 +84,15 @@ trusting_period = '14days'
 
 ### Light clients
 
-The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the `relayer light add` relayer command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
+The configuration file stores information about the light client peers. This configuration can be added to the configuration file when running the `relayer light add` command. Please see the [Light Clients](./light_clients.md) section to learn how to configure them.
 
 ### Adding Private Keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./transactions.md), please refer to the [Keys](./keys.md) sections in order to learn how to add the private keys that will be used by the relayer.
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./transactions.md), please refer to the [Keys](./keys.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ### Example configuration file
 
-Here is an full example of a configuration file with two chains configured and light client peers added:
+Here is a full example of a configuration file with two chains configured and light client peers added:
 
 ```toml
 [global]
@@ -179,14 +179,6 @@ trusted_height = '5'
 [chains.peers.light_clients.store]
 type = 'disk'
 path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
-
-[[connections]]
-a_chain = "ibc1"
-b_chain = "ibc0"
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
 ```
 
 ### Next Steps

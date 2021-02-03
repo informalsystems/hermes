@@ -45,37 +45,37 @@ pub enum CliCmd {
     #[options(help = "get usage information")]
     Help(Help<Self>),
 
+    /// The `keys` subcommand
+    #[options(help = "manage keys in the relayer for each chain")]
+    Keys(KeysCmd),
+
+    /// The `light` subcommand
+    #[options(help = "basic functionality for managing the light clients")]
+    Light(LightCmd),
+
     /// The `start` subcommand
-    #[options(help = "start the relayer (currently this refers to the v0 relayer)")]
+    #[options(help = "start the relayer")]
     Start(StartCmd),
 
     /// The `channel` subcommand
     #[options(help = "channel functionality for managing channels")]
     Channel(ChannelCmds),
 
-    /// The `listen` subcommand
-    #[options(help = "listen to IBC events")]
-    Listen(ListenCmd),
-
-    /// The `version` subcommand
-    #[options(help = "display version information")]
-    Version(VersionCmd),
-
     /// The `query` subcommand
     #[options(help = "query state from chain")]
     Query(QueryCmd),
 
     /// The `tx` subcommand
-    #[options(help = "create IBC transactions on configured chains")]
+    #[options(help = "create and send IBC transactions")]
     Tx(TxCmd),
 
-    /// The `light` subcommand
-    #[options(help = "basic functionality for managing the lite clients")]
-    Light(LightCmd),
+    /// The `listen` subcommand
+    #[options(help = "listen to and display IBC events emitted by a chain")]
+    Listen(ListenCmd),
 
-    /// The `keys` subcommand
-    #[options(help = "manage keys in the relayer for each chain")]
-    Keys(KeysCmd),
+    /// The `version` subcommand
+    #[options(help = "display version information")]
+    Version(VersionCmd),
 }
 
 /// This trait allows you to define how application configuration is loaded.
