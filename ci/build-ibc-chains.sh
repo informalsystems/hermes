@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
 ## Programmatic list for creating Gaia Hub chains for testing IBC.
-## Instead of blindly running this code, read it line by line and understand the dependecies and tasks.
+## Instead of blindly running this code, read it line by line and understand the dependencies and tasks.
 ## Prerequisites: Log into Docker Hub
 set -eou pipefail
-GAIA_BRANCH="v3.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
+
+## After updating the gaia version below, double-check the following (see readme.md also):
+##   - the new version made it to docker hub, and is available for download, e.g. `docker pull informaldev/ibc-1:v4.0.0`
+##   - the image versions and the relayer release in `docker-compose.yml` are consistent with the new version
+GAIA_BRANCH="v4.0.0" # Requires a version with the `--keyring-backend` option. v2.1 and above.
 
 BASE_DIR="$(dirname $0)"
 ONE_CHAIN="$BASE_DIR/../scripts/one-chain"
@@ -50,6 +54,6 @@ echo "*** Create Docker image and upload to Docker Hub"
 docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 -f --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 -f --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 
-read -p "Press ENTER to push image to Docker Hub or CTRL-C to cancel. " dontcare
+read -p "Press ANY KEY to push image to Docker Hub, or CTRL-C to cancel. " dontcare
 docker push informaldev/ibc-0:$GAIA_BRANCH
 docker push informaldev/ibc-1:$GAIA_BRANCH
