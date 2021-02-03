@@ -4,15 +4,18 @@ This section provides guidelines regarding troubleshooting and general
 resources for getting help with `hermes`.
 For this purpose, we recommend a few ideas that could be of help:
 
-- [profile][profiling] the binary to identify slow methods;
-- [configure][log-level] the `log_level` so that the relayer will print
-  more useful information that could help with debugging;
-- consult the [list of reported issues][issues] and search by relevant keywords
-  to see if you're dealing with a known problem;
+- [profile][profiling] your relayer binary to identify slow methods;
+- [configure][log-level] the `log_level` to help with debugging;
+- [patch][patching] your local gaia chain(s) to enable some corner-case methods 
+  (e.g., channel close);
+  
+And if the above do not help:
+- you can [request a new feature][feature];
+- or consult the [list of reported issues][issues] and search by relevant 
+  keywords to see if you're dealing with a known problem;
 - we would be grateful if you can submit a [bug report][bug-report]
   discussing any problem you find, and from there on we can look at the 
   problem together;
-- you can also [request a feature][feature].
 
 Lastly, for general questions, you can reach us at `hello@informal.systems`, 
 or on Twitter [@informalinc][twitter].
@@ -145,6 +148,80 @@ produced:
 {"status":"error","result":["query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)"]}
 ```
 
+## Patching `gaia`
+
+The guide below refers specifically to patching your gaia chain so that the 
+relayer can initiate the closing of channels by submitting a [`chan-close-init` 
+transaction][chan-close].
+Without this modification, the transaction will be rejected.
+We also describe how to test the channel closing feature.
+
+- Clone the Cosmos SDK
+
+    ```shell script
+    git clone https://github.com/cosmos/cosmos-sdk.git ~/go/src/github.com/cosmos/cosmos-sdk
+    cd ~/go/src/github.com/cosmos/cosmos-sdk
+    ```
+
+- Apply these diffs:
+
+    ```
+       --- a/x/ibc/applications/transfer/module.go
+       +++ b/x/ibc/applications/transfer/module.go
+       @@ -305,7 +305,7 @@ func (am AppModule) OnChanCloseInit(
+               channelID string,
+        ) error {
+               // Disallow user-initiated channel closing for transfer channels
+       -       return sdkerrors.Wrap(sdkerrors.ErrInvalidRequest, "user cannot close channel")
+       +       return nil
+        }
+    ```
+
+- Append the line below (watch for the placeholder `<your>`) as the last line
+  in your `go.mod` in the gaia clone:
+
+```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
+
+- Now `make build` and `make install` your local copy of gaia
+
+In order to test the correct operation during the channel close, perform the steps below.
+
+- the channel should be in state open-open:
+
+- transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+  Tx to `ibc-1` for a `MsgTransfer` packet.
+  Make sure you're not relaying this packet (the relayer should not be running on
+  this path).
+
+  ```shell script
+  hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
+  ```
+
+- now do the first step of channel closing: the channel will transition 
+to close-open:
+
+    ```shell script
+    hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
+    ```
+
+- trigger timeout on close to ibc-1
+
+    ```shell script
+    hermes -c config.toml tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+    ```
+
+- close-close
+
+    ```shell script
+    hermes -c config.toml tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer channel-1 channel-0
+    ```
+
+- verify that the two ends are in Close state:
+
+  ```shell script
+  hermes -c config.toml query channel end ibc-0 transfer channel-0
+  hermes -c config.toml query channel end ibc-1 transfer channel-1
+  ```
 
 ## New Feature Request
 
@@ -162,3 +239,5 @@ issue template.
 [issues]: https://github.com/informalsystems/ibc-rs/issues
 [profiling]: ./help.md#profiling
 [feature]: ./help.html#new-feature-request
+[patching]: ./help.html#patching-gaia
+[chan-close]: ./tx_channel_close.html#channel-close-init
