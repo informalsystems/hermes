@@ -8,7 +8,7 @@
 - [Features](./features.md)
 - [Getting Started](./getting_started.md)
    - [Pre-requisites](./pre_requisites.md)
-   - [Setup](./setup.md)
+   - [Installation](./installation.md)
    - [Configuration](./config.md)
 - [Tutorials](./tutorials.md)
    - [Two Local Chains](./two_chains.md)
