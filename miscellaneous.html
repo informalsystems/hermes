@@ -1,0 +1,306 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Miscellaneous - Hermes Documentation</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes (IBC Relayer)</li><li class="spacer"></li><li class="chapter-item expanded "><a href="index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="relayer.html"><strong aria-hidden="true">1.1.</strong> What is a relayer?</a></li></ol></li><li class="chapter-item expanded "><a href="features.html"><strong aria-hidden="true">2.</strong> Features</a></li><li class="chapter-item expanded "><a href="getting_started.html"><strong aria-hidden="true">3.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="pre_requisites.html"><strong aria-hidden="true">3.1.</strong> Pre-requisites</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">3.2.</strong> Setup</a></li><li class="chapter-item expanded "><a href="config.html"><strong aria-hidden="true">3.3.</strong> Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="tutorials.html"><strong aria-hidden="true">4.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="two_chains.html"><strong aria-hidden="true">4.1.</strong> Two Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gaia.html"><strong aria-hidden="true">4.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="local_chains.html"><strong aria-hidden="true">4.1.2.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="tutorial_raw.html"><strong aria-hidden="true">4.1.3.</strong> Connect the chains using raw transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial_client_raw.html"><strong aria-hidden="true">4.1.3.1.</strong> Configure Clients</a></li><li class="chapter-item expanded "><a href="tutorial_conn_raw.html"><strong aria-hidden="true">4.1.3.2.</strong> Connection Handshake Steps</a></li><li class="chapter-item expanded "><a href="tutorial_chan_open_raw.html"><strong aria-hidden="true">4.1.3.3.</strong> Channel Handshake Steps</a></li><li class="chapter-item expanded "><a href="tutorial_packet_raw.html"><strong aria-hidden="true">4.1.3.4.</strong> Relay Packets</a></li></ol></li><li class="chapter-item expanded "><a href="tutorial_relay_paths.html"><strong aria-hidden="true">4.1.4.</strong> Connect the chains using relay paths</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial_set_new_path.html"><strong aria-hidden="true">4.1.4.1.</strong> New Path</a></li><li class="chapter-item expanded "><a href="tutorial_relay_existing_path.html"><strong aria-hidden="true">4.1.4.2.</strong> Packet relaying on existing path</a></li><li class="chapter-item expanded "><a href="tutorial_relay_new_path.html"><strong aria-hidden="true">4.1.4.3.</strong> Packet relaying on new path</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="commands.html"><strong aria-hidden="true">5.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="keys.html"><strong aria-hidden="true">5.1.</strong> Keys</a></li><li class="chapter-item expanded "><a href="light_clients.html"><strong aria-hidden="true">5.2.</strong> Light Clients</a></li><li class="chapter-item expanded "><a href="relayer_loop.html"><strong aria-hidden="true">5.3.</strong> Path Setup and Streaming</a></li><li class="chapter-item expanded "><a href="transactions.html"><strong aria-hidden="true">5.4.</strong> Raw Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tx_client.html"><strong aria-hidden="true">5.4.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="tx_connection.html"><strong aria-hidden="true">5.4.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="tx_channel_open.html"><strong aria-hidden="true">5.4.3.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="tx_packet.html"><strong aria-hidden="true">5.4.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="tx_channel_close.html"><strong aria-hidden="true">5.4.5.</strong> Channel Close</a></li></ol></li><li class="chapter-item expanded "><a href="queries.html"><strong aria-hidden="true">5.5.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="query_client.html"><strong aria-hidden="true">5.5.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="query_connection.html"><strong aria-hidden="true">5.5.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="query_channel.html"><strong aria-hidden="true">5.5.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="query_packet.html"><strong aria-hidden="true">5.5.4.</strong> Packet</a></li></ol></li><li class="chapter-item expanded "><a href="listen.html"><strong aria-hidden="true">5.6.</strong> Relayer Listen Mode</a></li></ol></li><li class="chapter-item expanded "><a href="help.html"><strong aria-hidden="true">6.</strong> Help</a></li><li class="chapter-item expanded "><a href="glossary.html"><strong aria-hidden="true">7.</strong> Glossary</a></li><li class="chapter-item expanded "><a href="miscellaneous.html" class="active"><strong aria-hidden="true">8.</strong> Miscellaneous</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Hermes Documentation</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p>[WIP]</p>
+<h2><a class="header" href="#profiling-the-relayer" id="profiling-the-relayer">Profiling the relayer</a></h2>
+<p>The <code>relayer</code> crate provides a <code>time!</code> macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.</p>
+<h3><a class="header" href="#setup" id="setup">Setup</a></h3>
+<p>The <code>time!</code> macro has no effect unless the <code>profiling</code> feature of the <code>relayer</code> crate is enabled.</p>
+<p>To enable it, one must compile the <code>relayer-cli</code> crate with the <code>--features=profiling</code> flag.</p>
+<p>a) One way is to build the <code>relayer</code> binary and update the <code>hermes</code> alias to point to the executable:</p>
+<pre><code class="language-shellscript">$ cd relayer-cli/
+$ cargo build --features=profiling
+$ cd ..
+$ alias hermes=target/debug/relayer
+</code></pre>
+<p>b) Alternatively, one can use the <code>cargo run</code> command and update the alias accordingly:</p>
+<pre><code class="language-shellscript">$ alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
+</code></pre>
+<p>The <code>--manifest-path=relayer-cli/Cargo.toml</code> flag is needed for <code>cargo run</code> to accept the <code>--features</code> flag.</p>
+<h3><a class="header" href="#example" id="example">Example</a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn my_function(x: u32) -&gt; u32 {
+    time!(&quot;myfunction: x={}&quot;, x); // A
+
+    std::thread::sleep(Duration::from_secs(1));
+
+    {
+        time!(&quot;inner operation&quot;); // B
+
+        std::thread::sleep(Duration::from_secs(2));
+
+        // timer B ends here
+    }
+
+    x + 1
+
+    // timer A ends here
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h4><a class="header" href="#output" id="output">Output</a></h4>
+<pre><code>Jan 20 11:28:46.841  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - start
+Jan 20 11:28:47.842  INFO relayer::macros::profiling:    ⏳ inner operation - start
+Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - elapsed: 2004ms
+Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
+</code></pre>
+<h2><a class="header" href="#parametrizing-the-log-output-level" id="parametrizing-the-log-output-level">Parametrizing the log output level</a></h2>
+<p>The relayer configuration file permits parametrization of output verbosity via the knob called <code>log_level</code>.
+This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but can be overriden in all commands
+with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
+<p>Relevant snippet:</p>
+<pre><code class="language-toml">[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+</code></pre>
+<p>Valid options for <code>log_level</code> are: 'error', 'warn', 'info', 'debug', 'trace'.
+These levels correspond to the tracing sub-component of the relayer-cli, <a href="https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html">see
+here</a>.</p>
+<p>The relayer will <em>always</em> print a last line summarizing the result of its
+operation for queries of transactions. In addition to  this last line,
+arbitrary debug, info, or other outputs may be produced.  Example, with
+<code>log_level = 'debug'</code>:</p>
+<pre><code class="language-bash">Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.070&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: abscissa_core::terminal::component::Terminal (v0.5.2)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.071&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;registered component: relayer_cli::components::Tracing (v0.0.6)&quot;},&quot;target&quot;:&quot;abscissa_core::component::registry&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.078&quot;,&quot;level&quot;:&quot;INFO&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;Options QueryClientConsensusOptions { client_id: ClientId(\&quot;07-tendermint-X\&quot;), revision_number: 0, revision_height: 1, height: 0, proof: true }&quot;},&quot;target&quot;:&quot;relayer_cli::commands::query::client&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.080&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;resolving host=\&quot;localhost\&quot;&quot;},&quot;target&quot;:&quot;hyper::client::connect::dns&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.083&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;connecting to [::1]:26657&quot;},&quot;target&quot;:&quot;hyper::client::connect::http&quot;}
+{&quot;timestamp&quot;:&quot;Jan 20 19:21:52.083&quot;,&quot;level&quot;:&quot;DEBUG&quot;,&quot;fields&quot;:{&quot;message&quot;:&quot;connecting to 127.0.0.1:26657&quot;},&quot;target&quot;:&quot;hyper::client::connect::http&quot;}
+{&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
+</code></pre>
+<p>For the same command, with <code>log_level = 'error'</code>, just the last line will be
+produced:</p>
+<pre><code class="language-bash">   Running `target/debug/relayer query client consensus ibc-0 07-tendermint-X 0 1`
+{&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="glossary.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="glossary.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="mermaid.min.js"></script>
+        
+        <script type="text/javascript" src="mermaid-init.js"></script>
+        
+
+        
+
+    </body>
+</html>
