@@ -258,60 +258,8 @@ More details and feature comparison between the Rust and Go relayer implementati
 <li>Sending an UpgradePlan proposal for an IBC breaking upgrade</li>
 <li>Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes</li>
 </ul>
-<h1><a class="header" href="#feature-matrix-implementation-comparison" id="feature-matrix-implementation-comparison">Feature Matrix, Implementation Comparison</a></h1>
-<p>This section gives more details on some of the features and implementation 
-status for the Hermes Rust and the <a href="https://github.com/cosmos/relayer">Cosmos Go relayer</a>.</p>
-<table><thead><tr><th>Features \      Status</th><th align="center">Hermes</th><th align="center">Cosmos Go</th></tr></thead><tbody>
-<tr><td>Restart</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td>Multiple-Paths</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Cl-Tendermint-Create</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Cl-Tendermint-Update</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Cl-Tendermint-Upgrade</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Conn-Handshake-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Conn-Handshake-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Chan-Handshake-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Handshake-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Conn-Open-Init</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Conn-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Conn-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Conn-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Conn-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Conn-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Conn-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Chan-Open-Init</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Chan-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Chan-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Chan-Close-Init</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Close-Confirm-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Chan-Close-Confirm-P</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>FT-Transfer</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-Recv-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-Recv-P</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-Timeout-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-Timeout-P</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-TimeoutClose-A</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Packet-TimeoutClose-P</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Upgrade-Plan-Proposal</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td>Cl-Unfreeze-Proposal</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td>Cl-Misbehavior</td><td align="center">❌</td><td align="center">❌</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Cl-Non-Tendermint</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td>Chain-Non-Cosmos</td><td align="center">❌</td><td align="center">✅</td></tr>
-<tr><td></td><td align="center"></td><td align="center"></td></tr>
-<tr><td>Mgmt-Static</td><td align="center">✅</td><td align="center">✅</td></tr>
-<tr><td>Mgmt-Dynamic</td><td align="center">❌</td><td align="center">✅</td></tr>
-</tbody></table>
+<h1><a class="header" href="#feature-matrix" id="feature-matrix">Feature Matrix</a></h1>
+<p>This section gives more details about the features and implementation status for the Hermes Rust and the <a href="https://github.com/cosmos/relayer">Cosmos Go relayer</a>.</p>
 <p><strong>Legend</strong>:</p>
 <table><thead><tr><th>Term</th><th>Description</th></tr></thead><tbody>
 <tr><td>❌</td><td>feature not supported</td></tr>
@@ -323,131 +271,60 @@ status for the Hermes Rust and the <a href="https://github.com/cosmos/relayer">C
 <tr><td><code>..Handshake..</code></td><td>can execute all transactions required to finish a handshake from a single command</td></tr>
 <tr><td><code>..-&lt;msg&gt;-A</code></td><td>building and sending <code>msg</code> from a command that scans chain state</td></tr>
 <tr><td><code>..-&lt;msg&gt;-P</code></td><td>building and sending <code>msg</code> from IBC event, doesn't apply to <code>..-Init</code> and <code>FT-Transfer</code> features</td></tr>
+<tr><td>&gt;&gt;&gt;&gt;&gt;&gt;&gt; Stashed changes</td><td></td></tr>
 </tbody></table>
-<h2><a class="header" href="#feature-reference-list" id="feature-reference-list">Feature Reference List</a></h2>
-<p>[WIP - add more detail]</p>
-<ul>
-<li>
-<p>Restart: replays any IBC events that happened before restart</p>
-</li>
-<li>
-<p>Multiple-Paths: relays on multiple paths concurrently</p>
-</li>
-<li>
-<p>Cl-Tendermint-Create: tendermint light client creation</p>
-</li>
-<li>
-<p>Cl-Tendermint-Update: tendermint light client update</p>
-</li>
-<li>
-<p>Cl-Tendermint-Upgrade: tendermint light client upgrade</p>
-</li>
-<li>
-<p>Conn-Handshake-A</p>
-</li>
-<li>
-<p>Conn-Handshake-P</p>
-</li>
-<li>
-<p>Chan-Handshake-A</p>
-</li>
-<li>
-<p>Chan-Handshake-P</p>
-</li>
-<li>
-<p>Conn-Open-Init</p>
-</li>
-<li>
-<p>Conn-Open-Try-A</p>
-</li>
-<li>
-<p>Conn-Open-Try-P</p>
-</li>
-<li>
-<p>Conn-Open-Ack-A</p>
-</li>
-<li>
-<p>Conn-Open-Ack-P</p>
-</li>
-<li>
-<p>Conn-Open-Confirm-A</p>
-</li>
-<li>
-<p>Conn-Open-Confirm-P</p>
-</li>
-<li>
-<p>Chan-Open-Init</p>
-</li>
-<li>
-<p>Chan-Open-Try-A</p>
-</li>
-<li>
-<p>Chan-Open-Try-P</p>
-</li>
-<li>
-<p>Chan-Open-Ack-A</p>
-</li>
-<li>
-<p>Chan-Open-Ack-P</p>
-</li>
-<li>
-<p>Chan-Open-Confirm-A</p>
-</li>
-<li>
-<p>Chan-Open-Confirm-P</p>
-</li>
-<li>
-<p>Chan-Close-Init</p>
-</li>
-<li>
-<p>Chan-Close-Confirm-A</p>
-</li>
-<li>
-<p>Chan-Close-Confirm-P</p>
-</li>
-<li>
-<p>FT-Transfer: can submit an ICS-20 fungible token transfer message</p>
-</li>
-<li>
-<p>Packet-Recv-A</p>
-</li>
-<li>
-<p>Packet-Recv-P</p>
-</li>
-<li>
-<p>Packet-Timeout-A</p>
-</li>
-<li>
-<p>Packet-Timeout-P</p>
-</li>
-<li>
-<p>Packet-TimeoutClose-A</p>
-</li>
-<li>
-<p>Packet-TimeoutClose-P</p>
-</li>
-<li>
-<p>Upgrade-Plan-Proposal: submit <code>UpgradePlan</code> proposals for IBC breaking upgrades</p>
-</li>
-<li>
-<p>Cl-Unfreeze-Proposal: submit IBC client unfreezing proposals</p>
-</li>
-<li>
-<p>Cl-Misbehavior: monitors and submits IBC client misbehavior</p>
-</li>
-<li>
-<p>Cl-Non-Tendermint: supports non-tendermint IBC light clients</p>
-</li>
-<li>
-<p>Chain-Non-Cosmos: supports non-cosmos-SDK chains</p>
-</li>
-<li>
-<p>Management-Static: provides means for configuration prior to being started</p>
-</li>
-<li>
-<p>Management-Dynamic: provides means for configuration and monitorig during runtime</p>
-</li>
-</ul>
+<p><strong>Feature comparison between Hermes and the Go relayer</strong> </p>
+<table><thead><tr><th>Features \      Status</th><th align="center">Hermes</th><th align="center">Cosmos Go</th><th align="left">Feature Details</th></tr></thead><tbody>
+<tr><td>Restart</td><td align="center">❌</td><td align="center">✅</td><td align="left">replays any IBC events that happened before restart</td></tr>
+<tr><td>Multiple-Paths</td><td align="center">❌</td><td align="center">✅</td><td align="left">relays on multiple paths concurrently</td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Cl-Tendermint-Create</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client creation</td></tr>
+<tr><td>Cl-Tendermint-Update</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client update</td></tr>
+<tr><td>Cl-Tendermint-Upgrade</td><td align="center">❌</td><td align="center">✅</td><td align="left">tendermint light client upgrade</td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Conn-Handshake-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn-Handshake-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan-Handshake-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Handshake-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Conn-Open-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Conn-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Chan-Open-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Try-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Try-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Ack-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Ack-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Open-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Chan-Close-Init</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Close-Confirm-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan-Close-Confirm-P</td><td align="center">❌</td><td align="center">❌</td><td align="left"></td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>FT-Transfer</td><td align="center">✅</td><td align="center">✅</td><td align="left">can submit an ICS-20 fungible token transfer message</td></tr>
+<tr><td>Packet-Recv-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet-Recv-P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet-Timeout-A</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet-Timeout-P</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Packet-TimeoutClose-A</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
+<tr><td>Packet-TimeoutClose-P</td><td align="center">✅</td><td align="center">❓</td><td align="left"></td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Upgrade-Plan-Proposal</td><td align="center">❌</td><td align="center">✅</td><td align="left">submit <code>UpgradePlan</code> proposals for IBC breaking upgrades</td></tr>
+<tr><td>Cl-Unfreeze-Proposal</td><td align="center">❌</td><td align="center">❌</td><td align="left">submit IBC client unfreezing proposals</td></tr>
+<tr><td>Cl-Misbehavior</td><td align="center">❌</td><td align="center">❌</td><td align="left">monitors and submits IBC client misbehavior</td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Cl-Non-Tendermint</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non-tendermint IBC light clients</td></tr>
+<tr><td>Chain-Non-Cosmos</td><td align="center">❌</td><td align="center">❌</td><td align="left">supports non-cosmos-SDK chains</td></tr>
+<tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
+<tr><td>Mgmt-Static</td><td align="center">✅</td><td align="center">✅</td><td align="left">provides means for configuration prior to being started</td></tr>
+<tr><td>Mgmt-Dynamic</td><td align="center">❌</td><td align="center">❌</td><td align="left">provides means for configuration and monitorig during runtime</td></tr>
+</tbody></table>
 <h1><a class="header" href="#getting-started" id="getting-started">Getting Started</a></h1>
 <p>In order to run Hermes, please ensure you have all the <a href="./pre_requisites.html">pre-requisites</a> installed on your machine.</p>
 <p>Once you have all the pre-requisites installed on your machine, you can <a href="./setup.html">build and run Hermes</a> on your machine.</p>
