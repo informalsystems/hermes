@@ -163,7 +163,31 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1><a class="header" href="#create-a-new-path" id="create-a-new-path">Create a new path</a></h1>
+<p>Perform client creation, connection and channel handshake to establish a new path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> chains.</p>
+<pre><code class="language-shellscript"> hermes channel handshake ibc-0 ibc-1 transfer transfer
+</code></pre>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;a_side&quot;: {
+      &quot;chain&quot;: &quot;ibc-1&quot;,
+      &quot;channel_id&quot;: &quot;channel-3&quot;,
+      &quot;client_id&quot;: &quot;07-tendermint-3&quot;,
+      &quot;connection_id&quot;: &quot;connection-2&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;},
+    &quot;b_side&quot;: {
+      &quot;chain&quot;: &quot;ibc-0&quot;,
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-3&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
+    },
+    &quot;ordering&quot;:&quot;Unordered&quot;
+  }
+}
+</code></pre>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

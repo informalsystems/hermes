@@ -996,32 +996,49 @@ hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
 hermes tx raw packet-ack  ibc-1 ibc-0 transfer channel-0
 </code></pre>
 <p>The <code>ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199</code> denominator above can be obtained by querying the balance at <code>ibc-1</code> after the transfer from <code>ibc-0</code> to <code>ibc-1</code> is concluded.</p>
-<p>[WIP]</p>
-<h2><a class="header" href="#relaying-packets-using-the-event-listening-mode" id="relaying-packets-using-the-event-listening-mode">Relaying packets using the event listening mode</a></h2>
-<p>In this mode the relayer listens to IBC packet events and forwards packet transactions. The relayer can start this over a new or existing channel.</p>
-<h3><a class="header" href="#with-client-connection-and-channel-setup" id="with-client-connection-and-channel-setup">With client, connection and channel setup</a></h3>
-<p>The relayer can perform client creation, connection and channel handshake by configuring a relay path in the configuration  file. For example, you can specify that a channel between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> should be created by including the following in the configuration file:</p>
-<pre><code class="language-toml">[[connections]]
-a_chain = &quot;ibc1&quot;
-b_chain = &quot;ibc0&quot;
-
-[[connections.paths]]
-a_port = 'transfer'
-b_port = 'transfer'
+<h1><a class="header" href="#connect-the-chains-using-relay-paths" id="connect-the-chains-using-relay-paths">Connect the chains using relay paths</a></h1>
+<p>A relay path refers to a specific channel used to interconnect two chains and over which packets are being sent.
+Hermes can be started to listen for packet events on the two ends of a path and relay packets. This can be done over a new or existing path.</p>
+<ul>
+<li><a href="./tutorial_set_new_path.html">Create a new path</a></li>
+<li><a href="./tutorial_relay_existing_path.html">Packet relaying on existing path</a></li>
+<li><a href="./tutorial_relay_new_path.html">Packet relaying on new path</a></li>
+</ul>
+<h1><a class="header" href="#create-a-new-path" id="create-a-new-path">Create a new path</a></h1>
+<p>Perform client creation, connection and channel handshake to establish a new path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> chains.</p>
+<pre><code class="language-shellscript"> hermes channel handshake ibc-0 ibc-1 transfer transfer
 </code></pre>
-<p>Then start the relayer over this path:</p>
-<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;success&quot;,
+  &quot;result&quot;: {
+    &quot;a_side&quot;: {
+      &quot;chain&quot;: &quot;ibc-1&quot;,
+      &quot;channel_id&quot;: &quot;channel-3&quot;,
+      &quot;client_id&quot;: &quot;07-tendermint-3&quot;,
+      &quot;connection_id&quot;: &quot;connection-2&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;},
+    &quot;b_side&quot;: {
+      &quot;chain&quot;: &quot;ibc-0&quot;,
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;client_id&quot;: &quot;07-tendermint-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-3&quot;,
+      &quot;port_id&quot;: &quot;transfer&quot;
+    },
+    &quot;ordering&quot;:&quot;Unordered&quot;
+  }
+}
 </code></pre>
-<p>The relayer creates the clients, and perform the handshake for a new connection and channel between the two chains on <code>transfer</code> port. Once finished, it listens for IBC packet events and relays receive packets, acknowledgments and timeouts.</p>
-<h3><a class="header" href="#with-existing-channel" id="with-existing-channel">With existing channel</a></h3>
-<p>The relayer can be started by specifying an existing channel</p>
-<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1 transfer channel-0
-</code></pre>
-<p>The relayer listens for IBC packet events over the specified channel and relays receive packets, acknowledgments and timeouts.</p>
-<h3><a class="header" href="#packet-relaying" id="packet-relaying">Packet relaying</a></h3>
+<h1><a class="header" href="#packet-relaying-on-existing-path" id="packet-relaying-on-existing-path">Packet relaying on existing path</a></h1>
+<p>Hermes can listen to IBC packet events over a specified path and relay receive packets, acknowledgments and timeouts.</p>
 <ul>
 <li>
-<p>in a separate terminal, use the packet send command to send 2 packets to <code>ibc0</code> chain:</p>
+<p>from one terminal start hermes using the <code>start</code> command and specify the port and a previously established channel:</p>
+<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1 transfer channel-0
+</code></pre>
+<p><strong>Note</strong>: In this example, the channel identifier on <code>ibc-0</code>is <code>channel-0</code> while the identifier on<code>ibc-1</code> is <code>channel-1</code></p>
+</li>
+<li>
+<p>in a separate terminal, use the transfer command to send 2 packets to <code>ibc0</code> chain:</p>
 <pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
 </code></pre>
 </li>
@@ -1036,8 +1053,51 @@ b_port = 'transfer'
 <li>
 <p>query the unreceived packets on <code>ibc0</code> and <code>ibc1</code> from a different terminal</p>
 <pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
-hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-0
-hermes query packet unreceived-packets ibc-0 ibc-1  transfer channel-0
+hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+hermes query packet unreceived-packets ibc-0 ibc-1  transfer channel-1
+hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
+</code></pre>
+</li>
+</ul>
+<h2><a class="header" href="#packet-relaying-on-new-path" id="packet-relaying-on-new-path">Packet relaying on new path</a></h2>
+<p>Hermes packet relaying can be done over a newly established path. It will perform client creation, connection and channel handshake if a relay path is present in the configuration file.</p>
+<ul>
+<li>specify the path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> by including the following in the configuration file:</li>
+</ul>
+<pre><code class="language-toml">[[connections]]
+a_chain = &quot;ibc1&quot;
+b_chain = &quot;ibc0&quot;
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+</code></pre>
+<ul>
+<li>
+<p>from one terminal start the relayer over this path:</p>
+<pre><code class="language-shellscript"> hermes start ibc-0 ibc-1
+</code></pre>
+<p><strong>Note</strong>: The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.</p>
+<p>Once the path is established the relayer waits listening for IBC packet events.</p>
+</li>
+<li>
+<p>in a separate terminal, use the transfer command to send 2 packets to <code>ibc0</code> chain:</p>
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+</code></pre>
+</li>
+<li>
+<p>use the CLI to send 2 packets to <code>ibc1</code> chain:</p>
+<pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+</code></pre>
+</li>
+<li>
+<p>observe the output on the relayer terminal, verify that the send events are processed, and the <code>recv_packet</code> -s are sent out.</p>
+</li>
+<li>
+<p>query the unreceived packets on <code>ibc0</code> and <code>ibc1</code> from a different terminal</p>
+<pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0  transfer channel-0
+hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
+hermes query packet unreceived-packets ibc-0 ibc-1  transfer channel-1
 hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
