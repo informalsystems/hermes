@@ -163,29 +163,47 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#building-the-relayer" id="building-the-relayer">Building the Relayer</a></h1>
-<p>In order to build and run Hermes, please follow the steps below:</p>
+                        <h1><a class="header" href="#install-the-relayer" id="install-the-relayer">Install the relayer</a></h1>
+<p>In order to install and run Hermes, please follow the steps below:</p>
 <blockquote>
 <p>NOTE: This assumes you have installed all the <a href="./pre-requisites.html">pre-requisites</a> on your machine.</p>
 </blockquote>
+<h2><a class="header" href="#install-via-cargo" id="install-via-cargo">Install via Cargo</a></h2>
+<p>To install the latest release of Hermes, run the following command in a terminal:</p>
+<pre><code class="language-shell">$ cargo install hermes
+</code></pre>
+<p>This will download and build Hermes, and install the <code>hermes</code> binary in <code>$HOME/.cargo/bin</code>.</p>
+<blockquote>
+<p>If you have not installed Rust and Cargo via <a href="https://rustup.rs">rustup.rs</a>, you may need to
+add the <code>$HOME/.cargo/bin</code> directory to your <code>PATH</code> environment variable.
+For most shells, this can be done by adding the following line to your
+<code>.bashrc</code> or <code>.zshrc</code> configuration file:</p>
+<pre><code class="language-shell">export PATH=&quot;$HOME/.cargo/bin:$PATH&quot;
+</code></pre>
+</blockquote>
+<p>You should now be able to run Hermes by invoking the <code>hermes</code> executable.</p>
+<pre><code class="language-shell">$ hermes version
+hermes 0.1.0
+</code></pre>
+<h2><a class="header" href="#build-from-source" id="build-from-source">Build from source</a></h2>
 <h3><a class="header" href="#clone-the-repository" id="clone-the-repository">Clone the repository</a></h3>
 <p>Open a terminal and clone the following <code>ibc-rs</code> repository:</p>
-<pre><code class="language-shell">git clone https://github.com/informalsystems/ibc-rs.git`
+<pre><code class="language-shell">$ git clone https://github.com/informalsystems/ibc-rs.git`
 </code></pre>
 <p>Change to the repository directory</p>
-<pre><code class="language-shell">cd ibc-rs
+<pre><code class="language-shell">$ cd ibc-rs
 </code></pre>
 <h3><a class="header" href="#checkout-the-latest-release" id="checkout-the-latest-release">Checkout the latest release</a></h3>
 <p>Go to the <a href="https://github.com/informalsystems/ibc-rs/releases">ibc-rs releases</a> page to see what is the most recent release.</p>
 <p>Then checkout the release, for example if the most recent release is <code>v0.1.0</code> then execute the command:</p>
-<pre><code class="language-shell">git checkout v0.1.0
+<pre><code class="language-shell">$ git checkout v0.1.0
 </code></pre>
 <h3><a class="header" href="#building-with-cargo-build" id="building-with-cargo-build">Building with <code>cargo build</code></a></h3>
 <p>This command builds all the projects from the <a href="https://github.com/informalsystems/ibc-rs"><strong><code>ibc-rs</code></strong></a> repository including the <a href="https://github.com/informalsystems/ibc-rs/tree/master/modules"><strong><code>ibc</code></strong></a> modules crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer"><strong><code>ibc-relayer</code></strong></a> crate, <a href="https://github.com/informalsystems/ibc-rs/tree/master/proto"><strong><code>proto</code></strong></a> crate, and the <a href="https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> tool.</p>
-<pre><code class="language-shell">cargo build --workspace --all --release
+<pre><code class="language-shell">$ cargo build --release --bin hermes
 </code></pre>
 <p>If the build is successful, the <code>hermes</code> executable will be located in the following location:</p>
-<pre><code class="language-shell">./target/release/hermes
+<pre><code class="language-shell">$ ./target/release/hermes
 </code></pre>
 <h3><a class="header" href="#running-for-the-first-time" id="running-for-the-first-time">Running for the first time</a></h3>
 <p>If you run the <code>hermes</code> without any additional parameters you should see the usage and help information:</p>
@@ -209,10 +227,10 @@ SUBCOMMANDS:
 </code></pre>
 <h3><a class="header" href="#creating-an-alias-for-the-executable" id="creating-an-alias-for-the-executable">Creating an alias for the executable</a></h3>
 <p>It might be easier to create an alias for <code>hermes</code> so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:</p>
-<pre><code class="language-shell">alias hermes='cargo run --release --bin hermes --'
+<pre><code class="language-shell">$ alias hermes='cargo run --release --bin hermes --'
 </code></pre>
 <h3><a class="header" href="#next-steps" id="next-steps">Next Steps</a></h3>
-<p>Go to the <a href="./config.html"><code>Configuration</code></a> section to learn how to create a configuration file to be used by <code>Hermes</code>.</p>
+<p>Go to the <a href="./config.html"><code>Configuration</code></a> section to learn how to create a configuration file to be used by Hermes.</p>
 
                     </main>
 
