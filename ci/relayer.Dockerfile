@@ -6,8 +6,6 @@ LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE
 
-WORKDIR /repo
-
 # Add Python 3
 RUN apt-get update -y && apt-get install python3 -y
 
