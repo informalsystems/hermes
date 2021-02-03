@@ -115,3 +115,9 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --workspace --all-targets --release
+      - name: Build relayer image
+        run: docker-compose -f ci/docker-compose.yml build relayer
