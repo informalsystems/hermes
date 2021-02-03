@@ -90,7 +90,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --workspace --all-targets --release
+          args: --workspace --all-targets
       - run: cp ./target/release/hermes ci/
       - name: Build relayer image
         run: docker-compose -f ci/docker-compose.yml build relayer
