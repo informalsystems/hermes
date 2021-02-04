@@ -43,7 +43,7 @@ strategy = 'naive'
 log_level = 'info'
 ```
 
-### [[chains]]
+### `[[chains]]`
 
 A `chains` section includes parameters related to a chain and the full node to which the relayer can send transactions and  queries. It also has parameters related to the light client peers configured for the chain.
 

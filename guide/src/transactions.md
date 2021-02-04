@@ -58,5 +58,6 @@ where:
 - More details about the `tx raw` commands can be found in the following sections:
      - [Client](./tx_client.md)
      - [Connection](./tx_connection.md)
-     - [Channel](./tx_channel.md)
+     - [Channel Open](./tx_channel_open.md)
+     - [Channel Close](./tx_channel_close.md)
      - [Packet](./tx_packet.md)

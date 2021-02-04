@@ -2,7 +2,7 @@
 
 In order to install and run Hermes, please follow the steps below:
 
-> NOTE: This assumes you have installed all the [pre-requisites](./pre-requisites.md) on your machine.
+> NOTE: This assumes you have installed all the [pre-requisites](./pre_requisites.md) on your machine.
 
 ## Install via Cargo
 
