@@ -25,7 +25,7 @@
        - [Packet relaying on existing path](./tutorial_relay_existing_path.md)
        - [Packet relaying on new path](./tutorial_relay_new_path.md)
        - [Concurrent packet relaying on multiple paths](./tutorial_relay_two_paths.md)
-- [Commands reference](./commands.md)
+- [Commands Reference](./commands.md)
    - [Keys](./keys.md)
    - [Light clients](./light_clients.md)
    - [Path setup and streaming](./relayer_loop.md)
