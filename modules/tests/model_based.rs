@@ -72,11 +72,11 @@ impl ICS02TestExecutor {
             .expect("chain context should have been initialized")
     }
 
-    fn extract_handler_error_kind<K>(result: Result<(), ICS18Error>) -> K
+    fn extract_handler_error_kind<K>(ics18_result: Result<(), ICS18Error>) -> K
     where
         K: Clone + Debug + Display + Into<anomaly::BoxError> + 'static,
     {
-        let ics18_error = result.expect_err("ICS18 error expected");
+        let ics18_error = ics18_result.expect_err("ICS18 error expected");
         assert!(matches!(
             ics18_error.kind(),
             ICS18ErrorKind::TransactionFailed
@@ -94,7 +94,7 @@ impl ICS02TestExecutor {
             .source()
             .expect("expected source in ICS26 error")
             .downcast_ref::<anomaly::Error<K>>()
-            .expect("ICS26 source should be an error")
+            .expect("ICS26 source should be an handler error")
             .kind()
             .clone()
     }
@@ -150,7 +150,7 @@ impl ICS02TestExecutor {
         0
     }
 
-    // Check that chain heights match the ones in the model.
+    /// Check that chain heights match the ones in the model.
     fn check_chain_heights(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
             let ctx = self.chain_context(&chain_id);

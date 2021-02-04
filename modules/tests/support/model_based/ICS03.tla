@@ -61,13 +61,28 @@ ICS03_ConnectionOpenInit(
         ]
 
 ICS03_ConnectionOpenTry(
+    height,
     clients,
     connections,
     connectionIdCounter,
     clientId,
+    clientHeight,
     counterpartyClientId,
     connectionId
 ) ==
-    TRUE
+    \* check if client's claimed height
+    IF clientHeight > height THEN
+        \* if client's height is too advanced, then set an error outcome
+        [
+            connections |-> connections,
+            connectionIdCounter |-> connectionIdCounter,
+            outcome |-> "ICS03InvalidConsensusHeight"
+        ]
+    ELSE
+        [
+            connections |-> connections,
+            connectionIdCounter |-> connectionIdCounter,
+            outcome |-> "ICS03ConnectionOpenTryOK"
+        ]
 
 ===============================================================================

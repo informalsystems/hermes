@@ -29,9 +29,10 @@ a <: b == a
 ActionType == [
     type |-> STRING,
     chainId |-> STRING,
-    height |-> Int,
+    clientHeight |-> Int,
     clientId |-> Int,
-    counterpartyClientId |-> Int
+    counterpartyClientId |-> Int,
+    connectionId |-> Int
 ]
 AsAction(a) == a <: ActionType
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
@@ -92,13 +93,13 @@ NoneActions == [
 CreateClientActions == [
     type: {"ICS02CreateClient"},
     chainId: ChainIds,
-    height: ClientHeights
+    clientHeight: ClientHeights
 ] <: {ActionType}
 UpdateClientActions == [
     type: {"ICS02UpdateClient"},
     chainId: ChainIds,
     clientId: ClientIds,
-    height: ClientHeights
+    clientHeight: ClientHeights
 ] <: {ActionType}
 ConnectionOpenInitActions == [
     type: {"ICS03ConnectionOpenInit"},
@@ -106,28 +107,43 @@ ConnectionOpenInitActions == [
     clientId: ClientIds,
     counterpartyClientId: ClientIds
 ] <: {ActionType}
+ConnectionOpenTryActions == [
+    type: {"ICS03ConnectionOpenTry"},
+    chainId: ChainIds,
+    clientId: ClientIds,
+    clientHeight: ClientHeights,
+    counterpartyClientId: ClientIds,
+    connectionId: ConnectionIds \union {ConnectionIdNone}
+] <: {ActionType}
 Actions ==
     NoneActions \union
     CreateClientActions \union
     UpdateClientActions \union
-    ConnectionOpenInitActions
+    ConnectionOpenInitActions \union
+    ConnectionOpenTryActions
 
 \* set of possible action outcomes
 ActionOutcomes == {
     "None",
+    "ModelError",
+    \* ICS02_CreateClient outcomes:
     "ICS02CreateOK",
+    \* ICS02_UpdateClient outcomes:
     "ICS02UpdateOK",
     "ICS02ClientNotFound",
     "ICS02HeaderVerificationFailure",
+    \* ICS03_ConnectionOpenInit outcomes:
     "ICS03ConnectionOpenInitOK",
     "ICS03MissingClient",
-    "ModelError"
+    \* ICS03_ConnectionOpenTry outcomes:
+    "ICS03ConnectionOpenTryOK",
+    "ICS03InvalidConsensusHeight"
 }
 
 (***************************** Specification *********************************)
 
 \* update chain height if outcome was ok
-UpdateHeight(height, outcome, okOutcome) ==
+UpdateChainHeight(height, outcome, okOutcome) ==
     IF outcome = okOutcome THEN height + 1 ELSE height
 
 CreateClient(chainId, clientHeight) ==
@@ -137,7 +153,7 @@ CreateClient(chainId, clientHeight) ==
     LET result == ICS02_CreateClient(clients, clientIdCounter, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateHeight(@, result.outcome, "ICS02CreateOK"),
+        !.height = UpdateChainHeight(@, result.outcome, "ICS02CreateOK"),
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -146,7 +162,7 @@ CreateClient(chainId, clientHeight) ==
     /\ action' = AsAction([
         type |-> "ICS02CreateClient",
         chainId |-> chainId,
-        height |-> clientHeight])
+        clientHeight |-> clientHeight])
     /\ actionOutcome' = result.outcome
 
 UpdateClient(chainId, clientId, clientHeight) ==
@@ -155,7 +171,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
     LET result == ICS02_UpdateClient(clients, clientId, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateHeight(@, result.outcome, "ICS03CreateOK"),
+        !.height = UpdateChainHeight(@, result.outcome, "ICS03CreateOK"),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -164,7 +180,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
         type |-> "ICS02UpdateClient",
         chainId |-> chainId,
         clientId |-> clientId,
-        height |-> clientHeight])
+        clientHeight |-> clientHeight])
     /\ actionOutcome' = result.outcome
 
 ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
@@ -181,7 +197,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = UpdateHeight(@, result.outcome, "ICS03ConnectionOpenInitOK"),
+        !.height = UpdateChainHeight(@, result.outcome, "ICS03ConnectionOpenInitOK"),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -194,20 +210,44 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
         counterpartyClientId |-> counterpartyClientId])
     /\ actionOutcome' = result.outcome
 
-ConnectionOpenTry(chainId, clientId, counterpartyClientId, connectionId) ==
+ConnectionOpenTry(
+    chainId,
+    clientId,
+    clientHeight,
+    counterpartyClientId,
+    connectionId
+) ==
     LET chain == chains[chainId] IN
+    LET height == chain.height IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionIdCounter == chain.connectionIdCounter IN
     LET result == ICS03_ConnectionOpenTry(
+        height,
         clients,
         connections,
         connectionIdCounter,
         clientId,
+        clientHeight,
         counterpartyClientId,
         connectionId
     ) IN
-    UNCHANGED vars
+    \* update the chain
+    LET updatedChain == [chain EXCEPT
+        !.height = UpdateChainHeight(@, result.outcome, "ICS03ConnectionOpenTryOK"),
+        !.connections = result.connections,
+        !.connectionIdCounter = result.connectionIdCounter
+    ] IN
+    \* update `chains`, set the `action` and its `actionOutcome`
+    /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ action' = AsAction([
+        type |-> "ICS03ConnectionOpenTry",
+        chainId |-> chainId,
+        clientId |-> clientId,
+        clientHeight |-> clientHeight,
+        counterpartyClientId |-> counterpartyClientId,
+        connectionId |-> connectionId])
+    /\ actionOutcome' = result.outcome
 
 CreateClientAction ==
     \* select a chain id
@@ -249,6 +289,8 @@ ConnectionOpenTryAction ==
     \E chainId \in ChainIds:
     \* select a client id
     \E clientId \in ClientIds:
+    \* select a claimed height for the client
+    \E clientHeight \in ClientHeights:
     \* select a counterparty client id
     \E counterpartyClientId \in ClientIds:
     \* select a connection id (which can be none)
@@ -261,6 +303,7 @@ ConnectionOpenTryAction ==
                 ConnectionOpenTry(
                     chainId,
                     clientId,
+                    clientHeight,
                     counterpartyClientId,
                     connectionId
                 )
@@ -270,6 +313,7 @@ ConnectionOpenTryAction ==
             ConnectionOpenTry(
                 chainId,
                 clientId,
+                clientHeight,
                 counterpartyClientId,
                 connectionId
             )
