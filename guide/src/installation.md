@@ -29,6 +29,9 @@ You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
 hermes version
+```
+
+```
 hermes 0.1.0
 ```
 
@@ -78,6 +81,9 @@ If you run the `hermes` without any additional parameters you should see the usa
 
 ```shell
 ./target/release/hermes
+```
+
+```
 hermes 0.1.0
 Informal Systems <hello@informal.systems>
 
