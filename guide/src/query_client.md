@@ -1,5 +1,5 @@
 # Query Clients
-The `query clients` command can be used to query the identifiers of all clients on a given chain.
+Use the `query clients` command to query the identifiers of all clients on a given chain.
 
 ```shell
 USAGE:
@@ -33,7 +33,7 @@ $ hermes query clients ibc-1 | jq
 ```
 
 # Query Client Data
-The `query client` commands can be used to query the information about a specific client.
+Use the `query client` command to query the information about a specific client.
 
 ```shell
 USAGE:
@@ -49,7 +49,7 @@ SUBCOMMANDS:
 ```
 
 ## Query the client state
-The client state can be queried with the `query client state` command:
+Use the `query client state` command to query the client state of a client:
 
 ```shell
 USAGE:
@@ -116,7 +116,7 @@ $ hermes query client state ibc-1 07-tendermint-2 | jq
 ```
 
 ## Query the client consensus state
-The consensus state at a given height can be queried with the `query client consensus` command:
+Use the `query client consensus` command to query the consensus state for a given client and consensus height:
 
 ```shell
 USAGE:
@@ -157,7 +157,7 @@ $ hermes query client consensus ibc-1 07-tendermint-2 0 948 | jq
 ```
 
 ## Query the identifiers of all connections associated with a given client 
-The connections associated with a given client can be queried with the `query client connections` command:
+Use the `query client connections` command to query the connections associated with a given client:
 
 ```shell
 USAGE:

@@ -1,6 +1,6 @@
 # Query Channels
 
-The `query channels` command can be used to query the identifiers of all channels on a given chain.
+Use the `query channels` command to query the identifiers of all channels on a given chain.
 
 ```shell
 USAGE:
@@ -35,7 +35,7 @@ $ hermes query channels ibc-1 | jq
 
 # Query Channel Data
 
-The `query channel` commands can be used to query the information about a specific channel.
+Use the `query channel` commands to query the information about a specific channel.
 
 ```shell
 USAGE:
@@ -50,7 +50,7 @@ SUBCOMMANDS:
 
 ## Query the channel end data
 
-The channel end data can be queried with the `query channel end` command:
+Use the `query channel end` command to query the channel end:
 
 ```shell
 USAGE:

@@ -1,6 +1,6 @@
 # Query Connections
 
-The `query connections` command can be used to query the identifiers of all connections on a given chain.
+Use the `query connections` command to query the identifiers of all connections on a given chain.
 
 ```shell
 USAGE:
@@ -35,7 +35,7 @@ $ hermes query connections ibc-1 | jq
 
 # Query Connection Data
 
-The `query connection` commands can be used to query the information about a specific connection.
+Use the `query connection` commands to query a specific connection.
 
 ```shell
 USAGE:
@@ -51,7 +51,7 @@ SUBCOMMANDS:
 
 ## Query the connection end data
 
-The connection end data can be queried with the `query connection end` command:
+Use the `query connection end` command to query the connection end:
 
 ```shell
 USAGE:
@@ -104,8 +104,7 @@ $ hermes query connection end ibc-1 connection-1 | jq
 
 ## Query the identifiers of all channels associated with a given connection
 
-The identifiers of the channels associated with a given connection
-can be queried with the `query connection channels` command:
+Use the `query connection channels` command to query the identifiers of the channels associated with a given connection:
 
 ```shell
 USAGE:

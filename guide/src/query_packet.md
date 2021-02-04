@@ -1,6 +1,6 @@
 # Packet Queries
 
-The `query packet` command can be used to query some information about packets.
+Use the `query packet` commands to query information about packets.
 
 
 ```shell
@@ -19,9 +19,9 @@ SUBCOMMANDS:
     unreceived-acks query unreceived acknowledgments
 ```
 
-# Packet Commitments
+## Packet Commitments
 
-The `query packet commitments` can be used to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).
+Use the `query packet commitments` command to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).
 
 ```shell
 USAGE:
@@ -61,9 +61,9 @@ $ hermes query packet commitments ibc-0 transfer channel-0 | jq
 }
 ```
 
-# Packet Commitment with Sequence
+## Packet Commitment with Sequence
 
-The `query packet commitment` can be used to query the commitment raw value of a packet with a given sequence number.
+Use the `query packet commitment` command to query the commitment value of a packet with a given sequence number.
 
 ```shell
 USAGE:
@@ -97,9 +97,9 @@ $ hermes query packet commitment ibc-0 transfer channel-0 3 | jq
 }
 ```
 
-# Packet Acknowledgments
+## Packet Acknowledgments
 
-The `query packet acknowledgments` can be used to query the sequence numbers of all packets that have been acknowledged.
+Use the `query packet acknowledgments` command to query the sequence numbers of all packets that have been acknowledged.
 
 ```shell
 USAGE:
@@ -139,9 +139,9 @@ $ hermes query packet acks ibc-1 transfer channel-1 | jq
 }
 ```
 
-# Packet Acknowledgment with Sequence
+## Packet Acknowledgment with Sequence
 
-The `query packet acknowledgment` can be used to query the acknowledgment value of a packet with a given sequence number.
+Use the `query packet acknowledgment` command to query the acknowledgment value of a packet with a given sequence number.
 
 ```shell
 USAGE:
@@ -175,9 +175,9 @@ $ hermes query packet ack ibc-1 transfer channel-1 2 | jq
 }
 ```
 
-# Unreceived Packets
+## Unreceived Packets
 
-The `query packet unreceived-packets` can be used to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.
+Use the `query packet unreceived-packets` command to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.
 
 ```shell
 USAGE:
@@ -212,9 +212,9 @@ $ hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0 | jq
 }
 ```
 
-# Unreceived Acknowledgments
+## Unreceived Acknowledgments
 
-The `query packet unreceived-acks` can be used to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.
+Use the `query packet unreceived-acks` command to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.
 
 ```shell
 USAGE:
