@@ -74,7 +74,7 @@ Connections == [
 ]
 \* data kept per chain
 Chain == [
-    height: ChainHeights,
+    \* height: ChainHeights,
     clients: Clients,
     clientIdCounter: 0..MaxClientsPerChain,
     connections: Connections,
@@ -133,7 +133,7 @@ CreateClient(chainId, clientHeight) ==
     LET result == ICS02_CreateClient(clients, clientIdCounter, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = @ + 1,
+        \* !.height = @ + 1,
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -151,7 +151,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
     LET result == ICS02_UpdateClient(clients, clientId, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = @ + 1,
+        \* !.height = @ + 1,
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -177,7 +177,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        !.height = @ + 1,
+        \* !.height = @ + 1,
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -284,7 +284,7 @@ Init ==
     ] IN
     \* create an empty chain
     LET emptyChain == [
-        height |-> 0,
+        \* height |-> 0,
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
