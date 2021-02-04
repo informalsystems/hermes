@@ -3,23 +3,47 @@
         "action": {
             "type": "None"
         },
-        "actionOutcome": "None"
+        "actionOutcome": "None",
+        "chains": {
+            "chain-A": {
+                "height": 0
+            },
+            "chain-B": {
+                "height": 0
+            }
+        }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chain-B",
             "height": 1,
             "type": "ICS02CreateClient"
         },
-        "actionOutcome": "ICS02CreateOK"
+        "actionOutcome": "ICS02CreateOK",
+        "chains": {
+            "chain-A": {
+                "height": 0
+            },
+            "chain-B": {
+                "height": 1
+            }
+        }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chain-B",
             "clientId": 0,
             "counterpartyClientId": 0,
             "type": "ICS03ConnectionOpenInit"
         },
-        "actionOutcome": "ICS03ConnectionOpenInitOK"
+        "actionOutcome": "ICS03ConnectionOpenInitOK",
+        "chains": {
+            "chain-A": {
+                "height": 0
+            },
+            "chain-B": {
+                "height": 2
+            }
+        }
     }
 ]

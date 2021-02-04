@@ -6,13 +6,13 @@ EXTENDS Integers, FiniteSets, ICS02, ICS03
 CONSTANT ChainIds
 \* max number of client to be created per chain
 CONSTANT MaxClientsPerChain
-ASSUME MaxClientsPerChain > 0
+ASSUME MaxClientsPerChain >= 0
 \* max height which clients can reach
 CONSTANT MaxClientHeight
-ASSUME MaxClientHeight > 0
+ASSUME MaxClientHeight >= 0
 \* max number of connections to be created per chain
 CONSTANT MaxConnectionsPerChain
-ASSUME MaxConnectionsPerChain > 0
+ASSUME MaxConnectionsPerChain >= 0
 
 \* mapping from chain id to its data
 VARIABLE chains
@@ -20,6 +20,7 @@ VARIABLE chains
 VARIABLE action
 \* string with the outcome of the last operation
 VARIABLE actionOutcome
+vars == <<chains, action, actionOutcome>>
 
 (********************** TYPE ANNOTATIONS FOR APALACHE ************************)
 \* operator for type annotations
@@ -35,6 +36,8 @@ ActionType == [
 AsAction(a) == a <: ActionType
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
+\* set of possible chain heights
+ChainHeights == Int
 \* set of possible client identifiers
 ClientIds == 0..(MaxClientsPerChain - 1)
 \* set of possible client heights
@@ -71,6 +74,7 @@ Connections == [
 ]
 \* data kept per chain
 Chain == [
+    height: ChainHeights,
     clients: Clients,
     clientIdCounter: 0..MaxClientsPerChain,
     connections: Connections,
@@ -129,6 +133,7 @@ CreateClient(chainId, clientHeight) ==
     LET result == ICS02_CreateClient(clients, clientIdCounter, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
+        !.height = @ + 1,
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -146,6 +151,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
     LET result == ICS02_UpdateClient(clients, clientId, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
+        !.height = @ + 1,
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -171,6 +177,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
+        !.height = @ + 1,
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -183,6 +190,21 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
         counterpartyClientId |-> counterpartyClientId])
     /\ actionOutcome' = result.outcome
 
+ConnectionOpenTry(chainId, clientId, counterpartyClientId, connectionId) ==
+    LET chain == chains[chainId] IN
+    LET clients == chain.clients IN
+    LET connections == chain.connections IN
+    LET connectionIdCounter == chain.connectionIdCounter IN
+    LET result == ICS03_ConnectionOpenTry(
+        clients,
+        connections,
+        connectionIdCounter,
+        clientId,
+        counterpartyClientId,
+        connectionId
+    ) IN
+    UNCHANGED vars
+
 CreateClientAction ==
     \* select a chain id
     \E chainId \in ChainIds:
@@ -190,8 +212,10 @@ CreateClientAction ==
     \E clientHeight \in ClientHeights:
         \* only create client if the model constant `MaxClientsPerChain` allows
         \* it
-        /\ chains[chainId].clientIdCounter \in ClientIds
-        /\ CreateClient(chainId, clientHeight)
+        IF chains[chainId].clientIdCounter \in ClientIds THEN
+            CreateClient(chainId, clientHeight)
+        ELSE
+            UNCHANGED vars
 
 UpdateClientAction ==
     \* select a chain id
@@ -211,8 +235,40 @@ ConnectionOpenInitAction ==
     \E counterpartyClientId \in ClientIds:
         \* only create connection if the model constant `MaxConnectionsPerChain`
         \* allows it
-        /\ chains[chainId].connectionIdCounter \in ConnectionIds
-        /\ ConnectionOpenInit(chainId, clientId, counterpartyClientId)
+        IF chains[chainId].connectionIdCounter \in ConnectionIds THEN
+            ConnectionOpenInit(chainId, clientId, counterpartyClientId)
+        ELSE
+            UNCHANGED vars
+
+ConnectionOpenTryAction ==
+    \* select a chain id
+    \E chainId \in ChainIds:
+    \* select a client id
+    \E clientId \in ClientIds:
+    \* select a counterparty client id
+    \E counterpartyClientId \in ClientIds:
+    \* select a connection id (which can be none)
+    \E connectionId \in ConnectionIds \union {ConnectionIdNone}:
+        IF connectionId = ConnectionIdNone THEN
+            \* in this case we're trying to create a new connection; only create
+            \* connection if the model constant `MaxConnectionsPerChain` allows
+            \* it
+            IF chains[chainId].connectionIdCounter \in ConnectionIds THEN
+                ConnectionOpenTry(
+                    chainId,
+                    clientId,
+                    counterpartyClientId,
+                    connectionId
+                )
+            ELSE
+                UNCHANGED vars
+        ELSE
+            ConnectionOpenTry(
+                chainId,
+                clientId,
+                counterpartyClientId,
+                connectionId
+            )
 
 Init ==
     \* create a client and a connection with none values
@@ -228,6 +284,7 @@ Init ==
     ] IN
     \* create an empty chain
     LET emptyChain == [
+        height |-> 0,
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
@@ -241,7 +298,8 @@ Next ==
     \/ CreateClientAction
     \/ UpdateClientAction
     \/ ConnectionOpenInitAction
-    \/ UNCHANGED <<chains, action, actionOutcome>>
+    \/ ConnectionOpenTryAction
+    \/ UNCHANGED vars
 
 (******************************** Invariants *********************************)
 

@@ -60,4 +60,14 @@ ICS03_ConnectionOpenInit(
             outcome |-> "ICS03MissingClient"
         ]
 
+ICS03_ConnectionOpenTry(
+    clients,
+    connections,
+    connectionIdCounter,
+    clientId,
+    counterpartyClientId,
+    connectionId
+) ==
+    TRUE
+
 ===============================================================================
