@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (IBC Relayer CLI)
+# Hermes
 
 ---
 - [Introduction](./index.md)
