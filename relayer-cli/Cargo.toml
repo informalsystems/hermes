@@ -6,6 +6,11 @@ authors = [
   "Informal Systems <hello@informal.systems>"
 ]
 
+description = """
+    Implementation of `hermes`, an IBC Relayer developed in Rust.
+    This crate is a CLI wrapper over the `ibc-relayer` library.
+"""
+
 [features]
 profiling = ["ibc-relayer/profiling"]
 

@@ -38,7 +38,7 @@ Includes [TLA+ specifications](/docs/spec).
 Developed with the latest stable version of Rust: `1.49.0`. 
 (May work with older versions.)
 
-## Relayer guide
+## Hermes Guide
 
 The main relayer CLI binary, called `hermes`, has a comprehensive guide at
 [hermes.informal.systems](http://hermes.informal.systems).

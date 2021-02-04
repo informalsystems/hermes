@@ -12,6 +12,7 @@ authors    = [
 
 description = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
+    This crate comprises the main data structures and on-chain logic.
 """
 
 [features]

@@ -1,7 +1,11 @@
-# Relayer CLI Guide
+# Hermes Guide
 
-In order to build and view the Relayer CLI guide you need to instal [`mdBook`](https://github.com/rust-lang/mdBook). 
+Hermes is the name of the binary that comes packaged with 
+[IBC Relayer CLI](https://crates.io/crates/ibc-relayer-cli) crate.
 
+This directory comprises a comprehensive guide to Hermes.
+In order to build and view this guide you need to install [`mdBook`]
+(https://github.com/rust-lang/mdBook).
 mdBook is a utility to create modern online books from Markdown files.
 
 This guide should be permanently deployed at its latest stable version at 
