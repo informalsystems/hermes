@@ -437,14 +437,14 @@ USAGE:
 
 SUBCOMMANDS:
     help       Get usage information
-    keys       manage keys in the relayer for each chain
-    light      basic functionality for managing the light clients
-    start      start the relayer
-    channel    channel functionality for managing channels
-    query      query state from chain
-    tx         create and send IBC transactions
-    listen     listen to and display IBC events emitted by a chain
-    version    display version information
+    keys       Manage keys in the relayer for each chain
+    light      Basic functionality for managing the light clients
+    start      Start the relayer
+    channel    Channel functionality for managing channels
+    query      Query state from chain
+    tx         Create and send IBC transactions
+    listen     Listen to and display IBC events emitted by a chain
+    version    Display version information
 </code></pre>
 <h3><a class="header" href="#creating-an-alias-for-the-executable" id="creating-an-alias-for-the-executable">Creating an alias for the executable</a></h3>
 <p>It might be easier to create an alias for <code>hermes</code> so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:</p>
@@ -1485,7 +1485,7 @@ hermes -c relay_b/config.toml query packet unreceived-acks    ibc-1 ibc-0 transf
     hermes-cli keys &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    manage keys in the relayer for each chain
+    Manage keys in the relayer for each chain
 
 SUBCOMMANDS:
     help       Get usage information
@@ -1515,7 +1515,7 @@ SUBCOMMANDS:
     hermes keys add &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    adds a key to a configured chain
+    Adds a key to a configured chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
@@ -1535,7 +1535,7 @@ POSITIONAL ARGUMENTS:
     hermes keys list &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    list keys configured on a chain
+    List keys configured on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
@@ -1558,7 +1558,7 @@ POSITIONAL ARGUMENTS:
     hermes light &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    basic functionality for managing the lite clients
+    Basic functionality for managing the lite clients
 
 SUBCOMMANDS:
     add        add a light client peer for a given chain
@@ -1571,11 +1571,11 @@ SUBCOMMANDS:
     hermes light add &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    add a light client peer for a given chain
+    Add a light client peer for a given chain
 
 POSITIONAL ARGUMENTS:
     address                   RPC network address (required)
-                              
+
 FLAGS:
     -c, --chain-id CHAIN-ID   identifier of the chain (required)
     -s, --store STORE         path to light client store for this peer (required)
@@ -1601,11 +1601,11 @@ FLAGS:
     hermes light rm &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    remove a light client peer for a given chain
+    Remove a light client peer for a given chain
 
 POSITIONAL ARGUMENTS:
     peer_id                   identifiers of peers to remove
-                              
+
 FLAGS:
     -c, --chain-id CHAIN-ID   identifier of the chain to remove peers from
     -f, --force               force removal of primary peer
@@ -1773,7 +1773,7 @@ SUBCOMMANDS:
     hermes tx raw create-client &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    tx raw create-client
+    Create a client for source chain on destination chain
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -1806,7 +1806,7 @@ POSITIONAL ARGUMENTS:
     hermes tx raw update-client &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    tx raw update-client
+    Update the specified client on destination chain
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -2469,29 +2469,29 @@ POSITIONAL ARGUMENTS:
 <p>Hermes supports querying for different objects that exist on a configured chain.</p>
 <p>The <code>query</code> command provides the following sub-commands:</p>
 <table><thead><tr><th>CLI name</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>client</code></td><td><a href="./query_client.html">query information about client(s)</a></td></tr>
-<tr><td><code>clients</code></td><td><a href="./query_client.html">query all clients</a></td></tr>
-<tr><td><code>connection</code></td><td><a href="./query_connection.html">query information about connection(s)</a></td></tr>
-<tr><td><code>connections</code></td><td><a href="./query_connection.html">query the identifiers of all connections on a chain</a></td></tr>
-<tr><td><code>channel</code></td><td><a href="./query_channel.html">query information about channel(s)</a></td></tr>
-<tr><td><code>channels</code></td><td><a href="./query_channel.html">query the identifiers of all channels on a given chain</a></td></tr>
-<tr><td><code>packet</code></td><td><a href="./query_packet.html">query information about packet(s)</a></td></tr>
+<tr><td><code>client</code></td><td><a href="./query_client.html">Query information about clients</a></td></tr>
+<tr><td><code>clients</code></td><td><a href="./query_client.html">Query all clients</a></td></tr>
+<tr><td><code>connection</code></td><td><a href="./query_connection.html">Query information about connections</a></td></tr>
+<tr><td><code>connections</code></td><td><a href="./query_connection.html">Query the identifiers of all connections on a chain</a></td></tr>
+<tr><td><code>channel</code></td><td><a href="./query_channel.html">Query information about channels</a></td></tr>
+<tr><td><code>channels</code></td><td><a href="./query_channel.html">Query the identifiers of all channels on a given chain</a></td></tr>
+<tr><td><code>packet</code></td><td><a href="./query_packet.html">Query information about packets</a></td></tr>
 </tbody></table>
 <h2><a class="header" href="#usage-1" id="usage-1">Usage</a></h2>
 <pre><code>USAGE:
     hermes query &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    query state from chain
+    Query objects from the chain
 
 SUBCOMMANDS:
-    client     query information about client(s)
-    clients    query clients
-    connection query information about connection(s)
-    connections query the identifiers of all connections on a chain
-    channel    query information about channel(s)
-    channels   query the identifiers of all channels on a given chain
-    packet     query information about packet(s)
+    client         Query information about clients
+    clients        Query clients
+    connection     Query information about connections
+    connections    Query the identifiers of all connections on a chain
+    channel        Query information about channels
+    channels       Query the identifiers of all channels on a given chain
+    packet         Query information about packets
 </code></pre>
 <h1><a class="header" href="#query-clients" id="query-clients">Query Clients</a></h1>
 <p>Use the <code>query clients</code> command to query the identifiers of all clients on a given chain.</p>
@@ -2499,7 +2499,7 @@ SUBCOMMANDS:
     hermes query clients &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query clients
+    Query clients
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2524,7 +2524,7 @@ POSITIONAL ARGUMENTS:
     hermes query client &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    query information about client(s)
+    Query information about clients
 
 SUBCOMMANDS:
     state      query client full state
@@ -2537,7 +2537,7 @@ SUBCOMMANDS:
     hermes query client state &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query client full state
+    Query client full state
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2595,7 +2595,7 @@ FLAGS:
     hermes query client consensus &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query client consensus
+    Query client consensus state
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2627,7 +2627,7 @@ FLAGS:
     hermes query client connections &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query client connections
+    Query client connections
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2654,7 +2654,7 @@ FLAGS:
     hermes query connections &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query the identifiers of all connections on a chain
+    Query the identifiers of all connections on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2679,7 +2679,7 @@ POSITIONAL ARGUMENTS:
     hermes query connection &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    query information about connection(s)
+    Query information about connection(s)
 
 SUBCOMMANDS:
     end        query connection end
@@ -2757,7 +2757,7 @@ POSITIONAL ARGUMENTS:
     hermes query channels &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query the identifiers of all channels on a chain
+    Query the identifiers of all channels on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2782,7 +2782,7 @@ POSITIONAL ARGUMENTS:
     hermes query channel &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    query information about channel(s)
+    Query information about channels
 
 SUBCOMMANDS:
     end        query channel end
@@ -2830,7 +2830,7 @@ FLAGS:
     hermes query packet &lt;SUBCOMMAND&gt;
 
 DESCRIPTION:
-    query information about packet(s)
+    Query information about packets
 
 SUBCOMMANDS:
     commitments query packet commitments
@@ -2846,7 +2846,7 @@ SUBCOMMANDS:
     hermes query packet commitments &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query packet commitments
+    Query packet commitments
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2878,7 +2878,7 @@ POSITIONAL ARGUMENTS:
     hermes query packet commitment &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query packet commitment
+    Query packet commitment
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2904,7 +2904,7 @@ FLAGS:
     hermes query packet acks &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query packet acknowledgments
+    Query packet acknowledgments
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2936,7 +2936,7 @@ POSITIONAL ARGUMENTS:
     hermes query packet ack &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query packet acknowledgment
+    Query packet acknowledgment
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2962,7 +2962,7 @@ FLAGS:
     hermes query packet unreceived-packets &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query unreceived packets
+    Query unreceived packets
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the chain to query the unreceived sequences
@@ -2989,7 +2989,7 @@ POSITIONAL ARGUMENTS:
     hermes query packet unreceived-acks &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query unreceived acknowledgments
+    Query unreceived acknowledgments
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the chain to query the unreceived acknowledgments
@@ -3016,7 +3016,7 @@ POSITIONAL ARGUMENTS:
     hermes listen &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    listen to IBC events
+    Listen to IBC events
 
 POSITIONAL ARGUMENTS:
     chain_id
