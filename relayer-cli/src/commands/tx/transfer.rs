@@ -16,7 +16,7 @@ use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
-pub struct TxRawSendPacketCmd {
+pub struct TxICS20MsgTransferCmd {
     #[options(free, required, help = "identifier of the source chain")]
     src_chain_id: ChainId,
 
@@ -36,7 +36,7 @@ pub struct TxRawSendPacketCmd {
     )]
     amount: u64,
 
-    #[options(free, help = "timeout in number of blocks since current")]
+    #[options(free, required, help = "timeout in number of blocks since current")]
     height_offset: u64,
 
     #[options(help = "denomination of the coins to send", short = "d")]
@@ -46,7 +46,7 @@ pub struct TxRawSendPacketCmd {
     number_msgs: Option<usize>,
 }
 
-impl TxRawSendPacketCmd {
+impl TxICS20MsgTransferCmd {
     fn validate_options(&self, config: &Config) -> Result<TransferOptions, String> {
         let src_chain_config = config
             .find_chain(&self.src_chain_id)
@@ -79,7 +79,7 @@ impl TxRawSendPacketCmd {
     }
 }
 
-impl Runnable for TxRawSendPacketCmd {
+impl Runnable for TxICS20MsgTransferCmd {
     fn run(&self) {
         let config = app_config();
 

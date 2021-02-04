@@ -6,6 +6,10 @@ authors = [
   "Informal Systems <hello@informal.systems>"
 ]
 
+description = """
+    Implementation of an IBC Relayer in Rust, as a library.
+"""
+
 [features]
 profiling = []
 

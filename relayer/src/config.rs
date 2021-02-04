@@ -1,5 +1,4 @@
-//! Read the relayer configuration into the Config struct, in examples for now
-//! to support ADR validation..should move to relayer/src soon
+//! Relayer configuration
 
 use std::{
     fs,

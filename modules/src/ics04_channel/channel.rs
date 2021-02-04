@@ -16,9 +16,7 @@ use crate::ics04_channel::{
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(tag = "ChannelEnd")] // Internal tagging, to make the type explicit in JSON outputs.
 pub struct ChannelEnd {
-    // see https://serde.rs/enum-representations.html#internally-tagged
     state: State,
     ordering: Order,
     remote: Counterparty,

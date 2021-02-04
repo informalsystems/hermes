@@ -177,7 +177,7 @@ impl From<AnyHeader> for Any {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "AnyClientState")]
+#[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
@@ -273,7 +273,7 @@ impl ClientState for AnyClientState {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "AnyConsensusState")]
+#[serde(tag = "type")]
 pub enum AnyConsensusState {
     Tendermint(TendermintConsensusState),
 

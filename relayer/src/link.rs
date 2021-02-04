@@ -733,7 +733,7 @@ impl Link {
     }
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
-        info!("relaying packets for link {:#?}", self.a_to_b.channel);
+        println!("relaying packets on {:#?}", self.a_to_b.channel);
         loop {
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;

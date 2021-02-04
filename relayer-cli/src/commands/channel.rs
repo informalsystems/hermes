@@ -14,7 +14,7 @@ use crate::conclude::Output;
 #[derive(Command, Debug, Options, Runnable)]
 pub enum ChannelCmds {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
     /// The `tx raw` subcommand

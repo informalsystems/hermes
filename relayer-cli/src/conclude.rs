@@ -82,8 +82,7 @@ pub struct Output {
     pub status: Status,
 
     /// The result of a command, such as the output from a query or transaction.
-    /// This is a vector, possibly empty, of strongly typed JSON objects.
-    pub result: Vec<serde_json::Value>,
+    pub result: serde_json::Value,
 }
 
 impl Output {
@@ -91,7 +90,7 @@ impl Output {
     pub fn new(status: Status) -> Self {
         Output {
             status,
-            result: vec![],
+            result: serde_json::Value::Null,
         }
     }
 
@@ -105,30 +104,25 @@ impl Output {
         Output::new(Status::Error)
     }
 
-    /// Builder-style method for attaching a result to an output object. Can be called multiple
-    /// times, with each subsequent call appending the given `res` JSON object to the output.
-    pub fn with_result(mut self, res: serde_json::Value) -> Self {
-        self.result.push(res);
+    /// Builder-style method for attaching a result to an output object.
+    pub fn with_result(mut self, result: impl Serialize + std::fmt::Debug) -> Self {
+        self.result = Self::serialize_result(result);
         self
     }
 
     /// Quick-access constructor for an output signalling a success `status` and tagged with the
-    /// input `res`.
-    pub fn success(res: impl Serialize + std::fmt::Debug) -> Self {
-        let mut out = Output::with_success();
-        out.result.push(Self::serialize_result(res));
-        out
+    /// input `result`.
+    pub fn success(result: impl Serialize + std::fmt::Debug) -> Self {
+        Output::with_success().with_result(result)
     }
 
     /// Quick-access constructor for an output signalling a error `status` and tagged with the
-    /// input `res`.
-    pub fn error(res: impl Serialize + std::fmt::Debug) -> Self {
-        let mut out = Output::with_error();
-        out.result.push(Self::serialize_result(res));
-        out
+    /// input `result`.
+    pub fn error(result: impl Serialize + std::fmt::Debug) -> Self {
+        Output::with_error().with_result(result)
     }
 
-    // Helper to serialize a result into a `serde_json::Value`.
+    /// Helper to serialize a result into a `serde_json::Value`.
     fn serialize_result(res: impl Serialize + std::fmt::Debug) -> serde_json::Value {
         let last_resort = format!("{:?}", res);
 

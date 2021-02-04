@@ -9,7 +9,7 @@ class Packet:
     source_channel: ChannelId
     destination_port: PortId
     destination_channel: ChannelId
-    data: bytes
+    data: Hex
     timeout_height: Height
     timeout_timestamp: Timestamp
 
@@ -20,7 +20,7 @@ class TxPacketSendRes:
     packet: Packet
 
 
-@cmd("tx raw packet-send")
+@cmd("tx raw ft-transfer")
 @dataclass
 class TxPacketSend(Cmd[TxPacketSendRes]):
     src_chain_id: ChainId
@@ -32,7 +32,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
         return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
 
     def process(self, result: Any) -> TxPacketSendRes:
-        entry = find_entry(result[0], 'SendPacketChannel')
+        entry = find_entry(result, 'SendPacketChannel')
         return from_dict(TxPacketSendRes, entry)
 
 # -----------------------------------------------------------------------------
@@ -42,7 +42,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 class TxPacketRecvRes:
     height: BlockHeight
     packet: Packet
-    ack: bytes
+    ack: Hex
 
 
 @cmd("tx raw packet-recv")
@@ -57,7 +57,7 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
     def process(self, result: Any) -> TxPacketRecvRes:
-        entry = find_entry(result[0], 'WriteAcknowledgementChannel')
+        entry = find_entry(result, 'WriteAcknowledgementChannel')
         return from_dict(TxPacketRecvRes, entry)
 
 # -----------------------------------------------------------------------------
@@ -81,7 +81,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
     def process(self, result: Any) -> TxPacketAckRes:
-        entry = find_entry(result[0], 'AcknowledgePacketChannel')
+        entry = find_entry(result, 'AcknowledgePacketChannel')
         return from_dict(TxPacketAckRes, entry)
 
 # =============================================================================

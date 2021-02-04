@@ -27,7 +27,7 @@ impl QueryChannelsCmd {
     }
 }
 
-// hermes -c config.toml query channels ibc-0
+// hermes query channels ibc-0
 impl Runnable for QueryChannelsCmd {
     fn run(&self) {
         let config = app_config();
