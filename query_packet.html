@@ -164,7 +164,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#packet-queries" id="packet-queries">Packet Queries</a></h1>
-<p>The <code>query packet</code> command can be used to query some information about packets.</p>
+<p>Use the <code>query packet</code> commands to query information about packets.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet &lt;SUBCOMMAND&gt;
 
@@ -179,8 +179,8 @@ SUBCOMMANDS:
     unreceived-packets query unreceived packets
     unreceived-acks query unreceived acknowledgments
 </code></pre>
-<h1><a class="header" href="#packet-commitments" id="packet-commitments">Packet Commitments</a></h1>
-<p>The <code>query packet commitments</code> can be used to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).</p>
+<h2><a class="header" href="#packet-commitments" id="packet-commitments">Packet Commitments</a></h2>
+<p>Use the <code>query packet commitments</code> command to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet commitments &lt;OPTIONS&gt;
 
@@ -211,8 +211,8 @@ POSITIONAL ARGUMENTS:
   }
 }
 </code></pre>
-<h1><a class="header" href="#packet-commitment-with-sequence" id="packet-commitment-with-sequence">Packet Commitment with Sequence</a></h1>
-<p>The <code>query packet commitment</code> can be used to query the commitment raw value of a packet with a given sequence number.</p>
+<h2><a class="header" href="#packet-commitment-with-sequence" id="packet-commitment-with-sequence">Packet Commitment with Sequence</a></h2>
+<p>Use the <code>query packet commitment</code> command to query the commitment value of a packet with a given sequence number.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet commitment &lt;OPTIONS&gt;
 
@@ -237,8 +237,8 @@ FLAGS:
   &quot;result&quot;: &quot;F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC&quot;
 }
 </code></pre>
-<h1><a class="header" href="#packet-acknowledgments" id="packet-acknowledgments">Packet Acknowledgments</a></h1>
-<p>The <code>query packet acknowledgments</code> can be used to query the sequence numbers of all packets that have been acknowledged.</p>
+<h2><a class="header" href="#packet-acknowledgments" id="packet-acknowledgments">Packet Acknowledgments</a></h2>
+<p>Use the <code>query packet acknowledgments</code> command to query the sequence numbers of all packets that have been acknowledged.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet acks &lt;OPTIONS&gt;
 
@@ -269,8 +269,8 @@ POSITIONAL ARGUMENTS:
   }
 }
 </code></pre>
-<h1><a class="header" href="#packet-acknowledgment-with-sequence" id="packet-acknowledgment-with-sequence">Packet Acknowledgment with Sequence</a></h1>
-<p>The <code>query packet acknowledgment</code> can be used to query the acknowledgment value of a packet with a given sequence number.</p>
+<h2><a class="header" href="#packet-acknowledgment-with-sequence" id="packet-acknowledgment-with-sequence">Packet Acknowledgment with Sequence</a></h2>
+<p>Use the <code>query packet acknowledgment</code> command to query the acknowledgment value of a packet with a given sequence number.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet ack &lt;OPTIONS&gt;
 
@@ -295,8 +295,8 @@ FLAGS:
   &quot;result&quot;: &quot;08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C&quot;
 }
 </code></pre>
-<h1><a class="header" href="#unreceived-packets" id="unreceived-packets">Unreceived Packets</a></h1>
-<p>The <code>query packet unreceived-packets</code> can be used to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.</p>
+<h2><a class="header" href="#unreceived-packets" id="unreceived-packets">Unreceived Packets</a></h2>
+<p>Use the <code>query packet unreceived-packets</code> command to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet unreceived-packets &lt;OPTIONS&gt;
 
@@ -322,8 +322,8 @@ POSITIONAL ARGUMENTS:
   ]
 }
 </code></pre>
-<h1><a class="header" href="#unreceived-acknowledgments" id="unreceived-acknowledgments">Unreceived Acknowledgments</a></h1>
-<p>The <code>query packet unreceived-acks</code> can be used to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.</p>
+<h2><a class="header" href="#unreceived-acknowledgments" id="unreceived-acknowledgments">Unreceived Acknowledgments</a></h2>
+<p>Use the <code>query packet unreceived-acks</code> command to query the sequence numbers of all packets that have been received by the source chain but not yet acknowledged by the destination chain.</p>
 <pre><code class="language-shell">USAGE:
     hermes query packet unreceived-acks &lt;OPTIONS&gt;
 
