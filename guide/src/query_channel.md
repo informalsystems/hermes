@@ -7,7 +7,7 @@ USAGE:
     hermes query channels <OPTIONS>
 
 DESCRIPTION:
-    query the identifiers of all channels on a chain
+    Query the identifiers of all channels on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -42,7 +42,7 @@ USAGE:
     hermes query channel <SUBCOMMAND>
 
 DESCRIPTION:
-    query information about channel(s)
+    Query information about channels
 
 SUBCOMMANDS:
     end        query channel end

@@ -46,35 +46,35 @@ pub enum CliCmd {
     Help(Help<Self>),
 
     /// The `keys` subcommand
-    #[options(help = "manage keys in the relayer for each chain")]
+    #[options(help = "Manage keys in the relayer for each chain")]
     Keys(KeysCmd),
 
     /// The `light` subcommand
-    #[options(help = "basic functionality for managing the light clients")]
+    #[options(help = "Basic functionality for managing the light clients")]
     Light(LightCmd),
 
     /// The `start` subcommand
-    #[options(help = "start the relayer")]
+    #[options(help = "Start the relayer")]
     Start(StartCmd),
 
     /// The `channel` subcommand
-    #[options(help = "channel functionality for managing channels")]
+    #[options(help = "Channel functionality for managing channels")]
     Channel(ChannelCmds),
 
     /// The `query` subcommand
-    #[options(help = "query state from chain")]
+    #[options(help = "Query objects from the chain")]
     Query(QueryCmd),
 
     /// The `tx` subcommand
-    #[options(help = "create and send IBC transactions")]
+    #[options(help = "Create and send IBC transactions")]
     Tx(TxCmd),
 
     /// The `listen` subcommand
-    #[options(help = "listen to and display IBC events emitted by a chain")]
+    #[options(help = "Listen to and display IBC events emitted by a chain")]
     Listen(ListenCmd),
 
     /// The `version` subcommand
-    #[options(help = "display version information")]
+    #[options(help = "Display version information")]
     Version(VersionCmd),
 }
 

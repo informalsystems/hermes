@@ -17,7 +17,7 @@ USAGE:
     hermes-cli keys <SUBCOMMAND>
 
 DESCRIPTION:
-    manage keys in the relayer for each chain
+    Manage keys in the relayer for each chain
 
 SUBCOMMANDS:
     help       Get usage information
@@ -59,7 +59,7 @@ USAGE:
     hermes keys add <OPTIONS>
 
 DESCRIPTION:
-    adds a key to a configured chain
+    Adds a key to a configured chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain
@@ -90,7 +90,7 @@ USAGE:
     hermes keys list <OPTIONS>
 
 DESCRIPTION:
-    list keys configured on a chain
+    List keys configured on a chain
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain

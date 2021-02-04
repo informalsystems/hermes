@@ -7,7 +7,7 @@ USAGE:
     hermes listen <OPTIONS>
 
 DESCRIPTION:
-    listen to IBC events
+    Listen to IBC events
 
 POSITIONAL ARGUMENTS:
     chain_id

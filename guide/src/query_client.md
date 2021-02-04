@@ -6,7 +6,7 @@ USAGE:
     hermes query clients <OPTIONS>
 
 DESCRIPTION:
-    query clients
+    Query clients
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -40,7 +40,7 @@ USAGE:
     hermes query client <SUBCOMMAND>
 
 DESCRIPTION:
-    query information about client(s)
+    Query information about clients
 
 SUBCOMMANDS:
     state      query client full state
@@ -56,7 +56,7 @@ USAGE:
     hermes query client state <OPTIONS>
 
 DESCRIPTION:
-    query client full state
+    Query client full state
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -123,7 +123,7 @@ USAGE:
     hermes query client consensus <OPTIONS>
 
 DESCRIPTION:
-    query client consensus
+    Query client consensus state
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -164,7 +164,7 @@ USAGE:
     hermes query client connections <OPTIONS>
 
 DESCRIPTION:
-    query client connections
+    Query client connections
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query

@@ -13,11 +13,11 @@ pub enum KeysCmd {
     Help(Help<Self>),
 
     /// The `keys add` subcommand
-    #[options(help = "adds a key to a configured chain")]
+    #[options(help = "Adds a key to a configured chain")]
     Add(add::KeysAddCmd),
 
     /// The `keys list` subcommand
-    #[options(help = "list keys configured on a chain")]
+    #[options(help = "List keys configured on a chain")]
     List(list::KeysListCmd),
     ///// The `keys restore` subcommand
     // #[options(help = "restore a key to a configured chain using a mnemonic")]

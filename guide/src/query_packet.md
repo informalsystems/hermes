@@ -8,7 +8,7 @@ USAGE:
     hermes query packet <SUBCOMMAND>
 
 DESCRIPTION:
-    query information about packet(s)
+    Query information about packets
 
 SUBCOMMANDS:
     commitments query packet commitments
@@ -28,7 +28,7 @@ USAGE:
     hermes query packet commitments <OPTIONS>
 
 DESCRIPTION:
-    query packet commitments
+    Query packet commitments
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -70,7 +70,7 @@ USAGE:
     hermes query packet commitment <OPTIONS>
 
 DESCRIPTION:
-    query packet commitment
+    Query packet commitment
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -106,7 +106,7 @@ USAGE:
     hermes query packet acks <OPTIONS>
 
 DESCRIPTION:
-    query packet acknowledgments
+    Query packet acknowledgments
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -148,7 +148,7 @@ USAGE:
     hermes query packet ack <OPTIONS>
 
 DESCRIPTION:
-    query packet acknowledgment
+    Query packet acknowledgment
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -184,7 +184,7 @@ USAGE:
     hermes query packet unreceived-packets <OPTIONS>
 
 DESCRIPTION:
-    query unreceived packets
+    Query unreceived packets
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the chain to query the unreceived sequences
@@ -221,7 +221,7 @@ USAGE:
     hermes query packet unreceived-acks <OPTIONS>
 
 DESCRIPTION:
-    query unreceived acknowledgments
+    Query unreceived acknowledgments
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the chain to query the unreceived acknowledgments

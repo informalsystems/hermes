@@ -9,7 +9,7 @@ USAGE:
     hermes tx raw create-client <OPTIONS>
 
 DESCRIPTION:
-    tx raw create-client
+    Create a client for source chain on destination chain
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain
@@ -52,7 +52,7 @@ USAGE:
     hermes tx raw update-client <OPTIONS>
 
 DESCRIPTION:
-    tx raw update-client
+    Update the specified client on destination chain
 
 POSITIONAL ARGUMENTS:
     dst_chain_id              identifier of the destination chain

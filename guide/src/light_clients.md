@@ -34,11 +34,11 @@ USAGE:
     hermes light add <OPTIONS>
 
 DESCRIPTION:
-    add a light client peer for a given chain
+    Add a light client peer for a given chain
 
 POSITIONAL ARGUMENTS:
     address                   RPC network address (required)
-                              
+
 FLAGS:
     -c, --chain-id CHAIN-ID   identifier of the chain (required)
     -s, --store STORE         path to light client store for this peer (required)
@@ -78,11 +78,11 @@ USAGE:
     hermes light rm <OPTIONS>
 
 DESCRIPTION:
-    remove a light client peer for a given chain
+    Remove a light client peer for a given chain
 
 POSITIONAL ARGUMENTS:
     peer_id                   identifiers of peers to remove
-                              
+
 FLAGS:
     -c, --chain-id CHAIN-ID   identifier of the chain to remove peers from
     -f, --force               force removal of primary peer
