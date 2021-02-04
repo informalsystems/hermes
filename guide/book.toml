@@ -5,9 +5,10 @@ multilingual = false
 src = "src"
 title = "Hermes Documentation"
 
-[preprocessor]
 [preprocessor.mermaid]
 command = "mdbook-mermaid"
 
 [output.html]
 additional-js = ["mermaid.min.js", "mermaid-init.js"]
+
+[output.linkcheck]
