@@ -3,7 +3,7 @@
 Before we explain what is Hermes, we briefly describe what is a relayer.
 
 A **relayer** is an off-chain process responsible for relaying IBC datagrams between any two chains.
-The way it does so is by scanning chain states, building transactions based on this state,
+The way it does so is by scanning chain states, building transactions based on these states,
 and submitting the transactions.
 
 A relayer is a central element in the IBC network architecture. This is because chain modules 

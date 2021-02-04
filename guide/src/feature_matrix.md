@@ -1,7 +1,6 @@
 # Feature Matrix
 This section gives more details about the features and implementation status 
-of Hermes in comparison with the [Cosmos Go relayer]
-[cosmos-go-relayer].
+of Hermes in comparison with the [cosmos-go-relayer].
 
 __Legend__:
 
