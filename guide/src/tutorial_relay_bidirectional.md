@@ -179,13 +179,13 @@ up properly.
 14. In yet another terminal, From the either the `relay_a` or `relay_b` directory, use the `tx raw ft-transfer` command to send 2 packets to the `ibc0` chain:
 
     ```shell
-    hermes -c config tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
     ```
 
 15. Use the `tx raw ft-transfer` command again to send 2 packets to the `ibc1` chain:
 
     ```shell
-    hermes -c config tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+    hermes -c config.toml tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
     ```
 
 16. Observe the output on both relayer terminals, verify that the send events are processed, and the `recv_packet -s` are sent out.
