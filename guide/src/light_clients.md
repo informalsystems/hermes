@@ -67,7 +67,7 @@ In order to add a light client secondary peer for a given chain execute the foll
 hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 ```
 
-__Note__: The `peer-id` above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.
+> The `peer-id` above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.
 
 ### Removing Light Client Peers
 

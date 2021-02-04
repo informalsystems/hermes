@@ -14,7 +14,7 @@
     gaiad --node tcp://localhost:26557 query bank balances $(gaiad --home data/ibc-1 keys --keyring-backend="test" show user -a)
     ```
 
-Note that the addresses used in the two commands above are configured in `dev-env`.
+> Note that the addresses used in the two commands above are configured in `dev-env`.
 
 ### 4.2 Packet relaying:
 

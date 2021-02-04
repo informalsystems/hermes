@@ -31,7 +31,7 @@ if the command is successful a message similar to the one below will be displaye
 }
 ```
 
-> Note: Please note the `client_id` value returned. You will need that for other commands.
+> Please note the `client_id` value returned. You will need that for other commands.
 
 You can also execute a __query__ to view the client state on destination chain `ibc-0` by specifying the `client_id` value `07-tendermint-0`:
 

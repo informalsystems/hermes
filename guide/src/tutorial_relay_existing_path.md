@@ -8,7 +8,7 @@ Hermes can listen to IBC packet events over a specified path and relay receive p
    hermes start ibc-0 ibc-1 transfer channel-0
    ```
 
-    > __Note__: In this example, the channel identifier on `ibc-0`is `channel-0` while the identifier on`ibc-1` is `channel-1`
+    > In this example, the channel identifier on `ibc-0`is `channel-0` while the identifier on`ibc-1` is `channel-1`
 
 2. In a separate terminal, use the transfer command to send 2 packets to `ibc0` chain:
 

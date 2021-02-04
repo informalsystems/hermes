@@ -20,7 +20,7 @@ Hermes packet relaying can be done over a newly established path. It performs cl
    hermes start ibc-0 ibc-1
    ```
 
-    > __Note__: The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.
+    > The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.
 
     Once the path is established the relayer waits listening for IBC packet events.
 

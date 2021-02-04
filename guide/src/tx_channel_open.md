@@ -69,7 +69,8 @@ hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer | jq
 ```
 
 A new channel has been initialized on `ibc-1` with identifier `channel-0`.
-Note that the `counterparty_channel_id` field is currently empty.
+
+> Note that the `counterparty_channel_id` field is currently empty.
 
 
 ## Channel Open Try
@@ -119,7 +120,8 @@ hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channe
 ```
 
 A new channel has been created on `ibc-1` with identifier `channel-1`.
-Note that the field `counterparty_channel_id` points to the channel on `ibc-0`.
+
+> Note that the field `counterparty_channel_id` points to the channel on `ibc-0`.
 
 
 ## Channel Open Ack
@@ -169,7 +171,7 @@ hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channe
 }
 ```
 
-Note that the field `counterparty_channel_id` now points to the channel on `ibc-1`.
+> Note that the field `counterparty_channel_id` now points to the channel on `ibc-1`.
 
 
 ## Channel Open Confirm

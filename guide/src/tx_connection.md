@@ -70,7 +70,8 @@ hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 ```
 
 A new connection has been initialized on `ibc-0` with identifier `connection-0`.
-Note that the `counterparty_connection_id` field is currently empty.
+
+> Note that the `counterparty_connection_id` field is currently empty.
 
 
 ## Connection Try
@@ -118,7 +119,8 @@ hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection
 ```
 
 A new connection has been created on `ibc-1` with identifier `connection-1`.
-Note that the field `counterparty_connection_id` points to the connection on `ibc-0`.
+
+> Note that the field `counterparty_connection_id` points to the connection on `ibc-0`.
 
 
 ## Connection Ack
@@ -166,7 +168,7 @@ hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection
 }
 ```
 
-Note that the field `counterparty_connection_id` now points to the connection on `ibc-1`.
+> Note that the field `counterparty_connection_id` now points to the connection on `ibc-1`.
 
 
 ## Connection Confirm

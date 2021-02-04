@@ -1,23 +1,23 @@
 # Help
 
-This section provides guidelines regarding troubleshooting and general 
+This section provides guidelines regarding troubleshooting and general
 resources for getting help with `hermes`.
 For this purpose, we recommend a few ideas that could be of help:
 
 - [profile][profiling] your relayer binary to identify slow methods;
 - [configure][log-level] the `log_level` to help with debugging;
-- [patch][patching] your local gaia chain(s) to enable some corner-case methods 
+- [patch][patching] your local gaia chain(s) to enable some corner-case methods
   (e.g., channel close);
-  
+
 And if the above do not help:
 - you can [request a new feature][feature];
-- or consult the [list of reported issues][issues] and search by relevant 
+- or consult the [list of reported issues][issues] and search by relevant
   keywords to see if you're dealing with a known problem;
 - we would be grateful if you can submit a [bug report][bug-report]
-  discussing any problem you find, and from there on we can look at the 
+  discussing any problem you find, and from there on we can look at the
   problem together;
 
-Lastly, for general questions, you can reach us at `hello@informal.systems`, 
+Lastly, for general questions, you can reach us at `hello@informal.systems`,
 or on Twitter [@informalinc][twitter].
 
 ## Profiling
@@ -77,16 +77,16 @@ Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - ela
 ```
 
 Profiling is useful for tracking down unusually slow methods.
-Each transaction or query usually consists of multiple lower-level methods, 
+Each transaction or query usually consists of multiple lower-level methods,
 and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, `hermes` will output timing information for individual
 methods involved in a command.
 
-__NOTE__: To be able to see the profiling output, the 
-[log level][log-level] should be `info` 
+__NOTE__: To be able to see the profiling output, the
+[log level][log-level] should be `info`
 level or lower.
 
-#### Example output for `tx raw conn-init` command 
+#### Example output for `tx raw conn-init` command
 
 
 ```
@@ -150,8 +150,8 @@ produced:
 
 ## Patching `gaia`
 
-The guide below refers specifically to patching your gaia chain so that the 
-relayer can initiate the closing of channels by submitting a [`chan-close-init` 
+The guide below refers specifically to patching your gaia chain so that the
+relayer can initiate the closing of channels by submitting a [`chan-close-init`
 transaction][chan-close].
 Without this modification, the transaction will be rejected.
 We also describe how to test the channel closing feature.
@@ -197,7 +197,7 @@ In order to test the correct operation during the channel close, perform the ste
   hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 5555 1000 -n 1 -d samoleans
   ```
 
-- now do the first step of channel closing: the channel will transition 
+- now do the first step of channel closing: the channel will transition
 to close-open:
 
     ```shell script
@@ -225,11 +225,11 @@ to close-open:
 
 ## New Feature Request
 
-If you would like a feature to be added to `hermes`, don't hesitate 
+If you would like a feature to be added to `hermes`, don't hesitate
 to open a discussion about that via the [feature request][feature-request]
 issue template.
-Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
+> Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
