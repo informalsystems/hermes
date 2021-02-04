@@ -16,7 +16,7 @@
     {
         "action": {
             "chainId": "chain-A",
-            "height": 1,
+            "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",
@@ -32,7 +32,7 @@
     {
         "action": {
             "chainId": "chain-A",
-            "height": 1,
+            "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",

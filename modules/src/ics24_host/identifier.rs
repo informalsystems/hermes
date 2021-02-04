@@ -197,6 +197,13 @@ impl PartialEq<str> for ClientId {
 pub struct ConnectionId(String);
 
 impl ConnectionId {
+    /// Builds a new connection identifier.
+    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+        let prefix = "connection";
+        let id = format!("{}-{}", prefix, counter);
+        Self::from_str(id.as_str())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
@@ -283,6 +290,13 @@ impl Default for PortId {
 pub struct ChannelId(String);
 
 impl ChannelId {
+    /// Builds a new channel identifier.
+    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+        let prefix = "channel";
+        let id = format!("{}-{}", prefix, counter);
+        Self::from_str(id.as_str())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0

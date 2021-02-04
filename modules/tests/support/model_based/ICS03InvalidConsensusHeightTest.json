@@ -15,34 +15,20 @@
     },
     {
         "action": {
-            "chainId": "chain-B",
-            "clientHeight": 1,
-            "type": "ICS02CreateClient"
-        },
-        "actionOutcome": "ICS02CreateOK",
-        "chains": {
-            "chain-A": {
-                "height": 0
-            },
-            "chain-B": {
-                "height": 1
-            }
-        }
-    },
-    {
-        "action": {
-            "chainId": "chain-B",
+            "chainId": "chain-A",
             "clientId": 0,
+            "clientHeight": 1,
+            "connectionId": -1,
             "counterpartyClientId": 0,
-            "type": "ICS03ConnectionOpenInit"
+            "type": "ICS03ConnectionOpenTry"
         },
-        "actionOutcome": "ICS03ConnectionOpenInitOK",
+        "actionOutcome": "ICS03InvalidConsensusHeight",
         "chains": {
             "chain-A": {
                 "height": 0
             },
             "chain-B": {
-                "height": 2
+                "height": 0
             }
         }
     }

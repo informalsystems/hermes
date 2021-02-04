@@ -88,10 +88,10 @@ pub struct MockContext {
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Counter for connection identifiers (see `next_connection_id`).
-    connection_ids_counter: u32,
+    connection_ids_counter: u64,
 
     /// Counter for channel identifiers (see `next_channel_id`).
-    channel_ids_counter: u32,
+    channel_ids_counter: u64,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -392,11 +392,9 @@ impl ChannelReader for MockContext {
 
 impl ChannelKeeper for MockContext {
     fn next_channel_id(&mut self) -> ChannelId {
-        let prefix = ChannelId::default().to_string();
-        let suffix = self.channel_ids_counter;
+        let counter = self.channel_ids_counter;
         self.channel_ids_counter += 1;
-
-        ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        ChannelId::new(counter).unwrap()
     }
 
     fn store_channel(
@@ -497,11 +495,9 @@ impl ConnectionReader for MockContext {
 
 impl ConnectionKeeper for MockContext {
     fn next_connection_id(&mut self) -> ConnectionId {
-        let prefix = ConnectionId::default().to_string();
-        let suffix = self.connection_ids_counter;
+        let counter = self.connection_ids_counter;
         self.connection_ids_counter += 1;
-
-        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+        ConnectionId::new(counter).unwrap()
     }
 
     fn store_connection(

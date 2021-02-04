@@ -10,23 +10,25 @@ use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::error::Kind as ICS03ErrorKind;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
 use ibc::ics03_connection::version::Version;
 use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics24_host::identifier::ChainId;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
 use ibc::ics26_routing::msgs::ICS26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
+use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height;
 use ibc::{ics02_client::client_def::AnyHeader, ics18_relayer::context::ICS18Context};
-use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
+use std::{collections::HashMap, vec};
 use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
@@ -109,9 +111,18 @@ impl ICS02TestExecutor {
         Version::default()
     }
 
+    fn versions() -> Vec<Version> {
+        vec![Self::version()]
+    }
+
     fn client_id(client_id: u64) -> ClientId {
         ClientId::new(ClientType::Mock, client_id)
             .expect("it should be possible to create the client identifier")
+    }
+
+    fn connection_id(connection_id: u64) -> ConnectionId {
+        ConnectionId::new(connection_id)
+            .expect("it should be possible to create the connection identifier")
     }
 
     fn height(height: u64) -> Height {
@@ -139,15 +150,45 @@ impl ICS02TestExecutor {
     }
 
     fn counterparty(counterparty_client_id: u64) -> Counterparty {
-        Counterparty::new(
-            Self::client_id(counterparty_client_id),
-            None,
-            CommitmentPrefix(Vec::new()),
-        )
+        let client_id = Self::client_id(counterparty_client_id);
+        let connection_id = None;
+        let prefix = Self::commitment_prefix();
+        Counterparty::new(client_id, connection_id, prefix)
     }
 
     fn delay_period() -> u64 {
         0
+    }
+
+    fn commitment_prefix() -> CommitmentPrefix {
+        CommitmentPrefix(Vec::new())
+    }
+
+    fn commitment_proof_bytes() -> CommitmentProofBytes {
+        vec![0].into()
+    }
+
+    fn consensus_proof(height: u64) -> ConsensusProof {
+        let consensus_proof = Self::commitment_proof_bytes();
+        let consensus_height = Self::height(height);
+        ConsensusProof::new(consensus_proof, consensus_height)
+            .expect("it should be possible to create the consensus proof")
+    }
+
+    fn proofs(height: u64) -> Proofs {
+        let object_proof = Self::commitment_proof_bytes();
+        let client_proof = None;
+        let consensus_proof = Some(Self::consensus_proof(height));
+        let other_proof = None;
+        let height = Self::height(height);
+        Proofs::new(
+            object_proof,
+            client_proof,
+            consensus_proof,
+            other_proof,
+            height,
+        )
+        .expect("it should be possible to create the proofs")
     }
 
     /// Check that chain heights match the ones in the model.
@@ -179,6 +220,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
     }
 
     fn next_step(&mut self, step: Step) -> bool {
+        println!("{:?}", step);
         let outcome_matches = match step.action.action_type {
             ActionType::None => panic!("unexpected action type"),
             ActionType::ICS02CreateClient => {
@@ -187,18 +229,18 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                     .action
                     .chain_id
                     .expect("create client action should have a chain identifier");
-                let height = step
+                let client_height = step
                     .action
-                    .height
-                    .expect("create client action should have a height");
+                    .client_height
+                    .expect("create client action should have a client height");
 
                 // get chain's context
                 let ctx = self.chain_context_mut(&chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state: Self::client_state(height),
-                    consensus_state: Self::consensus_state(height),
+                    client_state: Self::client_state(client_height),
+                    consensus_state: Self::consensus_state(client_height),
                     signer: Self::signer(),
                 }));
                 let result = ctx.deliver(msg);
@@ -222,10 +264,10 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                     .action
                     .client_id
                     .expect("update client action should have a client identifier");
-                let height = step
+                let client_height = step
                     .action
-                    .height
-                    .expect("update client action should have a height");
+                    .client_height
+                    .expect("update client action should have a client height");
 
                 // get chain's context
                 let ctx = self.chain_context_mut(&chain_id);
@@ -233,7 +275,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
-                    header: Self::header(height),
+                    header: Self::header(client_height),
                     signer: Self::signer(),
                 }));
                 let result = ctx.deliver(msg);
@@ -251,7 +293,8 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                         // error matching the expected outcome
                         matches!(
                             handler_error_kind,
-                            ICS02ErrorKind::ClientNotFound(id) if id == Self::client_id(client_id)
+                            ICS02ErrorKind::ClientNotFound(error_client_id)
+                            if error_client_id == Self::client_id(client_id)
                         )
                     }
                     ActionOutcome::ICS02HeaderVerificationFailure => {
@@ -306,9 +349,64 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                         // error matching the expected outcome
                         matches!(
                             handler_error_kind,
-                            ICS03ErrorKind::MissingClient(id) if id == Self::client_id(client_id)
+                            ICS03ErrorKind::MissingClient(error_client_id)
+                            if error_client_id == Self::client_id(client_id)
                         )
                     }
+                    action => panic!("unexpected action outcome {:?}", action),
+                }
+            }
+            ActionType::ICS03ConnectionOpenTry => {
+                // get action parameters
+                let chain_id = step
+                    .action
+                    .chain_id
+                    .expect("connection open init action should have a chain identifier");
+                let client_id = step
+                    .action
+                    .client_id
+                    .expect("connection open init action should have a client identifier");
+                let client_height = step
+                    .action
+                    .client_height
+                    .expect("connection open try action should have a client height");
+                let counterparty_client_id = step.action.counterparty_client_id.expect(
+                    "connection open init action should have a counterparty client identifier",
+                );
+                let connection_id = step.action.connection_id;
+
+                // get chain's context
+                let ctx = self.chain_context_mut(&chain_id);
+
+                // create ICS26 message and deliver it
+                let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                    MsgConnectionOpenTry {
+                        previous_connection_id: connection_id.map(Self::connection_id),
+                        client_id: Self::client_id(client_id),
+                        client_state: None,
+                        counterparty: Self::counterparty(counterparty_client_id),
+                        counterparty_versions: Self::versions(),
+                        proofs: Self::proofs(client_height),
+                        delay_period: Self::delay_period(),
+                        signer: Self::signer(),
+                    },
+                )));
+                let result = ctx.deliver(msg);
+
+                // check the expected outcome
+                match step.action_outcome {
+                    ActionOutcome::ICS03InvalidConsensusHeight => {
+                        let handler_error_kind =
+                            Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
+                        matches!(
+                            handler_error_kind,
+                            ICS03ErrorKind::InvalidConsensusHeight(error_consensus_height, _)
+                            if error_consensus_height == Self::height(client_height)
+                        )
+                    }
+
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
@@ -327,6 +425,8 @@ fn main() {
         "ICS02HeaderVerificationFailureTest",
         "ICS03ConnectionOpenInitOKTest",
         "ICS03MissingClientTest",
+        "ICS03MissingClientTest",
+        "ICS03InvalidConsensusHeightTest",
     ];
 
     for test in tests {
