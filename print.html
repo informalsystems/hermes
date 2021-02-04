@@ -789,7 +789,13 @@ Done!
             └── testkey.json
 </code></pre>
 <h4><a class="header" href="#next-steps-4" id="next-steps-4">Next Steps</a></h4>
-<p>In the next section, <a href="./connect_chains.html">&quot;Connecting the chains&quot;</a>, you will learn how to execute transactions and queries on the relayer in order to relay packets.</p>
+<p>We now offer two options with regard to connecting the two chains:</p>
+<ol>
+<li>you can use <a href="./tutorial_raw.html">individual (raw) transactions</a> to create 
+all the necessary chain objects (clients, connections, channels), or</li>
+<li>you can perform this step using a 
+<a href="./tutorial_relay_paths.html">simplified approach</a>.</li>
+</ol>
 <h1><a class="header" href="#connecting-the-chains" id="connecting-the-chains">Connecting the chains</a></h1>
 <p>In the rest of this section we will show how to create the clients, establish a connection and a channel between the two chains, and relay packets over the channel. But first, a note on identifiers.</p>
 <h2><a class="header" href="#identifiers" id="identifiers">Identifiers</a></h2>
@@ -1213,13 +1219,13 @@ hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
 <p>Commands to manage keys (private keys) for each chain.</p>
 <p><strong><a href="./light_clients.html">Light Clients</a></strong></p>
 <p>Commands to manage light client configuration. Allows adding and removing light client peers.</p>
+<p><strong><a href="./relayer_loop.html">Path Setup and Streaming</a></strong></p>
+<p>Commands to manage channels</p>
 <p><strong><a href="./transactions.html">Raw Transactions</a></strong></p>
 <p>Command to submit transactions to configured chains</p>
-<p><strong><a href="./relayer_loop.html">Relayer</a></strong></p>
-<p>Commands to manage channels</p>
 <p><strong><a href="./queries.html">Queries</a></strong></p>
 <p>Commands to execute queries on configured chains</p>
-<p><strong><a href="./events.html">Events</a></strong></p>
+<p><strong><a href="./listen.html">Listen Mode</a></strong></p>
 <p>Commands to listen for IBC events</p>
 <h1><a class="header" href="#adding-keys-to-the-relayer" id="adding-keys-to-the-relayer">Adding Keys to the Relayer</a></h1>
 <p>Using the <code>keys</code> command you can add and list keys. </p>
