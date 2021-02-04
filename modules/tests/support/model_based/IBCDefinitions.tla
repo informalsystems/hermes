@@ -1,4 +1,4 @@
---------------------------- MODULE IBCDefinitions ----------------------------
+--------------------------- MODULE IBCDefinitions -----------------------------
 
 EXTENDS Integers, FiniteSets
 
@@ -9,4 +9,4 @@ NullHeight == -1
 \* if a connection identifier is undefined then it is -1
 NullConnectionId == -1
 
-=============================================================================
+===============================================================================

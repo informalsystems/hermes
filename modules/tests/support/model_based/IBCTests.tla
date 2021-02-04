@@ -1,4 +1,4 @@
-------------------------- MODULE IBCTests ---------------------------
+------------------------------ MODULE IBCTests --------------------------------
 
 EXTENDS IBC
 
@@ -27,4 +27,4 @@ ICS02HeaderVerificationFailureTest == ~ICS02HeaderVerificationFailure
 ICS03ConnectionOpenInitOKTest == ~ICS03ConnectionOpenInitOK
 ICS03MissingClientTest == ~ICS03MissingClient
 
-=============================================================================
+===============================================================================

@@ -1,4 +1,4 @@
-------------------------- MODULE ICS02 --------------------------
+------------------------------- MODULE ICS02 ----------------------------------
 
 EXTENDS Integers, FiniteSets, IBCDefinitions
 
@@ -29,6 +29,7 @@ ICS02_CreateClient(clients, clientIdCounter, clientHeight) ==
         LET client == [
             height |-> clientHeight
         ] IN
+        \* return result with updated state
         [
             clients |-> ICS02_SetClient(clients, clientIdCounter, client),
             clientIdCounter |-> clientIdCounter + 1,
@@ -46,6 +47,7 @@ ICS02_UpdateClient(clients, clientId, clientHeight) ==
             LET updatedClient == [client EXCEPT
                 !.height = clientHeight
             ] IN
+            \* return result with updated state
             [
                 clients |-> ICS02_SetClient(clients, clientId, updatedClient),
                 outcome |-> "ICS02UpdateOK"
@@ -64,4 +66,4 @@ ICS02_UpdateClient(clients, clientId, clientHeight) ==
             outcome |-> "ICS02ClientNotFound"
         ]
 
-=============================================================================
+===============================================================================

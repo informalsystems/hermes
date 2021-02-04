@@ -1,4 +1,4 @@
-------------------------- MODULE ICS03 --------------------------
+------------------------------ MODULE ICS03 -----------------------------------
 
 EXTENDS Integers, FiniteSets, IBCDefinitions, ICS02
 
@@ -14,7 +14,13 @@ ICS03_ConnectionExists(connections, connectionId) ==
 ICS03_SetConnection(connections, connectionId, connection) ==
     [connections EXCEPT ![connectionId] = connection]
 
-ICS03_ConnectionOpenInit(clients, connections, connectionIdCounter, clientId, counterpartyClientId) ==
+ICS03_ConnectionOpenInit(
+    clients,
+    connections,
+    connectionIdCounter,
+    clientId,
+    counterpartyClientId
+) ==
     \* check if the client exists
     IF ICS02_ClientExists(clients, clientId) THEN
         \* if the client exists,
@@ -36,8 +42,13 @@ ICS03_ConnectionOpenInit(clients, connections, connectionIdCounter, clientId, co
                 connectionId |-> connectionIdCounter,
                 counterpartyConnectionId |-> NullConnectionId
             ] IN
+            \* return result with updated state
             [
-                connections |-> ICS03_SetConnection(connections, connectionIdCounter, connection),
+                connections |-> ICS03_SetConnection(
+                    connections,
+                    connectionIdCounter,
+                    connection
+                ),
                 connectionIdCounter |-> connectionIdCounter + 1,
                 outcome |-> "ICS03ConnectionOpenInitOK"
             ]
@@ -49,4 +60,4 @@ ICS03_ConnectionOpenInit(clients, connections, connectionIdCounter, clientId, co
             outcome |-> "ICS03MissingClient"
         ]
 
-=============================================================================
+===============================================================================
