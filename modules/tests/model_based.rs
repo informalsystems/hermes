@@ -299,10 +299,10 @@ fn main() {
 
     for test in tests {
         let path = format!("{}/{}.json", TESTS_DIR, test);
-        let test_executor = ICS02TestExecutor::new();
+        let executor = ICS02TestExecutor::new();
         // we should be able to just return the `Result` once the following issue
         // is fixed: https://github.com/rust-lang/rust/issues/43301
-        if let Err(e) = modelator::test_driver(test_executor, path) {
+        if let Err(e) = modelator::test_driver(executor, path) {
             panic!("{:?}", e);
         }
     }
