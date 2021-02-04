@@ -1,7 +1,20 @@
 # Changelog
 
-## Unreleased Changes
+[comment]: <> (## Unreleased Changes)
 
+## v0.1.0
+*February 4, 2021*
+
+🎉 This release brings the first publication of `ibc-relayer` and
+`ibc-relayer-cli` to [crates.io](https://crates.io).
+
+Noteworthy changes in this release include:
+
+- The binary in the `ibc-relayer-cli` crate was given the name Hermes. 
+- We published a comprehensive guide for Hermes at [hermes.informal.systems](https://hermes.informal.systems).
+- Major improvements to user experience, in particular at CLI level: JSON output, 
+  configurable log output level, dedicated channel handshake command, as well as
+  overall improvements to error display and output.
 
 ### FEATURES
 
@@ -14,8 +27,11 @@
   - Added 'required' annotation for CLIs queries & txs; better error display ([#555])
   - Implement commands for channel close init and confirm ([#538])
   - Implement command to perform the handshake for a new channel ([#557])
+  - Query all clients command ([#552])
   - Query all connections command ([#553])
   - Query all channels command ([#568])
+  - Added a relayer binary guide ([#542])
+  - Split the dev-env script in `setup_chains` and `init_clients` ([#577])
 
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
@@ -23,6 +39,7 @@
 
 - [modules]
   - Add `MsgTimeoutOnClose` message type ([#563])
+  - Implement `MsgChannelOpenTry` message handler ([#543])
 
 ### IMPROVEMENTS
 
@@ -32,7 +49,7 @@
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
-  - UX improvements for relayer txs ([#536, #540, #554])
+  - UX improvements for relayer txs ([#536], [#540], [#554])
   - Allow running standalone commands concurrently to the main relayer loop ([#501])
   - Remove the simd-based integration tests ([#593])
 
@@ -76,12 +93,16 @@
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#538]: https://github.com/informalsystems/ibc-rs/issues/538
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
-[#555]: https://github.com/informalsystems/ibc-rs/issues/555
-[#554]: https://github.com/informalsystems/ibc-rs/issues/554
+[#542]: https://github.com/informalsystems/ibc-rs/issues/542
+[#543]: https://github.com/informalsystems/ibc-rs/issues/543
+[#552]: https://github.com/informalsystems/ibc-rs/issues/553
 [#553]: https://github.com/informalsystems/ibc-rs/issues/553
+[#554]: https://github.com/informalsystems/ibc-rs/issues/554
+[#555]: https://github.com/informalsystems/ibc-rs/issues/555
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
+[#577]: https://github.com/informalsystems/ibc-rs/issues/577
 [#582]: https://github.com/informalsystems/ibc-rs/issues/582
 [#583]: https://github.com/informalsystems/ibc-rs/issues/583
 [#590]: https://github.com/informalsystems/ibc-rs/issues/590

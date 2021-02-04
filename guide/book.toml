@@ -1,0 +1,13 @@
+[book]
+authors = ["Informal Systems Inc."]
+language = "en"
+multilingual = false
+src = "src"
+title = "Hermes (IBC Relayer CLI) Documentation"
+
+[preprocessor]
+[preprocessor.mermaid]
+command = "mdbook-mermaid"
+
+[output.html]
+additional-js = ["mermaid.min.js", "mermaid-init.js"]

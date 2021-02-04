@@ -76,7 +76,9 @@ impl From<ConsensusState> for RawConsensusState {
     fn from(value: ConsensusState) -> Self {
         RawConsensusState {
             timestamp: Some(value.timestamp.to_system_time().unwrap().into()),
-            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot { hash: value.root.0 }),
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
+                hash: value.root.into_vec(),
+            }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
         }
     }

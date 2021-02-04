@@ -41,6 +41,13 @@ def run(c: Config):
 
     packet.ping_pong(c, IBC_0, IBC_1, ibc0_chan_id, ibc1_chan_id)
 
+    split()
+
+    # The ChannelCloseInit message is currently denied by Gaia,
+    # and requires a patch to be accepted.
+    # channel.close(c, IBC_0, IBC_1, ibc0_conn_id,
+    #               ibc1_conn_id, ibc0_chan_id, ibc1_chan_id)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -76,7 +83,7 @@ def main():
 
     l.basicConfig(
         level=config.log_level,
-        format='[%(asctime)s] [%(levelname)8s] %(message)s',
+        format='%(asctime)s [%(levelname)8s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
     run(config)

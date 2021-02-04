@@ -46,15 +46,15 @@ pub fn build_and_send_transfer_messages(
 ) -> Result<Vec<IBCEvent>, PacketError> {
     let receiver = packet_dst_chain
         .get_signer()
-        .map_err(|e| PacketError::KeyError(e))?;
+        .map_err(PacketError::KeyError)?;
 
     let sender = packet_src_chain
         .get_signer()
-        .map_err(|e| PacketError::KeyError(e))?;
+        .map_err(PacketError::KeyError)?;
 
     let latest_height = packet_dst_chain
         .query_latest_height()
-        .map_err(|_e| PacketError::Failed("Height error".to_string()))?;
+        .map_err(|_| PacketError::Failed("Height error".to_string()))?;
 
     let msg = MsgTransfer {
         source_port: opts.packet_src_port_id.clone(),
@@ -85,9 +85,12 @@ pub fn build_and_send_transfer_messages(
         None => Ok(events),
         Some(err) => {
             if let IBCEvent::ChainError(err) = err {
-                return Err(PacketError::Failed(format!("{}", err)));
+                Err(PacketError::Failed(err.to_string()))
             } else {
-                panic!("internal error")
+                panic!(
+                    "internal error, expected IBCEvent::ChainError, got {:?}",
+                    err
+                )
             }
         }
     }

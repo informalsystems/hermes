@@ -1,0 +1,92 @@
+[global]
+timeout = '10s'
+strategy = 'naive'
+log_level = 'error'
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'tcp://localhost:26657'
+grpc_addr = 'tcp://localhost:9090'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = '8CE3551ABF73A754A7BC6BA32553E82D5526313C'
+
+[[chains.peers.light_clients]]
+peer_id = '8CE3551ABF73A754A7BC6BA32553E82D5526313C'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = '51E5C6F24D7F0E249624C8D31099720D316198DBEB1FA877428A0406248DBDB8'
+trusted_height = '40'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/coromac/Informal/Code/Current/ibc-rs/data/ibc-0/data/8CE3551ABF73A754A7BC6BA32553E82D5526313C'
+
+[[chains.peers.light_clients]]
+peer_id = '2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+address = 'tcp://localhost:26657'
+timeout = '10s'
+trusted_header_hash = '51E5C6F24D7F0E249624C8D31099720D316198DBEB1FA877428A0406248DBDB8'
+trusted_height = '40'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/coromac/Informal/Code/Current/ibc-rs/data/ibc-0/data/2427F8D914A6862279B3326FA64F76E3BC06DB2E'
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'tcp://localhost:26557'
+grpc_addr = 'tcp://localhost:9091'
+account_prefix = 'cosmos'
+key_name = 'testkey'
+store_prefix = 'ibc'
+gas = 200000
+clock_drift = '5s'
+trusting_period = '14days'
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.peers]
+primary = 'D7F25416D5156D76C05C7592EC1C97962EA696F9'
+
+[[chains.peers.light_clients]]
+peer_id = 'D7F25416D5156D76C05C7592EC1C97962EA696F9'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = 'DF6AB9F99C0B0E99DCE299566E92082E6611F0588F10ED3630CE41B245093526'
+trusted_height = '30'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/coromac/Informal/Code/Current/ibc-rs/data/ibc-1/data/D7F25416D5156D76C05C7592EC1C97962EA696F9'
+
+[[chains.peers.light_clients]]
+peer_id = 'A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+address = 'tcp://localhost:26557'
+timeout = '10s'
+trusted_header_hash = '0C915453C65A32A557C9D5CCF905ACBFC06D95AA780D069C0E0B28C0D433346A'
+trusted_height = '31'
+
+[chains.peers.light_clients.store]
+type = 'disk'
+path = '/Users/coromac/Informal/Code/Current/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
+
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'

@@ -15,7 +15,6 @@ use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(tag = "ConnectionEnd")]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -168,7 +167,7 @@ impl Default for Counterparty {
         Counterparty {
             client_id: Default::default(),
             connection_id: None,
-            prefix: CommitmentPrefix(vec![]),
+            prefix: Default::default(),
         }
     }
 }
@@ -207,7 +206,7 @@ impl From<Counterparty> for RawCounterparty {
                 .connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
-                key_prefix: value.prefix.0,
+                key_prefix: value.prefix.into_vec(),
             }),
         }
     }

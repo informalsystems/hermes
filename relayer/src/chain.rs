@@ -376,56 +376,62 @@ pub trait Chain: Sized {
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        port_id: PortId,
+        channel_id: ChannelId,
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        let data: Path;
-        let mut channel_proof = None;
-
-        match packet_type {
-            PacketMsgType::Recv => {
-                data = Path::Commitments {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+        let (data, channel_proof) = match packet_type {
+            PacketMsgType::Recv => (
+                Path::Commitments {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
-            }
-            PacketMsgType::Ack => {
-                data = Path::Acks {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+                },
+                None,
+            ),
+            PacketMsgType::Ack => (
+                Path::Acks {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
-            }
-            PacketMsgType::Timeout => {
-                data = Path::Receipts {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+                },
+                None,
+            ),
+            PacketMsgType::Timeout => (
+                Path::Receipts {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
-            }
+                },
+                None,
+            ),
             PacketMsgType::TimeoutOnClose => {
-                data = Path::Receipts {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
-                    sequence,
-                };
-                channel_proof = Some(CommitmentProofBytes::from(
-                    self.proven_channel(port_id, channel_id, height)?.1,
-                ));
+                let commitment = CommitmentProofBytes::from(
+                    self.proven_channel(&port_id, &channel_id, height)?.1,
+                );
+
+                (
+                    Path::Receipts {
+                        port_id,
+                        channel_id,
+                        sequence,
+                    },
+                    Some(commitment),
+                )
             }
-        }
+        };
 
         let res = self
             .query(data, height, true)
             .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
 
+        let commitment_proof_bytes = res.proof.ok_or_else(|| {
+            Kind::Query(packet_type.to_string()).context("empty proof".to_string())
+        })?;
+
         let proofs = Proofs::new(
-            CommitmentProofBytes::from(res.proof.ok_or_else(|| {
-                Kind::Query(packet_type.to_string()).context("empty proof".to_string())
-            })?),
+            commitment_proof_bytes.into(),
             None,
             None,
             channel_proof,

@@ -27,7 +27,7 @@ impl QueryConnectionsCmd {
     }
 }
 
-// hermes -c config.toml query connections ibc-0
+// hermes query connections ibc-0
 impl Runnable for QueryConnectionsCmd {
     fn run(&self) {
         let config = app_config();
