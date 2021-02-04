@@ -1,4 +1,4 @@
-# Bidirectional Relaying
+# Concurrent packet relaying on multiple paths
 
 At the moment, one Hermes instance relays packets over a single channel.
 To relay packets over multiple channels, one needs to spawn multiple instances.
