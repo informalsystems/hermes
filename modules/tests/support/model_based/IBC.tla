@@ -1,6 +1,6 @@
 --------------------------- MODULE IBC ----------------------------
 
-EXTENDS Integers, FiniteSets
+EXTENDS Integers, FiniteSets, ICS02, ICS03
 
 \* ids of existing chains
 CONSTANT ChainIds
@@ -37,16 +37,10 @@ AsAction(a) == a <: ActionType
 
 \* set of possible client identifiers
 ClientIds == 0..(MaxClientsPerChain - 1)
-\* if a client identifier is undefined then it is -1
-NullClientId == -1
 \* set of possible client heights
 ClientHeights == 1..MaxClientHeight
-\* if a client identifier is undefined then it is -1
-NullHeight == -1
 \* set of possible connection identifiers
 ConnectionIds == 0..(MaxConnectionsPerChain- 1)
-\* if a connection identifier is undefined then it is -1
-NullConnectionId == -1
 \* set of possible connection states
 ConnectionStates == {
     "Uninit",
@@ -130,119 +124,56 @@ ActionOutcomes == {
  Specification
  ***************************************************************************)
 
-\* retrieves `clientId`'s data
-GetClient(clients, clientId) ==
-    clients[clientId]
-
-\* check if `clientId` exists
-ClientExists(clients, clientId) ==
-    GetClient(clients, clientId).height /= NullHeight
-
-\* update `clientId`'s data
-SetClient(clients, clientId, client) ==
-    [clients EXCEPT ![clientId] = client]
-
-\* retrieves `connectionId`'s data
-GetConnection(connections, connectionId) ==
-    connections[connectionId]
-
-\* check if `connectionId` exists
-ConnectionExists(connections, connectionId) ==
-    GetConnection(connections, connectionId).state /= "Uninit"
-
-\* update `connectionId`'s data
-SetConnection(connections, connectionId, connection) ==
-    [connections EXCEPT ![connectionId] = connection]
-
 CreateClient(chainId, clientHeight) ==
     LET chain == chains[chainId] IN
     LET clients == chain.clients IN
     LET clientIdCounter == chain.clientIdCounter IN
-    \* check if the client exists (it shouldn't)
-    IF ClientExists(clients, clientIdCounter) THEN
-        \* if the client to be created already exists,
-        \* then there's an error in the model
-        /\ actionOutcome' = "ModelError"
-        /\ UNCHANGED <<chains>>
-    ELSE
-        \* if it doesn't, create it
-        LET client == [
-            height |-> clientHeight
-        ] IN
-        \* update the chain
-        LET updatedChain == [chain EXCEPT
-            !.clients = SetClient(clients, clientIdCounter, client),
-            !.clientIdCounter = clientIdCounter + 1
-        ] IN
-        \* update `chains` and set the outcome
-        /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-        /\ actionOutcome' = "ICS02CreateOK"
+    LET result == ICS02_CreateClient(clients, clientIdCounter, clientHeight) IN
+    \* update the chain
+    LET updatedChain == [chain EXCEPT
+        !.clients = result.clients,
+        !.clientIdCounter = result.clientIdCounter
+    ] IN
+    \* update `chains`, set the action and its outcome
+    /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ action' = AsAction([type |-> "ICS02CreateClient",
+                           chainId |-> chainId,
+                           height |-> clientHeight])
+    /\ actionOutcome' = result.outcome
 
 UpdateClient(chainId, clientId, clientHeight) ==
     LET chain == chains[chainId] IN
     LET clients == chain.clients IN
-    \* check if the client exists
-    IF ClientExists(clients, clientId) THEN
-        \* if the client exists, check its height
-        LET client == GetClient(clients, clientId) IN
-        IF client.height < clientHeight THEN
-            \* if the client's height is lower than the one being updated to
-            \* then, update the client
-            LET updatedClient == [client EXCEPT
-                !.height = clientHeight
-            ] IN
-            \* update the chain
-            LET updatedChain == [chain EXCEPT
-                !.clients = SetClient(clients, clientId, updatedClient)
-            ] IN
-            \* update `chains` and set the outcome
-            /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-            /\ actionOutcome' = "ICS02UpdateOK"
-        ELSE
-            \* if the client's height is at least as high as the one being
-            \* updated to, then set an error outcome
-            /\ actionOutcome' = "ICS02HeaderVerificationFailure"
-            /\ UNCHANGED <<chains>>
-    ELSE
-        \* if the client does not exist, then set an error outcome
-        /\ actionOutcome' = "ICS02ClientNotFound"
-        /\ UNCHANGED <<chains>>
+    LET result == ICS02_UpdateClient(clients, clientId, clientHeight) IN
+    \* update the chain
+    LET updatedChain == [chain EXCEPT
+        !.clients = result.clients
+    ] IN
+    \* update `chains`, set the action and its outcome
+    /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ action' = AsAction([type |-> "ICS02UpdateClient",
+                           chainId |-> chainId,
+                           clientId |-> clientId,
+                           height |-> clientHeight])
+    /\ actionOutcome' = result.outcome
 
 ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     LET chain == chains[chainId] IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionIdCounter == chain.connectionIdCounter IN
-    \* check if the client exists
-    IF ClientExists(clients, clientId) THEN
-        \* if the client exists,
-        \* then check if the connection exists (it shouldn't)
-        IF ConnectionExists(connections, connectionIdCounter) THEN
-            \* if the connection to be created already exists,
-            \* then there's an error in the model
-            /\ actionOutcome' = "ModelError"
-            /\ UNCHANGED <<chains>>
-        ELSE
-            \* if it doesn't, create it
-            LET connection == [
-                state |-> "Init",
-                clientId |-> clientId,
-                counterpartyClientId |-> counterpartyClientId,
-                connectionId |-> connectionIdCounter,
-                counterpartyConnectionId |-> NullConnectionId
-            ] IN
-            \* update the chain
-            LET updatedChain == [chain EXCEPT
-                !.connections = SetConnection(connections, connectionIdCounter, connection),
-                !.connectionIdCounter = connectionIdCounter + 1
-            ] IN
-            \* update `chains` and set the outcome
-            /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-            /\ actionOutcome' = "ICS03ConnectionOpenInitOK"
-    ELSE
-        \* if the client does not exist, then set an error outcome
-        /\ actionOutcome' = "ICS03MissingClient"
-        /\ UNCHANGED <<chains>>
+    LET result == ICS03_ConnectionOpenInit(clients, connections, connectionIdCounter, clientId, counterpartyClientId) IN
+    \* update the chain
+    LET updatedChain == [chain EXCEPT
+        !.connections = result.connections,
+        !.connectionIdCounter = result.connectionIdCounter
+    ] IN
+    /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
+    /\ action' = AsAction([type |-> "ICS03ConnectionOpenInit",
+                           chainId |-> chainId,
+                           clientId |-> clientId,
+                           counterpartyClientId |-> counterpartyClientId])
+    /\ actionOutcome' = result.outcome
 
 CreateClientAction ==
     \* select a chain id
@@ -252,9 +183,6 @@ CreateClientAction ==
         \* only create client if the model constant `MaxClientsPerChain` allows it
         /\ chains[chainId].clientIdCounter \in ClientIds
         /\ CreateClient(chainId, clientHeight)
-        /\ action' = AsAction([type |-> "ICS02CreateClient",
-                               chainId |-> chainId,
-                               height |-> clientHeight])
 
 UpdateClientAction ==
     \* select a chain id
@@ -263,11 +191,7 @@ UpdateClientAction ==
     \E clientId \in ClientIds:
     \* select a height for the client to be updated
     \E clientHeight \in ClientHeights:
-        /\ UpdateClient(chainId, clientId, clientHeight)
-        /\ action' = AsAction([type |-> "ICS02UpdateClient",
-                               chainId |-> chainId,
-                               clientId |-> clientId,
-                               height |-> clientHeight])
+        UpdateClient(chainId, clientId, clientHeight)
 
 ConnectionOpenInitAction ==
     \* select a chain id
@@ -279,10 +203,6 @@ ConnectionOpenInitAction ==
         \* only create connection if the model constant `MaxConnectionsPerChain` allows it
         /\ chains[chainId].connectionIdCounter \in ConnectionIds
         /\ ConnectionOpenInit(chainId, clientId, counterpartyClientId)
-        /\ action' = AsAction([type |-> "ICS03ConnectionOpenInit",
-                               chainId |-> chainId,
-                               clientId |-> clientId,
-                               counterpartyClientId |-> counterpartyClientId])
 
 Init ==
     \* create an null client and a null connection
