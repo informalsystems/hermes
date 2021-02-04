@@ -210,7 +210,9 @@ FLAGS:
 <p>In order to add a light client secondary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 </code></pre>
-<p><strong>Note</strong>: The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
+<blockquote>
+<p>The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
+</blockquote>
 <h3><a class="header" href="#removing-light-client-peers" id="removing-light-client-peers">Removing Light Client Peers</a></h3>
 <p>In order to remove a light client peer use the <code>rm</code> command:</p>
 <pre><code class="language-shell">USAGE:

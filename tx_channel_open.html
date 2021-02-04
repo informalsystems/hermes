@@ -217,8 +217,10 @@ POSITIONAL ARGUMENTS:
   }
 }
 </code></pre>
-<p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.
-Note that the <code>counterparty_channel_id</code> field is currently empty.</p>
+<p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.</p>
+<blockquote>
+<p>Note that the <code>counterparty_channel_id</code> field is currently empty.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-try" id="channel-open-try">Channel Open Try</a></h2>
 <p>Use the <code>chan-open-try</code> command to establish a counterparty to the channel on the other chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -255,8 +257,10 @@ FLAGS:
   }
 }
 </code></pre>
-<p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.
-Note that the field <code>counterparty_channel_id</code> points to the channel on <code>ibc-0</code>.</p>
+<p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.</p>
+<blockquote>
+<p>Note that the field <code>counterparty_channel_id</code> points to the channel on <code>ibc-0</code>.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-ack" id="channel-open-ack">Channel Open Ack</a></h2>
 <p>Use the <code>chan-open-ack</code> command to acknowledge the channel on the initial chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -294,7 +298,9 @@ FLAGS:
   }
 }
 </code></pre>
+<blockquote>
 <p>Note that the field <code>counterparty_channel_id</code> now points to the channel on <code>ibc-1</code>.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-confirm" id="channel-open-confirm">Channel Open Confirm</a></h2>
 <p>Use the <code>chan-open-confirm</code> command to confirm that the channel has been acknowledged,
 and finish the handshake, after which the channel is open on both chains.</p>

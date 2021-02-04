@@ -164,25 +164,25 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#help" id="help">Help</a></h1>
-<p>This section provides guidelines regarding troubleshooting and general 
+<p>This section provides guidelines regarding troubleshooting and general
 resources for getting help with <code>hermes</code>.
 For this purpose, we recommend a few ideas that could be of help:</p>
 <ul>
 <li><a href="./help.html#profiling">profile</a> your relayer binary to identify slow methods;</li>
 <li><a href="./help.html#parametrizing-the-log-output-level">configure</a> the <code>log_level</code> to help with debugging;</li>
-<li><a href="./help.html#patching-gaia">patch</a> your local gaia chain(s) to enable some corner-case methods 
+<li><a href="./help.html#patching-gaia">patch</a> your local gaia chain(s) to enable some corner-case methods
 (e.g., channel close);</li>
 </ul>
 <p>And if the above do not help:</p>
 <ul>
 <li>you can <a href="./help.html#new-feature-request">request a new feature</a>;</li>
-<li>or consult the <a href="https://github.com/informalsystems/ibc-rs/issues">list of reported issues</a> and search by relevant 
+<li>or consult the <a href="https://github.com/informalsystems/ibc-rs/issues">list of reported issues</a> and search by relevant
 keywords to see if you're dealing with a known problem;</li>
 <li>we would be grateful if you can submit a <a href="https://github.com/informalsystems/ibc-rs/issues/new?assignees=&amp;labels=&amp;template=bug-report.md">bug report</a>
-discussing any problem you find, and from there on we can look at the 
+discussing any problem you find, and from there on we can look at the
 problem together;</li>
 </ul>
-<p>Lastly, for general questions, you can reach us at <code>hello@informal.systems</code>, 
+<p>Lastly, for general questions, you can reach us at <code>hello@informal.systems</code>,
 or on Twitter <a href="https://twitter.com/informalinc">@informalinc</a>.</p>
 <h2><a class="header" href="#profiling" id="profiling">Profiling</a></h2>
 <p>The <code>relayer</code> crate provides a <code>time!</code> macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.</p>
@@ -227,12 +227,12 @@ Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - e
 Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
 </code></pre>
 <p>Profiling is useful for tracking down unusually slow methods.
-Each transaction or query usually consists of multiple lower-level methods, 
+Each transaction or query usually consists of multiple lower-level methods,
 and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, <code>hermes</code> will output timing information for individual
 methods involved in a command.</p>
-<p><strong>NOTE</strong>: To be able to see the profiling output, the 
-<a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code> 
+<p><strong>NOTE</strong>: To be able to see the profiling output, the
+<a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code>
 level or lower.</p>
 <h4><a class="header" href="#example-output-for-tx-raw-conn-init-command" id="example-output-for-tx-raw-conn-init-command">Example output for <code>tx raw conn-init</code> command</a></h4>
 <pre><code>hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
@@ -281,8 +281,8 @@ produced:</p>
 {&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
 </code></pre>
 <h2><a class="header" href="#patching-gaia" id="patching-gaia">Patching <code>gaia</code></a></h2>
-<p>The guide below refers specifically to patching your gaia chain so that the 
-relayer can initiate the closing of channels by submitting a <a href="./tx_channel_close.html#channel-close-init"><code>chan-close-init</code> 
+<p>The guide below refers specifically to patching your gaia chain so that the
+relayer can initiate the closing of channels by submitting a <a href="./tx_channel_close.html#channel-close-init"><code>chan-close-init</code>
 transaction</a>.
 Without this modification, the transaction will be rejected.
 We also describe how to test the channel closing feature.</p>
@@ -329,7 +329,7 @@ this path).</p>
 </code></pre>
 </li>
 <li>
-<p>now do the first step of channel closing: the channel will transition 
+<p>now do the first step of channel closing: the channel will transition
 to close-open:</p>
 <pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 </code></pre>
@@ -352,10 +352,12 @@ hermes -c config.toml query channel end ibc-1 transfer channel-1
 </li>
 </ul>
 <h2><a class="header" href="#new-feature-request" id="new-feature-request">New Feature Request</a></h2>
-<p>If you would like a feature to be added to <code>hermes</code>, don't hesitate 
+<p>If you would like a feature to be added to <code>hermes</code>, don't hesitate
 to open a discussion about that via the <a href="https://github.com/informalsystems/ibc-rs/issues/new?assignees=&amp;labels=&amp;template=feature-request.md">feature request</a>
-issue template.
-Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate.</p>
+issue template.</p>
+<blockquote>
+<p>Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate.</p>
+</blockquote>
 
                     </main>
 

@@ -933,7 +933,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 }
 </code></pre>
 <blockquote>
-<p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands.</p>
+<p>Please note the <code>client_id</code> value returned. You will need that for other commands.</p>
 </blockquote>
 <p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> by specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
 <pre><code class="language-shell">hermes query client state ibc-0 07-tendermint-0
@@ -1072,7 +1072,9 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 </code></pre>
 </li>
 </ul>
+<blockquote>
 <p>Note that the addresses used in the two commands above are configured in <code>dev-env</code>.</p>
+</blockquote>
 <h3><a class="header" href="#42-packet-relaying" id="42-packet-relaying">4.2 Packet relaying:</a></h3>
 <p>First, we'll send <code>9999</code> <code>samoleans</code> from <code>ibc-0</code> to <code>ibc-1</code>.</p>
 <ul>
@@ -1163,7 +1165,7 @@ Hermes can be started to listen for packet events on the two ends of a path and 
 <pre><code class="language-shellscript">hermes start ibc-0 ibc-1 transfer channel-0
 </code></pre>
 <blockquote>
-<p><strong>Note</strong>: In this example, the channel identifier on <code>ibc-0</code>is <code>channel-0</code> while the identifier on<code>ibc-1</code> is <code>channel-1</code></p>
+<p>In this example, the channel identifier on <code>ibc-0</code>is <code>channel-0</code> while the identifier on<code>ibc-1</code> is <code>channel-1</code></p>
 </blockquote>
 </li>
 <li>
@@ -1216,7 +1218,7 @@ b_port = 'transfer'
 <pre><code class="language-shellscript">hermes start ibc-0 ibc-1
 </code></pre>
 <blockquote>
-<p><strong>Note</strong>: The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.</p>
+<p>The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.</p>
 </blockquote>
 <p>Once the path is established the relayer waits listening for IBC packet events.</p>
 </li>
@@ -1593,7 +1595,9 @@ FLAGS:
 <p>In order to add a light client secondary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 </code></pre>
-<p><strong>Note</strong>: The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
+<blockquote>
+<p>The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
+</blockquote>
 <h3><a class="header" href="#removing-light-client-peers" id="removing-light-client-peers">Removing Light Client Peers</a></h3>
 <p>In order to remove a light client peer use the <code>rm</code> command:</p>
 <pre><code class="language-shell">USAGE:
@@ -1634,20 +1638,25 @@ FLAGS:
     -c, --src-channel-id SRC-CHANNEL-ID
 </code></pre>
 <h2><a class="header" href="#start-with-new-channel" id="start-with-new-channel">Start with New Channel</a></h2>
-<p>Use the <code>start</code> command without flags to create new clients on <code>source</code> and <code>destination</code> chains, and new connection and new channel between the two chains.
-<strong>Note</strong>: Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.</p>
-<p><strong>Example</strong>:</p>
+<p>Use the <code>start</code> command without flags to create new clients on <code>source</code> and <code>destination</code> chains, and new connection and new channel between the two chains.</p>
+<blockquote>
+<p>Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.</p>
+</blockquote>
+<h3><a class="header" href="#example" id="example">Example</a></h3>
 <pre><code class="language-shellscript">hermes start ibc-0 ibc-1
 </code></pre>
 <p>The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.</p>
 <h2><a class="header" href="#start-on-existing-channel" id="start-on-existing-channel">Start on Existing Channel</a></h2>
 <p>Use the <code>start</code> command and specify the source port and channel identifier of a channel that is already created and in open state on both chains.</p>
-<p><strong>Example</strong>:</p>
+<h3><a class="header" href="#example-1" id="example-1">Example</a></h3>
 <pre><code class="language-shellscript">hermes start ibc-0 ibc-1 -p transfer -c channel-0
 </code></pre>
-<p><strong>Note</strong>: Finishing uncompleted handshakes can only be achieved using the <code>tx raw</code> CLIs.</p>
+<blockquote>
+<p>Finishing uncompleted handshakes can only be achieved using the <code>tx raw</code> CLIs.</p>
+</blockquote>
 <h2><a class="header" href="#packet-streaming" id="packet-streaming">Packet Streaming</a></h2>
-<p>After the relayer is started using the <code>start</code> command, it listens to IBC packet events for the channel. Assuming the events are coming from a <code>source</code> chain, the relayer builds packets based on these events, packets that are then sent either to the <code>source</code> chain or the counterparty (<code>destination</code>) chain. Current events and actions are:</p>
+<p>After the relayer is started using the <code>start</code> command, it listens to IBC packet events for the channel. Assuming the events are coming from a <code>source</code> chain, the relayer builds packets based on these events, packets that are then sent either to the <code>source</code> chain or the counterparty (<code>destination</code>) chain. </p>
+<p>Current events and actions are:</p>
 <ul>
 <li><code>send_packet</code>: the relayer builds a packet message with the <code>packet</code> obtained from the event and any required proofs obtained from the counterparty of the chain where the message is sent. The concrete packet is:
 <ul>
@@ -1660,7 +1669,9 @@ FLAGS:
 </ul>
 <h2><a class="header" href="#relay-path-setup" id="relay-path-setup">Relay Path Setup</a></h2>
 <p>The <code>channel handshake</code> command can be used to establish a new channel that uses a new connection and new clients. There is no requirement for the ports to be configured in the configuration file (i.e. its <code>connections</code> section may be missing).</p>
-<p><strong>Note</strong>: Reuse of existing clients and/or connections is not supported in the current version.</p>
+<blockquote>
+<p>Reuse of existing clients and/or connections is not supported in the current version.</p>
+</blockquote>
 <pre><code class="language-shellscript">USAGE:
     hermes channel handshake &lt;OPTIONS&gt;
 
@@ -1676,7 +1687,7 @@ POSITIONAL ARGUMENTS:
 FLAGS:
     -o, --ordering ORDERING   the channel order
 </code></pre>
-<p><strong>Example</strong>:</p>
+<h2><a class="header" href="#example-2" id="example-2">Example</a></h2>
 <pre><code class="language-shellscript">hermes channel handshake ibc-0 ibc-1 transfer transfer
 </code></pre>
 <h1><a class="header" href="#raw-transactions" id="raw-transactions">Raw Transactions</a></h1>
@@ -1886,8 +1897,10 @@ identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can init
   }
 }
 </code></pre>
-<p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.
-Note that the <code>counterparty_connection_id</code> field is currently empty.</p>
+<p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.</p>
+<blockquote>
+<p>Note that the <code>counterparty_connection_id</code> field is currently empty.</p>
+</blockquote>
 <h2><a class="header" href="#connection-try" id="connection-try">Connection Try</a></h2>
 <p>Use the <code>conn-try</code> command to establish a counterparty to the connection on the other chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -1922,8 +1935,10 @@ FLAGS:
   }
 }
 </code></pre>
-<p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.
-Note that the field <code>counterparty_connection_id</code> points to the connection on <code>ibc-0</code>.</p>
+<p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.</p>
+<blockquote>
+<p>Note that the field <code>counterparty_connection_id</code> points to the connection on <code>ibc-0</code>.</p>
+</blockquote>
 <h2><a class="header" href="#connection-ack" id="connection-ack">Connection Ack</a></h2>
 <p>Use the <code>conn-ack</code> command to acknowledge the connection on the initial chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -1959,7 +1974,9 @@ FLAGS:
   }
 }
 </code></pre>
+<blockquote>
 <p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
+</blockquote>
 <h2><a class="header" href="#connection-confirm" id="connection-confirm">Connection Confirm</a></h2>
 <p>Use the <code>conn-confirm</code> command to confirm that the connection has been acknowledged,
 and finish the handshake, after which the connection is open on both chains.</p>
@@ -2051,8 +2068,10 @@ POSITIONAL ARGUMENTS:
   }
 }
 </code></pre>
-<p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.
-Note that the <code>counterparty_channel_id</code> field is currently empty.</p>
+<p>A new channel has been initialized on <code>ibc-1</code> with identifier <code>channel-0</code>.</p>
+<blockquote>
+<p>Note that the <code>counterparty_channel_id</code> field is currently empty.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-try" id="channel-open-try">Channel Open Try</a></h2>
 <p>Use the <code>chan-open-try</code> command to establish a counterparty to the channel on the other chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2089,8 +2108,10 @@ FLAGS:
   }
 }
 </code></pre>
-<p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.
-Note that the field <code>counterparty_channel_id</code> points to the channel on <code>ibc-0</code>.</p>
+<p>A new channel has been created on <code>ibc-1</code> with identifier <code>channel-1</code>.</p>
+<blockquote>
+<p>Note that the field <code>counterparty_channel_id</code> points to the channel on <code>ibc-0</code>.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-ack" id="channel-open-ack">Channel Open Ack</a></h2>
 <p>Use the <code>chan-open-ack</code> command to acknowledge the channel on the initial chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2128,7 +2149,9 @@ FLAGS:
   }
 }
 </code></pre>
+<blockquote>
 <p>Note that the field <code>counterparty_channel_id</code> now points to the channel on <code>ibc-1</code>.</p>
+</blockquote>
 <h2><a class="header" href="#channel-open-confirm" id="channel-open-confirm">Channel Open Confirm</a></h2>
 <p>Use the <code>chan-open-confirm</code> command to confirm that the channel has been acknowledged,
 and finish the handshake, after which the channel is open on both chains.</p>
@@ -3140,25 +3163,25 @@ POSITIONAL ARGUMENTS:
 }
 </code></pre>
 <h1><a class="header" href="#help" id="help">Help</a></h1>
-<p>This section provides guidelines regarding troubleshooting and general 
+<p>This section provides guidelines regarding troubleshooting and general
 resources for getting help with <code>hermes</code>.
 For this purpose, we recommend a few ideas that could be of help:</p>
 <ul>
 <li><a href="./help.html#profiling">profile</a> your relayer binary to identify slow methods;</li>
 <li><a href="./help.html#parametrizing-the-log-output-level">configure</a> the <code>log_level</code> to help with debugging;</li>
-<li><a href="./help.html#patching-gaia">patch</a> your local gaia chain(s) to enable some corner-case methods 
+<li><a href="./help.html#patching-gaia">patch</a> your local gaia chain(s) to enable some corner-case methods
 (e.g., channel close);</li>
 </ul>
 <p>And if the above do not help:</p>
 <ul>
 <li>you can <a href="./help.html#new-feature-request">request a new feature</a>;</li>
-<li>or consult the <a href="https://github.com/informalsystems/ibc-rs/issues">list of reported issues</a> and search by relevant 
+<li>or consult the <a href="https://github.com/informalsystems/ibc-rs/issues">list of reported issues</a> and search by relevant
 keywords to see if you're dealing with a known problem;</li>
 <li>we would be grateful if you can submit a <a href="https://github.com/informalsystems/ibc-rs/issues/new?assignees=&amp;labels=&amp;template=bug-report.md">bug report</a>
-discussing any problem you find, and from there on we can look at the 
+discussing any problem you find, and from there on we can look at the
 problem together;</li>
 </ul>
-<p>Lastly, for general questions, you can reach us at <code>hello@informal.systems</code>, 
+<p>Lastly, for general questions, you can reach us at <code>hello@informal.systems</code>,
 or on Twitter <a href="https://twitter.com/informalinc">@informalinc</a>.</p>
 <h2><a class="header" href="#profiling" id="profiling">Profiling</a></h2>
 <p>The <code>relayer</code> crate provides a <code>time!</code> macro which can be used to measure how much time is spent between the invocation of the macro and the end of the enclosing scope.</p>
@@ -3173,7 +3196,7 @@ cargo build --features=profiling
 <pre><code class="language-shellscript">alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
 </code></pre>
 <p>The <code>--manifest-path=relayer-cli/Cargo.toml</code> flag is needed for <code>cargo run</code> to accept the <code>--features</code> flag.</p>
-<h3><a class="header" href="#example" id="example">Example</a></h3>
+<h3><a class="header" href="#example-3" id="example-3">Example</a></h3>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -3203,12 +3226,12 @@ Jan 20 11:28:49.846  INFO relayer::macros::profiling:    ⏳ inner operation - e
 Jan 20 11:28:49.847  INFO relayer::macros::profiling: ⏳ myfunction: x=42 - elapsed: 3005ms
 </code></pre>
 <p>Profiling is useful for tracking down unusually slow methods.
-Each transaction or query usually consists of multiple lower-level methods, 
+Each transaction or query usually consists of multiple lower-level methods,
 and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, <code>hermes</code> will output timing information for individual
 methods involved in a command.</p>
-<p><strong>NOTE</strong>: To be able to see the profiling output, the 
-<a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code> 
+<p><strong>NOTE</strong>: To be able to see the profiling output, the
+<a href="./help.html#parametrizing-the-log-output-level">log level</a> should be <code>info</code>
 level or lower.</p>
 <h4><a class="header" href="#example-output-for-tx-raw-conn-init-command" id="example-output-for-tx-raw-conn-init-command">Example output for <code>tx raw conn-init</code> command</a></h4>
 <pre><code>hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-0
@@ -3257,8 +3280,8 @@ produced:</p>
 {&quot;status&quot;:&quot;error&quot;,&quot;result&quot;:[&quot;query error: RPC error to endpoint tcp://localhost:26657: error trying to connect: tcp connect error: Connection refused (os error 61) (code: 0)&quot;]}
 </code></pre>
 <h2><a class="header" href="#patching-gaia" id="patching-gaia">Patching <code>gaia</code></a></h2>
-<p>The guide below refers specifically to patching your gaia chain so that the 
-relayer can initiate the closing of channels by submitting a <a href="./tx_channel_close.html#channel-close-init"><code>chan-close-init</code> 
+<p>The guide below refers specifically to patching your gaia chain so that the
+relayer can initiate the closing of channels by submitting a <a href="./tx_channel_close.html#channel-close-init"><code>chan-close-init</code>
 transaction</a>.
 Without this modification, the transaction will be rejected.
 We also describe how to test the channel closing feature.</p>
@@ -3305,7 +3328,7 @@ this path).</p>
 </code></pre>
 </li>
 <li>
-<p>now do the first step of channel closing: the channel will transition 
+<p>now do the first step of channel closing: the channel will transition
 to close-open:</p>
 <pre><code class="language-shellscript">hermes -c config.toml tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer channel-0 channel-1
 </code></pre>
@@ -3328,10 +3351,12 @@ hermes -c config.toml query channel end ibc-1 transfer channel-1
 </li>
 </ul>
 <h2><a class="header" href="#new-feature-request" id="new-feature-request">New Feature Request</a></h2>
-<p>If you would like a feature to be added to <code>hermes</code>, don't hesitate 
+<p>If you would like a feature to be added to <code>hermes</code>, don't hesitate
 to open a discussion about that via the <a href="https://github.com/informalsystems/ibc-rs/issues/new?assignees=&amp;labels=&amp;template=feature-request.md">feature request</a>
-issue template.
-Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate.</p>
+issue template.</p>
+<blockquote>
+<p>Note that Hermes is packaged as part of the <code>ibc-relayer-cli</code> crate.</p>
+</blockquote>
 <h1><a class="header" href="#glossary" id="glossary">Glossary</a></h1>
 <p>These are some of the definitions used in this guide: </p>
 <table><thead><tr><th>Term</th><th>Definition</th></tr></thead><tbody>

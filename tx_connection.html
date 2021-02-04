@@ -217,8 +217,10 @@ identifier <code>07-tendermint-1</code> on chain <code>ibc-1</code>, we can init
   }
 }
 </code></pre>
-<p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.
-Note that the <code>counterparty_connection_id</code> field is currently empty.</p>
+<p>A new connection has been initialized on <code>ibc-0</code> with identifier <code>connection-0</code>.</p>
+<blockquote>
+<p>Note that the <code>counterparty_connection_id</code> field is currently empty.</p>
+</blockquote>
 <h2><a class="header" href="#connection-try" id="connection-try">Connection Try</a></h2>
 <p>Use the <code>conn-try</code> command to establish a counterparty to the connection on the other chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -253,8 +255,10 @@ FLAGS:
   }
 }
 </code></pre>
-<p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.
-Note that the field <code>counterparty_connection_id</code> points to the connection on <code>ibc-0</code>.</p>
+<p>A new connection has been created on <code>ibc-1</code> with identifier <code>connection-1</code>.</p>
+<blockquote>
+<p>Note that the field <code>counterparty_connection_id</code> points to the connection on <code>ibc-0</code>.</p>
+</blockquote>
 <h2><a class="header" href="#connection-ack" id="connection-ack">Connection Ack</a></h2>
 <p>Use the <code>conn-ack</code> command to acknowledge the connection on the initial chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -290,7 +294,9 @@ FLAGS:
   }
 }
 </code></pre>
+<blockquote>
 <p>Note that the field <code>counterparty_connection_id</code> now points to the connection on <code>ibc-1</code>.</p>
+</blockquote>
 <h2><a class="header" href="#connection-confirm" id="connection-confirm">Connection Confirm</a></h2>
 <p>Use the <code>conn-confirm</code> command to confirm that the connection has been acknowledged,
 and finish the handshake, after which the connection is open on both chains.</p>
