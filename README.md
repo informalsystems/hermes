@@ -40,7 +40,7 @@ Developed with the latest stable version of Rust: `1.49.0`.
 
 ## Hermes Guide
 
-The main relayer CLI binary, called `hermes`, has a comprehensive guide at
+The relayer CLI binary, called `hermes`, has a comprehensive guide at
 [hermes.informal.systems](http://hermes.informal.systems).
 
 ## Contributing
