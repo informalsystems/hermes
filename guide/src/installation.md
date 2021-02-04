@@ -86,14 +86,14 @@ USAGE:
 
 SUBCOMMANDS:
     help       Get usage information
-    keys       manage keys in the relayer for each chain
-    light      basic functionality for managing the light clients
-    start      start the relayer
-    channel    channel functionality for managing channels
-    query      query state from chain
-    tx         create and send IBC transactions
-    listen     listen to and display IBC events emitted by a chain
-    version    display version information
+    keys       Manage keys in the relayer for each chain
+    light      Basic functionality for managing the light clients
+    start      Start the relayer
+    channel    Channel functionality for managing channels
+    query      Query state from chain
+    tx         Create and send IBC transactions
+    listen     Listen to and display IBC events emitted by a chain
+    version    Display version information
 ```
 
 ### Creating an alias for the executable

@@ -17,7 +17,7 @@ USAGE:
     hermes light <SUBCOMMAND>
 
 DESCRIPTION:
-    basic functionality for managing the lite clients
+    Basic functionality for managing the lite clients
 
 SUBCOMMANDS:
     add        add a light client peer for a given chain
