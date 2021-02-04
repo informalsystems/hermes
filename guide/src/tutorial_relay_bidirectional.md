@@ -62,8 +62,8 @@ up properly.
     denominator = '3'
 
     [[connections]]
-    a_chain = "ibc1"
-    b_chain = "ibc0"
+    a_chain = "ibc-1"
+    b_chain = "ibc-0"
 
     [[connections.paths]]
     a_port = 'transfer'
@@ -137,8 +137,8 @@ up properly.
     denominator = '3'
 
     [[connections]]
-    a_chain = "ibc0"
-    b_chain = "ibc1"
+    a_chain = "ibc-0"
+    b_chain = "ibc-1"
 
     [[connections.paths]]
     a_port = 'transfer'
