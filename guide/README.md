@@ -4,6 +4,16 @@ In order to build and view the Relayer CLI guide you need to instal [`mdBook`](h
 
 mdBook is a utility to create modern online books from Markdown files.
 
+This guide should be permanently deployed at its latest stable version at 
+[hermes.informal.systems](https://hermes.informal.systems).
+
+Current version: `0.1.0`.
+The version of this guide is aligned with the [versioning of the ibc crates](../README.md).
+
+## Local deployment
+
+This section describes how to deploy this guide locally on your system.
+
 ### Pre-requisites
 
 Install `mdBook` using [`cargo`](https://doc.rust-lang.org/cargo/):
@@ -46,7 +56,7 @@ This will host the guide in your local machine. Open your browser and navigate t
 http://localhost:3000
 ```
 
-### Adding or editing new content to the guide
+## Adding or editing new content to the guide
 
 Please check the [mdBook documentation](https://rust-lang.github.io/mdBook/index.html) for additional information on how to add new content to the guide. 
 

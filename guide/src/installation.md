@@ -9,7 +9,7 @@ In order to install and run Hermes, please follow the steps below:
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-$ cargo install hermes
+$ cargo install ibc-relayer-cli
 ```
 
 This will download and build Hermes, and install the `hermes` binary in `$HOME/.cargo/bin`.

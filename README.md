@@ -8,23 +8,29 @@
 
 Rust implementation of the Inter-Blockchain Communication (IBC) protocol.
 
-This project consists of the following crates:
+This project comprises primarily four crates:
  
- - The [`ibc`](https://docs.rs/ibc) crate defines the main data structures and on-chain logic  for the IBC protocol.
-- The [`ibc-relayer`](https://docs.rs/ibc-relayer) crate provides an implementation of an IBC relayer, as a library.
-- [`hermes`](https://hermes.informal.systems) is a command-line interface for the IBC relayer provided by this project.
+- The [`ibc`][ibc-crate-link] crate defines the main data structures and 
+  on-chain logic for the IBC protocol.
+- The [`ibc-relayer`][relayer-crate-link] crate provides an implementation 
+  of an IBC relayer, as a _library_.
+- The [`ibc-relayer-cli`][relayer-cli-crate-link] is a CLI (a wrapper 
+  over the `ibc-relayer` library), comprising the 
+  [`hermes`](https://hermes.informal.systems) binary.
+- The [`ibc-proto`][ibc-proto-crate-link] is a library with proto definitions 
+  necessary for interacting with Cosmos SDK
+  [IBC structs](https://github.com/cosmos/cosmos-sdk/tree/master/proto/ibc).
 
-See the table below for details.
+See the table below for more details.
 
 Includes [TLA+ specifications](/docs/spec).
 
-> TODO: update the crate and docs links below (for relayer and relayer-cli).
-
 | Crate name    |   Type   |     Version       | Docs   |
 |:-------------:|:------:|:-------------:|:-----:|
-| [ibc (modules)](./modules) | lib|  [![IBC Crate][ibc-crate-image]][ibc-crate-link] | [![Docs][ibc-docs-image]][ibc-docs-link] |
-| [ibc-relayer](./relayer)      | lib |  [![Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![Docs][relayer-docs-image]][relayer-docs-link] |
-| [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
+| [ibc](./modules) (modules) | lib|  [![IBC Crate][ibc-crate-image]][ibc-crate-link] | [![IBC Docs][ibc-docs-image]][ibc-docs-link] |
+| [ibc-relayer](./relayer)      | lib |  [![IBC Relayer Crate][relayer-crate-image]][relayer-crate-link]  | [![IBC Relayer Docs][relayer-docs-image]][relayer-docs-link] |
+| [ibc-relayer-cli](./relayer-cli)  | bin: [hermes](relayer-cli/) |  [![IBC Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]      |  [![IBC Relayer CLI Docs][relayer-cli-docs-image]][relayer-cli-docs-link] |
+| [ibc-proto](./proto)  | lib |  [![IBC Proto Crate][ibc-proto-crate-image]][ibc-proto-crate-link]      |  [![IBC Proto Docs][ibc-proto-docs-image]][ibc-proto-docs-link] |
 
 
 ## Requirements 
@@ -74,14 +80,18 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [ibc-crate-link]: https://crates.io/crates/ibc
 [ibc-docs-image]: https://docs.rs/ibc/badge.svg
 [ibc-docs-link]: https://docs.rs/ibc/
-[relayer-crate-image]: https://img.shields.io/crates/v/ibc.svg
-[relayer-crate-link]: https://crates.io/crates/ibc
-[relayer-docs-image]: https://docs.rs/ibc/badge.svg
-[relayer-docs-link]: https://docs.rs/ibc/
-[relayer-cli-crate-image]: https://img.shields.io/crates/v/ibc.svg
-[relayer-cli-crate-link]: https://crates.io/crates/ibc
-[relayer-cli-docs-image]: https://docs.rs/ibc/badge.svg
-[relayer-cli-docs-link]: https://docs.rs/ibc/
+[relayer-crate-image]: https://img.shields.io/crates/v/ibc-relayer.svg
+[relayer-crate-link]: https://crates.io/crates/ibc-relayer
+[relayer-docs-image]: https://docs.rs/ibc-relayer/badge.svg
+[relayer-docs-link]: https://docs.rs/ibc-relayer/
+[relayer-cli-crate-image]: https://img.shields.io/crates/v/ibc-relayer-cli.svg
+[relayer-cli-crate-link]: https://crates.io/crates/ibc-relayer-cli
+[relayer-cli-docs-image]: https://docs.rs/ibc-relayer-cli/badge.svg
+[relayer-cli-docs-link]: https://docs.rs/ibc-relayer-cli/
+[ibc-proto-crate-image]: https://img.shields.io/crates/v/ibc-proto.svg
+[ibc-proto-crate-link]: https://crates.io/crates/ibc-proto
+[ibc-proto-docs-image]: https://docs.rs/ibc-proto/badge.svg
+[ibc-proto-docs-link]: https://docs.rs/ibc-proto/
 
 [build-image]: https://github.com/informalsystems/ibc-rs/workflows/Rust/badge.svg
 [build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
