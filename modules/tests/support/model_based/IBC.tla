@@ -137,7 +137,9 @@ ActionOutcomes == {
     "ICS03MissingClient",
     \* ICS03_ConnectionOpenTry outcomes:
     "ICS03ConnectionOpenTryOK",
-    "ICS03InvalidConsensusHeight"
+    "ICS03InvalidConsensusHeight",
+    "ICS03ConnectionNotFound",
+    "ICS03ConnectionMismatch"
 }
 
 (***************************** Specification *********************************)

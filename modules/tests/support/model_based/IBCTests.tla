@@ -26,6 +26,12 @@ ICS03ConnectionOpenTryOK ==
 ICS03InvalidConsensusHeight ==
     /\ actionOutcome = "ICS03InvalidConsensusHeight"
 
+ICS03ConnectionNotFound ==
+    /\ actionOutcome = "ICS03ConnectionNotFound"
+
+ICS03ConnectionMismatch ==
+    /\ actionOutcome = "ICS03ConnectionMismatch"
+
 ICS02CreateOKTest == ~ICS02CreateOK
 ICS02UpdateOKTest == ~ICS02UpdateOK
 ICS02ClientNotFoundTest == ~ICS02ClientNotFound
@@ -34,5 +40,7 @@ ICS03ConnectionOpenInitOKTest == ~ICS03ConnectionOpenInitOK
 ICS03MissingClientTest == ~ICS03MissingClient
 ICS03ConnectionOpenTryOKTest == ~ICS03ConnectionOpenTryOK
 ICS03InvalidConsensusHeightTest == ~ICS03InvalidConsensusHeight
+ICS03ConnectionNotFoundTest == ~ICS03ConnectionNotFound
+ICS03ConnectionMismatchTest == ~ICS03ConnectionMismatch
 
 ===============================================================================

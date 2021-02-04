@@ -60,29 +60,115 @@ ICS03_ConnectionOpenInit(
             outcome |-> "ICS03MissingClient"
         ]
 
-ICS03_ConnectionOpenTry(
-    height,
+ICS03_ConnectionOpenTry_1(
+    chainHeight,
     clients,
     connections,
     connectionIdCounter,
     clientId,
-    clientHeight,
+    clientClaimedHeight,
     counterpartyClientId,
     connectionId
 ) ==
-    \* check if client's claimed height
-    IF clientHeight > height THEN
+    \* TODO check that all parameters are still needed
+    [
+        connections |-> connections,
+        connectionIdCounter |-> connectionIdCounter,
+        outcome |-> "ICS03ConnectionOpenTryOK"
+    ]
+
+ICS03_ConnectionOpenTry_0(
+    chainHeight,
+    clients,
+    connections,
+    connectionIdCounter,
+    clientId,
+    clientClaimedHeight,
+    counterpartyClientId,
+    connectionId
+) ==
+    \* check if client's claimed height is higher than the chain's height
+    IF clientClaimedHeight > chainHeight THEN
         \* if client's height is too advanced, then set an error outcome
         [
             connections |-> connections,
             connectionIdCounter |-> connectionIdCounter,
             outcome |-> "ICS03InvalidConsensusHeight"
         ]
+        \* TODO: add `chain_max_history_size` to the model to be able to also
+        \*       return a `ICS03StaleConsensusHeight` error outcome
     ELSE
-        [
-            connections |-> connections,
-            connectionIdCounter |-> connectionIdCounter,
-            outcome |-> "ICS03ConnectionOpenTryOK"
-        ]
+        \* check if a `connectionId` was set
+        IF connectionId /= ConnectionIdNone THEN
+            \* if so, check if the connection exists
+            IF ICS03_ConnectionExists(connections, connectionId) THEN
+                \* if the connection exists, verify that is matches the
+                \* the parameters provided
+                LET connection == ICS03_GetConnection(
+                    connections,
+                    connectionId
+                ) IN
+                IF /\ connection.state = "Init"
+                   /\ connection.clientId = clientId
+                   /\ connection.counterpartyClientId = counterpartyClientId
+                THEN
+                    \* initial verification passed; move to step 1
+                    ICS03_ConnectionOpenTry_1(
+                        chainHeight,
+                        clients,
+                        connections,
+                        connectionIdCounter,
+                        clientId,
+                        clientClaimedHeight,
+                        counterpartyClientId,
+                        connectionId
+                    )
+                ELSE
+                    [
+                        connections |-> connections,
+                        connectionIdCounter |-> connectionIdCounter,
+                        outcome |-> "ICS03ConnectionMismatch"
+                    ]
+            ELSE
+                \* if the connection does not exist, then set an error outcome
+                [
+                    connections |-> connections,
+                    connectionIdCounter |-> connectionIdCounter,
+                    outcome |-> "ICS03ConnectionNotFound"
+                ]
+        ELSE
+            \* initial verification passed; move to step 1
+            ICS03_ConnectionOpenTry_1(
+                chainHeight,
+                clients,
+                connections,
+                connectionIdCounter,
+                clientId,
+                clientClaimedHeight,
+                counterpartyClientId,
+                connectionId
+            )
+
+ICS03_ConnectionOpenTry(
+    chainHeight,
+    clients,
+    connections,
+    connectionIdCounter,
+    clientId,
+    clientClaimedHeight,
+    counterpartyClientId,
+    connectionId
+) ==
+    \* start step 0
+    ICS03_ConnectionOpenTry_0(
+        chainHeight,
+        clients,
+        connections,
+        connectionIdCounter,
+        clientId,
+        clientClaimedHeight,
+        counterpartyClientId,
+        connectionId
+    )
 
 ===============================================================================

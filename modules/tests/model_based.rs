@@ -406,7 +406,30 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                             if error_consensus_height == Self::height(client_height)
                         )
                     }
-
+                    ActionOutcome::ICS03ConnectionNotFound => {
+                        let handler_error_kind =
+                            Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
+                        connection_id.is_some()
+                            && matches!(
+                                handler_error_kind,
+                                ICS03ErrorKind::ConnectionNotFound(error_connection_id)
+                                if error_connection_id == Self::connection_id(connection_id.unwrap())
+                            )
+                    }
+                    ActionOutcome::ICS03ConnectionMismatch => {
+                        let handler_error_kind =
+                            Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
+                        // the implementaion matches the model if there's an
+                        // error matching the expected outcome
+                        connection_id.is_some()
+                            && matches!(
+                                handler_error_kind,
+                                ICS03ErrorKind::ConnectionMismatch(error_connection_id)
+                                if error_connection_id == Self::connection_id(connection_id.unwrap())
+                            )
+                    }
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
@@ -427,6 +450,8 @@ fn main() {
         "ICS03MissingClientTest",
         "ICS03MissingClientTest",
         "ICS03InvalidConsensusHeightTest",
+        "ICS03ConnectionNotFoundTest",
+        "ICS03ConnectionMismatchTest",
     ];
 
     for test in tests {
