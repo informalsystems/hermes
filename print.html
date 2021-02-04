@@ -619,7 +619,9 @@ path = '/ibc-rs/data/ibc-1/data/A885BB3D3DFF6101188B462466AE926E7A6CD51E'
 <h1><a class="header" href="#install-gaia" id="install-gaia">Install Gaia</a></h1>
 <p>The script to start the chains requires gaia to be installed.</p>
 <blockquote>
-<p><strong>NOTE</strong>: This assumes you have <code>Golang</code> programming language installed on your machine. If not, please ensure you install before proceeding.</p>
+<p><strong>NOTE</strong>: This assumes you have <code>Golang</code> programming language installed on 
+your machine. If not, please ensure you install before proceeding. See 
+more details in the <a href="pre_requisites.html#2-golang">Pre-requisites</a> section.</p>
 </blockquote>
 <h4><a class="header" href="#clone-gaia" id="clone-gaia">Clone gaia</a></h4>
 <p>Clone the repository from Github:</p>
@@ -871,16 +873,16 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <p>In order to start relaying packets please follow the steps below:</p>
 <ul>
 <li>
-<p><a href="./relay_client.html">Configure Clients</a></p>
+<p><a href="./tutorial_client_raw.html">Configure Clients</a></p>
 </li>
 <li>
-<p><a href="./relay_conn.html">Connection Handshake</a></p>
+<p><a href="./tutorial_conn_raw.html">Connection Handshake</a></p>
 </li>
 <li>
-<p><a href="./relay_channel.html">Open the Channel</a></p>
+<p><a href="./tutorial_chan_open_raw.html">Open the Channel</a></p>
 </li>
 <li>
-<p><a href="relay_packet.html">Relay Packets</a></p>
+<p><a href="tutorial_packet_raw.html">Relay Packets</a></p>
 </li>
 </ul>
 <h1><a class="header" href="#1-configuring-clients" id="1-configuring-clients">1. Configuring clients</a></h1>
@@ -979,7 +981,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <pre><code class="language-shell">hermes tx raw update-client ibc-1 ibc-0 07-tendermint-1
 </code></pre>
 <h2><a class="header" href="#next-steps-5" id="next-steps-5">Next Steps</a></h2>
-<p>In the next section, we'll establish the <a href="./relay_conn.html">Connection Handshake</a></p>
+<p>In the next section, we'll establish the <a href="./tutorial_conn_raw.html">Connection Handshake</a></p>
 <h1><a class="header" href="#2-connection-handshake" id="2-connection-handshake">2. Connection Handshake</a></h1>
 <h3><a class="header" href="#21-conn-init" id="21-conn-init">2.1 <code>conn-init</code></a></h3>
 <p>Initialize a new connection on <code>ibc-0</code>:</p>
@@ -1006,7 +1008,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <pre><code class="language-shell">hermes query connection end ibc-0 connection-0
 </code></pre>
 <h2><a class="header" href="#next-steps-6" id="next-steps-6">Next Steps</a></h2>
-<p>In the next section, we'll <a href="./relay_channel.html">establish a new channel</a></p>
+<p>In the next section, we'll <a href="./tutorial_chan_open_raw.html">establish a new channel</a></p>
 <h1><a class="header" href="#3-channel-handshake" id="3-channel-handshake">3. Channel Handshake</a></h1>
 <h3><a class="header" href="#31-chan-open-init" id="31-chan-open-init">3.1 chan-open-init</a></h3>
 <p>Initialize a new channel on <code>ibc-0</code>:</p>
@@ -1032,7 +1034,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <pre><code class="language-shell">hermes query channel end ibc-1 transfer channel-1
 </code></pre>
 <h2><a class="header" href="#next-steps-7" id="next-steps-7">Next Steps</a></h2>
-<p>In the next section, we'll start to <a href="./relay_packet.html">relay packets</a></p>
+<p>In the next section, we'll start to <a href="./tutorial_packet_raw.html">relay packets</a></p>
 <h1><a class="header" href="#4-relay-packets" id="4-relay-packets">4. Relay Packets</a></h1>
 <h3><a class="header" href="#41-query-balances" id="41-query-balances">4.1 Query balances:</a></h3>
 <ul>
