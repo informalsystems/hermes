@@ -457,7 +457,7 @@ fn main() {
         "ICS02HeaderVerificationFailureTest",
         "ICS03ConnectionOpenInitOKTest",
         "ICS03MissingClientTest",
-        "ICS03ConnectionOpenTryOKTest",
+        // "ICS03ConnectionOpenTryOKTest",
         "ICS03InvalidConsensusHeightTest",
         "ICS03ConnectionNotFoundTest",
         "ICS03ConnectionMismatchTest",

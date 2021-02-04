@@ -53,6 +53,7 @@
             "clientId": 1,
             "connectionId": 0,
             "counterpartyClientId": 0,
+            "counterpartyConnectionId": 0,
             "type": "ICS03ConnectionOpenTry"
         },
         "actionOutcome": "ICS03ConnectionMismatch",

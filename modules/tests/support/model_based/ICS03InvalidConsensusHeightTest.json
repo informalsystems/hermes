@@ -16,10 +16,11 @@
     {
         "action": {
             "chainId": "chain-A",
-            "clientId": 0,
             "clientHeight": 1,
+            "clientId": 0,
             "connectionId": -1,
             "counterpartyClientId": 0,
+            "counterpartyConnectionId": 0,
             "type": "ICS03ConnectionOpenTry"
         },
         "actionOutcome": "ICS03InvalidConsensusHeight",
