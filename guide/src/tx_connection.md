@@ -51,7 +51,7 @@ identifier `07-tendermint-1` on chain `ibc-1`, we can initialize a connection be
 First, let's initialize the connection on `ibc-0`:
 
 ```shell
-$ hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
+hermes tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-tendermint-1
 ```
 
 ```json
@@ -99,7 +99,7 @@ __Example__
 Let's now create the counterparty to `connection-0` on chain `ibc-1`:
 
 ```shell
-$ hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
+hermes tx raw conn-try ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -s connection-0 | jq
 ```
 
 ```json
@@ -148,7 +148,7 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the connection attempt:
 
 ```shell
-$ hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
+hermes tx raw conn-ack ibc-0 ibc-1 07-tendermint-0 07-tendermint-1 -d connection-0 -s connection-1 | jq
 ```
 
 ```json
@@ -197,7 +197,7 @@ __Example__
 Confirm on `ibc-1` that `ibc-0` has accepted the connection attempt.
 
 ```shell
-$ hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
+hermes tx raw conn-confirm ibc-1 ibc-0 07-tendermint-1 07-tendermint-0 -d connection-1 -s connection-0 | jq
 ```
 
 ```json

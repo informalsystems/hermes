@@ -33,14 +33,14 @@ To enable it, one must compile the `relayer-cli` crate with the `--features=prof
 a) One way is to build the `relayer` binary and update the `hermes` alias to point to the executable:
 
 ```shell script
-$ cd relayer-cli/
-$ cargo build --features=profiling
+cd relayer-cli/
+cargo build --features=profiling
 ```
 
 b) Alternatively, one can use the `cargo run` command and update the alias accordingly:
 
 ```shell script
-$ alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
+alias hermes='cargo run --features=profiling --manifest-path=relayer-cli/Cargo.toml --'
 ```
 
 The `--manifest-path=relayer-cli/Cargo.toml` flag is needed for `cargo run` to accept the `--features` flag.

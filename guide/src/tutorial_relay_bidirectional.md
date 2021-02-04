@@ -20,7 +20,7 @@ up properly.
 2. From the root of the working copy of `ibc-rs`, create a folder for the first instance:
 
     ```shell
-    $ mkdir relay_a && cd relay_a
+    mkdir relay_a && cd relay_a
     ```
 
 3. Paste the following configuration in a file named `config.toml` in the `relay_a` directory:
@@ -73,20 +73,20 @@ up properly.
 4. Create the data folders for both chains:
 
     ```shell
-    $ mkdir -p data/ibc-0/data
-    $ mkdir -p data/ibc-1/data
+    mkdir -p data/ibc-0/data
+    mkdir -p data/ibc-1/data
     ```
 
 5. Copy the keys over from the chains `data` directory:
 
     ```shell
-    $ cp ../data/ibc-0/key_seed.json data/ibc-0/
-    $ cp ../data/ibc-1/key_seed.json data/ibc-1/
+    cp ../data/ibc-0/key_seed.json data/ibc-0/
+    cp ../data/ibc-1/key_seed.json data/ibc-1/
     ```
 6. Initialize the light clients:
 
     ```shell
-    $ ../scripts/init-clients config.toml ibc-0 ibc-1
+    ../scripts/init-clients config.toml ibc-0 ibc-1
     ```
 
 7. Let's proceed similarly for the second instance, but pay attention to the commands
@@ -95,7 +95,7 @@ up properly.
    From the root of the working copy of `ibc-rs`, create a folder for the second instance:
 
     ```shell
-    $ mkdir relay_b && cd relay_b
+    mkdir relay_b && cd relay_b
     ```
 
 8. Paste the following configuration in a file named `config.toml` in the `relay_b` directory:
@@ -148,32 +148,32 @@ up properly.
 9. Create the data folders for both chains:
 
     ```shell
-    $ mkdir -p data/ibc-0/data
-    $ mkdir -p data/ibc-1/data
+    mkdir -p data/ibc-0/data
+    mkdir -p data/ibc-1/data
     ```
 
 10. Copy the keys over from the chains `data` directory:
 
     ```shell
-    $ cp ../data/ibc-0/key_seed.json data/ibc-0/
-    $ cp ../data/ibc-1/key_seed.json data/ibc-1/
+    cp ../data/ibc-0/key_seed.json data/ibc-0/
+    cp ../data/ibc-1/key_seed.json data/ibc-1/
     ```
 11. Initialize the light clients:
 
     ```shell
-    $ ../scripts/init-clients config.toml ibc-0 ibc-1
+    ../scripts/init-clients config.toml ibc-0 ibc-1
     ```
 
 12. Start the first relayer in the `relay_a` directory:
 
     ```shell
-    $ hermes -c config.toml start ibc-0 ibc-1
+    hermes -c config.toml start ibc-0 ibc-1
     ```
 
 13. In another terminal, start the second relayer from the `relay_b` directory:
 
     ```shell
-    $ hermes -c config.toml start ibc-1 ibc-0
+    hermes -c config.toml start ibc-1 ibc-0
     ```
 
 14. In yet another terminal, From the either the `relay_a` or `relay_b` directory, use the `tx raw ft-transfer` command to send 2 packets to the `ibc0` chain:

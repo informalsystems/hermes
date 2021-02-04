@@ -28,7 +28,7 @@ FLAGS:
 __Example__
 
 ```shell
-$ hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
+hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1 | jq
 ```
 
 ```json
@@ -73,7 +73,7 @@ FLAGS:
 __Example__
 
 ```shell
-$ hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
+hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0 | jq
 ```
 
 ```json
