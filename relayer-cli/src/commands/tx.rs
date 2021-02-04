@@ -13,18 +13,18 @@ mod transfer;
 #[derive(Command, Debug, Options, Runnable)]
 pub enum TxCmd {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
     /// The `tx raw` subcommand
-    #[options(help = "tx raw")]
+    #[options(help = "Raw commands for sending transactions to a configured chain.")]
     Raw(TxRawCommands),
 }
 
 #[derive(Command, Debug, Options, Runnable)]
 pub enum TxRawCommands {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
     /// The `tx raw create-client` subcommand submits a MsgCreateClient in a transaction to a chain

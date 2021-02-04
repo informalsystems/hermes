@@ -82,7 +82,7 @@ USAGE:
     hermes <SUBCOMMAND>
 
 SUBCOMMANDS:
-    help       get usage information
+    help       Get usage information
     keys       manage keys in the relayer for each chain
     light      basic functionality for managing the light clients
     start      start the relayer
