@@ -164,18 +164,24 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#what-is-hermes" id="what-is-hermes">What is Hermes?</a></h1>
-<p>Before we explain what is Hermes, we briefly describe what is a relayer.</p>
-<p>A <strong>relayer</strong> is an off-chain process responsible for relaying IBC datagrams between any two chains.
+<p>Hermes is a an open-source Rust implementation of a relayer for the <a href="https://cosmos.network/ibc">Inter-Blockchain Communication protocol</a> (IBC),
+released under the <a href="https://crates.io/crates/ibc-relayer-cli">ibc-relayer-cli</a> crate.</p>
+<p>The <strong>Inter-Blockchain Communication protocol</strong> is an end-to-end, connection-oriented,
+state-ful protocol for reliable, ordered, and authenticated communication between modules
+on separate distributed ledgers. <sup class="footnote-reference"><a href="#ibc">1</a></sup></p>
+<p>An IBC <strong>relayer</strong> is an off-chain process responsible for relaying IBC datagrams between any two chains.
 The way it does so is by scanning chain states, building transactions based on these states,
-and submitting the transactions.</p>
-<p>A relayer is a central element in the IBC network architecture. This is because chain modules 
-in this architecture are not directly sending messages to each other over networking infrastructure, but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
-<p>Hermes is a relayer developed in Rust, released under the crate <a href="https://crates.io/crates/ibc-relayer-cli">ibc-relayer-cli</a>. Hermes is actively developed and maintained by
-<a href="https://informal.systems">Informal Systems</a> in the
-<a href="https://github.com/informalsystems/ibc-rs">ibc-rs</a> repository.</p>
+and submitting the transactions to the chains involved in the network.</p>
+<p>The relayer is a central element in the IBC network architecture. This is because chain modules
+in this architecture are not directly sending messages to each other over networking infrastructure,
+but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.</p>
 <p>We sometimes refer to Hermes as &quot;IBC Relayer CLI&quot;, to make it clear that this
-is a relayer CLI (i.e., a binary) and distinguish from the relayer core library 
+is a relayer CLI (i.e., a binary) and distinguish from the relayer core library
 (which is the crate called <a href="https://crates.io/crates/ibc-relayer"><code>ibc-relayer</code></a>).</p>
+<p>Hermes is actively developed and maintained by <a href="https://informal.systems">Informal Systems</a> in the <a href="https://github.com/informalsystems/ibc-rs">ibc-rs</a> repository.</p>
+<div class="footnote-definition" id="ibc"><sup class="footnote-definition-label">1</sup>
+<p><a href="https://arxiv.org/pdf/2006.15918.pdf">The Interblockchain Communication Protocol: An Overview</a></p>
+</div>
 
                     </main>
 
