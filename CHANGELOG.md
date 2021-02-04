@@ -16,6 +16,8 @@
   - Implement command to perform the handshake for a new channel ([#557])
   - Query all connections command ([#553])
   - Query all channels command ([#568])
+  - Added a relayer binary guide ([#542])
+  - Split the dev-env script in `setup_chains` and `init_clients` ([#577])
 
 - [relayer]
   - Added retry mechanism, restructured relayer ([#519])
@@ -76,12 +78,14 @@
 [#537]: https://github.com/informalsystems/ibc-rs/issues/537
 [#538]: https://github.com/informalsystems/ibc-rs/issues/538
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
+[#542]: https://github.com/informalsystems/ibc-rs/issues/542
 [#555]: https://github.com/informalsystems/ibc-rs/issues/555
 [#554]: https://github.com/informalsystems/ibc-rs/issues/554
 [#553]: https://github.com/informalsystems/ibc-rs/issues/553
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
+[#577]: https://github.com/informalsystems/ibc-rs/issues/577
 [#582]: https://github.com/informalsystems/ibc-rs/issues/582
 [#583]: https://github.com/informalsystems/ibc-rs/issues/583
 [#590]: https://github.com/informalsystems/ibc-rs/issues/590
