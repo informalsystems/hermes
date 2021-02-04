@@ -9,8 +9,9 @@ More details and feature comparison between the Rust and Go relayer implementati
 - Relay from packet events on a newly created, or an existing relaying path
 
   __Limitations:__
-   - Only one path per relayer instance
+   - Supports only one path per relayer instance
    - Relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup
+   - Only unordered channels are supported
 
 - individual commands that build and send transactions for:
     - Creating and updating IBC Tendermint light clients

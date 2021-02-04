@@ -18,39 +18,39 @@ Note that the addresses used in the two commands above are configured in `dev-en
 
 ### 4.2 Packet relaying:
 
-First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
+First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
 
-- start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This results in a Tx to `ibc-0` for a `MsgTransfer` packet
+- start the transfer of 9999 samoleans from `ibc-0` to `ibc-1`. This sends a `MsgTransfer` in a transaction to `ibc-0`
 
     ```shell script
     hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
     ```
 
-- query packet commitments on ibc-0
+- query packet commitments on `ibc-0`
 
     ```shell script
     hermes query packet commitments ibc-0 transfer channel-0
     ```
 
-- query unreceived packets on ibc-1
+- query unreceived packets on `ibc-1`
 
     ```shell script
     hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
     ```
 
-- send recv_packet to ibc-1
+- send recv_packet to `ibc-1`
 
     ```shell script
     hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
     ```
 
-- query unreceived acks on ibc-0
+- query unreceived acks on `ibc-0`
 
     ```shell script
     hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
     ```
 
-- send acknowledgement to ibc-0
+- send acknowledgement to `ibc-0`
 
     ```shell script
     hermes tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
@@ -62,7 +62,7 @@ First, we'll send 9999 samoleans from `ibc-0` to `ibc-1`.
     hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 2 -n 1
     ```
 
-- send timeout to ibc-0
+- send timeout to `ibc-0`
 
     ```shell script
     hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0

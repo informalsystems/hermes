@@ -1,5 +1,5 @@
 ## Packet relaying on new path
-Hermes packet relaying can be done over a newly established path. It will perform client creation, connection and channel handshake if a relay path is present in the configuration file.
+Hermes packet relaying can be done over a newly established path. It performs client creation, connection and channel handshake if a relay path is present in the configuration file.
 
 - specify the path between the `transfer` ports on `ibc-0` and `ibc-1` by including the following in the configuration file:
 
@@ -13,7 +13,7 @@ a_port = 'transfer'
 b_port = 'transfer'
 ```
 
-- from one terminal start the relayer over this path:
+- from one terminal start hermes over this path:
 
    ```shell script
     hermes start ibc-0 ibc-1

@@ -21,6 +21,8 @@ __Feature comparison between Hermes and the Go relayer__
 | ---------------------- | :---: | :----: |:-------|
 | Restart                | ❌    | ✅     | replays any IBC events that happened before restart
 | Multiple_Paths         | ❌    | ✅     | relays on multiple paths concurrently
+| Chan_Unordered         | ✅    | ✅     |
+| Chan_Ordered           | ❌    | ❓     |
 |                        |       |        |
 | Cl_Tendermint_Create   | ✅    | ✅     | tendermint light client creation
 | Cl_Tendermint_Update   | ✅    | ✅     | tendermint light client update

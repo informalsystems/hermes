@@ -27,7 +27,7 @@ SUBCOMMANDS:
 
 ### Key Seed file (Private Key)
 
-In order to execute the command below you need a private key file (JSON). The private key file will be used to sign the transactions submitted by the relayer to the chain.
+In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.
 
 The private key file can be obtained by using the `keys add` on a Cosmos chain, for example for a `gaia` chain the command is:
 
