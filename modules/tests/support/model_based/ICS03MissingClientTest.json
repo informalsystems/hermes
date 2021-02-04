@@ -55,10 +55,10 @@
         "actionOutcome": "ICS03MissingClient",
         "chains": {
             "chain-A": {
-                "height": 0
+                "height": 2
             },
             "chain-B": {
-                "height": 1
+                "height": 0
             }
         }
     }

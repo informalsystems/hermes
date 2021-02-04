@@ -1,7 +1,6 @@
 mod modelator;
 mod step;
 
-use ibc::ics02_client::client_def::AnyHeader;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
@@ -24,10 +23,11 @@ use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::Height;
+use ibc::{ics02_client::client_def::AnyHeader, ics18_relayer::context::ICS18Context};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
-use step::{ActionOutcome, ActionType, Step};
+use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
@@ -43,19 +43,33 @@ impl ICS02TestExecutor {
         }
     }
 
-    /// Find the `MockContext` of a given `chain_id`.
-    /// If no context is found, a new one is created.
-    fn get_chain_context_or_init(&mut self, chain_id: String) -> &mut MockContext {
-        self.contexts.entry(chain_id.clone()).or_insert_with(|| {
-            let max_history_size = 1;
-            let initial_height = 0;
-            MockContext::new(
-                ChainId::new(chain_id, Self::epoch()),
-                HostType::Mock,
-                max_history_size,
-                Height::new(Self::epoch(), initial_height),
-            )
-        })
+    /// Create a `MockContext` for a given `chain_id`.
+    /// Panic if a context for `chain_id` already exists.
+    fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
+        let max_history_size = 1;
+        let ctx = MockContext::new(
+            ChainId::new(chain_id.clone(), Self::epoch()),
+            HostType::Mock,
+            max_history_size,
+            Height::new(Self::epoch(), initial_height),
+        );
+        assert!(self.contexts.insert(chain_id, ctx).is_none());
+    }
+
+    /// Returns a reference to the `MockContext` of a given `chain_id`.
+    /// Panic if the context for `chain_id` is not found.
+    fn chain_context(&self, chain_id: &String) -> &MockContext {
+        self.contexts
+            .get(chain_id)
+            .expect("chain context should have been initialized")
+    }
+
+    /// Returns a mutable reference to the `MockContext` of a given `chain_id`.
+    /// Panic if the context for `chain_id` is not found.
+    fn chain_context_mut(&mut self, chain_id: &String) -> &mut MockContext {
+        self.contexts
+            .get_mut(chain_id)
+            .expect("chain context should have been initialized")
     }
 
     fn extract_handler_error_kind<K>(result: Result<(), ICS18Error>) -> K
@@ -100,8 +114,12 @@ impl ICS02TestExecutor {
             .expect("it should be possible to create the client identifier")
     }
 
+    fn height(height: u64) -> Height {
+        Height::new(Self::epoch(), height)
+    }
+
     fn mock_header(height: u64) -> MockHeader {
-        MockHeader(Height::new(Self::epoch(), height))
+        MockHeader(Self::height(height))
     }
 
     fn header(height: u64) -> AnyHeader {
@@ -131,6 +149,14 @@ impl ICS02TestExecutor {
     fn delay_period() -> u64 {
         0
     }
+
+    // Check that chain heights match the ones in the model.
+    fn check_chain_heights(&self, chains: HashMap<String, Chain>) -> bool {
+        chains.into_iter().all(|(chain_id, chain)| {
+            let ctx = self.chain_context(&chain_id);
+            ctx.query_latest_height() == Self::height(chain.height)
+        })
+    }
 }
 
 impl modelator::TestExecutor<Step> for ICS02TestExecutor {
@@ -145,11 +171,15 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
             ActionOutcome::None,
             "unexpected action outcome"
         );
+        // initiliaze all chains
+        for (chain_id, chain) in step.chains {
+            self.init_chain_context(chain_id, chain.height);
+        }
         true
     }
 
     fn next_step(&mut self, step: Step) -> bool {
-        match step.action.action_type {
+        let outcome_matches = match step.action.action_type {
             ActionType::None => panic!("unexpected action type"),
             ActionType::ICS02CreateClient => {
                 // get action parameters
@@ -163,7 +193,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                     .expect("create client action should have a height");
 
                 // get chain's context
-                let ctx = self.get_chain_context_or_init(chain_id);
+                let ctx = self.chain_context_mut(&chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
@@ -198,7 +228,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                     .expect("update client action should have a height");
 
                 // get chain's context
-                let ctx = self.get_chain_context_or_init(chain_id);
+                let ctx = self.chain_context_mut(&chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
@@ -249,7 +279,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                 );
 
                 // get chain's context
-                let ctx = self.get_chain_context_or_init(chain_id);
+                let ctx = self.chain_context_mut(&chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
@@ -282,7 +312,9 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
-        }
+        };
+        // also check that chain heights match
+        outcome_matches && self.check_chain_heights(step.chains)
     }
 }
 

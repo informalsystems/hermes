@@ -18,30 +18,28 @@ where
 {
     // open test file
     let file = File::open(path.as_ref())
-        .wrap_err_with(|| format!("test file {:?} not found.", path.as_ref()))?;
+        .wrap_err_with(|| format!("test {:?} not found.", path.as_ref()))?;
     let reader = BufReader::new(file);
 
     // parse test file
     let steps: Vec<Step> = serde_json::de::from_reader(reader)
-        .wrap_err_with(|| format!("test file {:?} could not be deserialized", path.as_ref()))?;
+        .wrap_err_with(|| format!("test {:?} could not be deserialized", path.as_ref()))?;
+    let step_count = steps.len();
 
-    let mut steps = steps.into_iter();
+    for (i, step) in steps.into_iter().enumerate() {
+        // check the step
+        let ok = if i == 0 {
+            executor.initial_step(step.clone())
+        } else {
+            executor.next_step(step.clone())
+        };
 
-    // check the initial step
-    if let Some(step) = steps.next() {
-        if !executor.initial_step(step.clone()) {
-            return Err(eyre!("check failed on initial step:\n{:#?}", step));
-        }
-    } else {
-        println!("WARNING: test file {:?} had 0 steps", path.as_ref());
-        return Ok(());
-    }
-
-    // check the remaining steps
-    for step in steps {
-        if !executor.next_step(step.clone()) {
+        if !ok {
             return Err(eyre!(
-                "check failed on step:\n{:#?}\n\nexecutor:\n{:#?}",
+                "test {:?} failed on step {}/{}:\n{:#?}\n\nexecutor:\n{:#?}",
+                path.as_ref(),
+                i + 1,
+                step_count,
                 step,
                 executor
             ));

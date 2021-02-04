@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -7,6 +8,8 @@ pub struct Step {
 
     #[serde(alias = "actionOutcome")]
     pub action_outcome: ActionOutcome,
+
+    pub chains: HashMap<String, Chain>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -43,4 +46,9 @@ pub enum ActionOutcome {
     ICS02HeaderVerificationFailure,
     ICS03ConnectionOpenInitOK,
     ICS03MissingClient,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Chain {
+    pub height: u64,
 }
