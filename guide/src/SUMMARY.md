@@ -24,7 +24,7 @@
        - [New Path](./tutorial_set_new_path.md)
        - [Packet relaying on existing path](./tutorial_relay_existing_path.md)
        - [Packet relaying on new path](./tutorial_relay_new_path.md)
-      - [Bidirectional Relaying](./tutorial_relay_bidirectional.md)
+       - [Concurrent packet relaying on multiple paths](./tutorial_relay_two_paths.md)
 - [Commands Reference](./commands.md)
    - [Keys](./keys.md)
    - [Light Clients](./light_clients.md)

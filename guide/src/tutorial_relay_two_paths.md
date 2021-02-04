@@ -1,11 +1,11 @@
 # Bidirectional Relaying
 
-At the moment, Hermes only relays packets in one direction between the two chains.
-To relay packets in both direction, one needs to spawn two instances of Hermes.
+At the moment, one Hermes instance relays packets over a single channel.
+To relay packets over multiple channels, one needs to spawn multiple instances.
 
-> Due to a current limitation, both instances need their own configuration file
-and their own `data` folder. The steps below describe the process for setting things
-up properly.
+> Due to a current limitation, an instance needs its own configuration file
+and its own `data` folder. The steps below describe the process for setting things
+up properly for two hermes instances.
 
 1. From the `ibc-rs` repository folder run the following script with the parameters below to start the chains (`ibc-0` and `ibc-1`):
 
@@ -62,8 +62,8 @@ up properly.
     denominator = '3'
 
     [[connections]]
-    a_chain = "ibc1"
-    b_chain = "ibc0"
+    a_chain = "ibc-1"
+    b_chain = "ibc-0"
 
     [[connections.paths]]
     a_port = 'transfer'
@@ -137,8 +137,8 @@ up properly.
     denominator = '3'
 
     [[connections]]
-    a_chain = "ibc0"
-    b_chain = "ibc1"
+    a_chain = "ibc-0"
+    b_chain = "ibc-1"
 
     [[connections.paths]]
     a_port = 'transfer'
@@ -169,37 +169,41 @@ up properly.
     ```shell
     $ hermes -c config.toml start ibc-0 ibc-1
     ```
+    Take note of the identifier of this first channel created between the two chains, e.g. `channel-0`
 
 13. In another terminal, start the second relayer from the `relay_b` directory:
 
     ```shell
-    $ hermes -c config.toml start ibc-1 ibc-0
+    $ hermes -c config.toml start ibc-0 ibc-1
     ```
+    Take note of the identifier of the second channel created between the two chains, e.g. `channel-1`
 
-14. In yet another terminal, From the either the `relay_a` or `relay_b` directory, use the `tx raw ft-transfer` command to send 2 packets to the `ibc0` chain:
+14. In yet another terminal:
+    Use the `tx raw ft-transfer` command to send packets on the two channels:
 
     ```shell
-    hermes -c config tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+    hermes -c relay_a/config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 2
+    hermes -c relay_b/config.toml tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 9999 1000 -n 2
     ```
 
-15. Use the `tx raw ft-transfer` command again to send 2 packets to the `ibc1` chain:
+16. Observe the output on both relayer terminals, verify that the send events are processed, and the `recv_packet` -s are sent out.
+
+17. Query the unreceived packets on `ibc-0` and `ibc-1` for both channels:
 
     ```shell
-    hermes -c config tx raw ft-transfer ibc-1 ibc-0 transfer channel-1 9999 1000 -n 2
+    # verify that there are no pending packets on channe-0 in either direction
+    hermes -c relay_a/config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
+    hermes -c relay_a/config.toml query packet unreceived-acks    ibc-0 ibc-1 transfer channel-0
+    hermes -c relay_a/config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-0
+    hermes -c relay_a/config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
+    # verify that there are no pending packets on channe-1 in either direction
+    hermes -c relay_b/config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-1
+    hermes -c relay_b/config.toml query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
+    hermes -c relay_b/config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
+    hermes -c relay_b/config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-1
     ```
 
-16. Observe the output on both relayer terminals, verify that the send events are processed, and the `recv_packet -s` are sent out.
-
-17. Query the unreceived packets on `ibc0` and `ibc1`:
-
-    ```shell
-    hermes -c config.toml query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
-    hermes -c config.toml query packet unreceived-acks    ibc-0 ibc-1 transfer channel-1
-    hermes -c config.toml query packet unreceived-packets ibc-0 ibc-1 transfer channel-1
-    hermes -c config.toml query packet unreceived-acks    ibc-1 ibc-0 transfer channel-0
-    ```
-
-    There should be no unreceived packets and acks:
+    There should be no unreceived packets and acks on both channels:
 
     ```json
     {
@@ -208,6 +212,6 @@ up properly.
     }
     ```
 
-    > It may also show packets that have been sent before the relayer loop was started (Hermes currently does not flush those).
+    > The above commands may show some packets if any have been sent before the instances were started (Hermes currently does not flush those).
 
 
