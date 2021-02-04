@@ -199,7 +199,7 @@ pub struct ConnectionId(String);
 impl ConnectionId {
     /// Builds a new connection identifier.
     pub fn new(counter: u64) -> Result<Self, ValidationError> {
-        let prefix = "connection";
+        let prefix = ConnectionId::default().to_string();
         let id = format!("{}-{}", prefix, counter);
         Self::from_str(id.as_str())
     }
@@ -292,7 +292,7 @@ pub struct ChannelId(String);
 impl ChannelId {
     /// Builds a new channel identifier.
     pub fn new(counter: u64) -> Result<Self, ValidationError> {
-        let prefix = "channel";
+        let prefix = ConnectionId::default().to_string();
         let id = format!("{}-{}", prefix, counter);
         Self::from_str(id.as_str())
     }
