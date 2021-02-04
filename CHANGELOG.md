@@ -1,7 +1,20 @@
 # Changelog
 
-## Unreleased Changes
+[comment]: <> (## Unreleased Changes)
 
+## v0.1.0
+*February 4, 2021*
+
+🎉 This release brings the first publication of `ibc-relayer` and
+`ibc-relayer-cli` to [crates.io](https://crates.io).
+
+Noteworthy changes in this release include:
+
+- The binary in the `ibc-relayer-cli` crate was given the name Hermes. 
+- We published a comprehensive guide for Hermes at [hermes.informal.systems](https://hermes.informal.systems).
+- Major improvements to user experience, in particular at CLI level: JSON output, 
+  configurable log output level, dedicated channel handshake command, as well as
+  overall improvements to error display and output.
 
 ### FEATURES
 
@@ -34,7 +47,7 @@
 - [relayer-cli]
   - Replace `ChannelConfig` in `Channel::new` ([#511])
   - Add `packet-send` CLI ([#470])
-  - UX improvements for relayer txs ([#536, #540, #554])
+  - UX improvements for relayer txs ([#536], [#540], [#554])
   - Allow running standalone commands concurrently to the main relayer loop ([#501])
   - Remove the simd-based integration tests ([#593])
 
