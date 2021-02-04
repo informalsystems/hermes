@@ -191,4 +191,9 @@ $HOME/.hermes/
 
 #### Next Steps
 
-In the next section, ["Connecting the chains"](./connect_chains.md), you will learn how to execute transactions and queries on the relayer in order to relay packets.
+We now offer two options with regard to connecting the two chains:
+
+1. you can use [individual (raw) transactions](./tutorial_raw.html) to create 
+   all the necessary chain objects (clients, connections, channels), or
+2. you can perform this step using a 
+   [simplified approach](./tutorial_relay_paths.html).
