@@ -190,13 +190,13 @@ SUBCOMMANDS:
     packet-ack Relay acknowledgment packets
 </code></pre>
 <p>The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.</p>
-<p>At a high level, most CLI has the following format/ usage:</p>
+<p>At a high level, most commands have the following format/ usage:</p>
 <pre><code class="language-shell">   hermes tx raw &lt;ibc-datagram&gt; &lt;dst-chain-id&gt; &lt;src-chain-id&gt; [&lt;dst-obj-id&gt; &lt;src-obj-id&gt;]*
 </code></pre>
 <p>where:</p>
 <ul>
 <li>
-<p><code>ibc-datagram</code> - identifies the &quot;main&quot; IBC message that is being sent, e.g. conn-init, conn-try, chan-open-init, etc. To ensure successfull processing on the receiving chain, the majority of these commands build and send two messages: one <code>UpdateClient</code> message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.</p>
+<p><code>ibc-datagram</code> - identifies the &quot;main&quot; IBC message that is being sent, e.g. <code>conn-init</code>, <code>conn-try</code>, <code>chan-open-init</code>, etc. To ensure successful processing on the receiving chain, the majority of these commands build and send two messages: one <code>UpdateClient</code> message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.</p>
 <p>The messages that do not require proofs are:</p>
 <ul>
 <li><code>MsgCreateClient</code> (<code>create-client</code> command),</li>
@@ -207,7 +207,7 @@ SUBCOMMANDS:
 </ul>
 </li>
 <li>
-<p><code>dst-chain-id</code> - is the identifier of the chain where the transaction is sent.</p>
+<p><code>dst-chain-id</code> - is the identifier of the chain where the transaction will be sent.</p>
 </li>
 <li>
 <p><code>src-chain-id</code> - is the identifier of the chain that is queried for the data that is included in the transaction, e.g. connection data, client proofs, etc. To ensure correct on-chain state, the relayer also queries the destination chain, however it does not include this information in the Tx to the destination chain.</p>

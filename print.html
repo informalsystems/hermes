@@ -1463,13 +1463,13 @@ SUBCOMMANDS:
     packet-ack Relay acknowledgment packets
 </code></pre>
 <p>The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.</p>
-<p>At a high level, most CLI has the following format/ usage:</p>
+<p>At a high level, most commands have the following format/ usage:</p>
 <pre><code class="language-shell">   hermes tx raw &lt;ibc-datagram&gt; &lt;dst-chain-id&gt; &lt;src-chain-id&gt; [&lt;dst-obj-id&gt; &lt;src-obj-id&gt;]*
 </code></pre>
 <p>where:</p>
 <ul>
 <li>
-<p><code>ibc-datagram</code> - identifies the &quot;main&quot; IBC message that is being sent, e.g. conn-init, conn-try, chan-open-init, etc. To ensure successfull processing on the receiving chain, the majority of these commands build and send two messages: one <code>UpdateClient</code> message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.</p>
+<p><code>ibc-datagram</code> - identifies the &quot;main&quot; IBC message that is being sent, e.g. <code>conn-init</code>, <code>conn-try</code>, <code>chan-open-init</code>, etc. To ensure successful processing on the receiving chain, the majority of these commands build and send two messages: one <code>UpdateClient</code> message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.</p>
 <p>The messages that do not require proofs are:</p>
 <ul>
 <li><code>MsgCreateClient</code> (<code>create-client</code> command),</li>
@@ -1480,7 +1480,7 @@ SUBCOMMANDS:
 </ul>
 </li>
 <li>
-<p><code>dst-chain-id</code> - is the identifier of the chain where the transaction is sent.</p>
+<p><code>dst-chain-id</code> - is the identifier of the chain where the transaction will be sent.</p>
 </li>
 <li>
 <p><code>src-chain-id</code> - is the identifier of the chain that is queried for the data that is included in the transaction, e.g. connection data, client proofs, etc. To ensure correct on-chain state, the relayer also queries the destination chain, however it does not include this information in the Tx to the destination chain.</p>
@@ -1908,8 +1908,8 @@ after which the channel is open on both chains.</p>
 <p>We have now successfully opened a channel over an existing connection between the two chains.</p>
 <h1><a class="header" href="#packet-tx-commands" id="packet-tx-commands">Packet Tx Commands</a></h1>
 <h2><a class="header" href="#fungible-token-transfer" id="fungible-token-transfer">Fungible token transfer</a></h2>
-<p>The <code>tx raw ft-transfer</code> command can be used to send ICS-20 fungible token transfer packets.
-<strong>NOTE:</strong> This command is meant to be used for testing the packet features of the relayer.</p>
+<p>Use the <code>tx raw ft-transfer</code> command to send ICS-20 fungible token transfer packets.
+<strong>NOTE:</strong> This command is mainly used for testing the packet features of the relayer.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw ft-transfer &lt;OPTIONS&gt;
 
@@ -1976,7 +1976,7 @@ FLAGS:
 </code></pre>
 <p>The transfer packets are stored on <code>ibc-0</code> and can be relayed.</p>
 <h2><a class="header" href="#relay-receive-and-timeout-packets" id="relay-receive-and-timeout-packets">Relay receive and timeout packets</a></h2>
-<p>The <code>tx raw packet-recv</code> command can be used to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.</p>
+<p>Use the <code>tx raw packet-recv</code> command to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw packet-recv &lt;OPTIONS&gt;
 
@@ -1990,7 +1990,7 @@ POSITIONAL ARGUMENTS:
     src_channel_id            identifier of the source channel
 </code></pre>
 <p><strong>Example</strong></p>
-<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p>Send the two transfer packets to the <code>ibc-1</code> module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the receive messages.</p>
 <pre><code class="language-shell">$ hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
 </code></pre>
@@ -2051,7 +2051,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p>Both packets have been relayed to <code>ibc-1</code> and acknowledged.</p>
 <h2><a class="header" href="#relay-acknowledgment-packets" id="relay-acknowledgment-packets">Relay acknowledgment packets</a></h2>
-<p>The <code>tx raw packet-ack</code> command can be used to relay acknowledgments to the original source of the packets.</p>
+<p>Use the <code>tx raw packet-ack</code> command to relay acknowledgments to the original source of the packets.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw packet-recv &lt;OPTIONS&gt;
 
@@ -2065,7 +2065,7 @@ POSITIONAL ARGUMENTS:
     src_channel_id            identifier of the source channel
 </code></pre>
 <p><strong>Example</strong></p>
-<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p>Send the acknowledgments to the <code>ibc-0</code> module bound to the <code>transfer</code> port and the <code>channel-1</code>'s counterparty.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the acknowledgments.</p>
 <pre><code class="language-shell">$ hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
 </code></pre>
@@ -2125,12 +2125,6 @@ POSITIONAL ARGUMENTS:
 <p>Both acknowledgments have been received on <code>ibc-0</code>.</p>
 <h1><a class="header" href="#channel-close-handshake" id="channel-close-handshake">Channel Close Handshake</a></h1>
 <p>The channel close handshake involves two steps: init and confirm.</p>
-<p><strong>NOTE</strong>: The application running on-chain (for gaia v4) may initiate the closing 
-of a channel by sending a <code>MsgChannelCloseInit</code> message. The cosmos-sdk 
-implementation does not allow the relayer to initiate the closing of channels. 
-Therefore, when using the Gaia release image, the <code>chan-close-init</code> command will
-fail. The command is rejected by the <code>cosmos-sdk</code> transfer module. To be able to
-test this command, you will need to <a href="./help.html#patching-gaia">patch</a> your gaia deployments.</p>
 <h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>
 <p>Use the <code>chan-close-init</code> command to initialize the closure of a channel.</p>
 <pre><code class="language-shell">USAGE:
@@ -2157,9 +2151,9 @@ FLAGS:
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: {
     &quot;CloseInitChannel&quot;: {
-      &quot;channel_id&quot;: &quot;channel-1&quot;,
-      &quot;connection_id&quot;: &quot;connection-1&quot;,
-      &quot;counterparty_channel_id&quot;: &quot;channel-3&quot;,
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
       &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
       &quot;height&quot;: &quot;1&quot;,
       &quot;port_id&quot;: &quot;transfer&quot;
@@ -2193,9 +2187,9 @@ FLAGS:
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: {
     &quot;CloseConfirmChannel&quot;: {
-      &quot;channel_id&quot;: &quot;channel-3&quot;,
-      &quot;connection_id&quot;: &quot;connection-3&quot;,
-      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
       &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
       &quot;height&quot;: &quot;1&quot;,
       &quot;port_id&quot;: &quot;transfer&quot;
@@ -2203,6 +2197,10 @@ FLAGS:
   }
 }
 </code></pre>
+<p><strong>NOTE</strong>: The cosmos-sdk implementation does not allow the relayer to initiate the closing of channels.
+Therefore, when using the Gaia release image, the <code>chan-close-init</code> command will
+fail as the <code>cosmos-sdk</code> transfer module will reject the <code>MsgChannelCloseInit</code> message included in the transaction.
+To be able to test channel closure, you will need to <a href="./help.html#patching-gaia">patch</a> your gaia deployments.</p>
 <h1><a class="header" href="#queries" id="queries">Queries</a></h1>
 <p>Hermes supports querying for different objects that exist on a configured chain.
 The following list provides an overview:</p>

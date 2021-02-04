@@ -165,12 +165,6 @@
                     <main>
                         <h1><a class="header" href="#channel-close-handshake" id="channel-close-handshake">Channel Close Handshake</a></h1>
 <p>The channel close handshake involves two steps: init and confirm.</p>
-<p><strong>NOTE</strong>: The application running on-chain (for gaia v4) may initiate the closing 
-of a channel by sending a <code>MsgChannelCloseInit</code> message. The cosmos-sdk 
-implementation does not allow the relayer to initiate the closing of channels. 
-Therefore, when using the Gaia release image, the <code>chan-close-init</code> command will
-fail. The command is rejected by the <code>cosmos-sdk</code> transfer module. To be able to
-test this command, you will need to <a href="./help.html#patching-gaia">patch</a> your gaia deployments.</p>
 <h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>
 <p>Use the <code>chan-close-init</code> command to initialize the closure of a channel.</p>
 <pre><code class="language-shell">USAGE:
@@ -197,9 +191,9 @@ FLAGS:
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: {
     &quot;CloseInitChannel&quot;: {
-      &quot;channel_id&quot;: &quot;channel-1&quot;,
-      &quot;connection_id&quot;: &quot;connection-1&quot;,
-      &quot;counterparty_channel_id&quot;: &quot;channel-3&quot;,
+      &quot;channel_id&quot;: &quot;channel-0&quot;,
+      &quot;connection_id&quot;: &quot;connection-0&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
       &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
       &quot;height&quot;: &quot;1&quot;,
       &quot;port_id&quot;: &quot;transfer&quot;
@@ -233,9 +227,9 @@ FLAGS:
   &quot;status&quot;: &quot;success&quot;,
   &quot;result&quot;: {
     &quot;CloseConfirmChannel&quot;: {
-      &quot;channel_id&quot;: &quot;channel-3&quot;,
-      &quot;connection_id&quot;: &quot;connection-3&quot;,
-      &quot;counterparty_channel_id&quot;: &quot;channel-1&quot;,
+      &quot;channel_id&quot;: &quot;channel-1&quot;,
+      &quot;connection_id&quot;: &quot;connection-1&quot;,
+      &quot;counterparty_channel_id&quot;: &quot;channel-0&quot;,
       &quot;counterparty_port_id&quot;: &quot;transfer&quot;,
       &quot;height&quot;: &quot;1&quot;,
       &quot;port_id&quot;: &quot;transfer&quot;
@@ -243,6 +237,10 @@ FLAGS:
   }
 }
 </code></pre>
+<p><strong>NOTE</strong>: The cosmos-sdk implementation does not allow the relayer to initiate the closing of channels.
+Therefore, when using the Gaia release image, the <code>chan-close-init</code> command will
+fail as the <code>cosmos-sdk</code> transfer module will reject the <code>MsgChannelCloseInit</code> message included in the transaction.
+To be able to test channel closure, you will need to <a href="./help.html#patching-gaia">patch</a> your gaia deployments.</p>
 
                     </main>
 

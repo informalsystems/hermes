@@ -165,8 +165,8 @@
                     <main>
                         <h1><a class="header" href="#packet-tx-commands" id="packet-tx-commands">Packet Tx Commands</a></h1>
 <h2><a class="header" href="#fungible-token-transfer" id="fungible-token-transfer">Fungible token transfer</a></h2>
-<p>The <code>tx raw ft-transfer</code> command can be used to send ICS-20 fungible token transfer packets.
-<strong>NOTE:</strong> This command is meant to be used for testing the packet features of the relayer.</p>
+<p>Use the <code>tx raw ft-transfer</code> command to send ICS-20 fungible token transfer packets.
+<strong>NOTE:</strong> This command is mainly used for testing the packet features of the relayer.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw ft-transfer &lt;OPTIONS&gt;
 
@@ -233,7 +233,7 @@ FLAGS:
 </code></pre>
 <p>The transfer packets are stored on <code>ibc-0</code> and can be relayed.</p>
 <h2><a class="header" href="#relay-receive-and-timeout-packets" id="relay-receive-and-timeout-packets">Relay receive and timeout packets</a></h2>
-<p>The <code>tx raw packet-recv</code> command can be used to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.</p>
+<p>Use the <code>tx raw packet-recv</code> command to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw packet-recv &lt;OPTIONS&gt;
 
@@ -247,7 +247,7 @@ POSITIONAL ARGUMENTS:
     src_channel_id            identifier of the source channel
 </code></pre>
 <p><strong>Example</strong></p>
-<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p>Send the two transfer packets to the <code>ibc-1</code> module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the receive messages.</p>
 <pre><code class="language-shell">$ hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0 | jq
 </code></pre>
@@ -308,7 +308,7 @@ POSITIONAL ARGUMENTS:
 </code></pre>
 <p>Both packets have been relayed to <code>ibc-1</code> and acknowledged.</p>
 <h2><a class="header" href="#relay-acknowledgment-packets" id="relay-acknowledgment-packets">Relay acknowledgment packets</a></h2>
-<p>The <code>tx raw packet-ack</code> command can be used to relay acknowledgments to the original source of the packets.</p>
+<p>Use the <code>tx raw packet-ack</code> command to relay acknowledgments to the original source of the packets.</p>
 <pre><code class="language-shell">USAGE:
     hermes tx raw packet-recv &lt;OPTIONS&gt;
 
@@ -322,7 +322,7 @@ POSITIONAL ARGUMENTS:
     src_channel_id            identifier of the source channel
 </code></pre>
 <p><strong>Example</strong></p>
-<p>Send the two transfer packets to the module bound to the <code>transfer</code> port and the <code>channel-0</code>'s counterparty on <code>ibc-1</code>.</p>
+<p>Send the acknowledgments to the <code>ibc-0</code> module bound to the <code>transfer</code> port and the <code>channel-1</code>'s counterparty.</p>
 <p><strong>NOTE</strong>: The relayer prepends a client update message before the acknowledgments.</p>
 <pre><code class="language-shell">$ hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1 | jq
 </code></pre>
