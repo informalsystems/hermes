@@ -74,7 +74,7 @@ Connections == [
 ]
 \* data kept per chain
 Chain == [
-    \* height: ChainHeights,
+    height: ChainHeights,
     clients: Clients,
     clientIdCounter: 0..MaxClientsPerChain,
     connections: Connections,
@@ -126,6 +126,10 @@ ActionOutcomes == {
 
 (***************************** Specification *********************************)
 
+\* update chain height if outcome was ok
+UpdateHeight(height, outcome, okOutcome) ==
+    IF outcome = okOutcome THEN height + 1 ELSE height
+
 CreateClient(chainId, clientHeight) ==
     LET chain == chains[chainId] IN
     LET clients == chain.clients IN
@@ -133,7 +137,7 @@ CreateClient(chainId, clientHeight) ==
     LET result == ICS02_CreateClient(clients, clientIdCounter, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        \* !.height = @ + 1,
+        !.height = UpdateHeight(@, result.outcome, "ICS02CreateOK"),
         !.clients = result.clients,
         !.clientIdCounter = result.clientIdCounter
     ] IN
@@ -151,7 +155,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
     LET result == ICS02_UpdateClient(clients, clientId, clientHeight) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        \* !.height = @ + 1,
+        !.height = UpdateHeight(@, result.outcome, "ICS03CreateOK"),
         !.clients = result.clients
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
@@ -177,7 +181,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
-        \* !.height = @ + 1,
+        !.height = UpdateHeight(@, result.outcome, "ICS03ConnectionOpenInitOK"),
         !.connections = result.connections,
         !.connectionIdCounter = result.connectionIdCounter
     ] IN
@@ -284,7 +288,7 @@ Init ==
     ] IN
     \* create an empty chain
     LET emptyChain == [
-        \* height |-> 0,
+        height |-> 0,
         clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
         connections |-> [connectionId \in ConnectionIds |-> connectionNone],
