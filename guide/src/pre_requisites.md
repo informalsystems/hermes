@@ -4,7 +4,7 @@
 
 The IBC Relayer is developed with the [Rust]() programming language. In order to build and run the relayer you need to install and configure `Rust` on your machine.
 
-### Fresh installation
+### Fresh Rust installation
 
 For instructions on how to install `Rust` on your machine please follow the official [`Notes about Rust Installation`](https://www.rust-lang.org/tools/install).
 
@@ -40,4 +40,5 @@ To install and configure Golang on your machine please follow the [Golang offici
 
 ## Next Steps
 
-Next, go to the [Setup](./setup.md) section to learn how to build the relayer.
+Next, go to the [Installation](./installation.md) section to learn how to build 
+Hermes.
