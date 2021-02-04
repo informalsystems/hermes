@@ -2,11 +2,11 @@
 
 Thank you for your interest in contributing. The goal
 of ibc-rs is to provide a high quality, formally verified implementation of
-the IBC protocol.
+the IBC protocol and relayer.
 
 All work on the code base should be motivated by a Github
-Issue. Search is a good place start when looking for places to contribute. If you
-would like to work on an issue which already exists, please indicate so
+Issue. Search is a good place to start when looking for places to contribute. 
+If you would like to work on an issue which already exists, please indicate so
 by leaving a comment. If you'd like to work on something else, open an Issue to
 start the discussion.
 
@@ -42,8 +42,6 @@ in the larger context. If you are not comfortable with writing an ADR,
 you can open a less-formal issue and the maintainers will help you
 turn it into an ADR. 
 
-TODO: ADR registration (eg. in an ADR registration issue)
-
 When the problem as well as proposed solution are well understood,
 changes should start with a [draft
 pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
@@ -56,8 +54,7 @@ of smaller incremental changes, in the form of small PRs that can be merged
 quickly. This helps manage the load for reviewers and reduces the likelihood
 that PRs will sit open for longer.
 
-![Contributing
-flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png)
+![Contributing flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png?raw=true)
 
 Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
 
