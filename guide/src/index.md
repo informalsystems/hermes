@@ -1,20 +1,19 @@
 # Hermes Guide
 
-This guide can help you setup, configure, and operate Hermes to transfer 
+This guide can help you setup, configure, and operate Hermes to transfer
 packets between two IBC enabled chains.
 
 ## Sections
 ---
-**[Introduction](./index.md)**
+**[What is Hermes](./relayer.md)**
 
-- The introduction gives an overview of this guide and a brief discussion on 
-  Hermes.
+- Explains what Hermes is about.
 
 **[Features](./features.html)**
 
-- This section discusses what features to expect from Hermes, as well as a 
+- This section discusses what features to expect from Hermes, as well as a
   comparison between the Cosmos Go relayer and Hermes.
-  
+
 **[Getting Started](./getting_started.md)**
 
 - The getting started section can help you setup, configure, and run Hermes.
@@ -29,7 +28,7 @@ packets between two IBC enabled chains.
 
 **[Help](./help.md)**
 
-- This part provides guidelines regarding troubleshooting and general resources 
+- This part provides guidelines regarding troubleshooting and general resources
   for getting help.
 
 **[Glossary](./glossary.md)**
@@ -39,7 +38,7 @@ packets between two IBC enabled chains.
 ---
 
 **Other References and Useful Links:**
-* [Hermes Github repository](https://github.com/informalsystems/ibc-rs) — The 
+* [Hermes Github repository](https://github.com/informalsystems/ibc-rs) — The
   official Github repository for Hermes.
 * [IBC Github repository](https://github.com/cosmos/ics) - The official
   repository for the Inter-blockchain protocol (IBC).
