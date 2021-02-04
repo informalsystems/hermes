@@ -43,4 +43,4 @@ hermes query channel end ibc-1 transfer channel-1
 
 ## Next Steps
 
-In the next section, we'll start to [relay packets](./relay_packet.md)
+In the next section, we'll start to [relay packets](./tutorial_packet_raw.md)

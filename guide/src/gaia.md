@@ -2,7 +2,9 @@
 
 The script to start the chains requires gaia to be installed.
 
-> __NOTE__: This assumes you have `Golang` programming language installed on your machine. If not, please ensure you install before proceeding.
+> __NOTE__: This assumes you have `Golang` programming language installed on 
+> your machine. If not, please ensure you install before proceeding. See 
+> more details in the [Pre-requisites](pre_requisites.html#2-golang) section.
 
 #### Clone gaia
 

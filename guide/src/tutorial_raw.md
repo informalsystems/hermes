@@ -81,10 +81,10 @@ If you want to ensure you get the same identifiers while following the tutorial,
 
 In order to start relaying packets please follow the steps below:
 
-* [Configure Clients](./relay_client.md)
+* [Configure Clients](./tutorial_client_raw.md)
 
-* [Connection Handshake](./relay_conn.md)
+* [Connection Handshake](./tutorial_conn_raw.md)
 
-* [Open the Channel](./relay_channel.md)
+* [Open the Channel](./tutorial_chan_open_raw.md)
 
-* [Relay Packets](relay_packet.md)
+* [Relay Packets](tutorial_packet_raw.md)

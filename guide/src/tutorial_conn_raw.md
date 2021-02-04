@@ -46,4 +46,4 @@ hermes query connection end ibc-0 connection-0
 
 ## Next Steps
 
-In the next section, we'll [establish a new channel](./relay_channel.md)
+In the next section, we'll [establish a new channel](./tutorial_chan_open_raw.md)
