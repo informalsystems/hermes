@@ -164,7 +164,7 @@
                 <div id="content" class="content">
                     <main>
                         <h2><a class="header" href="#packet-relaying-on-new-path" id="packet-relaying-on-new-path">Packet relaying on new path</a></h2>
-<p>Hermes packet relaying can be done over a newly established path. It will perform client creation, connection and channel handshake if a relay path is present in the configuration file.</p>
+<p>Hermes packet relaying can be done over a newly established path. It performs client creation, connection and channel handshake if a relay path is present in the configuration file.</p>
 <ul>
 <li>specify the path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> by including the following in the configuration file:</li>
 </ul>
@@ -178,7 +178,7 @@ b_port = 'transfer'
 </code></pre>
 <ul>
 <li>
-<p>from one terminal start the relayer over this path:</p>
+<p>from one terminal start hermes over this path:</p>
 <pre><code class="language-shellscript"> hermes start ibc-0 ibc-1
 </code></pre>
 <p><strong>Note</strong>: The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.</p>

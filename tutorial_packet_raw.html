@@ -179,35 +179,35 @@
 </ul>
 <p>Note that the addresses used in the two commands above are configured in <code>dev-env</code>.</p>
 <h3><a class="header" href="#42-packet-relaying" id="42-packet-relaying">4.2 Packet relaying:</a></h3>
-<p>First, we'll send 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>.</p>
+<p>First, we'll send <code>9999</code> <code>samoleans</code> from <code>ibc-0</code> to <code>ibc-1</code>.</p>
 <ul>
 <li>
-<p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
+<p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This sends a <code>MsgTransfer</code> in a transaction to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
-<p>query packet commitments on ibc-0</p>
+<p>query packet commitments on <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes query packet commitments ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>query unreceived packets on ibc-1</p>
+<p>query unreceived packets on <code>ibc-1</code></p>
 <pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>send recv_packet to ibc-1</p>
+<p>send recv_packet to <code>ibc-1</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>query unreceived acks on ibc-0</p>
+<p>query unreceived acks on <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
 <li>
-<p>send acknowledgement to ibc-0</p>
+<p>send acknowledgement to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
@@ -217,7 +217,7 @@
 </code></pre>
 </li>
 <li>
-<p>send timeout to ibc-0</p>
+<p>send timeout to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>

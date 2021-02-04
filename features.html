@@ -175,8 +175,9 @@ More details and feature comparison between the Rust and Go relayer implementati
 <p>Relay from packet events on a newly created, or an existing relaying path</p>
 <p><strong>Limitations:</strong></p>
 <ul>
-<li>Only one path per relayer instance</li>
+<li>Supports only one path per relayer instance</li>
 <li>Relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup</li>
+<li>Only unordered channels are supported</li>
 </ul>
 </li>
 <li>

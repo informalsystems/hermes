@@ -164,12 +164,12 @@
                 <div id="content" class="content">
                     <main>
                         <h1><a class="header" href="#light-clients" id="light-clients">Light Clients</a></h1>
-<p>Using the <code>light</code> command you can add and remove light client peers information to the chain configuration.</p>
+<p>Using the <code>light</code> command you can add and remove light client peer information to the chain configuration.</p>
 <h4><a class="header" href="#show-usage" id="show-usage">Show usage</a></h4>
 <p>To see the available subcommands for the <code>light</code> command run:</p>
 <pre><code class="language-shell">hermes help light
 </code></pre>
-<p>Currently there are two subcommands supported <code>add</code> and <code>rm</code>:</p>
+<p>There are two subcommands supported <code>add</code> and <code>rm</code>:</p>
 <pre><code class="language-shell">USAGE:
     hermes light &lt;SUBCOMMAND&gt;
 
@@ -182,7 +182,7 @@ SUBCOMMANDS:
 
 </code></pre>
 <h3><a class="header" href="#adding-light-client-peers" id="adding-light-client-peers">Adding Light Client Peers</a></h3>
-<p>In order to add light client peers use the <code>add</code> command:</p>
+<p>In order to add the light client peers use the <code>add</code> command:</p>
 <pre><code class="language-shell">USAGE:
     hermes light add &lt;OPTIONS&gt;
 
@@ -203,16 +203,16 @@ FLAGS:
     --hash HASH               override hash (optional)
 </code></pre>
 <h4><a class="header" href="#set-the-primary-light-client-peer-for-a-chain" id="set-the-primary-light-client-peer-for-a-chain">Set the Primary Light Client Peer for a Chain</a></h4>
-<p>In order to add a light client peer for a given chain execute the following command:</p>
+<p>In order to add a light client primary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] -p -y -f
 </code></pre>
 <h4><a class="header" href="#set-the-secondary-light-client-peer-for-a-chain" id="set-the-secondary-light-client-peer-for-a-chain">Set the Secondary Light Client Peer for a Chain</a></h4>
-<p>In order to add a light client peer for a given chain execute the following command:</p>
+<p>In order to add a light client secondary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 </code></pre>
 <p><strong>Note</strong>: The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
 <h3><a class="header" href="#removing-light-client-peers" id="removing-light-client-peers">Removing Light Client Peers</a></h3>
-<p>In order to add light client peers use the <code>rm</code> command:</p>
+<p>In order to remove a light client peer use the <code>rm</code> command:</p>
 <pre><code class="language-shell">USAGE:
     hermes light rm &lt;OPTIONS&gt;
 
@@ -230,7 +230,7 @@ FLAGS:
 
 </code></pre>
 <h4><a class="header" href="#removing-all-light-client-peers-from-a-chain" id="removing-all-light-client-peers-from-a-chain">Removing all light client peers from a chain</a></h4>
-<p>In order to remove all light peers configuration from a chain execute the following command:</p>
+<p>In order to remove from the configuration all light peers for a chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light rm -c [CHAIN_ID] -y --all
 </code></pre>
 

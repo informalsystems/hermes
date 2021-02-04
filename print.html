@@ -226,8 +226,9 @@ More details and feature comparison between the Rust and Go relayer implementati
 <p>Relay from packet events on a newly created, or an existing relaying path</p>
 <p><strong>Limitations:</strong></p>
 <ul>
-<li>Only one path per relayer instance</li>
+<li>Supports only one path per relayer instance</li>
 <li>Relayer restart is not supported, i.e. pending packets (previously sent packets and acknowledgments) are not cleared on startup</li>
+<li>Only unordered channels are supported</li>
 </ul>
 </li>
 <li>
@@ -282,6 +283,8 @@ More details and feature comparison between the Rust and Go relayer implementati
 <table><thead><tr><th>Features \      Status</th><th align="center">Hermes</th><th align="center">Cosmos Go</th><th align="left">Feature Details</th></tr></thead><tbody>
 <tr><td>Restart</td><td align="center">❌</td><td align="center">✅</td><td align="left">replays any IBC events that happened before restart</td></tr>
 <tr><td>Multiple_Paths</td><td align="center">❌</td><td align="center">✅</td><td align="left">relays on multiple paths concurrently</td></tr>
+<tr><td>Chan_Unordered</td><td align="center">✅</td><td align="center">✅</td><td align="left"></td></tr>
+<tr><td>Chan_Ordered</td><td align="center">❌</td><td align="center">❓</td><td align="left"></td></tr>
 <tr><td></td><td align="center"></td><td align="center"></td><td align="left"></td></tr>
 <tr><td>Cl_Tendermint_Create</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client creation</td></tr>
 <tr><td>Cl_Tendermint_Update</td><td align="center">✅</td><td align="center">✅</td><td align="left">tendermint light client update</td></tr>
@@ -918,7 +921,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 <blockquote>
 <p>Note: Please note the <code>client_id</code> value returned. You will need that for other commands.</p>
 </blockquote>
-<p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> and also specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
+<p>You can also execute a <strong>query</strong> to view the client state on destination chain <code>ibc-0</code> by specifying the <code>client_id</code> value <code>07-tendermint-0</code>:</p>
 <pre><code class="language-shell">hermes query client state ibc-0 07-tendermint-0
 </code></pre>
 <p>which show a message similar to the one below:</p>
@@ -1057,35 +1060,35 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 </ul>
 <p>Note that the addresses used in the two commands above are configured in <code>dev-env</code>.</p>
 <h3><a class="header" href="#42-packet-relaying" id="42-packet-relaying">4.2 Packet relaying:</a></h3>
-<p>First, we'll send 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>.</p>
+<p>First, we'll send <code>9999</code> <code>samoleans</code> from <code>ibc-0</code> to <code>ibc-1</code>.</p>
 <ul>
 <li>
-<p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This results in a Tx to <code>ibc-0</code> for a <code>MsgTransfer</code> packet</p>
+<p>start the transfer of 9999 samoleans from <code>ibc-0</code> to <code>ibc-1</code>. This sends a <code>MsgTransfer</code> in a transaction to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-0 9999 1000 -n 1 -d samoleans
 </code></pre>
 </li>
 <li>
-<p>query packet commitments on ibc-0</p>
+<p>query packet commitments on <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes query packet commitments ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>query unreceived packets on ibc-1</p>
+<p>query unreceived packets on <code>ibc-1</code></p>
 <pre><code class="language-shellscript">hermes query packet unreceived-packets ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>send recv_packet to ibc-1</p>
+<p>send recv_packet to <code>ibc-1</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
 <li>
-<p>query unreceived acks on ibc-0</p>
+<p>query unreceived acks on <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes query packet unreceived-acks ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
 <li>
-<p>send acknowledgement to ibc-0</p>
+<p>send acknowledgement to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-ack  ibc-0 ibc-1 transfer channel-1
 </code></pre>
 </li>
@@ -1095,7 +1098,7 @@ We will create a second channel on <code>ibc-1</code> with identifier <code>chan
 </code></pre>
 </li>
 <li>
-<p>send timeout to ibc-0</p>
+<p>send timeout to <code>ibc-0</code></p>
 <pre><code class="language-shellscript">hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
 </code></pre>
 </li>
@@ -1170,7 +1173,7 @@ hermes query packet unreceived-acks ibc-1 ibc-0 transfer channel-0
 </li>
 </ul>
 <h2><a class="header" href="#packet-relaying-on-new-path" id="packet-relaying-on-new-path">Packet relaying on new path</a></h2>
-<p>Hermes packet relaying can be done over a newly established path. It will perform client creation, connection and channel handshake if a relay path is present in the configuration file.</p>
+<p>Hermes packet relaying can be done over a newly established path. It performs client creation, connection and channel handshake if a relay path is present in the configuration file.</p>
 <ul>
 <li>specify the path between the <code>transfer</code> ports on <code>ibc-0</code> and <code>ibc-1</code> by including the following in the configuration file:</li>
 </ul>
@@ -1184,7 +1187,7 @@ b_port = 'transfer'
 </code></pre>
 <ul>
 <li>
-<p>from one terminal start the relayer over this path:</p>
+<p>from one terminal start hermes over this path:</p>
 <pre><code class="language-shellscript"> hermes start ibc-0 ibc-1
 </code></pre>
 <p><strong>Note</strong>: The different modes of operations are currently under heavy development. In this release the fist path specified between two chains is selected.</p>
@@ -1246,7 +1249,7 @@ SUBCOMMANDS:
     list       list keys configured on a chain
 </code></pre>
 <h3><a class="header" href="#key-seed-file-private-key" id="key-seed-file-private-key">Key Seed file (Private Key)</a></h3>
-<p>In order to execute the command below you need a private key file (JSON). The private key file will be used to sign the transactions submitted by the relayer to the chain.</p>
+<p>In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.</p>
 <p>The private key file can be obtained by using the <code>keys add</code> on a Cosmos chain, for example for a <code>gaia</code> chain the command is:</p>
 <pre><code class="language-shell">gaiad keys add ...
 </code></pre>
@@ -1301,12 +1304,12 @@ POSITIONAL ARGUMENTS:
 <pre><code class="language-json">{&quot;status&quot;:&quot;success&quot;,&quot;result&quot;:[&quot;chain: [CHAIN_ID] -&gt; testkey ([ADDRESS])&quot;]}
 </code></pre>
 <h1><a class="header" href="#light-clients-1" id="light-clients-1">Light Clients</a></h1>
-<p>Using the <code>light</code> command you can add and remove light client peers information to the chain configuration.</p>
+<p>Using the <code>light</code> command you can add and remove light client peer information to the chain configuration.</p>
 <h4><a class="header" href="#show-usage-1" id="show-usage-1">Show usage</a></h4>
 <p>To see the available subcommands for the <code>light</code> command run:</p>
 <pre><code class="language-shell">hermes help light
 </code></pre>
-<p>Currently there are two subcommands supported <code>add</code> and <code>rm</code>:</p>
+<p>There are two subcommands supported <code>add</code> and <code>rm</code>:</p>
 <pre><code class="language-shell">USAGE:
     hermes light &lt;SUBCOMMAND&gt;
 
@@ -1319,7 +1322,7 @@ SUBCOMMANDS:
 
 </code></pre>
 <h3><a class="header" href="#adding-light-client-peers" id="adding-light-client-peers">Adding Light Client Peers</a></h3>
-<p>In order to add light client peers use the <code>add</code> command:</p>
+<p>In order to add the light client peers use the <code>add</code> command:</p>
 <pre><code class="language-shell">USAGE:
     hermes light add &lt;OPTIONS&gt;
 
@@ -1340,16 +1343,16 @@ FLAGS:
     --hash HASH               override hash (optional)
 </code></pre>
 <h4><a class="header" href="#set-the-primary-light-client-peer-for-a-chain" id="set-the-primary-light-client-peer-for-a-chain">Set the Primary Light Client Peer for a Chain</a></h4>
-<p>In order to add a light client peer for a given chain execute the following command:</p>
+<p>In order to add a light client primary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] -p -y -f
 </code></pre>
 <h4><a class="header" href="#set-the-secondary-light-client-peer-for-a-chain" id="set-the-secondary-light-client-peer-for-a-chain">Set the Secondary Light Client Peer for a Chain</a></h4>
-<p>In order to add a light client peer for a given chain execute the following command:</p>
+<p>In order to add a light client secondary peer for a given chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light add tcp://[RPC_NETWORK_ADDRESS] -c [CHAIN_ID] -s [CHAIN_STORE] --peer-id 17D46D8C1576A79203A6733F63B2C9B7235DD559 -y
 </code></pre>
 <p><strong>Note</strong>: The <code>peer-id</code> above can be any valid value for a peer id. Currently, the relayer does not validate if this secondary peer exists.</p>
 <h3><a class="header" href="#removing-light-client-peers" id="removing-light-client-peers">Removing Light Client Peers</a></h3>
-<p>In order to add light client peers use the <code>rm</code> command:</p>
+<p>In order to remove a light client peer use the <code>rm</code> command:</p>
 <pre><code class="language-shell">USAGE:
     hermes light rm &lt;OPTIONS&gt;
 
@@ -1367,7 +1370,7 @@ FLAGS:
 
 </code></pre>
 <h4><a class="header" href="#removing-all-light-client-peers-from-a-chain" id="removing-all-light-client-peers-from-a-chain">Removing all light client peers from a chain</a></h4>
-<p>In order to remove all light peers configuration from a chain execute the following command:</p>
+<p>In order to remove from the configuration all light peers for a chain execute the following command:</p>
 <pre><code class="language-shell">hermes -c [CONFIG_FILE] light rm -c [CHAIN_ID] -y --all
 </code></pre>
 <h1><a class="header" href="#relay-path-setup-and-packet-streaming" id="relay-path-setup-and-packet-streaming">Relay Path Setup and Packet Streaming</a></h1>
