@@ -19,12 +19,12 @@ FLAGS:
 ```
 
 ## Start with New Channel
-Use the `stert` command without flags to create new clients on `source` and `destination` chains, and new connection and new channel between the two chains.
+Use the `start` command without flags to create new clients on `source` and `destination` chains, and new connection and new channel between the two chains.
 __Note__: Reusing existing clients or connection is not possible with the current version. The port used by the channel is obtained from and must be specified in the configuration file.
 
 __Example__:
 ```shell script
-hermes ibc-0 ibc-1
+hermes start ibc-0 ibc-1
 ```
 The relayer creates a new client on each chain and then established a new connection and a new channel using that connection. After that is enters a listen loop acting on packet events that occur on that channel.
 
@@ -33,7 +33,7 @@ Use the `start` command and specify the source port and channel identifier of a 
 
 __Example__:
 ```shell script
-hermes ibc-0 ibc-1 -p transfer -c channel-0
+hermes start ibc-0 ibc-1 -p transfer -c channel-0
 ```
 
 __Note__: Finishing uncompleted handshakes can only be achieved using the `tx raw` CLIs.
@@ -47,7 +47,7 @@ After the relayer is started using the `start` command, it listens to IBC packet
 - `write_acknowledgement`: the relayer builds a `MsgAcknowledgement` packet that is sent to the `destination` chain.
 
 ## Relay Path Setup
-The `channel handshake` command can be used to establish a new channel that uses a new connection and new clients. There is no requirement for the ports to be configured in the configuration file (i.e. `connections` section may be missing).
+The `channel handshake` command can be used to establish a new channel that uses a new connection and new clients. There is no requirement for the ports to be configured in the configuration file (i.e. its `connections` section may be missing).
 
 __Note__: Reuse of existing clients and/or connections is not supported in the current version.
 

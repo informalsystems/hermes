@@ -93,7 +93,7 @@ FLAGS:
 
 #### Removing all light client peers from a chain
 
-In order to remove from the configuration all light peers for a chain execute the following command:
+In order to remove all light peers for a chain from the configuration execute the following command:
 
 ```shell
 hermes -c [CONFIG_FILE] light rm -c [CHAIN_ID] -y --all
