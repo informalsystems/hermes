@@ -1,9 +1,11 @@
 # Create a new path
+
 Perform client creation, connection and channel handshake to establish a new path between the `transfer` ports on `ibc-0` and `ibc-1` chains.
 
-   ```shell script
-    hermes channel handshake ibc-0 ibc-1 transfer transfer
-   ```
+```shell script
+$ hermes channel handshake ibc-0 ibc-1 transfer transfer
+```
+
 ```json
 {
   "status": "success",
