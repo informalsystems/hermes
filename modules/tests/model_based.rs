@@ -1,7 +1,7 @@
 mod modelator;
 mod step;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -13,9 +13,9 @@ use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
 use ibc::ics03_connection::version::Version;
+use ibc::ics18_relayer::context::ICS18Context;
 use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
-use ibc::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
 use ibc::ics26_routing::msgs::ICS26Envelope;
@@ -25,10 +25,9 @@ use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height;
-use ibc::{ics02_client::client_def::AnyHeader, ics18_relayer::context::ICS18Context};
+use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
-use std::{collections::HashMap, vec};
 use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
@@ -149,9 +148,9 @@ impl ICS02TestExecutor {
         AccountId::new([0; 20])
     }
 
-    fn counterparty(counterparty_client_id: u64) -> Counterparty {
-        let client_id = Self::client_id(counterparty_client_id);
-        let connection_id = None;
+    fn counterparty(client_id: u64, connection_id: Option<u64>) -> Counterparty {
+        let client_id = Self::client_id(client_id);
+        let connection_id = connection_id.map(|connection_id| Self::connection_id(connection_id));
         let prefix = Self::commitment_prefix();
         Counterparty::new(client_id, connection_id, prefix)
     }
@@ -161,7 +160,7 @@ impl ICS02TestExecutor {
     }
 
     fn commitment_prefix() -> CommitmentPrefix {
-        CommitmentPrefix(Vec::new())
+        vec![0].into()
     }
 
     fn commitment_proof_bytes() -> CommitmentProofBytes {
@@ -328,7 +327,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                 let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
                     MsgConnectionOpenInit {
                         client_id: Self::client_id(client_id),
-                        counterparty: Self::counterparty(counterparty_client_id),
+                        counterparty: Self::counterparty(counterparty_client_id, None),
                         version: Self::version(),
                         delay_period: Self::delay_period(),
                         signer: Self::signer(),
@@ -361,19 +360,22 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                 let chain_id = step
                     .action
                     .chain_id
-                    .expect("connection open init action should have a chain identifier");
+                    .expect("connection open try action should have a chain identifier");
                 let client_id = step
                     .action
                     .client_id
-                    .expect("connection open init action should have a client identifier");
+                    .expect("connection open try action should have a client identifier");
                 let client_height = step
                     .action
                     .client_height
                     .expect("connection open try action should have a client height");
                 let counterparty_client_id = step.action.counterparty_client_id.expect(
-                    "connection open init action should have a counterparty client identifier",
+                    "connection open try action should have a counterparty client identifier",
                 );
                 let connection_id = step.action.connection_id;
+                let counterparty_connection_id = step.action.counterparty_connection_id.expect(
+                    "connection open try action should have a counterparty connection identifier",
+                );
 
                 // get chain's context
                 let ctx = self.chain_context_mut(&chain_id);
@@ -384,17 +386,24 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
                         previous_connection_id: connection_id.map(Self::connection_id),
                         client_id: Self::client_id(client_id),
                         client_state: None,
-                        counterparty: Self::counterparty(counterparty_client_id),
+                        counterparty: Self::counterparty(
+                            counterparty_client_id,
+                            Some(counterparty_connection_id),
+                        ),
                         counterparty_versions: Self::versions(),
                         proofs: Self::proofs(client_height),
                         delay_period: Self::delay_period(),
                         signer: Self::signer(),
                     },
                 )));
-                let result = ctx.deliver(msg);
+                let result = dbg!(ctx.deliver(msg));
 
                 // check the expected outcome
                 match step.action_outcome {
+                    ActionOutcome::ICS03ConnectionOpenTryOK => {
+                        // the implementaion matches the model if no error occurs
+                        result.is_ok()
+                    }
                     ActionOutcome::ICS03InvalidConsensusHeight => {
                         let handler_error_kind =
                             Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
@@ -448,7 +457,7 @@ fn main() {
         "ICS02HeaderVerificationFailureTest",
         "ICS03ConnectionOpenInitOKTest",
         "ICS03MissingClientTest",
-        "ICS03MissingClientTest",
+        "ICS03ConnectionOpenTryOKTest",
         "ICS03InvalidConsensusHeightTest",
         "ICS03ConnectionNotFoundTest",
         "ICS03ConnectionMismatchTest",

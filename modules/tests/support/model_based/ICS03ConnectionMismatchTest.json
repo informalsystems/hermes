@@ -49,8 +49,8 @@
     {
         "action": {
             "chainId": "chain-B",
-            "clientId": 1,
             "clientHeight": 2,
+            "clientId": 1,
             "connectionId": 0,
             "counterpartyClientId": 0,
             "type": "ICS03ConnectionOpenTry"

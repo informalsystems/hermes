@@ -31,8 +31,9 @@ ActionType == [
     chainId |-> STRING,
     clientHeight |-> Int,
     clientId |-> Int,
+    connectionId |-> Int,
     counterpartyClientId |-> Int,
-    connectionId |-> Int
+    counterpartyConnectionId |-> Int
 ]
 AsAction(a) == a <: ActionType
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
@@ -98,8 +99,8 @@ CreateClientActions == [
 UpdateClientActions == [
     type: {"ICS02UpdateClient"},
     chainId: ChainIds,
-    clientId: ClientIds,
-    clientHeight: ClientHeights
+    clientHeight: ClientHeights,
+    clientId: ClientIds
 ] <: {ActionType}
 ConnectionOpenInitActions == [
     type: {"ICS03ConnectionOpenInit"},
@@ -110,10 +111,11 @@ ConnectionOpenInitActions == [
 ConnectionOpenTryActions == [
     type: {"ICS03ConnectionOpenTry"},
     chainId: ChainIds,
-    clientId: ClientIds,
     clientHeight: ClientHeights,
+    clientId: ClientIds,
     counterpartyClientId: ClientIds,
-    connectionId: ConnectionIds \union {ConnectionIdNone}
+    connectionId: ConnectionIds \union {ConnectionIdNone},
+    counterpartyConnectionId: ConnectionIds
 ] <: {ActionType}
 Actions ==
     NoneActions \union
@@ -216,8 +218,9 @@ ConnectionOpenTry(
     chainId,
     clientId,
     clientHeight,
+    connectionId,
     counterpartyClientId,
-    connectionId
+    counterpartyConnectionId
 ) ==
     LET chain == chains[chainId] IN
     LET height == chain.height IN
@@ -231,8 +234,9 @@ ConnectionOpenTry(
         connectionIdCounter,
         clientId,
         clientHeight,
+        connectionId,
         counterpartyClientId,
-        connectionId
+        counterpartyConnectionId
     ) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
@@ -247,8 +251,9 @@ ConnectionOpenTry(
         chainId |-> chainId,
         clientId |-> clientId,
         clientHeight |-> clientHeight,
+        connectionId |-> connectionId,
         counterpartyClientId |-> counterpartyClientId,
-        connectionId |-> connectionId])
+        counterpartyConnectionId |-> counterpartyConnectionId])
     /\ actionOutcome' = result.outcome
 
 CreateClientAction ==
@@ -293,10 +298,12 @@ ConnectionOpenTryAction ==
     \E clientId \in ClientIds:
     \* select a claimed height for the client
     \E clientHeight \in ClientHeights:
-    \* select a counterparty client id
-    \E counterpartyClientId \in ClientIds:
     \* select a connection id (which can be none)
     \E connectionId \in ConnectionIds \union {ConnectionIdNone}:
+    \* select a counterparty client id
+    \E counterpartyClientId \in ClientIds:
+    \* select a counterparty connection id
+    \E counterpartyConnectionId \in ConnectionIds:
         IF connectionId = ConnectionIdNone THEN
             \* in this case we're trying to create a new connection; only create
             \* connection if the model constant `MaxConnectionsPerChain` allows
@@ -306,8 +313,9 @@ ConnectionOpenTryAction ==
                     chainId,
                     clientId,
                     clientHeight,
+                    connectionId,
                     counterpartyClientId,
-                    connectionId
+                    counterpartyConnectionId
                 )
             ELSE
                 UNCHANGED vars
@@ -316,8 +324,9 @@ ConnectionOpenTryAction ==
                 chainId,
                 clientId,
                 clientHeight,
+                connectionId,
                 counterpartyClientId,
-                connectionId
+                counterpartyConnectionId
             )
 
 Init ==

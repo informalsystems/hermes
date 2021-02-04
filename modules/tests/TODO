@@ -1,0 +1,3 @@
+- conn open try does not increment the connection id counter; looks like a bug
+- the model allows a conn open try to succeed without a conn open try (likely because we don't have proofs)
+- TLC doesn't finish with `MaxClientsPerChain = 2`

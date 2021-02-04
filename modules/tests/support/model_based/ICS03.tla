@@ -60,32 +60,18 @@ ICS03_ConnectionOpenInit(
             outcome |-> "ICS03MissingClient"
         ]
 
-ICS03_ConnectionOpenTry_1(
+\* TODO: errors generated when verifying proofs are never an outcome of this
+\*       model
+ICS03_ConnectionOpenTry(
     chainHeight,
     clients,
     connections,
     connectionIdCounter,
     clientId,
     clientClaimedHeight,
+    connectionId,
     counterpartyClientId,
-    connectionId
-) ==
-    \* TODO check that all parameters are still needed
-    [
-        connections |-> connections,
-        connectionIdCounter |-> connectionIdCounter,
-        outcome |-> "ICS03ConnectionOpenTryOK"
-    ]
-
-ICS03_ConnectionOpenTry_0(
-    chainHeight,
-    clients,
-    connections,
-    connectionIdCounter,
-    clientId,
-    clientClaimedHeight,
-    counterpartyClientId,
-    connectionId
+    counterpartyConnectionId
 ) ==
     \* check if client's claimed height is higher than the chain's height
     IF clientClaimedHeight > chainHeight THEN
@@ -112,17 +98,27 @@ ICS03_ConnectionOpenTry_0(
                    /\ connection.clientId = clientId
                    /\ connection.counterpartyClientId = counterpartyClientId
                 THEN
-                    \* initial verification passed; move to step 1
-                    ICS03_ConnectionOpenTry_1(
-                        chainHeight,
-                        clients,
-                        connections,
-                        connectionIdCounter,
-                        clientId,
-                        clientClaimedHeight,
-                        counterpartyClientId,
-                        connectionId
-                    )
+                    \* verification passed; update connection
+                    LET updatedConnection == [
+                        state |-> "TryOpen",
+                        clientId |-> clientId,
+                        connectionId |-> connectionId,
+                        counterpartyClientId |-> counterpartyClientId,
+                        counterpartyConnectionId |-> counterpartyConnectionId
+                    ] IN
+                    \* return result with updated state
+                    [
+                        connections |-> ICS03_SetConnection(
+                            connections,
+                            connectionId,
+                            updatedConnection
+                        ),
+                        \* as the connection identifier has already been
+                        \* created, here we do not update the
+                        \* `connectionIdCounter`
+                        connectionIdCounter |-> connectionIdCounter,
+                        outcome |-> "ICS03ConnectionOpenTryOK"
+                    ]
                 ELSE
                     [
                         connections |-> connections,
@@ -137,38 +133,26 @@ ICS03_ConnectionOpenTry_0(
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
         ELSE
-            \* initial verification passed; move to step 1
-            ICS03_ConnectionOpenTry_1(
-                chainHeight,
-                clients,
-                connections,
-                connectionIdCounter,
-                clientId,
-                clientClaimedHeight,
-                counterpartyClientId,
-                connectionId
-            )
-
-ICS03_ConnectionOpenTry(
-    chainHeight,
-    clients,
-    connections,
-    connectionIdCounter,
-    clientId,
-    clientClaimedHeight,
-    counterpartyClientId,
-    connectionId
-) ==
-    \* start step 0
-    ICS03_ConnectionOpenTry_0(
-        chainHeight,
-        clients,
-        connections,
-        connectionIdCounter,
-        clientId,
-        clientClaimedHeight,
-        counterpartyClientId,
-        connectionId
-    )
+            \* verification passed; create connection
+            LET connection == [
+                state |-> "TryOpen",
+                clientId |-> clientId,
+                \* generate a new connection identifier
+                connectionId |-> connectionIdCounter,
+                counterpartyClientId |-> counterpartyClientId,
+                counterpartyConnectionId |-> counterpartyConnectionId
+            ] IN
+            \* return result with updated state
+            [
+                connections |-> ICS03_SetConnection(
+                    connections,
+                    connectionIdCounter,
+                    connection
+                ),
+                \* since a new connection identifier has been created, here we
+                \* update the `connectionIdCounter`
+                connectionIdCounter |-> connectionIdCounter + 1,
+                outcome |-> "ICS03ConnectionOpenTryOK"
+            ]
 
 ===============================================================================

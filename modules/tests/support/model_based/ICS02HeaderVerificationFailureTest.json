@@ -32,8 +32,8 @@
     {
         "action": {
             "chainId": "chain-B",
-            "clientId": 0,
             "clientHeight": 1,
+            "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02HeaderVerificationFailure",

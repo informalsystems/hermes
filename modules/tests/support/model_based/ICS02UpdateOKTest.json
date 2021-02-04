@@ -32,8 +32,8 @@
     {
         "action": {
             "chainId": "chain-B",
-            "clientId": 0,
             "clientHeight": 2,
+            "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",
@@ -65,8 +65,8 @@
     {
         "action": {
             "chainId": "chain-A",
-            "clientId": 0,
             "clientHeight": 2,
+            "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",
@@ -98,8 +98,8 @@
     {
         "action": {
             "chainId": "chain-A",
-            "clientId": 1,
             "clientHeight": 2,
+            "clientId": 1,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",

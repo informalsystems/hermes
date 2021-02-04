@@ -32,6 +32,10 @@ pub struct Action {
     #[serde(alias = "connectionId")]
     #[serde(default, deserialize_with = "deserialize_connection_id")]
     pub connection_id: Option<u64>,
+
+    #[serde(alias = "counterpartyConnectionId")]
+    #[serde(default, deserialize_with = "deserialize_connection_id")]
+    pub counterparty_connection_id: Option<u64>,
 }
 
 /// On the model, a non-existing `connection_id` is represented with -1.
@@ -67,6 +71,7 @@ pub enum ActionOutcome {
     ICS02HeaderVerificationFailure,
     ICS03ConnectionOpenInitOK,
     ICS03MissingClient,
+    ICS03ConnectionOpenTryOK,
     ICS03InvalidConsensusHeight,
     ICS03ConnectionNotFound,
     ICS03ConnectionMismatch,

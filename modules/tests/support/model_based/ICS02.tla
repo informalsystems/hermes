@@ -65,5 +65,7 @@ ICS02_UpdateClient(clients, clientId, clientHeight) ==
             clients |-> clients,
             outcome |-> "ICS02ClientNotFound"
         ]
+        \* TODO: distinguish between client state and consensus state to also be
+        \*       able to return a `ConsensusStateNotFound` error outcome
 
 ===============================================================================
