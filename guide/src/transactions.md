@@ -30,7 +30,7 @@ SUBCOMMANDS:
 
 The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.
 
-At a high level, most CLI has the following format/ usage:
+At a high level, most commands have the following format/ usage:
 
 ```shell
    hermes tx raw <ibc-datagram> <dst-chain-id> <src-chain-id> [<dst-obj-id> <src-obj-id>]*
@@ -38,7 +38,7 @@ At a high level, most CLI has the following format/ usage:
 
 where:
 
-- `ibc-datagram` - identifies the "main" IBC message that is being sent, e.g. conn-init, conn-try, chan-open-init, etc. To ensure successfull processing on the receiving chain, the majority of these commands build and send two messages: one `UpdateClient` message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.
+- `ibc-datagram` - identifies the "main" IBC message that is being sent, e.g. `conn-init`, `conn-try`, `chan-open-init`, etc. To ensure successful processing on the receiving chain, the majority of these commands build and send two messages: one `UpdateClient` message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.
 
     The messages that do not require proofs are:
     - `MsgCreateClient` (`create-client` command),
@@ -47,7 +47,7 @@ where:
     - `MsgChannelCloseInit` (`chan-close-init` command) and
     - `MsgTransfer` (`ft-transfer` command)
 
-- `dst-chain-id` - is the identifier of the chain where the transaction is sent.
+- `dst-chain-id` - is the identifier of the chain where the transaction will be sent.
 
 - `src-chain-id` - is the identifier of the chain that is queried for the data that is included in the transaction, e.g. connection data, client proofs, etc. To ensure correct on-chain state, the relayer also queries the destination chain, however it does not include this information in the Tx to the destination chain.
 

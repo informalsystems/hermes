@@ -2,8 +2,8 @@
 
 ## Fungible token transfer
 
-The `tx raw ft-transfer` command can be used to send ICS-20 fungible token transfer packets.
-__NOTE:__ This command is meant to be used for testing the packet features of the relayer.
+Use the `tx raw ft-transfer` command to send ICS-20 fungible token transfer packets.
+__NOTE:__ This command is mainly used for testing the packet features of the relayer.
 
 ```shell
 USAGE:
@@ -81,7 +81,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 
 ## Relay receive and timeout packets
 
-The `tx raw packet-recv` command can be used to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.
+Use the `tx raw packet-recv` command to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.
 
 ```shell
 USAGE:
@@ -99,7 +99,7 @@ POSITIONAL ARGUMENTS:
 
 __Example__
 
-Send the two transfer packets to the module bound to the `transfer` port and the `channel-0`'s counterparty on `ibc-1`.
+Send the two transfer packets to the `ibc-1` module bound to the `transfer` port and the `channel-0`'s counterparty.
 
 __NOTE__: The relayer prepends a client update message before the receive messages.
 
@@ -168,7 +168,7 @@ Both packets have been relayed to `ibc-1` and acknowledged.
 
 ## Relay acknowledgment packets
 
-The `tx raw packet-ack` command can be used to relay acknowledgments to the original source of the packets.
+Use the `tx raw packet-ack` command to relay acknowledgments to the original source of the packets.
 
 ```shell
 USAGE:
@@ -186,7 +186,7 @@ POSITIONAL ARGUMENTS:
 
 __Example__
 
-Send the two transfer packets to the module bound to the `transfer` port and the `channel-0`'s counterparty on `ibc-1`.
+Send the acknowledgments to the `ibc-0` module bound to the `transfer` port and the `channel-1`'s counterparty.
 
 __NOTE__: The relayer prepends a client update message before the acknowledgments.
 

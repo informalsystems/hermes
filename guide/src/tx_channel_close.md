@@ -2,13 +2,6 @@
 
 The channel close handshake involves two steps: init and confirm.
 
-__NOTE__: The application running on-chain (for gaia v4) may initiate the closing 
-of a channel by sending a `MsgChannelCloseInit` message. The cosmos-sdk 
-implementation does not allow the relayer to initiate the closing of channels. 
-Therefore, when using the Gaia release image, the `chan-close-init` command will
-fail. The command is rejected by the `cosmos-sdk` transfer module. To be able to
-test this command, you will need to [patch][patching] your gaia deployments.
-
 ## Channel Close Init
 
 Use the `chan-close-init` command to initialize the closure of a channel.
@@ -43,9 +36,9 @@ $ hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d ch
   "status": "success",
   "result": {
     "CloseInitChannel": {
-      "channel_id": "channel-1",
-      "connection_id": "connection-1",
-      "counterparty_channel_id": "channel-3",
+      "channel_id": "channel-0",
+      "connection_id": "connection-0",
+      "counterparty_channel_id": "channel-1",
       "counterparty_port_id": "transfer",
       "height": "1",
       "port_id": "transfer"
@@ -88,9 +81,9 @@ $ hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d
   "status": "success",
   "result": {
     "CloseConfirmChannel": {
-      "channel_id": "channel-3",
-      "connection_id": "connection-3",
-      "counterparty_channel_id": "channel-1",
+      "channel_id": "channel-1",
+      "connection_id": "connection-1",
+      "counterparty_channel_id": "channel-0",
       "counterparty_port_id": "transfer",
       "height": "1",
       "port_id": "transfer"
@@ -99,4 +92,7 @@ $ hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d
 }
 ```
 
-[patching]: ./help.html#patching-gaia
+__NOTE__: The cosmos-sdk implementation does not allow the relayer to initiate the closing of channels.
+Therefore, when using the Gaia release image, the `chan-close-init` command will
+fail as the `cosmos-sdk` transfer module will reject the `MsgChannelCloseInit` message included in the transaction.
+To be able to test channel closure, you will need to [patch](./help.html#patching-gaia) your gaia deployments.
