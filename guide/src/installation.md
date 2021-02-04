@@ -6,13 +6,15 @@ In order to install and run Hermes, please follow the steps below:
 
 ## Install via Cargo
 
+Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
 cargo install ibc-relayer-cli
 ```
 
-This will download and build Hermes, and install the `hermes` binary in `$HOME/.cargo/bin`.
+This will download and build the crate `ibc-relayer-cli`, and install the 
+`hermes` binary in `$HOME/.cargo/bin`.
 
 > If you have not installed Rust and Cargo via [rustup.rs](https://rustup.rs), you may need to
 > add the `$HOME/.cargo/bin` directory to your `PATH` environment variable.
@@ -57,7 +59,8 @@ git checkout v0.1.0
 
 ### Building with `cargo build`
 
-This command builds all the projects from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository including the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, [__`proto`__](https://github.com/informalsystems/ibc-rs/tree/master/proto) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) tool.
+This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository, namely: the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, [__`ibc-proto`__](https://github.com/informalsystems/ibc-rs/tree/master/proto) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) crate.
+The last of these crates contains the `hermes` binary.
 
 ```shell
 cargo build --release --bin hermes

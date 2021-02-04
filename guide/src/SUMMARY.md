@@ -4,7 +4,7 @@
 
 ---
 - [Introduction](./index.md)
-    - [What is a relayer?](./relayer.md)
+    - [What is Hermes?](./relayer.md)
 - [Features](./features.md)
     - [Feature Matrix](./feature_matrix.md)
 - [Getting Started](./getting_started.md)

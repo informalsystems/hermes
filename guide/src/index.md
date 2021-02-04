@@ -1,4 +1,4 @@
-# IBC Relayer Guide
+# Hermes Guide
 
 This guide can help you setup, configure, and operate Hermes to transfer 
 packets between two IBC enabled chains.

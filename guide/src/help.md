@@ -228,6 +228,7 @@ to close-open:
 If you would like a feature to be added to `hermes`, don't hesitate 
 to open a discussion about that via the [feature request][feature-request]
 issue template.
+Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
 
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
