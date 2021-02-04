@@ -9,7 +9,7 @@ mod restore;
 #[derive(Command, Debug, Options, Runnable)]
 pub enum KeysCmd {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
     /// The `keys add` subcommand

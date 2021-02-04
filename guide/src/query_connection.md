@@ -18,7 +18,7 @@ __Example__
 Query all connections on `ibc-1`:
 
 ```shell
-$ hermes query connections ibc-1 | jq
+hermes query connections ibc-1 | jq
 ```
 
 ```json
@@ -74,7 +74,7 @@ __Example__
 Query the connection end of connection `connection-1` on `ibc-1`:
 
 ```shell
-$ hermes query connection end ibc-1 connection-1 | jq
+hermes query connection end ibc-1 connection-1 | jq
 ```
 
 ```json
@@ -123,7 +123,7 @@ __Example__
 Query the channels associated with connection `connection-1` on `ibc-1`:
 
 ```shell
-$ hermes query connection channels ibc-1 connection-1 | jq
+hermes query connection channels ibc-1 connection-1 | jq
 ```
 
 ```json

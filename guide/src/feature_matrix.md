@@ -1,5 +1,7 @@
 # Feature Matrix
-This section gives more details about the features and implementation status for the Hermes Rust and the [Cosmos Go relayer][cosmos-go-relayer].
+This section gives more details about the features and implementation status 
+of Hermes in comparison with the [Cosmos Go relayer]
+[cosmos-go-relayer].
 
 __Legend__:
 

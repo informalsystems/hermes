@@ -9,7 +9,7 @@ In order to install and run Hermes, please follow the steps below:
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-$ cargo install hermes
+cargo install ibc-relayer-cli
 ```
 
 This will download and build Hermes, and install the `hermes` binary in `$HOME/.cargo/bin`.
@@ -26,7 +26,7 @@ This will download and build Hermes, and install the `hermes` binary in `$HOME/.
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-$ hermes version
+hermes version
 hermes 0.1.0
 ```
 
@@ -37,12 +37,12 @@ hermes 0.1.0
 Open a terminal and clone the following `ibc-rs` repository:
 
 ```shell
-$ git clone https://github.com/informalsystems/ibc-rs.git`
+git clone https://github.com/informalsystems/ibc-rs.git`
 ```
 
 Change to the repository directory
 ```shell
-$ cd ibc-rs
+cd ibc-rs
 ```
 
 ### Checkout the latest release
@@ -52,7 +52,7 @@ Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) 
 Then checkout the release, for example if the most recent release is `v0.1.0` then execute the command:
 
 ```shell
-$ git checkout v0.1.0
+git checkout v0.1.0
 ```
 
 ### Building with `cargo build`
@@ -60,13 +60,13 @@ $ git checkout v0.1.0
 This command builds all the projects from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository including the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, [__`proto`__](https://github.com/informalsystems/ibc-rs/tree/master/proto) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) tool.
 
 ```shell
-$ cargo build --release --bin hermes
+cargo build --release --bin hermes
 ```
 
 If the build is successful, the `hermes` executable will be located in the following location:
 
 ```shell
-$ ./target/release/hermes
+./target/release/hermes
 ```
 
 ### Running for the first time
@@ -74,7 +74,7 @@ $ ./target/release/hermes
 If you run the `hermes` without any additional parameters you should see the usage and help information:
 
 ```shell
-$ ./target/release/hermes
+./target/release/hermes
 hermes 0.1.0
 Informal Systems <hello@informal.systems>
 
@@ -82,7 +82,7 @@ USAGE:
     hermes <SUBCOMMAND>
 
 SUBCOMMANDS:
-    help       get usage information
+    help       Get usage information
     keys       manage keys in the relayer for each chain
     light      basic functionality for managing the light clients
     start      start the relayer
@@ -98,7 +98,7 @@ SUBCOMMANDS:
 It might be easier to create an alias for `hermes` so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
 
 ```shell
-$ alias hermes='cargo run --release --bin hermes --'
+alias hermes='cargo run --release --bin hermes --'
 ```
 
 ### Next Steps

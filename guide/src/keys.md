@@ -20,7 +20,7 @@ DESCRIPTION:
     manage keys in the relayer for each chain
 
 SUBCOMMANDS:
-    help       get usage information
+    help       Get usage information
     add        adds a key to a configured chain
     list       list keys configured on a chain
 ```

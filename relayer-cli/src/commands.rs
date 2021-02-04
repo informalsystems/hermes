@@ -42,7 +42,7 @@ pub fn default_config_file() -> Option<PathBuf> {
 #[derive(Command, Debug, Options, Runnable)]
 pub enum CliCmd {
     /// The `help` subcommand
-    #[options(help = "get usage information")]
+    #[options(help = "Get usage information")]
     Help(Help<Self>),
 
     /// The `keys` subcommand
