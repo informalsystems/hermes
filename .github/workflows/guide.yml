@@ -11,22 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup mdbook
+      - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: "0.4.6"
 
-      - name: Setup mdbook-mermaid
+      - name: Setup mdBook-mermaid
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: mdbook-mermaid
-
-      - name: Setup mdbook-linkcheck
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: mdbook-linkcheck
 
       - run: |
           cd guide
