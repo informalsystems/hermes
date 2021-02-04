@@ -166,8 +166,16 @@
                         <h1><a class="header" href="#pre-requisites" id="pre-requisites">Pre-requisites</a></h1>
 <h2><a class="header" href="#1-rust" id="1-rust">1. Rust</a></h2>
 <p>The IBC Relayer is developed with the <a href="">Rust</a> programming language. In order to build and run the relayer you need to install and configure <code>Rust</code> on your machine.</p>
+<h3><a class="header" href="#fresh-installation" id="fresh-installation">Fresh installation</a></h3>
 <p>For instructions on how to install <code>Rust</code> on your machine please follow the official <a href="https://www.rust-lang.org/tools/install"><code>Notes about Rust Installation</code></a>.</p>
 <p>The provided instructions will install all the Rust toolchain including <code>rustc</code>, <code>cargo</code>, and <code>rustup</code> that are required to build the project.</p>
+<h3><a class="header" href="#version-requirements" id="version-requirements">Version requirements</a></h3>
+<p>Hermes is developed and tested using the latest version of Rust, <code>1.49</code> at 
+the moment. To check that your toolchain is up-to-date run:</p>
+<pre><code class="language-shell">rustc --version
+</code></pre>
+<p>In case you already had installed the Rust toolchain in the past, you can 
+update your installation by running <code>rustup update</code>.</p>
 <h3><a class="header" href="#testing-the-installation" id="testing-the-installation">Testing the installation</a></h3>
 <p>After you install the <code>Rust</code> toolchain you can execute the following command:</p>
 <pre><code class="language-shell">cargo version
