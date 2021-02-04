@@ -27,6 +27,7 @@ Noteworthy changes in this release include:
   - Added 'required' annotation for CLIs queries & txs; better error display ([#555])
   - Implement commands for channel close init and confirm ([#538])
   - Implement command to perform the handshake for a new channel ([#557])
+  - Query all clients command ([#552])
   - Query all connections command ([#553])
   - Query all channels command ([#568])
   - Added a relayer binary guide ([#542])
@@ -38,6 +39,7 @@ Noteworthy changes in this release include:
 
 - [modules]
   - Add `MsgTimeoutOnClose` message type ([#563])
+  - Implement `MsgChannelOpenTry` message handler ([#543])
 
 ### IMPROVEMENTS
 
@@ -92,9 +94,11 @@ Noteworthy changes in this release include:
 [#538]: https://github.com/informalsystems/ibc-rs/issues/538
 [#540]: https://github.com/informalsystems/ibc-rs/issues/540
 [#542]: https://github.com/informalsystems/ibc-rs/issues/542
-[#555]: https://github.com/informalsystems/ibc-rs/issues/555
-[#554]: https://github.com/informalsystems/ibc-rs/issues/554
+[#543]: https://github.com/informalsystems/ibc-rs/issues/543
+[#552]: https://github.com/informalsystems/ibc-rs/issues/553
 [#553]: https://github.com/informalsystems/ibc-rs/issues/553
+[#554]: https://github.com/informalsystems/ibc-rs/issues/554
+[#555]: https://github.com/informalsystems/ibc-rs/issues/555
 [#557]: https://github.com/informalsystems/ibc-rs/issues/557
 [#563]: https://github.com/informalsystems/ibc-rs/issues/563
 [#568]: https://github.com/informalsystems/ibc-rs/issues/568
