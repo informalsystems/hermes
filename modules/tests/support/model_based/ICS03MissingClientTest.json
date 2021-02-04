@@ -1,9 +1,9 @@
 [
     {
         "action": {
-            "type": "Null"
+            "type": "None"
         },
-        "actionOutcome": "Null"
+        "actionOutcome": "None"
     },
     {
         "action": {

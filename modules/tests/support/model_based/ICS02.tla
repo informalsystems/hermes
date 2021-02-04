@@ -8,7 +8,7 @@ ICS02_GetClient(clients, clientId) ==
 
 \* check if `clientId` exists
 ICS02_ClientExists(clients, clientId) ==
-    ICS02_GetClient(clients, clientId).height /= NullHeight
+    ICS02_GetClient(clients, clientId).height /= HeightNone
 
 \* update `clientId`'s data
 ICS02_SetClient(clients, clientId, client) ==

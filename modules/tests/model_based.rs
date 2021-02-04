@@ -137,12 +137,12 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
     fn initial_step(&mut self, step: Step) -> bool {
         assert_eq!(
             step.action.action_type,
-            ActionType::Null,
+            ActionType::None,
             "unexpected action type"
         );
         assert_eq!(
             step.action_outcome,
-            ActionOutcome::Null,
+            ActionOutcome::None,
             "unexpected action outcome"
         );
         true
@@ -150,7 +150,7 @@ impl modelator::TestExecutor<Step> for ICS02TestExecutor {
 
     fn next_step(&mut self, step: Step) -> bool {
         match step.action.action_type {
-            ActionType::Null => panic!("unexpected action type"),
+            ActionType::None => panic!("unexpected action type"),
             ActionType::ICS02CreateClient => {
                 // get action parameters
                 let chain_id = step

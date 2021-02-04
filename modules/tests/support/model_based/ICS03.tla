@@ -40,7 +40,7 @@ ICS03_ConnectionOpenInit(
                 clientId |-> clientId,
                 counterpartyClientId |-> counterpartyClientId,
                 connectionId |-> connectionIdCounter,
-                counterpartyConnectionId |-> NullConnectionId
+                counterpartyConnectionId |-> ConnectionIdNone
             ] IN
             \* return result with updated state
             [

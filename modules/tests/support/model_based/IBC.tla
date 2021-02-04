@@ -51,7 +51,7 @@ ConnectionStates == {
 
 \* data kept per cliennt
 Client == [
-    height: ClientHeights \union {NullHeight}
+    height: ClientHeights \union {HeightNone}
 ]
 \* mapping from client identifier to its height
 Clients == [
@@ -60,10 +60,10 @@ Clients == [
 \* data kept per connection
 Connection == [
     state: ConnectionStates,
-    clientId: ClientIds \union {NullClientId},
-    counterpartyClientId: ClientIds \union {NullClientId},
-    connectionId: ConnectionIds \union {NullConnectionId},
-    counterpartyConnectionId: ConnectionIds \union {NullConnectionId}
+    clientId: ClientIds \union {ClientIdNone},
+    counterpartyClientId: ClientIds \union {ClientIdNone},
+    connectionId: ConnectionIds \union {ConnectionIdNone},
+    counterpartyConnectionId: ConnectionIds \union {ConnectionIdNone}
 ]
 \* mapping from connection identifier to its data
 Connections == [
@@ -82,8 +82,8 @@ Chains == [
 ]
 
 \* set of possible actions
-NullActions == [
-    type: {"Null"}
+NoneActions == [
+    type: {"None"}
 ] <: {ActionType}
 CreateClientActions == [
     type: {"ICS02CreateClient"},
@@ -103,14 +103,14 @@ ConnectionOpenInitActions == [
     counterpartyClientId: ClientIds
 ] <: {ActionType}
 Actions ==
-    NullActions \union
+    NoneActions \union
     CreateClientActions \union
     UpdateClientActions \union
     ConnectionOpenInitActions
 
 \* set of possible action outcomes
 ActionOutcomes == {
-    "Null",
+    "None",
     "ICS02CreateOK",
     "ICS02UpdateOK",
     "ICS02ClientNotFound",
@@ -137,8 +137,7 @@ CreateClient(chainId, clientHeight) ==
     /\ action' = AsAction([
         type |-> "ICS02CreateClient",
         chainId |-> chainId,
-        height |-> clientHeight
-    ])
+        height |-> clientHeight])
     /\ actionOutcome' = result.outcome
 
 UpdateClient(chainId, clientId, clientHeight) ==
@@ -155,8 +154,7 @@ UpdateClient(chainId, clientId, clientHeight) ==
         type |-> "ICS02UpdateClient",
         chainId |-> chainId,
         clientId |-> clientId,
-        height |-> clientHeight
-    ])
+        height |-> clientHeight])
     /\ actionOutcome' = result.outcome
 
 ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
@@ -182,8 +180,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
         type |-> "ICS03ConnectionOpenInit",
         chainId |-> chainId,
         clientId |-> clientId,
-        counterpartyClientId |-> counterpartyClientId
-    ])
+        counterpartyClientId |-> counterpartyClientId])
     /\ actionOutcome' = result.outcome
 
 CreateClientAction ==
@@ -210,7 +207,7 @@ ConnectionOpenInitAction ==
     \E chainId \in ChainIds:
     \* select a client id
     \E clientId \in ClientIds:
-    \* select a couterparty client id
+    \* select a counterparty client id
     \E counterpartyClientId \in ClientIds:
         \* only create connection if the model constant `MaxConnectionsPerChain`
         \* allows it
@@ -218,27 +215,27 @@ ConnectionOpenInitAction ==
         /\ ConnectionOpenInit(chainId, clientId, counterpartyClientId)
 
 Init ==
-    \* create a null client and a null connection
-    LET nullClient == [
-        height |-> NullHeight
+    \* create a client and a connection with none values
+    LET clientNone == [
+        height |-> HeightNone
     ] IN
-    LET nullConnection == [
+    LET connectionNone == [
         state |-> "Uninit",
-        clientId |-> NullClientId,
-        counterpartyClientId |-> NullClientId,
-        connectionId |-> NullConnectionId,
-        counterpartyConnectionId |-> NullConnectionId
+        clientId |-> ClientIdNone,
+        counterpartyClientId |-> ClientIdNone,
+        connectionId |-> ConnectionIdNone,
+        counterpartyConnectionId |-> ConnectionIdNone
     ] IN
     \* create an empty chain
     LET emptyChain == [
-        clients |-> [clientId \in ClientIds |-> nullClient],
+        clients |-> [clientId \in ClientIds |-> clientNone],
         clientIdCounter |-> 0,
-        connections |-> [connectionId \in ConnectionIds |-> nullConnection],
+        connections |-> [connectionId \in ConnectionIds |-> connectionNone],
         connectionIdCounter |-> 0
     ] IN
     /\ chains = [chainId \in ChainIds |-> emptyChain]
-    /\ action = AsAction([type |-> "Null"])
-    /\ actionOutcome = "Null"
+    /\ action = AsAction([type |-> "None"])
+    /\ actionOutcome = "None"
 
 Next ==
     \/ CreateClientAction

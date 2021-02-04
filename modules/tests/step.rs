@@ -28,7 +28,7 @@ pub struct Action {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionType {
-    Null,
+    None,
     ICS02CreateClient,
     ICS02UpdateClient,
     ICS03ConnectionOpenInit,
@@ -36,7 +36,7 @@ pub enum ActionType {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ActionOutcome {
-    Null,
+    None,
     ICS02CreateOK,
     ICS02UpdateOK,
     ICS02ClientNotFound,
