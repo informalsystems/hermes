@@ -32,12 +32,12 @@ use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
-struct ICS02TestExecutor {
+struct IBCTestExecutor {
     // mapping from chain identifier to its context
     contexts: HashMap<String, MockContext>,
 }
 
-impl ICS02TestExecutor {
+impl IBCTestExecutor {
     fn new() -> Self {
         Self {
             contexts: Default::default(),
@@ -199,7 +199,7 @@ impl ICS02TestExecutor {
     }
 }
 
-impl modelator::TestExecutor<Step> for ICS02TestExecutor {
+impl modelator::TestExecutor<Step> for IBCTestExecutor {
     fn initial_step(&mut self, step: Step) -> bool {
         assert_eq!(
             step.action.action_type,
@@ -465,7 +465,7 @@ fn main() {
 
     for test in tests {
         let path = format!("{}/{}.json", TESTS_DIR, test);
-        let executor = ICS02TestExecutor::new();
+        let executor = IBCTestExecutor::new();
         // we should be able to just return the `Result` once the following issue
         // is fixed: https://github.com/rust-lang/rust/issues/43301
         if let Err(e) = modelator::test_driver(executor, path) {
