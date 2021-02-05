@@ -462,7 +462,7 @@ SUBCOMMANDS:
 <p>In order to run Hermes, you will need to have a configuration file.</p>
 <p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a>.</p>
 <p>By default, Hermes expects the configuration file to be located at <code>$HOME/.hermes/config.toml</code>.</p>
-<p>This can be overriden by supplying the <code>-c</code> flag when invoking <code>hermes</code>, before the
+<p>This can be overridden by supplying the <code>-c</code> flag when invoking <code>hermes</code>, before the
 name of the command to run, eg. <code>hermes -c my_config.toml query connection channels ibc-1 connection-1</code>.</p>
 <blockquote>
 <p>With the exception of the light client configuration, current relayer does not support managing the configuration file programmatically.
@@ -1485,10 +1485,10 @@ hermes -c relay_b/config.toml query packet unreceived-acks    ibc-1 ibc-0 transf
 <h1><a class="header" href="#adding-keys-to-the-relayer" id="adding-keys-to-the-relayer">Adding Keys to the Relayer</a></h1>
 <p>Using the <code>keys</code> command you can add and list keys. </p>
 <h4><a class="header" href="#show-usage" id="show-usage">Show usage</a></h4>
-<p>To see the available subcommands for the <code>keys</code> command run:</p>
+<p>To see the available sub-commands for the <code>keys</code> command run:</p>
 <pre><code class="language-shell">hermes help keys
 </code></pre>
-<p>Currently there are two subcommands supported <code>add</code> and <code>list</code>:</p>
+<p>Currently there are two sub-commands supported <code>add</code> and <code>list</code>:</p>
 <pre><code class="language-shell">USAGE:
     hermes-cli keys &lt;SUBCOMMAND&gt;
 
@@ -1558,10 +1558,10 @@ POSITIONAL ARGUMENTS:
 <h1><a class="header" href="#light-clients-1" id="light-clients-1">Light Clients</a></h1>
 <p>Using the <code>light</code> command you can add and remove light client peer information to the chain configuration.</p>
 <h4><a class="header" href="#show-usage-1" id="show-usage-1">Show usage</a></h4>
-<p>To see the available subcommands for the <code>light</code> command run:</p>
+<p>To see the available sub-commands for the <code>light</code> command run:</p>
 <pre><code class="language-shell">hermes help light
 </code></pre>
-<p>There are two subcommands supported <code>add</code> and <code>rm</code>:</p>
+<p>There are two sub-commands supported <code>add</code> and <code>rm</code>:</p>
 <pre><code class="language-shell">USAGE:
     hermes light &lt;SUBCOMMAND&gt;
 
@@ -1784,6 +1784,11 @@ SUBCOMMANDS:
 </code></pre>
 <h1><a class="header" href="#client" id="client">Client</a></h1>
 <p>The <code>tx raw</code> commands can be used to create and update the on-chain IBC clients.</p>
+<h2><a class="header" href="#table-of-contents" id="table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="tx_client.html#create-client">Create Client</a></li>
+<li><a href="tx_client.html#update-client">Update Client</a></li>
+</ul>
 <h2><a class="header" href="#create-client" id="create-client">Create Client</a></h2>
 <p>Use the <code>create-client</code> command to create a new client.</p>
 <pre><code class="language-shell">USAGE:
@@ -1871,6 +1876,13 @@ POSITIONAL ARGUMENTS:
     Note over A, B: Connection open
 </pre>
 </center>
+<h2><a class="header" href="#table-of-contents-1" id="table-of-contents-1">Table of Contents</a></h2>
+<ul>
+<li><a href="tx_connection.html#connection-init">Connection Init</a></li>
+<li><a href="tx_connection.html#connection-try">Connection Try</a></li>
+<li><a href="tx_connection.html#connection-ack">Connection Ack</a></li>
+<li><a href="tx_connection.html#connection-confirm">Connection Confirm</a></li>
+</ul>
 <h2><a class="header" href="#connection-init" id="connection-init">Connection Init</a></h2>
 <p>Use the <code>conn-init</code> command to initialize a new connection on a chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2042,6 +2054,13 @@ FLAGS:
     Note over A, B: Channel open
 </pre>
 </center>
+<h2><a class="header" href="#table-of-contents-2" id="table-of-contents-2">Table of Contents</a></h2>
+<ul>
+<li><a href="tx_channel_open.html#channel-open-init">Channel Open Init</a></li>
+<li><a href="tx_channel_open.html#channel-open-try">Channel Open Try</a></li>
+<li><a href="tx_channel_open.html#channel-open-ack">Channel Open Ack</a></li>
+<li><a href="tx_channel_open.html#channel-open-confirm">Channel Open Confirm</a></li>
+</ul>
 <h2><a class="header" href="#channel-open-init" id="channel-open-init">Channel Open Init</a></h2>
 <p>Use the <code>chan-open-init</code> command to initialize a new channel.</p>
 <pre><code class="language-shell">USAGE:
@@ -2201,6 +2220,11 @@ after which the channel is open on both chains.</p>
 <p>We have now successfully opened a channel over an existing connection between the two chains.</p>
 <h1><a class="header" href="#channel-close-handshake" id="channel-close-handshake">Channel Close Handshake</a></h1>
 <p>The channel close handshake involves two steps: init and confirm.</p>
+<h2><a class="header" href="#table-of-contents-3" id="table-of-contents-3">Table of Contents</a></h2>
+<ul>
+<li><a href="tx_channel_close.html#channel-close-init">Channel Close Init</a></li>
+<li><a href="tx_channel_close.html#channel-close-confirm">Channel Close Confirm</a></li>
+</ul>
 <h2><a class="header" href="#channel-close-init" id="channel-close-init">Channel Close Init</a></h2>
 <p>Use the <code>chan-close-init</code> command to initialize the closure of a channel.</p>
 <pre><code class="language-shell">USAGE:
@@ -2278,6 +2302,12 @@ Therefore, when using the Gaia release image, the <code>chan-close-init</code> c
 fail as the <code>cosmos-sdk</code> transfer module will reject the <code>MsgChannelCloseInit</code> message included in the transaction.
 To be able to test channel closure, you will need to <a href="./help.html#patching-gaia">patch</a> your gaia deployments.</p>
 <h1><a class="header" href="#packet-tx-commands" id="packet-tx-commands">Packet Tx Commands</a></h1>
+<h2><a class="header" href="#table-of-contents-4" id="table-of-contents-4">Table of Contents</a></h2>
+<ul>
+<li><a href="tx_packet.html#fungible-token-transfer">Fungible token transfer</a></li>
+<li><a href="tx_packet.html#relay-receive-and-timeout-packets">Relay receive and timeout packets</a></li>
+<li><a href="tx_packet.html#relay-acknowledgment-packets">Relay acknowledgment packets</a></li>
+</ul>
 <h2><a class="header" href="#fungible-token-transfer" id="fungible-token-transfer">Fungible token transfer</a></h2>
 <p>Use the <code>tx raw ft-transfer</code> command to send ICS-20 fungible token transfer packets.
 <strong>NOTE:</strong> This command is mainly used for testing the packet features of the relayer.</p>
@@ -2522,6 +2552,17 @@ SUBCOMMANDS:
     channels       Query the identifiers of all channels on a given chain
     packet         Query information about packets
 </code></pre>
+<h1><a class="header" href="#table-of-contents-5" id="table-of-contents-5">Table of Contents</a></h1>
+<ul>
+<li><a href="query_client.html#query-clients">Query Clients</a></li>
+<li><a href="query_client.html#query-client-data">Query Client Data</a>
+<ul>
+<li><a href="query_client.html#query-the-client-state">Query the client state</a></li>
+<li><a href="query_client.html#query-the-client-consensus-state">Query the client consensus state</a></li>
+<li><a href="query_client.html#query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></li>
+</ul>
+</li>
+</ul>
 <h1><a class="header" href="#query-clients" id="query-clients">Query Clients</a></h1>
 <p>Use the <code>query clients</code> command to query the identifiers of all clients on a given chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2677,6 +2718,16 @@ FLAGS:
   ]
 }```
 </code></pre>
+<h1><a class="header" href="#table-of-contents-6" id="table-of-contents-6">Table of Contents</a></h1>
+<ul>
+<li><a href="query_connection.html#query-connections">Query Connections</a></li>
+<li><a href="query_connection.html#query-connection-data">Query Connection Data</a>
+<ul>
+<li><a href="query_connection.html#query-the-connection-end-data">Query the connection end data</a></li>
+<li><a href="query_connection.html#query-the-identifiers-of-all-channels-associated-with-a-given-connection">Query the identifiers of all channels associated with a given connection</a></li>
+</ul>
+</li>
+</ul>
 <h1><a class="header" href="#query-connections" id="query-connections">Query Connections</a></h1>
 <p>Use the <code>query connections</code> command to query the identifiers of all connections on a given chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2780,6 +2831,15 @@ POSITIONAL ARGUMENTS:
   ]
 }
 </code></pre>
+<h1><a class="header" href="#table-of-contents-7" id="table-of-contents-7">Table of Contents</a></h1>
+<ul>
+<li><a href="query_channel.html#query-channels">Query Channels</a></li>
+<li><a href="query_channel.html#query-channel-data">Query Channel Data</a>
+<ul>
+<li><a href="query_channel.html#query-the-channel-end-data">Query the channel end data</a></li>
+</ul>
+</li>
+</ul>
 <h1><a class="header" href="#query-channels" id="query-channels">Query Channels</a></h1>
 <p>Use the <code>query channels</code> command to query the identifiers of all channels on a given chain.</p>
 <pre><code class="language-shell">USAGE:
@@ -2822,7 +2882,7 @@ SUBCOMMANDS:
     hermes query channel end &lt;OPTIONS&gt;
 
 DESCRIPTION:
-    query channel end
+    Query channel end
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
@@ -2869,6 +2929,15 @@ SUBCOMMANDS:
     unreceived-packets query unreceived packets
     unreceived-acks query unreceived acknowledgments
 </code></pre>
+<h2><a class="header" href="#table-of-contents-8" id="table-of-contents-8">Table of Contents</a></h2>
+<ul>
+<li><a href="query_packet.html#packet-commitments">Packet Commitments</a></li>
+<li><a href="query_packet.html#packet-commitment-with-sequence">Packet Commitment with Sequence</a></li>
+<li><a href="query_packet.html#packet-acknowledgments">Packet Acknowledgments</a></li>
+<li><a href="query_packet.html#packet-acknowledgment-with-sequence">Packet Acknowledgment with Sequence</a></li>
+<li><a href="query_packet.html#unreceived-packets">Unreceived Packets</a></li>
+<li><a href="query_packet.html#unreceived-acknowledgments">Unreceived Acknowledgments</a></li>
+</ul>
 <h2><a class="header" href="#packet-commitments" id="packet-commitments">Packet Commitments</a></h2>
 <p>Use the <code>query packet commitments</code> command to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).</p>
 <pre><code class="language-shell">USAGE:
@@ -3257,7 +3326,7 @@ level or lower.</p>
 </code></pre>
 <h2><a class="header" href="#parametrizing-the-log-output-level" id="parametrizing-the-log-output-level">Parametrizing the log output level</a></h2>
 <p>The relayer configuration file permits parametrization of output verbosity via the knob called <code>log_level</code>.
-This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but can be overriden in all commands
+This file is loaded by default from <code>$HOME/.hermes/config.toml</code>, but can be overridden in all commands
 with the <code>-c</code> flag, eg. <code>hermes -c ./path/to/my/config.toml some command</code>.</p>
 <p>Relevant snippet:</p>
 <pre><code class="language-toml">[global]
