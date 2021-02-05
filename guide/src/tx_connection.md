@@ -25,6 +25,10 @@ sequenceDiagram
 
 </center>
 
+## Table of Contents
+
+<!-- toc -->
+
 ## Connection Init
 
 Use the `conn-init` command to initialize a new connection on a chain.

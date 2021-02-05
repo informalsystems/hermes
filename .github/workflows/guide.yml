@@ -11,21 +11,29 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup mdBook
+      - name: Setup mdbook
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: "0.4.6"
 
-      - name: Setup mdBook-mermaid
+      - name: Setup mdbook-mermaid
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: mdbook-mermaid
 
-      - run: |
+      - name: Setup mdbook-toc
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: mdbook-toc
+
+      - name: Build guide
+        run: |
           cd guide
           mdbook build
-      - name: Deploy
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

@@ -25,6 +25,10 @@ sequenceDiagram
 
 </center>
 
+## Table of Contents
+
+<!-- toc -->
+
 ## Channel Open Init
 
 Use the `chan-open-init` command to initialize a new channel.

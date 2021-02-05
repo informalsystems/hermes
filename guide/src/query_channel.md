@@ -1,3 +1,7 @@
+# Table of Contents
+
+<!-- toc -->
+
 # Query Channels
 
 Use the `query channels` command to query the identifiers of all channels on a given chain.
@@ -57,7 +61,7 @@ USAGE:
     hermes query channel end <OPTIONS>
 
 DESCRIPTION:
-    query channel end
+    Query channel end
 
 POSITIONAL ARGUMENTS:
     chain_id                  identifier of the chain to query
