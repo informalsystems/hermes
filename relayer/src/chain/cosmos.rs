@@ -826,6 +826,14 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
         request.source_port_id.to_string(),
     )
     .and_eq(
+        format!("{}.packet_dst_channel", request.event_id.as_str()),
+        request.destination_channel_id.to_string(),
+    )
+    .and_eq(
+        format!("{}.packet_dst_port", request.event_id.as_str()),
+        request.destination_port_id.to_string(),
+    )
+    .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
         seq.to_string(),
     ))
@@ -840,6 +848,7 @@ fn packet_from_tx_search_response(
     seq: Sequence,
     response: &tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Option<IBCEvent>, Error> {
+    // TODO: remove loop as `response.txs.len() <= 1`
     for r in response.txs.iter() {
         let height = r.height;
         if height.value() > request.height.revision_height {
@@ -869,6 +878,8 @@ fn packet_from_tx_search_response(
             let packet = packet.unwrap();
             if packet.source_port != request.source_port_id
                 || packet.source_channel != request.source_channel_id
+                || packet.destination_port != request.destination_port_id
+                || packet.destination_channel != request.destination_channel_id
                 || packet.sequence != seq
             {
                 continue;
