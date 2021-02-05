@@ -6,7 +6,7 @@ The format supported for the configuration file is [TOML](https://toml.io/en/).
 
 By default, Hermes expects the configuration file to be located at `$HOME/.hermes/config.toml`.
 
-This can be overriden by supplying the `-c` flag when invoking `hermes`, before the
+This can be overridden by supplying the `-c` flag when invoking `hermes`, before the
 name of the command to run, eg. `hermes -c my_config.toml query connection channels ibc-1 connection-1`.
 
 > With the exception of the light client configuration, current relayer does not support managing the configuration file programmatically.
