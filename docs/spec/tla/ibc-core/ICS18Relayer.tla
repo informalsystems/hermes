@@ -347,21 +347,38 @@ Relay(srcChainID, dstChainID) ==
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
     /\ UNCHANGED <<chainAstore, chainBstore>>
-    
+    /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
 \* given an entry from the packet log, create a packet datagram and 
 \* append it to the outgoing packet datagram queue for dstChainID      
-RelayPacketDatagram(packetLogEntry) ==
-    \* get dstChainID
-    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
-    \* create a packet datagram from packet log entry
-    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
-    
-    IF packetDatagram /= NullDatagram
-    THEN [outgoingPacketDatagrams EXCEPT 
+RelayPacketDatagram(srcChainID, dstChainID) ==
+    /\ packetLog /= AsPacketLog(<<>>)
+    /\ GeneratePacketDatagrams
+    /\ LET packetLogEntry == Head(packetLog) IN
+       LET packetDatagram == PacketDatagram(packetLogEntry) IN
+       \* if srcChainID matches the one from the log entry
+       /\ packetLogEntry.srcChainID = srcChainID
+       \* if dstChainID is the counterparty chain of srcChainID
+       /\ dstChainID = GetCounterpartyChainID(packetLogEntry.srcChainID)
+       /\ packetDatagram /= NullDatagram
+       /\ outgoingPacketDatagrams' = [outgoingPacketDatagrams EXCEPT 
             ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
                                    AsPacketDatagram(packetDatagram))]
-    ELSE outgoingPacketDatagrams      
+       /\ packetLog' = Tail(packetLog)
+       /\ UNCHANGED <<chainAstore, chainBstore>>
+       /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
+    
+\*    
+\*    \* get dstChainID
+\*    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
+\*    \* create a packet datagram from packet log entry
+\*    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
+\*    
+\*    IF packetDatagram /= NullDatagram
+\*    THEN [outgoingPacketDatagrams EXCEPT 
+\*            ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
+\*                                   AsPacketDatagram(packetDatagram))]
+\*    ELSE outgoingPacketDatagrams      
 
 \* update the relayer client heights
 UpdateClient ==
@@ -371,14 +388,21 @@ UpdateClient ==
 CreateDatagrams ==
     \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : 
         \* client, connection, channel datagrams
-        /\ Relay(srcChainID, dstChainID)
-        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
-              /\ Head(packetLog).srcChainID = srcChainID
-              /\ GeneratePacketDatagrams
-              \* packet datagrams   
-              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
-              /\ packetLog' = Tail(packetLog)
-           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
+        Relay(srcChainID, dstChainID)
+        
+\*        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
+\*              /\ Head(packetLog).srcChainID = srcChainID
+\*              /\ GeneratePacketDatagrams
+\*              \* packet datagrams   
+\*              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
+\*              /\ packetLog' = Tail(packetLog)
+\*           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
+
+CreatePacketDatagrams ==
+    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs :
+        RelayPacketDatagram(srcChainID, dstChainID)
+    
+    
 
 (***************************************************************************
  Specification
@@ -400,14 +424,22 @@ Init ==
 Next ==
     \/ UpdateClient
     \/ CreateDatagrams
+    \/ CreatePacketDatagrams
     \/ UNCHANGED vars    
        
 \* Fairness constraints
 Fairness ==
+\*    WF_vars(Next)
+\*    /\ WF_vars(CreateDatagrams)
+\*    /\ WF_vars(CreatePacketDatagrams)
     /\ \A chainID \in ChainIDs : 
             WF_vars(UpdateRelayerClientHeight(chainID))
     /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs : 
             WF_vars(Relay(srcChainID, dstChainID))
+    /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs :
+            WF_vars(RelayPacketDatagram(srcChainID, dstChainID))
+            
+    
                
 (***************************************************************************
  Invariants
@@ -420,5 +452,5 @@ TypeOK ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 18:02:05 CET 2021 by ilinastoilkovska
+\* Last modified Tue Feb 02 09:58:43 CET 2021 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -112,10 +112,10 @@ PacketUpdate(chainID, store, packetDatagrams, log) ==
  ***************************************************************************)
 \* Update chainID with the received datagrams
 \* Supports ICS02 (Clients), ICS03 (Connections), and ICS04 (Channels & Packets).
-UpdateChainStoreAndPacketLog(chainID, datagrams, packetDatagrams, log) == 
+UpdateChainStoreAndPacketLog(chainID, chain, datagrams, packetDatagrams, log) == 
     
     \* ICS02: Client updates
-    LET clientUpdatedStore == LightClientUpdate(chainID, chainStore, datagrams) IN
+    LET clientUpdatedStore == LightClientUpdate(chainID, chain, datagrams) IN
 
     \* ICS03: Connection updates
     LET connectionUpdatedStore == ConnectionUpdate(chainID, clientUpdatedStore, datagrams) IN
@@ -136,7 +136,7 @@ UpdateChainStoreAndPacketLog(chainID, datagrams, packetDatagrams, log) ==
     IN
 
     [chainStore |-> updatedChainStore, 
-     packetLog |-> packetUpdatedStoreAndLog.packetLog]
+     packetLog |-> packetUpdatedStoreAndLog.packetLog] 
 
 (***************************************************************************
  Chain actions
@@ -188,7 +188,8 @@ AcknowledgePacket ==
 HandleIncomingDatagrams ==
     /\ \/ incomingDatagrams /= AsSetDatagrams({})
        \/ incomingPacketDatagrams /= AsSeqPacketDatagrams(<<>>) 
-    /\ LET updatedChainStoreAndPacketLog == UpdateChainStoreAndPacketLog(ChainID, incomingDatagrams, incomingPacketDatagrams, packetLog) IN
+    /\ LET updatedChainStoreAndPacketLog == 
+            UpdateChainStoreAndPacketLog(ChainID, chainStore, incomingDatagrams, incomingPacketDatagrams, packetLog) IN
         /\ chainStore' = updatedChainStoreAndPacketLog.chainStore
         /\ packetLog' = updatedChainStoreAndPacketLog.packetLog 
         /\ incomingDatagrams' = AsSetDatagrams({})
@@ -212,7 +213,7 @@ HandleIncomingDatagrams ==
                             [] OTHER 
                                     -> history
         /\ UNCHANGED appPacketSeq
-
+     
 (***************************************************************************
  Specification
  ***************************************************************************)
@@ -243,8 +244,7 @@ Next ==
     \/ UNCHANGED vars
         
 Fairness ==
-    /\ WF_vars(AdvanceChain)
-    /\ WF_vars(HandleIncomingDatagrams)        
+    /\ WF_vars(Next)     
         
 (***************************************************************************
  Invariants
@@ -269,5 +269,5 @@ HeightDoesntDecrease ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jan 29 16:25:59 CET 2021 by ilinastoilkovska
+\* Last modified Fri Feb 05 13:46:33 CET 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:56:21 CET 2020 by ilinastoilkovska

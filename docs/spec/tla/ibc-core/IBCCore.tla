@@ -190,7 +190,11 @@ Next ==
    
 \* Fairness constraint
 Fairness ==
-    /\ WF_vars(Next)  
+    /\ WF_vars(SubmitDatagrams)  
+    /\ ChainA!Fairness
+    /\ ChainB!Fairness
+    /\ Relayer1!Fairness
+    /\ Relayer2!Fairness
     /\ <>[]closeChannelA
     /\ <>[]closeChannelB
 
@@ -565,5 +569,5 @@ IBCDelivery ==
                
 =============================================================================
 \* Modification History
-\* Last modified Mon Feb 01 18:58:16 CET 2021 by ilinastoilkovska
+\* Last modified Tue Feb 02 10:20:20 CET 2021 by ilinastoilkovska
 \* Created Fri Jun 05 16:48:22 CET 2020 by ilinastoilkovska
