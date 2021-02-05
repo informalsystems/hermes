@@ -1,5 +1,9 @@
 # Packet Tx Commands
 
+## Table of Contents
+
+<!-- toc -->
+
 ## Fungible token transfer
 
 Use the `tx raw ft-transfer` command to send ICS-20 fungible token transfer packets.

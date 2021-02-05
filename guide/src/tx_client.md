@@ -1,6 +1,9 @@
 # Client
 The `tx raw` commands can be used to create and update the on-chain IBC clients.
 
+## Table of Contents
+<!-- toc -->
+
 ## Create Client
 Use the `create-client` command to create a new client.
 

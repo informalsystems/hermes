@@ -1,3 +1,7 @@
+# Table of Contents
+
+<!-- toc -->
+
 # Query Connections
 
 Use the `query connections` command to query the identifiers of all connections on a given chain.

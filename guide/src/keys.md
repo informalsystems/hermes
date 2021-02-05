@@ -4,13 +4,13 @@ Using the `keys` command you can add and list keys.
 
 #### Show usage
 
-To see the available subcommands for the `keys` command run:
+To see the available sub-commands for the `keys` command run:
 
 ```shell
 hermes help keys
 ```
 
-Currently there are two subcommands supported `add` and `list`:
+Currently there are two sub-commands supported `add` and `list`:
 
 ```shell
 USAGE:
