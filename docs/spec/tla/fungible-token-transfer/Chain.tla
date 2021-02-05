@@ -26,12 +26,12 @@ Heights == 1..MaxHeight \* set of possible heights of the chains in the system
  Token transfer operators
  ***************************************************************************)
 \* Create a packet: Abstract away from timestamp. 
-\* Assume timeoutHeight is MaxHeight + 1
+\* Assume timeoutHeight is MaxHeight
 CreatePacket(packetData) ==
     LET channelEnd == chainStore.channelEnd IN
     AsPacket([
         sequence |-> appPacketSeq,
-        timeoutHeight |-> MaxHeight + 1,
+        timeoutHeight |-> MaxHeight,
         data |-> packetData, 
         srcPortID |-> channelEnd.portID,
         srcChannelID |-> channelEnd.channelID,
@@ -109,8 +109,11 @@ SendPacket ==
         \* if there is no error, send packet
         \/ /\ ~createOutgoingPacketOutcome.error
            /\ LET packet == CreatePacket(createOutgoingPacketOutcome.packetData) IN
+              LET updatedChainStore == WritePacketCommitment(chainStore, packet) IN
+                \* if writing the packet commitment was successful
+                /\ chainStore /= updatedChainStore   
                 \* update chain store with packet committment
-                /\ chainStore' = WritePacketCommitment(chainStore, packet)
+                /\ chainStore' = updatedChainStore
                 \* log sent packet
                 /\ packetLog' = Append(packetLog, 
                                   AsPacketLogEntry(
@@ -151,7 +154,7 @@ AcknowledgePacket ==
 \*  - incomingPacketDatagrams is an empty sequence
 \*  - the appPacketSeq is set to 1
 Init == 
-    /\ chainStore = ICS20InitChainStore(ChainID, <<NativeDenomination>>)
+    /\ chainStore = ICS20InitChainStore(ChainID)
     /\ incomingPacketDatagrams = AsSeqDatagrams(<<>>)
     /\ appPacketSeq = AsInt(1)
     
@@ -169,9 +172,19 @@ Next ==
     \/ UNCHANGED vars
         
 Fairness ==
-    /\ WF_vars(SendPacket)        
+    /\ WF_vars(Next)
+    
+(***************************************************************************
+ Invariants
+ ***************************************************************************)
+\* Type invariant   
+\* ChainStores, Datagrams, PacketLogEntries are defined in IBCTokenTransferDefinitions.tla        
+TypeOK ==    
+    /\ chainStore \in ChainStores(Heights, MaxPacketSeq, MaxBalance, NativeDenomination)
+    /\ appPacketSeq \in 1..(MaxPacketSeq + 1)
+            
         
 =============================================================================
 \* Modification History
-\* Last modified Fri Nov 20 16:09:50 CET 2020 by ilinastoilkovska
+\* Last modified Mon Feb 01 19:31:22 CET 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:03 CEST 2020 by ilinastoilkovska

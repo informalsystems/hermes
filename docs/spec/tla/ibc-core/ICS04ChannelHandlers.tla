@@ -74,7 +74,7 @@ HandleChanOpenTry(chainID, chain, datagrams) ==
     \* if there are valid "ChanOpenTry" datagrams and the connection is "OPEN", 
     \* update the channel end
     IF /\ chanOpenTryDgrs /= AsSetDatagrams({}) 
-       /\ chain.connectionEnd = "OPEN" 
+       /\ chain.connectionEnd.state = "OPEN" 
     THEN LET chanOpenTryDgr == CHOOSE dgr \in chanOpenTryDgrs : TRUE IN
          \* if the channel end is uninitialized
          IF \/ connectionEnd.channelEnd.state = "UNINIT"
@@ -265,5 +265,5 @@ HandleChanCloseConfirm(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 30 13:59:29 CET 2020 by ilinastoilkovska
+\* Last modified Tue Feb 02 10:51:07 CET 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:58:02 CEST 2020 by ilinastoilkovska
