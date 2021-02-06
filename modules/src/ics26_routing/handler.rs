@@ -138,6 +138,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
 
+    //use crate::ics24_host::identifier::{ChannelId, ConnectionId};
     use crate::ics24_host::identifier::ChannelId;
 
     use crate::events::IBCEvent;
@@ -178,6 +179,8 @@ mod tests {
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 34)).unwrap();
         let msg_conn_try_good_height =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 29)).unwrap();
+
+        //Some(ConnectionId::from_str("defaultConnection-0").unwrap());
 
         let msg_chan_init =
             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
@@ -231,6 +234,11 @@ mod tests {
             event => panic!("unexpected IBC event: {:?}", event),
         };
 
+        let mut msg_conn_try_good =
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 29)).unwrap();
+        msg_conn_try_good.previous_connection_id = None;
+        msg_conn_try_good.client_id = client_id.clone();
+
         let tests: Vec<Test> = vec![
             // Test some ICS2 client functionality.
             Test {
@@ -280,6 +288,13 @@ mod tests {
                     msg_conn_try_good_height,
                 ))),
                 want_pass: false,
+            },
+            Test {
+                name: "Connection open try shoukd not fails".to_string(),
+                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                    msg_conn_try_good,
+                ))),
+                want_pass: true,
             },
             // ICS04
             Test {

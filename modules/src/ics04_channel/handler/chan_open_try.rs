@@ -282,7 +282,7 @@ mod tests {
         );
 
         let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,
@@ -445,7 +445,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()

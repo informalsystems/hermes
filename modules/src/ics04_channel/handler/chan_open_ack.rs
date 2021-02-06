@@ -78,7 +78,7 @@ pub(crate) fn process(
         expected_connection_hops,
         msg.counterparty_version().clone(),
     );
-
+    //2. Verify proofs
     verify_proofs(
         ctx,
         &channel_end,
@@ -111,6 +111,7 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
+
     use crate::events::IBCEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
@@ -120,20 +121,19 @@ mod tests {
     use crate::ics03_connection::connection::State as ConnectionState;
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    // use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
-    // use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::version::get_compatible_versions;
 
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try; //_with_counterparty;
+    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
 
     use crate::ics24_host::identifier::ConnectionId;
-    //use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
     use crate::Height;
 
@@ -146,25 +146,6 @@ mod tests {
             want_pass: bool,
         }
         let proof_height = 10;
-
-        // //chan_id is used to add a channel to the context
-        // let cchan_id2 = <ChannelId as FromStr>::from_str(&"channel24".to_string());
-
-        // let chan_id = match cchan_id2 {
-        //     Ok(v) => v,
-        //     Err(_e) => ChannelId::default(),
-        // };
-
-        // //msg_chan_try2 is used to test against an exiting channel entry.
-        // let cchan_id = <ChannelId as FromStr>::from_str(&"channel24".to_string());
-
-        // let mut msg_chan_try2 =
-        //     MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
-
-        // msg_chan_try2.previous_channel_id = match cchan_id {
-        //     Ok(v) => Some(v),
-        //     Err(_e) => None,
-        // };
 
         let context = MockContext::default();
 
@@ -198,37 +179,14 @@ mod tests {
             },
         );
 
-        // let init_chan_end2 = ChannelEnd::new(
-        //     State::Init,
-        //     *msg_chan_try2.channel.ordering(),
-        //     msg_chan_try2.channel.counterparty().clone(),
-        //     //msg_chan_try.channel.connection_hops().clone(),
-        //     connection_vec,
-        //     msg_chan_try2.counterparty_version().clone(),
-        // );
-
-        // //Used for Test "Processing connection does not match when a channel exists "
-        // let mut connection_vec3 = Vec::new();
-        // connection_vec3.insert(0, ConnectionId::default());
-
-        // let init_chan_end3 = ChannelEnd::new(
-        //     State::Init,
-        //     *msg_chan_try2.channel.ordering(),
-        //     msg_chan_try2.channel.counterparty().clone(),
-        //     connection_vec3,
-        //     msg_chan_try2.channel().version(),
-        // );
-
         let client_consensus_state_height = 10;
-        //let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
 
-        // let _msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
-        //     client_consensus_state_height,
-        //     host_chain_height.revision_height,
-        // ))
-        // .unwrap();
-
-        //Test "Good parameters: No channel Open Init found"
+        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+            client_consensus_state_height,
+            host_chain_height.revision_height,
+        ))
+        .unwrap();
 
         let msg_chan_ack =
             MsgChannelOpenAck::try_from(get_dummy_raw_msg_chan_open_ack(proof_height)).unwrap();
@@ -243,14 +201,20 @@ mod tests {
                 msg_chan_ack.port_id().clone(),
                 Some(msg_chan_ack.channel_id().clone()),
             ),
+            connection_vec0.clone(),
+            msg_chan_try.channel.version(),
+        );
+
+        let failed_chan_end = ChannelEnd::new(
+            State::Open,
+            *msg_chan_try.channel.ordering(),
+            Counterparty::new(
+                msg_chan_ack.port_id().clone(),
+                Some(msg_chan_ack.channel_id().clone()),
+            ),
             connection_vec0,
             msg_chan_try.channel.version(),
         );
-        // let ccounterparty_chan_id = <ChannelId as FromStr>::from_str(&"channel25".to_string());
-        // let counterparty_chan_id = match ccounterparty_chan_id {
-        //     Ok(v) => v,
-        //     Err(_e) => ChannelId::default(),
-        // };
 
         let tests: Vec<Test> = vec![
             Test {
@@ -259,86 +223,77 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
                 want_pass: false,
             },
-            // Test {
-            //     name: "Processing fails because port does not have a capability associated"
-            //         .to_string(),
-            //     ctx: context
-            //         .clone()
-            //         .with_connection(cid.clone(), init_conn_end.clone()),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try.clone()),
-            //     want_pass: false,
-            // },
-            // Test {
-            //     name: "Processing version does not match when a channel exists ".to_string(),
-            //     ctx: context
-            //         .clone()
-            //         .with_connection(cid.clone(), init_conn_end.clone())
-            //         .with_port_capability(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //         )
-            //         .with_channel_init(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //             chan_id.clone(),
-            //             init_chan_end2,
-            //         ),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
-            //     want_pass: false,
-            // },
-            // Test {
-            //     name: "Processing connection does not match when a channel exists ".to_string(),
-            //     ctx: context
-            //         .clone()
-            //         .with_connection(cid.clone(), init_conn_end.clone())
-            //         .with_port_capability(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //         )
-            //         .with_channel_init(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //             chan_id.clone(),
-            //             init_chan_end3,
-            //         ),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
-            //     want_pass: false,
-            // },
-            // Test {
-            //     name: " Channel Open Try fails due to missing client state ".to_string(),
-            //     ctx: context
-            //         .clone()
-            //         .with_connection(cid.clone(), init_conn_end.clone())
-            //         .with_port_capability(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //         )
-            //         .with_channel_init(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //             chan_id.clone(),
-            //             init_chan_end.clone(),
-            //         ),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try2.clone()),
-            //     want_pass: false,
-            // },
+            Test {
+                name: "Processing fails because the channel is in the wrong state".to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(
+                        msg_conn_try.client_id(),
+                        Height::new(0, client_consensus_state_height),
+                    )
+                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_channel_init(
+                        msg_chan_ack.port_id().clone(),
+                        msg_chan_ack.channel_id().clone(),
+                        failed_chan_end,
+                    ),
+                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because port does not have a capability associate"
+                    .to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(
+                        msg_conn_try.client_id(),
+                        Height::new(0, client_consensus_state_height),
+                    )
+                    .with_connection(cid.clone(), conn_end.clone())
+                    .with_channel_init(
+                        msg_chan_ack.port_id().clone(),
+                        msg_chan_ack.channel_id().clone(),
+                        chan_end.clone(),
+                    ),
+                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because a connection does exist".to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(
+                        msg_conn_try.client_id(),
+                        Height::new(0, client_consensus_state_height),
+                    )
+                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_channel_init(
+                        msg_chan_ack.port_id().clone(),
+                        msg_chan_ack.channel_id().clone(),
+                        chan_end.clone(),
+                    ),
+                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails due to missing client state ".to_string(),
+                ctx: context
+                    .clone()
+                    .with_connection(cid.clone(), conn_end.clone())
+                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_channel_init(
+                        msg_chan_ack.port_id().clone(),
+                        msg_chan_ack.channel_id().clone(),
+                        chan_end.clone(),
+                    ),
+                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
+                want_pass: false,
+            },
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context //  .clone()
                     .with_client(
-                        msg_conn_init.client_id(),
+                        msg_conn_try.client_id(),
                         Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
@@ -351,28 +306,6 @@ mod tests {
                 msg: ChannelMsg::ChannelOpenAck(msg_chan_ack),
                 want_pass: true,
             },
-            // Test {
-            //     name: "Good parameters: No channel Open Init found".to_string(),
-            //     ctx: context
-            //         .with_client(
-            //             msg_conn_try.client_id(),
-            //             Height::new(0, client_consensus_state_height),
-            //         )
-            //         .with_connection(cid, init_conn_end)
-            //         .with_port_capability(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //         )
-            //         .with_channel_init(
-            //             PortId::from_str("port12").unwrap(),
-            //             counterparty_chan_id,
-            //             init_chan_end,
-            //         ),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try),
-            //     want_pass: true,
-            // },
         ]
         .into_iter()
         .collect();
@@ -383,29 +316,29 @@ mod tests {
             match res {
                 Ok(proto_output) => {
                     assert_eq!(
-                        test.want_pass,
-                        true,
-                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
-                        test.name,
-                        test.msg.clone(),
-                        test.ctx.clone()
-                    );
+                            test.want_pass,
+                            true,
+                            "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                            test.name,
+                            test.msg.clone(),
+                            test.ctx.clone()
+                        );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
                     // The object in the output is a ConnectionEnd, should have init state.
                     let res: ChannelResult = proto_output.result;
                     //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
-                    assert_eq!(res.channel_end.state().clone(), State::TryOpen);
+                    assert_eq!(res.channel_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenTryChannel(_)));
+                        assert!(matches!(e, &IBCEvent::OpenAckChannel(_)));
                     }
                 }
                 Err(e) => {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "chan_open_try: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "chan_open_ack: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),
