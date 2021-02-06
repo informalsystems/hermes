@@ -856,57 +856,56 @@ fn packet_from_tx_search_response(
         response.txs.len() <= 1,
         "packet_from_tx_search_response: unexpected number of txs"
     );
-    match response.txs.pop() {
-        None => Ok(None),
-        Some(r) => {
-            let height = r.height;
-            if height.value() > request.height.revision_height {
-                return Ok(None);
-            }
-
-            let mut matching = Vec::new();
-            for e in r.tx_result.events {
-                assert_eq!(
-                    e.type_str,
-                    request.event_id.as_str(),
-                    "packet_from_tx_search_response: unexpected event type"
-                );
-
-                let res = ChannelEvents::try_from_tx(&e);
-                if res.is_none() {
-                    continue;
-                }
-                let event = res.unwrap();
-                let packet = match &event {
-                    IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
-                    IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
-                    _ => None,
-                };
-
-                if packet.is_none() {
-                    continue;
-                }
-
-                let packet = packet.unwrap();
-                if packet.source_port != request.source_port_id
-                    || packet.source_channel != request.source_channel_id
-                    || packet.destination_port != request.destination_port_id
-                    || packet.destination_channel != request.destination_channel_id
-                    || packet.sequence != seq
-                {
-                    continue;
-                }
-
-                matching.push(event);
-            }
-
-            assert_eq!(
-                matching.len(),
-                1,
-                "packet_from_tx_search_response: unexpected number of matching packets"
-            );
-            Ok(matching.pop())
+    if let Some(r) = response.txs.pop() {
+        let height = r.height;
+        if height.value() > request.height.revision_height {
+            return Ok(None);
         }
+
+        let mut matching = Vec::new();
+        for e in r.tx_result.events {
+            assert_eq!(
+                e.type_str,
+                request.event_id.as_str(),
+                "packet_from_tx_search_response: unexpected event type"
+            );
+
+            let res = ChannelEvents::try_from_tx(&e);
+            if res.is_none() {
+                continue;
+            }
+            let event = res.unwrap();
+            let packet = match &event {
+                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
+                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
+                _ => None,
+            };
+
+            if packet.is_none() {
+                continue;
+            }
+
+            let packet = packet.unwrap();
+            if packet.source_port != request.source_port_id
+                || packet.source_channel != request.source_channel_id
+                || packet.destination_port != request.destination_port_id
+                || packet.destination_channel != request.destination_channel_id
+                || packet.sequence != seq
+            {
+                continue;
+            }
+
+            matching.push(event);
+        }
+
+        assert_eq!(
+            matching.len(),
+            1,
+            "packet_from_tx_search_response: unexpected number of matching packets"
+        );
+        Ok(matching.pop())
+    } else {
+        Ok(None)
     }
 }
 
