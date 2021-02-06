@@ -6,6 +6,7 @@ use std::{
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
+use ibc::ics04_channel::events as ChannelEvents;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -688,7 +689,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
+            let mut events = packet_from_tx_search_response(&request, *seq, response)?
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -839,56 +840,74 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
     ))
 }
 
-// Extract the packet events from the query_tx RPC response. The response includes the full set of events
-// from the Tx-es where there is at least one request query match.
-// For example, the query request asks for the Tx for packet with sequence 3, and both 3 and 4 were
-// committed in one Tx. In this case the response includes the events for 3 and 4.
+// Extract the packet events from the query_txs RPC response. For any given
+// packet query, there is at most one Tx matching such query. However, a single
+// Tx may contain several events, and a single one must match the packet query.
+// For example, if we're querying for the packet with sequence 3 and this packet
+// was committed a some Tx along with the packet with sequence 4, the response
+// will include both packets. For this reason, we iterate all packets in the Tx
+// until the one we're looking for is found.
 fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    response: &tendermint_rpc::endpoint::tx_search::Response,
+    mut response: tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Option<IBCEvent>, Error> {
-    // TODO: remove loop as `response.txs.len() <= 1`
-    for r in response.txs.iter() {
-        let height = r.height;
-        if height.value() > request.height.revision_height {
-            continue;
-        }
-
-        for e in r.tx_result.events.iter() {
-            if e.type_str != request.event_id.as_str() {
-                continue;
+    assert!(
+        response.txs.len() <= 1,
+        "packet_from_tx_search_response: unexpected number of txs"
+    );
+    match response.txs.pop() {
+        None => Ok(None),
+        Some(r) => {
+            let height = r.height;
+            if height.value() > request.height.revision_height {
+                return Ok(None);
             }
 
-            let res = from_tx_response_event(e);
-            if res.is_none() {
-                continue;
-            }
-            let event = res.unwrap();
-            let packet = match &event {
-                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
-                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
-                _ => None,
-            };
+            let mut matching = Vec::new();
+            for e in r.tx_result.events {
+                assert_eq!(
+                    e.type_str,
+                    request.event_id.as_str(),
+                    "packet_from_tx_search_response: unexpected event type"
+                );
 
-            if packet.is_none() {
-                continue;
+                let res = ChannelEvents::try_from_tx(&e);
+                if res.is_none() {
+                    continue;
+                }
+                let event = res.unwrap();
+                let packet = match &event {
+                    IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
+                    IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
+                    _ => None,
+                };
+
+                if packet.is_none() {
+                    continue;
+                }
+
+                let packet = packet.unwrap();
+                if packet.source_port != request.source_port_id
+                    || packet.source_channel != request.source_channel_id
+                    || packet.destination_port != request.destination_port_id
+                    || packet.destination_channel != request.destination_channel_id
+                    || packet.sequence != seq
+                {
+                    continue;
+                }
+
+                matching.push(event);
             }
 
-            let packet = packet.unwrap();
-            if packet.source_port != request.source_port_id
-                || packet.source_channel != request.source_channel_id
-                || packet.destination_port != request.destination_port_id
-                || packet.destination_channel != request.destination_channel_id
-                || packet.sequence != seq
-            {
-                continue;
-            }
-
-            return Ok(Some(event));
+            assert_eq!(
+                matching.len(),
+                1,
+                "packet_from_tx_search_response: unexpected number of matching packets"
+            );
+            Ok(matching.pop())
         }
     }
-    Ok(None)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
