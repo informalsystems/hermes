@@ -864,11 +864,9 @@ fn packet_from_tx_search_response(
 
         let mut matching = Vec::new();
         for e in r.tx_result.events {
-            assert_eq!(
-                e.type_str,
-                request.event_id.as_str(),
-                "packet_from_tx_search_response: unexpected event type"
-            );
+            if e.type_str != request.event_id.as_str() {
+                continue;
+            }
 
             let res = ChannelEvents::try_from_tx(&e);
             if res.is_none() {
