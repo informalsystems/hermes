@@ -372,6 +372,8 @@ impl RelayPath {
             event_id: IBCEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: self.src_channel_id().clone(),
+            destination_port_id: self.dst_port_id().clone(),
+            destination_channel_id: self.dst_channel_id().clone(),
             sequences,
             height: self.src_height,
         })?;
@@ -442,6 +444,8 @@ impl RelayPath {
                 event_id: IBCEventType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: self.dst_channel_id().clone(),
+                destination_port_id: self.src_port_id().clone(),
+                destination_channel_id: self.src_channel_id().clone(),
                 sequences,
                 height: query_height,
             })
