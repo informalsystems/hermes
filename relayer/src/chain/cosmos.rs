@@ -841,12 +841,12 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
 }
 
 // Extract the packet events from the query_txs RPC response. For any given
-// packet query, there is at most one Tx matching such query. However, a single
-// Tx may contain several events, and a single one must match the packet query.
+// packet query, there is at most one Tx matching such query. Moreover, a Tx may
+// contain several events, but a single one must match the packet query.
 // For example, if we're querying for the packet with sequence 3 and this packet
-// was committed a some Tx along with the packet with sequence 4, the response
-// will include both packets. For this reason, we iterate all packets in the Tx
-// until the one we're looking for is found.
+// was committed in some Tx along with the packet with sequence 4, the response
+// will include both packets. For this reason, we iterate all packets in the Tx,
+// searching for those that match (which must be a single one).
 fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
