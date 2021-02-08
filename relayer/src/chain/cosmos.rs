@@ -866,8 +866,8 @@ fn packet_from_tx_search_response(
             }
             let event = res.unwrap();
             let packet = match &event {
-                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
-                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
+                IBCEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+                IBCEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
 

@@ -65,7 +65,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::SendPacketChannel(SendPacket {
+            Some(IBCEvent::SendPacket(SendPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -74,19 +74,17 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should have a write ack.
             let write_ack = write_ack.unwrap();
-            Some(IBCEvent::WriteAcknowledgementChannel(
-                WriteAcknowledgement {
-                    height: Default::default(),
-                    packet,
-                    ack: write_ack,
-                },
-            ))
+            Some(IBCEvent::WriteAcknowledgement(WriteAcknowledgement {
+                height: Default::default(),
+                packet,
+                ack: write_ack,
+            }))
         }
         ACK_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::AcknowledgePacketChannel(AcknowledgePacket {
+            Some(IBCEvent::AcknowledgePacket(AcknowledgePacket {
                 height: Default::default(),
                 packet,
             }))
@@ -95,7 +93,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::TimeoutPacketChannel(TimeoutPacket {
+            Some(IBCEvent::TimeoutPacket(TimeoutPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -334,6 +332,12 @@ impl CloseInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn height(&self) -> &block::Height {
+        &self.0.height
+    }
+    pub fn port_id(&self) -> &PortId {
+        &self.0.port_id
+    }
 }
 
 impl From<Attributes> for CloseInit {
@@ -362,6 +366,18 @@ impl TryFrom<RawObject> for CloseInit {
 impl From<CloseInit> for IBCEvent {
     fn from(v: CloseInit) -> Self {
         IBCEvent::CloseInitChannel(v)
+    }
+}
+
+impl std::fmt::Display for CloseInit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(
+            f,
+            "{:?} {} {:?}",
+            self.height(),
+            CLOSE_INIT_EVENT_TYPE,
+            self.0
+        )
     }
 }
 
@@ -448,7 +464,7 @@ impl TryFrom<RawObject> for SendPacket {
 
 impl From<SendPacket> for IBCEvent {
     fn from(v: SendPacket) -> Self {
-        IBCEvent::SendPacketChannel(v)
+        IBCEvent::SendPacket(v)
     }
 }
 
@@ -477,7 +493,7 @@ impl TryFrom<RawObject> for ReceivePacket {
 
 impl From<ReceivePacket> for IBCEvent {
     fn from(v: ReceivePacket) -> Self {
-        IBCEvent::ReceivePacketChannel(v)
+        IBCEvent::ReceivePacket(v)
     }
 }
 
@@ -513,7 +529,7 @@ impl TryFrom<RawObject> for WriteAcknowledgement {
 
 impl From<WriteAcknowledgement> for IBCEvent {
     fn from(v: WriteAcknowledgement) -> Self {
-        IBCEvent::WriteAcknowledgementChannel(v)
+        IBCEvent::WriteAcknowledgement(v)
     }
 }
 
@@ -540,7 +556,7 @@ impl TryFrom<RawObject> for AcknowledgePacket {
 
 impl From<AcknowledgePacket> for IBCEvent {
     fn from(v: AcknowledgePacket) -> Self {
-        IBCEvent::AcknowledgePacketChannel(v)
+        IBCEvent::AcknowledgePacket(v)
     }
 }
 
@@ -568,7 +584,7 @@ impl TryFrom<RawObject> for TimeoutPacket {
 
 impl From<TimeoutPacket> for IBCEvent {
     fn from(v: TimeoutPacket) -> Self {
-        IBCEvent::TimeoutPacketChannel(v)
+        IBCEvent::TimeoutPacket(v)
     }
 }
 
