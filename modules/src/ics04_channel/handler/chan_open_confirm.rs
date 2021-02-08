@@ -11,7 +11,6 @@ use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use Kind::ConnectionNotOpen;
 
-
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenConfirm,
@@ -26,7 +25,7 @@ pub(crate) fn process(
 
     // Validate that the channel end is in a state where it can be ack.
 
-    if !channel_end.state_matches(&State::TryOpen){
+    if !channel_end.state_matches(&State::TryOpen) {
         return Err(Into::<Error>::into(Kind::InvalidChannelState(
             msg.channel_id().clone(),
         )));
@@ -77,7 +76,7 @@ pub(crate) fn process(
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        channel_end.version().clone(),
+        channel_end.version(),
     );
     //2. Verify proofs
     verify_proofs(
@@ -91,7 +90,7 @@ pub(crate) fn process(
 
     output.log("success: channel open confirm ");
 
-    // Transition the channel end to the new state & pick a version.
+    // Transition the channel end to the new state.
     channel_end.set_state(State::Open);
 
     let result = ChannelResult {
@@ -148,9 +147,8 @@ mod tests {
         let client_consensus_state_height = 10;
         let host_chain_height = Height::new(1, 35);
 
-        
         let context = MockContext::default();
-        
+
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,
             host_chain_height.revision_height,
@@ -185,7 +183,8 @@ mod tests {
         );
 
         let msg_chan_confirm =
-            MsgChannelOpenConfirm::try_from(get_dummy_raw_msg_chan_open_confirm(proof_height)).unwrap();
+            MsgChannelOpenConfirm::try_from(get_dummy_raw_msg_chan_open_confirm(proof_height))
+                .unwrap();
 
         let msg_chan_try =
             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
@@ -197,29 +196,27 @@ mod tests {
                 msg_chan_confirm.port_id().clone(),
                 Some(msg_chan_confirm.channel_id().clone()),
             ),
-            connection_vec1.clone(),
+            connection_vec1,
             msg_chan_try.channel.version(),
         );
 
-        let tests: Vec<Test> = vec![
-            Test {
-                name: "Good parameters".to_string(),
-                ctx: context //  .clone()
-                    .with_client(
-                        msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
-                    )
-                    .with_connection(cid, conn_end)
-                    .with_port_capability(msg_chan_confirm.port_id().clone())
-                    .with_channel_init(
-                        msg_chan_confirm.port_id().clone(),
-                        msg_chan_confirm.channel_id().clone(),
-                        chan_end,
-                    ),
-                msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
-                want_pass: true,
-            },
-        ]
+        let tests: Vec<Test> = vec![Test {
+            name: "Good parameters".to_string(),
+            ctx: context
+                .with_client(
+                    msg_conn_try.client_id(),
+                    Height::new(1, client_consensus_state_height),
+                )
+                .with_connection(cid, conn_end)
+                .with_port_capability(msg_chan_confirm.port_id().clone())
+                .with_channel_init(
+                    msg_chan_confirm.port_id().clone(),
+                    msg_chan_confirm.channel_id().clone(),
+                    chan_end,
+                ),
+            msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
+            want_pass: true,
+        }]
         .into_iter()
         .collect();
 

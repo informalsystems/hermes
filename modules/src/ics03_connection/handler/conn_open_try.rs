@@ -81,7 +81,7 @@ pub(crate) fn process(
             .ok_or(Kind::NoCommonVersion)?,
     );
 
-    assert_eq!(new_connection_end.versions().len(),1);
+    assert_eq!(new_connection_end.versions().len(), 1);
 
     output.log("success: connection verification passed");
 

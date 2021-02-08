@@ -8,12 +8,12 @@ use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
+pub mod chan_close_confirm;
+pub mod chan_close_init;
 pub mod chan_open_ack;
+pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
-pub mod chan_open_confirm;
-pub mod chan_close_init;
-pub mod chan_close_confirm;
 
 mod verify;
 #[derive(Clone, Debug)]

@@ -201,8 +201,10 @@ pub mod test_util {
         }
     }
 
-    pub fn get_dummy_msg_conn_open_ack_ics26(proof_height: u64,
-        consensus_height: u64) -> RawMsgConnectionOpenAck {
+    pub fn get_dummy_msg_conn_open_ack_ics26(
+        proof_height: u64,
+        consensus_height: u64,
+    ) -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
             connection_id: "defaultConnection-0".to_string(),
             counterparty_connection_id: "defaultConnection-0".to_string(),

@@ -119,20 +119,31 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::{ics02_client::client_def::{AnyClientState, AnyConsensusState}, ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm}; 
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
-    use crate::ics04_channel::msgs::{chan_close_confirm::test_util::get_dummy_raw_msg_chan_close_confirm_ics26, 
-        chan_close_init::{MsgChannelCloseInit, test_util::get_dummy_raw_msg_chan_close_init}};
-    use crate::ics03_connection::msgs::conn_open_ack::{MsgConnectionOpenAck, test_util::get_dummy_msg_conn_open_ack_ics26};
-    use crate::ics04_channel::msgs::{chan_open_ack::{MsgChannelOpenAck, test_util::get_dummy_raw_msg_chan_open_ack_ics26}, chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_ics26, chan_open_try::test_util::get_dummy_raw_msg_chan_open_try_ics26};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try_ics26;
+    use crate::ics03_connection::msgs::conn_open_ack::{
+        test_util::get_dummy_msg_conn_open_ack_ics26, MsgConnectionOpenAck,
+    };
     use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init_ics26;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try_ics26;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
+    use crate::ics04_channel::msgs::{
+        chan_close_confirm::test_util::get_dummy_raw_msg_chan_close_confirm_ics26,
+        chan_close_init::{test_util::get_dummy_raw_msg_chan_close_init, MsgChannelCloseInit},
+    };
+    use crate::ics04_channel::msgs::{
+        chan_open_ack::{test_util::get_dummy_raw_msg_chan_open_ack_ics26, MsgChannelOpenAck},
+        chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_ics26,
+        chan_open_try::test_util::get_dummy_raw_msg_chan_open_try_ics26,
+    };
+    use crate::{
+        ics02_client::client_def::{AnyClientState, AnyConsensusState},
+        ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm,
+    };
 
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_with_missing_connection;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
@@ -176,13 +187,13 @@ mod tests {
 
         let msg_conn_init =
             MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init_ics26()).unwrap();
-       
+
         let correct_msg_conn_try =
-            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try_ics26(5,5)).unwrap();
-        
+            MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try_ics26(5, 5)).unwrap();
+
         let msg_conn_ack =
-        MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack_ics26(5,5)).unwrap();
-        
+            MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack_ics26(5, 5)).unwrap();
+
         let msg_conn_try_good_height =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 29)).unwrap();
 
@@ -196,11 +207,11 @@ mod tests {
         )
         .unwrap();
 
-        let proof_height = 5;        
-        
-        
+        let proof_height = 5;
+
         let mut msg_chan_try2 =
-            MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try_ics26(proof_height)).unwrap();
+            MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try_ics26(proof_height))
+                .unwrap();
 
         // We reuse this same context across all tests. Nothing in particular needs parametrizing.
         let mut ctx = MockContext::default();
@@ -210,16 +221,18 @@ mod tests {
         msg_chan_try2.previous_channel_id = Some(
             <ChannelId as FromStr>::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap(),
         );
-    
 
         let msg_chan_ack =
-            MsgChannelOpenAck::try_from(get_dummy_raw_msg_chan_open_ack_ics26(proof_height)).unwrap();
+            MsgChannelOpenAck::try_from(get_dummy_raw_msg_chan_open_ack_ics26(proof_height))
+                .unwrap();
 
-        let mut msg_chan_close_init = MsgChannelCloseInit::try_from(
-            get_dummy_raw_msg_chan_close_init()).unwrap();
-       
+        let mut msg_chan_close_init =
+            MsgChannelCloseInit::try_from(get_dummy_raw_msg_chan_close_init()).unwrap();
+
         let msg_chan_close_confirm = MsgChannelCloseConfirm::try_from(
-            get_dummy_raw_msg_chan_close_confirm_ics26(proof_height)).unwrap();
+            get_dummy_raw_msg_chan_close_confirm_ics26(proof_height),
+        )
+        .unwrap();
 
         msg_chan_close_init.channel_id = ChannelId::from_str("defaultChannel-0").unwrap();
 
@@ -251,11 +264,8 @@ mod tests {
             event => panic!("unexpected IBC event: {:?}", event),
         };
 
-        
-
         let incorrect_msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try_ics26(10, 43)).unwrap();
-        
 
         let tests: Vec<Test> = vec![
             // Test some ICS2 client functionality.
@@ -293,16 +303,14 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Connection open try succeeds"
-                    .to_string(),
+                name: "Connection open try succeeds".to_string(),
                 msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     correct_msg_conn_try,
                 ))),
                 want_pass: true,
             },
             Test {
-                name: "Connection open ack succeeds"
-                    .to_string(),
+                name: "Connection open ack succeeds".to_string(),
                 msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     msg_conn_ack,
                 ))),
@@ -343,7 +351,9 @@ mod tests {
             },
             Test {
                 name: "Channel close confirm fails cause channel is already closed".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelCloseConfirm(msg_chan_close_confirm)),
+                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelCloseConfirm(
+                    msg_chan_close_confirm,
+                )),
                 want_pass: false,
             },
         ]

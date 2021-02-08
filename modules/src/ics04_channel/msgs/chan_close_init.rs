@@ -30,7 +30,6 @@ impl MsgChannelCloseInit {
     pub fn channel_id(&self) -> &ChannelId {
         &self.channel_id
     }
-
 }
 
 impl Msg for MsgChannelCloseInit {

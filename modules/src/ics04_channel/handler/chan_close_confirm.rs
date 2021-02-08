@@ -1,16 +1,18 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelCloseInit`.
-use crate::{events::IBCEvent, ics04_channel::channel::{ChannelEnd, Counterparty}};
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::State;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
+use crate::ics04_channel::handler::verify::verify_proofs;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use crate::ics04_channel::handler::verify::verify_proofs;
+use crate::{
+    events::IBCEvent,
+    ics04_channel::channel::{ChannelEnd, Counterparty},
+};
 use Kind::ConnectionNotOpen;
-
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -62,7 +64,8 @@ pub(crate) fn process(
     // Proof verification in two steps:
     // 1. Setup: build the Channel as we expect to find it on the other party.
 
-    let expected_counterparty = Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
+    let expected_counterparty =
+        Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
 
     let counterparty = conn.counterparty();
     let ccid = counterparty.connection_id().ok_or_else(|| {
@@ -76,7 +79,7 @@ pub(crate) fn process(
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        channel_end.version().clone(),
+        channel_end.version(),
     );
 
     verify_proofs(

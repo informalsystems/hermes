@@ -389,8 +389,7 @@ pub mod test_util {
             version: "ics20".to_string(), // The version is not validated.
         }
     }
-    
-    
+
     /// Returns a dummy `RawChannel`, for testing only!
     pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
         RawChannel {

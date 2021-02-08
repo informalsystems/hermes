@@ -30,7 +30,7 @@ pub(crate) fn process(
             msg.channel_id().clone(),
         )));
     }
-    //?? Why don't we check that the  channel_end's version matches 
+    //?? Why don't we check that the  channel_end's version matches
     // the counterparty_version received in the message.
 
     //Channel capabilities
@@ -183,8 +183,6 @@ mod tests {
                 _ => unreachable!(),
             },
         );
-
-
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,

@@ -122,7 +122,9 @@ pub mod test_util {
             signer: get_dummy_bech32_account(),
         }
     }
-    pub fn get_dummy_raw_msg_chan_close_confirm_ics26(proof_height: u64) -> RawMsgChannelCloseConfirm {
+    pub fn get_dummy_raw_msg_chan_close_confirm_ics26(
+        proof_height: u64,
+    ) -> RawMsgChannelCloseConfirm {
         RawMsgChannelCloseConfirm {
             port_id: "port".to_string(),
             channel_id: "defaultChannel-0".to_string(),

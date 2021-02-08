@@ -57,7 +57,6 @@ pub(crate) fn process(
         return Err(ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
     }
 
-    
     output.log("success: channel close init ");
 
     // Transition the channel end to the new state & pick a version.
