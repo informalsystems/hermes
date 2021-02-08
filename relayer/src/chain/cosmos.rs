@@ -220,7 +220,7 @@ impl CosmosSDKChain {
             .block_on(broadcast_tx_commit(self, txraw_buf))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let res = tx_result_to_event(response)?;
+        let res = tx_result_to_event(&self.config.id, response)?;
 
         Ok(res)
     }
@@ -688,7 +688,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
+            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, &response)?
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -844,14 +844,15 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
 // For example, the query request asks for the Tx for packet with sequence 3, and both 3 and 4 were
 // committed in one Tx. In this case the response includes the events for 3 and 4.
 fn packet_from_tx_search_response(
+    chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     response: &tendermint_rpc::endpoint::tx_search::Response,
 ) -> Result<Option<IBCEvent>, Error> {
     // TODO: remove loop as `response.txs.len() <= 1`
     for r in response.txs.iter() {
-        let height = r.height;
-        if height.value() > request.height.revision_height {
+        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+        if height > request.height {
             continue;
         }
 
@@ -860,7 +861,7 @@ fn packet_from_tx_search_response(
                 continue;
             }
 
-            let res = from_tx_response_event(e);
+            let res = from_tx_response_event(height, e);
             if res.is_none() {
                 continue;
             }
@@ -975,7 +976,10 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+pub fn tx_result_to_event(
+    chain_id: &ChainId,
+    response: Response,
+) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
 
     // Verify the return codes from check_tx and deliver_tx
@@ -992,8 +996,9 @@ pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::
         ))]);
     }
 
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
     for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(&event) {
+        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
             result.push(ibc_ev);
         }
     }

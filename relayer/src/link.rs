@@ -214,12 +214,8 @@ impl RelayPath {
         };
 
         if !self.all_events.is_empty() {
-            // TODO add ICS height to IBC event
             // All events are at the same height
-            self.src_height = Height {
-                revision_height: u64::from(self.all_events[0].height()),
-                revision_number: ChainId::chain_version(self.src_chain.id().to_string().as_str()),
-            };
+            self.src_height = *self.all_events[0].height();
         }
     }
 
@@ -535,11 +531,7 @@ impl RelayPath {
         Ok(msg.to_any::<RawMsgRecvPacket>())
     }
 
-    fn build_ack_packet(
-        &self,
-        event: &WriteAcknowledgement,
-        height: Height,
-    ) -> Result<Any, LinkError> {
+    fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
             LinkError::Failed(format!(
@@ -557,7 +549,7 @@ impl RelayPath {
                 &packet.destination_port,
                 &packet.destination_channel,
                 packet.sequence,
-                height,
+                event.height,
             )
             .map_err(|e| LinkError::PacketProofsConstructor(self.src_chain.id(), e))?;
 
@@ -668,12 +660,6 @@ impl RelayPath {
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let packet = event.packet.clone();
 
-        // TODO - change event types to return ICS height
-        let event_height = Height::new(
-            ChainId::chain_version(self.src_chain.id().to_string().as_str()),
-            u64::from(event.height),
-        );
-
         let dst_height = self
             .dst_chain
             .query_latest_height()
@@ -697,20 +683,10 @@ impl RelayPath {
         //     TODO - add query to get the current chain time
         } else {
             Ok((
-                Some(self.build_recv_packet(&event.packet, event_height)?),
+                Some(self.build_recv_packet(&event.packet, event.height)?),
                 None,
             ))
         }
-    }
-
-    fn build_ack_from_recv_event(&self, event: &WriteAcknowledgement) -> Result<Any, LinkError> {
-        // TODO - change event types to return ICS height
-        let event_height = Height::new(
-            ChainId::chain_version(self.src_chain.id().to_string().as_str()),
-            u64::from(event.height),
-        );
-
-        self.build_ack_packet(&event, event_height)
     }
 }
 

@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use futures::stream::StreamExt;
 use futures::{stream::select_all, Stream};
 use itertools::Itertools;
-use tendermint::{block::Height, net};
+use tendermint::net;
 use tendermint_rpc::{query::EventType, query::Query, SubscriptionClient, WebSocketClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tokio::task::JoinHandle;
@@ -14,6 +14,7 @@ use tracing::{debug, error, info};
 use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
 
 use crate::error::{Error, Kind};
+use ibc::ics02_client::height::Height;
 
 /// A batch of events from a chain at a specific height
 #[derive(Clone, Debug)]
@@ -169,7 +170,7 @@ impl EventMonitor {
         let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
-            Some(Ok(event)) => match ibc::events::get_all_events(event.clone()) {
+            Some(Ok(event)) => match ibc::events::get_all_events(&self.chain_id, event.clone()) {
                 Ok(ibc_events) => {
                     let events_by_height = ibc_events.into_iter().into_group_map();
 

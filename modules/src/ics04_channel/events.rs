@@ -1,12 +1,12 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
 use crate::events::{IBCEvent, RawObject};
+use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::{attribute, some_attribute};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
 
 /// Channel event types
 const OPEN_INIT_EVENT_TYPE: &str = "channel_open_init";
@@ -154,7 +154,7 @@ fn extract_packet_and_write_ack_from_tx(
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
-    pub height: block::Height,
+    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -181,6 +181,12 @@ pub struct OpenInit(Attributes);
 impl OpenInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -220,6 +226,12 @@ impl OpenTry {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for OpenTry {
@@ -257,6 +269,12 @@ pub struct OpenAck(Attributes);
 impl OpenAck {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -296,6 +314,12 @@ impl OpenConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for OpenConfirm {
@@ -334,6 +358,12 @@ impl CloseInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for CloseInit {
@@ -371,6 +401,12 @@ pub struct CloseConfirm(Attributes);
 impl CloseConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -431,7 +467,7 @@ impl TryFrom<RawObject> for Packet {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SendPacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
 }
 
@@ -460,7 +496,7 @@ impl std::fmt::Display for SendPacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ReceivePacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
 }
 
@@ -489,7 +525,7 @@ impl std::fmt::Display for ReceivePacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct WriteAcknowledgement {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub ack: Vec<u8>,
@@ -525,7 +561,7 @@ impl std::fmt::Display for WriteAcknowledgement {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AcknowledgePacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
 }
 
@@ -552,7 +588,7 @@ impl std::fmt::Display for AcknowledgePacket {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TimeoutPacket {
-    pub height: block::Height,
+    pub height: Height,
     pub packet: Packet,
 }
 
