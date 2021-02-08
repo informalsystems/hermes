@@ -242,12 +242,12 @@ pub mod test_util {
                 .collect(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                revision_number: 1,
+                revision_number: 0,
                 revision_height: proof_height,
             }),
             proof_consensus: get_dummy_proof(),
             consensus_height: Some(Height {
-                revision_number: 1,
+                revision_number: 0,
                 revision_height: consensus_height,
             }),
             proof_client: vec![],
