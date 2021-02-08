@@ -59,6 +59,7 @@ pub enum IBCEvent {
     WriteAcknowledgement(ChannelEvents::WriteAcknowledgement),
     AcknowledgePacket(ChannelEvents::AcknowledgePacket),
     TimeoutPacket(ChannelEvents::TimeoutPacket),
+    TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
     TimeoutTransfer(TransferEvents::Timeout),
     PacketTransfer(TransferEvents::Packet),
@@ -103,7 +104,7 @@ impl IBCEvent {
         }
     }
 
-    pub fn set_height(&mut self, height: ICSHeight) {
+    pub fn set_height(&mut self, height: &ICSHeight) {
         match self {
             IBCEvent::SendPacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
@@ -119,6 +120,9 @@ impl IBCEvent {
             }
             IBCEvent::TimeoutPacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::CloseInitChannel(ev) => {
+                ev.set_height(Height::try_from(height.revision_height).unwrap())
             }
             _ => unimplemented!(),
         }
@@ -294,7 +298,14 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
-        _ => Err("Incorrect Event Type".into()),
+        "timeout_on_close_packet" => {
+            object.action = "timeout_packet".to_string();
+            Ok(IBCEvent::from(
+                ChannelEvents::TimeoutOnClosePacket::try_from(object)?,
+            ))
+        }
+
+        unknown_event => Err(unknown_event.into()),
     }
 }
 

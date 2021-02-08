@@ -29,6 +29,7 @@ const RECV_PACKET: &str = "recv_packet";
 const WRITE_ACK: &str = "write_acknowledgement";
 const ACK_PACKET: &str = "acknowledge_packet";
 const TIMEOUT: &str = "timeout_packet";
+const TIMEOUT_ON_CLOSE: &str = "timeout_on_close_packet";
 
 /// Packet event attribute keys
 const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -338,6 +339,9 @@ impl CloseInit {
     pub fn port_id(&self) -> &PortId {
         &self.0.port_id
     }
+    pub fn set_height(&mut self, height: block::Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for CloseInit {
@@ -591,5 +595,33 @@ impl From<TimeoutPacket> for IBCEvent {
 impl std::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(f, "{} {} {}", self.height, TIMEOUT, self.packet)
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TimeoutOnClosePacket {
+    pub height: block::Height,
+    pub packet: Packet,
+}
+
+impl TryFrom<RawObject> for TimeoutOnClosePacket {
+    type Error = BoxError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        Ok(TimeoutOnClosePacket {
+            height: obj.height,
+            packet: Packet::try_from(obj)?,
+        })
+    }
+}
+
+impl From<TimeoutOnClosePacket> for IBCEvent {
+    fn from(v: TimeoutOnClosePacket) -> Self {
+        IBCEvent::TimeoutOnClosePacket(v)
+    }
+}
+
+impl std::fmt::Display for TimeoutOnClosePacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{} {} {}", self.height, TIMEOUT_ON_CLOSE, self.packet)
     }
 }
