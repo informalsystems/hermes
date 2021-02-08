@@ -167,6 +167,13 @@ impl RelayPath {
         event: &IBCEvent,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         match event {
+            IBCEvent::CloseInitChannel(close_init_ev) => {
+                info!("{} => event {}", self.src_chain.id(), close_init_ev);
+                Ok((
+                    Some(self.build_chan_close_confirm_from_close_init_event(&close_init_ev)?),
+                    None,
+                ))
+            }
             IBCEvent::SendPacket(send_packet_ev) => {
                 info!("{} => event {}", self.src_chain.id(), send_packet_ev);
                 Ok(self.build_recv_or_timeout_from_send_packet_event(&send_packet_ev)?)
@@ -215,15 +222,9 @@ impl RelayPath {
     }
 
     fn handle_packet_event(&mut self, event: &IBCEvent) -> Result<(), LinkError> {
-        if let IBCEvent::CloseInitChannel(close_init_ev) = event {
-            let msg = self.build_chan_close_confirm_from_close_init_event(&close_init_ev)?;
-            self.packet_msgs.append(&mut vec![msg]);
-            return Ok(());
-        }
+        let (dst_msg, timeout) = self.build_msg_from_event(event)?;
 
-        let (packet, timeout) = self.build_msg_from_event(event)?;
-
-        if let Some(msg) = packet {
+        if let Some(msg) = dst_msg {
             self.packet_msgs.append(&mut vec![msg]);
             self.dst_msgs_input_events.append(&mut vec![event.clone()]);
         }
@@ -234,43 +235,91 @@ impl RelayPath {
         }
         Ok(())
     }
-
-    // Determines if the event received is relevant and should be processed.
+    // Determines if the events received are relevant and should be processed.
     // Only events for a port/channel matching one of the channel ends should be processed.
-    fn collect_event(&mut self, event: &IBCEvent) {
-        match event {
-            IBCEvent::SendPacket(send_packet_ev) => {
-                if self.src_channel_id().clone() == send_packet_ev.packet.source_channel
-                    && self.src_port_id().clone() == send_packet_ev.packet.source_port
-                {
-                    self.all_events.append(&mut vec![event.clone()]);
+    fn collect_events(&mut self, events: &[IBCEvent]) {
+        for event in events.iter() {
+            match event {
+                IBCEvent::SendPacket(send_packet_ev) => {
+                    if self.src_channel_id().clone() == send_packet_ev.packet.source_channel
+                        && self.src_port_id().clone() == send_packet_ev.packet.source_port
+                    {
+                        self.all_events.append(&mut vec![event.clone()]);
+                    }
                 }
-            }
-            IBCEvent::WriteAcknowledgement(write_ack_ev) => {
-                if self.channel.src_channel_id().clone() == write_ack_ev.packet.destination_channel
-                    && self.channel.src_port_id().clone() == write_ack_ev.packet.destination_port
-                {
-                    self.all_events.append(&mut vec![event.clone()]);
+                IBCEvent::WriteAcknowledgement(write_ack_ev) => {
+                    if self.channel.src_channel_id().clone()
+                        == write_ack_ev.packet.destination_channel
+                        && self.channel.src_port_id().clone()
+                            == write_ack_ev.packet.destination_port
+                    {
+                        self.all_events.append(&mut vec![event.clone()]);
+                    }
                 }
-            }
-            IBCEvent::CloseInitChannel(chan_close_ev) => {
-                if Some(self.channel.src_channel_id()) == chan_close_ev.channel_id().as_ref()
-                    && self.channel.src_port_id() == chan_close_ev.port_id()
-                {
-                    self.all_events.append(&mut vec![event.clone()]);
+                IBCEvent::CloseInitChannel(chan_close_ev) => {
+                    if Some(self.channel.src_channel_id()) == chan_close_ev.channel_id().as_ref()
+                        && self.channel.src_port_id() == chan_close_ev.port_id()
+                    {
+                        self.all_events.append(&mut vec![event.clone()]);
+                    }
                 }
-            }
-            _ => {}
-        };
-
-        if !self.all_events.is_empty() {
-            // TODO add ICS height to IBC event
-            // All events are at the same height
-            self.src_height = Height {
-                revision_height: u64::from(*self.all_events[0].height()),
-                revision_number: ChainId::chain_version(self.src_chain.id().to_string().as_str()),
+                _ => {}
             };
         }
+    }
+
+    // May adjust the height of events in self.all_events.
+    // Checks if the client on destination chain is at a higher height than the event height.
+    // This can happen if a client update has happened after the event was emitted but before
+    // this point when the relayer starts to process the events.
+    fn adjust_events_height(&mut self) -> Result<(), LinkError> {
+        if self.all_events.is_empty() {
+            return Ok(());
+        }
+        // TODO add ICS height to IBC event
+        // All events are at the same height
+        let event_height = Height::new(
+            ChainId::chain_version(self.src_chain.id().to_string().as_str()),
+            u64::from(*self.all_events[0].height()),
+        );
+
+        // Check if a consensus state at event_height + 1 exists on destination chain already
+        // and update src_height
+        if self
+            .dst_chain()
+            .proven_client_consensus(
+                self.dst_client_id(),
+                event_height.increment(),
+                Height::default(),
+            )
+            .is_ok()
+        {
+            self.src_height = event_height;
+            return Ok(());
+        }
+
+        // Get the latest trusted height from the client state on destination.
+        let trusted_height = self
+            .dst_chain()
+            .query_client_state(self.dst_client_id(), Height::default())
+            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?
+            .latest_height();
+
+        // event_height + 1 is the height at which the client on destination chain
+        // should be updated, unless ...
+        if trusted_height > event_height.increment() {
+            // ... client is already at a higher height.
+            let new_height = trusted_height
+                .decrement()
+                .map_err(|e| LinkError::Failed(e.to_string()))?;
+            self.src_height = new_height;
+            self.all_events
+                .iter_mut()
+                .for_each(|ev| ev.set_height(&new_height));
+        } else {
+            self.src_height = event_height;
+        }
+        Ok(())
     }
 
     fn reset_buffers(&mut self) {
@@ -285,9 +334,8 @@ impl RelayPath {
         // Send a multi message transaction with these, prepending the client update
         for batch in self.subscription.try_iter().collect::<Vec<_>>().iter() {
             // collect relevant events in self.all_events
-            for event in batch.events.iter() {
-                self.collect_event(event);
-            }
+            self.collect_events(&batch.events);
+            self.adjust_events_height()?;
 
             if self.all_events.is_empty() {
                 continue;
@@ -321,18 +369,28 @@ impl RelayPath {
         let mut src_tx_events = vec![];
         let mut dst_tx_events = vec![];
 
-        // Clear all_events and collect either the src and/ or dst input events if Tx-es fail
+        // Clear all_events and collect the src and dst input events if Tx-es fail
         self.all_events = vec![];
         if !self.packet_msgs.is_empty() {
             let update_height = self.src_height.increment();
-            let mut msgs_to_send = self.build_update_client_on_dst(update_height)?;
+            let mut msgs_to_send = vec![];
+
+            // Check if a consensus state at update_height exists on destination chain already
+            if self
+                .dst_chain()
+                .proven_client_consensus(self.dst_client_id(), update_height, Height::default())
+                .is_err()
+            {
+                msgs_to_send = self.build_update_client_on_dst(update_height)?;
+                info!("sending update client at height {:?}", update_height,);
+            }
             msgs_to_send.append(&mut self.packet_msgs);
             info!(
-                "sending {:?} messages to {}, update client at height {:?}",
+                "sending {} messages to {}",
                 msgs_to_send.len(),
-                self.dst_chain.id(),
-                update_height,
+                self.dst_chain.id()
             );
+
             dst_tx_events = self.dst_chain.send_msgs(msgs_to_send)?;
             info!("result {:?}\n", dst_tx_events);
 
@@ -521,8 +579,9 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
         for event in self.all_events.iter_mut() {
-            event.set_height(self.src_height);
+            event.set_height(&self.src_height);
         }
+
         for event in self.all_events.clone() {
             self.handle_packet_event(&event)?;
         }
@@ -539,7 +598,7 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
         for event in self.all_events.iter_mut() {
-            event.set_height(self.src_height);
+            event.set_height(&self.src_height);
         }
         for event in self.all_events.clone() {
             self.handle_packet_event(&event)?;
@@ -724,13 +783,9 @@ impl RelayPath {
             u64::from(event.height),
         );
 
-        let dst_height = self
-            .dst_chain
-            .query_latest_height()
-            .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
         let dst_channel = self
             .dst_chain
-            .query_channel(self.dst_port_id(), self.dst_channel_id(), dst_height)
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), self.dst_height)
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))?;
 
         if dst_channel.state_matches(&ChannelState::Closed) {
@@ -738,7 +793,8 @@ impl RelayPath {
                 None,
                 Some(self.build_timeout_on_close_packet(&event.packet, self.dst_height)?),
             ))
-        } else if packet.timeout_height != Height::zero() && packet.timeout_height < dst_height {
+        } else if packet.timeout_height != Height::zero() && packet.timeout_height < self.dst_height
+        {
             Ok((
                 None,
                 Some(self.build_timeout_packet(&event.packet, self.dst_height)?),
