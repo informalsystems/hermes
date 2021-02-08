@@ -1,4 +1,0 @@
-- conn open try does not increment the connection id counter; looks like a bug
-- the model allows a conn open try to succeed without a conn open try (likely because we don't have proofs)
-  - one possible solution is the following; let A be the chain where a conn open init occurs and B the counterparty chain; when processing the conn open init, A should write a proof of it to B's set of proofs; a coon open try at B should then only succeed if B's set of proofs contains a proof of the corresponding conn open init
-- TLC doesn't finish with `MaxClientsPerChain = 2`

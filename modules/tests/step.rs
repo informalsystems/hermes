@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer};
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Debug;
 
@@ -25,32 +25,6 @@ pub struct Action {
 
     #[serde(alias = "clientHeight")]
     pub client_height: Option<u64>,
-
-    #[serde(alias = "counterpartyClientId")]
-    pub counterparty_client_id: Option<u64>,
-
-    #[serde(alias = "connectionId")]
-    #[serde(default, deserialize_with = "deserialize_connection_id")]
-    pub connection_id: Option<u64>,
-
-    #[serde(alias = "counterpartyConnectionId")]
-    #[serde(default, deserialize_with = "deserialize_connection_id")]
-    pub counterparty_connection_id: Option<u64>,
-}
-
-/// On the model, a non-existing `connection_id` is represented with -1.
-/// For this reason, this function maps a `Some(-1)` to a `None`.
-fn deserialize_connection_id<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let connection_id: Option<i64> = Deserialize::deserialize(deserializer)?;
-    let connection_id = if connection_id == Some(-1) {
-        None
-    } else {
-        connection_id.map(|connection_id| connection_id as u64)
-    };
-    Ok(connection_id)
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -58,8 +32,6 @@ pub enum ActionType {
     None,
     ICS02CreateClient,
     ICS02UpdateClient,
-    ICS03ConnectionOpenInit,
-    ICS03ConnectionOpenTry,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
@@ -69,12 +41,6 @@ pub enum ActionOutcome {
     ICS02UpdateOK,
     ICS02ClientNotFound,
     ICS02HeaderVerificationFailure,
-    ICS03ConnectionOpenInitOK,
-    ICS03MissingClient,
-    ICS03ConnectionOpenTryOK,
-    ICS03InvalidConsensusHeight,
-    ICS03ConnectionNotFound,
-    ICS03ConnectionMismatch,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
