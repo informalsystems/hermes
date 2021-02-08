@@ -84,7 +84,7 @@ impl From<MsgChannelOpenInit> for RawMsgChannelOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
-    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics04_channel::channel::test_util::{get_dummy_raw_channel_end, get_dummy_raw_channel_end_ics26};
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_with_missing_connection;
     use crate::test_utils::get_dummy_bech32_account;
     //use crate::ics04_channel::channel::State;
@@ -94,6 +94,15 @@ pub mod test_util {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),
             channel: Some(get_dummy_raw_channel_end()),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+
+    /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
+    pub fn get_dummy_raw_msg_chan_open_init_ics26() -> RawMsgChannelOpenInit {
+        RawMsgChannelOpenInit {
+            port_id: "port".to_string(),
+            channel: Some(get_dummy_raw_channel_end_ics26()),
             signer: get_dummy_bech32_account(),
         }
     }

@@ -138,7 +138,7 @@ impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
 
-    use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
+    use crate::ics04_channel::channel::test_util::{get_dummy_raw_channel_end, get_dummy_raw_channel_end_ics26};
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end_with_counterparty;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
@@ -152,12 +152,28 @@ pub mod test_util {
             counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                revision_number: 0,
+                revision_number:1,
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),
         }
     }
+
+        /// Returns a dummy `RawMsgChannelOpenTry`, for testing only!
+        pub fn get_dummy_raw_msg_chan_open_try_ics26(proof_height: u64) -> RawMsgChannelOpenTry {
+            RawMsgChannelOpenTry {
+                port_id: "port".to_string(),
+                previous_channel_id: "".to_string(),
+                channel: Some(get_dummy_raw_channel_end_ics26()),
+                counterparty_version: "".to_string(),
+                proof_init: get_dummy_proof(),
+                proof_height: Some(Height {
+                    revision_number: 0,
+                    revision_height: proof_height,
+                }),
+                signer: get_dummy_bech32_account(),
+            }
+        }
 
     pub fn get_dummy_raw_msg_chan_open_try_with_counterparty(
         proof_height: u64,
@@ -169,7 +185,7 @@ pub mod test_util {
             counterparty_version: "".to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
-                revision_number: 0,
+                revision_number: 1,
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),

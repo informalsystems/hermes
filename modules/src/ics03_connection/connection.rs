@@ -115,8 +115,8 @@ impl ConnectionEnd {
     }
 
     /// Setter for the `version` field.
-    /// TODO: A ConnectionEnd should only store one version.
     pub fn set_version(&mut self, new_version: Version) {
+        self.versions = Vec::new();
         self.versions.insert(0, new_version)
     }
 

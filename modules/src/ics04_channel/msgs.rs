@@ -5,6 +5,8 @@ use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 
 // Opening handshake messages.
 pub mod chan_open_ack;
@@ -29,4 +31,6 @@ pub enum ChannelMsg {
     ChannelOpenTry(MsgChannelOpenTry),
     ChannelOpenAck(MsgChannelOpenAck),
     ChannelOpenConfirm(MsgChannelOpenConfirm),
+    ChannelCloseInit(MsgChannelCloseInit),
+    ChannelCloseConfirm(MsgChannelCloseConfirm),
 }

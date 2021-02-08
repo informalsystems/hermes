@@ -134,6 +134,22 @@ pub mod test_util {
             counterparty_version: "v1".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
+                revision_number: 1,
+                revision_height: proof_height,
+            }),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+
+    /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
+    pub fn get_dummy_raw_msg_chan_open_ack_ics26(proof_height: u64) -> RawMsgChannelOpenAck {
+        RawMsgChannelOpenAck {
+            port_id: "port".to_string(),
+            channel_id: "defaultChannel-0".to_string(),
+            counterparty_channel_id: "defaultChannel-0".to_string(),
+            counterparty_version: "v1".to_string(),
+            proof_try: get_dummy_proof(),
+            proof_height: Some(Height {
                 revision_number: 0,
                 revision_height: proof_height,
             }),

@@ -1,4 +1,4 @@
-//! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
+//! Protocol logic specific to ICS4 messages of type `MsgChannelOpenConfirm`.
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -8,12 +8,13 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_proofs;
 use crate::ics04_channel::handler::ChannelResult;
-use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use Kind::ConnectionNotOpen;
+
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
-    msg: MsgChannelOpenAck,
+    msg: MsgChannelOpenConfirm,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -25,13 +26,11 @@ pub(crate) fn process(
 
     // Validate that the channel end is in a state where it can be ack.
 
-    if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
+    if !channel_end.state_matches(&State::TryOpen){
         return Err(Into::<Error>::into(Kind::InvalidChannelState(
             msg.channel_id().clone(),
         )));
     }
-    //?? Why don't we check that the  channel_end's version matches 
-    // the counterparty_version received in the message.
 
     //Channel capabilities
     let cap = ctx.port_capability(&msg.port_id().clone());
@@ -66,19 +65,19 @@ pub(crate) fn process(
     let expected_counterparty =
         Counterparty::new(msg.port_id().clone(), Some(msg.channel_id().clone()));
 
-    let counterparty = conn.counterparty();
-    let ccid = counterparty.connection_id().ok_or_else(|| {
+    let connection_counterparty = conn.counterparty();
+    let ccid = connection_counterparty.connection_id().ok_or_else(|| {
         Kind::UndefinedConnectionCounterparty(channel_end.connection_hops()[0].clone())
     })?;
 
     let expected_connection_hops = vec![ccid.clone()];
 
     let expected_channel_end = ChannelEnd::new(
-        State::TryOpen,
+        State::Open,
         *channel_end.ordering(),
         expected_counterparty,
         expected_connection_hops,
-        msg.counterparty_version().clone(),
+        channel_end.version().clone(),
     );
     //2. Verify proofs
     verify_proofs(
@@ -90,11 +89,10 @@ pub(crate) fn process(
     )
     .map_err(|e| Kind::FailedChanneOpenAckVerification.context(e))?;
 
-    output.log("success: channel open try ");
+    output.log("success: channel open confirm ");
 
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
-    channel_end.set_version(msg.counterparty_version().clone());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
@@ -107,7 +105,7 @@ pub(crate) fn process(
         channel_id: Some(msg.channel_id().clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenAckChannel(event_attributes.into()));
+    output.emit(IBCEvent::OpenConfirmChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -122,16 +120,14 @@ mod tests {
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::version::get_compatible_versions;
 
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
-    use crate::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
-    use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+    use crate::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
+    use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
@@ -141,7 +137,7 @@ mod tests {
     use crate::Height;
 
     #[test]
-    fn chan_open_ack_msg_processing() {
+    fn chan_open_confirm_msg_processing() {
         struct Test {
             name: String,
             ctx: MockContext,
@@ -152,147 +148,60 @@ mod tests {
         let client_consensus_state_height = 10;
         let host_chain_height = Height::new(1, 35);
 
+        
         let context = MockContext::default();
-
-        let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
-
-        let conn_end = ConnectionEnd::new(
-            ConnectionState::Open,
-            msg_conn_init.client_id().clone(),
-            ConnectionCounterparty::new(
-                msg_conn_init.counterparty().client_id().clone(),
-                Some(ConnectionId::from_str("defaultConnection-1").unwrap()),
-                msg_conn_init.counterparty().prefix().clone(),
-            ),
-            get_compatible_versions(),
-            msg_conn_init.delay_period,
-        );
-
-        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
-        let cid = match ccid {
-            Ok(v) => v,
-            Err(_e) => ConnectionId::default(),
-        };
-
-        let mut connection_vec0 = Vec::new();
-        connection_vec0.insert(
-            0,
-            match <ConnectionId as FromStr>::from_str("defaultConnection-0") {
-                Ok(a) => a,
-                _ => unreachable!(),
-            },
-        );
-
-
-
+        
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,
             host_chain_height.revision_height,
         ))
         .unwrap();
 
-        let msg_chan_ack =
-            MsgChannelOpenAck::try_from(get_dummy_raw_msg_chan_open_ack(proof_height)).unwrap();
+        let conn_end = ConnectionEnd::new(
+            ConnectionState::Open,
+            msg_conn_try.client_id().clone(),
+            ConnectionCounterparty::new(
+                msg_conn_try.counterparty().client_id().clone(),
+                Some(ConnectionId::from_str("defaultConnection-0").unwrap()),
+                msg_conn_try.counterparty().prefix().clone(),
+            ),
+            get_compatible_versions(),
+            msg_conn_try.delay_period,
+        );
+
+        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-1");
+        let cid = match ccid {
+            Ok(v) => v,
+            Err(_e) => ConnectionId::default(),
+        };
+
+        let mut connection_vec1 = Vec::new();
+        connection_vec1.insert(
+            0,
+            match <ConnectionId as FromStr>::from_str("defaultConnection-1") {
+                Ok(a) => a,
+                _ => unreachable!(),
+            },
+        );
+
+        let msg_chan_confirm =
+            MsgChannelOpenConfirm::try_from(get_dummy_raw_msg_chan_open_confirm(proof_height)).unwrap();
 
         let msg_chan_try =
             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height)).unwrap();
 
         let chan_end = ChannelEnd::new(
-            State::Init,
+            State::TryOpen,
             *msg_chan_try.channel.ordering(),
             Counterparty::new(
-                msg_chan_ack.port_id().clone(),
-                Some(msg_chan_ack.channel_id().clone()),
+                msg_chan_confirm.port_id().clone(),
+                Some(msg_chan_confirm.channel_id().clone()),
             ),
-            connection_vec0.clone(),
-            msg_chan_try.channel.version(),
-        );
-
-        let failed_chan_end = ChannelEnd::new(
-            State::Open,
-            *msg_chan_try.channel.ordering(),
-            Counterparty::new(
-                msg_chan_ack.port_id().clone(),
-                Some(msg_chan_ack.channel_id().clone()),
-            ),
-            connection_vec0,
+            connection_vec1.clone(),
             msg_chan_try.channel.version(),
         );
 
         let tests: Vec<Test> = vec![
-            Test {
-                name: "Processing fails because no channel exists in the context".to_string(),
-                ctx: context.clone(),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
-                want_pass: false,
-            },
-            Test {
-                name: "Processing fails because the channel is in the wrong state".to_string(),
-                ctx: context
-                    .clone()
-                    .with_client(
-                        msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
-                    )
-                    .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
-                        failed_chan_end,
-                    ),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
-                want_pass: false,
-            },
-            Test {
-                name: "Processing fails because port does not have a capability associate"
-                    .to_string(),
-                ctx: context
-                    .clone()
-                    .with_client(
-                        msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
-                    )
-                    .with_connection(cid.clone(), conn_end.clone())
-                    .with_channel_init(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
-                        chan_end.clone(),
-                    ),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
-                want_pass: false,
-            },
-            Test {
-                name: "Processing fails because a connection does exist".to_string(),
-                ctx: context
-                    .clone()
-                    .with_client(
-                        msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
-                    )
-                    .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
-                        chan_end.clone(),
-                    ),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
-                want_pass: false,
-            },
-            Test {
-                name: "Processing fails due to missing client state ".to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(cid.clone(), conn_end.clone())
-                    .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
-                        chan_end.clone(),
-                    ),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack.clone()),
-                want_pass: false,
-            },
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context //  .clone()
@@ -301,13 +210,13 @@ mod tests {
                         Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
-                    .with_port_capability(msg_chan_ack.port_id().clone())
+                    .with_port_capability(msg_chan_confirm.port_id().clone())
                     .with_channel_init(
-                        msg_chan_ack.port_id().clone(),
-                        msg_chan_ack.channel_id().clone(),
+                        msg_chan_confirm.port_id().clone(),
+                        msg_chan_confirm.channel_id().clone(),
                         chan_end,
                     ),
-                msg: ChannelMsg::ChannelOpenAck(msg_chan_ack),
+                msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
                 want_pass: true,
             },
         ]
@@ -322,7 +231,7 @@ mod tests {
                     assert_eq!(
                             test.want_pass,
                             true,
-                            "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                            "chan_open_confirm: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                             test.name,
                             test.msg.clone(),
                             test.ctx.clone()
@@ -335,7 +244,7 @@ mod tests {
                     assert_eq!(res.channel_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenAckChannel(_)));
+                        assert!(matches!(e, &IBCEvent::OpenConfirmChannel(_)));
                     }
                 }
                 Err(e) => {

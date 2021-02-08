@@ -198,7 +198,9 @@ mod tests {
             want_pass: bool,
         }
         let proof_height = 10;
-
+        let client_consensus_state_height = 10;
+        let host_chain_height = Height::new(1, 35);
+        
         //chan_id is used to add a channel to the context
         let cchan_id2 = <ChannelId as FromStr>::from_str(&"channel24".to_string());
 
@@ -218,8 +220,7 @@ mod tests {
             Err(_e) => None,
         };
 
-        let proof_height = 10;
-
+        
         let context = MockContext::default();
 
         let msg_conn_init =
@@ -281,8 +282,7 @@ mod tests {
             msg_chan_try2.channel().version(),
         );
 
-        let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(0, 35);
+ 
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,
@@ -391,7 +391,7 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), init_conn_end.clone())
                     .with_port_capability(
@@ -416,7 +416,7 @@ mod tests {
                 ctx: context
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid, init_conn_end)
                     .with_port_capability(
