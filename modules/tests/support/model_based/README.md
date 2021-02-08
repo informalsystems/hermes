@@ -26,7 +26,8 @@ Because the invariant is wrong, `Apalache` will find a counterexample showing th
 
 ### Current limitations
 
-The counterexamples currently produced by `Apalache` are not easy to parse and have traditionally required tools like [`jsonatr`](https://github.com/informalsystems/jsonatr). Fortunately, [that will change soon](https://github.com/informalsystems/apalache/issues/530), and `Apalache` will be able to produce counterexamples (like those in [tests/](tests/), which are currently generated manually) that can be easily mapped to Rust (see [step.rs](../../step.rs)).
+The counterexamples currently produced by `Apalache` are not easy to parse and have traditionally required tools like [`jsonatr`](https://github.com/informalsystems/jsonatr). Fortunately, [that will change soon](https://github.com/informalsystems/apalache/issues/530), and `Apalache` will be able to produce counterexamples like those in [tests/](tests/).
+These are currently generated manually, but can be easily mapped to Rust (see [step.rs](../../step.rs)).
 
 ### Running the model-based tests
 
