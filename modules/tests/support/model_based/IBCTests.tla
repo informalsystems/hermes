@@ -2,21 +2,21 @@
 
 EXTENDS IBC
 
-ICS02CreateOK ==
+ICS02CreateOKTest ==
     /\ actionOutcome = "ICS02CreateOK"
 
-ICS02UpdateOK ==
+ICS02UpdateOKTest ==
     /\ actionOutcome = "ICS02UpdateOK"
 
-ICS02ClientNotFound ==
+ICS02ClientNotFoundTest ==
     /\ actionOutcome = "ICS02ClientNotFound"
 
-ICS02HeaderVerificationFailure ==
+ICS02HeaderVerificationFailureTest ==
     /\ actionOutcome = "ICS02HeaderVerificationFailure"
 
-ICS02CreateOKTest == ~ICS02CreateOK
-ICS02UpdateOKTest == ~ICS02UpdateOK
-ICS02ClientNotFoundTest == ~ICS02ClientNotFound
-ICS02HeaderVerificationFailureTest == ~ICS02HeaderVerificationFailure
+ICS02CreateOKTestNeg == ~ICS02CreateOKTest
+ICS02UpdateOKTestNeg == ~ICS02UpdateOKTest
+ICS02ClientNotFoundTestNeg == ~ICS02ClientNotFoundTest
+ICS02HeaderVerificationFailureTestNeg == ~ICS02HeaderVerificationFailureTest
 
 ===============================================================================

@@ -251,7 +251,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
 const TESTS_DIR: &str = "tests/support/model_based/tests";
 
 #[test]
-fn main() {
+fn model_based() {
     let tests = vec!["ICS02UpdateOKTest", "ICS02HeaderVerificationFailureTest"];
 
     for test in tests {
