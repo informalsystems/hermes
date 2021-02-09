@@ -1,6 +1,13 @@
 # Changelog
 
-[comment]: <> (## Unreleased Changes)
+## Unreleased Changes
+
+### BUG FIXES:
+
+- [relayer-cli]
+  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
+
+[#614]: https://github.com/informalsystems/ibc-rs/issues/614
 
 ## v0.1.0
 *February 4, 2021*

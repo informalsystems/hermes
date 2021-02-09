@@ -4,13 +4,13 @@ Using the `light` command you can add and remove light client peer information t
 
 #### Show usage
 
-To see the available subcommands for the `light` command run:
+To see the available sub-commands for the `light` command run:
 
 ```shell
 hermes help light
 ```
 
-There are two subcommands supported `add` and `rm`:
+There are two sub-commands supported `add` and `rm`:
 
 ```shell
 USAGE:

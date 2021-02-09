@@ -52,7 +52,7 @@ This repo contains the TLA+ specification and Rust implementation for the IBC
 modules and relayer. If you're interested in contributing, please comment on an issue or open a new
 one!
 
-See also [CONTRIBUTING.MD](./CONTRIBUTING.md).
+See also [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Versioning
 
@@ -62,9 +62,9 @@ under active development.
 ## Resources
 
 - [IBC Website](https://cosmos.network/ibc)
-- [IBC Specification](https://github.com/cosmos/ics)
-- [IBC Modules in Go](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc)
-- [IBC Relayer in Go](https://github.com/iqlusioninc/relayer)
+- [IBC Specification](https://github.com/cosmos/ics) <!-- this will change to /ibc -->
+- [IBC Modules in Go](https://github.com/cosmos/cosmos-sdk/tree/master/x/ibc) <!-- this will change to a TBD repo, see https://github.com/cosmos/cosmos-sdk/issues/8501 -->
+- [IBC Relayer in Go](https://github.com/cosmos/relayer)
 
 ## License
 

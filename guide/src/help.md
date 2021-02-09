@@ -108,7 +108,7 @@ hermes -c config_example.toml tx raw conn-init ibc-0 ibc-1 07-tendermint-0 07-te
 ## Parametrizing the log output level
 
 The relayer configuration file permits parametrization of output verbosity via the knob called `log_level`.
-This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overriden in all commands
+This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overridden in all commands
 with the `-c` flag, eg. `hermes -c ./path/to/my/config.toml some command`.
 
 Relevant snippet:

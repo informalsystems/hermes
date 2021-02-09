@@ -2,6 +2,10 @@
 
 The channel close handshake involves two steps: init and confirm.
 
+## Table of Contents
+
+<!-- toc -->
+
 ## Channel Close Init
 
 Use the `chan-close-init` command to initialize the closure of a channel.

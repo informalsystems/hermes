@@ -1,3 +1,4 @@
+
 # Packet Queries
 
 Use the `query packet` commands to query information about packets.
@@ -18,6 +19,11 @@ SUBCOMMANDS:
     unreceived-packets query unreceived packets
     unreceived-acks query unreceived acknowledgments
 ```
+
+## Table of Contents
+
+<!-- toc -->
+
 
 ## Packet Commitments
 

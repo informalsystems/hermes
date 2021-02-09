@@ -164,19 +164,19 @@ WritePacketCommitment(chain, packet) ==
                 !.connectionEnd.channelEnd.nextSendSeq = channelEnd.nextSendSeq + 1
               ]
          \* otherwise, do not update the chain store
-         ELSE chain
-    ELSE IF \* if the channel is unordered, 
-            \* add a packet committment in the chain store
-            /\ channelEnd.order = "UNORDERED"
-         THEN [chain EXCEPT 
-                !.packetCommitments =  
-                    chain.packetCommitments \union {[portID |-> packet.srcPortID,
-                                                     channelID |-> packet.srcChannelID,
-                                                     sequence |-> packet.sequence,
-                                                     timeoutHeight |-> packet.timeoutHeight]}
-              ]
-         \* otherwise, do not update the chain store
-         ELSE chain
+         ELSE IF \* if the channel is unordered, 
+                 \* add a packet committment in the chain store
+                 /\ channelEnd.order = "UNORDERED"
+              THEN [chain EXCEPT 
+                    !.packetCommitments =  
+                        chain.packetCommitments \union {[portID |-> packet.srcPortID,
+                                                         channelID |-> packet.srcChannelID,
+                                                         sequence |-> packet.sequence,
+                                                         timeoutHeight |-> packet.timeoutHeight]}
+                   ]
+              \* otherwise, do not update the chain store
+              ELSE chain
+    ELSE chain              
 
 \* write acknowledgements to chain store
 WriteAcknowledgement(chain, packet) ==
@@ -341,5 +341,5 @@ TimeoutOnClose(chain, counterpartyChain, packet, proofHeight) ==
         
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:31:13 CET 2020 by ilinastoilkovska
+\* Last modified Fri Jan 29 15:44:44 CET 2021 by ilinastoilkovska
 \* Created Wed Jul 29 14:30:04 CEST 2020 by ilinastoilkovska

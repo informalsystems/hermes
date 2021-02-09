@@ -15,7 +15,7 @@ EXTENDS Integers, FiniteSets, IBCCoreDefinitions
 HandleCreateClient(chainID, chain, datagrams) == 
     \* get "CreateClient" datagrams with valid clientID
     LET createClientDgrs == {dgr \in datagrams : 
-                            /\ dgr.type = "CreateClient"
+                            /\ dgr.type = "ClientCreate"
                             /\ dgr.clientID = GetCounterpartyClientID(chainID)} IN
     \* get heights in datagrams with correct counterparty clientID for chainID
     LET createClientHeights == AsSetInt({dgr.height : dgr \in createClientDgrs}) IN  
@@ -71,5 +71,5 @@ HandleClientUpdate(chainID, chain, datagrams) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Nov 26 17:40:19 CET 2020 by ilinastoilkovska
+\* Last modified Tue Feb 02 10:47:00 CET 2021 by ilinastoilkovska
 \* Created Tue Apr 07 16:42:47 CEST 2020 by ilinastoilkovska

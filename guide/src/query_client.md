@@ -1,3 +1,8 @@
+
+# Table of Contents
+
+<!-- toc -->
+
 # Query Clients
 Use the `query clients` command to query the identifiers of all clients on a given chain.
 

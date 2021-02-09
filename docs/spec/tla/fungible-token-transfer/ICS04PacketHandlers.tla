@@ -141,6 +141,9 @@ WritePacketCommitment(chain, packet) ==
 
     IF \* channel end is neither null nor closed
        /\ channelEnd.state \notin {"UNINIT", "CLOSED"}
+       \* there exists a counterparty client 
+       \* (used to abstract the check if the connection end is not in UNINIT) 
+       /\ latestClientHeight /= 0
        \* if the packet has valid port and channel IDs
        /\ packet.srcPortID = channelEnd.portID
        /\ packet.srcChannelID = channelEnd.channelID
@@ -321,5 +324,5 @@ TimeoutOnClose(chain, counterpartyChain, accounts, escrowAccounts,
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 16:59:04 CET 2020 by ilinastoilkovska
+\* Last modified Mon Feb 01 11:49:35 CET 2021 by ilinastoilkovska
 \* Created Thu Oct 19 18:29:58 CET 2020 by ilinastoilkovska

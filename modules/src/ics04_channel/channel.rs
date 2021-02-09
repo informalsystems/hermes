@@ -324,6 +324,8 @@ pub struct QueryPacketEventDataRequest {
     pub event_id: IBCEventType,
     pub source_channel_id: ChannelId,
     pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
 }
