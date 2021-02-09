@@ -1,29 +1,50 @@
-use eyre::{eyre, Context, Result};
 use serde::de::DeserializeOwned;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::BufReader;
-use std::path::Path;
+use thiserror::Error;
 
+#[derive(Error, Debug)]
+pub enum ModelatorError<Executor: Debug, Step: Debug> {
+    #[error("test '{path}' not found: {error}")]
+    TestNotFound { path: String, error: String },
+    #[error("test '{path}' could not be deserialized: {error}")]
+    InvalidTest { path: String, error: String },
+    #[error("test '{path}' failed on step {step_index}/{step_count}:\nstep:\n{step:#?}\nexecutor:\n{executor:#?}")]
+    FailedTest {
+        path: String,
+        step_index: usize,
+        step_count: usize,
+        step: Step,
+        executor: Executor,
+    },
+}
 pub trait TestExecutor<S> {
     fn initial_step(&mut self, step: S) -> bool;
     fn next_step(&mut self, step: S) -> bool;
 }
 
-pub fn test_driver<Executor, Step, P>(mut executor: Executor, path: P) -> Result<()>
+pub fn test<Executor, State>(
+    mut executor: Executor,
+    path: &str,
+) -> Result<(), ModelatorError<Executor, State>>
 where
-    Executor: TestExecutor<Step> + Debug,
-    Step: DeserializeOwned + Debug + Clone,
-    P: AsRef<Path>,
+    Executor: TestExecutor<State> + Debug,
+    State: DeserializeOwned + Debug + Clone,
 {
     // open test file
-    let file = File::open(path.as_ref())
-        .wrap_err_with(|| format!("test {:?} not found.", path.as_ref()))?;
+    let file = File::open(path).map_err(|error| ModelatorError::TestNotFound {
+        path: path.to_string(),
+        error: error.to_string(),
+    })?;
     let reader = BufReader::new(file);
 
     // parse test file
-    let steps: Vec<Step> = serde_json::de::from_reader(reader)
-        .wrap_err_with(|| format!("test {:?} could not be deserialized", path.as_ref()))?;
+    let steps: Vec<State> =
+        serde_json::de::from_reader(reader).map_err(|error| ModelatorError::InvalidTest {
+            path: path.to_string(),
+            error: error.to_string(),
+        })?;
     let step_count = steps.len();
 
     for (i, step) in steps.into_iter().enumerate() {
@@ -35,14 +56,13 @@ where
         };
 
         if !ok {
-            return Err(eyre!(
-                "test {:?} failed on step {}/{}:\n{:#?}\n\nexecutor:\n{:#?}",
-                path.as_ref(),
-                i + 1,
+            return Err(ModelatorError::FailedTest {
+                path: path.to_string(),
+                step_index: i + 1,
                 step_count,
                 step,
-                executor
-            ));
+                executor,
+            });
         }
     }
     Ok(())
