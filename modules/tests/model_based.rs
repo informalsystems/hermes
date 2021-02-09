@@ -26,7 +26,7 @@ use tendermint::account::Id as AccountId;
 #[derive(Debug)]
 struct IBCTestExecutor {
     // mapping from chain identifier to its context
-    contexts: HashMap<String, MockContext>,
+    contexts: HashMap<ChainId, MockContext>,
 }
 
 impl IBCTestExecutor {
@@ -39,9 +39,10 @@ impl IBCTestExecutor {
     /// Create a `MockContext` for a given `chain_id`.
     /// Panic if a context for `chain_id` already exists.
     fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
+        let chain_id = Self::chain_id(chain_id);
         let max_history_size = 1;
         let ctx = MockContext::new(
-            ChainId::new(chain_id.clone(), Self::epoch()),
+            chain_id.clone(),
             HostType::Mock,
             max_history_size,
             Height::new(Self::epoch(), initial_height),
@@ -51,17 +52,17 @@ impl IBCTestExecutor {
 
     /// Returns a reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
-    fn chain_context(&self, chain_id: &String) -> &MockContext {
+    fn chain_context(&self, chain_id: String) -> &MockContext {
         self.contexts
-            .get(chain_id)
+            .get(&Self::chain_id(chain_id))
             .expect("chain context should have been initialized")
     }
 
     /// Returns a mutable reference to the `MockContext` of a given `chain_id`.
     /// Panic if the context for `chain_id` is not found.
-    fn chain_context_mut(&mut self, chain_id: &String) -> &mut MockContext {
+    fn chain_context_mut(&mut self, chain_id: String) -> &mut MockContext {
         self.contexts
-            .get_mut(chain_id)
+            .get_mut(&Self::chain_id(chain_id))
             .expect("chain context should have been initialized")
     }
 
@@ -90,6 +91,10 @@ impl IBCTestExecutor {
             .expect("ICS26 source should be an handler error")
             .kind()
             .clone()
+    }
+
+    fn chain_id(chain_id: String) -> ChainId {
+        ChainId::new(chain_id, Self::epoch())
     }
 
     // TODO: this is sometimes called version/revision number but seems
@@ -130,7 +135,7 @@ impl IBCTestExecutor {
     /// Check that chain heights match the ones in the model.
     fn check_chain_heights(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
-            let ctx = self.chain_context(&chain_id);
+            let ctx = self.chain_context(chain_id);
             ctx.query_latest_height() == Self::height(chain.height)
         })
     }
@@ -170,7 +175,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     .expect("create client action should have a client height");
 
                 // get chain's context
-                let ctx = self.chain_context_mut(&chain_id);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
@@ -205,7 +210,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     .expect("update client action should have a client height");
 
                 // get chain's context
-                let ctx = self.chain_context_mut(&chain_id);
+                let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
