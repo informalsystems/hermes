@@ -28,8 +28,6 @@ pub(crate) fn process(
     if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
         return Err(Kind::InvalidChannelState(msg.channel_id().clone()).into());
     }
-    //?? Why don't we check that the  channel_end's version matches
-    // the counterparty_version received in the message.
 
     // Channel capabilities
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
