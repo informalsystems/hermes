@@ -47,7 +47,7 @@ apalache-mc check --inv=ICS02UpdateOKTestNeg IBCTests.tla
 
 (Again, the above command automatically reads what we have defined in [IBCTests.cfg](support/model_based/IBCTests.cfg).)
 
-Because the invariant is wrong, `Apalache` will find a counterexample showing that it is indeed possible that a light-client is sucessfully updated to a new height. This counterexample is our test.
+Because the invariant is wrong, `Apalache` will find a counterexample showing that it is indeed possible that a client is sucessfully updated to a new height. This counterexample is our test.
 
 ### Current limitations
 
