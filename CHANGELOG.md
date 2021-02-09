@@ -4,7 +4,7 @@
 
 ### FEATURES
 - [modules]
-  - Implementation the channel message handlers ([#316])
+  -Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#618])
   
 ### BUG FIXES:
 
@@ -12,6 +12,7 @@
   - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
 
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#618]: https://github.com/informalsystems/ibc-rs/issues/316
 
 ## v0.1.0
 *February 4, 2021*
