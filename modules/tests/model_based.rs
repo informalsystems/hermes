@@ -45,7 +45,7 @@ impl IBCTestExecutor {
             chain_id.clone(),
             HostType::Mock,
             max_history_size,
-            Height::new(Self::epoch(), initial_height),
+            Height::new(Self::revision(), initial_height),
         );
         assert!(self.contexts.insert(chain_id, ctx).is_none());
     }
@@ -94,12 +94,10 @@ impl IBCTestExecutor {
     }
 
     fn chain_id(chain_id: String) -> ChainId {
-        ChainId::new(chain_id, Self::epoch())
+        ChainId::new(chain_id, Self::revision())
     }
 
-    // TODO: this is sometimes called version/revision number but seems
-    //       unrelated with the `Version` type; is that so?
-    fn epoch() -> u64 {
+    fn revision() -> u64 {
         0
     }
 
@@ -109,7 +107,7 @@ impl IBCTestExecutor {
     }
 
     fn height(height: u64) -> Height {
-        Height::new(Self::epoch(), height)
+        Height::new(Self::revision(), height)
     }
 
     fn mock_header(height: u64) -> MockHeader {
