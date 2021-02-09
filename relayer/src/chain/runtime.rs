@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
 
@@ -78,15 +75,13 @@ pub struct ChainRuntime<C: Chain> {
     light_client: Box<dyn LightClient<C>>,
 
     #[allow(dead_code)]
-    rt: Arc<Mutex<TokioRuntime>>, // Making this future-proof, so we keep the runtime around.
+    rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
 
 impl<C: Chain + Send + 'static> ChainRuntime<C> {
     /// Spawns a new runtime for a specific Chain implementation.
     pub fn spawn(config: ChainConfig) -> Result<(Box<dyn ChainHandle>, Threads), Error> {
-        let rt = Arc::new(Mutex::new(
-            TokioRuntime::new().map_err(|e| Kind::Io.context(e))?,
-        ));
+        let rt = Arc::new(TokioRuntime::new().map_err(|e| Kind::Io.context(e))?);
 
         // Similar to `from_config`.
         let chain = C::bootstrap(config, rt.clone())?;
@@ -114,7 +109,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> (Box<dyn ChainHandle>, thread::JoinHandle<()>) {
         let chain_runtime = Self::new(chain, light_client, event_receiver, rt);
 
@@ -132,7 +127,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         chain: C,
         light_client: Box<dyn LightClient<C>>,
         event_receiver: channel::Receiver<EventBatch>,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
@@ -635,7 +630,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
     ) -> Result<(), Error> {
         let result =
             self.chain
-                .build_packet_proofs(packet_type, &port_id, &channel_id, sequence, height);
+                .build_packet_proofs(packet_type, port_id, channel_id, sequence, height);
 
         reply_to
             .send(result)

@@ -9,11 +9,13 @@ EXTENDS Integers, FiniteSets, Sequences, IBCCoreDefinitions
 
 CONSTANTS GenerateClientDatagrams, \* toggle generation of client datagrams
           GenerateConnectionDatagrams, \* toggle generation of connection datagrams
-          GenerateChannelDatagrams \* toggle generation of channel datagrams
+          GenerateChannelDatagrams, \* toggle generation of channel datagrams
+          GeneratePacketDatagrams \* toggle generation of packet datagrams
 
 ASSUME /\ GenerateClientDatagrams \in BOOLEAN 
        /\ GenerateConnectionDatagrams \in BOOLEAN 
-       /\ GenerateChannelDatagrams \in BOOLEAN 
+       /\ GenerateChannelDatagrams \in BOOLEAN
+       /\ GeneratePacketDatagrams \in BOOLEAN
 
 CONSTANTS MaxHeight, \* set of possible heights of the chains in the system
           MaxVersion, \* maximal connection / channel version (we assume versions are integers)
@@ -30,7 +32,8 @@ VARIABLES chainAstore, \* store of ChainA
           packetLog \* packet log
           
 vars == <<chainAstore, chainBstore, outgoingDatagrams, outgoingPacketDatagrams, relayerHeights, packetLog>>
-Heights == 1..MaxHeight \* set of possible heights of the chains in the system                     
+Heights == 1..MaxHeight \* set of possible heights of the chains in the system
+Versions == 1..MaxVersion \* set of possible connection versions                     
 
 GetChainByID(chainID) ==
     IF chainID = "chainA"
@@ -119,8 +122,9 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
                 counterpartyClientID |-> GetCounterpartyClientID(srcChainID) \* "clB" 
             ])}
     
-        ELSE IF srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
-                                                   \/ dstConnectionEnd.state = "INIT" THEN 
+        ELSE IF /\ srcClientHeight /= nullHeight
+                /\ srcConnectionEnd.state = "INIT" /\ \/ dstConnectionEnd.state = "UNINIT"
+                                                      \/ dstConnectionEnd.state = "INIT" THEN 
             {AsDatagram([
                 type |-> "ConnOpenTry",
                 desiredConnectionID |-> srcConnectionEnd.counterpartyConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")  
@@ -132,8 +136,9 @@ ConnectionDatagrams(srcChainID, dstChainID) ==
                 consensusHeight |-> srcClientHeight
             ])}
          
-        ELSE IF srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
-                                                      \/ dstConnectionEnd.state = "TRYOPEN" THEN
+        ELSE IF /\ srcClientHeight /= nullHeight
+                /\ srcConnectionEnd.state = "TRYOPEN" /\ \/ dstConnectionEnd.state = "INIT"
+                                                         \/ dstConnectionEnd.state = "TRYOPEN" THEN
             {AsDatagram([
                 type |-> "ConnOpenAck",
                 connectionID |-> dstConnectionID, \* "connBtoA" (if srcChainID = "chainA", dstChainID = "chainB")
@@ -342,21 +347,38 @@ Relay(srcChainID, dstChainID) ==
             ]
     /\ relayerHeights' = datagramsAndRelayerUpdate.relayerUpdate       
     /\ UNCHANGED <<chainAstore, chainBstore>>
-    
+    /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
 
 \* given an entry from the packet log, create a packet datagram and 
 \* append it to the outgoing packet datagram queue for dstChainID      
-RelayPacketDatagram(packetLogEntry) ==
-    \* get dstChainID
-    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
-    \* create a packet datagram from packet log entry
-    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
-    
-    IF packetDatagram /= NullDatagram
-    THEN [outgoingPacketDatagrams EXCEPT 
+RelayPacketDatagram(srcChainID, dstChainID) ==
+    /\ packetLog /= AsPacketLog(<<>>)
+    /\ GeneratePacketDatagrams
+    /\ LET packetLogEntry == Head(packetLog) IN
+       LET packetDatagram == PacketDatagram(packetLogEntry) IN
+       \* if srcChainID matches the one from the log entry
+       /\ packetLogEntry.srcChainID = srcChainID
+       \* if dstChainID is the counterparty chain of srcChainID
+       /\ dstChainID = GetCounterpartyChainID(packetLogEntry.srcChainID)
+       /\ packetDatagram /= NullDatagram
+       /\ outgoingPacketDatagrams' = [outgoingPacketDatagrams EXCEPT 
             ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
                                    AsPacketDatagram(packetDatagram))]
-    ELSE outgoingPacketDatagrams      
+       /\ packetLog' = Tail(packetLog)
+       /\ UNCHANGED <<chainAstore, chainBstore>>
+       /\ UNCHANGED <<outgoingDatagrams, relayerHeights>>
+    
+\*    
+\*    \* get dstChainID
+\*    LET dstChainID == GetCounterpartyChainID(packetLogEntry.srcChainID) IN
+\*    \* create a packet datagram from packet log entry
+\*    LET packetDatagram == PacketDatagram(packetLogEntry) IN 
+\*    
+\*    IF packetDatagram /= NullDatagram
+\*    THEN [outgoingPacketDatagrams EXCEPT 
+\*            ![dstChainID] = Append(outgoingPacketDatagrams[dstChainID], 
+\*                                   AsPacketDatagram(packetDatagram))]
+\*    ELSE outgoingPacketDatagrams      
 
 \* update the relayer client heights
 UpdateClient ==
@@ -366,13 +388,21 @@ UpdateClient ==
 CreateDatagrams ==
     \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs : 
         \* client, connection, channel datagrams
-        /\ Relay(srcChainID, dstChainID)
-        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
-              /\ Head(packetLog).srcChainID = srcChainID
-              \* packet datagrams   
-              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
-              /\ packetLog' = Tail(packetLog)
-           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
+        Relay(srcChainID, dstChainID)
+        
+\*        /\ \/ /\ packetLog /= AsPacketLog(<<>>)
+\*              /\ Head(packetLog).srcChainID = srcChainID
+\*              /\ GeneratePacketDatagrams
+\*              \* packet datagrams   
+\*              /\ outgoingPacketDatagrams' = RelayPacketDatagram(AsPacketLogEntry(Head(packetLog)))
+\*              /\ packetLog' = Tail(packetLog)
+\*           \/ /\ UNCHANGED <<outgoingPacketDatagrams, packetLog>>
+
+CreatePacketDatagrams ==
+    \E srcChainID \in ChainIDs : \E dstChainID \in ChainIDs :
+        RelayPacketDatagram(srcChainID, dstChainID)
+    
+    
 
 (***************************************************************************
  Specification
@@ -394,14 +424,22 @@ Init ==
 Next ==
     \/ UpdateClient
     \/ CreateDatagrams
+    \/ CreatePacketDatagrams
     \/ UNCHANGED vars    
        
 \* Fairness constraints
 Fairness ==
+\*    WF_vars(Next)
+\*    /\ WF_vars(CreateDatagrams)
+\*    /\ WF_vars(CreatePacketDatagrams)
     /\ \A chainID \in ChainIDs : 
             WF_vars(UpdateRelayerClientHeight(chainID))
     /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs : 
             WF_vars(Relay(srcChainID, dstChainID))
+    /\ \A srcChainID \in ChainIDs : \A dstChainID \in ChainIDs :
+            WF_vars(RelayPacketDatagram(srcChainID, dstChainID))
+            
+    
                
 (***************************************************************************
  Invariants
@@ -409,10 +447,10 @@ Fairness ==
 \* Type invariant
 TypeOK ==
     /\ relayerHeights \in [ChainIDs -> Heights \union {nullHeight}]
-    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(MaxHeight, MaxPacketSeq, MaxVersion)]
-    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(MaxHeight, MaxPacketSeq, MaxVersion))]
+    /\ outgoingDatagrams \in [ChainIDs -> SUBSET Datagrams(Heights, MaxPacketSeq, Versions)]
+    /\ outgoingPacketDatagrams \in [ChainIDs -> Seq(Datagrams(Heights, MaxPacketSeq, Versions))]
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 01 10:50:40 CET 2020 by ilinastoilkovska
+\* Last modified Tue Feb 02 09:58:43 CET 2021 by ilinastoilkovska
 \* Created Fri Mar 06 09:23:12 CET 2020 by ilinastoilkovska

@@ -1,5 +1,4 @@
-//! Read the relayer configuration into the Config struct, in examples for now
-//! to support ADR validation..should move to relayer/src soon
+//! Relayer configuration
 
 use std::{
     fs,
@@ -10,10 +9,10 @@ use std::{
 };
 
 use serde_derive::{Deserialize, Serialize};
-
-use ibc::ics24_host::identifier::{ChainId, PortId};
 use tendermint::{net, Hash};
 use tendermint_light_client::types::{Height, PeerId, TrustThreshold};
+
+use ibc::ics24_host::identifier::{ChainId, PortId};
 
 use crate::error;
 
@@ -51,6 +50,27 @@ pub struct Config {
     pub connections: Option<Vec<Connection>>, // use all for default
 }
 
+impl Config {
+    pub fn find_chain(&self, id: &ChainId) -> Option<&ChainConfig> {
+        self.chains.iter().find(|c| c.id == *id)
+    }
+
+    pub fn find_chain_mut(&mut self, id: &ChainId) -> Option<&mut ChainConfig> {
+        self.chains.iter_mut().find(|c| c.id == *id)
+    }
+    pub fn relay_paths(&self, src_chain: &ChainId, dst_chain: &ChainId) -> Option<Vec<RelayPath>> {
+        self.connections
+            .as_ref()?
+            .iter()
+            .find(|c| {
+                c.a_chain == *src_chain && c.b_chain == *dst_chain
+                    || c.a_chain == *dst_chain && c.b_chain == *src_chain
+            })?
+            .paths
+            .clone()
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum Strategy {
     #[serde(rename = "naive")]
@@ -67,8 +87,13 @@ impl Default for Strategy {
 pub struct GlobalConfig {
     #[serde(default = "default::timeout", with = "humantime_serde")]
     pub timeout: Duration,
+
     #[serde(default)]
     pub strategy: Strategy,
+
+    /// All valid log levels, as defined in tracing:
+    /// https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
+    pub log_level: String,
 }
 
 impl Default for GlobalConfig {
@@ -76,6 +101,7 @@ impl Default for GlobalConfig {
         Self {
             timeout: default::timeout(),
             strategy: Strategy::default(),
+            log_level: "info".to_string(),
         }
     }
 }
@@ -178,6 +204,16 @@ pub enum StoreConfig {
         #[serde(skip)]
         dummy: (),
     },
+}
+
+impl StoreConfig {
+    pub fn disk(path: PathBuf) -> Self {
+        Self::Disk { path }
+    }
+
+    pub fn memory() -> Self {
+        Self::Memory { dummy: () }
+    }
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

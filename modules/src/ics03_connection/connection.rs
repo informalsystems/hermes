@@ -1,10 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
+use serde::Serialize;
+use tendermint_proto::Protobuf;
+
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
 };
-use tendermint_proto::Protobuf;
 
 use crate::ics03_connection::error::Kind;
 use crate::ics03_connection::version::Version;
@@ -12,7 +14,7 @@ use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::error::ValidationError;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ConnectionEnd {
     state: State,
     client_id: ClientId,
@@ -106,6 +108,11 @@ impl ConnectionEnd {
         self.state = new_state;
     }
 
+    /// Setter for the `counterparty` field.
+    pub fn set_counterparty(&mut self, new_cparty: Counterparty) {
+        self.counterparty = new_cparty;
+    }
+
     /// Setter for the `version` field.
     /// TODO: A ConnectionEnd should only store one version.
     pub fn set_version(&mut self, new_version: Version) {
@@ -148,7 +155,7 @@ impl ConnectionEnd {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Counterparty {
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -160,7 +167,7 @@ impl Default for Counterparty {
         Counterparty {
             client_id: Default::default(),
             connection_id: None,
-            prefix: CommitmentPrefix(vec![]),
+            prefix: Default::default(),
         }
     }
 }
@@ -199,7 +206,7 @@ impl From<Counterparty> for RawCounterparty {
                 .connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
-                key_prefix: value.prefix.0,
+                key_prefix: value.prefix.into_vec(),
             }),
         }
     }
@@ -237,7 +244,7 @@ impl Counterparty {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,

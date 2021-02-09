@@ -1,14 +1,18 @@
+use serde::Serialize;
+
 use crate::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::Height;
 
 /// Structure comprising proofs in a message. Proofs are typically present in messages for
 /// handshake protocols, e.g., ICS3 connection (open) handshake or ICS4 channel (open and close)
 /// handshake, as well as for ICS4 packets, timeouts, and acknowledgements.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct Proofs {
     object_proof: CommitmentProofBytes,
     client_proof: Option<CommitmentProofBytes>,
     consensus_proof: Option<ConsensusProof>,
+    /// Currently used for proof_close for MsgTimeoutOnCLose where object_proof is proof_unreceived
+    pub(crate) other_proof: Option<CommitmentProofBytes>,
     /// Height for the commitment root for proving the proofs above.
     /// When creating these proofs, the chain is queried at `height-1`.
     height: Height,
@@ -19,6 +23,7 @@ impl Proofs {
         object_proof: CommitmentProofBytes,
         client_proof: Option<CommitmentProofBytes>,
         consensus_proof: Option<ConsensusProof>,
+        other_proof: Option<CommitmentProofBytes>,
         height: Height,
     ) -> Result<Self, String> {
         if height.is_zero() {
@@ -33,6 +38,7 @@ impl Proofs {
             object_proof,
             client_proof,
             consensus_proof,
+            other_proof,
             height,
         })
     }
@@ -60,7 +66,7 @@ impl Proofs {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusProof {
     proof: CommitmentProofBytes,
     height: Height,

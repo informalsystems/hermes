@@ -16,3 +16,13 @@ Cargo.lock
 
 # Ignore Jetbrains
 .idea
+
+# Ignore VisualStudio
+.vscode
+
+# Ignore chain's data
+data
+
+# Ignore Python artifacts
+.mypy_cache/
+__pycache__/

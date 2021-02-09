@@ -1,12 +1,13 @@
 use std::{io, io::Write, ops::Deref};
 
-use crate::prelude::*;
-
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
+use tendermint_light_client::types::PeerId;
 
 use ibc::ics24_host::identifier::ChainId;
-use relayer::config::PeersConfig;
-use tendermint_light_client::types::PeerId;
+use ibc_relayer::config::PeersConfig;
+
+use crate::conclude::Output;
+use crate::prelude::*;
 
 #[derive(Command, Debug, Options)]
 pub struct RmCmd {
@@ -80,9 +81,7 @@ impl RmCmd {
         let mut config = (*app_config()).clone();
 
         let chain_config = config
-            .chains
-            .iter_mut()
-            .find(|c| c.id == options.chain_id)
+            .find_chain_mut(&options.chain_id)
             .ok_or_else(|| format!("could not find config for chain: {}", options.chain_id))?;
 
         let mut peers_config = chain_config
@@ -90,19 +89,25 @@ impl RmCmd {
             .as_mut()
             .ok_or_else(|| format!("no peers configured for chain: {}", options.chain_id))?;
 
-        if options.all && (options.yes || confirm(&options.chain_id)?) {
+        let rmd_peers = if options.all && (options.yes || confirm(&options.chain_id)?) {
             let removed_peers = get_all_peer_ids(&peers_config);
             chain_config.peers = None;
-            status_ok!("Removed", "light client peers {:?}", removed_peers);
+
+            removed_peers
         } else {
+            let mut res: Vec<String> = vec![];
             for peer_id in options.peer_ids {
                 let removed_peer = remove_peer(&mut peers_config, peer_id, options.force)?;
-                status_ok!("Removed", "light client peer '{}'", removed_peer);
+                res.push(removed_peer.to_string());
             }
+
+            res
         };
 
         let config_path = crate::config::config_path()?;
-        relayer::config::store(&config, config_path)?;
+        ibc_relayer::config::store(&config, config_path)?;
+
+        Output::success(format!("Removed light client peer(s) '{:?}'", rmd_peers)).exit();
 
         Ok(())
     }

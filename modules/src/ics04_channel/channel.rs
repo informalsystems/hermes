@@ -1,19 +1,21 @@
-use crate::ics04_channel::error::{self, Error, Kind};
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-
-use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
-
-use tendermint_proto::Protobuf;
-
-use crate::events::IBCEventType;
-use crate::ics02_client::height::Height;
-use crate::ics04_channel::packet::Sequence;
-use anomaly::fail;
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-#[derive(Clone, Debug, PartialEq)]
+use anomaly::fail;
+use serde::Serialize;
+use tendermint_proto::Protobuf;
+
+use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
+
+use crate::events::IBCEventType;
+use crate::ics02_client::height::Height;
+use crate::ics04_channel::{
+    error::{self, Error, Kind},
+    packet::Sequence,
+};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ChannelEnd {
     state: State,
     ordering: Order,
@@ -40,7 +42,7 @@ impl TryFrom<RawChannel> for ChannelEnd {
 
     fn try_from(value: RawChannel) -> Result<Self, Self::Error> {
         // Parse the ordering type. Propagate the error, if any, to our caller.
-        let chan_state = State::from_i32(value.state)?;
+        let chan_state: State = State::from_i32(value.state)?;
 
         if chan_state == State::Uninitialized {
             return Ok(ChannelEnd::default());
@@ -78,7 +80,7 @@ impl From<ChannelEnd> for RawChannel {
         RawChannel {
             state: value.state.clone() as i32,
             ordering: value.ordering as i32,
-            counterparty: Some(value.counterparty().into()),
+            counterparty: Some(value.counterparty().clone().into()),
             connection_hops: value
                 .connection_hops
                 .iter()
@@ -120,12 +122,12 @@ impl ChannelEnd {
         &self.ordering
     }
 
-    pub fn counterparty(&self) -> Counterparty {
-        self.remote.clone()
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.remote
     }
 
-    pub fn connection_hops(&self) -> Vec<ConnectionId> {
-        self.connection_hops.clone()
+    pub fn connection_hops(&self) -> &Vec<ConnectionId> {
+        &self.connection_hops
     }
 
     pub fn version(&self) -> String {
@@ -148,9 +150,26 @@ impl ChannelEnd {
     pub fn state_matches(&self, other: &State) -> bool {
         self.state.eq(other)
     }
+
+    /// Helper function to compare the order of this end with another order.
+    pub fn order_matches(&self, other: &Order) -> bool {
+        self.ordering.eq(other)
+    }
+    #[allow(clippy::ptr_arg)]
+    pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
+        self.connection_hops.eq(other)
+    }
+
+    pub fn counterparty_matches(&self, other: &Counterparty) -> bool {
+        self.counterparty().eq(other)
+    }
+
+    pub fn version_matches(&self, other: &str) -> bool {
+        self.version().eq(other)
+    }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct Counterparty {
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
@@ -218,7 +237,7 @@ impl From<Counterparty> for RawCounterparty {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -236,8 +255,8 @@ impl Order {
     pub fn as_string(&self) -> &'static str {
         match self {
             Self::None => "UNINITIALIZED",
-            Self::Unordered => "UNORDERED",
-            Self::Ordered => "ORDERED",
+            Self::Unordered => "ORDER_UNORDERED",
+            Self::Ordered => "ORDER_ORDERED",
         }
     }
 
@@ -265,7 +284,7 @@ impl FromStr for Order {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -305,6 +324,8 @@ pub struct QueryPacketEventDataRequest {
     pub event_id: IBCEventType,
     pub source_channel_id: ChannelId,
     pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: Height,
 }
@@ -318,14 +339,23 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
+
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
-            port_id: "0123456789".into(),
-            channel_id: "0987654321".into(),
+            port_id: "port".into(),
+            channel_id: "channel24".into(),
+        }
+    }
+
+    /// Returns a dummy `RawCounterparty`, for testing only!
+    pub fn get_another_dummy_raw_counterparty() -> RawCounterparty {
+        RawCounterparty {
+            port_id: "port12".into(),
+            channel_id: "channel25".into(),
         }
     }
 
@@ -333,23 +363,44 @@ pub mod test_util {
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
             state: 1,
-            ordering: 0,
+            ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec![],
-            version: "".to_string(), // The version is not validated.
+            connection_hops: vec!["defaultConnection-0".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
+        }
+    }
+
+    /// Returns a dummy `RawChannel`, for testing only!
+    pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 1,
+            counterparty: Some(get_another_dummy_raw_counterparty()),
+            connection_hops: vec!["defaultConnection-0".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
+        }
+    }
+
+    pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 1,
+            counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec!["noconnection".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
     use std::str::FromStr;
+
+    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
 
     use crate::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::ics04_channel::channel::ChannelEnd;
-
-    use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
-    use std::convert::TryFrom;
 
     #[test]
     fn channel_end_try_from_raw() {

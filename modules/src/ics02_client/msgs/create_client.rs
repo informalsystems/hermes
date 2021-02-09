@@ -61,11 +61,6 @@ impl Msg for MsgCreateAnyClient {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate since all fields are validated on creation.
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }

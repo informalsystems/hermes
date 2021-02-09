@@ -1,6 +1,6 @@
 [package]
-name = "ibc-proto"
-version = "0.6.0"
+name    = "ibc-proto"
+version = "0.7.0"
 authors = ["Greg Szabo <greg@informal.systems>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -14,16 +14,20 @@ description = """
     ibc-proto is a the Rust implementation of the Cosmos SDK proto structs.
     """
 
+[lib]
+name = "ibc_proto"
+path = "src/lib.rs"
+
 [package.metadata.docs.rs]
 all-features = true
 
 [dependencies]
-prost = { version = "0.6" }
-prost-types = { version = "0.6" }
+prost = "0.7"
+prost-types = "0.7"
 anomaly = "0.2"
-bytes = "0.6"
+bytes = "1.0"
 thiserror = "1.0"
-tonic = "0.3.1"
+tonic = "0.4"
 
 [dependencies.tendermint-proto]
-version = "=0.17.0"
+version = "=0.18.0"

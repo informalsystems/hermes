@@ -1,6 +1,7 @@
-use prost_types::Any;
 use std::convert::TryFrom;
 
+use prost_types::Any;
+use serde::Serialize;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
@@ -9,12 +10,13 @@ use crate::ics02_client::error::{Error, Kind};
 use crate::ics02_client::header::Header;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
+use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics07_tendermint::client_def::TendermintClient;
 use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -73,6 +75,19 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Box<dyn std::error::Error>>;
+
+    /// Verify a `proof` that a channel state matches that of the input `channel_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_channel_state(
+        &self,
+        client_state: &Self::ClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
     ) -> Result<(), Box<dyn std::error::Error>>;
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
@@ -161,7 +176,8 @@ impl From<AnyHeader> for Any {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TendermintClientState),
 
@@ -193,9 +209,10 @@ impl Protobuf<Any> for AnyClientState {}
 impl TryFrom<Any> for AnyClientState {
     type Error = Error;
 
-    // TODO Fix type urls: avoid having hardcoded values sprinkled around the whole codebase.
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
+            "" => Err(Kind::EmptyClientState.into()),
+
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
                 TendermintClientState::decode_vec(&raw.value)
                     .map_err(|e| Kind::InvalidRawClientState.context(e))?,
@@ -255,7 +272,8 @@ impl ClientState for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(tag = "type")]
 pub enum AnyConsensusState {
     Tendermint(TendermintConsensusState),
 
@@ -281,6 +299,8 @@ impl TryFrom<Any> for AnyConsensusState {
 
     fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
+            "" => Err(Kind::EmptyConsensusState.into()),
+
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
                 TendermintConsensusState::decode_vec(&value.value)
                     .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
@@ -487,6 +507,50 @@ impl ClientDef for AnyClient {
         }
     }
 
+    fn verify_channel_state(
+        &self,
+        client_state: &AnyClientState,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        match self {
+            Self::Tendermint(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Tendermint)
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Tendermint))?;
+
+                client.verify_channel_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    port_id,
+                    channel_id,
+                    expected_channel_end,
+                )
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(client) => {
+                let client_state = downcast!(client_state => AnyClientState::Mock)
+                    .ok_or_else(|| Kind::ClientArgsTypeMismatch(ClientType::Mock))?;
+
+                client.verify_channel_state(
+                    client_state,
+                    height,
+                    prefix,
+                    proof,
+                    port_id,
+                    channel_id,
+                    expected_channel_end,
+                )
+            }
+        }
+    }
+
     fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
@@ -538,11 +602,13 @@ impl ClientDef for AnyClient {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+
+    use prost_types::Any;
+
     use crate::ics02_client::client_def::AnyClientState;
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use prost_types::Any;
-    use std::convert::TryFrom;
 
     #[test]
     fn any_client_state_serialization() {

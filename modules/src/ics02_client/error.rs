@@ -12,6 +12,9 @@ pub enum Kind {
     #[error("unknown client type: {0}")]
     UnknownClientType(String),
 
+    #[error("Client identifier constructor failed for type {0} with counter {1}")]
+    ClientIdentifierConstructor(ClientType, u64),
+
     #[error("client already exists: {0}")]
     ClientAlreadyExists(ClientId),
 
@@ -30,8 +33,14 @@ pub enum Kind {
     #[error("unknown client state type: {0}")]
     UnknownClientStateType(String),
 
+    #[error("empty client state")]
+    EmptyClientState,
+
     #[error("unknown client consensus state type: {0}")]
     UnknownConsensusStateType(String),
+
+    #[error("empty client consensus state")]
+    EmptyConsensusState,
 
     #[error("unknown header type: {0}")]
     UnknownHeaderType(String),

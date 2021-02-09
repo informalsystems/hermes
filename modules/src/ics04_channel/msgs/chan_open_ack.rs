@@ -32,12 +32,6 @@ impl Msg for MsgChannelOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
@@ -58,6 +52,7 @@ impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
 
         let proofs = Proofs::new(
             raw_msg.proof_try.into(),
+            None,
             None,
             None,
             raw_msg

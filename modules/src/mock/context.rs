@@ -12,14 +12,23 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHead
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
+
+use crate::ics05_port::capabilities::Capability;
+use crate::ics05_port::context::PortReader;
+
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
+
+use crate::events::IBCEvent;
+use crate::ics04_channel::channel::ChannelEnd;
+use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::ics04_channel::error::Error as ICS4Error;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
-use crate::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
 use crate::ics26_routing::msgs::ICS26Envelope;
@@ -50,8 +59,9 @@ pub struct MockContext {
     /// The set of all clients, indexed by their id.
     clients: HashMap<ClientId, MockClientRecord>,
 
-    /// Counter for the client identifiers, necessary to generate ids (see `next_client_id`).
-    client_ids_counter: u32,
+    /// Counter for the client identifiers, necessary for `increase_client_counter` and the
+    /// `client_counter` methods.
+    client_ids_counter: u64,
 
     /// Association between client ids and connection ids.
     client_connections: HashMap<ClientId, ConnectionId>,
@@ -59,11 +69,32 @@ pub struct MockContext {
     /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
 
+    /// All the channels in the store. TODO Make new key PortId X ChanneId
+    channels: HashMap<(PortId, ChannelId), ChannelEnd>,
+
+    /// Association between conection ids and channel ids.
+    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+
+    /// Tracks the sequence number for the next packet to be sent.
+    next_sequence_send: HashMap<(PortId, ChannelId), u64>,
+
+    /// Tracks the sequence number for the next packet to be received.
+    next_sequence_recv: HashMap<(PortId, ChannelId), u64>,
+
+    /// Tracks the sequence number for the next packet to be acknowledged.
+    next_sequence_ack: HashMap<(PortId, ChannelId), u64>,
+
+    /// Maps ports to their capabilities
+    port_capabilities: HashMap<PortId, Capability>,
+
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
+
+    /// Counter for channel identifiers (see `next_channel_id`).
+    channel_ids_counter: u32,
 }
 
-/// Returns a MockContext with bare minimum initialization: no clients, no connections are
+/// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
 /// present, and the chain has Height(5). This should be used sparingly, mostly for testing the
 /// creation of new domain objects.
 impl Default for MockContext {
@@ -123,7 +154,14 @@ impl MockContext {
             client_ids_counter: 0,
             clients: Default::default(),
             client_connections: Default::default(),
+            channels: Default::default(),
+            connection_channels: Default::default(),
+            next_sequence_send: Default::default(),
+            next_sequence_recv: Default::default(),
+            next_sequence_ack: Default::default(),
+            port_capabilities: Default::default(),
             connection_ids_counter: 0,
+            channel_ids_counter: 0,
         }
     }
 
@@ -141,13 +179,12 @@ impl MockContext {
     /// `consensus_state_height` is None, then the client will be initialized with a consensus
     /// state matching the same height as the client state (`client_state_height`).
     pub fn with_client_parametrized(
-        self,
+        mut self,
         client_id: &ClientId,
         client_state_height: Height,
         client_type: Option<ClientType>,
         consensus_state_height: Option<Height>,
     ) -> Self {
-        let mut clients = self.clients.clone();
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
@@ -178,23 +215,34 @@ impl MockContext {
             client_state,
             consensus_states,
         };
-        clients.insert(client_id.clone(), client_record);
-
-        Self { clients, ..self }
+        self.clients.insert(client_id.clone(), client_record);
+        self
     }
 
     /// Associates a connection to this context.
     pub fn with_connection(
-        self,
+        mut self,
         connection_id: ConnectionId,
         connection_end: ConnectionEnd,
     ) -> Self {
-        let mut connections = self.connections.clone();
-        connections.insert(connection_id, connection_end);
-        Self {
-            connections,
-            ..self
-        }
+        self.connections.insert(connection_id, connection_end);
+        self
+    }
+
+    pub fn with_port_capability(mut self, port_id: PortId) -> Self {
+        self.port_capabilities.insert(port_id, Capability::new());
+        self
+    }
+
+    pub fn with_channel_init(
+        self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        channel_end: ChannelEnd,
+    ) -> Self {
+        let mut channels = self.channels.clone();
+        channels.insert((port_id, chan_id), channel_end);
+        Self { channels, ..self }
     }
 
     /// Accessor for a block of the local (host) chain from this context.
@@ -268,9 +316,146 @@ impl MockContext {
         }
         Ok(())
     }
+
+    pub fn add_port(&mut self, port_id: PortId) {
+        self.port_capabilities.insert(port_id, Capability::new());
+    }
 }
 
 impl ICS26Context for MockContext {}
+
+impl PortReader for MockContext {
+    fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
+        self.port_capabilities.get(port_id).cloned()
+    }
+
+    fn autenthenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
+        true
+    }
+}
+
+impl ChannelReader for MockContext {
+    fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+        self.channels.get(pcid).cloned()
+    }
+
+    fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
+        self.connections.get(cid).cloned()
+    }
+
+    fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>> {
+        self.connection_channels.get(cid).cloned()
+    }
+
+    fn channel_client_state(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Option<AnyClientState> {
+        let channel = self.channel_end(port_channel_id);
+        match channel {
+            Some(v) => {
+                let cid = v.connection_hops().clone()[0].clone();
+                let conn = ChannelReader::connection_end(self, &cid);
+                match conn {
+                    Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn channel_client_consensus_state(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+        height: Height,
+    ) -> Option<AnyConsensusState> {
+        let channel_end = self.channel_end(port_channel_id);
+        match channel_end {
+            Some(channel) => {
+                let cid = channel.connection_hops()[0].clone();
+                let conn = ChannelReader::connection_end(self, &cid).unwrap();
+                ConnectionReader::client_consensus_state(self, conn.client_id(), height)
+            }
+            _ => None,
+        }
+    }
+
+    fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
+        PortReader::lookup_module_by_port(self, port_id)
+    }
+
+    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
+        PortReader::autenthenticate(self, cap, port_id)
+    }
+}
+
+impl ChannelKeeper for MockContext {
+    fn next_channel_id(&mut self) -> ChannelId {
+        let prefix = ChannelId::default().to_string();
+        let suffix = self.channel_ids_counter;
+        self.channel_ids_counter += 1;
+
+        ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    }
+
+    fn store_channel(
+        &mut self,
+        port_channel_id: &(PortId, ChannelId),
+        channel_end: &ChannelEnd,
+    ) -> Result<(), ICS4Error> {
+        self.channels
+            .insert(port_channel_id.clone(), channel_end.clone());
+        Ok(())
+    }
+    fn store_next_sequence_send(
+        &mut self,
+        port_channel_id: &(PortId, ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_send.insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+    fn store_next_sequence_recv(
+        &mut self,
+        port_channel_id: &(PortId, ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_recv.insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+    fn store_next_sequence_ack(
+        &mut self,
+        port_channel_id: &(PortId, ChannelId),
+        seq: u64,
+    ) -> Result<(), ICS4Error> {
+        self.next_sequence_ack.insert(port_channel_id.clone(), seq);
+        Ok(())
+    }
+
+    fn store_connection_channels(
+        &mut self,
+        cid: &ConnectionId,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<(), ICS4Error> {
+        match self.connection_channels.get(cid) {
+            Some(v) => {
+                let mut modv = v.clone();
+                modv.push(port_channel_id.clone());
+                self.connection_channels.remove(cid);
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+            None => {
+                let mut modv = Vec::new();
+                modv.push(port_channel_id.clone());
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+        }
+        Ok(())
+    }
+}
 
 impl ConnectionReader for MockContext {
     fn connection_end(&self, cid: &ConnectionId) -> Option<ConnectionEnd> {
@@ -364,6 +549,10 @@ impl ClientReader for MockContext {
             None => None,
         }
     }
+
+    fn client_counter(&self) -> u64 {
+        self.client_ids_counter
+    }
 }
 
 impl ClientKeeper for MockContext {
@@ -380,14 +569,6 @@ impl ClientKeeper for MockContext {
 
         client_record.client_type = client_type;
         Ok(())
-    }
-
-    fn next_client_id(&mut self) -> ClientId {
-        let prefix = ClientId::default().to_string();
-        let suffix = self.client_ids_counter;
-        self.client_ids_counter += 1;
-
-        ClientId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
     }
 
     fn store_client_state(
@@ -422,6 +603,10 @@ impl ClientKeeper for MockContext {
             .insert(height, consensus_state);
         Ok(())
     }
+
+    fn increase_client_counter(&mut self) {
+        self.client_ids_counter += 1
+    }
 }
 
 impl ICS18Context for MockContext {
@@ -439,20 +624,13 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<String>, ICS18Error> {
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
         let events =
             deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
 
-        // Parse the events into a list of strings.
-        let res: Vec<String> = events
-            .iter()
-            .map(|e| e.attribute_values())
-            .flatten()
-            .collect();
-
         self.advance_host_chain_height(); // Advance chain height
-        Ok(res)
+        Ok(events)
     }
 
     fn signer(&self) -> Id {

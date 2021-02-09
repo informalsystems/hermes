@@ -1,6 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
+use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics04_channel::channel::ChannelEnd;
@@ -8,24 +9,22 @@ use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::{ChannelId, PortId};
 use ibc::ics24_host::Path::ChannelEnds;
+use ibc_relayer::chain::{Chain, CosmosSDKChain};
+use ibc_relayer::config::{ChainConfig, Config};
 
-use relayer::chain::{Chain, CosmosSDKChain};
-use relayer::config::{ChainConfig, Config};
-
-use tendermint_proto::Protobuf;
-
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryChannelEndCmd {
-    #[options(free, help = "identifier of the chain to query")]
+    #[options(free, required, help = "identifier of the chain to query")]
     chain_id: Option<ChainId>,
 
-    #[options(free, help = "identifier of the port to query")]
+    #[options(free, required, help = "identifier of the port to query")]
     port_id: Option<String>,
 
-    #[options(free, help = "identifier of the channel to query")]
+    #[options(free, required, help = "identifier of the channel to query")]
     channel_id: Option<String>,
 
     #[options(help = "height of the state to query", short = "h")]
@@ -53,10 +52,8 @@ impl QueryChannelEndCmd {
             .clone()
             .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .find_chain(&chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
         let port_id = self
             .port_id
@@ -87,18 +84,15 @@ impl Runnable for QueryChannelEndCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
         // run without proof:
-        // cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query channel end ibc-test firstport firstchannel --height 3 -p false
+        // cargo run --bin hermes -- query channel end ibc-test firstport firstchannel --height 3 -p false
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
 
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
@@ -114,16 +108,17 @@ impl Runnable for QueryChannelEndCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("Result for channel end query: ", "{:?}", cs),
-            Err(e) => status_info!("Error encountered on channel end query:", "{}", e),
+            Ok(ce) => Output::success(ce).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use ibc_relayer::config::parse;
+
     use crate::commands::query::channel::QueryChannelEndCmd;
-    use relayer::config::parse;
 
     #[test]
     fn parse_channel_query_end_parameters() {

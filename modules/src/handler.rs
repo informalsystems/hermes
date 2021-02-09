@@ -1,61 +1,13 @@
+use crate::events::IBCEvent;
 use std::marker::PhantomData;
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Attribute {
-    key: String,
-    value: String,
-}
-
-impl Attribute {
-    pub fn new(key: String, value: String) -> Self {
-        Self { key, value }
-    }
-
-    pub fn value(&self) -> String {
-        self.value.clone()
-    }
-
-    pub fn key(&self) -> String {
-        self.key.clone()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EventType {
-    Message,
-    Custom(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Event {
-    pub tpe: EventType,
-    pub attributes: Vec<Attribute>,
-}
-
-impl Event {
-    pub fn new(tpe: EventType, attrs: Vec<(String, String)>) -> Self {
-        Self {
-            tpe,
-            attributes: attrs
-                .into_iter()
-                .map(|(k, v)| Attribute::new(k, v))
-                .collect(),
-        }
-    }
-
-    /// Returns a vector containing the values within all attributes of this event
-    pub fn attribute_values(&self) -> Vec<String> {
-        self.attributes.iter().map(|a| a.value.clone()).collect()
-    }
-}
 
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub struct HandlerOutput<T> {
     pub result: T,
     pub log: Vec<String>,
-    pub events: Vec<Event>,
+    pub events: Vec<IBCEvent>,
 }
 
 impl<T> HandlerOutput<T> {
@@ -64,10 +16,10 @@ impl<T> HandlerOutput<T> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct HandlerOutputBuilder<T> {
     log: Vec<String>,
-    events: Vec<Event>,
+    events: Vec<IBCEvent>,
     marker: PhantomData<T>,
 }
 
@@ -89,13 +41,13 @@ impl<T> HandlerOutputBuilder<T> {
         self.log.push(log.into());
     }
 
-    pub fn with_events(mut self, events: impl Into<Vec<Event>>) -> Self {
-        self.events.append(&mut events.into());
+    pub fn with_events(mut self, mut events: Vec<IBCEvent>) -> Self {
+        self.events.append(&mut events);
         self
     }
 
-    pub fn emit(&mut self, event: impl Into<Event>) {
-        self.events.push(event.into());
+    pub fn emit(&mut self, event: IBCEvent) {
+        self.events.push(event);
     }
 
     pub fn with_result(self, result: T) -> HandlerOutput<T> {

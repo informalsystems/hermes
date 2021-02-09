@@ -1,10 +1,11 @@
-use crate::application::app_config;
 use abscissa_core::{Command, Options, Runnable};
-use relayer::config::Config;
 
+use ibc_relayer::config::Config;
+use ibc_relayer::keys::add::{add_key, KeysAddOptions};
+
+use crate::application::app_config;
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
-use crate::prelude::*;
-use relayer::keys::add::{add_key, KeysAddOptions};
 
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysAddCmd {
@@ -23,9 +24,7 @@ impl KeysAddCmd {
             .ok_or_else(|| "missing chain identifier".to_string())?;
 
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id.parse().unwrap())
+            .find_chain(&chain_id.parse().unwrap())
             .ok_or_else(|| {
                 "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
             })?;
@@ -48,18 +47,15 @@ impl Runnable for KeysAddCmd {
         let config = app_config();
 
         let opts = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
 
         let res: Result<String, Error> = add_key(opts).map_err(|e| Kind::Keys.context(e).into());
 
         match res {
-            Ok(r) => status_info!("key add result: ", "{:?}", r),
-            Err(e) => status_info!("key add failed: ", "{}", e),
+            Ok(r) => Output::success(r).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }

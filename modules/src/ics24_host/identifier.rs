@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::error::ValidationError;
 use super::validate::*;
+use crate::ics02_client::client_type::ClientType;
 
 /// This type is subject to future changes.
 ///
@@ -117,9 +118,38 @@ impl Default for ChainId {
 pub struct ClientId(String);
 
 impl ClientId {
+    /// Builds a new client identifier. Client identifiers are deterministically formed from two
+    /// elements: a prefix derived from the client type `ctype`, and a monotonically increasing
+    /// `counter`; these are separated by a dash "-".
+    ///
+    /// ```
+    /// # use ibc::ics24_host::identifier::ClientId;
+    /// # use ibc::ics02_client::client_type::ClientType;
+    /// let tm_client_id = ClientId::new(ClientType::Tendermint, 0);
+    /// assert!(tm_client_id.is_ok());
+    /// tm_client_id.map(|id| { assert_eq!(&id, "07-tendermint-0") });
+    /// ```
+    pub fn new(ctype: ClientType, counter: u64) -> Result<Self, ValidationError> {
+        let prefix = Self::prefix(ctype);
+        let id = format!("{}-{}", prefix, counter);
+        Self::from_str(id.as_str())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+
+    /// Returns one of the prefixes that should be present in any client identifiers.
+    /// The prefix is deterministic for a given chain type, hence all clients for a Tendermint-type
+    /// chain, for example, will have the prefix '07-tendermint'.
+    pub fn prefix(client_type: ClientType) -> &'static str {
+        match client_type {
+            ClientType::Tendermint => ClientType::Tendermint.as_string(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            ClientType::Mock => ClientType::Mock.as_string(),
+        }
     }
 
     /// Get this identifier as a borrowed byte slice

@@ -1,8 +1,8 @@
+use crate::application::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
-use crate::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::Height as ICSHeight;
 
 use tendermint_rpc::event::{Event as RpcEvent, EventData as RpcEventData};
@@ -13,7 +13,6 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use tendermint::block::Height;
 
-use tendermint::abci::Event;
 use tracing::warn;
 
 /// Events types
@@ -70,25 +69,24 @@ pub enum IBCEvent {
 }
 
 // This is tendermint specific
-pub fn from_tx_response_event(event: Event) -> Option<IBCEvent> {
+pub fn from_tx_response_event(event: &tendermint::abci::Event) -> Option<IBCEvent> {
     // Return the first hit we find
-    // Look for client event...
-    if let Some(client_res) = ClientEvents::try_from_tx(event.clone()) {
-        return Some(client_res);
-    // Look for connection event...
-    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event.clone()) {
-        return Some(conn_res);
+    if let Some(client_res) = ClientEvents::try_from_tx(event) {
+        Some(client_res)
+    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event) {
+        Some(conn_res)
     } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
-        return Some(chan_res);
+        Some(chan_res)
+    } else {
+        None
     }
-
-    None
 }
 
 impl IBCEvent {
     pub fn to_json(&self) -> String {
         serde_json::to_string(self).unwrap()
     }
+
     pub fn height(&self) -> Height {
         match self {
             IBCEvent::NewBlock(bl) => bl.height,
@@ -99,11 +97,10 @@ impl IBCEvent {
             IBCEvent::AcknowledgePacketChannel(ev) => ev.height,
             IBCEvent::TimeoutPacketChannel(ev) => ev.height,
 
-            _ => {
-                unimplemented!()
-            }
+            _ => unimplemented!(),
         }
     }
+
     pub fn set_height(&mut self, height: ICSHeight) {
         match self {
             IBCEvent::SendPacketChannel(ev) => {
@@ -121,9 +118,7 @@ impl IBCEvent {
             IBCEvent::TimeoutPacketChannel(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            _ => {
-                unimplemented!()
-            }
+            _ => unimplemented!(),
         }
     }
 }

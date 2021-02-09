@@ -1,9 +1,13 @@
 //! Cli Abscissa Application
 
+use crate::components::Tracing;
 use crate::{commands::CliCmd, config::Config};
+
+use abscissa_core::terminal::component::Terminal;
 use abscissa_core::{
     application::{self, AppCell},
-    config, trace, Application, EntryPoint, FrameworkError, StandardPaths,
+    component::Component,
+    config, trace, Application, Configurable, EntryPoint, FrameworkError, StandardPaths,
 };
 
 /// Application state
@@ -96,6 +100,40 @@ impl Application for CliApp {
         self.state.components.after_config(&config)?;
         self.config = Some(config);
         Ok(())
+    }
+
+    /// Overrides the default abscissa components, so that we can setup tracing on our own. See
+    /// also `register_components`.
+    fn framework_components(
+        &mut self,
+        command: &Self::Cmd,
+    ) -> Result<Vec<Box<dyn Component<Self>>>, FrameworkError> {
+        let terminal = Terminal::new(self.term_colors(command));
+
+        let config = command
+            .config_path()
+            .map(|path| self.load_config(&path))
+            .transpose()?
+            .unwrap_or_default();
+
+        // For `start` cmd exclusively we disable JSON; otherwise output is JSON-only
+        let json_on = if let Some(c) = &command.command {
+            !matches!(c, CliCmd::Start(..))
+        } else {
+            true
+        };
+
+        if json_on {
+            let tracing = Tracing::new(config.global)?;
+            Ok(vec![Box::new(terminal), Box::new(tracing)])
+        } else {
+            let alt_tracing = abscissa_core::trace::Tracing::new(
+                abscissa_core::trace::Config::from(config.global.log_level),
+                abscissa_core::terminal::ColorChoice::Auto,
+            )
+            .unwrap();
+            Ok(vec![Box::new(terminal), Box::new(alt_tracing)])
+        }
     }
 
     /// Get tracing configuration from command-line options

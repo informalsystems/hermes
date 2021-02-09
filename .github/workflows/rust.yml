@@ -46,60 +46,35 @@ jobs:
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: --workspace --all-targets
-      - uses: actions-rs/cargo@v1
-        with:
           command: test
           args: --all-features --no-fail-fast
 
-  test-integration-stable:
+  test-coverage:
     runs-on: ubuntu-latest
-    services:
-      simd:
-        image: informaldev/simd
-        ports:
-          - 1317:1317
-          - 26656:26656
-          - 26657:26657
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
       - uses: actions-rs/cargo@v1
         with:
-          command: build
-          args: -p relayer-cli --bins
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p relayer-cli --test acceptance --no-fail-fast -- --ignored
-
-  test-nightly-coverage:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
           command: clean
-      - uses: actions-rs/cargo@v1
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
         with:
-          command: test
-          args: --all-features --no-fail-fast
-        env:
-          CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off -Cpanic=unwind -Zpanic_abort_tests"
-      - uses: actions-rs/grcov@v0.1
+          version: '0.16.0'
+          args: '-- --test-threads 1'
+          timeout: 600
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ${{ steps.coverage.outputs.report }}
-          yml: ./codecov.yml
           fail_ci_if_error: true
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
+        with:
+          name: code-coverage-report
+          path: cobertura.xml

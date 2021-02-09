@@ -46,12 +46,6 @@ impl Msg for MsgTimeout {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
     }
@@ -72,6 +66,7 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
 
         let proofs = Proofs::new(
             raw_msg.proof_unreceived.into(),
+            None,
             None,
             None,
             raw_msg

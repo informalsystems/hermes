@@ -201,8 +201,8 @@ ChannelEnds ==
 (************************* FungibleTokenPacketData *************************
  A set of records defining ICS20 packet data.
  
- Denominations are defined as Seq(ChannelIDs \union PortIDs \union {Denomination}), 
- where Denomination is a native denomination.
+ Denominations are defined as Seq(ChannelIDs \union PortIDs \union NativeDenominations), 
+ where NativeDenominations is the set of native denominations of the two chains.
  ***************************************************************************)    
 FungibleTokenPacketData(maxBalance, Denominations) ==
     [
@@ -215,13 +215,13 @@ FungibleTokenPacketData(maxBalance, Denominations) ==
 (******* PacketCommitments, PacketReceipts, PacketAcknowledgements *********
  Sets of packet commitments, packet receipts, packet acknowledgements.
  ***************************************************************************)
-PacketCommitments(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
+PacketCommitments(Heights, maxPacketSeq, maxBalance, Denominations) ==
     [
         channelID : ChannelIDs,
         portID : PortIDs, 
         sequence : 1..maxPacketSeq,
         data : FungibleTokenPacketData(maxBalance, Denominations),
-        timeoutHeight : 1..maxHeight
+        timeoutHeight : Heights
     ] <: {PacketCommitmentType} 
     
 PacketReceipts(maxPacketSeq) ==
@@ -242,17 +242,16 @@ PacketAcknowledgements(maxPacketSeq) ==
 (********************************* Packets *********************************
  A set of packets.
  ***************************************************************************)
-Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
+Packets(Heights, maxPacketSeq, maxBalance, Denominations) ==
     [
         sequence : 1..maxPacketSeq,
-        timeoutHeight : 1..maxHeight,
+        timeoutHeight : Heights,
         data : FungibleTokenPacketData(maxBalance, Denominations),
         srcPortID : PortIDs,
         srcChannelID : ChannelIDs,
         dstPortID : PortIDs,
         dstChannelID : ChannelIDs
     ] <: {PacketType} 
-
 
 (******************************** ChainStores ******************************
     A set of chain store records, with fields relevant for ICS20. 
@@ -281,18 +280,18 @@ Packets(maxHeight, maxPacketSeq, maxBalance, Denominations) ==
     these are specified in the IBC Core specification.
       
  ***************************************************************************)
-ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==    
+ChainStores(Heights, maxPacketSeq, maxBalance, NativeDenominations) ==    
     [
-        height : 1..maxHeight,
-        clientHeight : 1..maxHeight,
+        height : Heights,
+        counterpartyClientHeights : SUBSET(Heights),
         channelEnd : ChannelEnds,
         
-        packetCommitments : SUBSET(PacketCommitments(maxHeight, maxPacketSeq, maxBalance, 
-                                           Seq(ChannelIDs \union PortIDs \union {Denomination}))),
+        packetCommitments : SUBSET(PacketCommitments(Heights, maxPacketSeq, maxBalance, 
+                                           Seq(ChannelIDs \union PortIDs \union NativeDenominations))),
         packetReceipts : SUBSET(PacketReceipts(maxPacketSeq)),
         packetAcknowledgements : SUBSET(PacketAcknowledgements(maxPacketSeq)),
-        packetsToAcknowledge : Seq(Packets(maxHeight, maxPacketSeq, maxBalance, 
-                                           Seq(ChannelIDs \union PortIDs \union {Denomination}))
+        packetsToAcknowledge : Seq(Packets(Heights, maxPacketSeq, maxBalance, 
+                                           Seq(ChannelIDs \union PortIDs \union NativeDenominations))
                                    \X
                                    BOOLEAN)
     ] 
@@ -301,23 +300,54 @@ ChainStores(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
  A set of datagrams.
  For ICS20, we need only packet datagrams
  ***************************************************************************)
-Datagrams(maxHeight, maxPacketSeq, maxBalance, Denomination) ==
+Datagrams(Heights, maxPacketSeq, maxBalance, NativeDenominations) ==
     [type : {"PacketRecv"}, 
-     packet : Packets(maxHeight, maxPacketSeq, maxBalance, 
-                      Seq(ChannelIDs \union PortIDs \union {Denomination})), 
-     proofHeight : 1..maxHeight]
+     packet : Packets(Heights, maxPacketSeq, maxBalance, 
+                      Seq(ChannelIDs \union PortIDs \union NativeDenominations)), 
+     proofHeight : Heights]
     \union 
     [type : {"PacketAck"}, 
-     packet : Packets(maxHeight, maxPacketSeq, maxBalance, 
-                      Seq(ChannelIDs \union PortIDs \union {Denomination})), 
+     packet : Packets(Heights, maxPacketSeq, maxBalance, 
+                      Seq(ChannelIDs \union PortIDs \union NativeDenominations)), 
      acknowledgement : BOOLEAN, 
-     proofHeight : 1..maxHeight]
+     proofHeight : Heights]
     <: {DatagramType}
           
 
 NullDatagram == 
     [type |-> "null"] 
     <: DatagramType    
+    
+(**************************** PacketLogEntries *****************************
+ A set of packet log entries.
+ ***************************************************************************)
+PacketLogEntries(Heights, maxPacketSeq, maxBalance, NativeDenominations) == 
+    [
+        type : {"PacketSent"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        timeoutHeight : Heights,
+        data : FungibleTokenPacketData(maxBalance, 
+                                       Seq(ChannelIDs \union PortIDs \union NativeDenominations))
+    ] \union [
+        type : {"PacketRecv"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : Heights
+    ] \union [
+        type : {"WriteAck"},
+        srcChainID : ChainIDs,  
+        sequence : 1..maxPacketSeq,
+        portID : PortIDs,
+        channelID : ChannelIDs,
+        timeoutHeight : Heights,
+        data : FungibleTokenPacketData(maxBalance, 
+                                       Seq(ChannelIDs \union PortIDs \union NativeDenominations)),
+        acknowledgement : BOOLEAN
+    ]
+    <: {PacketLogEntryType}    
     
 (***************************************************************************
  Chain helper operators
@@ -392,7 +422,7 @@ InitUnorderedChannelEnd(ChainID) ==
 \*      - the channelEnd is initialized to InitUnorderedChannelEnd
 \*      - the packet committments, receipts, acknowledgements, and packets  
 \*        to acknowledge are empty
-ICS20InitChainStore(ChainID, Denomination) == 
+ICS20InitChainStore(ChainID) == 
     [
         height |-> 1,
         counterpartyClientHeights |-> AsSetInt({}), 
@@ -406,5 +436,5 @@ ICS20InitChainStore(ChainID, Denomination) ==
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Nov 23 13:06:12 CET 2020 by ilinastoilkovska
+\* Last modified Mon Feb 01 12:31:21 CET 2021 by ilinastoilkovska
 \* Created Mon Oct 17 13:01:38 CEST 2020 by ilinastoilkovska

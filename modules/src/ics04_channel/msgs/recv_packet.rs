@@ -23,19 +23,12 @@ pub struct MsgRecvPacket {
 }
 
 impl MsgRecvPacket {
-    #[allow(dead_code, unreachable_code, unused_variables)]
     pub fn new(packet: Packet, proofs: Proofs, signer: AccountId) -> Result<MsgRecvPacket, Error> {
         Ok(Self {
             packet,
             proofs,
             signer,
         })
-    }
-
-    // returns the base64-encoded bytes used for the
-    // data field when signing the packet
-    pub fn get_data_bytes() -> Vec<u8> {
-        todo!()
     }
 }
 
@@ -44,12 +37,6 @@ impl Msg for MsgRecvPacket {
 
     fn route(&self) -> String {
         crate::keys::ROUTER_KEY.to_string()
-    }
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError> {
-        // Nothing to validate
-        // All the validation is performed on creation
-        Ok(())
     }
 
     fn type_url(&self) -> String {
@@ -72,6 +59,7 @@ impl TryFrom<RawMsgRecvPacket> for MsgRecvPacket {
 
         let proofs = Proofs::new(
             raw_msg.proof_commitment.into(),
+            None,
             None,
             None,
             raw_msg

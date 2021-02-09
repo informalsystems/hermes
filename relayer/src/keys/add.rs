@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -20,12 +20,12 @@ pub fn add_key(opts: KeysAddOptions) -> Result<String, Error> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain
-    let chain = CosmosSDKChain::bootstrap(opts.clone().chain_config, Arc::new(Mutex::new(rt)))?;
+    let chain = CosmosSDKChain::bootstrap(opts.clone().chain_config, Arc::new(rt))?;
 
     let key_contents = fs::read_to_string(&opts.file)
         .map_err(|_| Kind::KeyBase.context("error reading the key file"))?;
 
-    //Check if it's a valid Key seed file
+    // Check if it's a valid Key seed file
     let key_entry = chain.keybase().key_from_seed_file(&key_contents);
 
     match key_entry {

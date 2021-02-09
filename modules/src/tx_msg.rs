@@ -1,3 +1,4 @@
+use crate::ics24_host::error::ValidationError;
 use prost_types::Any;
 use tendermint::account::Id as AccountId;
 
@@ -6,8 +7,6 @@ pub trait Msg: Clone {
 
     // TODO -- clarify what is this function supposed to do & its connection to ICS26 routing mod.
     fn route(&self) -> String;
-
-    fn validate_basic(&self) -> Result<(), Self::ValidationError>;
 
     fn get_sign_bytes<M: From<Self> + prost::Message>(&self) -> Vec<u8> {
         let mut buf = Vec::new();
@@ -29,4 +28,8 @@ pub trait Msg: Clone {
     }
 
     fn get_signers(&self) -> Vec<AccountId>;
+
+    fn validate_basic(&self) -> Result<(), ValidationError> {
+        Ok(())
+    }
 }

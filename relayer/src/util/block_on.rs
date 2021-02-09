@@ -4,8 +4,7 @@ use futures::Future;
 
 /// Spawns a new tokio runtime and use it to block on the given future.
 pub fn block_on<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new()
-        .basic_scheduler()
+    tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap()

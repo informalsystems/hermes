@@ -1,17 +1,3 @@
-use crate::config::ChainConfig;
-use crate::keyring::errors::{Error, Kind};
-use bech32::ToBase32;
-
-use bitcoin::secp256k1::Secp256k1;
-use bitcoin::{
-    network::constants::Network,
-    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-};
-
-use bitcoin_wallet::mnemonic::Mnemonic;
-use hdpath::StandardHDPath;
-use k256::ecdsa::{signature::Signer, Signature, SigningKey};
-use serde_json::Value;
 use std::collections::BTreeMap;
 use std::convert::TryFrom;
 use std::fs;
@@ -19,9 +5,22 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use bech32::ToBase32;
+use bitcoin::{
+    network::constants::Network,
+    secp256k1::Secp256k1,
+    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
+};
+use bitcoin_wallet::mnemonic::Mnemonic;
+use hdpath::StandardHDPath;
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
+use serde_json::Value;
 use tendermint::account::Id as AccountId;
 
-pub const KEYSTORE_DEFAULT_FOLDER: &str = ".rrly/keys/";
+use crate::config::ChainConfig;
+use crate::keyring::errors::{Error, Kind};
+
+pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_TEST_BACKEND: &str = "keyring-test";
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 

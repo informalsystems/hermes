@@ -1,44 +1,35 @@
-pub(crate) mod cosmos;
-pub use cosmos::CosmosSDKChain;
-
-pub mod handle;
-pub mod runtime;
-
-#[cfg(test)]
-pub mod mock;
+use std::{sync::Arc, thread};
 
 use crossbeam_channel as channel;
-use std::{
-    sync::{Arc, Mutex},
-    thread,
-};
-use tokio::runtime::Runtime as TokioRuntime;
-
 use prost_types::Any;
-
-use tendermint_proto::Protobuf;
-
 // TODO - tendermint deps should not be here
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
+use tendermint_proto::Protobuf;
+use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-
+pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
-use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics03_connection::connection::{ConnectionEnd, State};
+use ibc::ics03_connection::raw::ConnectionIds;
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::Height as ICSHeight;
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest,
+};
+use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
 
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
@@ -46,7 +37,13 @@ use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+
+pub(crate) mod cosmos;
+pub mod handle;
+pub mod runtime;
+
+#[cfg(test)]
+pub mod mock;
 
 /// Generic query response type
 /// TODO - will slowly move to GRPC protobuf specs for queries
@@ -80,7 +77,7 @@ pub trait Chain: Sized {
     type ClientState: ClientState;
 
     /// Constructs the chain
-    fn bootstrap(config: ChainConfig, rt: Arc<Mutex<TokioRuntime>>) -> Result<Self, Error>;
+    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
     #[allow(clippy::type_complexity)]
     /// Initializes and returns the light client (if any) associated with this chain.
@@ -91,7 +88,7 @@ pub trait Chain: Sized {
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
         &self,
-        rt: Arc<Mutex<TokioRuntime>>,
+        rt: Arc<TokioRuntime>,
     ) -> Result<
         (
             channel::Receiver<EventBatch>,
@@ -154,7 +151,8 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<ConnectionEnd, Error> {
         let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
-        Ok(ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
+        Ok(ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("connection".into()).context(e))?)
     }
 
     fn query_channel(
@@ -168,7 +166,8 @@ pub trait Chain: Sized {
             height,
             false,
         )?;
-        Ok(ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?)
+        Ok(ChannelEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("channel".into()).context(e))?)
     }
 
     // Provable queries
@@ -186,14 +185,15 @@ pub trait Chain: Sized {
     ) -> Result<(ConnectionEnd, MerkleProof), Error> {
         let res = self
             .query(Path::Connections(connection_id.clone()), height, true)
-            .map_err(|e| Kind::Query.context(e))?;
-        let connection_end =
-            ConnectionEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
+        let connection_end = ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
 
         Ok((
             connection_end,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("proven connection".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
@@ -216,20 +216,21 @@ pub trait Chain: Sized {
                 height,
                 true,
             )
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(|e| Kind::Query.context(e))?;
+        let channel_end = ChannelEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
         Ok((
             channel_end,
-            res.proof
-                .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
+            res.proof.ok_or_else(|| {
+                Kind::Query("proven channel".into()).context("empty proof".to_string())
+            })?,
         ))
     }
 
     /// Builds the required proofs and the client state for connection handshake messages.
-    /// The proofs and client state must be obtained from queries at same height with value
-    /// `height - 1`
+    /// The proofs and client state must be obtained from queries at same height.
     fn build_connection_proofs_and_client_state(
         &self,
         message_type: ConnectionMsgType,
@@ -237,14 +238,30 @@ pub trait Chain: Sized {
         client_id: &ClientId,
         height: ICSHeight,
     ) -> Result<(Option<Self::ClientState>, Proofs), Error> {
-        // Set the height of the queries at height - 1
-        let query_height = height
-            .decrement()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
+        let (connection_end, connection_proof) = self.proven_connection(&connection_id, height)?;
 
-        // Collect all proofs as required
-        let connection_proof =
-            CommitmentProofBytes::from(self.proven_connection(&connection_id, query_height)?.1);
+        // Check that the connection state is compatible with the message
+        match message_type {
+            ConnectionMsgType::OpenTry => {
+                if !connection_end.state_matches(&State::Init)
+                    && !connection_end.state_matches(&State::TryOpen)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenAck => {
+                if !connection_end.state_matches(&State::TryOpen)
+                    && !connection_end.state_matches(&State::Open)
+                {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+            ConnectionMsgType::OpenConfirm => {
+                if !connection_end.state_matches(&State::Open) {
+                    return Err(Kind::ConnOpenTry("bad connection state".to_string()).into());
+                }
+            }
+        }
 
         let mut client_state = None;
         let mut client_proof = None;
@@ -253,7 +270,7 @@ pub trait Chain: Sized {
         match message_type {
             ConnectionMsgType::OpenTry | ConnectionMsgType::OpenAck => {
                 let (client_state_value, client_state_proof) =
-                    self.proven_client_state(&client_id, query_height)?;
+                    self.proven_client_state(&client_id, height)?;
 
                 client_proof = Some(CommitmentProofBytes::from(client_state_proof));
 
@@ -261,7 +278,7 @@ pub trait Chain: Sized {
                     .proven_client_consensus(
                         &client_id,
                         client_state_value.latest_height(),
-                        query_height,
+                        height,
                     )?
                     .1;
 
@@ -282,8 +299,14 @@ pub trait Chain: Sized {
 
         Ok((
             client_state,
-            Proofs::new(connection_proof, client_proof, consensus_proof, height)
-                .map_err(|_| Kind::MalformedProof)?,
+            Proofs::new(
+                CommitmentProofBytes::from(connection_proof),
+                client_proof,
+                consensus_proof,
+                None,
+                height.increment(),
+            )
+            .map_err(|_| Kind::MalformedProof)?,
         ))
     }
 
@@ -298,23 +321,21 @@ pub trait Chain: Sized {
     }
 
     /// Builds the proof for channel handshake messages.
-    /// The proof must be obtained from queries at height `height - 1`
+    /// The proof is obtained from queries at height `height`
     fn build_channel_proofs(
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
         height: ICSHeight,
     ) -> Result<Proofs, Error> {
-        // Set the height of the queries at height - 1
-        let query_height = height
-            .decrement()
-            .map_err(|e| Kind::InvalidHeight.context(e))?;
-
         // Collect all proofs as required
         let channel_proof =
-            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, query_height)?.1);
+            CommitmentProofBytes::from(self.proven_channel(port_id, channel_id, height)?.1);
 
-        Ok(Proofs::new(channel_proof, None, None, height).map_err(|_| Kind::MalformedProof)?)
+        Ok(
+            Proofs::new(channel_proof, None, None, None, height.increment())
+                .map_err(|_| Kind::MalformedProof)?,
+        )
     }
 
     fn query_packet_commitments(
@@ -337,50 +358,83 @@ pub trait Chain: Sized {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
+    /// Performs a query to retrieve the identifiers of all channels associated with a connection.
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all clients associated with a chain.
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error>;
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error>;
+
+    /// Performs a query to retrieve the identifiers of all channels.
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error>;
+
     fn build_packet_proofs(
         &self,
         packet_type: PacketMsgType,
-        port_id: &PortId,
-        channel_id: &ChannelId,
+        port_id: PortId,
+        channel_id: ChannelId,
         sequence: Sequence,
         height: ICSHeight,
     ) -> Result<(Vec<u8>, Proofs), Error> {
-        let data: Path;
-        match packet_type {
-            PacketMsgType::Recv => {
-                data = Path::Commitments {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+        let (data, channel_proof) = match packet_type {
+            PacketMsgType::Recv => (
+                Path::Commitments {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
-            }
-            PacketMsgType::Ack => {
-                data = Path::Acks {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+                },
+                None,
+            ),
+            PacketMsgType::Ack => (
+                Path::Acks {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
-            }
-            PacketMsgType::Timeout => {
-                data = Path::Receipts {
-                    port_id: port_id.clone(),
-                    channel_id: channel_id.clone(),
+                },
+                None,
+            ),
+            PacketMsgType::Timeout => (
+                Path::Receipts {
+                    port_id,
+                    channel_id,
                     sequence,
-                }
+                },
+                None,
+            ),
+            PacketMsgType::TimeoutOnClose => {
+                let commitment = CommitmentProofBytes::from(
+                    self.proven_channel(&port_id, &channel_id, height)?.1,
+                );
+
+                (
+                    Path::Receipts {
+                        port_id,
+                        channel_id,
+                        sequence,
+                    },
+                    Some(commitment),
+                )
             }
-        }
+        };
 
         let res = self
             .query(data, height, true)
-            .map_err(|e| Kind::Query.context(e))?;
+            .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
+
+        let commitment_proof_bytes = res.proof.ok_or_else(|| {
+            Kind::Query(packet_type.to_string()).context("empty proof".to_string())
+        })?;
 
         let proofs = Proofs::new(
-            CommitmentProofBytes::from(
-                res.proof
-                    .ok_or_else(|| Kind::Query.context("empty proof".to_string()))?,
-            ),
+            commitment_proof_bytes.into(),
             None,
             None,
+            channel_proof,
             height.increment(),
         )
         .map_err(|_| Kind::MalformedProof)?;

@@ -1,4 +1,5 @@
 use prost_types::Any;
+use std::{thread, time::Duration};
 use thiserror::Error;
 use tracing::{error, info};
 
@@ -15,7 +16,6 @@ use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
-use crate::error::{Error, Kind};
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -29,22 +29,20 @@ pub enum ForeignClientError {
 #[derive(Clone, Debug)]
 pub struct ForeignClient {
     /// The identifier of this client. The host chain determines this id upon client creation,
-    /// so it may be missing (`None).
-    id: ClientId,
+    /// so we may be using the default value temporarily.
+    pub id: ClientId,
 
     /// A handle to the chain hosting this client, i.e., destination chain.
-    dst_chain: Box<dyn ChainHandle>,
+    pub dst_chain: Box<dyn ChainHandle>,
 
     /// A handle to the chain whose headers this client is verifying, aka the source chain.
-    src_chain: Box<dyn ChainHandle>,
+    pub src_chain: Box<dyn ChainHandle>,
 }
 
 impl ForeignClient {
-    /// Creates a new foreign client on `host_chain`. Blocks until the client is created, or
+    /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
-    /// Post-condition: `host_chain` hosts an IBC client for `src_chain`.
-    /// TODO: what are the pre-conditions for success?
-    /// Is it enough to have a "live" handle to each of `host_chain` and `src_chain` chains?
+    /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
     pub fn new(
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
@@ -68,31 +66,6 @@ impl ForeignClient {
 
         Ok(client)
     }
-
-    pub fn id(&self) -> &ClientId {
-        &self.id
-    }
-
-    /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
-    fn create(&mut self) -> Result<(), ForeignClientError> {
-        let done = '\u{1F36D}';
-
-        match build_create_client_and_send(self.dst_chain.clone(), self.src_chain.clone()) {
-            Err(e) => {
-                error!("Failed CreateClient {:?}: {}", self.dst_chain.id(), e);
-                return Err(ForeignClientError::ClientCreate(format!(
-                    "Create client failed ({:?})",
-                    e
-                )));
-            }
-            Ok(event) => {
-                self.id = extract_client_id(&event)?.clone();
-                info!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
-            }
-        }
-        Ok(())
-    }
-
     /// Returns a handle to the chain hosting this client.
     pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
         self.dst_chain.clone()
@@ -103,22 +76,181 @@ impl ForeignClient {
         self.src_chain.clone()
     }
 
+    pub fn id(&self) -> &ClientId {
+        &self.id
+    }
+
+    /// Lower-level interface for preparing a message to create a client.
+    pub fn build_create_client(&self) -> Result<MsgCreateAnyClient, ForeignClientError> {
+        // Get signer
+        let signer = self.dst_chain.get_signer().map_err(|e| {
+            ForeignClientError::ClientCreate(format!(
+                "failed while fetching the destination chain ({}) signer: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
+
+        // Build client create message with the data from source chain at latest height.
+        let latest_height = self.src_chain.query_latest_height().map_err(|e| {
+            ForeignClientError::ClientCreate(format!(
+                "failed while querying src chain ({}) for latest height: {}",
+                self.src_chain.id(),
+                e
+            ))
+        })?;
+
+        let client_state = self
+            .src_chain
+            .build_client_state(latest_height)
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed while building client state from src chain ({}) with error: {}",
+                    self.src_chain.id(),
+                    e
+                ))
+            })?
+            .wrap_any();
+
+        let consensus_state = self.src_chain
+            .build_consensus_state(latest_height)
+            .map_err(|e| ForeignClientError::ClientCreate(format!("failed while building client consensus state from src chain ({}) with error: {}", self.src_chain.id(), e)))?
+            .wrap_any();
+
+        let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer).map_err(|e| {
+            ForeignClientError::ClientCreate(format!(
+                "failed while building the create client message: {}",
+                e
+            ))
+        })?;
+
+        Ok(msg)
+    }
+
+    /// Returns the identifier of the newly created client.
+    pub fn build_create_client_and_send(&self) -> Result<IBCEvent, ForeignClientError> {
+        let new_msg = self.build_create_client()?;
+
+        let res = self
+            .dst_chain
+            .send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])
+            .map_err(|e| {
+                ForeignClientError::ClientCreate(format!(
+                    "failed sending message to dst chain ({}) with err: {}",
+                    self.dst_chain.id(),
+                    e
+                ))
+            })?;
+
+        assert!(!res.is_empty());
+        Ok(res[0].clone())
+    }
+
+    /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
+    fn create(&mut self) -> Result<(), ForeignClientError> {
+        let done = '\u{1F36D}';
+
+        match self.build_create_client_and_send() {
+            Err(e) => {
+                error!("Failed CreateClient {:?}: {}", self.dst_chain.id(), e);
+                return Err(ForeignClientError::ClientCreate(format!(
+                    "Create client failed ({:?})",
+                    e
+                )));
+            }
+            Ok(event) => {
+                self.id = extract_client_id(&event)?.clone();
+                println!("{}  {} => {:?}\n", done, self.dst_chain.id(), event);
+            }
+        }
+        Ok(())
+    }
+
+    pub fn build_update_client(
+        &self,
+        target_height: Height,
+    ) -> Result<Vec<Any>, ForeignClientError> {
+        // Wait for source chain to reach `target_height`
+        while self.src_chain().query_latest_height().map_err(|e| {
+            ForeignClientError::ClientUpdate(format!(
+                "failed fetching src chain latest height with error: {}",
+                e
+            ))
+        })? < target_height
+        {
+            thread::sleep(Duration::from_millis(100))
+        }
+
+        // Get the latest trusted height from the client state on destination.
+        let trusted_height = self
+            .dst_chain()
+            .query_client_state(&self.id, Height::default())
+            .map_err(|e| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed querying client state on dst chain {} with error: {}",
+                    self.id, e
+                ))
+            })?
+            .latest_height();
+
+        let header = self
+            .src_chain()
+            .build_header(trusted_height, target_height)
+            .map_err(|e| {
+                ForeignClientError::ClientUpdate(format!(
+                    "failed building header with error: {}",
+                    e
+                ))
+            })?
+            .wrap_any();
+
+        let signer = self.dst_chain().get_signer().map_err(|e| {
+            ForeignClientError::ClientUpdate(format!(
+                "failed getting signer for dst chain ({}) with error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
+        let new_msg = MsgUpdateAnyClient {
+            client_id: self.id.clone(),
+            header,
+            signer,
+        };
+
+        Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
+    }
+
+    pub fn build_update_client_and_send(&self) -> Result<IBCEvent, ForeignClientError> {
+        let h = self.src_chain.query_latest_height().map_err(|e| {
+            ForeignClientError::ClientUpdate(format!(
+                "failed while querying src chain ({}) for latest height: {}",
+                self.src_chain.id(),
+                e
+            ))
+        })?;
+        let new_msgs = self.build_update_client(h)?;
+
+        let mut events = self.dst_chain().send_msgs(new_msgs).map_err(|e| {
+            ForeignClientError::ClientUpdate(format!(
+                "failed sending message to dst chain ({}) with err: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
+
+        assert!(!events.is_empty());
+        Ok(events.pop().unwrap())
+    }
+
     /// Attempts to update a client using header from the latest height of its source chain.
     pub fn update(&self) -> Result<(), ForeignClientError> {
-        let client_id = self.id.clone();
-
-        let res = build_update_client_and_send(
-            self.dst_chain.clone(),
-            self.src_chain.clone(),
-            &client_id,
-        )
-        .map_err(|e| {
+        let res = self.build_update_client_and_send().map_err(|e| {
             ForeignClientError::ClientUpdate(format!("build_create_client_and_send {:?}", e))
         })?;
 
-        println!(
+        info!(
             "Client id {:?} on {:?} updated with return message {:?}\n",
-            client_id,
+            self.id,
             self.dst_chain.id(),
             res
         );
@@ -137,152 +269,63 @@ pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientErr
     }
 }
 
-/// Lower-level interface for preparing a message to create a client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `new`) should be preferred over this.
-pub fn build_create_client(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-) -> Result<MsgCreateAnyClient, Error> {
-    // Get signer
-    let signer = dst_chain
-        .get_signer()
-        .map_err(|e| Kind::KeyBase.context(e))?;
-
-    // Build client create message with the data from source chain at latest height.
-    let latest_height = src_chain.query_latest_height()?;
-    Ok(MsgCreateAnyClient::new(
-        src_chain.build_client_state(latest_height)?.wrap_any(),
-        src_chain.build_consensus_state(latest_height)?.wrap_any(),
-        signer,
-    )
-    .map_err(|e| {
-        Kind::MessageTransaction("failed to build the create client message".into()).context(e)
-    })?)
-}
-
-/// Lower-level interface for creating a client.
-/// Returns the identifier of the newly created client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `new`) should be preferred over this.
-pub fn build_create_client_and_send(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-) -> Result<IBCEvent, Error> {
-    let new_msg = build_create_client(dst_chain.clone(), src_chain)?;
-
-    let res = dst_chain.send_msgs(vec![new_msg.to_any::<RawMsgCreateClient>()])?;
-    assert!(!res.is_empty());
-    Ok(res[0].clone())
-}
-
-/// Lower-level interface to create the message for updating a client to height `target_height`.
-///
-/// ## Note
-/// Methods in `ForeignClient`, in particular `prepare_update`, should be preferred over this.
-pub fn build_update_client(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-    dst_client_id: &ClientId,
-    target_height: Height,
-) -> Result<Vec<Any>, Error> {
-    // Get the latest trusted height from the client state on destination.
-    let trusted_height = dst_chain
-        .query_client_state(&dst_client_id, Height::default())?
-        .latest_height();
-
-    let header = src_chain
-        .build_header(trusted_height, target_height)?
-        .wrap_any();
-
-    let signer = dst_chain.get_signer()?;
-    let new_msg = MsgUpdateAnyClient {
-        client_id: dst_client_id.clone(),
-        header,
-        signer,
-    };
-
-    Ok(vec![new_msg.to_any::<RawMsgUpdateClient>()])
-}
-
-/// Lower-level interface for preparing a message to update a client.
-///
-/// ## Note
-/// Methods in `ForeignClient` (see `update`) should be preferred over this.
-pub fn build_update_client_and_send(
-    dst_chain: Box<dyn ChainHandle>,
-    src_chain: Box<dyn ChainHandle>,
-    dst_client_id: &ClientId,
-) -> Result<IBCEvent, Error> {
-    let new_msgs = build_update_client(
-        dst_chain.clone(),
-        src_chain.clone(),
-        dst_client_id,
-        src_chain.query_latest_height()?,
-    )?;
-
-    let mut events = dst_chain.send_msgs(new_msgs)?;
-    assert!(!events.is_empty());
-    Ok(events.pop().unwrap())
-}
-
 /// Tests the integration of crates `relayer` plus `relayer-cli` against crate `ibc`. These tests
 /// exercise various client methods (create, update, ForeignClient::new) using locally-running
 /// instances of chains built using `MockChain`.
-///
-/// ## Why are all these tests ignored?
-/// We ignore these tests as of #451, because the mock chain is not yet capable of producing
-/// transaction responses of correct types (the types should be similar to `tx_commit::Response`).
-/// Another problem is that `build_create_client_and_send` contains a Cosmos-specific method
-/// for parsing transaction response. Once this parsing stage is general enough for the Mock chain,
-/// these tests should require minimal changes to pass.
 #[cfg(test)]
 mod test {
     use std::str::FromStr;
 
+    use ibc::events::IBCEvent;
     use ibc::ics24_host::identifier::ClientId;
     use ibc::Height;
 
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
     use crate::chain::runtime::ChainRuntime;
-    use crate::foreign_client::{
-        build_create_client_and_send, build_update_client_and_send, extract_client_id,
-        ForeignClient,
-    };
+    use crate::foreign_client::ForeignClient;
 
     /// Basic test for the `build_create_client_and_send` method.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn create_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
 
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let a_client = ForeignClient {
+            id: Default::default(),
+            dst_chain: a_chain.clone(),
+            src_chain: b_chain.clone(),
+        };
+
+        let b_client = ForeignClient {
+            id: Default::default(),
+            dst_chain: b_chain,
+            src_chain: a_chain,
+        };
 
         // Create the client on chain a
-        let res = build_create_client_and_send(a_chain.clone(), b_chain.clone());
+        let res = a_client.build_create_client_and_send();
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
 
         // Create the client on chain b
-        let res = build_create_client_and_send(b_chain.clone(), a_chain.clone());
+        let res = b_client.build_create_client_and_send();
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
+        assert!(matches!(res.unwrap(), IBCEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn update_client_and_send_method() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -293,30 +336,44 @@ mod test {
 
         let (a_chain, _) = ChainRuntime::<MockChain>::spawn(a_cfg).unwrap();
         let (b_chain, _) = ChainRuntime::<MockChain>::spawn(b_cfg).unwrap();
+        let mut a_client = ForeignClient {
+            id: a_client_id,
+            dst_chain: a_chain.clone(),
+            src_chain: b_chain.clone(),
+        };
+
+        let mut b_client = ForeignClient {
+            id: Default::default(),
+            dst_chain: b_chain.clone(),
+            src_chain: a_chain.clone(),
+        };
 
         // This action should fail because no client exists (yet)
-        let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_client_id);
+        let res = a_client.build_update_client_and_send();
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail (no client existed)"
         );
 
         // Remember b's height.
-        let b_height_start = b_chain.query_latest_height().unwrap();
+        let b_height_start = b_chain.clone().query_latest_height().unwrap();
 
         // Create a client on chain a
-        let res = build_create_client_and_send(a_chain.clone(), b_chain.clone());
+        let res = a_client.create();
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
+
+        // TODO: optionally add return events from `create` and assert on the event type, e.g.:
+        //      assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
+        //      let a_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
 
         // This should fail because the client on chain a already has the latest headers. Chain b,
         // the source chain for the client on a, is at the same height where it was when the client
         // was created, so an update should fail here.
-        let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_client_id);
+        let res = a_client.build_update_client_and_send();
         assert!(
             res.is_err(),
             "build_update_client_and_send was supposed to fail",
@@ -327,15 +384,14 @@ mod test {
         assert_eq!(b_height_last, b_height_start);
 
         // Create a client on chain b
-        let res = build_create_client_and_send(b_chain.clone(), a_chain.clone());
+        let res = b_client.create();
         assert!(
             res.is_ok(),
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
-
-        // Remember the id of the client we created on chain b
-        let b_client_id = extract_client_id(&res.unwrap()).unwrap().clone();
+        // TODO: assert return events
+        //  assert!(matches!(res.as_ref().unwrap(), IBCEvent::CreateClient(_)));
 
         // Chain b should have advanced
         let mut b_height_last = b_chain.query_latest_height().unwrap();
@@ -346,12 +402,14 @@ mod test {
 
         // Now we can update both clients -- a ping pong, similar to ICS18 `client_update_ping_pong`
         for _i in 1..num_iterations {
-            let res = build_update_client_and_send(a_chain.clone(), b_chain.clone(), &a_client_id);
+            let res = a_client.build_update_client_and_send();
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain a) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let a_height_current = a_chain.query_latest_height().unwrap();
             a_height_last = a_height_last.increment();
             assert_eq!(
@@ -360,12 +418,14 @@ mod test {
             );
 
             // And also update the client on chain b.
-            let res = build_update_client_and_send(b_chain.clone(), a_chain.clone(), &b_client_id);
+            let res = b_client.build_update_client_and_send();
             assert!(
                 res.is_ok(),
                 "build_update_client_and_send failed (chain b) with error: {:?}",
                 res
             );
+            assert!(matches!(res.as_ref().unwrap(), IBCEvent::UpdateClient(_)));
+
             let b_height_current = b_chain.query_latest_height().unwrap();
             b_height_last = b_height_last.increment();
             assert_eq!(
@@ -377,7 +437,6 @@ mod test {
 
     /// Tests for `ForeignClient::new()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_create() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");
@@ -423,7 +482,6 @@ mod test {
 
     /// Tests for `ForeignClient::update()`.
     #[test]
-    #[ignore = "cannot parse client creation against mock chain (#451), temp. disabled"]
     fn foreign_client_update() {
         let a_cfg = get_basic_chain_config("chain_a");
         let b_cfg = get_basic_chain_config("chain_b");

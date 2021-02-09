@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.0.6"
+version    = "0.1.0"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -12,6 +12,7 @@ authors    = [
 
 description = """
     Implementation of the Inter-Blockchain Communication Protocol (IBC).
+    This crate comprises the main data structures and on-chain logic.
 """
 
 [features]
@@ -21,7 +22,7 @@ mocks = [ "tendermint-testgen" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.6.0", path = "../proto" }
+ibc-proto = { version = "0.7.0", path = "../proto" }
 ics23 = "0.6.0"
 anomaly = "0.2.0"
 chrono = "0.4"
@@ -30,31 +31,28 @@ serde_derive = "1.0.104"
 serde = "1.0.104"
 serde_json = "1"
 tracing = "0.1.13"
-prost = "0.6.1"
-prost-types = "0.6.1"
-bytes = "0.6.0"
+prost = "0.7"
+prost-types = "0.7"
+bytes = "1.0.0"
 dyn-clonable = "0.9.0"
 regex = "1"
 bech32 = "0.7.2"
+subtle-encoding = "0.5"
 
 [dependencies.tendermint]
-version = "=0.17.0"
+version = "=0.18.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.17.0"
+version = "=0.18.0"
 features = ["http-client", "websocket-client"]
 
-[dependencies.tendermint-light-client]
-version = "=0.17.0"
-
 [dependencies.tendermint-proto]
-version = "=0.17.0"
+version = "=0.18.0"
 
 [dependencies.tendermint-testgen]
-version = "=0.17.0"
+version = "=0.18.0"
 optional = true
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["macros"] }
-subtle-encoding = { version = "0.5" }
-tendermint-testgen = { version = "=0.17.0" } # Needed for generating (synthetic) light blocks.
+tokio = { version = "1.0", features = ["macros"] }
+tendermint-testgen = { version = "=0.18.0" } # Needed for generating (synthetic) light blocks.

@@ -1,6 +1,6 @@
 //! This module implements the processing logic for ICS3 (connection open handshake) messages.
 
-use crate::handler::{Event, EventType, HandlerOutput};
+use crate::handler::HandlerOutput;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::Error;
@@ -14,51 +14,9 @@ pub mod conn_open_try;
 mod verify;
 
 #[derive(Clone, Debug)]
-pub enum ConnectionEvent {
-    ConnOpenInit(ConnectionResult),
-    ConnOpenTry(ConnectionResult),
-    ConnOpenAck(ConnectionResult),
-    ConnOpenConfirm(ConnectionResult),
-}
-
-#[derive(Clone, Debug)]
 pub struct ConnectionResult {
     pub connection_id: Option<ConnectionId>,
     pub connection_end: ConnectionEnd,
-}
-
-impl From<ConnectionEvent> for Event {
-    fn from(ev: ConnectionEvent) -> Event {
-        match ev {
-            ConnectionEvent::ConnOpenInit(_conn) => Event::new(
-                EventType::Custom("connection_open_init".to_string()),
-                vec![("connection_id".to_string(), "None".to_string())],
-            ),
-            ConnectionEvent::ConnOpenTry(conn) => Event::new(
-                EventType::Custom("connection_open_try".to_string()),
-                vec![(
-                    "connection_id".to_string(),
-                    // TODO: move connection id decision (`next_connection_id` method) in ClientReader
-                    // to be able to write the connection identifier here, instead of the default.
-                    conn.connection_id.unwrap_or_default().to_string(),
-                )],
-            ),
-            ConnectionEvent::ConnOpenAck(conn) => Event::new(
-                EventType::Custom("connection_open_ack".to_string()),
-                vec![(
-                    "connection_id".to_string(),
-                    conn.connection_id.unwrap().to_string(),
-                )],
-            ),
-            ConnectionEvent::ConnOpenConfirm(conn) => Event::new(
-                EventType::Custom("connection_open_confirm".to_string()),
-                vec![(
-                    "connection_id".to_string(),
-                    conn.connection_id.unwrap().to_string(),
-                )],
-            ),
-        }
-    }
 }
 
 /// General entry point for processing any type of message related to the ICS3 connection open
@@ -70,10 +28,10 @@ pub fn dispatch<Ctx>(
 where
     Ctx: ConnectionReader,
 {
-    Ok(match msg {
-        ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg)?,
-        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg)?,
-        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, *msg)?,
-        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg)?,
-    })
+    match msg {
+        ConnectionMsg::ConnectionOpenInit(msg) => conn_open_init::process(ctx, msg),
+        ConnectionMsg::ConnectionOpenTry(msg) => conn_open_try::process(ctx, *msg),
+        ConnectionMsg::ConnectionOpenAck(msg) => conn_open_ack::process(ctx, *msg),
+        ConnectionMsg::ConnectionOpenConfirm(msg) => conn_open_confirm::process(ctx, msg),
+    }
 }

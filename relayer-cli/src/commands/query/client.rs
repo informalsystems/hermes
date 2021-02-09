@@ -1,37 +1,40 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use abscissa_core::{Command, Options, Runnable};
+use tendermint_proto::Protobuf;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::info;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics02_client::raw::ConnectionIds as ConnectionIDs;
+use ibc::ics03_connection::raw::ConnectionIds as ConnectionIDs;
 use ibc::ics24_host::error::ValidationError;
 use ibc::ics24_host::identifier::ChainId;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::ics24_host::Path::{ClientConnections, ClientConsensusState, ClientState};
+use ibc_relayer::chain::Chain;
+use ibc_relayer::chain::CosmosSDKChain;
+use ibc_relayer::config::{ChainConfig, Config};
 
-use tendermint_proto::Protobuf;
-
-use relayer::chain::Chain;
-use relayer::chain::CosmosSDKChain;
-use relayer::config::{ChainConfig, Config};
-
+use crate::conclude::Output;
 use crate::error::{Error, Kind};
 use crate::prelude::*;
 
 /// Query client state command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientStateCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
 
-    #[options(help = "whether proof is required", short = "p")]
+    #[options(
+        help = "whether proof is required; default: false (no proof)",
+        short = "p"
+    )]
     proof: Option<bool>,
 }
 
@@ -59,26 +62,23 @@ impl QueryClientStateCmd {
     }
 }
 
-/// Command for handling a query for a client's state.
+/// Command for querying a client's state.
 /// To run with proof:
-/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3
+/// hermes -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3
 ///
 /// Run without proof:
-/// cargo run --bin relayer -- -c relayer/tests/config/fixtures/simple_config.toml query client state ibc-test ethbridge --height 3 -p false
+/// hermes -c cfg.toml query client state ibc-1 07-tendermint-0 --height 3 -p false
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -89,8 +89,8 @@ impl Runnable for QueryClientStateCmd {
                 AnyClientState::decode_vec(&v.value).map_err(|e| Kind::Query.context(e).into())
             });
         match res {
-            Ok(cs) => status_info!("client state query result: ", "{:?}", cs),
-            Err(e) => status_info!("client state query error: ", "{:?}", e),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -98,16 +98,24 @@ impl Runnable for QueryClientStateCmd {
 /// Query client consensus command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConsensusCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
-    #[options(free, help = "epoch of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "epoch of the client's consensus state to query"
+    )]
     consensus_epoch: Option<u64>,
 
-    #[options(free, help = "height of the client's consensus state to query")]
+    #[options(
+        free,
+        required,
+        help = "height of the client's consensus state to query"
+    )]
     consensus_height: Option<u64>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -154,24 +162,21 @@ impl QueryClientConsensusCmd {
 
 /// Implementation of the query for a client's consensus state at a certain height.
 /// Run with proof:
-/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22
+/// hermes -c cfg.toml query client consensus ibc-0 ibconeclient 22
 ///
 /// Run without proof:
-/// cargo run --bin relayer -- -c simple_config.toml query client consensus ibc0 ibconeclient 22 -p false
+/// hermes -c cfg.toml query client consensus ibc-0 ibconeclient 22 -p false
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -191,25 +196,20 @@ impl Runnable for QueryClientConsensusCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("client consensus state query result: ", "{:?}", cs),
-            Err(e) => status_info!("client consensus state query error: ", "{:?}", e),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
 
 fn validate_common_options(
-    chain_id: &Option<ChainId>,
+    chain_id: &ChainId,
     client_id: &Option<String>,
     config: &Config,
 ) -> Result<(ChainConfig, ClientId), String> {
-    let chain_id = chain_id
-        .clone()
-        .ok_or_else(|| "missing chain parameter".to_string())?;
     let chain_config = config
-        .chains
-        .iter()
-        .find(|c| c.id == chain_id)
-        .ok_or_else(|| "missing chain in configuration".to_string())?;
+        .find_chain(&chain_id)
+        .ok_or_else(|| format!("chain '{}' not found in configuration file", chain_id))?;
 
     let client_id = client_id
         .as_ref()
@@ -223,10 +223,10 @@ fn validate_common_options(
 /// Query client connections command
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryClientConnectionsCmd {
-    #[options(free, help = "identifier of the chain to query")]
-    chain_id: Option<ChainId>,
+    #[options(free, required, help = "identifier of the chain to query")]
+    chain_id: ChainId,
 
-    #[options(free, help = "identifier of the client to query")]
+    #[options(free, required, help = "identifier of the client to query")]
     client_id: Option<String>,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
@@ -244,15 +244,9 @@ impl QueryClientConnectionsCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryClientConnectionsOptions), String> {
-        let chain_id = self
-            .chain_id
-            .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
         let chain_config = config
-            .chains
-            .iter()
-            .find(|c| c.id == chain_id)
-            .ok_or_else(|| "missing chain configuration".to_string())?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let client_id = self
             .client_id
@@ -277,15 +271,12 @@ impl Runnable for QueryClientConnectionsCmd {
         let config = app_config();
 
         let (chain_config, opts) = match self.validate_options(&config) {
-            Err(err) => {
-                status_err!("invalid options: {}", err);
-                return;
-            }
+            Err(err) => return Output::error(err).exit(),
             Ok(result) => result,
         };
-        status_info!("Options", "{:?}", opts);
+        info!("Options {:?}", opts);
 
-        let rt = Arc::new(Mutex::new(TokioRuntime::new().unwrap()));
+        let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
         let height = ibc::Height::new(chain.id().version(), opts.height);
 
@@ -297,8 +288,8 @@ impl Runnable for QueryClientConnectionsCmd {
             });
 
         match res {
-            Ok(cs) => status_info!("client connections query result: ", "{:?}", cs),
-            Err(e) => status_info!("client connections query error", "{}", e),
+            Ok(cs) => Output::success(cs).exit(),
+            Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
 }
@@ -306,13 +297,14 @@ impl Runnable for QueryClientConnectionsCmd {
 /// Tests
 #[cfg(test)]
 mod tests {
+    use ibc_relayer::config::parse;
+
     use crate::commands::query::client::{QueryClientConnectionsCmd, QueryClientStateCmd};
-    use relayer::config::parse;
 
     #[test]
     fn parse_query_state_parameters() {
         let default_params = QueryClientStateCmd {
-            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            chain_id: "ibc-0".to_string().parse().unwrap(),
             client_id: Some("ibconeclient".to_string().parse().unwrap()),
             height: None,
             proof: None,
@@ -331,17 +323,9 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "No chain specified".to_string(),
-                params: QueryClientStateCmd {
-                    chain_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientStateCmd {
-                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    chain_id: "notibc0oribc1".to_string().parse().unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -398,7 +382,7 @@ mod tests {
     #[test]
     fn parse_query_client_connections_parameters() {
         let default_params = QueryClientConnectionsCmd {
-            chain_id: Some("ibc-0".to_string().parse().unwrap()),
+            chain_id: "ibc-0".to_string().parse().unwrap(),
             client_id: Some("clientidone".to_string().parse().unwrap()),
             height: Some(4),
         };
@@ -416,17 +400,9 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "No chain specified".to_string(),
-                params: QueryClientConnectionsCmd {
-                    chain_id: None,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
                 name: "Chain not configured".to_string(),
                 params: QueryClientConnectionsCmd {
-                    chain_id: Some("notibc0oribc1".to_string().parse().unwrap()),
+                    chain_id: "notibc0oribc1".to_string().parse().unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,

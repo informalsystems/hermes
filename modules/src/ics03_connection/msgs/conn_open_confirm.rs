@@ -41,10 +41,6 @@ impl Msg for MsgConnectionOpenConfirm {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn validate_basic(&self) -> Result<(), Error> {
-        Ok(())
-    }
-
     fn get_signers(&self) -> Vec<AccountId> {
         vec![self.signer]
     }
@@ -72,7 +68,7 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
                 .connection_id
                 .parse()
                 .map_err(|e| Kind::IdentifierError.context(e))?,
-            proofs: Proofs::new(msg.proof_ack.into(), None, None, proof_height)
+            proofs: Proofs::new(msg.proof_ack.into(), None, None, None, proof_height)
                 .map_err(|e| Kind::InvalidProof.context(e))?,
             signer,
         })

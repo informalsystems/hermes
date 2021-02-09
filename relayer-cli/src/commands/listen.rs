@@ -1,15 +1,11 @@
-use std::{
-    ops::Deref,
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{ops::Deref, sync::Arc, thread};
 
 use abscissa_core::{application::fatal_error, error::BoxError, Command, Options, Runnable};
 use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc::ics24_host::identifier::ChainId;
-use relayer::{config::ChainConfig, event::monitor::*};
+use ibc_relayer::{config::ChainConfig, event::monitor::*};
 
 use crate::prelude::*;
 
@@ -21,17 +17,13 @@ pub struct ListenCmd {
 
 impl ListenCmd {
     fn cmd(&self) -> Result<(), BoxError> {
-        let rt = Arc::new(Mutex::new(TokioRuntime::new()?));
-        let config = app_config().clone();
+        let rt = Arc::new(TokioRuntime::new()?);
+        let config = app_config();
 
         let chain_id = self.chain_id.clone().unwrap();
-        let chain_config = config
-            .chains
-            .into_iter()
-            .find(|c| c.id == chain_id)
-            .unwrap();
+        let chain_config = config.find_chain(&chain_id).unwrap();
 
-        listen(rt, chain_config)
+        listen(rt, chain_config.clone())
     }
 }
 
@@ -43,7 +35,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-pub fn listen(rt: Arc<Mutex<TokioRuntime>>, config: ChainConfig) -> Result<(), BoxError> {
+pub fn listen(rt: Arc<TokioRuntime>, config: ChainConfig) -> Result<(), BoxError> {
     info!(chain.id = %config.id, "spawning event monitor for");
 
     let (event_monitor, rx) = subscribe(config, rt)?;
@@ -58,7 +50,7 @@ pub fn listen(rt: Arc<Mutex<TokioRuntime>>, config: ChainConfig) -> Result<(), B
 
 fn subscribe(
     chain_config: ChainConfig,
-    rt: Arc<Mutex<TokioRuntime>>,
+    rt: Arc<TokioRuntime>,
 ) -> Result<(EventMonitor, channel::Receiver<EventBatch>), BoxError> {
     let (mut event_monitor, rx) = EventMonitor::new(chain_config.id, chain_config.rpc_addr, rt)
         .map_err(|e| format!("couldn't initialize event monitor: {}", e))?;

@@ -1,19 +1,52 @@
 use anomaly::BoxError;
 use tracing::info;
 
+use ibc::ics04_channel::channel::Order;
+
 use crate::chain::handle::ChainHandle;
-use crate::channel::{Channel, ChannelConfig};
+use crate::channel::Channel;
+use crate::config::RelayPath;
 use crate::connection::Connection;
 use crate::foreign_client::ForeignClient;
-use crate::link::Link;
+use crate::link::{Link, LinkParameters};
 
 pub(crate) const MAX_ITER: u32 = 10;
 
-pub fn channel_relay(
+/// Used by the `hermes start ibc-0 ibc-1`
+pub fn relay_on_new_link(
     a_chain_handle: Box<dyn ChainHandle>,
     b_chain_handle: Box<dyn ChainHandle>,
-    chan_cfg: ChannelConfig,
+    ordering: Order,
+    path: RelayPath,
 ) -> Result<(), BoxError> {
+    // Setup the clients, connection and channel
+    let channel = connect_with_new_channel(a_chain_handle, b_chain_handle, ordering, path)?;
+
+    let mut link = Link::new(channel)?;
+    link.relay()?;
+
+    Ok(())
+}
+
+/// Relays packets over a specified channel
+/// Used by the `hermes start ibc-0 ibc-1 transfer channel-0`
+pub fn channel_relay(
+    a_chain: Box<dyn ChainHandle>,
+    b_chain: Box<dyn ChainHandle>,
+    opts: &LinkParameters,
+) -> Result<(), BoxError> {
+    let mut link = Link::new_from_opts(a_chain, b_chain, opts)?;
+    Ok(link.relay()?)
+}
+
+/// Connects two ports of two chains creating new clients, connection and channel
+/// Used by the `hermes channel handshake ibc-0 ibc-1 transfer transfer `
+pub fn connect_with_new_channel(
+    a_chain_handle: Box<dyn ChainHandle>,
+    b_chain_handle: Box<dyn ChainHandle>,
+    ordering: Order,
+    path: RelayPath,
+) -> Result<Channel, BoxError> {
     info!("\nChannel Relay Loop\n");
 
     // Instantiate the foreign client on the two chains
@@ -24,11 +57,10 @@ pub fn channel_relay(
     let connection = Connection::new(client_on_a, client_on_b)?;
 
     // Setup the channel over the connection
-    let channel = Channel::new(connection, chan_cfg)?;
-
-    let link = Link::new(channel);
-
-    link.run()?;
-
-    Ok(())
+    Ok(Channel::new(
+        connection,
+        ordering,
+        path.a_port,
+        path.b_port,
+    )?)
 }
