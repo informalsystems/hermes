@@ -2,6 +2,10 @@
 
 ## Unreleased Changes
 
+### FEATURES
+- [modules]
+  - Implementation the channel message handlers ([#316])
+  
 ### BUG FIXES:
 
 - [relayer-cli]
