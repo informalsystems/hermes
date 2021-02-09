@@ -4,7 +4,7 @@
 
 ### FEATURES
 - [modules]
-  -Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
+  - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
   
 ### BUG FIXES:
 
