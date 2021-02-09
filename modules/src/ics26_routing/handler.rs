@@ -149,8 +149,6 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
-
-    //use crate::ics24_host::identifier::{ChannelId, ConnectionId};
     use crate::ics24_host::identifier::ChannelId;
 
     use crate::events::IBCEvent;
@@ -196,8 +194,6 @@ mod tests {
 
         let msg_conn_try_good_height =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(10, 29)).unwrap();
-
-        //Some(ConnectionId::from_str("defaultConnection-0").unwrap());
 
         let msg_chan_init =
             MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init_ics26()).unwrap();

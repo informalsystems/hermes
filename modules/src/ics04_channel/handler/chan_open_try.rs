@@ -96,18 +96,8 @@ pub(crate) fn process(
         return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
     }
 
-    //Channel capabilities
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let channel_cap = match cap {
-        Some(key) => {
-            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                Err(Kind::InvalidPortCapability)
-            } else {
-                Ok(key)
-            }
-        }
-        None => Err(Kind::NoPortCapability),
-    }?;
+    // Channel capabilities
+    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());

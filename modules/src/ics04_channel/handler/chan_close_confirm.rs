@@ -20,43 +20,27 @@ pub(crate) fn process(
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Unwrap the old channel end and validate it against the message.
+    // Retrieve the old channel end and validate it against the message.
 
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
         .ok_or_else(|| Kind::ChannelNotFound.context(msg.channel_id().clone().to_string()))?;
 
-    // Validate that the channel end is in a state where it can be ack.
-
+    // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {
-        return Err(Into::<Error>::into(Kind::ChannelAlreadyClosed(
-            msg.channel_id().clone(),
-        )));
+        return Err(Kind::ChannelAlreadyClosed(msg.channel_id().clone()).into());
     }
 
-    //Channel capabilities
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let channel_cap = match cap {
-        Some(key) => {
-            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                Err(Kind::InvalidPortCapability)
-            } else {
-                Ok(key)
-            }
-        }
-        None => Err(Kind::NoPortCapability),
-    }?;
+    // Channel capabilities
+    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     // An OPEN IBC connection running on the local (host) chain should exist.
-
     if channel_end.connection_hops().len() != 1 {
         return Err(Kind::InvalidConnectionHopsLength.into());
     }
-
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
         .ok_or_else(|| Kind::MissingConnection(channel_end.connection_hops()[0].clone()))?;
-
     if !conn.state_matches(&ConnectionState::Open) {
         return Err(ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
     }

@@ -22,7 +22,7 @@ pub(crate) fn process(
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
         .ok_or_else(|| Kind::ChannelNotFound.context(msg.channel_id().clone().to_string()))?;
 
-    // Validate that the channel end is in a state where it can be ack.
+    // Validate that the channel end is in a state where it can be closed.
 
     if channel_end.state_matches(&State::Closed) {
         return Err(Into::<Error>::into(Kind::InvalidChannelState(
@@ -30,19 +30,8 @@ pub(crate) fn process(
         )));
     }
 
-    //Channel capabilities
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let channel_cap = match cap {
-        Some(key) => {
-            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                Err(Kind::InvalidPortCapability)
-            } else {
-                Ok(key)
-            }
-        }
-        None => Err(Kind::NoPortCapability),
-    }?;
-
+    // Channel capabilities
+    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {

@@ -99,10 +99,10 @@ pub enum Kind {
     #[error("Client not found in chan open verification")]
     ClientNotFound,
 
-    #[error("Channel is in {0} state which is not")]
+    #[error("Channel is in state {0} which is invalid")]
     InvalidChannelState(ChannelId),
 
-    #[error("Channel is in {0} state")]
+    #[error("Channel is in state {0}")]
     ChannelAlreadyClosed(ChannelId),
 
     #[error("Channel chain verification fails on ChannelOpenAck for ChannelOpenTry")]

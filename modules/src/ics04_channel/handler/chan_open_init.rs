@@ -15,19 +15,8 @@ pub(crate) fn process(
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let cap_key;
-
-    match cap {
-        Some(key) => {
-            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                return Err(Kind::InvalidPortCapability.into());
-            } else {
-                cap_key = key;
-            }
-        }
-        None => return Err(Kind::NoPortCapability.into()),
-    }
+    // Channel capabilities
+    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().connection_hops().len() != 1 {
         return Err(Kind::InvalidConnectionHopsLength.into());
@@ -70,7 +59,7 @@ pub(crate) fn process(
         port_id: msg.port_id().clone(),
         channel_id: None,
         channel_end: new_channel_end,
-        channel_cap: cap_key,
+        channel_cap,
     };
 
     let event_attributes = Attributes {
