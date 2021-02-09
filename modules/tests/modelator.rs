@@ -25,8 +25,8 @@ pub trait TestExecutor<S> {
 }
 
 pub fn test<Executor, State>(
-    mut executor: Executor,
     path: &str,
+    mut executor: Executor,
 ) -> Result<(), ModelatorError<Executor, State>>
 where
     Executor: TestExecutor<State> + Debug,

@@ -258,11 +258,11 @@ fn model_based() {
     let tests = vec!["ICS02UpdateOKTest", "ICS02HeaderVerificationFailureTest"];
 
     for test in tests {
-        let test_path = format!("{}/{}.json", TESTS_DIR, test);
-        let test_executor = IBCTestExecutor::new();
+        let test = format!("{}/{}.json", TESTS_DIR, test);
+        let executor = IBCTestExecutor::new();
         // we should be able to just return the `Result` once the following issue
         // is fixed: https://github.com/rust-lang/rust/issues/43301
-        if let Err(e) = modelator::test(test_executor, &test_path) {
+        if let Err(e) = modelator::test(&test, executor) {
             panic!("{:?}", e);
         }
     }
