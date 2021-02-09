@@ -22,7 +22,7 @@ class TxCreateClient(Cmd[ClientCreated]):
         return [self.dst_chain_id, self.src_chain_id]
 
     def process(self, result: Any) -> ClientCreated:
-        return from_dict(ClientCreated, result[0]['CreateClient'])
+        return from_dict(ClientCreated, result['CreateClient'])
 
 
 # -----------------------------------------------------------------------------
@@ -47,7 +47,7 @@ class TxUpdateClient(Cmd[ClientUpdated]):
         return [self.dst_chain_id, self.src_chain_id, self.dst_client_id]
 
     def process(self, result: Any) -> ClientUpdated:
-        return from_dict(ClientUpdated, result[0]['UpdateClient'])
+        return from_dict(ClientUpdated, result['UpdateClient'])
 
 
 # -----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ class QueryClientState(Cmd[ClientState]):
         return args
 
     def process(self, result: Any) -> ClientState:
-        return from_dict(ClientState, result[0])
+        return from_dict(ClientState, result)
 
 # =============================================================================
 # CLIENT creation and manipulation

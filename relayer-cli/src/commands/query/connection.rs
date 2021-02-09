@@ -70,7 +70,7 @@ impl QueryConnectionEndCmd {
     }
 }
 
-// cargo run --bin hermes -- -c relayer/tests/config/fixtures/simple_config.toml query connection end ibc-test connectionidone --height 3
+// cargo run --bin hermes -- query connection end ibc-test connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
@@ -99,7 +99,7 @@ impl Runnable for QueryConnectionEndCmd {
 
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
-/// `cargo run --bin hermes -- -c simple_config.toml query connection channels ibc-0 connection-0`
+/// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryConnectionChannelsCmd {
     #[options(free, required, help = "identifier of the chain to query")]

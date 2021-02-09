@@ -2,9 +2,19 @@
 name    = "ibc-relayer-cli"
 version = "0.1.0"
 edition = "2018"
+license    = "Apache-2.0"
+readme     = "README.md"
+keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+homepage = "https://hermes.informal.systems/"
+repository = "https://github.com/informalsystems/ibc-rs"
 authors = [
   "Informal Systems <hello@informal.systems>"
 ]
+
+description = """
+    Implementation of `hermes`, an IBC Relayer developed in Rust.
+    This crate is a CLI wrapper over the `ibc-relayer` library.
+"""
 
 [features]
 profiling = ["ibc-relayer/profiling"]
@@ -27,9 +37,11 @@ serde_derive = "1.0.116"
 serde_json = "1"
 sled = "0.34.4"
 prost = "0.7"
-prost-types = { version = "0.7" }
+prost-types = "0.7"
 hex = "0.4"
 crossbeam-channel = "0.5.0"
+subtle-encoding = "0.5"
+dirs-next = "2.0.0"
 
 [dependencies.tendermint-proto]
 version = "=0.18.0"

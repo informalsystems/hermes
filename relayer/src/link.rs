@@ -372,6 +372,8 @@ impl RelayPath {
             event_id: IBCEventType::SendPacket,
             source_port_id: self.src_port_id().clone(),
             source_channel_id: self.src_channel_id().clone(),
+            destination_port_id: self.dst_port_id().clone(),
+            destination_channel_id: self.dst_channel_id().clone(),
             sequences,
             height: self.src_height,
         })?;
@@ -442,6 +444,8 @@ impl RelayPath {
                 event_id: IBCEventType::WriteAck,
                 source_port_id: self.dst_port_id().clone(),
                 source_channel_id: self.dst_channel_id().clone(),
+                destination_port_id: self.src_port_id().clone(),
+                destination_channel_id: self.src_channel_id().clone(),
                 sequences,
                 height: query_height,
             })
@@ -733,7 +737,7 @@ impl Link {
     }
 
     pub fn relay(&mut self) -> Result<(), LinkError> {
-        info!("relaying packets for link {:#?}", self.a_to_b.channel);
+        println!("relaying packets on {:#?}", self.a_to_b.channel);
         loop {
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;
