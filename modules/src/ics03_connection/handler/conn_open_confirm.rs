@@ -60,12 +60,13 @@ pub(crate) fn process(
     new_conn_end.set_state(State::Open);
 
     let result = ConnectionResult {
-        connection_id: Some(msg.connection_id().clone()),
+        connection_id: msg.connection_id().clone(),
+        prev_connection_id: None,
         connection_end: new_conn_end,
     };
 
     let event_attributes = Attributes {
-        connection_id: result.connection_id.clone(),
+        connection_id: Some(result.connection_id.clone()),
         ..Default::default()
     };
     output.emit(IBCEvent::OpenConfirmConnection(event_attributes.into()));

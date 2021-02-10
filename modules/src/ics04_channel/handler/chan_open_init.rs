@@ -85,7 +85,6 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     use crate::events::IBCEvent;
     use crate::ics03_connection::connection::ConnectionEnd;
@@ -126,11 +125,7 @@ mod tests {
             msg_conn_init.delay_period,
         );
 
-        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
-        let cid = match ccid {
-            Ok(v) => v,
-            Err(_e) => ConnectionId::default(),
-        };
+        let cid = ConnectionId::default();
 
         let tests: Vec<Test> = vec![
             Test {

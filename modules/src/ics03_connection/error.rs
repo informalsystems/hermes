@@ -3,6 +3,7 @@ use anomaly::{BoxError, Context};
 use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
 
@@ -25,6 +26,9 @@ pub enum Kind {
 
     #[error("consensus height claimed by the client on the other party falls outside of trusting period: {0} (host chain current height: {1})")]
     StaleConsensusHeight(Height, Height),
+
+    #[error("conn identifier constructor error for counter {0} with underlying cause: {1}")]
+    ConnectionIdentifierConstructor(u64, ValidationKind),
 
     #[error("identifier error")]
     IdentifierError,

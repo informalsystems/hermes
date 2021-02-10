@@ -8,6 +8,7 @@ use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::ConnectionResult;
 use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use crate::ics24_host::identifier::ConnectionId;
 
 pub(crate) fn process(
     ctx: &dyn ConnectionReader,
@@ -28,15 +29,24 @@ pub(crate) fn process(
         msg.delay_period,
     );
 
-    output.log("success: no connection found");
+    // Construct the identifier for the new connection.
+    let id_counter = ctx.connection_counter();
+    let conn_id = ConnectionId::new(id_counter)
+        .map_err(|e| Kind::ConnectionIdentifierConstructor(id_counter, e.kind().clone()))?;
+
+    output.log(format!(
+        "success: generated new connection identifier: {}",
+        conn_id
+    ));
 
     let result = ConnectionResult {
-        connection_id: None,
+        connection_id: conn_id.clone(),
+        prev_connection_id: None,
         connection_end: new_connection_end,
     };
 
     let event_attributes = Attributes {
-        connection_id: None,
+        connection_id: Some(conn_id),
         ..Default::default()
     };
     output.emit(IBCEvent::OpenInitConnection(event_attributes.into()));

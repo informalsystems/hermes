@@ -33,7 +33,10 @@ pub fn process(
         Kind::ClientIdentifierConstructor(msg.client_state().client_type(), id_counter).context(e)
     })?;
 
-    output.log("success: generated new client identifier");
+    output.log(format!(
+        "success: generated new client identifier: {}",
+        client_id
+    ));
 
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),

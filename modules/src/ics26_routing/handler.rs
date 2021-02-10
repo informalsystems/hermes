@@ -1,7 +1,6 @@
 use prost_types::Any;
 use tendermint_proto::Protobuf;
 
-// use crate::handler;
 use crate::events::IBCEvent;
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
@@ -10,13 +9,10 @@ use crate::ics02_client::msgs::update_client;
 use crate::ics02_client::msgs::ClientMsg;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
-//use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
-
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
 use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg, ICS4Msg};
-// use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
@@ -121,6 +117,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
+    use crate::events::IBCEvent;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
@@ -130,17 +127,13 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
-
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
     use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init_with_missing_connection;
     use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
-
     use crate::ics24_host::identifier::ChannelId;
-
-    use crate::events::IBCEvent;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::ICS26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};

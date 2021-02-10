@@ -340,6 +340,7 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 #[cfg(test)]
 pub mod test_util {
 
+    use crate::ics24_host::identifier::ConnectionId;
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
@@ -365,7 +366,7 @@ pub mod test_util {
             state: 1,
             ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty()),
-            connection_hops: vec!["defaultConnection-0".to_string()],
+            connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
     }
@@ -376,7 +377,7 @@ pub mod test_util {
             state: 1,
             ordering: 1,
             counterparty: Some(get_another_dummy_raw_counterparty()),
-            connection_hops: vec!["defaultConnection-0".to_string()],
+            connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
     }

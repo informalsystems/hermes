@@ -15,7 +15,16 @@ mod verify;
 
 #[derive(Clone, Debug)]
 pub struct ConnectionResult {
-    pub connection_id: Option<ConnectionId>,
+    /// The identifier for the connection which the handler processed. Typically this represents the
+    /// newly-generated connection id (e.g., when processing `MsgConnectionOpenInit`) or
+    /// an existing connection id (e.g., for `MsgConnectionOpenAck`).
+    pub connection_id: ConnectionId,
+
+    /// The identifier of the previous connection, if any. This typically appears after processing a
+    /// message of type `MsgConnectionOpenTry`.
+    pub prev_connection_id: Option<ConnectionId>,
+
+    /// The connection end, which the handler produced as a result of processing the message.
     pub connection_end: ConnectionEnd,
 }
 

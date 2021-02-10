@@ -224,27 +224,15 @@ mod tests {
             msg_conn_init.client_id().clone(),
             ConnectionCounterparty::new(
                 msg_conn_init.counterparty().client_id().clone(),
-                Some(ConnectionId::from_str("defaultConnection-0").unwrap()),
+                Some(ConnectionId::default()),
                 msg_conn_init.counterparty().prefix().clone(),
             ),
             get_compatible_versions(),
             msg_conn_init.delay_period,
         );
 
-        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
-        let cid = match ccid {
-            Ok(v) => v,
-            Err(_e) => ConnectionId::default(),
-        };
-
-        let mut connection_vec = Vec::new();
-        connection_vec.insert(
-            0,
-            match <ConnectionId as FromStr>::from_str("defaultConnection-0") {
-                Ok(a) => a,
-                _ => unreachable!(),
-            },
-        );
+        let cid = ConnectionId::default();
+        let connection_vec = vec![cid.clone()];
 
         let init_chan_end = ChannelEnd::new(
             State::Init,

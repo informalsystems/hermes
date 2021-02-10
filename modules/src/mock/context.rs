@@ -87,8 +87,8 @@ pub struct MockContext {
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
-    /// Counter for connection identifiers (see `next_connection_id`).
-    connection_ids_counter: u32,
+    /// Counter for connection identifiers (see `increase_connection_counter`).
+    connection_ids_counter: u64,
 
     /// Counter for channel identifiers (see `next_channel_id`).
     channel_ids_counter: u32,
@@ -493,15 +493,15 @@ impl ConnectionReader for MockContext {
         let block_ref = self.host_block(height);
         block_ref.cloned().map(Into::into)
     }
+
+    fn connection_counter(&self) -> u64 {
+        self.connection_ids_counter
+    }
 }
 
 impl ConnectionKeeper for MockContext {
-    fn next_connection_id(&mut self) -> ConnectionId {
-        let prefix = ConnectionId::default().to_string();
-        let suffix = self.connection_ids_counter;
+    fn increase_connection_counter(&mut self) {
         self.connection_ids_counter += 1;
-
-        ConnectionId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
     }
 
     fn store_connection(

@@ -54,6 +54,11 @@ pub trait ConnectionReader {
     ) -> Option<Version> {
         pick_version(supported_versions, counterparty_candidate_versions)
     }
+
+    /// Returns a counter on how many connections have been created thus far.
+    /// The value of this counter should increase only via method
+    /// `ConnectionKeeper::increase_connection_counter`.
+    fn connection_counter(&self) -> u64;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
@@ -62,35 +67,39 @@ pub trait ConnectionKeeper {
     fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
         match result.connection_end.state() {
             State::Init => {
-                let connection_id = self.next_connection_id();
-                self.store_connection(&connection_id, &result.connection_end)?;
+                self.store_connection(&result.connection_id, &result.connection_end)?;
                 // If this is the first time the handler processed this connection, associate the
                 // connection end to its client identifier.
                 self.store_connection_to_client(
-                    &connection_id,
+                    &result.connection_id,
                     &result.connection_end.client_id(),
                 )?;
+                self.increase_connection_counter();
             }
             State::TryOpen => {
-                let connection_id = result
-                    .connection_id
-                    .unwrap_or_else(|| self.next_connection_id());
-                self.store_connection(&connection_id, &result.connection_end)?;
+                self.store_connection(&result.connection_id, &result.connection_end)?;
                 // If this is the first time the handler processed this connection, associate the
                 // connection end to its client identifier.
                 self.store_connection_to_client(
-                    &connection_id,
+                    &result.connection_id,
                     &result.connection_end.client_id(),
                 )?;
+                // If there is no prev. connection identifier, that means we generated one.
+                if matches!(result.prev_connection_id, None) {
+                    self.increase_connection_counter();
+                }
             }
             _ => {
-                self.store_connection(&result.connection_id.unwrap(), &result.connection_end)?;
+                self.store_connection(&result.connection_id, &result.connection_end)?;
             }
         }
         Ok(())
     }
 
-    fn next_connection_id(&mut self) -> ConnectionId;
+    /// Called upon connection identifier creation (Init or Try process).
+    /// Increases the counter which keeps track of how many connections have been created.
+    /// Should never fail.
+    fn increase_connection_counter(&mut self);
 
     /// Stores the given connection_end at a path associated with the connection_id.
     fn store_connection(
