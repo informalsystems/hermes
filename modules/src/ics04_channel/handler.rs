@@ -8,8 +8,13 @@ use crate::ics04_channel::msgs::ChannelMsg;
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, PortId};
 
+pub mod chan_close_confirm;
+pub mod chan_close_init;
+pub mod chan_open_ack;
+pub mod chan_open_confirm;
 pub mod chan_open_init;
 pub mod chan_open_try;
+
 mod verify;
 #[derive(Clone, Debug)]
 pub struct ChannelResult {
@@ -28,8 +33,9 @@ where
     match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
         ChannelMsg::ChannelOpenTry(msg) => chan_open_try::process(ctx, msg),
-        // ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
-        // ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
-        _ => panic!(),
+        ChannelMsg::ChannelOpenAck(msg) => chan_open_ack::process(ctx, msg),
+        ChannelMsg::ChannelOpenConfirm(msg) => chan_open_confirm::process(ctx, msg),
+        ChannelMsg::ChannelCloseInit(msg) => chan_close_init::process(ctx, msg),
+        ChannelMsg::ChannelCloseConfirm(msg) => chan_close_confirm::process(ctx, msg),
     }
 }

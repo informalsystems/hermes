@@ -2,14 +2,21 @@
 
 ## Unreleased Changes
 
+### FEATURES
+
+- `[ibc]`
+  - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
+
 ### BUG FIXES:
 
-- [relayer-cli]
-  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
-
-- [modules]
+- `[ibc]`
   - Fix panic in conn open try when no connection id is provided ([#626])
 
+- `[ibc-relayer-cli]`
+  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
+
+
+[#316]: https://github.com/informalsystems/ibc-rs/issues/316
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 
