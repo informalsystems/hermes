@@ -5,43 +5,43 @@
         },
         "actionOutcome": "None",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 0
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-B",
+            "chainId": "chainB-0",
             "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 1
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-B",
+            "chainId": "chainB-0",
             "clientHeight": 1,
             "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02HeaderVerificationFailure",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 1
             }
         }

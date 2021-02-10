@@ -5,109 +5,109 @@
         },
         "actionOutcome": "None",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 0
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-B",
+            "chainId": "chainB-0",
             "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 1
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-B",
+            "chainId": "chainB-0",
             "clientHeight": 2,
             "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 0
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 2
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chainA-0",
             "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 1
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 2
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chainA-0",
             "clientHeight": 2,
             "clientId": 0,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 2
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 2
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chainA-0",
             "clientHeight": 1,
             "type": "ICS02CreateClient"
         },
         "actionOutcome": "ICS02CreateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 3
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 2
             }
         }
     },
     {
         "action": {
-            "chainId": "chain-A",
+            "chainId": "chainA-0",
             "clientHeight": 2,
             "clientId": 1,
             "type": "ICS02UpdateClient"
         },
         "actionOutcome": "ICS02UpdateOK",
         "chains": {
-            "chain-A": {
+            "chainA-0": {
                 "height": 4
             },
-            "chain-B": {
+            "chainB-0": {
                 "height": 2
             }
         }
