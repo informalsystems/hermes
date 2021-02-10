@@ -1,30 +1,40 @@
-# ADR 005: Relayer v0 implementation
+# ADR 005: Relayer v0.1 implementation
 
 ## Changelog
 
 * 04.01.2020: First draft proposed.
+* 09.02.2020: Revised, fixed todos, reviewed.
 
 
 ## Context
 
-This ADR documents the implementation of the `v0` relayer.
+This ADR documents the implementation of the `v0.1` [relayer lib crate]
+[ibc-relayer].
+This library is instantiated in the [Hermes][hermes] binary of the 
+[ibc-relayer-cli crate][ibc-relayer-cli], which we do not cover here.
 
-As a main design goal, `v0` is meant to lay a foundation upon which we can 
+As a main design goal, `v0.1` is meant to lay a foundation upon which we can 
 add more features and enhancements incrementally with later relayer versions.
-This is to say that `v0` may be deficient in terms of features or 
-robustness, and rather aims to be adaptable and extensible.
+This is to say that `v0.1` may be deficient in terms of features or 
+robustness, and rather aims to be simple, adaptable, and extensible.
 For this reason, we primarily discuss aspects of concurrency and architecture.
 
 
+### Relayer versioning scheme
+
+On the mid-term, the relayer architecture is set out to evolve across three 
+versions.
+
+The first of these, `v0.1`, makes several simplifying assumptions 
+about the environment of the relayer and its features. These assumptions 
+are important towards limiting the scope that `v0.1` aims to 
+cover, and allowing a focus on the architecture and concurrency model to 
+provide for growth in the future.
+
+These assumptions are as follows:
+
 ## Decision
 
-The relayer is set out to evolve across three versions.
-The first of these versions, `v0`, makes several simplifying assumptions 
-about the environment of the relayer and its features. These assumptions 
-are important towards limiting the scope of functionality that `v0` aims to 
-cover, and allowing a focus on the architecture and concurrency model to 
-provide for growth in the future (see [the design goal](#context) above). 
-These assumptions are as follows:
 
 ### Configuration
 
@@ -36,7 +46,7 @@ Light clients are also statically defined in the config file, and cannot be
 switched dynamically at runtime.
 
 Recent changes to the ICS protocol specifies identifier 
-selection for clients, connections, and channels to be [deterministic][1].
+selection for clients, connections, and channels to be [deterministic][ids].
 For this reason, we will not need to specify any identifiers in the 
 configuration file.
 We only specify which pairs of chains should communicate with one 
@@ -45,13 +55,27 @@ This pair of chains plus their corresponding port identifiers is called a
 __relaying path__.
 Any relaying path is unidirectional.
 
-> todo: put config example?
+An example of the relevant section of the configuration file follows.
+
+```toml
+[[connections]]
+a_chain = 'ibc-0'
+b_chain = 'ibc-1'
+
+[[connections.paths]]
+a_port = 'transfer'
+b_port = 'transfer'
+```
+
+Here there are two chains, ith one connection between them, and a path for 
+relaying on the port called `transfer` on both chains, from chain `ibc-0` 
+to `ibc-1`.
 
 ### Links
 
-A [link][2] is a relayer-level protocol that implements packet relay across 
+A [link][link] is a relayer-level protocol that implements packet relay across 
 one relaying path.
-The relayer at `v0` will focus on a single link.
+The relayer at `v0.1` will focus on a single link.
 This limitation will be lifted in subsequent versions.
 
 ### Chain State
@@ -62,14 +86,15 @@ connection, and channel objects respectively on each side of a link.
 
 ### Proof Verification
 
-The `v0` relayer has no explicit focus on proof verification.
+The `v0.1` relayer will _not_ do proof verification.
 
-> todo: detail the current (working) state of proof verification? 
+### Feature set
 
+> todo
 
 ## Relayer Concurrency Model
 
-Relayer `v0` works under the assumption that there are no competing relayers 
+Relayer `v0.1` works under the assumption that there are no competing relayers 
 running concurrently (which may interfere with each other). 
 Furthermore, as stated above, the relayer will handle a single link (one 
 packet relaying direction from a source chain to a destination chain).
@@ -93,11 +118,13 @@ with the live chain IBC events.
 In other words, no synchronization with starts of other threads should be 
 required.
 
-Beside the application thread, the relayer maintains is one or more threads 
+Beside the application thread, the relayer maintains one or more threads 
 for each chain.
 The number of threads per chain is chain-specific:
-- For the production chain ([Gaia](#references)), there are three separate 
-  threads, described in more detail below in [architecture](#architecture).
+- For the production chain [Gaia][gaia] (see also the [References]
+  (#references) below), there are three separate 
+  threads, described in more detail in the [architecture](#architecture) 
+  section.
 - For the mock chain ([Mock](#references)), there is one thread.
 
 The link runs in the main application thread. This consumes events 
@@ -142,7 +169,7 @@ levels of abstraction as follows:
 - It is universal for all possible chains, i.e., does _not_ contain any 
      chain-specific code
 - Accepts as input requests from the application, in the form of 
-     [`ChainRequest`][3] via a crossbeam channel
+     [`ChainRequest`][chain-req] via a crossbeam channel
 - Responds to the application via a crossbeam channel
 - Has objects which implement the three interfaces named above 
   (`LightClient`, `Chain`, and `EventMonitor`) and orchestrates access to 
@@ -162,18 +189,23 @@ Each thread in this diagram is a separate box shaded in gray.
 There are four threads running: the `EventMonitor`, the `Supervisor`, the 
 `Runtime`, and the main application thread, called `V0Cmd`.
 
-[1]: https://github.com/cosmos/cosmos-sdk/pull/7993
-[2]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-004-relayer-domain-decomposition.md#link
-[3]: https://github.com/informalsystems/ibc-rs/blob/379dd9812f6e7a42b9428f64eb52fe292d417476/relayer/src/chain/handle.rs#L51
-
 > TODO: Summary of pros and cons
 
 ## References:
 
-- Gaia: the correct Gaia instance for working with `v0` can be obtained from 
-  https://github.com/cosmos/relayer, branch 
-  `colin/329-handshake-refactor` by executing `make build-gaia`. This
+- __Gaia__: the correct Gaia instance for working with `v0.1` can be obtained 
+  from https://github.com/cosmos/relayer, with `git checkout v4.0.0` by 
+  executing `make build-gaia`. This
   [comment](https://github.com/informalsystems/ibc-rs/pull/449#issuecomment-750248113)
-  provides additional insights into development-time relayer `v0` environment.
+  provides additional insights into development-time relayer `v0.1` environment.
 
-- Mock: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
+- __Mock__: https://github.com/informalsystems/ibc-rs/blob/master/relayer/src/chain/mock.rs
+
+
+
+[ids]: https://github.com/cosmos/cosmos-sdk/pull/7993
+[link]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-004-relayer-domain-decomposition.md#link
+[chain-req]: https://github.com/informalsystems/ibc-rs/blob/379dd9812f6e7a42b9428f64eb52fe292d417476/relayer/src/chain/handle.rs#L51
+[ibc-relayer]: https://github.com/informalsystems/ibc-rs/relayer/ 
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/relayer-cli/
+[hermes]: https://hermes.informal.systems
