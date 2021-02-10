@@ -3,6 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId};
 
 #[derive(Clone, Debug, Error)]
@@ -13,11 +14,14 @@ pub enum Kind {
     #[error("identifier error")]
     IdentifierError,
 
+    #[error("failed constructing new channel identifier for counter {0} with underlying validation error: {1}")]
+    ChannelIdentifierConstructor(u64, ValidationKind),
+
     #[error("channel order type unknown")]
     UnknownOrderType,
 
-    #[error("invalid connection hops length")]
-    InvalidConnectionHopsLength,
+    #[error("invalid connection hops length: expected {0}; actual {1}")]
+    InvalidConnectionHopsLength(usize, usize),
 
     #[error("invalid version")]
     InvalidVersion,

@@ -42,6 +42,7 @@ pub(crate) fn process(
                 Ok((old_connection_end, prev_id.clone()))
             } else {
                 // A ConnectionEnd already exists and validation failed.
+                // TODO(ADI) Fix this: no need for context.
                 Err(Into::<Error>::into(
                     Kind::ConnectionMismatch(prev_id.clone())
                         .context(old_connection_end.client_id().to_string()),

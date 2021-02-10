@@ -107,6 +107,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
     use ibc_proto::ibc::core::client::v1::Height;
 
+    use crate::ics24_host::identifier::ChannelId;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     /// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
@@ -127,7 +128,7 @@ pub mod test_util {
     ) -> RawMsgChannelCloseConfirm {
         RawMsgChannelCloseConfirm {
             port_id: "port".to_string(),
-            channel_id: "defaultChannel-0".to_string(),
+            channel_id: ChannelId::default().to_string(),
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,

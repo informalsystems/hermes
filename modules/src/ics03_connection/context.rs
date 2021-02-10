@@ -96,11 +96,6 @@ pub trait ConnectionKeeper {
         Ok(())
     }
 
-    /// Called upon connection identifier creation (Init or Try process).
-    /// Increases the counter which keeps track of how many connections have been created.
-    /// Should never fail.
-    fn increase_connection_counter(&mut self);
-
     /// Stores the given connection_end at a path associated with the connection_id.
     fn store_connection(
         &mut self,
@@ -114,4 +109,9 @@ pub trait ConnectionKeeper {
         connection_id: &ConnectionId,
         client_id: &ClientId,
     ) -> Result<(), Error>;
+
+    /// Called upon connection identifier creation (Init or Try process).
+    /// Increases the counter which keeps track of how many connections have been created.
+    /// Should never fail.
+    fn increase_connection_counter(&mut self);
 }

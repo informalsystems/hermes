@@ -18,13 +18,11 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
         .ok_or_else(|| Kind::ChannelNotFound.context(msg.channel_id().clone().to_string()))?;
 
     // Validate that the channel end is in a state where it can be confirmed.
-
     if !channel_end.state_matches(&State::TryOpen) {
         return Err(Kind::InvalidChannelState(msg.channel_id().clone()).into());
     }
@@ -33,9 +31,10 @@ pub(crate) fn process(
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     // An OPEN IBC connection running on the local (host) chain should exist.
-
     if channel_end.connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len()).into(),
+        );
     }
 
     let conn = ctx
@@ -83,7 +82,8 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: msg.channel_id().clone(),
+        previous_channel_id: None,
         channel_cap,
         channel_end,
     };
@@ -197,7 +197,7 @@ mod tests {
                 )
                 .with_connection(cid, conn_end)
                 .with_port_capability(msg_chan_confirm.port_id().clone())
-                .with_channel_init(
+                .with_channel(
                     msg_chan_confirm.port_id().clone(),
                     msg_chan_confirm.channel_id().clone(),
                     chan_end,

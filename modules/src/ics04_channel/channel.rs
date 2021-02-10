@@ -113,6 +113,7 @@ impl ChannelEnd {
     pub fn set_state(&mut self, s: State) {
         self.state = s;
     }
+
     pub fn set_version(&mut self, v: String) {
         self.version = v;
     }
@@ -139,9 +140,11 @@ impl ChannelEnd {
 
     pub fn validate_basic(&self) -> Result<(), Error> {
         if self.connection_hops.len() != 1 {
-            return Err(Kind::InvalidConnectionHopsLength
-                .context("validate channel")
-                .into());
+            return Err(
+                Kind::InvalidConnectionHopsLength(1, self.connection_hops.len())
+                    .context("validate channel")
+                    .into(),
+            );
         }
         if self.version().trim() == "" {
             return Err(Kind::InvalidVersion.context("empty version string").into());
@@ -343,22 +346,16 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 #[cfg(test)]
 pub mod test_util {
 
-    use crate::ics24_host::identifier::ConnectionId;
+    use crate::ics24_host::identifier::{ChannelId, ConnectionId};
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
-    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
+    /// Can be optionally parametrized with a specific channel identifier.
+    pub fn get_dummy_raw_counterparty(channel_id: Option<String>) -> RawCounterparty {
         RawCounterparty {
             port_id: "port".into(),
-            channel_id: "channel24".into(),
-        }
-    }
-    /// Returns a dummy `RawCounterparty`, for testing only!
-    pub fn get_dummy_raw_counterparty_ics26() -> RawCounterparty {
-        RawCounterparty {
-            port_id: "port".into(),
-            channel_id: "defaultChannel-0".into(),
+            channel_id: channel_id.unwrap_or_else(|| ChannelId::default().to_string()),
         }
     }
 
@@ -375,7 +372,7 @@ pub mod test_util {
         RawChannel {
             state: 1,
             ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty()),
+            counterparty: Some(get_dummy_raw_counterparty(None)),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
@@ -385,7 +382,7 @@ pub mod test_util {
         RawChannel {
             state: 1,
             ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty_ics26()),
+            counterparty: Some(get_dummy_raw_counterparty(None)),
             connection_hops: vec!["defaultConnection-0".to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
@@ -396,7 +393,7 @@ pub mod test_util {
         RawChannel {
             state: 1,
             ordering: 1,
-            counterparty: Some(get_another_dummy_raw_counterparty()),
+            counterparty: Some(get_dummy_raw_counterparty(Some("channel-89".to_string()))),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
@@ -407,7 +404,7 @@ pub mod test_util {
         RawChannel {
             state: 1,
             ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty()),
+            counterparty: Some(get_dummy_raw_counterparty(None)),
             connection_hops: vec!["noconnection".to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }

@@ -8,6 +8,7 @@ use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use crate::ics24_host::identifier::ChannelId;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -19,11 +20,12 @@ pub(crate) fn process(
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, msg.channel().connection_hops().len()).into(),
+        );
     }
 
     // An IBC connection running on the local (host) chain should exist.
-
     let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
     let conn = connection_end
@@ -45,6 +47,16 @@ pub(crate) fn process(
         return Err(Kind::InvalidVersion.into());
     }
 
+    // Channel identifier construction.
+    let id_counter = ctx.channel_counter();
+    let chan_id = ChannelId::new(id_counter)
+        .map_err(|e| Kind::ChannelIdentifierConstructor(id_counter, e.kind().clone()))?;
+
+    output.log(format!(
+        "success: generated new channel identifier: {}",
+        chan_id
+    ));
+
     let new_channel_end = ChannelEnd::new(
         State::Init,
         *msg.channel().ordering(),
@@ -57,13 +69,14 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: None,
+        channel_id: chan_id.clone(),
         channel_end: new_channel_end,
+        previous_channel_id: None,
         channel_cap,
     };
 
     let event_attributes = Attributes {
-        channel_id: None,
+        channel_id: Some(chan_id),
         ..Default::default()
     };
     output.emit(IBCEvent::OpenInitChannel(event_attributes.into()));

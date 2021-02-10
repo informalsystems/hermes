@@ -305,6 +305,27 @@ impl Default for PortId {
 pub struct ChannelId(String);
 
 impl ChannelId {
+    /// Builds a new channel identifier. Like client and connection identifiers, channel ids are
+    /// deterministically formed from two elements: a prefix `prefix`, and a monotonically
+    /// increasing `counter`, separated by a dash "-".
+    /// The prefix is currently determined statically (see `ChannelId::prefix()`) so this method
+    /// accepts a single argument, the `counter`.
+    ///
+    /// ```
+    /// # use ibc::ics24_host::identifier::ChannelId;
+    /// let chan_id = ChannelId::new(27);
+    /// assert!(chan_id.is_ok());
+    /// chan_id.map(|id| { assert_eq!(&id, "channel-27") });
+    /// ```
+    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+        let id = format!("{}-{}", Self::prefix(), counter);
+        Self::from_str(id.as_str())
+    }
+
+    pub fn prefix() -> &'static str {
+        "channel"
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0
@@ -333,6 +354,6 @@ impl FromStr for ChannelId {
 
 impl Default for ChannelId {
     fn default() -> Self {
-        "defaultChannel".to_string().parse().unwrap()
+        Self::new(0).unwrap()
     }
 }

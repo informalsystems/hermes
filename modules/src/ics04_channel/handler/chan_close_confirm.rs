@@ -36,7 +36,9 @@ pub(crate) fn process(
 
     // An OPEN IBC connection running on the local (host) chain should exist.
     if channel_end.connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len()).into(),
+        );
     }
     let conn = ctx
         .connection_end(&channel_end.connection_hops()[0])
@@ -82,7 +84,8 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: msg.channel_id().clone(),
+        previous_channel_id: None,
         channel_cap,
         channel_end,
     };

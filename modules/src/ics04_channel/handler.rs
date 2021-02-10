@@ -19,7 +19,10 @@ mod verify;
 #[derive(Clone, Debug)]
 pub struct ChannelResult {
     pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
+    pub channel_id: ChannelId,
+    /// The identifier of the previous channel, if any. This typically appears after processing a
+    /// message of type `MsgChannelOpenTry`.
+    pub previous_channel_id: Option<ChannelId>,
     pub channel_cap: Capability,
     pub channel_end: ChannelEnd,
 }

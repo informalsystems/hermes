@@ -71,11 +71,17 @@ pub struct MockContext {
     /// All the connections in the store.
     connections: HashMap<ConnectionId, ConnectionEnd>,
 
+    /// Counter for connection identifiers (see `increase_connection_counter`).
+    connection_ids_counter: u64,
+
+    /// Association between connection ids and channel ids.
+    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
+
+    /// Counter for channel identifiers (see `increase_channel_counter`).
+    channel_ids_counter: u64,
+
     /// All the channels in the store. TODO Make new key PortId X ChanneId
     channels: HashMap<(PortId, ChannelId), ChannelEnd>,
-
-    /// Association between conection ids and channel ids.
-    connection_channels: HashMap<ConnectionId, Vec<(PortId, ChannelId)>>,
 
     /// Tracks the sequence number for the next packet to be sent.
     next_sequence_send: HashMap<(PortId, ChannelId), u64>,
@@ -88,12 +94,6 @@ pub struct MockContext {
 
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
-
-    /// Counter for connection identifiers (see `increase_connection_counter`).
-    connection_ids_counter: u64,
-
-    /// Counter for channel identifiers (see `next_channel_id`).
-    channel_ids_counter: u32,
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -236,7 +236,8 @@ impl MockContext {
         self
     }
 
-    pub fn with_channel_init(
+    /// Associates a channel (in an arbtirary state) to this context.
+    pub fn with_channel(
         self,
         port_id: PortId,
         chan_id: ChannelId,
@@ -396,17 +397,33 @@ impl ChannelReader for MockContext {
             None => Err(ICS4Error::from(ICS4Kind::NoPortCapability)),
         }
     }
+
+    fn channel_counter(&self) -> u64 {
+        self.channel_ids_counter
+    }
 }
 
 impl ChannelKeeper for MockContext {
-    fn next_channel_id(&mut self) -> ChannelId {
-        let prefix = ChannelId::default().to_string();
-        let suffix = self.channel_ids_counter;
-        self.channel_ids_counter += 1;
-
-        ChannelId::from_str(format!("{}-{}", prefix, suffix).as_str()).unwrap()
+    fn store_connection_channels(
+        &mut self,
+        cid: &ConnectionId,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<(), ICS4Error> {
+        match self.connection_channels.get(cid) {
+            Some(v) => {
+                let mut modv = v.clone();
+                modv.push(port_channel_id.clone());
+                self.connection_channels.remove(cid);
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+            None => {
+                let mut modv = Vec::new();
+                modv.push(port_channel_id.clone());
+                self.connection_channels.insert(cid.clone(), modv);
+            }
+        }
+        Ok(())
     }
-
     fn store_channel(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
@@ -416,6 +433,7 @@ impl ChannelKeeper for MockContext {
             .insert(port_channel_id.clone(), channel_end.clone());
         Ok(())
     }
+
     fn store_next_sequence_send(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
@@ -443,25 +461,8 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_connection_channels(
-        &mut self,
-        cid: &ConnectionId,
-        port_channel_id: &(PortId, ChannelId),
-    ) -> Result<(), ICS4Error> {
-        match self.connection_channels.get(cid) {
-            Some(v) => {
-                let mut modv = v.clone();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.remove(cid);
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-            None => {
-                let mut modv = Vec::new();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-        }
-        Ok(())
+    fn increase_channel_counter(&mut self) {
+        self.channel_ids_counter += 1;
     }
 }
 
@@ -508,10 +509,6 @@ impl ConnectionReader for MockContext {
 }
 
 impl ConnectionKeeper for MockContext {
-    fn increase_connection_counter(&mut self) {
-        self.connection_ids_counter += 1;
-    }
-
     fn store_connection(
         &mut self,
         connection_id: &ConnectionId,
@@ -530,6 +527,10 @@ impl ConnectionKeeper for MockContext {
         self.client_connections
             .insert(client_id.clone(), connection_id.clone());
         Ok(())
+    }
+
+    fn increase_connection_counter(&mut self) {
+        self.connection_ids_counter += 1;
     }
 }
 

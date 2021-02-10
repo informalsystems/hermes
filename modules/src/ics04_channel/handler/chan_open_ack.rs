@@ -35,7 +35,9 @@ pub(crate) fn process(
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len()).into(),
+        );
     }
 
     let conn = ctx
@@ -84,7 +86,8 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: msg.channel_id().clone(),
+        previous_channel_id: None,
         channel_cap,
         channel_end,
     };
@@ -220,7 +223,7 @@ mod tests {
                         Height::new(1, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         failed_chan_end,
@@ -238,7 +241,7 @@ mod tests {
                         Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), conn_end.clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -255,7 +258,7 @@ mod tests {
                         Height::new(1, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -269,7 +272,7 @@ mod tests {
                     .clone()
                     .with_connection(cid.clone(), conn_end.clone())
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -286,7 +289,7 @@ mod tests {
                     )
                     .with_connection(cid, conn_end)
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end,
