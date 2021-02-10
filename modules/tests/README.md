@@ -39,7 +39,7 @@ To generate a test from the `ICS02UpdateOKTest` assertion, we first define an in
 ICS02UpdateOKTestNeg == ~ICS02UpdateOKTest
 ```
 
-Then, we ask [`Apalache`], to prove it:
+Then, we ask `Apalache`, to prove it:
 
 ```bash
 apalache-mc check --inv=ICS02UpdateOKTestNeg IBCTests.tla
