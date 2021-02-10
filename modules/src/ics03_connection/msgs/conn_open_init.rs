@@ -104,25 +104,16 @@ pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty_ics26;
     use crate::ics03_connection::version::Version;
+    use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
     pub fn get_dummy_msg_conn_open_init() -> RawMsgConnectionOpenInit {
         RawMsgConnectionOpenInit {
-            client_id: "srcclient".to_string(),
+            client_id: ClientId::default().to_string(),
             counterparty: Some(get_dummy_counterparty()),
-            version: Some(Version::default().into()),
-            delay_period: 0,
-            signer: get_dummy_bech32_account(),
-        }
-    }
-    pub fn get_dummy_msg_conn_open_init_ics26() -> RawMsgConnectionOpenInit {
-        RawMsgConnectionOpenInit {
-            client_id: "9999-mock-0".to_string(),
-            counterparty: Some(get_dummy_counterparty_ics26()),
             version: Some(Version::default().into()),
             delay_period: 0,
             signer: get_dummy_bech32_account(),

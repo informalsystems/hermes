@@ -402,6 +402,7 @@ pub mod test_util {
         }
     }
 
+    // TODO(ADI): fix this!
     pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
         RawChannel {
             state: 1,

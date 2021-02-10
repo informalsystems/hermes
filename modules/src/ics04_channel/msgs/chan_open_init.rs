@@ -100,6 +100,7 @@ pub mod test_util {
         }
     }
 
+    // TODO(Adi) FIx this!
     /// Returns a dummy `RawMsgChannelOpenInit`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_init_ics26() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
@@ -109,6 +110,7 @@ pub mod test_util {
         }
     }
 
+    // TODO(Adi) FIx this!
     pub fn get_dummy_raw_msg_chan_open_init_with_missing_connection() -> RawMsgChannelOpenInit {
         RawMsgChannelOpenInit {
             port_id: "port".to_string(),

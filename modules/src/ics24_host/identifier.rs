@@ -176,7 +176,7 @@ impl FromStr for ClientId {
 
 impl Default for ClientId {
     fn default() -> Self {
-        "defaultClient".to_string().parse().unwrap()
+        Self::new(ClientType::Tendermint, 0).unwrap()
     }
 }
 
