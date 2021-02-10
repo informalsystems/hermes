@@ -197,6 +197,12 @@ impl PartialEq<str> for ClientId {
 pub struct ConnectionId(String);
 
 impl ConnectionId {
+    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+        let prefix = ConnectionId::default().to_string();
+        let id = format!("{}-{}", prefix, counter);
+        Self::from_str(id.as_str())
+    }
+
     /// Get this identifier as a borrowed `&str`
     pub fn as_str(&self) -> &str {
         &self.0

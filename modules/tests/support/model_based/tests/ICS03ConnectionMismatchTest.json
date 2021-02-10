@@ -1,0 +1,69 @@
+[
+    {
+        "action": {
+            "type": "None"
+        },
+        "actionOutcome": "None",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 0
+            }
+        }
+    },
+    {
+        "action": {
+            "chainId": "chainB-0",
+            "clientHeight": 1,
+            "type": "ICS02CreateClient"
+        },
+        "actionOutcome": "ICS02CreateOK",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 1
+            }
+        }
+    },
+    {
+        "action": {
+            "chainId": "chainB-0",
+            "clientId": 0,
+            "counterpartyClientId": 1,
+            "type": "ICS03ConnectionOpenInit"
+        },
+        "actionOutcome": "ICS03ConnectionOpenInitOK",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 2
+            }
+        }
+    },
+    {
+        "action": {
+            "chainId": "chainB-0",
+            "clientHeight": 2,
+            "clientId": 1,
+            "connectionId": 0,
+            "counterpartyClientId": 0,
+            "counterpartyConnectionId": 0,
+            "type": "ICS03ConnectionOpenTry"
+        },
+        "actionOutcome": "ICS03ConnectionMismatch",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 2
+            }
+        }
+    }
+]
