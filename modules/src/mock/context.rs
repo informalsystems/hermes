@@ -332,14 +332,13 @@ impl PortReader for MockContext {
         self.port_capabilities.get(port_id).cloned()
     }
 
-    fn autenthenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
+    fn authenticate(&self, _cap: &Capability, _port_id: &PortId) -> bool {
         true
     }
 }
 
 impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
-        println!("Searching for channel {:?} among {:?}", pcid, self.channels);
         self.channels.get(pcid).cloned()
     }
 
@@ -351,52 +350,23 @@ impl ChannelReader for MockContext {
         self.connection_channels.get(cid).cloned()
     }
 
-    fn channel_client_state(
-        &self,
-        port_channel_id: &(PortId, ChannelId),
-    ) -> Option<AnyClientState> {
-        let channel = self.channel_end(port_channel_id);
-        match channel {
-            Some(end) => {
-                println!("found channel {:?}", end);
-                // Extract the underlying connection.
-                let cid = end.connection_hops().clone()[0].clone();
-                println!("depends on connection {:?}", cid);
-                let conn = ChannelReader::connection_end(self, &cid);
-                println!("found connection {:?}", conn);
-                match conn {
-                    Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
-                    _ => None,
-                }
-            }
-            _ => {
-                println!("no  channel found :(");
-                None
-            }
-        }
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+        ClientReader::client_state(self, client_id)
     }
 
-    fn channel_client_consensus_state(
+    fn client_consensus_state(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState> {
-        let channel_end = self.channel_end(port_channel_id);
-        match channel_end {
-            Some(channel) => {
-                let cid = channel.connection_hops()[0].clone();
-                let conn = ChannelReader::connection_end(self, &cid).unwrap();
-                ConnectionReader::client_consensus_state(self, conn.client_id(), height)
-            }
-            _ => None,
-        }
+        ClientReader::consensus_state(self, client_id, height)
     }
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS4Error> {
         let cap = PortReader::lookup_module_by_port(self, port_id);
         match cap {
             Some(key) => {
-                if !PortReader::autenthenticate(self, &key, port_id) {
+                if !PortReader::authenticate(self, &key, port_id) {
                     Err(ICS4Error::from(ICS4Kind::InvalidPortCapability))
                 } else {
                     Ok(key)

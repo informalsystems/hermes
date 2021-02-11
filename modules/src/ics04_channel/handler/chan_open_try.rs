@@ -20,8 +20,6 @@ pub(crate) fn process(
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    println!("\n---\nIncOming message: {:?}\n---\n", msg);
-
     // Unwrap the old channel end (if any) and validate it against the message.
     let (mut new_channel_end, channel_id) = match msg.previous_channel_id() {
         Some(prev_id) => {
@@ -76,8 +74,6 @@ pub(crate) fn process(
             Ok((channel_end, chan_id))
         }
     }?;
-
-    println!("New channel end supposedly: {:?}", new_channel_end);
 
     // An IBC connection running on the local (host) chain should exist.
     if msg.channel.connection_hops().len() != 1 {
@@ -166,21 +162,14 @@ pub(crate) fn process(
 }
 
 #[cfg(test)]
-#[allow(clippy::all, unused_imports, unused_variables)]
 mod tests {
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     use crate::events::IBCEvent;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::context::ConnectionReader;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
-    use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::{ChannelEnd, State};
@@ -189,7 +178,7 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
-    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId};
     use crate::mock::context::MockContext;
     use crate::Height;
 
@@ -210,7 +199,6 @@ mod tests {
 
         // The context. We'll reuse this same one across all tests.
         let context = MockContext::default();
-        let host_chain_height = context.host_current_height();
 
         // This is the connection underlying the channel we're trying to open.
         let conn_end = ConnectionEnd::new(
@@ -257,7 +245,7 @@ mod tests {
             version,
         );
 
-        // A preloaded channel end resididing in the context, which will be __inconsistent__ with
+        // A preloaded channel end residing in the context, which will be __inconsistent__ with
         // the incoming ChanOpenTry message `msg` due to its connection hops field.
         let hops = vec![ConnectionId::new(9890).unwrap()];
         let incorrect_chan_end_hops = ChannelEnd::new(
@@ -341,7 +329,7 @@ mod tests {
                 name: "Processing is successful".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&client_id, host_chain_height)
+                    .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end.clone()),
@@ -349,29 +337,17 @@ mod tests {
                 want_pass: true,
                 expect_error_kind: None,
             },
-            // // Good case.
-            // Test {
-            //     name: "Good parameters: No channel Open Init found".to_string(),
-            //     ctx: context
-            //         .with_client(
-            //             msg_conn_try.client_id(),
-            //             Height::new(1, client_consensus_state_height),
-            //         )
-            //         .with_connection(conn_id, conn_end)
-            //         .with_port_capability(
-            //             MsgChannelOpenTry::try_from(get_dummy_raw_msg_chan_open_try(proof_height))
-            //                 .unwrap()
-            //                 .port_id()
-            //                 .clone(),
-            //         )
-            //         .with_channel(      // verify that it should work without this.
-            //             PortId::from_str("port12").unwrap(),
-            //             counterparty_chan_id,
-            //             correct_chan_end,
-            //         ),
-            //     msg: ChannelMsg::ChannelOpenTry(msg_chan_try),
-            //     want_pass: true,
-            // },
+            Test {
+                name: "Processing is successful against an empty context (no preexisting channel)"
+                    .to_string(),
+                ctx: context
+                    .with_client(&client_id, Height::new(0, proof_height))
+                    .with_connection(conn_id, conn_end)
+                    .with_port_capability(msg.port_id.clone()),
+                msg: ChannelMsg::ChannelOpenTry(msg_vanilla),
+                want_pass: true,
+                expect_error_kind: None,
+            },
         ]
         .into_iter()
         .collect();
@@ -391,9 +367,8 @@ mod tests {
                     );
                     assert_ne!(handler_output.events.is_empty(), true); // Some events must exist.
 
-                    // The object in the output is a ConnectionEnd, should have init state.
+                    // The object in the output is a channel end, should have TryOpen state.
                     let res: ChannelResult = handler_output.result;
-                    //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
                     assert_eq!(res.channel_end.state().clone(), State::TryOpen);
 
                     for e in handler_output.events.iter() {

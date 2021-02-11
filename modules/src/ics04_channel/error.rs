@@ -4,7 +4,8 @@ use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::error::ValidationKind;
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::Height;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
@@ -88,14 +89,14 @@ pub enum Kind {
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
-    #[error("No client state associated with channel ({0}, {1})")]
-    MissingClientState(PortId, ChannelId),
+    #[error("No client state associated with client id {0}")]
+    MissingClientState(ClientId),
 
-    #[error("Frozen Client")]
-    FrozenClient,
+    #[error("Client with id {0} is frozen")]
+    FrozenClient(ClientId),
 
-    #[error("Missing client consensus state")]
-    MissingClientConsensusState,
+    #[error("Missing client consensus state for client id {0} at height {1}")]
+    MissingClientConsensusState(ClientId, Height),
 
     #[error("Invalid channel id in counterparty")]
     InvalidCounterpartyChannelId,

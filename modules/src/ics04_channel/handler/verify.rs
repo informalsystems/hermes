@@ -14,28 +14,23 @@ pub fn verify_proofs(
     expected_chan: &ChannelEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
+    // This is the client which will perform proof verification.
     let client_id = connection_end.client_id().clone();
 
-    // Lookup the client associated with our channel end.
-    let port_id = channel_end.counterparty().port_id().clone();
-    let chan_id = channel_end.counterparty().channel_id().unwrap().clone();
-
     let client_state = ctx
-        .channel_client_state(&(port_id.clone(), chan_id.clone()))
-        .ok_or(Kind::MissingClientState(port_id.clone(), chan_id.clone()))?;
+        .client_state(&client_id)
+        .ok_or(Kind::MissingClientState(client_id.clone()))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient.context(client_id.to_string()).into());
+        return Err(Kind::FrozenClient(client_id.clone()).into());
     }
 
     if ctx
-        .channel_client_consensus_state(&(port_id, chan_id), proofs.height())
+        .client_consensus_state(&client_id, proofs.height())
         .is_none()
     {
-        return Err(Kind::MissingClientConsensusState
-            .context(client_id.to_string())
-            .into());
+        return Err(Kind::MissingClientConsensusState(client_id.clone(), proofs.height()).into());
     }
 
     let client_def = AnyClient::from_client_type(client_state.client_type());
