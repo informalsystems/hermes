@@ -83,7 +83,7 @@ mod tests {
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_msg_conn_open_confirm;
+    use crate::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -102,7 +102,7 @@ mod tests {
 
         let client_id = ClientId::from_str("mock_clientid").unwrap();
         let msg_confirm =
-            MsgConnectionOpenConfirm::try_from(get_dummy_msg_conn_open_confirm()).unwrap();
+            MsgConnectionOpenConfirm::try_from(get_dummy_raw_msg_conn_open_confirm()).unwrap();
         let counterparty = Counterparty::new(
             client_id.clone(),
             Some(msg_confirm.connection_id().clone()),

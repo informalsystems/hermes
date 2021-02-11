@@ -1,10 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
@@ -175,13 +175,14 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::version::Version;
-    use crate::ics24_host::identifier::ConnectionId;
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    pub fn get_dummy_msg_conn_open_ack(
+    use crate::ics03_connection::version::Version;
+    use crate::ics24_host::identifier::ConnectionId;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+
+    pub fn get_dummy_raw_msg_conn_open_ack(
         proof_height: u64,
         consensus_height: u64,
     ) -> RawMsgConnectionOpenAck {
@@ -213,7 +214,7 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
+    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
     #[test]
@@ -225,7 +226,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_ack(5, 5);
+        let default_ack_msg = get_dummy_raw_msg_conn_open_ack(5, 5);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -291,7 +292,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_ack(5, 6);
+        let raw = get_dummy_raw_msg_conn_open_ack(5, 6);
         let msg = MsgConnectionOpenAck::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenAck::from(msg.clone());
         let msg_back = MsgConnectionOpenAck::try_from(raw_back.clone()).unwrap();

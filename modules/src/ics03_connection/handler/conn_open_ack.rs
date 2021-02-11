@@ -104,7 +104,7 @@ mod tests {
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::error::Kind;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
+    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -123,7 +123,8 @@ mod tests {
             error_kind: Option<Kind>,
         }
 
-        let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack(5, 5)).unwrap();
+        let msg_ack =
+            MsgConnectionOpenAck::try_from(get_dummy_raw_msg_conn_open_ack(10, 10)).unwrap();
         let conn_id = msg_ack.connection_id.clone();
 
         // Client parameters -- identifier and correct height (matching the proof height)
@@ -258,7 +259,6 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    println!("Error for {:?} was {:#?}", test.name, e.kind());
                     assert_eq!(
                         test.want_pass,
                         false,

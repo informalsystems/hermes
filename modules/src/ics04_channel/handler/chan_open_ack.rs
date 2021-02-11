@@ -1,5 +1,4 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
-use Kind::ConnectionNotOpen;
 
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -44,7 +43,7 @@ pub(crate) fn process(
         .ok_or_else(|| Kind::MissingConnection(channel_end.connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
+        return Err(Kind::ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
     }
 
     // Proof verification in two steps:
@@ -137,7 +136,7 @@ mod tests {
         }
         let proof_height = 10;
         let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
 
         let context = MockContext::default();
 
@@ -218,7 +217,7 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
                     .with_channel(
@@ -236,7 +235,7 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), conn_end.clone())
                     .with_channel(
@@ -253,7 +252,7 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
                     .with_channel(
@@ -283,7 +282,7 @@ mod tests {
                 ctx: context //  .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
                     .with_port_capability(msg_chan_ack.port_id().clone())

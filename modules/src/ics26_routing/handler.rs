@@ -122,7 +122,7 @@ mod tests {
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient, ClientMsg,
     };
     use crate::ics03_connection::msgs::{
-        conn_open_ack::{test_util::get_dummy_msg_conn_open_ack, MsgConnectionOpenAck},
+        conn_open_ack::{test_util::get_dummy_raw_msg_conn_open_ack, MsgConnectionOpenAck},
         conn_open_init::{test_util::get_dummy_raw_msg_conn_open_init, MsgConnectionOpenInit},
         conn_open_try::{test_util::get_dummy_raw_msg_conn_open_try, MsgConnectionOpenTry},
         ConnectionMsg,
@@ -191,7 +191,7 @@ mod tests {
         )
         .unwrap();
 
-        let msg_conn_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack(
+        let msg_conn_ack = MsgConnectionOpenAck::try_from(get_dummy_raw_msg_conn_open_ack(
             client_height,
             client_height,
         ))
