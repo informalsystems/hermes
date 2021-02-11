@@ -61,7 +61,7 @@ mod tests {
     use crate::events::IBCEvent;
     use crate::ics03_connection::connection::State;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::mock::context::MockContext;
@@ -77,7 +77,7 @@ mod tests {
         }
 
         let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
         let context = MockContext::default();
 
         let tests: Vec<Test> = vec![

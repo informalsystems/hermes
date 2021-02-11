@@ -17,11 +17,11 @@ use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct ChannelEnd {
-    state: State,
-    ordering: Order,
-    remote: Counterparty,
-    connection_hops: Vec<ConnectionId>,
-    version: String,
+    pub state: State,
+    pub ordering: Order,
+    pub remote: Counterparty,
+    pub connection_hops: Vec<ConnectionId>,
+    pub version: String,
 }
 
 impl Default for ChannelEnd {
@@ -384,17 +384,6 @@ pub mod test_util {
             ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty(None)),
             connection_hops: vec!["defaultConnection-0".to_string()],
-            version: "ics20".to_string(), // The version is not validated.
-        }
-    }
-
-    /// Returns a dummy `RawChannel`, for testing only!
-    pub fn get_dummy_raw_channel_end_with_counterparty() -> RawChannel {
-        RawChannel {
-            state: 1,
-            ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty(Some("channel-89".to_string()))),
-            connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
     }

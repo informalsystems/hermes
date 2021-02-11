@@ -38,7 +38,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
 
-    pub fn get_dummy_counterparty() -> RawCounterparty {
+    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
             client_id: ClientId::default().to_string(),
             connection_id: ConnectionId::default().to_string(),

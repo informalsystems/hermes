@@ -4,9 +4,9 @@ use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::error::ValidationKind;
-use crate::ics24_host::identifier::{ChannelId, ConnectionId};
+use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
-#[derive(Clone, Debug, Error)]
+#[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
     #[error("channel state unknown")]
     UnknownState,
@@ -59,8 +59,8 @@ pub enum Kind {
     #[error("given connection hop {0} does not exist")]
     MissingConnection(ConnectionId),
 
-    #[error("the port has no capability associated")]
-    NoPortCapability,
+    #[error("the port {0} has no capability associated")]
+    NoPortCapability(PortId),
 
     #[error("the module associated with the port does not have the capability it needs")]
     InvalidPortCapability,
@@ -88,8 +88,8 @@ pub enum Kind {
     #[error("Channel chain verification fails on ChannelOpenTry for ChannelOpenInit")]
     FailedChanneOpenTryVerification,
 
-    #[error("No client state associated with the channel")]
-    MissingClientState,
+    #[error("No client state associated with channel ({0}, {1})")]
+    MissingClientState(PortId, ChannelId),
 
     #[error("Frozen Client")]
     FrozenClient,

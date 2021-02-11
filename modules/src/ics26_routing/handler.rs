@@ -124,7 +124,7 @@ mod tests {
     use crate::ics03_connection::msgs::conn_open_ack::{
         test_util::get_dummy_msg_conn_open_ack_ics26, MsgConnectionOpenAck,
     };
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -180,7 +180,7 @@ mod tests {
         .unwrap();
 
         let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
 
         let correct_msg_conn_try =
             MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(5, 5)).unwrap();

@@ -14,18 +14,19 @@ pub fn verify_proofs(
     expected_chan: &ChannelEnd,
     proofs: &Proofs,
 ) -> Result<(), Error> {
-    let client = connection_end.client_id().clone();
+    let client_id = connection_end.client_id().clone();
 
+    // Lookup the client associated with our channel end.
     let port_id = channel_end.counterparty().port_id().clone();
     let chan_id = channel_end.counterparty().channel_id().unwrap().clone();
 
     let client_state = ctx
         .channel_client_state(&(port_id.clone(), chan_id.clone()))
-        .ok_or(Kind::MissingClientState)?;
+        .ok_or(Kind::MissingClientState(port_id.clone(), chan_id.clone()))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient.context(client.to_string()).into());
+        return Err(Kind::FrozenClient.context(client_id.to_string()).into());
     }
 
     if ctx
@@ -33,7 +34,7 @@ pub fn verify_proofs(
         .is_none()
     {
         return Err(Kind::MissingClientConsensusState
-            .context(client.to_string())
+            .context(client_id.to_string())
             .into());
     }
 

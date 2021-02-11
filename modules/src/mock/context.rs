@@ -339,6 +339,7 @@ impl PortReader for MockContext {
 
 impl ChannelReader for MockContext {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Option<ChannelEnd> {
+        println!("Searching for channel {:?} among {:?}", pcid, self.channels);
         self.channels.get(pcid).cloned()
     }
 
@@ -356,15 +357,22 @@ impl ChannelReader for MockContext {
     ) -> Option<AnyClientState> {
         let channel = self.channel_end(port_channel_id);
         match channel {
-            Some(v) => {
-                let cid = v.connection_hops().clone()[0].clone();
+            Some(end) => {
+                println!("found channel {:?}", end);
+                // Extract the underlying connection.
+                let cid = end.connection_hops().clone()[0].clone();
+                println!("depends on connection {:?}", cid);
                 let conn = ChannelReader::connection_end(self, &cid);
+                println!("found connection {:?}", conn);
                 match conn {
                     Some(v) => ConnectionReader::client_state(self, &v.client_id().clone()),
                     _ => None,
                 }
             }
-            _ => None,
+            _ => {
+                println!("no  channel found :(");
+                None
+            }
         }
     }
 
@@ -394,7 +402,7 @@ impl ChannelReader for MockContext {
                     Ok(key)
                 }
             }
-            None => Err(ICS4Error::from(ICS4Kind::NoPortCapability)),
+            None => Err(ICS4Error::from(ICS4Kind::NoPortCapability(port_id.clone()))),
         }
     }
 

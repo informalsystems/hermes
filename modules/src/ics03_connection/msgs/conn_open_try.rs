@@ -215,7 +215,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
@@ -234,7 +234,7 @@ pub mod test_util {
             client_id: ClientId::default().to_string(),
             previous_connection_id: ConnectionId::default().to_string(),
             client_state: None,
-            counterparty: Some(get_dummy_counterparty()),
+            counterparty: Some(get_dummy_raw_counterparty()),
             delay_period: 0,
             counterparty_versions: get_compatible_versions()
                 .iter()
@@ -266,7 +266,7 @@ mod tests {
 
     use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
 
     #[test]
     fn parse_connection_open_try_msg() {
@@ -301,7 +301,7 @@ mod tests {
                             connection_id:
                             "abcdasdfasdfsdfasfdwefwfsdfsfsfasfwewvxcvdvwgadvaadsefghijklmnopqrstu"
                                 .to_string(),
-                            ..get_dummy_counterparty()
+                            ..get_dummy_raw_counterparty()
                         }),
                         ..default_try_msg.clone()
                     },
@@ -313,7 +313,7 @@ mod tests {
                     raw: RawMsgConnectionOpenTry {
                         counterparty: Some(RawCounterparty {
                             client_id: "ClientId_".to_string(),
-                            ..get_dummy_counterparty()
+                            ..get_dummy_raw_counterparty()
                         }),
                         ..default_try_msg.clone()
                     },

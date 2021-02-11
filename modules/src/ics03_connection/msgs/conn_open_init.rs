@@ -103,17 +103,17 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::Version;
     use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_bech32_account;
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
-    pub fn get_dummy_msg_conn_open_init() -> RawMsgConnectionOpenInit {
+    pub fn get_dummy_raw_msg_conn_open_init() -> RawMsgConnectionOpenInit {
         RawMsgConnectionOpenInit {
             client_id: ClientId::default().to_string(),
-            counterparty: Some(get_dummy_counterparty()),
+            counterparty: Some(get_dummy_raw_counterparty()),
             version: Some(Version::default().into()),
             delay_period: 0,
             signer: get_dummy_bech32_account(),
@@ -129,8 +129,8 @@ mod tests {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use super::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
+    use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
 
     #[test]
     fn parse_connection_open_init_msg() {
@@ -141,7 +141,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_init_msg = get_dummy_msg_conn_open_init();
+        let default_init_msg = get_dummy_raw_msg_conn_open_init();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -164,7 +164,7 @@ mod tests {
                         connection_id:
                             "abcdefghijksdffjssdkflweldflsfladfsfwjkrekcmmsdfsdfjflddmnopqrstu"
                                 .to_string(),
-                        ..get_dummy_counterparty()
+                        ..get_dummy_raw_counterparty()
                     }),
                     ..default_init_msg
                 },
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_init();
+        let raw = get_dummy_raw_msg_conn_open_init();
         let msg = MsgConnectionOpenInit::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenInit::from(msg.clone());
         let msg_back = MsgConnectionOpenInit::try_from(raw_back.clone()).unwrap();
