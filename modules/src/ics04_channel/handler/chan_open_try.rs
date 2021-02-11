@@ -332,7 +332,7 @@ mod tests {
                     .with_client(&client_id, Height::new(0, proof_height))
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_port_capability(msg.port_id.clone())
-                    .with_channel(msg.port_id.clone(), chan_id, correct_chan_end.clone()),
+                    .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: true,
                 expect_error_kind: None,

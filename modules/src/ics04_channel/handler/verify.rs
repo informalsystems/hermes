@@ -19,18 +19,18 @@ pub fn verify_proofs(
 
     let client_state = ctx
         .client_state(&client_id)
-        .ok_or(Kind::MissingClientState(client_id.clone()))?;
+        .ok_or_else(|| Kind::MissingClientState(client_id.clone()))?;
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient(client_id.clone()).into());
+        return Err(Kind::FrozenClient(client_id).into());
     }
 
     if ctx
         .client_consensus_state(&client_id, proofs.height())
         .is_none()
     {
-        return Err(Kind::MissingClientConsensusState(client_id.clone(), proofs.height()).into());
+        return Err(Kind::MissingClientConsensusState(client_id, proofs.height()).into());
     }
 
     let client_def = AnyClient::from_client_type(client_state.client_type());

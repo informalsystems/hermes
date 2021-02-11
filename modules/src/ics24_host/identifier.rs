@@ -357,3 +357,10 @@ impl Default for ChannelId {
         Self::new(0).unwrap()
     }
 }
+
+/// Equality check against string literal (satisfies &ChannelId == &str).
+impl PartialEq<str> for ChannelId {
+    fn eq(&self, other: &str) -> bool {
+        self.as_str().eq(other)
+    }
+}
