@@ -29,9 +29,7 @@ pub trait ChannelReader {
         height: Height,
     ) -> Option<AnyConsensusState>;
 
-    fn port_capability(&self, port_id: &PortId) -> Option<Capability>;
-
-    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool;
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)

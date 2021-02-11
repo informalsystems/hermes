@@ -46,4 +46,13 @@ pub mod test_util {
             }),
         }
     }
+    pub fn get_dummy_counterparty_ics26() -> RawCounterparty {
+        RawCounterparty {
+            client_id: "9999-mock-0".to_string(),
+            connection_id: "defaultConnection-0".to_string(),
+            prefix: Some(MerklePrefix {
+                key_prefix: b"ibc".to_vec(),
+            }),
+        }
+    }
 }
