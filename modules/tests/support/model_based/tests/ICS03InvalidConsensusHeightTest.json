@@ -5,30 +5,30 @@
         },
         "actionOutcome": "None",
         "chains": {
-            "chainA-0": {
+            "chainA": {
                 "height": 0
             },
-            "chainB-0": {
+            "chainB": {
                 "height": 0
             }
         }
     },
     {
         "action": {
-            "chainId": "chainA-0",
-            "clientHeight": 1,
+            "chainId": "chainA",
+            "previousConnectionId": -1,
             "clientId": 0,
-            "connectionId": -1,
+            "clientState": 1,
             "counterpartyClientId": 0,
             "counterpartyConnectionId": 0,
             "type": "ICS03ConnectionOpenTry"
         },
         "actionOutcome": "ICS03InvalidConsensusHeight",
         "chains": {
-            "chainA-0": {
+            "chainA": {
                 "height": 0
             },
-            "chainB-0": {
+            "chainB": {
                 "height": 0
             }
         }

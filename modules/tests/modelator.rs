@@ -10,7 +10,7 @@ pub enum ModelatorError<Executor: Debug, Step: Debug> {
     TestNotFound { path: String, error: String },
     #[error("test '{path}' could not be deserialized: {error}")]
     InvalidTest { path: String, error: String },
-    #[error("test '{path}' failed on step {step_index}/{step_count}:\nstep:\n{step:#?}\nexecutor:\n{executor:#?}")]
+    #[error("test '{path}' failed on step {step_index}/{step_count}:\nstep: {step:#?}\nexecutor: {executor:#?}")]
     FailedTest {
         path: String,
         step_index: usize,

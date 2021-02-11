@@ -67,14 +67,14 @@ ICS03_ConnectionOpenTry(
     clients,
     connections,
     connectionIdCounter,
+    previousConnectionId,
     clientId,
-    clientClaimedHeight,
-    connectionId,
+    height,
     counterpartyClientId,
     counterpartyConnectionId
 ) ==
     \* check if client's claimed height is higher than the chain's height
-    IF clientClaimedHeight > chainHeight THEN
+    IF height > chainHeight THEN
         \* if client's height is too advanced, then set an error outcome
         [
             connections |-> connections,
@@ -84,15 +84,15 @@ ICS03_ConnectionOpenTry(
         \* TODO: add `chain_max_history_size` to the model to be able to also
         \*       return a `ICS03StaleConsensusHeight` error outcome
     ELSE
-        \* check if a `connectionId` was set
-        IF connectionId /= ConnectionIdNone THEN
+        \* check if there's a `previousConnectionId`
+        IF previousConnectionId /= ConnectionIdNone THEN
             \* if so, check if the connection exists
-            IF ICS03_ConnectionExists(connections, connectionId) THEN
+            IF ICS03_ConnectionExists(connections, previousConnectionId) THEN
                 \* if the connection exists, verify that is matches the
                 \* the parameters provided
                 LET connection == ICS03_GetConnection(
                     connections,
-                    connectionId
+                    previousConnectionId
                 ) IN
                 IF /\ connection.state = "Init"
                    /\ connection.clientId = clientId
@@ -102,7 +102,7 @@ ICS03_ConnectionOpenTry(
                     LET updatedConnection == [
                         state |-> "TryOpen",
                         clientId |-> clientId,
-                        connectionId |-> connectionId,
+                        connectionId |-> previousConnectionId,
                         counterpartyClientId |-> counterpartyClientId,
                         counterpartyConnectionId |-> counterpartyConnectionId
                     ] IN
@@ -110,7 +110,7 @@ ICS03_ConnectionOpenTry(
                     [
                         connections |-> ICS03_SetConnection(
                             connections,
-                            connectionId,
+                            previousConnectionId,
                             updatedConnection
                         ),
                         \* as the connection identifier has already been

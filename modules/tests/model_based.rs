@@ -230,18 +230,22 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     .action
                     .chain_id
                     .expect("create client action should have a chain identifier");
-                let client_height = step
+                let client_state = step
                     .action
-                    .client_height
-                    .expect("create client action should have a client height");
+                    .client_state
+                    .expect("create client action should have a client state");
+                let consensus_state = step
+                    .action
+                    .consensus_state
+                    .expect("create client action should have a consensus state");
 
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state: Self::client_state(client_height),
-                    consensus_state: Self::consensus_state(client_height),
+                    client_state: Self::client_state(client_state),
+                    consensus_state: Self::consensus_state(consensus_state),
                     signer: Self::signer(),
                 }));
                 let result = ctx.deliver(msg);
@@ -265,10 +269,10 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     .action
                     .client_id
                     .expect("update client action should have a client identifier");
-                let client_height = step
+                let header = step
                     .action
-                    .client_height
-                    .expect("update client action should have a client height");
+                    .header
+                    .expect("update client action should have a header");
 
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
@@ -276,7 +280,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
-                    header: Self::header(client_height),
+                    header: Self::header(header),
                     signer: Self::signer(),
                 }));
                 let result = ctx.deliver(msg);
@@ -363,18 +367,18 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     .action
                     .chain_id
                     .expect("connection open try action should have a chain identifier");
+                let previous_connection_id = step.action.previous_connection_id;
                 let client_id = step
                     .action
                     .client_id
                     .expect("connection open try action should have a client identifier");
-                let client_height = step
+                let client_state = step
                     .action
-                    .client_height
-                    .expect("connection open try action should have a client height");
+                    .client_state
+                    .expect("connection open try action should have a client state");
                 let counterparty_client_id = step.action.counterparty_client_id.expect(
                     "connection open try action should have a counterparty client identifier",
                 );
-                let connection_id = step.action.connection_id;
                 let counterparty_connection_id = step.action.counterparty_connection_id.expect(
                     "connection open try action should have a counterparty connection identifier",
                 );
@@ -385,15 +389,17 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 // create ICS26 message and deliver it
                 let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     MsgConnectionOpenTry {
-                        previous_connection_id: connection_id.map(Self::connection_id),
+                        previous_connection_id: previous_connection_id.map(Self::connection_id),
                         client_id: Self::client_id(client_id),
                         client_state: None,
+                        // TODO: it should be like this:
+                        // client_state: Some(Self::client_state(client_state)),
                         counterparty: Self::counterparty(
                             counterparty_client_id,
                             Some(counterparty_connection_id),
                         ),
                         counterparty_versions: Self::versions(),
-                        proofs: Self::proofs(client_height),
+                        proofs: Self::proofs(client_state),
                         delay_period: Self::delay_period(),
                         signer: Self::signer(),
                     },
@@ -414,7 +420,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                         matches!(
                             handler_error_kind,
                             ICS03ErrorKind::InvalidConsensusHeight(error_consensus_height, _)
-                            if error_consensus_height == Self::height(client_height)
+                            if error_consensus_height == Self::height(client_state)
                         )
                     }
                     ActionOutcome::ICS03ConnectionNotFound => {
@@ -422,11 +428,11 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                             Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
                         // the implementaion matches the model if there's an
                         // error matching the expected outcome
-                        connection_id.is_some()
+                        previous_connection_id.is_some()
                             && matches!(
                                 handler_error_kind,
                                 ICS03ErrorKind::ConnectionNotFound(error_connection_id)
-                                if error_connection_id == Self::connection_id(connection_id.unwrap())
+                                if error_connection_id == Self::connection_id(previous_connection_id.unwrap())
                             )
                     }
                     ActionOutcome::ICS03ConnectionMismatch => {
@@ -434,11 +440,11 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                             Self::extract_handler_error_kind::<ICS03ErrorKind>(result);
                         // the implementaion matches the model if there's an
                         // error matching the expected outcome
-                        connection_id.is_some()
+                        previous_connection_id.is_some()
                             && matches!(
                                 handler_error_kind,
                                 ICS03ErrorKind::ConnectionMismatch(error_connection_id)
-                                if error_connection_id == Self::connection_id(connection_id.unwrap())
+                                if error_connection_id == Self::connection_id(previous_connection_id.unwrap())
                             )
                     }
                     action => panic!("unexpected action outcome {:?}", action),
@@ -467,11 +473,12 @@ fn main() {
 
     for test in tests {
         let test = format!("{}/{}.json", TESTS_DIR, test);
+        println!("> running {}", test);
         let executor = IBCTestExecutor::new();
         // we should be able to just return the `Result` once the following issue
         // is fixed: https://github.com/rust-lang/rust/issues/43301
         if let Err(e) = modelator::test(&test, executor) {
-            panic!("{:?}", e);
+            panic!("{}", e);
         }
     }
 }

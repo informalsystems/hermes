@@ -20,18 +20,23 @@ pub struct Action {
     #[serde(alias = "chainId")]
     pub chain_id: Option<String>,
 
+    #[serde(alias = "clientState")]
+    pub client_state: Option<u64>,
+
+    #[serde(alias = "consensusState")]
+    pub consensus_state: Option<u64>,
+
     #[serde(alias = "clientId")]
     pub client_id: Option<u64>,
 
-    #[serde(alias = "clientHeight")]
-    pub client_height: Option<u64>,
+    pub header: Option<u64>,
+
+    #[serde(alias = "previousConnectionId")]
+    #[serde(default, deserialize_with = "deserialize_connection_id")]
+    pub previous_connection_id: Option<u64>,
 
     #[serde(alias = "counterpartyClientId")]
     pub counterparty_client_id: Option<u64>,
-
-    #[serde(alias = "connectionId")]
-    #[serde(default, deserialize_with = "deserialize_connection_id")]
-    pub connection_id: Option<u64>,
 
     #[serde(alias = "counterpartyConnectionId")]
     #[serde(default, deserialize_with = "deserialize_connection_id")]
