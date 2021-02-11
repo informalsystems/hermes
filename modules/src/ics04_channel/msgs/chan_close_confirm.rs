@@ -40,6 +40,19 @@ impl Msg for MsgChannelCloseConfirm {
     }
 }
 
+impl MsgChannelCloseConfirm {
+    /// Getter: borrow the `port_id` from this message.
+    pub fn port_id(&self) -> &PortId {
+        &self.port_id
+    }
+    pub fn channel_id(&self) -> &ChannelId {
+        &self.channel_id
+    }
+    pub fn proofs(&self) -> &Proofs {
+        &self.proofs
+    }
+}
+
 impl Protobuf<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {}
 
 impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
@@ -104,6 +117,20 @@ pub mod test_util {
             proof_init: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 1,
+                revision_height: proof_height,
+            }),
+            signer: get_dummy_bech32_account(),
+        }
+    }
+    pub fn get_dummy_raw_msg_chan_close_confirm_ics26(
+        proof_height: u64,
+    ) -> RawMsgChannelCloseConfirm {
+        RawMsgChannelCloseConfirm {
+            port_id: "port".to_string(),
+            channel_id: "defaultChannel-0".to_string(),
+            proof_init: get_dummy_proof(),
+            proof_height: Some(Height {
+                revision_number: 0,
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),

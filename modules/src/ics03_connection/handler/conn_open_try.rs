@@ -81,6 +81,8 @@ pub(crate) fn process(
             .ok_or(Kind::NoCommonVersion)?,
     );
 
+    assert_eq!(new_connection_end.versions().len(), 1);
+
     output.log("success: connection verification passed");
 
     let result = ConnectionResult {
@@ -124,9 +126,9 @@ mod tests {
             want_pass: bool,
         }
 
-        let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
         let context = MockContext::new(
-            ChainId::new("mockgaia".to_string(), 1),
+            ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
             5,
             host_chain_height,
