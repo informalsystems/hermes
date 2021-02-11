@@ -7,7 +7,12 @@
 - `[ibc]`
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
 
-### BUG FIXES:
+### IMPROVEMENTS
+
+- `[ibc]`
+  - Remove dependency on `tendermint-rpc` ([#624])
+
+### BUG FIXES
 
 - `[ibc]`
   - Fix panic in conn open try when no connection id is provided ([#626])
@@ -18,6 +23,7 @@
 
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 
 ## v0.1.0

@@ -1,8 +1,7 @@
-use crate::events::{IBCEvent, RawObject};
-use crate::make_event;
-use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
-use std::convert::TryFrom;
+
+use crate::events::IBCEvent;
+use crate::make_event;
 
 // TODO - extract attributes
 make_event!(Timeout, "timeout");
