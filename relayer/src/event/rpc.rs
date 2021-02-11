@@ -123,32 +123,79 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
 /// Takes events in the form
 ///
 /// ```json
-///  "events":{
-///      "connection_open_init.client_id":["testclient","testclientsec"],
-///      "connection_open_init.connection_id":["ancaconnonetest","ancaconnonetestsec"],
-///      "connection_open_init.counterparty_client_id":["testclientsec","testclientsecsec"],
-///      "create_client.client_id":["testclientthird"],
-///      "create_client.client_type":["tendermint"],
-///      "message.action":["connection_open_init","create_client","connection_open_init"],
-///      "message.module":["ibc_connection","ibc_client",ibc_connection"],
-///      "message.sender":["cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9","cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9"],"tm.event":["Tx"],"transfer.amount":["5000stake"],"transfer.recipient":["cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"],"tx.hash":["A9E18AE3909F22232F8DBDB1C48F2FECB260A308A2D157E8832E901D45950605"],
-///      "tx.height":["35"]
+/// {
+///   "events": {
+///     "connection_open_init.client_id": [
+///       "testclient",
+///       "testclientsec"
+///     ],
+///     "connection_open_init.connection_id": [
+///       "ancaconnonetest",
+///       "ancaconnonetestsec"
+///     ],
+///     "connection_open_init.counterparty_client_id": [
+///       "testclientsec",
+///       "testclientsecsec"
+///     ],
+///     "create_client.client_id": [
+///       "testclientthird"
+///     ],
+///     "create_client.client_type": [
+///       "tendermint"
+///     ],
+///     "message.action": [
+///       "connection_open_init",
+///       "create_client",
+///       "connection_open_init"
+///     ],
+///     "message.module": [
+///       "ibc_connection",
+///       "ibc_client",
+///       "ibc_connection"
+///     ],
+///     "message.sender": [
+///       "cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9",
+///       "cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9",
+///       "cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9",
+///       "cosmos187xxg4yfkypl05cqylucezpjvycj24nurvm8p9"
+///     ],
+///     "tm.event": [
+///       "Tx"
+///     ],
+///     "transfer.amount": [
+///       "5000stake"
+///     ],
+///     "transfer.recipient": [
+///       "cosmos17xpfvakm2amg962yls6f84z3kell8c5lserqta"
+///     ],
+///     "tx.hash": [
+///       "A9E18AE3909F22232F8DBDB1C48F2FECB260A308A2D157E8832E901D45950605"
+///     ],
+///     "tx.height": [
+///       "35"
+///     ]
+///   }
+/// }
 /// ```
 ///
 /// and returns:
 ///
-/// ```json
-/// [{"connection_open_init", 0}, {"create_client", 0}, {"connection_open_init", 1}]
+/// ```rust
+/// vec![
+///     ("connection_open_init", 0),
+///     ("create_client", 0),
+///     ("connection_open_init", 1),
+/// ];
 /// ```
 ///
 /// where the number in each entry is the index in the matching events that should be used to build the event.
 ///
 /// e.g. for the last "connection_open_init" in the result
 ///
-/// ```
-///      "connection_open_init.client_id" -> "testclientsec"
-///      "connection_open_init.connection_id" -> "ancaconnonetestsec",
-///      "connection_open_init.counterparty_client_id" -> "testclientsec","testclientsecsec",
+/// ```text
+/// "connection_open_init.client_id"              -> "testclientsec"
+/// "connection_open_init.connection_id"          -> "ancaconnonetestsec",
+/// "connection_open_init.counterparty_client_id" -> "testclientsec", "testclientsecsec",
 /// ```
 fn extract_helper(events: &HashMap<String, Vec<String>>) -> Result<Vec<(String, u32)>, String> {
     let actions = events.get("message.action").ok_or("Incorrect Event Type")?;
