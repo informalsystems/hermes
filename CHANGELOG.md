@@ -2,6 +2,55 @@
 
 [comment]: <> (## Unreleased Changes)
 
+### FEATURES
+
+- <high level summary>
+
+- [modules]
+  -
+
+- [relayer]
+  - Listen to channel close initialization event and perform the close handshake ([#560])
+
+- [relayer-cli]
+  -
+
+### IMPROVEMENTS
+
+- <high level summary>
+
+- [modules]
+  -
+
+- [relayer]
+  -
+
+- [relayer-cli]
+  -
+
+### BUG FIXES:
+
+- [modules]
+  -
+
+- [relayer]
+  -
+
+- [relayer-cli]
+  -
+
+### BREAKING CHANGES:
+
+- [modules]
+  -
+
+- [relayer]
+  -
+
+- [relayer-cli]
+
+[#593]: https://github.com/informalsystems/ibc-rs/issues/560
+
 ## v0.1.0
 *February 4, 2021*
 
