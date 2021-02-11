@@ -1,4 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
+use Kind::ConnectionNotOpen;
+
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -6,10 +8,9 @@ use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::handler::verify::verify_proofs;
 use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::verify::verify_proofs;
 use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use Kind::ConnectionNotOpen;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -103,32 +104,31 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-
-    use crate::events::IBCEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
 
+    use crate::events::IBCEvent;
+    use crate::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
     use crate::ics03_connection::version::get_compatible_versions;
-
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-    use crate::ics04_channel::handler::{dispatch, ChannelResult};
-    use crate::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
+    use crate::ics04_channel::handler::{ChannelResult, dispatch};
     use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
+    use crate::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+    use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::ChannelMsg;
-
     use crate::ics24_host::identifier::ConnectionId;
     use crate::mock::context::MockContext;
-    use crate::Height;
 
+    // TODO: The tests here are very fragile and complex.
+    //  Should be adapted to use the same structure as `handler::chan_open_try::tests`.
     #[test]
     fn chan_open_ack_msg_processing() {
         struct Test {
