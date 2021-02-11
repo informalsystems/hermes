@@ -981,7 +981,7 @@ impl Link {
                 b_channel_id,
             ),
         };
-        Ok(Link::new(channel)?)
+        Link::new(channel)
     }
 
     pub fn build_and_send_recv_packet_messages(&mut self) -> Result<Vec<IBCEvent>, LinkError> {

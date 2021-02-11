@@ -680,7 +680,7 @@ impl Chain for CosmosSDKChain {
             // query all Tx-es that include events related to packet with given port, channel and sequence
             let response = self
                 .block_on(self.rpc_client.tx_search(
-                    packet_query(&request, seq)?,
+                    packet_query(&request, seq),
                     false,
                     1,
                     1,
@@ -688,7 +688,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, &response)?
+            let mut events = packet_from_tx_search_response(&request, *seq, &response)
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -816,8 +816,8 @@ impl Chain for CosmosSDKChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
-    Ok(tendermint_rpc::query::Query::eq(
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query {
+    tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
     )
@@ -836,7 +836,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
         seq.to_string(),
-    ))
+    )
 }
 
 // Extract the packet events from the query_tx RPC response. The response includes the full set of events
@@ -847,7 +847,7 @@ fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     response: &tendermint_rpc::endpoint::tx_search::Response,
-) -> Result<Option<IBCEvent>, Error> {
+) -> Option<IBCEvent> {
     // TODO: remove loop as `response.txs.len() <= 1`
     for r in response.txs.iter() {
         let height = r.height;
@@ -885,10 +885,10 @@ fn packet_from_tx_search_response(
                 continue;
             }
 
-            return Ok(Some(event));
+            return Some(event);
         }
     }
-    Ok(None)
+    None
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
