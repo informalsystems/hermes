@@ -28,7 +28,7 @@ use ibc::Height;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{Debug, Display};
-use step::{ActionOutcome, ActionType, Chain, Step};
+use step::{Action, ActionOutcome, Chain, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
@@ -204,11 +204,7 @@ impl IBCTestExecutor {
 
 impl modelator::TestExecutor<Step> for IBCTestExecutor {
     fn initial_step(&mut self, step: Step) -> bool {
-        assert_eq!(
-            step.action.action_type,
-            ActionType::None,
-            "unexpected action type"
-        );
+        assert_eq!(step.action, Action::None, "unexpected action type");
         assert_eq!(
             step.action_outcome,
             ActionOutcome::None,
@@ -222,23 +218,13 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
     }
 
     fn next_step(&mut self, step: Step) -> bool {
-        let outcome_matches = match step.action.action_type {
-            ActionType::None => panic!("unexpected action type"),
-            ActionType::ICS02CreateClient => {
-                // get action parameters
-                let chain_id = step
-                    .action
-                    .chain_id
-                    .expect("create client action should have a chain identifier");
-                let client_state = step
-                    .action
-                    .client_state
-                    .expect("create client action should have a client state");
-                let consensus_state = step
-                    .action
-                    .consensus_state
-                    .expect("create client action should have a consensus state");
-
+        let outcome_matches = match step.action {
+            Action::None => panic!("unexpected action type"),
+            Action::ICS02CreateClient {
+                chain_id,
+                client_state,
+                consensus_state,
+            } => {
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
@@ -259,21 +245,11 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
-            ActionType::ICS02UpdateClient => {
-                // get action parameters
-                let chain_id = step
-                    .action
-                    .chain_id
-                    .expect("update client action should have a chain identifier");
-                let client_id = step
-                    .action
-                    .client_id
-                    .expect("update client action should have a client identifier");
-                let header = step
-                    .action
-                    .header
-                    .expect("update client action should have a header");
-
+            Action::ICS02UpdateClient {
+                chain_id,
+                client_id,
+                header,
+            } => {
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
@@ -312,20 +288,11 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
-            ActionType::ICS03ConnectionOpenInit => {
-                // get action parameters
-                let chain_id = step
-                    .action
-                    .chain_id
-                    .expect("connection open init action should have a chain identifier");
-                let client_id = step
-                    .action
-                    .client_id
-                    .expect("connection open init action should have a client identifier");
-                let counterparty_client_id = step.action.counterparty_client_id.expect(
-                    "connection open init action should have a counterparty client identifier",
-                );
-
+            Action::ICS03ConnectionOpenInit {
+                chain_id,
+                client_id,
+                counterparty_client_id,
+            } => {
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 
@@ -361,28 +328,14 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                     action => panic!("unexpected action outcome {:?}", action),
                 }
             }
-            ActionType::ICS03ConnectionOpenTry => {
-                // get action parameters
-                let chain_id = step
-                    .action
-                    .chain_id
-                    .expect("connection open try action should have a chain identifier");
-                let previous_connection_id = step.action.previous_connection_id;
-                let client_id = step
-                    .action
-                    .client_id
-                    .expect("connection open try action should have a client identifier");
-                let client_state = step
-                    .action
-                    .client_state
-                    .expect("connection open try action should have a client state");
-                let counterparty_client_id = step.action.counterparty_client_id.expect(
-                    "connection open try action should have a counterparty client identifier",
-                );
-                let counterparty_connection_id = step.action.counterparty_connection_id.expect(
-                    "connection open try action should have a counterparty connection identifier",
-                );
-
+            Action::ICS03ConnectionOpenTry {
+                chain_id,
+                previous_connection_id,
+                client_id,
+                client_state,
+                counterparty_client_id,
+                counterparty_connection_id,
+            } => {
                 // get chain's context
                 let ctx = self.chain_context_mut(chain_id);
 

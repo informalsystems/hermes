@@ -12,35 +12,59 @@ pub struct Step {
     pub chains: HashMap<String, Chain>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct Action {
-    #[serde(alias = "type")]
-    pub action_type: ActionType,
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(tag = "type")]
+pub enum Action {
+    None,
+    ICS02CreateClient {
+        #[serde(alias = "chainId")]
+        chain_id: String,
 
-    #[serde(alias = "chainId")]
-    pub chain_id: Option<String>,
+        #[serde(alias = "clientState")]
+        client_state: u64,
 
-    #[serde(alias = "clientState")]
-    pub client_state: Option<u64>,
+        #[serde(alias = "consensusState")]
+        consensus_state: u64,
+    },
+    ICS02UpdateClient {
+        #[serde(alias = "chainId")]
+        chain_id: String,
 
-    #[serde(alias = "consensusState")]
-    pub consensus_state: Option<u64>,
+        #[serde(alias = "clientId")]
+        client_id: u64,
 
-    #[serde(alias = "clientId")]
-    pub client_id: Option<u64>,
+        header: u64,
+    },
+    ICS03ConnectionOpenInit {
+        #[serde(alias = "chainId")]
+        chain_id: String,
 
-    pub header: Option<u64>,
+        #[serde(alias = "clientId")]
+        client_id: u64,
 
-    #[serde(alias = "previousConnectionId")]
-    #[serde(default, deserialize_with = "deserialize_connection_id")]
-    pub previous_connection_id: Option<u64>,
+        #[serde(alias = "counterpartyClientId")]
+        counterparty_client_id: u64,
+    },
+    ICS03ConnectionOpenTry {
+        #[serde(alias = "chainId")]
+        chain_id: String,
 
-    #[serde(alias = "counterpartyClientId")]
-    pub counterparty_client_id: Option<u64>,
+        #[serde(alias = "previousConnectionId")]
+        #[serde(default, deserialize_with = "deserialize_connection_id")]
+        previous_connection_id: Option<u64>,
 
-    #[serde(alias = "counterpartyConnectionId")]
-    #[serde(default, deserialize_with = "deserialize_connection_id")]
-    pub counterparty_connection_id: Option<u64>,
+        #[serde(alias = "clientId")]
+        client_id: u64,
+
+        #[serde(alias = "clientState")]
+        client_state: u64,
+
+        #[serde(alias = "counterpartyClientId")]
+        counterparty_client_id: u64,
+
+        #[serde(alias = "counterpartyConnectionId")]
+        counterparty_connection_id: u64,
+    },
 }
 
 /// On the model, a non-existing `connection_id` is represented with -1.
@@ -56,15 +80,6 @@ where
         connection_id.map(|connection_id| connection_id as u64)
     };
     Ok(connection_id)
-}
-
-#[derive(Debug, Clone, PartialEq, Deserialize)]
-pub enum ActionType {
-    None,
-    ICS02CreateClient,
-    ICS02UpdateClient,
-    ICS03ConnectionOpenInit,
-    ICS03ConnectionOpenTry,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
