@@ -477,10 +477,7 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenTry>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenTry>());
         Ok(msgs)
     }
 
@@ -576,10 +573,7 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenAck>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenAck>());
         Ok(msgs)
     }
 
@@ -666,10 +660,7 @@ impl Connection {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgConnectionOpenConfirm>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgConnectionOpenConfirm>());
         Ok(msgs)
     }
 

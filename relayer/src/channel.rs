@@ -506,10 +506,7 @@ impl Channel {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgChannelOpenTry>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgChannelOpenTry>());
         Ok(msgs)
     }
 
@@ -598,10 +595,7 @@ impl Channel {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgChannelOpenAck>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgChannelOpenAck>());
         Ok(msgs)
     }
 
@@ -678,10 +672,7 @@ impl Channel {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgChannelOpenConfirm>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgChannelOpenConfirm>());
         Ok(msgs)
     }
 
@@ -807,10 +798,7 @@ impl Channel {
             signer,
         };
 
-        let mut new_msgs = vec![new_msg.to_any::<RawMsgChannelCloseConfirm>()];
-
-        msgs.append(&mut new_msgs);
-
+        msgs.push(new_msg.to_any::<RawMsgChannelCloseConfirm>());
         Ok(msgs)
     }
 

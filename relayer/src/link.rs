@@ -500,7 +500,7 @@ impl RelayPath {
         for event in self.all_events.iter() {
             let send_event = downcast!(event => IBCEvent::SendPacket)
                 .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.append(&mut vec![send_event.packet.sequence]);
+            packet_sequences.push(send_event.packet.sequence);
         }
         info!("received from query_txs {:?}", packet_sequences);
 
@@ -573,7 +573,7 @@ impl RelayPath {
         for event in self.all_events.iter() {
             let write_ack_event = downcast!(event => IBCEvent::WriteAcknowledgement)
                 .ok_or_else(|| LinkError::Failed("unexpected query tx response".into()))?;
-            packet_sequences.append(&mut vec![write_ack_event.packet.sequence]);
+            packet_sequences.push(write_ack_event.packet.sequence);
         }
         info!("received from query_txs {:?}", packet_sequences);
         Ok(())
