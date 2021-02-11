@@ -139,7 +139,7 @@ pub mod test_util {
             channel_id: "testchannel".to_string(),
             proof_ack: get_dummy_proof(),
             proof_height: Some(Height {
-                revision_number: 1,
+                revision_number: 0,
                 revision_height: proof_height,
             }),
             signer: get_dummy_bech32_account(),

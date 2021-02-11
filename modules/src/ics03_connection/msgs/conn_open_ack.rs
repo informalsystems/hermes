@@ -72,12 +72,12 @@ impl Msg for MsgConnectionOpenAck {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 
@@ -176,38 +176,18 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 #[cfg(test)]
 pub mod test_util {
     use crate::ics03_connection::version::Version;
+    use crate::ics24_host::identifier::ConnectionId;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
-    pub fn get_dummy_msg_conn_open_ack() -> RawMsgConnectionOpenAck {
-        RawMsgConnectionOpenAck {
-            connection_id: "srcconnection".to_string(),
-            counterparty_connection_id: "tgtconnection".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: 10,
-            }),
-            proof_consensus: get_dummy_proof(),
-            consensus_height: Some(Height {
-                revision_number: 0,
-                revision_height: 10,
-            }),
-            client_state: None,
-            proof_client: vec![],
-            version: Some(Version::default().into()),
-            signer: get_dummy_bech32_account(),
-        }
-    }
-
-    pub fn get_dummy_msg_conn_open_ack_ics26(
+    pub fn get_dummy_msg_conn_open_ack(
         proof_height: u64,
         consensus_height: u64,
     ) -> RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
-            connection_id: "defaultConnection-0".to_string(),
-            counterparty_connection_id: "defaultConnection-0".to_string(),
+            connection_id: ConnectionId::default().to_string(),
+            counterparty_connection_id: ConnectionId::default().to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,
@@ -245,7 +225,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_ack_msg = get_dummy_msg_conn_open_ack();
+        let default_ack_msg = get_dummy_msg_conn_open_ack(5, 5);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -311,7 +291,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_ack();
+        let raw = get_dummy_msg_conn_open_ack(5, 6);
         let msg = MsgConnectionOpenAck::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenAck::from(msg.clone());
         let msg_back = MsgConnectionOpenAck::try_from(raw_back.clone()).unwrap();

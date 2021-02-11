@@ -123,7 +123,7 @@ mod tests {
             error_kind: Option<Kind>,
         }
 
-        let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
+        let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack(5, 5)).unwrap();
         let conn_id = msg_ack.connection_id.clone();
 
         // Client parameters -- identifier and correct height (matching the proof height)

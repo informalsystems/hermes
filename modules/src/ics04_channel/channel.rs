@@ -290,7 +290,7 @@ impl FromStr for Order {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Eq)]
 pub enum State {
     Uninitialized = 0,
     Init = 1,
@@ -321,6 +321,13 @@ impl State {
             4 => Ok(Self::Closed),
             _ => fail!(error::Kind::UnknownState, s),
         }
+    }
+}
+
+/// Provides a `to_string` method.
+impl std::fmt::Display for State {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{}", self.as_string())
     }
 }
 
@@ -359,14 +366,6 @@ pub mod test_util {
         }
     }
 
-    /// Returns a dummy `RawCounterparty`, for testing only!
-    pub fn get_another_dummy_raw_counterparty() -> RawCounterparty {
-        RawCounterparty {
-            port_id: "port12".into(),
-            channel_id: "channel25".into(),
-        }
-    }
-
     /// Returns a dummy `RawChannel`, for testing only!
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
@@ -374,27 +373,6 @@ pub mod test_util {
             ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty(None)),
             connection_hops: vec![ConnectionId::default().to_string()],
-            version: "ics20".to_string(), // The version is not validated.
-        }
-    }
-    /// Returns a dummy `RawChannel`, for testing only!
-    pub fn get_dummy_raw_channel_end_ics26() -> RawChannel {
-        RawChannel {
-            state: 1,
-            ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty(None)),
-            connection_hops: vec!["defaultConnection-0".to_string()],
-            version: "ics20".to_string(), // The version is not validated.
-        }
-    }
-
-    // TODO(ADI): fix this!
-    pub fn get_dummy_raw_channel_end_with_missing_connection() -> RawChannel {
-        RawChannel {
-            state: 1,
-            ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty(None)),
-            connection_hops: vec!["noconnection".to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
     }

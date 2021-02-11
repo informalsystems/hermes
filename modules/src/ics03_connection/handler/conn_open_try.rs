@@ -42,11 +42,9 @@ pub(crate) fn process(
                 Ok((old_connection_end, prev_id.clone()))
             } else {
                 // A ConnectionEnd already exists and validation failed.
-                // TODO(ADI) Fix this: no need for context.
-                Err(Into::<Error>::into(
-                    Kind::ConnectionMismatch(prev_id.clone())
-                        .context(old_connection_end.client_id().to_string()),
-                ))
+                Err(Into::<Error>::into(Kind::ConnectionMismatch(
+                    prev_id.clone(),
+                )))
             }
         }
         // No prev. connection id was supplied, create a new connection end and conn id.
@@ -126,7 +124,7 @@ mod tests {
     use crate::ics03_connection::connection::State;
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics24_host::identifier::ChainId;
@@ -153,14 +151,14 @@ mod tests {
         let pruning_window = context.host_chain_history_size() as u64;
         let client_consensus_state_height = 10;
 
-        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
             host_chain_height.revision_height,
         ))
         .unwrap();
 
         // The proof targets a height that does not exist (i.e., too advanced) on destination chain.
-        let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
             host_chain_height.increment().revision_height,
         ))
@@ -170,18 +168,19 @@ mod tests {
             .unwrap()
             .revision_height;
         // The consensus proof targets a missing height (pruned) on destination chain.
-        let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
             pruned_height,
         ))
         .unwrap();
 
         // The proofs in this message are created at a height which the client on destination chain does not have.
-        let msg_proof_height_missing = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
-            client_consensus_state_height - 1,
-            host_chain_height.revision_height,
-        ))
-        .unwrap();
+        let msg_proof_height_missing =
+            MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
+                client_consensus_state_height - 1,
+                host_chain_height.revision_height,
+            ))
+            .unwrap();
 
         let tests: Vec<Test> = vec![
             Test {

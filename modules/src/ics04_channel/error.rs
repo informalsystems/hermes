@@ -3,6 +3,7 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
+use crate::ics04_channel::channel::State;
 use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
@@ -72,8 +73,8 @@ pub enum Kind {
     #[error("the channel ordering is not supported by connection ")]
     ChannelFeatureNotSuportedByConnection,
 
-    #[error("queried for a non-existing connection")]
-    ChannelNotFound,
+    #[error("the channel end ({0}, {1}) does not exist")]
+    ChannelNotFound(PortId, ChannelId),
 
     #[error(
         "a different channel exists (was initialized) already for the same channel identifier {0}"
@@ -104,14 +105,17 @@ pub enum Kind {
     #[error("Client not found in chan open verification")]
     ClientNotFound,
 
-    #[error("Channel is in state {0} which is invalid")]
-    InvalidChannelState(ChannelId),
+    #[error("Channel {0} should not be state {1}")]
+    InvalidChannelState(ChannelId, State),
 
     #[error("Channel is in state {0}")]
     ChannelAlreadyClosed(ChannelId),
 
-    #[error("Channel chain verification fails on ChannelOpenAck for ChannelOpenTry")]
-    FailedChanneOpenAckVerification,
+    #[error("Handshake proof verification fails at ChannelOpenAck")]
+    ChanOpenAckProofVerification,
+
+    #[error("Handshake proof verification fails at ChannelOpenConfirm")]
+    ChanOpenConfirmProofVerification,
 }
 
 impl Kind {

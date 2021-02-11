@@ -21,10 +21,9 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Retrieve the old channel end and validate it against the message.
-
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
-        .ok_or_else(|| Kind::ChannelNotFound.context(msg.channel_id().clone().to_string()))?;
+        .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), msg.channel_id().clone()))?;
 
     // Validate that the channel end is in a state where it can be closed.
     if channel_end.state_matches(&State::Closed) {

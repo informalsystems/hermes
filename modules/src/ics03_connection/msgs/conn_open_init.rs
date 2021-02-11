@@ -50,12 +50,12 @@ impl Msg for MsgConnectionOpenInit {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 

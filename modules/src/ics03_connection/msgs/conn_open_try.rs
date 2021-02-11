@@ -1,10 +1,10 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use crate::address::{account_to_string, string_to_account};
 use crate::ics02_client::client_def::AnyClientState;
@@ -76,6 +76,11 @@ impl MsgConnectionOpenTry {
         }
     }
 
+    /// Setter for `client_id`.
+    pub fn with_client_id(self, client_id: ClientId) -> MsgConnectionOpenTry {
+        MsgConnectionOpenTry { client_id, ..self }
+    }
+
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `0` if this field is not set.
     pub fn consensus_height(&self) -> Height {
@@ -93,12 +98,12 @@ impl Msg for MsgConnectionOpenTry {
         crate::keys::ROUTER_KEY.to_string()
     }
 
-    fn get_signers(&self) -> Vec<AccountId> {
-        vec![self.signer]
-    }
-
     fn type_url(&self) -> String {
         TYPE_URL.to_string()
+    }
+
+    fn get_signers(&self) -> Vec<AccountId> {
+        vec![self.signer]
     }
 }
 
@@ -215,18 +220,19 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
     /// `proof_height` represents the height, on the source chain, at which this chain produced the
     /// proof. Parameter `consensus_height` represents the height of destination chain which a
     /// client on the source chain stores.
-    pub fn get_dummy_msg_conn_open_try(
+    pub fn get_dummy_raw_msg_conn_open_try(
         proof_height: u64,
         consensus_height: u64,
     ) -> RawMsgConnectionOpenTry {
@@ -264,7 +270,7 @@ mod tests {
     use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
 
@@ -277,7 +283,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let default_try_msg = get_dummy_msg_conn_open_try(10, 34);
+        let default_try_msg = get_dummy_raw_msg_conn_open_try(10, 34);
 
         let tests: Vec<Test> =
             vec![
@@ -379,7 +385,7 @@ mod tests {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_msg_conn_open_try(10, 34);
+        let raw = get_dummy_raw_msg_conn_open_try(10, 34);
         let msg = MsgConnectionOpenTry::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgConnectionOpenTry::from(msg.clone());
         let msg_back = MsgConnectionOpenTry::try_from(raw_back.clone()).unwrap();

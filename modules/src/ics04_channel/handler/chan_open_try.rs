@@ -25,7 +25,7 @@ pub(crate) fn process(
         Some(prev_id) => {
             let old_channel_end = ctx
                 .channel_end(&(msg.port_id().clone(), prev_id.clone()))
-                .ok_or_else(|| Kind::ChannelNotFound.context(prev_id.to_string()))?;
+                .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), prev_id.clone()))?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
@@ -262,7 +262,10 @@ mod tests {
                 ctx: context.clone(),
                 msg: ChannelMsg::ChannelOpenTry(msg.clone()),
                 want_pass: false,
-                expect_error_kind: Some(Kind::ChannelNotFound),
+                expect_error_kind: Some(Kind::ChannelNotFound(
+                    msg.port_id.clone(),
+                    chan_id.clone(),
+                )),
             },
             Test {
                 name: "Processing fails because no connection exists in the context".to_string(),
