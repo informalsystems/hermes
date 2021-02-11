@@ -34,6 +34,7 @@ use crate::connection::ConnectionError;
 use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::relay::MAX_ITER;
+use ibc::ics04_channel::channel::State;
 use ibc::ics04_channel::events::CloseInit;
 
 #[derive(Debug, Error)]
@@ -855,10 +856,57 @@ impl Link {
     pub fn relay(&mut self) -> Result<(), LinkError> {
         println!("relaying packets on {:#?}", self.a_to_b.channel);
         loop {
+            if self.is_closed()? {
+                println!("channel is closed, exiting");
+                return Ok(());
+            }
             self.a_to_b.relay_from_events()?;
             self.b_to_a.relay_from_events()?;
+
             // TODO - select over the two subscriptions
             thread::sleep(Duration::from_millis(100))
+        }
+    }
+
+    fn is_closed(&self) -> Result<bool, LinkError> {
+        let a_channel = self
+            .a_to_b
+            .src_chain()
+            .query_channel(
+                self.a_to_b.src_port_id(),
+                self.a_to_b.src_channel_id(),
+                Height::default(),
+            )
+            .map_err(|e| {
+                LinkError::Failed(format!(
+                    "channel {} does not exist on chain {}; context={}",
+                    self.a_to_b.src_channel_id(),
+                    self.a_to_b.src_chain().id(),
+                    e
+                ))
+            })?;
+
+        let b_channel = self
+            .a_to_b
+            .dst_chain()
+            .query_channel(
+                self.a_to_b.dst_port_id(),
+                self.a_to_b.dst_channel_id(),
+                Height::default(),
+            )
+            .map_err(|e| {
+                LinkError::Failed(format!(
+                    "channel {} does not exist on chain {}; context={}",
+                    self.a_to_b.dst_channel_id(),
+                    self.a_to_b.dst_chain().id(),
+                    e
+                ))
+            })?;
+
+        if a_channel.state_matches(&State::Closed) && b_channel.state_matches(&State::Closed) {
+            Ok(true)
+        } else {
+            Ok(false)
         }
     }
 
