@@ -7,7 +7,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tracing::info;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::identifier::{ChannelId, PortId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
@@ -23,7 +23,7 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentsCmd {
     #[options(free, required, help = "identifier of the chain to query")]
-    chain_id: String,
+    chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the port to query")]
     port_id: PortId,
@@ -38,8 +38,8 @@ impl QueryPacketCommitmentsCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions), String> {
         let dest_chain_config = config
-            .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -93,7 +93,7 @@ impl Runnable for QueryPacketCommitmentsCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketCommitmentCmd {
     #[options(free, required, help = "identifier of the chain to query")]
-    chain_id: String,
+    chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the port to query")]
     port_id: PortId,
@@ -114,8 +114,8 @@ impl QueryPacketCommitmentCmd {
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
         let dest_chain_config = config
-            .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -171,14 +171,14 @@ pub struct QueryUnreceivedPacketsCmd {
         required,
         help = "identifier of the chain to query the unreceived sequences"
     )]
-    dst_chain_id: String,
+    dst_chain_id: ChainId,
 
     #[options(
         free,
         required,
         help = "identifier of the chain where sent sequences are queried"
     )]
-    src_chain_id: String,
+    src_chain_id: ChainId,
 
     #[options(
         free,
@@ -200,13 +200,19 @@ impl QueryUnreceivedPacketsCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.src_chain_id))?;
+        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "source chain '{}' not found in configuration file",
+                self.src_chain_id
+            )
+        })?;
 
-        let dst_chain_config = config
-            .find_chain(&self.dst_chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
+        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "destination chain '{}' not found in configuration file",
+                self.dst_chain_id
+            )
+        })?;
 
         let opts = QueryPacketOptions {
             port_id: self.src_port_id.clone(),
@@ -313,7 +319,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketAcknowledgementsCmd {
     #[options(free, required, help = "identifier of the chain to query")]
-    chain_id: String,
+    chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the port to query")]
     port_id: PortId,
@@ -327,14 +333,9 @@ impl QueryPacketAcknowledgementsCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions), String> {
-        let dest_chain_config = config
-            .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                format!(
-                    "missing configuration for the given chain ({}) ",
-                    self.chain_id
-                )
-            })?;
+        let dst_chain_config = config
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -342,7 +343,7 @@ impl QueryPacketAcknowledgementsCmd {
             height: 0_u64,
         };
 
-        Ok((dest_chain_config.clone(), opts))
+        Ok((dst_chain_config.clone(), opts))
     }
 }
 
@@ -388,7 +389,7 @@ impl Runnable for QueryPacketAcknowledgementsCmd {
 #[derive(Clone, Command, Debug, Options)]
 pub struct QueryPacketAcknowledgmentCmd {
     #[options(free, required, help = "identifier of the chain to query")]
-    chain_id: String,
+    chain_id: ChainId,
 
     #[options(free, required, help = "identifier of the port to query")]
     port_id: PortId,
@@ -408,9 +409,9 @@ impl QueryPacketAcknowledgmentCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, QueryPacketOptions, Sequence), String> {
-        let dest_chain_config = config
-            .find_chain(&self.chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.chain_id))?;
+        let dst_chain_config = config
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let opts = QueryPacketOptions {
             port_id: self.port_id.clone(),
@@ -418,7 +419,7 @@ impl QueryPacketAcknowledgmentCmd {
             height: self.height.unwrap_or(0_u64),
         };
 
-        Ok((dest_chain_config.clone(), opts, self.sequence.into()))
+        Ok((dst_chain_config.clone(), opts, self.sequence.into()))
     }
 }
 
@@ -466,14 +467,14 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         required,
         help = "identifier of the chain to query the unreceived acknowledgments"
     )]
-    dst_chain_id: String,
+    dst_chain_id: ChainId,
 
     #[options(
         free,
         required,
         help = "identifier of the chain where received sequences are queried"
     )]
-    src_chain_id: String,
+    src_chain_id: ChainId,
 
     #[options(
         free,
@@ -495,13 +496,19 @@ impl QueryUnreceivedAcknowledgementCmd {
         &self,
         config: &Config,
     ) -> Result<(ChainConfig, ChainConfig, QueryPacketOptions), String> {
-        let src_chain_config = config
-            .find_chain(&self.src_chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.src_chain_id))?;
+        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+            format!(
+                "source chain '{}' not found in configuration file",
+                self.src_chain_id
+            )
+        })?;
 
-        let dst_chain_config = config
-            .find_chain(&self.dst_chain_id.parse().unwrap())
-            .ok_or_else(|| format!("missing configuration for chain ({}) ", self.dst_chain_id))?;
+        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "destination chain '{}' not found in configuration file",
+                self.dst_chain_id
+            )
+        })?;
 
         let opts = QueryPacketOptions {
             port_id: self.src_port_id.clone(),
