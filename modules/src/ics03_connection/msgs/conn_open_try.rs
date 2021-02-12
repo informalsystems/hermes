@@ -216,6 +216,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 #[cfg(test)]
 pub mod test_util {
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
+    use crate::ics03_connection::msgs::test_util::get_dummy_counterparty_ics26;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
@@ -234,6 +235,34 @@ pub mod test_util {
             previous_connection_id: "srcconnection".to_string(),
             client_state: None,
             counterparty: Some(get_dummy_counterparty()),
+            delay_period: 0,
+            counterparty_versions: get_compatible_versions()
+                .iter()
+                .map(|v| v.clone().into())
+                .collect(),
+            proof_init: get_dummy_proof(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: proof_height,
+            }),
+            proof_consensus: get_dummy_proof(),
+            consensus_height: Some(Height {
+                revision_number: 0,
+                revision_height: consensus_height,
+            }),
+            proof_client: vec![],
+            signer: get_dummy_bech32_account(),
+        }
+    }
+    pub fn get_dummy_msg_conn_open_try_ics26(
+        proof_height: u64,
+        consensus_height: u64,
+    ) -> RawMsgConnectionOpenTry {
+        RawMsgConnectionOpenTry {
+            client_id: "9999-mock-0".to_string(),
+            previous_connection_id: "defaultConnection-0".to_string(),
+            client_state: None,
+            counterparty: Some(get_dummy_counterparty_ics26()),
             delay_period: 0,
             counterparty_versions: get_compatible_versions()
                 .iter()

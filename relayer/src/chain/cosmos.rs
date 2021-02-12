@@ -6,6 +6,7 @@ use std::{
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
+use ibc::ics04_channel::events as ChannelEvents;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -680,7 +681,7 @@ impl Chain for CosmosSDKChain {
             // query all Tx-es that include events related to packet with given port, channel and sequence
             let response = self
                 .block_on(self.rpc_client.tx_search(
-                    packet_query(&request, seq)?,
+                    packet_query(&request, seq),
                     false,
                     1,
                     1,
@@ -688,7 +689,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, &response)?
+            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, response)
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -816,8 +817,8 @@ impl Chain for CosmosSDKChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
-    Ok(tendermint_rpc::query::Query::eq(
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query {
+    tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
     )
@@ -836,39 +837,46 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
         seq.to_string(),
-    ))
+    )
 }
 
-// Extract the packet events from the query_tx RPC response. The response includes the full set of events
-// from the Tx-es where there is at least one request query match.
-// For example, the query request asks for the Tx for packet with sequence 3, and both 3 and 4 were
-// committed in one Tx. In this case the response includes the events for 3 and 4.
+// Extract the packet events from the query_txs RPC response. For any given
+// packet query, there is at most one Tx matching such query. Moreover, a Tx may
+// contain several events, but a single one must match the packet query.
+// For example, if we're querying for the packet with sequence 3 and this packet
+// was committed in some Tx along with the packet with sequence 4, the response
+// will include both packets. For this reason, we iterate all packets in the Tx,
+// searching for those that match (which must be a single one).
 fn packet_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    response: &tendermint_rpc::endpoint::tx_search::Response,
-) -> Result<Option<IBCEvent>, Error> {
-    // TODO: remove loop as `response.txs.len() <= 1`
-    for r in response.txs.iter() {
+    mut response: tendermint_rpc::endpoint::tx_search::Response,
+) -> Option<IBCEvent> {
+    assert!(
+        response.txs.len() <= 1,
+        "packet_from_tx_search_response: unexpected number of txs"
+    );
+    if let Some(r) = response.txs.pop() {
         let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
         if height > request.height {
-            continue;
+            return None;
         }
 
-        for e in r.tx_result.events.iter() {
+        let mut matching = Vec::new();
+        for e in r.tx_result.events {
             if e.type_str != request.event_id.as_str() {
                 continue;
             }
 
-            let res = from_tx_response_event(height, e);
+            let res = ChannelEvents::try_from_tx(&e);
             if res.is_none() {
                 continue;
             }
             let event = res.unwrap();
             let packet = match &event {
-                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
-                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
+                IBCEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+                IBCEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
 
@@ -886,10 +894,18 @@ fn packet_from_tx_search_response(
                 continue;
             }
 
-            return Ok(Some(event));
+            matching.push(event);
         }
+
+        assert_eq!(
+            matching.len(),
+            1,
+            "packet_from_tx_search_response: unexpected number of matching packets"
+        );
+        matching.pop()
+    } else {
+        None
     }
-    Ok(None)
 }
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.

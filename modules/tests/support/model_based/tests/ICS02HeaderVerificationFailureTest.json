@@ -1,0 +1,49 @@
+[
+    {
+        "action": {
+            "type": "None"
+        },
+        "actionOutcome": "None",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 0
+            }
+        }
+    },
+    {
+        "action": {
+            "chainId": "chainB-0",
+            "clientHeight": 1,
+            "type": "ICS02CreateClient"
+        },
+        "actionOutcome": "ICS02CreateOK",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 1
+            }
+        }
+    },
+    {
+        "action": {
+            "chainId": "chainB-0",
+            "clientHeight": 1,
+            "clientId": 0,
+            "type": "ICS02UpdateClient"
+        },
+        "actionOutcome": "ICS02HeaderVerificationFailure",
+        "chains": {
+            "chainA-0": {
+                "height": 0
+            },
+            "chainB-0": {
+                "height": 1
+            }
+        }
+    }
+]

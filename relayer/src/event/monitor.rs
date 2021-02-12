@@ -170,26 +170,28 @@ impl EventMonitor {
         let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
-            Some(Ok(event)) => match ibc::events::get_all_events(&self.chain_id, event.clone()) {
-                Ok(ibc_events) => {
-                    let events_by_height = ibc_events.into_iter().into_group_map();
+            Some(Ok(event)) => {
+                match crate::event::rpc::get_all_events(&self.chain_id, event.clone()) {
+                    Ok(ibc_events) => {
+                        let events_by_height = ibc_events.into_iter().into_group_map();
 
-                    for (height, events) in events_by_height {
-                        let batch = EventBatch {
-                            chain_id: self.chain_id.clone(),
-                            height,
-                            events,
-                        };
-                        self.tx_batch.send(batch)?;
+                        for (height, events) in events_by_height {
+                            let batch = EventBatch {
+                                chain_id: self.chain_id.clone(),
+                                height,
+                                events,
+                            };
+                            self.tx_batch.send(batch)?;
+                        }
+                    }
+                    Err(err) => {
+                        error!(
+                            "Error {} when extracting IBC events from {:?}: ",
+                            err, event
+                        );
                     }
                 }
-                Err(err) => {
-                    error!(
-                        "Error {} when extracting IBC events from {:?}: ",
-                        err, event
-                    );
-                }
-            },
+            }
             Some(Err(err)) => {
                 error!("Error on collecting events from subscriptions: {}", err);
             }

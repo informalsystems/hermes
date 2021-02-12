@@ -96,18 +96,8 @@ pub(crate) fn process(
         return Err(Kind::ChannelFeatureNotSuportedByConnection.into());
     }
 
-    //Channel capabilities
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let channel_cap = match cap {
-        Some(key) => {
-            if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                Err(Kind::InvalidPortCapability)
-            } else {
-                Ok(key)
-            }
-        }
-        None => Err(Kind::NoPortCapability),
-    }?;
+    // Channel capabilities
+    let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().version().is_empty() {
         return Err(Kind::InvalidVersion.into());
@@ -133,12 +123,18 @@ pub(crate) fn process(
         msg.counterparty_version().clone(),
     );
 
-    verify_proofs(ctx, &new_channel_end, &expected_channel_end, &msg.proofs())
-        .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
+    verify_proofs(
+        ctx,
+        &new_channel_end,
+        &conn,
+        &expected_channel_end,
+        &msg.proofs(),
+    )
+    .map_err(|e| Kind::FailedChanneOpenTryVerification.context(e))?;
 
     output.log("success: channel open try ");
 
-    // Transition the connection end to the new state & pick a version.
+    // Transition the channel end to the new state & pick a version.
     new_channel_end.set_state(State::TryOpen);
 
     let result = ChannelResult {
@@ -192,6 +188,8 @@ mod tests {
             want_pass: bool,
         }
         let proof_height = 10;
+        let client_consensus_state_height = 10;
+        let host_chain_height = Height::new(1, 35);
 
         //chan_id is used to add a channel to the context
         let cchan_id2 = <ChannelId as FromStr>::from_str(&"channel24".to_string());
@@ -211,8 +209,6 @@ mod tests {
             Ok(v) => Some(v),
             Err(_e) => None,
         };
-
-        let proof_height = 10;
 
         let context = MockContext::default();
 
@@ -274,9 +270,6 @@ mod tests {
             connection_vec3,
             msg_chan_try2.channel().version(),
         );
-
-        let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(1, 35);
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
             client_consensus_state_height,
@@ -385,7 +378,7 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), init_conn_end.clone())
                     .with_port_capability(
@@ -410,7 +403,7 @@ mod tests {
                 ctx: context
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(1, client_consensus_state_height),
                     )
                     .with_connection(cid, init_conn_end)
                     .with_port_capability(
@@ -439,7 +432,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         true,
-                        "conn_open_init: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        "chan_open_ack: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                         test.name,
                         test.msg.clone(),
                         test.ctx.clone()
@@ -459,7 +452,7 @@ mod tests {
                     assert_eq!(
                         test.want_pass,
                         false,
-                        "chan_open_init: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        "chan_open_try: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
                         test.msg,
                         test.ctx.clone(),

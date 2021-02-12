@@ -24,6 +24,8 @@ use crate::events::IBCEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ICS4Error;
+use crate::ics04_channel::error::Kind as ICS4Kind;
+
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
@@ -381,12 +383,18 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
-        PortReader::lookup_module_by_port(self, port_id)
-    }
-
-    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
-        PortReader::autenthenticate(self, cap, port_id)
+    fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, ICS4Error> {
+        let cap = PortReader::lookup_module_by_port(self, port_id);
+        match cap {
+            Some(key) => {
+                if !PortReader::autenthenticate(self, &key, port_id) {
+                    Err(ICS4Error::from(ICS4Kind::InvalidPortCapability))
+                } else {
+                    Ok(key)
+                }
+            }
+            None => Err(ICS4Error::from(ICS4Kind::NoPortCapability)),
+        }
     }
 }
 
@@ -440,19 +448,10 @@ impl ChannelKeeper for MockContext {
         cid: &ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), ICS4Error> {
-        match self.connection_channels.get(cid) {
-            Some(v) => {
-                let mut modv = v.clone();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.remove(cid);
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-            None => {
-                let mut modv = Vec::new();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-        }
+        self.connection_channels
+            .entry(cid.clone())
+            .or_insert_with(Vec::new)
+            .push(port_channel_id.clone());
         Ok(())
     }
 }
