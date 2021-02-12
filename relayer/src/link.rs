@@ -194,11 +194,7 @@ impl RelayPath {
         // TODO - change event types to return ICS height
         let proofs = self
             .src_chain()
-            .build_channel_proofs(
-                self.src_port_id(),
-                self.src_channel_id(),
-                *event.height(),
-            )
+            .build_channel_proofs(self.src_port_id(), self.src_channel_id(), *event.height())
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
 
         // Get signer
