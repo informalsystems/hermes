@@ -110,13 +110,13 @@ impl Default for Height {
 
 pub struct AccountId(u64);
 
+#[derive(PartialEq)]
 pub struct PortId(u64);
 impl Clone for PortId {
     fn clone(&self) -> Self {
         PortId(self.0)
     }
 }
-
 impl Default for PortId {
     fn default() -> Self {
         let default_port: u64 = 1000;
@@ -131,6 +131,7 @@ impl Clone for ChannelId {
     }
 }
 
+#[derive(PartialEq)]
 pub struct ConnectionId(u64);
 impl Default for ConnectionId {
     fn default() -> Self {
@@ -150,6 +151,13 @@ pub struct ClientId(u64);
 pub enum Feature {
     Order(Order),
 }
+impl Clone for Feature {
+    fn clone(&self) -> Self {
+        match self {
+            Feature::Order(o) => Feature::Order(o.clone()),
+        }
+    }
+}
 
 pub struct Version {
     /* unused
@@ -159,11 +167,17 @@ pub struct Version {
     /// list of features compatible with the specified identifier
     features: List<Feature>,
 }
-
 impl Version {
     /// Checks whether or not the given feature is supported in this version
     pub fn is_supported_feature(&self, feature: Feature) -> bool {
         self.features.contains(&feature)
+    }
+}
+impl Clone for Version {
+    fn clone(&self) -> Self {
+        Version {
+            features: self.features.clone(),
+        }
     }
 }
 
@@ -375,8 +389,14 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
+#[derive(PartialEq)]
 pub struct Capability {
     // unused index: u64,
+}
+impl Clone for Capability {
+    fn clone(&self) -> Self {
+        Capability {}
+    }
 }
 
 pub struct ConnectionEnd {
@@ -385,6 +405,13 @@ pub struct ConnectionEnd {
     // unused counterparty: Counterparty,
     versions: List<Version>,
     // unused pub(crate) delay_period: u64,
+}
+impl Clone for ConnectionEnd {
+    fn clone(&self) -> Self {
+        ConnectionEnd {
+            versions: self.versions.clone(),
+        }
+    }
 }
 
 pub struct MsgChannelOpenInit {
@@ -412,9 +439,38 @@ pub trait ChannelReader {
     fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool;
 }
 
+pub struct MockChannelReader {
+    connection_id: ConnectionId,
+    connection_end: ConnectionEnd,
+    port_id: PortId,
+    cap: Capability,
+}
+
+impl ChannelReader for MockChannelReader {
+    fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
+        if *connection_id == self.connection_id {
+            Option::Some(self.connection_end.clone())
+        } else {
+            Option::None
+        }
+    }
+
+    fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
+        if *port_id == self.port_id {
+            Option::Some(self.cap.clone())
+        } else {
+            Option::None
+        }
+    }
+
+    fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
+        *port_id == self.port_id && *cap == self.cap
+    }
+}
+
 /// The actual function we want to verify
 pub fn process(
-    ctx: &dyn ChannelReader,
+    ctx: MockChannelReader,
     msg: MsgChannelOpenInit,
 ) -> Result<HandlerOutput<ChannelResult>, ErrorKind> {
     let output = HandlerOutput::builder();
