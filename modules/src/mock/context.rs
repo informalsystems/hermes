@@ -448,19 +448,10 @@ impl ChannelKeeper for MockContext {
         cid: &ConnectionId,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<(), ICS4Error> {
-        match self.connection_channels.get(cid) {
-            Some(v) => {
-                let mut modv = v.clone();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.remove(cid);
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-            None => {
-                let mut modv = Vec::new();
-                modv.push(port_channel_id.clone());
-                self.connection_channels.insert(cid.clone(), modv);
-            }
-        }
+        self.connection_channels
+            .entry(cid.clone())
+            .or_insert_with(Vec::new)
+            .push(port_channel_id.clone());
         Ok(())
     }
 }

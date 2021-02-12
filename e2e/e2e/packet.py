@@ -32,7 +32,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
         return [self.src_chain_id, self.dst_chain_id, self.src_port, self.src_channel, "9999", "1000"]
 
     def process(self, result: Any) -> TxPacketSendRes:
-        entry = find_entry(result, 'SendPacketChannel')
+        entry = find_entry(result, 'SendPacket')
         return from_dict(TxPacketSendRes, entry)
 
 # -----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
     def process(self, result: Any) -> TxPacketRecvRes:
-        entry = find_entry(result, 'WriteAcknowledgementChannel')
+        entry = find_entry(result, 'WriteAcknowledgement')
         return from_dict(TxPacketRecvRes, entry)
 
 # -----------------------------------------------------------------------------
@@ -81,7 +81,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
         return [self.dst_chain_id, self.src_chain_id, self.src_port, self.src_channel]
 
     def process(self, result: Any) -> TxPacketAckRes:
-        entry = find_entry(result, 'AcknowledgePacketChannel')
+        entry = find_entry(result, 'AcknowledgePacket')
         return from_dict(TxPacketAckRes, entry)
 
 # =============================================================================

@@ -54,11 +54,12 @@ pub enum IBCEvent {
     CloseInitChannel(ChannelEvents::CloseInit),
     CloseConfirmChannel(ChannelEvents::CloseConfirm),
 
-    SendPacketChannel(ChannelEvents::SendPacket),
-    ReceivePacketChannel(ChannelEvents::ReceivePacket),
-    WriteAcknowledgementChannel(ChannelEvents::WriteAcknowledgement),
-    AcknowledgePacketChannel(ChannelEvents::AcknowledgePacket),
-    TimeoutPacketChannel(ChannelEvents::TimeoutPacket),
+    SendPacket(ChannelEvents::SendPacket),
+    ReceivePacket(ChannelEvents::ReceivePacket),
+    WriteAcknowledgement(ChannelEvents::WriteAcknowledgement),
+    AcknowledgePacket(ChannelEvents::AcknowledgePacket),
+    TimeoutPacket(ChannelEvents::TimeoutPacket),
+    TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
     TimeoutTransfer(TransferEvents::Timeout),
     PacketTransfer(TransferEvents::Packet),
@@ -87,36 +88,41 @@ impl IBCEvent {
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn height(&self) -> Height {
+    // TODO - change to ICSHeight
+    pub fn height(&self) -> &Height {
         match self {
-            IBCEvent::NewBlock(bl) => bl.height,
-            IBCEvent::UpdateClient(uc) => *uc.height(),
-            IBCEvent::SendPacketChannel(ev) => ev.height,
-            IBCEvent::ReceivePacketChannel(ev) => ev.height,
-            IBCEvent::WriteAcknowledgementChannel(ev) => ev.height,
-            IBCEvent::AcknowledgePacketChannel(ev) => ev.height,
-            IBCEvent::TimeoutPacketChannel(ev) => ev.height,
+            IBCEvent::NewBlock(ev) => &ev.height,
+            IBCEvent::UpdateClient(ev) => ev.height(),
+            IBCEvent::SendPacket(ev) => &ev.height,
+            IBCEvent::ReceivePacket(ev) => &ev.height,
+            IBCEvent::WriteAcknowledgement(ev) => &ev.height,
+            IBCEvent::AcknowledgePacket(ev) => &ev.height,
+            IBCEvent::TimeoutPacket(ev) => &ev.height,
+            IBCEvent::CloseInitChannel(ev) => ev.height(),
 
             _ => unimplemented!(),
         }
     }
 
-    pub fn set_height(&mut self, height: ICSHeight) {
+    pub fn set_height(&mut self, height: &ICSHeight) {
         match self {
-            IBCEvent::SendPacketChannel(ev) => {
+            IBCEvent::SendPacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            IBCEvent::ReceivePacketChannel(ev) => {
+            IBCEvent::ReceivePacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            IBCEvent::WriteAcknowledgementChannel(ev) => {
+            IBCEvent::WriteAcknowledgement(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            IBCEvent::AcknowledgePacketChannel(ev) => {
+            IBCEvent::AcknowledgePacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
             }
-            IBCEvent::TimeoutPacketChannel(ev) => {
+            IBCEvent::TimeoutPacket(ev) => {
                 ev.height = Height::try_from(height.revision_height).unwrap()
+            }
+            IBCEvent::CloseInitChannel(ev) => {
+                ev.set_height(Height::try_from(height.revision_height).unwrap())
             }
             _ => unimplemented!(),
         }
@@ -292,7 +298,14 @@ pub fn build_event(mut object: RawObject) -> Result<IBCEvent, BoxError> {
             object,
         )?)),
 
-        _ => Err("Incorrect Event Type".into()),
+        "timeout_on_close_packet" => {
+            object.action = "timeout_packet".to_string();
+            Ok(IBCEvent::from(
+                ChannelEvents::TimeoutOnClosePacket::try_from(object)?,
+            ))
+        }
+
+        unknown_event => Err(unknown_event.into()),
     }
 }
 
