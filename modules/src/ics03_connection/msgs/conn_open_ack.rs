@@ -200,6 +200,30 @@ pub mod test_util {
             signer: get_dummy_bech32_account(),
         }
     }
+
+    pub fn get_dummy_msg_conn_open_ack_ics26(
+        proof_height: u64,
+        consensus_height: u64,
+    ) -> RawMsgConnectionOpenAck {
+        RawMsgConnectionOpenAck {
+            connection_id: "defaultConnection-0".to_string(),
+            counterparty_connection_id: "defaultConnection-0".to_string(),
+            proof_try: get_dummy_proof(),
+            proof_height: Some(Height {
+                revision_number: 0,
+                revision_height: proof_height,
+            }),
+            proof_consensus: get_dummy_proof(),
+            consensus_height: Some(Height {
+                revision_number: 0,
+                revision_height: consensus_height,
+            }),
+            client_state: None,
+            proof_client: vec![],
+            version: Some(Version::default().into()),
+            signer: get_dummy_bech32_account(),
+        }
+    }
 }
 
 #[cfg(test)]

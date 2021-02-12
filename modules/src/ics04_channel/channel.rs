@@ -113,6 +113,9 @@ impl ChannelEnd {
     pub fn set_state(&mut self, s: State) {
         self.state = s;
     }
+    pub fn set_version(&mut self, v: String) {
+        self.version = v;
+    }
 
     pub fn state(&self) -> &State {
         &self.state
@@ -350,6 +353,13 @@ pub mod test_util {
             channel_id: "channel24".into(),
         }
     }
+    /// Returns a dummy `RawCounterparty`, for testing only!
+    pub fn get_dummy_raw_counterparty_ics26() -> RawCounterparty {
+        RawCounterparty {
+            port_id: "port".into(),
+            channel_id: "defaultChannel-0".into(),
+        }
+    }
 
     /// Returns a dummy `RawCounterparty`, for testing only!
     pub fn get_another_dummy_raw_counterparty() -> RawCounterparty {
@@ -365,6 +375,16 @@ pub mod test_util {
             state: 1,
             ordering: 1,
             counterparty: Some(get_dummy_raw_counterparty()),
+            connection_hops: vec!["defaultConnection-0".to_string()],
+            version: "ics20".to_string(), // The version is not validated.
+        }
+    }
+    /// Returns a dummy `RawChannel`, for testing only!
+    pub fn get_dummy_raw_channel_end_ics26() -> RawChannel {
+        RawChannel {
+            state: 1,
+            ordering: 1,
+            counterparty: Some(get_dummy_raw_counterparty_ics26()),
             connection_hops: vec!["defaultConnection-0".to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }
