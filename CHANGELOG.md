@@ -2,66 +2,69 @@
 
 ## Unreleased Changes
 
+> [high level summary]
+
 ### FEATURES
 
-- <high level summary>
-
 - [ibc]
-  -
+  - [nothing yet]
 
 - [ibc-relayer]
   - Listen to channel close initialization event and perform the close handshake ([#560])
 
 - [ibc-relayer-cli]
-  -
+  - [nothing yet]
 
 ### IMPROVEMENTS
 
-- <high level summary>
-
 - [ibc]
-  -
+  - [nothing yet]
 
 - [ibc-relayer]
-  -
+  - [nothing yet]
 
 - [ibc-relayer-cli]
-  -
+  - [nothing yet]
 
-### BUG FIXES:
+### BUG FIXES
 
 - [ibc]
-  -
+  - [nothing yet]
 
 - [ibc-relayer]
-  -
+  - [nothing yet]
 
 - [ibc-relayer-cli]
-  -
+  - [nothing yet]
 
-### BREAKING CHANGES:
+### BREAKING CHANGES
 
 - [ibc]
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
+  - Remove dependency on `tendermint-rpc` ([#624])
 
 - [ibc-relayer]
-  -
+  - [nothing yet]
 
 - [ibc-relayer-cli]
+  - [nothing yet]
 
+### BUG FIXES
 
-### BUG FIXES:
-
-- `[ibc]`
+- [ibc]
   - Fix panic in conn open try when no connection id is provided ([#626])
 
-- `[ibc-relayer-cli]`
+- [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
   - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
 
 
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 
 ## v0.1.0
@@ -72,9 +75,9 @@
 
 Noteworthy changes in this release include:
 
-- The binary in the `ibc-relayer-cli` crate was given the name Hermes. 
+- The binary in the `ibc-relayer-cli` crate was given the name Hermes.
 - We published a comprehensive guide for Hermes at [hermes.informal.systems](https://hermes.informal.systems).
-- Major improvements to user experience, in particular at CLI level: JSON output, 
+- Major improvements to user experience, in particular at CLI level: JSON output,
   configurable log output level, dedicated channel handshake command, as well as
   overall improvements to error display and output.
 
@@ -183,7 +186,7 @@ the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-
 - Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#451])
 
 - [ibc-relayer]
- 
+
 - [ibc-relayer-cli]
   - Packet CLIs for recv_packet ([#443])
   - Packet CLIs for acknowledging packets ([#468])
@@ -192,7 +195,7 @@ the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-
 - [ibc-relayer]
   - Mock chain (implementing IBC handlers) and integration against CLI ([#158])
   - Relayer tests for client update (ping pong) against MockChain ([#381])
-  - Relayer refactor to improve testing and add semantic dependencies ([#447]) 
+  - Relayer refactor to improve testing and add semantic dependencies ([#447])
 
 [#158]: https://github.com/informalsystems/ibc-rs/issues/158
 [#379]: https://github.com/informalsystems/ibc-rs/issues/379
@@ -208,7 +211,7 @@ the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-
 
 This release focuses on implementing relayer and relayer-cli functionality towards a full v0 implementation.
 We now have the full-stack implementation for supporting client creation & updates, as well as connection- and channel handshakes.
-We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and added ICS 020 spec. 
+We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and added ICS 020 spec.
 
 Special thanks to external contributors for this release: @CharlyCst ([#347], [#419]).
 
@@ -317,7 +320,7 @@ Additional highlights:
 
 ### BREAKING CHANGES:
 - [ibc-relayer] & [ibc] Alignment with ecosystem updates:
-    - Compatibility with the latest protobuf (Gaia stargate-3 and stargate-4) ([#191], [#272], [#273], [#278]) 
+    - Compatibility with the latest protobuf (Gaia stargate-3 and stargate-4) ([#191], [#272], [#273], [#278])
     - Adaptations to tendermint 0.17 ([#286], [#293], [#300], [#302], [#308])
 - [ibc-relayer] UX improvement: Remove proof option from client connections command ([#205])
 
@@ -336,7 +339,7 @@ Additional highlights:
 - [ibc] Implemented the `DomainType` trait for IBC proto structures ([#245], [#249]).
 - [ibc] & [ibc-proto] Several improvements to message processors, among which ([#218]):
     - ICS03 connection handshake protocol initial implementation and tests ([#160])
-    - Add capability to decode from protobuf Any* type into Tendermint and Mock client states 
+    - Add capability to decode from protobuf Any* type into Tendermint and Mock client states
     - Cleanup Any* client wrappers related code
     - Migrate handlers to newer protobuf definitions ([#226])
     - Extend client context mock ([#221])
@@ -476,7 +479,7 @@ the latest state of development towards the Cosmos-SDK Stargate release.
         [\#174](https://github.com/informalsystems/ibc-rs/pull/174),
         [\#155](https://github.com/informalsystems/ibc-rs/pull/155)
 - [repo] Moved relayer/cli to relayer-cli, relayer/relay to relayer. [\#183](https://github.com/informalsystems/ibc-rs/pull/183)
-  
+
 ### FEATURES:
 
 - [ibc-relayer] Query connections given client id. [\#169](https://github.com/informalsystems/ibc-rs/pull/169)
@@ -486,20 +489,20 @@ the latest state of development towards the Cosmos-SDK Stargate release.
 
 ### IMPROVEMENTS:
 
-- [ci] Framework (scripts and Github Actions) for integration testing the relayer queries against 
+- [ci] Framework (scripts and Github Actions) for integration testing the relayer queries against
     the Cosmos-SDK's `simd` binary with prepopulated IBC state in the genesis
         [\#140](https://github.com/informalsystems/ibc-rs/pull/140),
         [\#184](https://github.com/informalsystems/ibc-rs/pull/184)
 - [ibc-relayer|ibc] Implemented better Raw type handling. [\#156](https://github.com/informalsystems/ibc-rs/pull/156)
 - [repo] Add rust-toolchain file. [\#154](https://github.com/informalsystems/ibc-rs/pull/154)
-   
+
 ### BUG FIXES:
 
 - [ibc] Fixed the identifiers limits according to updated ics spec. [\#189](https://github.com/informalsystems/ibc-rs/pull/189)
 - [ibc/relayer] Remove some warnings triggered during compilation due to dependency specification. [\#132](https://github.com/informalsystems/ibc-rs/pull/132)
 - [ibc] Fix nightly runs. [\#161](https://github.com/informalsystems/ibc-rs/pull/161)
 - [repo] Fix for incomplete licence terms. [\#153](https://github.com/informalsystems/ibc-rs/pull/153)
-  
+
 ## 0.0.1
 
 *July 1st, 2020*
