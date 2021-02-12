@@ -86,13 +86,13 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
 
         let signer = string_to_account(raw.signer).map_err(|e| Kind::InvalidAddress.context(e))?;
 
-        Ok(MsgCreateAnyClient::new(
+        MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)
                 .map_err(|e| Kind::InvalidRawClientState.context(e))?,
             AnyConsensusState::try_from(raw_consensus_state)
                 .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
             signer,
-        )?)
+        )
     }
 }
 
