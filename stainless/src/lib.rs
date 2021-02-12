@@ -244,28 +244,32 @@ impl<T> HandlerOutputBuilder<T> {
     pub fn with_log(self, log: List<Log>) -> Self {
         HandlerOutputBuilder {
             log: self.log.append(log),
-            ..self
+            events: self.events,
+            marker: self.marker,
         }
     }
 
     pub fn log(self, log: Log) -> Self {
         HandlerOutputBuilder {
             log: self.log.push(log),
-            ..self
+            events: self.events,
+            marker: self.marker,
         }
     }
 
     pub fn with_events(self, events: List<IBCEvent>) -> Self {
         HandlerOutputBuilder {
             events: self.events.append(events),
-            ..self
+            log: self.log,
+            marker: self.marker,
         }
     }
 
     pub fn emit(self, event: IBCEvent) -> Self {
         HandlerOutputBuilder {
             events: self.events.push(event),
-            ..self
+            log: self.log,
+            marker: self.marker,
         }
     }
 
@@ -424,6 +428,7 @@ pub fn process(
 
     match ctx.port_capability(&msg.port_id().clone()) {
         Option::None => Result::Err(ErrorKind::NoPortCapability.into()),
+
         Option::Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
                 Result::Err(ErrorKind::InvalidPortCapability.into())
@@ -436,6 +441,7 @@ pub fn process(
                     Option::None => Result::Err(ErrorKind::MissingConnection(
                         msg.channel().connection_hops().first().clone(),
                     )),
+
                     Option::Some(conn) => {
                         match conn.versions {
                             List::Cons(version, tail) if tail.len() == 0 => {
@@ -466,9 +472,16 @@ pub fn process(
                                         channel_cap: key,
                                     };
 
+                                    let default_attributes: Attributes = Default::default();
                                     let event_attributes = Attributes {
                                         channel_id: Option::None,
-                                        ..Default::default()
+                                        height: default_attributes.height,
+                                        port_id: default_attributes.port_id,
+                                        connection_id: default_attributes.connection_id,
+                                        counterparty_port_id: default_attributes
+                                            .counterparty_port_id,
+                                        counterparty_channel_id: default_attributes
+                                            .counterparty_channel_id,
                                     };
                                     let output = output
                                         .emit(IBCEvent::OpenInitChannel(event_attributes.into()));
