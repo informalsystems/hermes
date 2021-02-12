@@ -11,7 +11,14 @@ pub enum Option<T> {
     Some(T),
     None,
 }
-
+impl<T> Option<T> {
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Option::Some(_) => true,
+            _ => false,
+        }
+    }
+}
 impl<T: Clone> Clone for Option<T> {
     fn clone(&self) -> Self {
         match self {
@@ -20,7 +27,6 @@ impl<T: Clone> Clone for Option<T> {
         }
     }
 }
-
 impl<T> Default for Option<T> {
     fn default() -> Option<T> {
         Option::None
@@ -142,18 +148,23 @@ impl Clone for ConnectionId {
 
 pub struct ClientId(u64);
 
+#[derive(PartialEq)]
+pub enum Feature {
+    Order(Order),
+}
+
 pub struct Version {
     /* unused
     /// unique version identifier
     identifier: String,
      */
     /// list of features compatible with the specified identifier
-    features: List<String>,
+    features: List<Feature>,
 }
 
 impl Version {
     /// Checks whether or not the given feature is supported in this version
-    pub fn is_supported_feature(&self, feature: String) -> bool {
+    pub fn is_supported_feature(&self, feature: Feature) -> bool {
         self.features.contains(&feature)
     }
 }
@@ -203,7 +214,7 @@ pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 
 pub struct HandlerOutput<T> {
     pub result: T,
-    pub log: List<String>,
+    pub log: List<Log>,
     pub events: List<IBCEvent>,
 }
 
@@ -213,8 +224,12 @@ impl<T> HandlerOutput<T> {
     }
 }
 
+pub enum Log {
+    NoChannelFound,
+}
+
 pub struct HandlerOutputBuilder<T> {
-    log: List<String>,
+    log: List<Log>,
     events: List<IBCEvent>,
     marker: PhantomData<T>,
 }
@@ -228,16 +243,16 @@ impl<T> HandlerOutputBuilder<T> {
         }
     }
 
-    pub fn with_log(self, log: List<String>) -> Self {
+    pub fn with_log(self, log: List<Log>) -> Self {
         HandlerOutputBuilder {
             log: self.log.append(log),
             ..self
         }
     }
 
-    pub fn log(self, log: impl Into<String>) -> Self {
+    pub fn log(self, log: Log) -> Self {
         HandlerOutputBuilder {
-            log: self.log.push(log.into()),
+            log: self.log.push(log),
             ..self
         }
     }
@@ -265,13 +280,20 @@ impl<T> HandlerOutputBuilder<T> {
     }
 }
 
+pub struct VersionId(u64);
+impl Clone for VersionId {
+    fn clone(&self) -> Self {
+        VersionId(self.0)
+    }
+}
+
 #[allow(dead_code)]
 pub struct ChannelEnd {
     state: State,
     ordering: Order,
     remote: Counterparty,
     connection_hops: List<ConnectionId>,
-    version: String,
+    version: Option<VersionId>,
 }
 
 impl ChannelEnd {
@@ -280,7 +302,7 @@ impl ChannelEnd {
         ordering: Order,
         remote: Counterparty,
         connection_hops: List<ConnectionId>,
-        version: String,
+        version: Option<VersionId>,
     ) -> Self {
         Self {
             state,
@@ -303,25 +325,28 @@ impl ChannelEnd {
         &self.connection_hops
     }
 
-    pub fn version(&self) -> String {
-        self.version.parse().unwrap()
+    pub fn version(&self) -> &Option<VersionId> {
+        &self.version
     }
 }
 
-#[derive(Clone)]
+#[derive(PartialEq)]
 pub enum Order {
     None = 0,
     Unordered,
     Ordered,
 }
-
 impl Order {
-    /// Yields the Order as a string
-    pub fn as_string(&self) -> &'static str {
+    pub fn as_feature(&self) -> Feature {
+        Feature::Order(self.clone())
+    }
+}
+impl Clone for Order {
+    fn clone(&self) -> Self {
         match self {
-            Self::None => "UNINITIALIZED",
-            Self::Unordered => "ORDER_UNORDERED",
-            Self::Ordered => "ORDER_ORDERED",
+            Order::None => Order::None,
+            Order::Unordered => Order::Unordered,
+            Order::Ordered => Order::Ordered,
         }
     }
 }
@@ -433,7 +458,7 @@ pub fn process(
         _ => return Result::Err(ErrorKind::InvalidVersionLengthConnection.into()),
     };
 
-    let channel_feature = msg.channel().ordering().as_string().to_string();
+    let channel_feature = msg.channel().ordering().as_feature();
     if !version.is_supported_feature(channel_feature) {
         return Result::Err(ErrorKind::ChannelFeatureNotSuportedByConnection.into());
     }
@@ -448,10 +473,10 @@ pub fn process(
         msg.channel().ordering().clone(),
         msg.channel().counterparty().clone(),
         msg.channel().connection_hops().clone(),
-        msg.channel().version(),
+        msg.channel().version().clone(),
     );
 
-    let output = output.log("success: no channel found");
+    let output = output.log(Log::NoChannelFound);
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
