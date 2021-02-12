@@ -424,74 +424,67 @@ pub fn process(
 ) -> HandlerResult<ChannelResult, ErrorKind> {
     let output = HandlerOutput::builder();
 
-    let cap = ctx.port_capability(&msg.port_id().clone());
-    let cap_key = match cap {
+    match ctx.port_capability(&msg.port_id().clone()) {
+        Option::None => Result::Err(ErrorKind::NoPortCapability.into()),
         Option::Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                return Result::Err(ErrorKind::InvalidPortCapability.into());
+                Result::Err(ErrorKind::InvalidPortCapability.into())
+            }
+            // An IBC connection running on the local (host) chain should exist.
+            else if msg.channel().connection_hops().len() != 1 {
+                Result::Err(ErrorKind::InvalidConnectionHopsLength.into())
             } else {
-                key
+                match ctx.connection_end(msg.channel().connection_hops().first()) {
+                    Option::None => Result::Err(ErrorKind::MissingConnection(
+                        msg.channel().connection_hops().first().clone(),
+                    )),
+                    Option::Some(conn) => {
+                        match conn.versions {
+                            List::Cons(version, tail) if tail.len() == 0 => {
+                                let channel_feature = msg.channel().ordering().as_feature();
+                                if !version.is_supported_feature(channel_feature) {
+                                    Result::Err(
+                                        ErrorKind::ChannelFeatureNotSuportedByConnection.into(),
+                                    )
+                                }
+                                // TODO: Check that `version` is non empty but not necessary coherent
+                                else if msg.channel().version().is_empty() {
+                                    Result::Err(ErrorKind::InvalidVersion.into())
+                                } else {
+                                    let new_channel_end = ChannelEnd::new(
+                                        State::Init,
+                                        msg.channel().ordering().clone(),
+                                        msg.channel().counterparty().clone(),
+                                        msg.channel().connection_hops().clone(),
+                                        msg.channel().version().clone(),
+                                    );
+
+                                    let output = output.log(Log::NoChannelFound);
+
+                                    let result = ChannelResult {
+                                        port_id: msg.port_id().clone(),
+                                        channel_id: Option::None,
+                                        channel_end: new_channel_end,
+                                        channel_cap: key,
+                                    };
+
+                                    let event_attributes = Attributes {
+                                        channel_id: Option::None,
+                                        ..Default::default()
+                                    };
+                                    let output = output
+                                        .emit(IBCEvent::OpenInitChannel(event_attributes.into()));
+
+                                    Result::Ok(output.with_result(result))
+                                }
+                            }
+                            _ => Result::Err(ErrorKind::InvalidVersionLengthConnection.into()),
+                        }
+                    }
+                }
             }
         }
-        Option::None => return Result::Err(ErrorKind::NoPortCapability.into()),
-    };
-
-    if msg.channel().connection_hops().len() != 1 {
-        return Result::Err(ErrorKind::InvalidConnectionHopsLength.into());
     }
-
-    // An IBC connection running on the local (host) chain should exist.
-
-    let connection_end = ctx.connection_end(msg.channel().connection_hops().first());
-
-    let conn = match connection_end {
-        Option::Some(v) => v,
-        Option::None => {
-            return Result::Err(ErrorKind::MissingConnection(
-                msg.channel().connection_hops().first().clone(),
-            ))
-        }
-    };
-
-    let version = match conn.versions {
-        List::Cons(version, tail) if tail.len() == 0 => version,
-        _ => return Result::Err(ErrorKind::InvalidVersionLengthConnection.into()),
-    };
-
-    let channel_feature = msg.channel().ordering().as_feature();
-    if !version.is_supported_feature(channel_feature) {
-        return Result::Err(ErrorKind::ChannelFeatureNotSuportedByConnection.into());
-    }
-
-    // TODO: Check that `version` is non empty but not necessary coherent
-    if msg.channel().version().is_empty() {
-        return Result::Err(ErrorKind::InvalidVersion.into());
-    }
-
-    let new_channel_end = ChannelEnd::new(
-        State::Init,
-        msg.channel().ordering().clone(),
-        msg.channel().counterparty().clone(),
-        msg.channel().connection_hops().clone(),
-        msg.channel().version().clone(),
-    );
-
-    let output = output.log(Log::NoChannelFound);
-
-    let result = ChannelResult {
-        port_id: msg.port_id().clone(),
-        channel_id: Option::None,
-        channel_end: new_channel_end,
-        channel_cap: cap_key,
-    };
-
-    let event_attributes = Attributes {
-        channel_id: Option::None,
-        ..Default::default()
-    };
-    let output = output.emit(IBCEvent::OpenInitChannel(event_attributes.into()));
-
-    Result::Ok(output.with_result(result))
 }
 
 pub fn main() {}
