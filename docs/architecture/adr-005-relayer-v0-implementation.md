@@ -5,13 +5,12 @@
 * 04.01.2020: First draft proposed.
 * 09.02.2020: Revised, fixed todos, reviewed.
 
-
 ## Context
 
 This ADR documents the implementation of the `v0.1` [relayer lib crate]
 [ibc-relayer].
 This library is instantiated in the [Hermes][hermes] binary of the 
-[ibc-relayer-cli crate][ibc-relayer-cli], which we do not cover here.
+[ibc-relayer-cli crate][ibc-relayer-cli] (which is not the focus of this discussion).
 
 As a main design goal, `v0.1` is meant to lay a foundation upon which we can 
 add more features and enhancements incrementally with later relayer versions.
@@ -31,7 +30,7 @@ are important towards limiting the scope that `v0.1` aims to
 cover, and allowing a focus on the architecture and concurrency model to 
 provide for growth in the future.
 
-These assumptions are as follows:
+These assumptions are documented below in the [decision](#decision) section.
 
 ## Decision
 
@@ -55,7 +54,7 @@ This pair of chains plus their corresponding port identifiers is called a
 __relaying path__.
 Any relaying path is unidirectional.
 
-An example of the relevant section of the configuration file follows.
+An example with the relevant section of the configuration file follows.
 
 ```toml
 [[connections]]
@@ -90,7 +89,7 @@ The `v0.1` relayer will _not_ do proof verification.
 
 ### Feature set
 
-> todo
+The [complete list of features is documented elsewhere][features] in detail.
 
 ## Relayer Concurrency Model
 
@@ -140,11 +139,21 @@ interface between the relayer and a single chain.
 
 <img src="assets/relayer-v0-arch.jpg" width="500" alt="relayer v0 architecture"/>
 
+##### Legend
+
+Some of the notation from this figure has the following meaning.
+
+| Notation | Description | Examples |
+| ------ | ----------- | ----------- |
+| `E` | Enum: typically messages between threads | `ChainRequest`; `IBCEvent` |
+| `S` | Struct: a processing element | `ForeignClient`; `Connection` |
+| `T` | Trait: typically  interface between threads | `Chain`; `LightClient<C: Chain>` |
+
 ##### Levels of abstraction
 
 At the top of this diagram, there is a chain consisting of multiple full nodes.
-The deeper we go in this sketch, the closer we get to the user, or the 
-relayer CLI.
+The deeper (i.e., lower) we go into this sketch, the closer we get to the user, or 
+Hermes (the relayer CLI).
 To understand the relayer architecture intuitively, we can break down the 
 levels of abstraction as follows:
 
@@ -153,22 +162,22 @@ levels of abstraction as follows:
      users
 - The relayer communicates with a chain via three interfaces: 
     - (i) the `LightClient` trait (handled via the supervisor for the 
-      production 
-     chain),
+      production chain),
     - (ii) the `Chain` trait (where the communication happens over the 
   ABCI/gRPC interface primarily), and 
-    - (iii) an `EventMonitor` which subscribes to a full node and sends batches 
+    - (iii) an `EventMonitor` which subscribes to a full node, and carries batches 
   of events from that node to the chain runtime in the relayer. Currently, 
   the relayer registers for `Tx` and `Block` notifications. It then extracts 
-  the IBC events from the Tx and generates a "NewBlock" event also for the
-  block. Note that the notification may include multiple IBC Events.
+  the IBC events from the `Tx` and generates a `NewBlock` event also for the
+  block. Note that a notification may include multiple IBC Events.
      
 ###### 2. The chain runtime
+
 - This is an intermediary layer, sitting between the relayer application and 
-  any chain(s)
-- It is universal for all possible chains, i.e., does _not_ contain any 
-     chain-specific code
-- Accepts as input requests from the application, in the form of 
+  any chain(s);
+- The runtime is universal for all possible chains, i.e., does _not_ contain any 
+     chain-specific code;
+- Accepts as input requests from the application (Hermes, the CLI), in the form of 
      [`ChainRequest`][chain-req] via a crossbeam channel
 - Responds to the application via a crossbeam channel
 - Has objects which implement the three interfaces named above 
@@ -176,12 +185,14 @@ levels of abstraction as follows:
   these objects as required by application requests
 
 ###### 3. The relayer application
+
 - Communicates with the runtime via a `ChainHandle`, which contains the 
       appropriate crossbeam sender and receiver channels to/from the runtime
 - Upon start-up, instantiates relayer-level objects in the following order: 
   two `ForeignClient`s (one per chain), a `Connection` (which contains the 
   two clients), a `Channel` (containing the connection), and on top of that 
   a `Link`.
+- The code here is part of the Hermes (relayer CLI) binary.
 
 ##### Threads
 
@@ -189,7 +200,18 @@ Each thread in this diagram is a separate box shaded in gray.
 There are four threads running: the `EventMonitor`, the `Supervisor`, the 
 `Runtime`, and the main application thread, called `V0Cmd`.
 
-> TODO: Summary of pros and cons
+## Status
+
+Accepted
+
+## Consequences
+
+### Positive
+- prepares the relayer crate for incremental growth
+
+### Negative
+
+### Neutral
 
 ## References:
 
@@ -209,3 +231,4 @@ There are four threads running: the `EventMonitor`, the `Supervisor`, the
 [ibc-relayer]: https://github.com/informalsystems/ibc-rs/relayer/ 
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/relayer-cli/
 [hermes]: https://hermes.informal.systems
+[features]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/guide/src/feature_matrix.md
