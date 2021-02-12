@@ -106,48 +106,53 @@ impl Default for Height {
 
 pub struct AccountId(u64);
 
-pub struct PortId(String);
+pub struct PortId(u64);
 impl Clone for PortId {
     fn clone(&self) -> Self {
-        PortId(self.0.clone())
+        PortId(self.0)
     }
 }
+
 impl Default for PortId {
     fn default() -> Self {
-        PortId("defaultPort".to_string())
+        let default_port: u64 = 1000;
+        PortId(default_port)
     }
 }
 
-pub struct ChannelId(String);
+pub struct ChannelId(u64);
 impl Clone for ChannelId {
     fn clone(&self) -> Self {
-        ChannelId(self.0.clone())
+        ChannelId(self.0)
     }
 }
 
-pub struct ConnectionId(String);
+pub struct ConnectionId(u64);
 impl Default for ConnectionId {
     fn default() -> Self {
-        ConnectionId("defaultConnection".to_string())
+        let default_connection: u64 = 1000;
+        ConnectionId(default_connection)
     }
 }
 impl Clone for ConnectionId {
     fn clone(&self) -> Self {
-        ConnectionId(self.0.clone())
+        ConnectionId(self.0)
     }
 }
 
-pub struct ClientId(String);
+pub struct ClientId(u64);
 
 pub struct Version {
+    /* unused
     /// unique version identifier
-    // unused identifier: String,
+    identifier: String,
+     */
     /// list of features compatible with the specified identifier
     features: List<String>,
 }
 
 impl Version {
-    /// Checks whether or not the given feature is supported in this versin
+    /// Checks whether or not the given feature is supported in this version
     pub fn is_supported_feature(&self, feature: String) -> bool {
         self.features.contains(&feature)
     }
