@@ -1,5 +1,5 @@
-mod modelator;
-mod step;
+pub mod modelator;
+pub mod step;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
@@ -24,13 +24,13 @@ use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
-struct IBCTestExecutor {
+pub struct IBCTestExecutor {
     // mapping from chain identifier to its context
     contexts: HashMap<ChainId, MockContext>,
 }
 
 impl IBCTestExecutor {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             contexts: Default::default(),
         }
