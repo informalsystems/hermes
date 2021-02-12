@@ -400,18 +400,16 @@ pub fn process(
     let output = HandlerOutput::builder();
 
     let cap = ctx.port_capability(&msg.port_id().clone());
-    let cap_key;
-
-    match cap {
+    let cap_key = match cap {
         Option::Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
                 return Result::Err(ErrorKind::InvalidPortCapability.into());
             } else {
-                cap_key = key;
+                key
             }
         }
         Option::None => return Result::Err(ErrorKind::NoPortCapability.into()),
-    }
+    };
 
     if msg.channel().connection_hops().len() != 1 {
         return Result::Err(ErrorKind::InvalidConnectionHopsLength.into());
