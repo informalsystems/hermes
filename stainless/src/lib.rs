@@ -1,8 +1,6 @@
 extern crate stainless;
 use stainless::*;
 
-use std::marker::PhantomData;
-
 trait Clone {
     fn clone(&self) -> Self;
 }
@@ -216,8 +214,8 @@ pub struct HandlerOutput<T> {
     pub events: List<IBCEvent>,
 }
 
-impl<T> HandlerOutput<T> {
-    pub fn builder() -> HandlerOutputBuilder<T> {
+impl HandlerOutput<ChannelResult> {
+    pub fn builder() -> HandlerOutputBuilder {
         HandlerOutputBuilder::new()
     }
 }
@@ -226,18 +224,17 @@ pub enum Log {
     NoChannelFound,
 }
 
-pub struct HandlerOutputBuilder<T> {
+pub struct HandlerOutputBuilder {
     log: List<Log>,
     events: List<IBCEvent>,
-    marker: PhantomData<T>,
+    // marker: PhantomData<T>,
 }
 
-impl<T> HandlerOutputBuilder<T> {
+impl HandlerOutputBuilder {
     pub fn new() -> Self {
         Self {
             log: List::Nil,
             events: List::Nil,
-            marker: PhantomData,
         }
     }
 
@@ -245,7 +242,6 @@ impl<T> HandlerOutputBuilder<T> {
         HandlerOutputBuilder {
             log: self.log.append(log),
             events: self.events,
-            marker: self.marker,
         }
     }
 
@@ -253,7 +249,6 @@ impl<T> HandlerOutputBuilder<T> {
         HandlerOutputBuilder {
             log: self.log.push(log),
             events: self.events,
-            marker: self.marker,
         }
     }
 
@@ -261,7 +256,6 @@ impl<T> HandlerOutputBuilder<T> {
         HandlerOutputBuilder {
             events: self.events.append(events),
             log: self.log,
-            marker: self.marker,
         }
     }
 
@@ -269,11 +263,10 @@ impl<T> HandlerOutputBuilder<T> {
         HandlerOutputBuilder {
             events: self.events.push(event),
             log: self.log,
-            marker: self.marker,
         }
     }
 
-    pub fn with_result(self, result: T) -> HandlerOutput<T> {
+    pub fn with_result(self, result: ChannelResult) -> HandlerOutput<ChannelResult> {
         HandlerOutput {
             result,
             log: self.log,
