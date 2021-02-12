@@ -63,6 +63,12 @@ impl NewBlock {
     pub fn new(h: Height) -> NewBlock {
         NewBlock { height: h }
     }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
 }
 
 impl From<NewBlock> for IBCEvent {
@@ -182,7 +188,6 @@ impl ClientMisbehavior {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
-
     pub fn height(&self) -> &Height {
         &self.0.height
     }
