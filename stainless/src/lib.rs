@@ -210,8 +210,6 @@ pub enum IBCEvent {
     Other,
 }
 
-pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
-
 pub struct HandlerOutput<T> {
     pub result: T,
     pub log: List<Log>,
@@ -421,7 +419,7 @@ pub trait ChannelReader {
 pub fn process(
     ctx: &dyn ChannelReader,
     msg: MsgChannelOpenInit,
-) -> HandlerResult<ChannelResult, ErrorKind> {
+) -> Result<HandlerOutput<ChannelResult>, ErrorKind> {
     let output = HandlerOutput::builder();
 
     match ctx.port_capability(&msg.port_id().clone()) {
