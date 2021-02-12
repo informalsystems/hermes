@@ -137,7 +137,6 @@ impl Runnable for QueryPacketCommitmentCmd {
         };
         info!("Options {:?}", opts);
 
-        // run without proof:
         // cargo run --bin hermes -- query packet commitment ibc-0 transfer ibconexfer 3 --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
@@ -433,7 +432,6 @@ impl Runnable for QueryPacketAcknowledgmentCmd {
         };
         info!("Options {:?}", opts);
 
-        // run without proof:
         // cargo run --bin hermes -- query packet acknowledgment ibc-0 transfer ibconexfer --height 3
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();

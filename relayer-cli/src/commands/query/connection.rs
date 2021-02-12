@@ -48,7 +48,6 @@ impl Runnable for QueryConnectionEndCmd {
 
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
-        // TODO - any value in querying with proof from the CLI?
         let res: Result<ConnectionEnd, Error> = chain
             .query_connection(&self.connection_id, height)
             .map_err(|e| Kind::Query.context(e).into());
