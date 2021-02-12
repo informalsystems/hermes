@@ -8,7 +8,7 @@ use serde::{Serialize, Serializer};
 use tendermint::account::Id as AccountId;
 
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::{identifier::ChainId, identifier::ClientId, Path};
+use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -30,8 +30,6 @@ use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
 use crate::{error::Error, event::monitor::EventBatch};
 
-use super::QueryResponse;
-
 mod prod;
 
 pub type Subscription = channel::Receiver<Arc<EventBatch>>;
@@ -52,13 +50,6 @@ pub enum ChainRequest {
 
     Subscribe {
         reply_to: ReplyTo<Subscription>,
-    },
-
-    Query {
-        path: Path,
-        height: Height,
-        prove: bool,
-        reply_to: ReplyTo<QueryResponse>,
     },
 
     SendMsgs {
@@ -206,8 +197,6 @@ dyn_clone::clone_trait_object!(ChainHandle);
 
 pub trait ChainHandle: DynClone + Send + Sync + Debug {
     fn id(&self) -> ChainId;
-
-    fn query(&self, path: Path, height: Height, prove: bool) -> Result<QueryResponse, Error>;
 
     fn subscribe(&self) -> Result<Subscription, Error>;
 
