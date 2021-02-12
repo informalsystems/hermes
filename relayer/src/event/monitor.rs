@@ -169,7 +169,7 @@ impl EventMonitor {
         let event = self.rt.block_on(self.subscriptions.next());
 
         match event {
-            Some(Ok(event)) => match ibc::events::get_all_events(event.clone()) {
+            Some(Ok(event)) => match crate::event::rpc::get_all_events(event.clone()) {
                 Ok(ibc_events) => {
                     let events_by_height = ibc_events.into_iter().into_group_map();
 

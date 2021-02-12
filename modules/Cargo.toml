@@ -42,10 +42,6 @@ subtle-encoding = "0.5"
 [dependencies.tendermint]
 version = "=0.18.0"
 
-[dependencies.tendermint-rpc]
-version = "=0.18.0"
-features = ["http-client", "websocket-client"]
-
 [dependencies.tendermint-proto]
 version = "=0.18.0"
 
@@ -55,4 +51,5 @@ optional = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros"] }
+tendermint-rpc = { version = "=0.18.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.18.0" } # Needed for generating (synthetic) light blocks.
