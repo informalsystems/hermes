@@ -681,7 +681,7 @@ impl Chain for CosmosSDKChain {
             // query all Tx-es that include events related to packet with given port, channel and sequence
             let response = self
                 .block_on(self.rpc_client.tx_search(
-                    packet_query(&request, seq)?,
+                    packet_query(&request, seq),
                     false,
                     1,
                     1,
@@ -689,7 +689,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, response)?
+            let mut events = packet_from_tx_search_response(&request, *seq, response)
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -817,8 +817,8 @@ impl Chain for CosmosSDKChain {
     }
 }
 
-fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result<Query, Error> {
-    Ok(tendermint_rpc::query::Query::eq(
+fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query {
+    tendermint_rpc::query::Query::eq(
         format!("{}.packet_src_channel", request.event_id.as_str()),
         request.source_channel_id.to_string(),
     )
@@ -837,7 +837,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Result
     .and_eq(
         format!("{}.packet_sequence", request.event_id.as_str()),
         seq.to_string(),
-    ))
+    )
 }
 
 // Extract the packet events from the query_txs RPC response. For any given
@@ -851,7 +851,7 @@ fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     mut response: tendermint_rpc::endpoint::tx_search::Response,
-) -> Result<Option<IBCEvent>, Error> {
+) -> Option<IBCEvent> {
     assert!(
         response.txs.len() <= 1,
         "packet_from_tx_search_response: unexpected number of txs"
@@ -859,7 +859,7 @@ fn packet_from_tx_search_response(
     if let Some(r) = response.txs.pop() {
         let height = r.height;
         if height.value() > request.height.revision_height {
-            return Ok(None);
+            return None;
         }
 
         let mut matching = Vec::new();
@@ -874,8 +874,8 @@ fn packet_from_tx_search_response(
             }
             let event = res.unwrap();
             let packet = match &event {
-                IBCEvent::SendPacketChannel(send_ev) => Some(&send_ev.packet),
-                IBCEvent::WriteAcknowledgementChannel(ack_ev) => Some(&ack_ev.packet),
+                IBCEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+                IBCEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
 
@@ -901,9 +901,9 @@ fn packet_from_tx_search_response(
             1,
             "packet_from_tx_search_response: unexpected number of matching packets"
         );
-        Ok(matching.pop())
+        matching.pop()
     } else {
-        Ok(None)
+        None
     }
 }
 

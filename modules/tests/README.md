@@ -59,5 +59,5 @@ These are currently generated manually, but can be easily mapped to Rust (see [s
 The model-based tests can be run with the following command:
  
 ```bash
-cargo test -p ibc --features mocks -- model_based
+cargo test --features mocks -- mbt
 ```
