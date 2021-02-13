@@ -76,11 +76,12 @@ pub(crate) fn process(
     )
     .map_err(|e| Kind::FailedChanneOpenAckVerification.context(e))?;
 
-    output.log("success: channel open try ");
+    output.log("success: channel open ack ");
 
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
     channel_end.set_version(msg.counterparty_version().clone());
+    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
