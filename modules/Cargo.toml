@@ -40,19 +40,19 @@ bech32 = "0.8.0"
 subtle-encoding = "0.5"
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-testgen]
-version = "=0.18.0"
+version = "=0.18.1"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros"] }
-tendermint-rpc = { version = "=0.18.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.18.0" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.18.1", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.18.1" } # Needed for generating (synthetic) light blocks.
 
 [[test]]
 name = "mbt"

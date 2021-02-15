@@ -54,22 +54,22 @@ dyn-clone = "1.0.3"
 funty = "=1.1.0"    # Quick fix for https://github.com/informalsystems/ibc-rs/issues/665; TODO: remove eventually.
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-rpc]
-version = "=0.18.0"
+version = "=0.18.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.18.0"
+version = "=0.18.1"
 features = ["unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dev-dependencies]
 serial_test = "0.5.0"
 ibc = { version = "0.1.0", path = "../modules", features = ["mocks"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.18.0" }
+tendermint-testgen = { version = "=0.18.1" }
