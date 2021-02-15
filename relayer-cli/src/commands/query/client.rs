@@ -66,16 +66,16 @@ pub struct QueryClientConsensusCmd {
     #[options(
         free,
         required,
-        help = "epoch of the client's consensus state to query"
+        help = "revision number of the client's consensus state to query"
     )]
-    consensus_version: u64,
+    consensus_rev_number: u64,
 
     #[options(
         free,
         required,
-        help = "height of the client's consensus state to query"
+        help = "height (revision height) of the client's consensus state to query"
     )]
-    consensus_height: u64,
+    consensus_rev_height: u64,
 
     #[options(help = "the chain height which this query should reflect", short = "h")]
     height: Option<u64>,
@@ -102,7 +102,7 @@ impl Runnable for QueryClientConsensusCmd {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
-        let consensus_height = ibc::Height::new(self.consensus_version, self.consensus_height);
+        let consensus_height = ibc::Height::new(self.consensus_rev_number, self.consensus_rev_height);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         match chain.proven_client_consensus(&self.client_id, consensus_height, height) {
