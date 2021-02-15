@@ -44,7 +44,7 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint]
 version = "=0.18.0"
