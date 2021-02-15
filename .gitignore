@@ -26,3 +26,8 @@ data
 # Ignore Python artifacts
 .mypy_cache/
 __pycache__/
+
+# Ignore Stainless artifacts
+stainless.log
+stainless-stack-trace.txt
+*.inoxser

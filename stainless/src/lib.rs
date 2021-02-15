@@ -4,6 +4,12 @@ use stainless::*;
 trait Clone {
     fn clone(&self) -> Self;
 }
+trait Default {
+    fn default() -> Self;
+}
+pub trait Equals {
+    fn eq(&self, other: &Self) -> bool;
+}
 
 pub enum Option<T> {
     Some(T),
@@ -72,10 +78,10 @@ impl<T> List<T> {
     }
 }
 
-impl<T: PartialEq> List<T> {
+impl<T: Equals> List<T> {
     fn contains(&self, x: &T) -> bool {
         match self {
-            List::Cons(y, tail) => x == y || tail.contains(x),
+            List::Cons(y, tail) => x.eq(y) || tail.contains(x),
             _ => false,
         }
     }
@@ -110,7 +116,6 @@ impl Default for Height {
 
 pub struct AccountId(u64);
 
-#[derive(PartialEq)]
 pub struct PortId(u64);
 impl Clone for PortId {
     fn clone(&self) -> Self {
@@ -123,6 +128,11 @@ impl Default for PortId {
         PortId(default_port)
     }
 }
+impl Equals for PortId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
 
 pub struct ChannelId(u64);
 impl Clone for ChannelId {
@@ -131,7 +141,6 @@ impl Clone for ChannelId {
     }
 }
 
-#[derive(PartialEq)]
 pub struct ConnectionId(u64);
 impl Default for ConnectionId {
     fn default() -> Self {
@@ -144,10 +153,14 @@ impl Clone for ConnectionId {
         ConnectionId(self.0)
     }
 }
+impl Equals for ConnectionId {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
 
 pub struct ClientId(u64);
 
-#[derive(PartialEq)]
 pub enum Feature {
     Order(Order),
 }
@@ -155,6 +168,13 @@ impl Clone for Feature {
     fn clone(&self) -> Self {
         match self {
             Feature::Order(o) => Feature::Order(o.clone()),
+        }
+    }
+}
+impl Equals for Feature {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Feature::Order(o), Feature::Order(p)) => o.eq(p),
         }
     }
 }
@@ -208,12 +228,6 @@ pub struct OpenInit(Attributes);
 impl OpenInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
-    }
-}
-
-impl From<Attributes> for OpenInit {
-    fn from(attrs: Attributes) -> Self {
-        OpenInit(attrs)
     }
 }
 
@@ -358,9 +372,14 @@ impl Clone for Order {
         }
     }
 }
-impl PartialEq for Order {
+impl Equals for Order {
     fn eq(&self, other: &Order) -> bool {
-        self == other
+        match (self, other) {
+            (Order::None, Order::None) => true,
+            (Order::Unordered, Order::Unordered) => true,
+            (Order::Ordered, Order::Ordered) => true,
+            _ => false,
+        }
     }
 }
 
@@ -393,13 +412,19 @@ pub struct ChannelResult {
     pub channel_end: ChannelEnd,
 }
 
-#[derive(PartialEq)]
 pub struct Capability {
-    // unused index: u64,
+    _index: u64,
 }
 impl Clone for Capability {
     fn clone(&self) -> Self {
-        Capability {}
+        Capability {
+            _index: self._index,
+        }
+    }
+}
+impl Equals for Capability {
+    fn eq(&self, other: &Self) -> bool {
+        self._index == other._index
     }
 }
 
@@ -452,7 +477,7 @@ pub struct MockChannelReader {
 
 impl ChannelReader for MockChannelReader {
     fn connection_end(&self, connection_id: &ConnectionId) -> Option<ConnectionEnd> {
-        if *connection_id == self.connection_id {
+        if connection_id.eq(&self.connection_id) {
             Option::Some(self.connection_end.clone())
         } else {
             Option::None
@@ -460,7 +485,7 @@ impl ChannelReader for MockChannelReader {
     }
 
     fn port_capability(&self, port_id: &PortId) -> Option<Capability> {
-        if *port_id == self.port_id {
+        if port_id.eq(&self.port_id) {
             Option::Some(self.cap.clone())
         } else {
             Option::None
@@ -468,7 +493,7 @@ impl ChannelReader for MockChannelReader {
     }
 
     fn capability_authentification(&self, port_id: &PortId, cap: &Capability) -> bool {
-        *port_id == self.port_id && *cap == self.cap
+        port_id.eq(&self.port_id) && cap.eq(&self.cap)
     }
 }
 
@@ -480,15 +505,15 @@ pub fn process(
     let output = HandlerOutput::builder();
 
     match ctx.port_capability(&msg.port_id().clone()) {
-        Option::None => Result::Err(ErrorKind::NoPortCapability.into()),
+        Option::None => Result::Err(ErrorKind::NoPortCapability),
 
         Option::Some(key) => {
             if !ctx.capability_authentification(&msg.port_id().clone(), &key) {
-                Result::Err(ErrorKind::InvalidPortCapability.into())
+                Result::Err(ErrorKind::InvalidPortCapability)
             }
             // An IBC connection running on the local (host) chain should exist.
             else if msg.channel().connection_hops().len() != 1 {
-                Result::Err(ErrorKind::InvalidConnectionHopsLength.into())
+                Result::Err(ErrorKind::InvalidConnectionHopsLength)
             } else {
                 match ctx.connection_end(msg.channel().connection_hops().first()) {
                     Option::None => Result::Err(ErrorKind::MissingConnection(
@@ -500,13 +525,11 @@ pub fn process(
                             List::Cons(version, tail) if tail.len() == 0 => {
                                 let channel_feature = msg.channel().ordering().as_feature();
                                 if !version.is_supported_feature(channel_feature) {
-                                    Result::Err(
-                                        ErrorKind::ChannelFeatureNotSuportedByConnection.into(),
-                                    )
+                                    Result::Err(ErrorKind::ChannelFeatureNotSuportedByConnection)
                                 }
                                 // TODO: Check that `version` is non empty but not necessary coherent
                                 else if msg.channel().version().is_empty() {
-                                    Result::Err(ErrorKind::InvalidVersion.into())
+                                    Result::Err(ErrorKind::InvalidVersion)
                                 } else {
                                     let new_channel_end = ChannelEnd::new(
                                         State::Init,
@@ -536,13 +559,14 @@ pub fn process(
                                         counterparty_channel_id: default_attributes
                                             .counterparty_channel_id,
                                     };
-                                    let output = output
-                                        .emit(IBCEvent::OpenInitChannel(event_attributes.into()));
+                                    let output = output.emit(IBCEvent::OpenInitChannel(OpenInit(
+                                        event_attributes,
+                                    )));
 
                                     Result::Ok(output.with_result(result))
                                 }
                             }
-                            _ => Result::Err(ErrorKind::InvalidVersionLengthConnection.into()),
+                            _ => Result::Err(ErrorKind::InvalidVersionLengthConnection),
                         }
                     }
                 }
