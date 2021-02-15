@@ -71,4 +71,4 @@ serial_test = "0.5.0"
 ibc = { version = "0.1.0", path = "../modules", features = ["mocks"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.18.0" }
+tendermint-testgen = { version = "=0.18.1" }
