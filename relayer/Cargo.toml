@@ -56,7 +56,7 @@ dyn-clone = "1.0.3"
 version = "=0.18.0"
 
 [dependencies.tendermint-rpc]
-version = "=0.18.0"
+version = "=0.18.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
