@@ -1,39 +1,18 @@
-use std::convert::TryFrom;
-
-use prost_types::Any;
-use serde::Serialize;
-use tendermint_proto::Protobuf;
-
 use crate::downcast;
+use crate::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use crate::ics02_client::client_header::AnyHeader;
+use crate::ics02_client::client_header::Header;
+use crate::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics02_client::error::{Error, Kind};
-use crate::ics02_client::header::Header;
-use crate::ics02_client::state::{ClientState, ConsensusState};
+use crate::ics02_client::error::Kind;
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics07_tendermint::client_def::TendermintClient;
-use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
-use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use crate::Height;
-
 #[cfg(any(test, feature = "mocks"))]
-use crate::mock::{
-    client_def::MockClient,
-    client_state::{MockClientState, MockConsensusState},
-    header::MockHeader,
-};
-
-pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
-pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
-    "/ibc.lightclients.tendermint.v1.ConsensusState";
-pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
-
-pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
-pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
-pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
+use crate::mock::client_def::MockClient;
+use crate::Height;
 
 pub trait ClientDef: Clone {
     type Header: Header;
@@ -102,253 +81,6 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         client_state: &AnyClientState,
     ) -> Result<(), Box<dyn std::error::Error>>;
-}
-
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
-#[allow(clippy::large_enum_variant)]
-pub enum AnyHeader {
-    Tendermint(TendermintHeader),
-
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(MockHeader),
-}
-
-impl Header for AnyHeader {
-    fn client_type(&self) -> ClientType {
-        match self {
-            Self::Tendermint(header) => header.client_type(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.client_type(),
-        }
-    }
-
-    fn height(&self) -> Height {
-        match self {
-            Self::Tendermint(header) => header.height(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(header) => header.height(),
-        }
-    }
-
-    fn wrap_any(self) -> AnyHeader {
-        self
-    }
-}
-
-impl Protobuf<Any> for AnyHeader {}
-
-impl TryFrom<Any> for AnyHeader {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            TENDERMINT_HEADER_TYPE_URL => Ok(AnyHeader::Tendermint(
-                TendermintHeader::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
-            )),
-
-            #[cfg(any(test, feature = "mocks"))]
-            MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawHeader.context(e))?,
-            )),
-
-            _ => Err(Kind::UnknownHeaderType(raw.type_url).into()),
-        }
-    }
-}
-
-impl From<AnyHeader> for Any {
-    fn from(value: AnyHeader) -> Self {
-        match value {
-            AnyHeader::Tendermint(header) => Any {
-                type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: header.encode_vec().unwrap(),
-            },
-            #[cfg(any(test, feature = "mocks"))]
-            AnyHeader::Mock(header) => Any {
-                type_url: MOCK_HEADER_TYPE_URL.to_string(),
-                value: header.encode_vec().unwrap(),
-            },
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "type")]
-pub enum AnyClientState {
-    Tendermint(TendermintClientState),
-
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(MockClientState),
-}
-
-impl AnyClientState {
-    pub fn latest_height(&self) -> Height {
-        match self {
-            Self::Tendermint(tm_state) => tm_state.latest_height(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.latest_height(),
-        }
-    }
-    pub fn client_type(&self) -> ClientType {
-        match self {
-            Self::Tendermint(state) => state.client_type(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(state) => state.client_type(),
-        }
-    }
-}
-
-impl Protobuf<Any> for AnyClientState {}
-
-impl TryFrom<Any> for AnyClientState {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            "" => Err(Kind::EmptyClientState.into()),
-
-            TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                TendermintClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
-            )),
-
-            #[cfg(any(test, feature = "mocks"))]
-            MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value)
-                    .map_err(|e| Kind::InvalidRawClientState.context(e))?,
-            )),
-
-            _ => Err(Kind::UnknownClientStateType(raw.type_url).into()),
-        }
-    }
-}
-
-impl From<AnyClientState> for Any {
-    fn from(value: AnyClientState) -> Self {
-        match value {
-            AnyClientState::Tendermint(value) => Any {
-                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
-            },
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(value) => Any {
-                type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
-            },
-        }
-    }
-}
-
-impl ClientState for AnyClientState {
-    fn chain_id(&self) -> String {
-        todo!()
-    }
-
-    fn client_type(&self) -> ClientType {
-        self.client_type()
-    }
-
-    fn latest_height(&self) -> Height {
-        self.latest_height()
-    }
-
-    fn is_frozen(&self) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.is_frozen(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.is_frozen(),
-        }
-    }
-
-    fn wrap_any(self) -> AnyClientState {
-        self
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-#[serde(tag = "type")]
-pub enum AnyConsensusState {
-    Tendermint(TendermintConsensusState),
-
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(MockConsensusState),
-}
-
-impl AnyConsensusState {
-    pub fn client_type(&self) -> ClientType {
-        match self {
-            AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(_cs) => ClientType::Mock,
-        }
-    }
-}
-
-impl Protobuf<Any> for AnyConsensusState {}
-
-impl TryFrom<Any> for AnyConsensusState {
-    type Error = Error;
-
-    fn try_from(value: Any) -> Result<Self, Self::Error> {
-        match value.type_url.as_str() {
-            "" => Err(Kind::EmptyConsensusState.into()),
-
-            TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TendermintConsensusState::decode_vec(&value.value)
-                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
-            )),
-
-            #[cfg(any(test, feature = "mocks"))]
-            MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)
-                    .map_err(|e| Kind::InvalidRawConsensusState.context(e))?,
-            )),
-
-            _ => Err(Kind::UnknownConsensusStateType(value.type_url).into()),
-        }
-    }
-}
-
-impl From<AnyConsensusState> for Any {
-    fn from(value: AnyConsensusState) -> Self {
-        match value {
-            AnyConsensusState::Tendermint(value) => Any {
-                type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
-            },
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(value) => Any {
-                type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value.encode_vec().unwrap(),
-            },
-        }
-    }
-}
-
-impl ConsensusState for AnyConsensusState {
-    fn client_type(&self) -> ClientType {
-        self.client_type()
-    }
-
-    fn root(&self) -> &CommitmentRoot {
-        todo!()
-    }
-
-    fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
-        todo!()
-    }
-
-    fn wrap_any(self) -> AnyConsensusState {
-        self
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -606,7 +338,7 @@ mod tests {
 
     use prost_types::Any;
 
-    use crate::ics02_client::client_def::AnyClientState;
+    use crate::ics02_client::client_state::AnyClientState;
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
 

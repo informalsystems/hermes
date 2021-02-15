@@ -1,7 +1,9 @@
 pub mod modelator;
 pub mod step;
 
-use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics02_client::client_type::ClientType;
 use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;

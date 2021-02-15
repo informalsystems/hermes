@@ -12,7 +12,8 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::error;
 use crate::ics02_client::error::{Error, Kind};
 use crate::tx_msg::Msg;
@@ -112,9 +113,8 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgCreateClient;
 
-    use crate::ics02_client::client_def::AnyConsensusState;
+    use crate::ics02_client::client_consensus::AnyConsensusState;
     use crate::ics02_client::msgs::MsgCreateAnyClient;
-
     use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::test_utils::get_dummy_account_id;

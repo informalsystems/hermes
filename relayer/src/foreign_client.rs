@@ -1,14 +1,15 @@
-use prost_types::Any;
 use std::{thread, time::Duration};
+
+use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
 use ibc::events::IBCEvent;
-use ibc::ics02_client::header::Header;
+use ibc::ics02_client::client_consensus::ConsensusState;
+use ibc::ics02_client::client_header::Header;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::ics02_client::state::ClientState;
-use ibc::ics02_client::state::ConsensusState;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::tx_msg::Msg;
 use ibc::Height;
@@ -203,6 +204,8 @@ impl ForeignClient {
                 ))
             })?
             .wrap_any();
+
+        println!("\nHeader for update {:?}", header);
 
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::ClientUpdate(format!(

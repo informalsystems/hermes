@@ -8,24 +8,22 @@ use std::str::FromStr;
 use prost_types::Any;
 use tendermint::account::Id;
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
+use crate::events::IBCEvent;
+use crate::ics02_client::client_consensus::AnyConsensusState;
+use crate::ics02_client::client_header::AnyHeader;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
-
-use crate::ics05_port::capabilities::Capability;
-use crate::ics05_port::context::PortReader;
-
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
-
-use crate::events::IBCEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ICS4Error;
 use crate::ics04_channel::error::Kind as ICS4Kind;
-
+use crate::ics05_port::capabilities::Capability;
+use crate::ics05_port::context::PortReader;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};

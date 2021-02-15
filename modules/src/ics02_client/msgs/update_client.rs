@@ -12,7 +12,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics02_client::client_def::AnyHeader;
+use crate::ics02_client::client_header::AnyHeader;
 use crate::ics02_client::error::{Error, Kind};
 use crate::ics24_host::identifier::ClientId;
 use crate::tx_msg::Msg;
@@ -86,11 +86,10 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgUpdateClient;
 
-    use crate::ics02_client::client_def::AnyHeader;
+    use crate::ics02_client::client_header::AnyHeader;
     use crate::ics02_client::msgs::MsgUpdateAnyClient;
-    use crate::ics24_host::identifier::ClientId;
-
     use crate::ics07_tendermint::header::test_util::get_dummy_ics07_header;
+    use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
 
     #[test]

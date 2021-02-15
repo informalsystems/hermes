@@ -2,7 +2,8 @@ use prost_types::Any;
 use tendermint::account::Id as AccountId;
 
 use crate::events::IBCEvent;
-use crate::ics02_client::client_def::{AnyClientState, AnyHeader};
+use crate::ics02_client::client_header::AnyHeader;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics18_relayer::error::Error;
 use crate::ics24_host::identifier::ClientId;
 use crate::Height;

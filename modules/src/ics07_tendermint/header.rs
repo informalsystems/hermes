@@ -6,9 +6,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::ics02_client::{client_def::AnyHeader, client_type::ClientType};
+use crate::events::IBCEventType;
+use crate::ics02_client::client_header::AnyHeader;
+use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
-use crate::ics24_host::identifier::ChainId;
+use crate::ics24_host::identifier::{ChainId, ClientId};
 use crate::Height;
 
 /// Tendermint consensus header
@@ -20,7 +22,7 @@ pub struct Header {
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
 }
 
-impl crate::ics02_client::header::Header for Header {
+impl crate::ics02_client::client_header::Header for Header {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -79,11 +81,19 @@ impl From<Header> for RawHeader {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct QueryHeaderRequest {
+    pub event_id: IBCEventType,
+    pub client_id: ClientId,
+    pub consensus_height: Height,
+    pub height: Height,
+}
+
 #[cfg(test)]
 pub mod test_util {
     use std::convert::TryInto;
-    use subtle_encoding::hex;
 
+    use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;
     use tendermint::validator::Info as ValidatorInfo;
     use tendermint::validator::Set as ValidatorSet;

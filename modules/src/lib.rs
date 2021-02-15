@@ -39,6 +39,7 @@ pub mod ics26_routing;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
+pub mod query;
 pub mod tx_msg;
 
 mod serializers;

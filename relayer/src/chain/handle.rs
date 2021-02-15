@@ -7,14 +7,17 @@ use serde::{Serialize, Serializer};
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IBCEvent,
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
-    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
+    ics04_channel::channel::ChannelEnd,
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
@@ -187,7 +190,7 @@ pub enum ChainRequest {
     },
 
     QueryPacketEventData {
-        request: QueryPacketEventDataRequest,
+        request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IBCEvent>>,
     },
 }
@@ -311,7 +314,7 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IBCEvent>, Error>;
 }
 
 impl Serialize for dyn ChainHandle {

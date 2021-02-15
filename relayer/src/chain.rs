@@ -9,22 +9,24 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
-use ibc::ics02_client::header::Header;
-use ibc::ics02_client::state::{ClientState, ConsensusState};
+use ibc::ics02_client::client_consensus::{AnyConsensusStateWithHeight, ConsensusState};
+use ibc::ics02_client::client_header::Header;
+use ibc::ics02_client::client_state::ClientState;
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
 use ibc::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::channel::ChannelEnd;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
+use ibc_proto::ibc::core::client::v1::{QueryClientStatesRequest, QueryConsensusStatesRequest};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest, QueryConnectionsRequest,
@@ -130,6 +132,11 @@ pub trait Chain: Sized {
         height: ICSHeight,
     ) -> Result<Self::ClientState, Error>;
 
+    fn query_client_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
+
     /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
         &self,
@@ -194,7 +201,7 @@ pub trait Chain: Sized {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IBCEvent>, Error>;
 
     // Provable queries
     fn proven_client_state(

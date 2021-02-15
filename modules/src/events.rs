@@ -13,6 +13,7 @@ use crate::Height;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum IBCEventType {
     CreateClient,
+    UpdateClient,
     SendPacket,
     WriteAck,
 }
@@ -21,6 +22,7 @@ impl IBCEventType {
     pub fn as_str(&self) -> &'static str {
         match *self {
             IBCEventType::CreateClient => "create_client",
+            IBCEventType::UpdateClient => "update_client",
             IBCEventType::SendPacket => "send_packet",
             IBCEventType::WriteAck => "write_acknowledgement",
         }

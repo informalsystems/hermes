@@ -321,7 +321,6 @@ impl State {
     }
 }
 
-/// Used for queries and not yet standardized in channel's query.proto
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: IBCEventType,
@@ -342,7 +341,6 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 
 #[cfg(test)]
 pub mod test_util {
-
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 

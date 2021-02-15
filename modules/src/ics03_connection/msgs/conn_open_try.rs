@@ -1,13 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 use std::str::FromStr;
 
-use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use tendermint::account::Id as AccountId;
 use tendermint_proto::Protobuf;
 
-use tendermint::account::Id as AccountId;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
 use crate::address::{account_to_string, string_to_account};
-use crate::ics02_client::client_def::AnyClientState;
+use crate::ics02_client::client_state::AnyClientState;
 use crate::ics03_connection::connection::Counterparty;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::version::Version;
@@ -215,12 +215,13 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
 
 #[cfg(test)]
 pub mod test_util {
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty;
     use crate::ics03_connection::msgs::test_util::get_dummy_counterparty_ics26;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     /// Returns a dummy `RawMsgConnectionOpenTry` with parametrized heights. The parameter
     /// `proof_height` represents the height, on the source chain, at which this chain produced the

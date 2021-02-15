@@ -4,13 +4,16 @@ use crossbeam_channel as channel;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use ibc::ics02_client::client_consensus::AnyConsensusState;
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_state::AnyClientState;
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IBCEvent,
-    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
-    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
+    ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
@@ -286,7 +289,7 @@ impl ChainHandle for ProdChainHandle {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IBCEvent>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 }

@@ -5,17 +5,17 @@ use crossbeam_channel as channel;
 use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use ibc::ics02_client::client_header::AnyHeader;
+use ibc::ics02_client::client_state::{AnyClientState, ClientState};
 use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::query::QueryTxRequest;
 use ibc::{
     events::IBCEvent,
-    ics02_client::{
-        client_def::{AnyClientState, AnyConsensusState, AnyHeader},
-        header::Header,
-        state::{ClientState, ConsensusState},
-    },
+    ics02_client::client_header::Header,
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
-    ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
+    ics04_channel::channel::ChannelEnd,
     ics23_commitment::commitment::CommitmentPrefix,
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
@@ -660,7 +660,7 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
     fn query_txs(
         &self,
-        request: QueryPacketEventDataRequest,
+        request: QueryTxRequest,
         reply_to: ReplyTo<Vec<IBCEvent>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
