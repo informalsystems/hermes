@@ -54,7 +54,7 @@ dyn-clone = "1.0.3"
 funty = "=1.1.0"    # Quick fix for https://github.com/informalsystems/ibc-rs/issues/665; TODO: remove eventually.
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-rpc]
 version = "=0.18.0"
