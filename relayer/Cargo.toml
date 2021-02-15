@@ -51,6 +51,7 @@ dyn-clonable = "0.9.0"
 tonic = "0.4"
 dirs-next = "2.0.0"
 dyn-clone = "1.0.3"
+funty = "=1.1.0"    # Quick fix for https://github.com/informalsystems/ibc-rs/issues/665; TODO: remove eventually.
 
 [dependencies.tendermint]
 version = "=0.18.0"
