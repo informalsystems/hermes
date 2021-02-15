@@ -18,7 +18,7 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer]
   - [nothing yet]
@@ -51,6 +51,7 @@
   - [nothing yet]
 
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
+[#549]: https://github.com/informalsystems/ibc-rs/issues/549
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
