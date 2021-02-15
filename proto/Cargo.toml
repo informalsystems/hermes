@@ -30,4 +30,4 @@ thiserror = "1.0"
 tonic = "0.4"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"

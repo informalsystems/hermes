@@ -43,7 +43,7 @@ subtle-encoding = "0.5"
 version = "=0.18.0"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-testgen]
 version = "=0.18.0"

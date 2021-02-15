@@ -64,7 +64,7 @@ version = "=0.18.0"
 features = ["unstable"]
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dev-dependencies]
 serial_test = "0.5.0"
