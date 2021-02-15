@@ -102,7 +102,8 @@ impl Runnable for QueryClientConsensusCmd {
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
         let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
-        let consensus_height = ibc::Height::new(self.consensus_rev_number, self.consensus_rev_height);
+        let consensus_height =
+            ibc::Height::new(self.consensus_rev_number, self.consensus_rev_height);
         let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
 
         match chain.proven_client_consensus(&self.client_id, consensus_height, height) {
