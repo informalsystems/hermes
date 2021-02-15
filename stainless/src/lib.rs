@@ -339,7 +339,6 @@ impl ChannelEnd {
     }
 }
 
-#[derive(PartialEq)]
 pub enum Order {
     None = 0,
     Unordered,
@@ -357,6 +356,11 @@ impl Clone for Order {
             Order::Unordered => Order::Unordered,
             Order::Ordered => Order::Ordered,
         }
+    }
+}
+impl PartialEq for Order {
+    fn eq(&self, other: &Order) -> bool {
+        self == other
     }
 }
 
