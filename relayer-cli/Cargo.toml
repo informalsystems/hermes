@@ -47,7 +47,7 @@ dirs-next = "2.0.0"
 version = "=0.18.0"
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-rpc]
 version = "=0.18.0"
