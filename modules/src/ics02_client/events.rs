@@ -8,7 +8,6 @@ use anomaly::BoxError;
 use crate::ics02_client::height::Height;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
-use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -57,12 +56,18 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
 // TODO - find a better place for NewBlock
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct NewBlock {
-    pub height: block::Height,
+    pub height: Height,
 }
 
 impl NewBlock {
-    pub fn new(h: block::Height) -> NewBlock {
+    pub fn new(h: Height) -> NewBlock {
         NewBlock { height: h }
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
+    pub fn height(&self) -> &Height {
+        &self.height
     }
 }
 
@@ -74,7 +79,7 @@ impl From<NewBlock> for IBCEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
-    pub height: block::Height,
+    pub height: Height,
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub consensus_height: Height,
@@ -98,6 +103,12 @@ pub struct CreateClient(Attributes);
 impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -135,8 +146,11 @@ impl UpdateClient {
         &self.0.client_id
     }
 
-    pub fn height(&self) -> &tendermint::block::Height {
+    pub fn height(&self) -> &Height {
         &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -169,6 +183,18 @@ impl From<UpdateClient> for IBCEvent {
 /// misbehavior.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ClientMisbehavior(Attributes);
+
+impl ClientMisbehavior {
+    pub fn client_id(&self) -> &ClientId {
+        &self.0.client_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
+}
 
 impl TryFrom<RawObject> for ClientMisbehavior {
     type Error = BoxError;

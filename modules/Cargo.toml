@@ -53,3 +53,8 @@ optional = true
 tokio = { version = "1.0", features = ["macros"] }
 tendermint-rpc = { version = "=0.18.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.18.0" } # Needed for generating (synthetic) light blocks.
+
+[[test]]
+name = "mbt"
+path = "tests/mbt.rs"
+required-features = ["mocks"]

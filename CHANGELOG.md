@@ -7,7 +7,7 @@
 ### FEATURES
 
 - [ibc]
-  - Consistent identifier handling across client, connections and channels ([#622])
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
   - Listen to channel close initialization event and perform the close handshake ([#560])
@@ -18,13 +18,25 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer]
   - [nothing yet]
 
 - [ibc-relayer-cli]
   - [nothing yet]
+
+### BUG FIXES
+
+- [ibc]
+  - Fix panic in conn open try when no connection id is provided ([#626])
+  - Disable MBT tests if the "mocks" feature is not enabled ([#643])
+
+- [ibc-relayer]
+  - Quick fix for `funty` breaking change bug ([#665])
+
+- [ibc-relayer-cli]
+  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
 
 ### BREAKING CHANGES
 
@@ -38,24 +50,15 @@
 - [ibc-relayer-cli]
   - [nothing yet]
 
-### BUG FIXES
-
-- [ibc]
-  - Fix panic in conn open try when no connection id is provided ([#626])
-
-- [ibc-relayer]
-  - [nothing yet]
-  
-- [ibc-relayer-cli]
-  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
-
-
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
+[#549]: https://github.com/informalsystems/ibc-rs/issues/549
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#643]: https://github.com/informalsystems/ibc-rs/issues/643
+[#665]: https://github.com/informalsystems/ibc-rs/issues/665
 
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
