@@ -40,7 +40,7 @@ bech32 = "0.7.2"
 subtle-encoding = "0.5"
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-proto]
 version = "=0.18.0"
