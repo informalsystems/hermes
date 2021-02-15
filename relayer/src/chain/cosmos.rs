@@ -223,7 +223,7 @@ impl CosmosSDKChain {
             .block_on(broadcast_tx_commit(self, txraw_buf))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let res = tx_result_to_event(response)?;
+        let res = tx_result_to_event(&self.config.id, response)?;
 
         Ok(res)
     }
@@ -766,7 +766,7 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, response)
+            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, response)
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
@@ -998,6 +998,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query 
 // will include both packets. For this reason, we iterate all packets in the Tx,
 // searching for those that match (which must be a single one).
 fn packet_from_tx_search_response(
+    chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     mut response: tendermint_rpc::endpoint::tx_search::Response,
@@ -1007,8 +1008,8 @@ fn packet_from_tx_search_response(
         "packet_from_tx_search_response: unexpected number of txs"
     );
     if let Some(r) = response.txs.pop() {
-        let height = r.height;
-        if height.value() > request.height.revision_height {
+        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+        if height > request.height {
             return None;
         }
 
@@ -1141,7 +1142,10 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+pub fn tx_result_to_event(
+    chain_id: &ChainId,
+    response: Response,
+) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
 
     // Verify the return codes from check_tx and deliver_tx
@@ -1158,8 +1162,9 @@ pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::
         ))]);
     }
 
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
     for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(&event) {
+        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
             result.push(ibc_ev);
         }
     }

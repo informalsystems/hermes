@@ -1,11 +1,11 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 use crate::events::{IBCEvent, RawObject};
+use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::{attribute, some_attribute};
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
-use tendermint::block;
 
 /// The content of the `type` field for the event that a chain produces upon executing a connection handshake transaction.
 const INIT_EVENT_TYPE: &str = "connection_open_init";
@@ -62,7 +62,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Attributes {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Attributes {
-    pub height: block::Height,
+    pub height: Height,
     pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
@@ -87,6 +87,12 @@ pub struct OpenInit(Attributes);
 impl OpenInit {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 
@@ -125,6 +131,12 @@ impl OpenTry {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for OpenTry {
@@ -162,6 +174,12 @@ impl OpenAck {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
+    }
 }
 
 impl From<Attributes> for OpenAck {
@@ -198,6 +216,12 @@ pub struct OpenConfirm(Attributes);
 impl OpenConfirm {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
+    }
+    pub fn height(&self) -> &Height {
+        &self.0.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.0.height = height;
     }
 }
 

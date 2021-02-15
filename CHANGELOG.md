@@ -18,13 +18,25 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer]
   - [nothing yet]
 
 - [ibc-relayer-cli]
   - Cleanup CLI code ([#572])
+
+### BUG FIXES
+
+- [ibc]
+  - Fix panic in conn open try when no connection id is provided ([#626])
+  - Disable MBT tests if the "mocks" feature is not enabled ([#643])
+
+- [ibc-relayer]
+  - Quick fix for `funty` breaking change bug ([#665])
+
+- [ibc-relayer-cli]
+  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
 
 ### BREAKING CHANGES
 
@@ -38,24 +50,15 @@
 - [ibc-relayer-cli]
   - Remove the `proof` option from CLI ([#572])
 
-### BUG FIXES
-
-- [ibc]
-  - Fix panic in conn open try when no connection id is provided ([#626])
-
-- [ibc-relayer]
-  - [nothing yet]
-
-- [ibc-relayer-cli]
-  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
-
-
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
+[#549]: https://github.com/informalsystems/ibc-rs/issues/549
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#643]: https://github.com/informalsystems/ibc-rs/issues/643
+[#665]: https://github.com/informalsystems/ibc-rs/issues/665
 
 ## v0.1.0
 *February 4, 2021*

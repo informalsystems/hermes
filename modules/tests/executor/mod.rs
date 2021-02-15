@@ -1,5 +1,5 @@
-mod modelator;
-mod step;
+pub mod modelator;
+pub mod step;
 
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use ibc::ics02_client::client_type::ClientType;
@@ -24,13 +24,13 @@ use step::{ActionOutcome, ActionType, Chain, Step};
 use tendermint::account::Id as AccountId;
 
 #[derive(Debug)]
-struct IBCTestExecutor {
+pub struct IBCTestExecutor {
     // mapping from chain identifier to its context
     contexts: HashMap<ChainId, MockContext>,
 }
 
 impl IBCTestExecutor {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             contexts: Default::default(),
         }
@@ -248,22 +248,5 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
         };
         // also check that chain heights match
         outcome_matches && self.check_chain_heights(step.chains)
-    }
-}
-
-const TESTS_DIR: &str = "tests/support/model_based/tests";
-
-#[test]
-fn model_based() {
-    let tests = vec!["ICS02UpdateOKTest", "ICS02HeaderVerificationFailureTest"];
-
-    for test in tests {
-        let test = format!("{}/{}.json", TESTS_DIR, test);
-        let executor = IBCTestExecutor::new();
-        // we should be able to just return the `Result` once the following issue
-        // is fixed: https://github.com/rust-lang/rust/issues/43301
-        if let Err(e) = modelator::test(&test, executor) {
-            panic!("{:?}", e);
-        }
     }
 }
