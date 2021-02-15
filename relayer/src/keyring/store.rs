@@ -146,7 +146,7 @@ impl KeyRingOperations for KeyRing {
         let address = get_address(public_key);
 
         // Get Bech32 account
-        let account = bech32::encode("cosmos", address.to_base32(), Variant::Bech32m)
+        let account = bech32::encode("cosmos", address.to_base32(), Variant::Bech32)
             .map_err(|e| Kind::Bech32Account.context(e))?;
 
         let key = KeyEntry {
