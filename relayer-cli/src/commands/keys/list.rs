@@ -1,5 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
+use ibc::ics24_host::identifier::ChainId;
 use ibc_relayer::config::Config;
 use ibc_relayer::keys::list::{list_keys, KeysListOptions};
 
@@ -10,21 +11,14 @@ use crate::error::{Error, Kind};
 #[derive(Clone, Command, Debug, Options)]
 pub struct KeysListCmd {
     #[options(free, help = "identifier of the chain")]
-    chain_id: Option<String>,
+    chain_id: ChainId,
 }
 
 impl KeysListCmd {
     fn validate_options(&self, config: &Config) -> Result<KeysListOptions, String> {
-        let chain_id = self
-            .chain_id
-            .clone()
-            .ok_or_else(|| "missing chain identifier".to_string())?;
-
         let chain_config = config
-            .find_chain(&chain_id.parse().unwrap())
-            .ok_or_else(|| {
-                "Invalid chain identifier. Cannot retrieve the chain configuration".to_string()
-            })?;
+            .find_chain(&self.chain_id)
+            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         Ok(KeysListOptions {
             chain_config: chain_config.clone(),

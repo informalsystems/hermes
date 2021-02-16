@@ -69,7 +69,6 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -h, --height HEIGHT       the chain height which this query should reflect
-    -p, --proof PROOF         whether proof is required; default: false (no proof)
 ```
 
 __Example__
@@ -138,7 +137,6 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -h, --height HEIGHT       the chain height which this query should reflect
-    -p, --proof PROOF         whether proof is required
 ```
 
 __Example__

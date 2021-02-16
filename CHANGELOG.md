@@ -24,7 +24,7 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Cleanup CLI code ([#572])
 
 ### BUG FIXES
 
@@ -48,11 +48,12 @@
   - [nothing yet]
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Remove the `proof` option from CLI ([#572])
 
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
 [#549]: https://github.com/informalsystems/ibc-rs/issues/549
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
+[#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
