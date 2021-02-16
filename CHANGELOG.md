@@ -37,6 +37,7 @@
 
 - [ibc-relayer-cli]
   - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
+  - Guide: documented the v0.1.0 cargo install problem and added workaround ([#672])
 
 ### BREAKING CHANGES
 
@@ -59,6 +60,7 @@
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 
 ## v0.1.0
 *February 4, 2021*
