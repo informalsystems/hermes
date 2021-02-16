@@ -75,7 +75,7 @@ pub enum TxRawCommands {
     #[options(help = "Confirm the closing of a channel (ChannelCloseConfirm)")]
     ChanCloseConfirm(channel::TxRawChanCloseConfirmCmd),
 
-    /// The `tx raw packet-send` subcommand
+    /// The `tx raw ft-transfer` subcommand
     #[options(help = "Send a fungible token transfer test transaction (ICS20 MsgTransfer)")]
     FtTransfer(transfer::TxICS20MsgTransferCmd),
 

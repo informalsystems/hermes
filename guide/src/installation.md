@@ -35,6 +35,20 @@ hermes version
 hermes 0.1.0
 ```
 
+> #### Update 16.02.2021: Regarding installation errors
+>
+> It is possible that the command `cargo install ibc-relayer-cli` will fail.
+> This is a [known issue][issue/672], caused by a recent update of a dependency.
+>
+> The simplest way to work around this problem is to build Hermes from source,
+> using the most up-to-date version. Simply follow the recipe in the section
+> below __but skip the step__ `git checkout v0.1.0`. In that way, you'll be
+> using the latest commit in the `master` branch. The rest of the steps remain
+> unchanged.
+
+
+[issue/672]: https://github.com/informalsystems/ibc-rs/issues/672
+
 ## Build from source
 
 ### Clone the repository
