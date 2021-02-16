@@ -25,7 +25,7 @@ pub fn verify_proofs(
 
     // The client must not be frozen.
     if client_state.is_frozen() {
-        return Err(Kind::FrozenClient.context(client.to_string()).into());
+        return Err(Kind::VerifiedFrozenClient.context(client.to_string()).into());
     }
 
     if ctx

@@ -30,6 +30,9 @@ pub trait ChannelReader {
     ) -> Option<AnyConsensusState>;
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
+
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<
+    &u64>;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)

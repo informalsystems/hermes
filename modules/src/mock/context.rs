@@ -396,6 +396,12 @@ impl ChannelReader for MockContext {
             None => Err(ICS4Error::from(ICS4Kind::NoPortCapability)),
         }
     }
+
+    fn get_next_sequence_send(
+        &self, port_channel_id: &(PortId, ChannelId),
+    ) -> Option<&u64> {
+        return self.next_sequence_send.get(port_channel_id);
+    }
 }
 
 impl ChannelKeeper for MockContext {

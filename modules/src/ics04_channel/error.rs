@@ -1,9 +1,10 @@
 use anomaly::{BoxError, Context};
+use tendermint::Time;
 use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::ics24_host::identifier::{ChannelId, ConnectionId};
+use crate::{Height, ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}};
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -18,6 +19,9 @@ pub enum Kind {
 
     #[error("invalid connection hops length")]
     InvalidConnectionHopsLength,
+
+    #[error("packet destination port/channel doesn't match the counterparty's port/channel")]
+    InvalidPacketCounterparty(PortId,ChannelId),
 
     #[error("invalid version")]
     InvalidVersion,
@@ -67,8 +71,9 @@ pub enum Kind {
     #[error("the channel ordering is not supported by connection ")]
     ChannelFeatureNotSuportedByConnection,
 
-    #[error("queried for a non-existing connection")]
+    #[error("Missing channel")]
     ChannelNotFound,
+
 
     #[error(
         "a different channel exists (was initialized) already for the same channel identifier {0}"
@@ -87,8 +92,23 @@ pub enum Kind {
     #[error("No client state associated with the channel")]
     MissingClientState,
 
-    #[error("Frozen Client")]
-    FrozenClient,
+    #[error("the client {0} running locally is frozen")]
+    FrozenClient(ClientId),
+
+    #[error("the client is frozen")]
+    VerifiedFrozenClient,
+
+    #[error("Missing sequence number for send packets")]
+    MissingNextSendSeq,
+
+    #[error("Invalid packet sequence {0} ≠ next send sequence {1}")]
+    InvalidPacketSequence(u64,u64),
+
+    #[error("Receiving chain block height {0} >= packet timeout height {1}")]
+    LowPacketHeight(Height,Height),
+
+    #[error("Receiving chain block timestamp {0} >= packet timeout timestamp {1}")]
+    LowPacketTimestamp(Time,Time),
 
     #[error("Missing client consensus state")]
     MissingClientConsensusState,
@@ -102,8 +122,8 @@ pub enum Kind {
     #[error("Channel is in state {0} which is invalid")]
     InvalidChannelState(ChannelId),
 
-    #[error("Channel is in state {0}")]
-    ChannelAlreadyClosed(ChannelId),
+    #[error("Channel {0} is Closed")]
+    ChannelClosed(ChannelId),
 
     #[error("Channel chain verification fails on ChannelOpenAck for ChannelOpenTry")]
     FailedChanneOpenAckVerification,
