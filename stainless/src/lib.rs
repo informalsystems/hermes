@@ -48,17 +48,10 @@ pub enum List<T> {
 }
 
 impl<T> List<T> {
-    fn len(&self) -> u32 {
+    pub fn is_empty(&self) -> bool {
         match self {
-            List::Cons(_, tail) => 1 + tail.len(),
-            _ => 0,
-        }
-    }
-
-    fn first(&self) -> &T {
-        match self {
-            List::Cons(v, _) => &v,
-            _ => panic!("Empty list"),
+            List::Nil => true,
+            _ => false,
         }
     }
 
@@ -78,8 +71,8 @@ impl<T> List<T> {
     }
 }
 
-impl<T: Equals> List<T> {
-    fn contains(&self, x: &T) -> bool {
+impl List<Feature> {
+    fn contains(&self, x: &Feature) -> bool {
         match self {
             List::Cons(y, tail) => x.eq(y) || tail.contains(x),
             _ => false,
@@ -512,63 +505,66 @@ pub fn process(
                 Result::Err(ErrorKind::InvalidPortCapability)
             }
             // An IBC connection running on the local (host) chain should exist.
-            else if msg.channel().connection_hops().len() != 1 {
-                Result::Err(ErrorKind::InvalidConnectionHopsLength)
-            } else {
-                match ctx.connection_end(msg.channel().connection_hops().first()) {
-                    Option::None => Result::Err(ErrorKind::MissingConnection(
-                        msg.channel().connection_hops().first().clone(),
-                    )),
+            else {
+                match msg.channel().connection_hops() {
+                    List::Cons(hop, tail) if tail.is_empty() => {
+                        match ctx.connection_end(hop) {
+                            Option::None => Result::Err(ErrorKind::MissingConnection(hop.clone())),
 
-                    Option::Some(conn) => {
-                        match conn.versions {
-                            List::Cons(version, tail) if tail.len() == 0 => {
-                                let channel_feature = msg.channel().ordering().as_feature();
-                                if !version.is_supported_feature(channel_feature) {
-                                    Result::Err(ErrorKind::ChannelFeatureNotSuportedByConnection)
-                                }
-                                // TODO: Check that `version` is non empty but not necessary coherent
-                                else if msg.channel().version().is_empty() {
-                                    Result::Err(ErrorKind::InvalidVersion)
-                                } else {
-                                    let new_channel_end = ChannelEnd::new(
-                                        State::Init,
-                                        msg.channel().ordering().clone(),
-                                        msg.channel().counterparty().clone(),
-                                        msg.channel().connection_hops().clone(),
-                                        msg.channel().version().clone(),
-                                    );
+                            Option::Some(conn) => {
+                                match conn.versions {
+                                    List::Cons(version, tail) if tail.is_empty() => {
+                                        let channel_feature = msg.channel().ordering().as_feature();
+                                        if !version.is_supported_feature(channel_feature) {
+                                            Result::Err(
+                                                ErrorKind::ChannelFeatureNotSuportedByConnection,
+                                            )
+                                        }
+                                        // TODO: Check that `version` is non empty but not necessary coherent
+                                        else if msg.channel().version().is_empty() {
+                                            Result::Err(ErrorKind::InvalidVersion)
+                                        } else {
+                                            let new_channel_end = ChannelEnd::new(
+                                                State::Init,
+                                                msg.channel().ordering().clone(),
+                                                msg.channel().counterparty().clone(),
+                                                msg.channel().connection_hops().clone(),
+                                                msg.channel().version().clone(),
+                                            );
 
-                                    let output = output.log(Log::NoChannelFound);
+                                            let output = output.log(Log::NoChannelFound);
 
-                                    let result = ChannelResult {
-                                        port_id: msg.port_id().clone(),
-                                        channel_id: Option::None,
-                                        channel_end: new_channel_end,
-                                        channel_cap: key,
-                                    };
+                                            let result = ChannelResult {
+                                                port_id: msg.port_id().clone(),
+                                                channel_id: Option::None,
+                                                channel_end: new_channel_end,
+                                                channel_cap: key,
+                                            };
 
-                                    let default_attributes: Attributes = Default::default();
-                                    let event_attributes = Attributes {
-                                        channel_id: Option::None,
-                                        height: default_attributes.height,
-                                        port_id: default_attributes.port_id,
-                                        connection_id: default_attributes.connection_id,
-                                        counterparty_port_id: default_attributes
-                                            .counterparty_port_id,
-                                        counterparty_channel_id: default_attributes
-                                            .counterparty_channel_id,
-                                    };
-                                    let output = output.emit(IBCEvent::OpenInitChannel(OpenInit(
-                                        event_attributes,
-                                    )));
+                                            let default_attributes: Attributes = Default::default();
+                                            let event_attributes = Attributes {
+                                                channel_id: Option::None,
+                                                height: default_attributes.height,
+                                                port_id: default_attributes.port_id,
+                                                connection_id: default_attributes.connection_id,
+                                                counterparty_port_id: default_attributes
+                                                    .counterparty_port_id,
+                                                counterparty_channel_id: default_attributes
+                                                    .counterparty_channel_id,
+                                            };
+                                            let output = output.emit(IBCEvent::OpenInitChannel(
+                                                OpenInit(event_attributes),
+                                            ));
 
-                                    Result::Ok(output.with_result(result))
+                                            Result::Ok(output.with_result(result))
+                                        }
+                                    }
+                                    _ => Result::Err(ErrorKind::InvalidVersionLengthConnection),
                                 }
                             }
-                            _ => Result::Err(ErrorKind::InvalidVersionLengthConnection),
                         }
                     }
+                    _ => Result::Err(ErrorKind::InvalidConnectionHopsLength),
                 }
             }
         }

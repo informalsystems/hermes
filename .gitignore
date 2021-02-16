@@ -31,3 +31,4 @@ __pycache__/
 stainless.log
 stainless-stack-trace.txt
 *.inoxser
+vccache.bin
