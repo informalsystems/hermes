@@ -36,11 +36,6 @@ impl MsgConnectionOpenInit {
     pub fn counterparty(&self) -> &Counterparty {
         &self.counterparty
     }
-
-    /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
-    pub fn with_client_id(self, client_id: ClientId) -> Self {
-        MsgConnectionOpenInit { client_id, ..self }
-    }
 }
 
 impl Msg for MsgConnectionOpenInit {
@@ -103,10 +98,19 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 pub mod test_util {
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::ics03_connection::version::Version;
     use crate::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_bech32_account;
+
+    /// Extends the implementation with additional helper methods.
+    impl MsgConnectionOpenInit {
+        /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
+        pub fn with_client_id(self, client_id: ClientId) -> Self {
+            MsgConnectionOpenInit { client_id, ..self }
+        }
+    }
 
     /// Returns a dummy message, for testing only.
     /// Other unit tests may import this if they depend on a MsgConnectionOpenInit.
