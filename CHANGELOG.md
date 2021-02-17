@@ -1,27 +1,86 @@
 # Changelog
 
-## Unreleased Changes
+[comment]: <> (## Unreleased Changes)
 
-> [high level summary]
+[comment]: <> (> [high level summary])
+
+[comment]: <> (### FEATURES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### IMPROVEMENTS)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### BUG FIXES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### BREAKING CHANGES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+## v0.1.1
+*February 17, 2021*
+
+This release brings a quick fix for a problem with a dependency of crate
+`ibc-relayer`, which causes build & installation issues. Many thanks to 
+@Fraccaman for bringing this problem to our attention! ([#672])
+
+
+Additionally, this release also introduces initial implementation for most of
+ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
+some CLI code, refactored the Height type in the IBC Events, and a bug fix
+involving packet acks in a 3-chain setup. More details below. 
 
 ### FEATURES
-
-- [ibc]
-  - [nothing yet]
-
 - [ibc-relayer]
   - Listen to channel close initialization event and perform the close handshake ([#560])
-
-- [ibc-relayer-cli]
-  - [nothing yet]
 
 ### IMPROVEMENTS
 
 - [ibc]
   - Change event height to ICS height ([#549])
-
-- [ibc-relayer]
-  - [nothing yet]
 
 - [ibc-relayer-cli]
   - Cleanup CLI code ([#572])
@@ -44,9 +103,6 @@
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
   - Remove dependency on `tendermint-rpc` ([#624])
 
-- [ibc-relayer]
-  - [nothing yet]
-
 - [ibc-relayer-cli]
   - Remove the `proof` option from CLI ([#572])
 
@@ -59,6 +115,7 @@
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
 
 ## v0.1.0
 *February 4, 2021*

@@ -32,7 +32,7 @@ hermes version
 ```
 
 ```
-hermes 0.1.0
+hermes 0.1.1
 ```
 
 ## Build from source
@@ -54,10 +54,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v0.1.0` then execute the command:
+Then checkout the release, for example if the most recent release is `v0.1.1` then execute the command:
 
 ```shell
-git checkout v0.1.0
+git checkout v0.1.1
 ```
 
 ### Building with `cargo build`
@@ -84,7 +84,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes 0.1.0
+hermes 0.1.1
 Informal Systems <hello@informal.systems>
 
 USAGE:
