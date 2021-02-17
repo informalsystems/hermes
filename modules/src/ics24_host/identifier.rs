@@ -206,12 +206,11 @@ impl ConnectionId {
     /// ```
     /// # use ibc::ics24_host::identifier::ConnectionId;
     /// let conn_id = ConnectionId::new(11);
-    /// assert!(conn_id.is_ok());
-    /// conn_id.map(|id| { assert_eq!(&id, "connection-11") });
+    /// assert_eq!(&conn_id, "connection-11");
     /// ```
-    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+    pub fn new(counter: u64) -> Self {
         let id = format!("{}-{}", Self::prefix(), counter);
-        Self::from_str(id.as_str())
+        Self::from_str(id.as_str()).unwrap()
     }
 
     /// Returns the static prefix to be used across all connection identifiers.
@@ -247,7 +246,7 @@ impl FromStr for ConnectionId {
 
 impl Default for ConnectionId {
     fn default() -> Self {
-        Self::new(0).unwrap()
+        Self::new(0)
     }
 }
 
@@ -314,12 +313,11 @@ impl ChannelId {
     /// ```
     /// # use ibc::ics24_host::identifier::ChannelId;
     /// let chan_id = ChannelId::new(27);
-    /// assert!(chan_id.is_ok());
-    /// chan_id.map(|id| { assert_eq!(&id, "channel-27") });
+    /// assert_eq!(&chan_id, "channel-27");
     /// ```
-    pub fn new(counter: u64) -> Result<Self, ValidationError> {
+    pub fn new(counter: u64) -> Self {
         let id = format!("{}-{}", Self::prefix(), counter);
-        Self::from_str(id.as_str())
+        Self::from_str(id.as_str()).unwrap()
     }
 
     pub fn prefix() -> &'static str {
@@ -354,7 +352,7 @@ impl FromStr for ChannelId {
 
 impl Default for ChannelId {
     fn default() -> Self {
-        Self::new(0).unwrap()
+        Self::new(0)
     }
 }
 

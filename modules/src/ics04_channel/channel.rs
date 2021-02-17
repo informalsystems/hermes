@@ -353,16 +353,16 @@ pub fn validate_version(version: String) -> Result<String, Error> {
 #[cfg(test)]
 pub mod test_util {
 
-    use crate::ics24_host::identifier::{ChannelId, ConnectionId};
+    use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
     use ibc_proto::ibc::core::channel::v1::Channel as RawChannel;
     use ibc_proto::ibc::core::channel::v1::Counterparty as RawCounterparty;
 
     /// Returns a dummy `RawCounterparty`, for testing only!
     /// Can be optionally parametrized with a specific channel identifier.
-    pub fn get_dummy_raw_counterparty(channel_id: Option<String>) -> RawCounterparty {
+    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {
-            port_id: "port".into(),
-            channel_id: channel_id.unwrap_or_else(|| ChannelId::default().to_string()),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
         }
     }
 
@@ -371,7 +371,7 @@ pub mod test_util {
         RawChannel {
             state: 1,
             ordering: 1,
-            counterparty: Some(get_dummy_raw_counterparty(None)),
+            counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
         }

@@ -3,7 +3,7 @@
 //! See "ADR 003: IBC protocol implementation" for more details.
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use crate::ics03_connection::connection::{ConnectionEnd, State};
+use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::error::Error;
 use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::version::{get_compatible_versions, pick_version, Version};
@@ -67,18 +67,16 @@ pub trait ConnectionKeeper {
     fn store_connection_result(&mut self, result: ConnectionResult) -> Result<(), Error> {
         self.store_connection(&result.connection_id, &result.connection_end)?;
 
-        if matches!(result.connection_end.state(), State::Init | State::TryOpen) {
-            // If this is the first time the handler processed this connection, associate the
-            // connection end to its client identifier.
+        // If we generated an identifier, increase the counter & associate this new identifier
+        // with the client id.
+        if matches!(result.connection_id_state, ConnectionIdState::Generated) {
+            self.increase_connection_counter();
+
+            // Also associate the connection end to its client identifier.
             self.store_connection_to_client(
                 &result.connection_id,
                 &result.connection_end.client_id(),
             )?;
-        }
-
-        // If we generated an identifier, increase the counter.
-        if matches!(result.connection_id_state, ConnectionIdState::Generated) {
-            self.increase_connection_counter();
         }
 
         Ok(())

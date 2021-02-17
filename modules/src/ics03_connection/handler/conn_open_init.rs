@@ -31,8 +31,7 @@ pub(crate) fn process(
 
     // Construct the identifier for the new connection.
     let id_counter = ctx.connection_counter();
-    let conn_id = ConnectionId::new(id_counter)
-        .map_err(|e| Kind::ConnectionIdentifierConstructor(id_counter, e.kind().clone()))?;
+    let conn_id = ConnectionId::new(id_counter);
 
     output.log(format!(
         "success: generated new connection identifier: {}",

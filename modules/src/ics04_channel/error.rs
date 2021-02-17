@@ -4,7 +4,6 @@ use thiserror::Error;
 pub type Error = anomaly::Error<Kind>;
 
 use crate::ics04_channel::channel::State;
-use crate::ics24_host::error::ValidationKind;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
@@ -15,9 +14,6 @@ pub enum Kind {
 
     #[error("identifier error")]
     IdentifierError,
-
-    #[error("failed constructing new channel identifier for counter {0} with underlying validation error: {1}")]
-    ChannelIdentifierConstructor(u64, ValidationKind),
 
     #[error("channel order type unknown")]
     UnknownOrderType,

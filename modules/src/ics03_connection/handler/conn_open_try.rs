@@ -58,8 +58,7 @@ pub(crate) fn process(
                 msg.delay_period,
             );
             let id_counter = ctx.connection_counter();
-            let conn_id = ConnectionId::new(id_counter)
-                .map_err(|e| Kind::ConnectionIdentifierConstructor(id_counter, e.kind().clone()))?;
+            let conn_id = ConnectionId::new(id_counter);
 
             output.log(format!(
                 "success: new connection end and identifier {} generated",

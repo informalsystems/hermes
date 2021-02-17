@@ -6,9 +6,8 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use Kind::ConnectionNotOpen;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -44,7 +43,7 @@ pub(crate) fn process(
         .ok_or_else(|| Kind::MissingConnection(channel_end.connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
+        return Err(Kind::ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
     }
 
     output.log("success: channel close init ");
@@ -55,7 +54,7 @@ pub(crate) fn process(
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
         channel_id: msg.channel_id().clone(),
-        previous_channel_id: None,
+        channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };

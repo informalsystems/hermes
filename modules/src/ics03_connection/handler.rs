@@ -11,15 +11,17 @@ pub mod conn_open_ack;
 pub mod conn_open_confirm;
 pub mod conn_open_init;
 pub mod conn_open_try;
+
 mod verify;
 
 /// Defines the possible states of a connection identifier in a `ConnectionResult`.
+#[derive(Clone, Debug)]
 pub enum ConnectionIdState {
-    /// Specifies that a new connection identifier was allocated. This happens during the processing
-    /// of either the `MsgConnectionOpenInit` or `MsgConnectionOpenTry` message.
+    /// Specifies that the handler allocated a new connection identifier. This happens during the
+    /// processing of either the `MsgConnectionOpenInit` or `MsgConnectionOpenTry` message.
     Generated,
 
-    /// Specifies that a previously-allocated connection identifier was reused.
+    /// Specifies that the handler reused a previously-allocated connection identifier.
     Reused,
 }
 

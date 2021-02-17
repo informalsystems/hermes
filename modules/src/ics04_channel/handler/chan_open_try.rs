@@ -1,7 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use Kind::ConnectionNotOpen;
-
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
@@ -10,7 +8,7 @@ use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_proofs;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::ics24_host::identifier::ChannelId;
 
@@ -63,8 +61,7 @@ pub(crate) fn process(
 
             // Channel identifier construction.
             let id_counter = ctx.channel_counter();
-            let chan_id = ChannelId::new(id_counter)
-                .map_err(|e| Kind::ChannelIdentifierConstructor(id_counter, e.kind().clone()))?;
+            let chan_id = ChannelId::new(id_counter);
 
             output.log(format!(
                 "success: generated new channel identifier: {}",
@@ -88,7 +85,7 @@ pub(crate) fn process(
         .ok_or_else(|| Kind::MissingConnection(msg.channel().connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(ConnectionNotOpen(msg.channel.connection_hops()[0].clone()).into());
+        return Err(Kind::ConnectionNotOpen(msg.channel.connection_hops()[0].clone()).into());
     }
 
     let get_versions = conn.versions();
@@ -147,7 +144,11 @@ pub(crate) fn process(
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
         channel_cap,
-        previous_channel_id: msg.previous_channel_id.clone(),
+        channel_id_state: if matches!(msg.previous_channel_id, None) {
+            ChannelIdState::Generated
+        } else {
+            ChannelIdState::Reused
+        },
         channel_id: channel_id.clone(),
         channel_end: new_channel_end,
     };
@@ -194,7 +195,7 @@ mod tests {
 
         // Some general-purpose variable to parametrize the messages and the context.
         let proof_height = 10;
-        let conn_id = ConnectionId::new(2).unwrap();
+        let conn_id = ConnectionId::new(2);
         let client_id = ClientId::new(ClientType::Mock, 45).unwrap();
 
         // The context. We'll reuse this same one across all tests.
@@ -215,7 +216,7 @@ mod tests {
 
         // Assumption: an already existing `Init` channel should exist in the context for `msg`, and
         // this channel should depend on connection `conn_id`.
-        let chan_id = ChannelId::new(24).unwrap();
+        let chan_id = ChannelId::new(24);
         let hops = vec![conn_id.clone()];
         msg.previous_channel_id = Some(chan_id.clone());
         msg.channel.connection_hops = hops;
@@ -247,7 +248,7 @@ mod tests {
 
         // A preloaded channel end residing in the context, which will be __inconsistent__ with
         // the incoming ChanOpenTry message `msg` due to its connection hops field.
-        let hops = vec![ConnectionId::new(9890).unwrap()];
+        let hops = vec![ConnectionId::new(9890)];
         let incorrect_chan_end_hops = ChannelEnd::new(
             State::Init,
             *msg.channel.ordering(),

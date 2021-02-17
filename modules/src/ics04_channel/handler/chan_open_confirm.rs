@@ -8,7 +8,7 @@ use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_proofs;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 
 pub(crate) fn process(
@@ -83,7 +83,7 @@ pub(crate) fn process(
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
         channel_id: msg.channel_id().clone(),
-        previous_channel_id: None,
+        channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
@@ -128,7 +128,7 @@ mod tests {
             want_pass: bool,
         }
         let client_id = ClientId::new(ClientType::Mock, 24).unwrap();
-        let conn_id = ConnectionId::new(2).unwrap();
+        let conn_id = ConnectionId::new(2);
         let context = MockContext::default();
         let client_consensus_state_height = context.host_current_height().revision_height;
 

@@ -4,9 +4,8 @@
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
-use crate::ics04_channel::channel::State;
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
@@ -43,47 +42,29 @@ pub trait ChannelReader {
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
-        match result.channel_end.state() {
-            // This is the first time the handler processed this channel, with `MsgChannelOpenInit`.
-            State::Init => {
-                self.store_channel(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    &result.channel_end,
-                )?;
+        // The handler processed this channel & some modifications occurred, store the new end.
+        self.store_channel(
+            &(result.port_id.clone(), result.channel_id.clone()),
+            &result.channel_end,
+        )?;
 
-                // Associate also the channel end to its connection.
-                self.store_connection_channels(
-                    &result.channel_end.connection_hops()[0].clone(),
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                )?;
+        // The channel identifier was freshly brewed.
+        // Increase counter & initialize seq. nrs.
+        if matches!(result.channel_id_state, ChannelIdState::Generated) {
+            self.increase_channel_counter();
 
-                // Initialize send, recv, and ack sequence numbers.
-                self.store_next_sequence_send(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    1,
-                )?;
-                self.store_next_sequence_recv(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    1,
-                )?;
-                self.store_next_sequence_ack(&(result.port_id, result.channel_id), 1)?;
+            // Associate also the channel end to its connection.
+            self.store_connection_channels(
+                &result.channel_end.connection_hops()[0].clone(),
+                &(result.port_id.clone(), result.channel_id.clone()),
+            )?;
 
-                // Bump the channel counter.
-                self.increase_channel_counter();
-            }
-            // The handler processed this channel & some modifications occurred, store the new end.
-            _ => {
-                self.store_channel(
-                    &(result.port_id.clone(), result.channel_id.clone()),
-                    &result.channel_end,
-                )?;
-
-                // There was no previous_channel_id, which means we generated one.
-                if matches!(result.previous_channel_id, None) {
-                    self.increase_channel_counter();
-                }
-            }
+            // Initialize send, recv, and ack sequence numbers.
+            self.store_next_sequence_send(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_recv(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_ack(&(result.port_id, result.channel_id), 1)?;
         }
+
         Ok(())
     }
 
