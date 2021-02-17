@@ -14,13 +14,10 @@ ICS03_ConnectionExists(connections, connectionId) ==
 ICS03_SetConnection(connections, connectionId, connection) ==
     [connections EXCEPT ![connectionId] = connection]
 
-ICS03_ConnectionOpenInit(
-    clients,
-    connections,
-    connectionIdCounter,
-    clientId,
-    counterpartyClientId
-) ==
+ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
+    LET clients == chain.clients IN
+    LET connections == chain.connections IN
+    LET connectionIdCounter == chain.connectionIdCounter IN
     \* check if the client exists
     IF ICS02_ClientExists(clients, clientId) THEN
         \* if the client exists,
@@ -63,19 +60,24 @@ ICS03_ConnectionOpenInit(
 \* TODO: errors generated when verifying proofs are never an outcome of this
 \*       model
 ICS03_ConnectionOpenTry(
-    chainHeight,
-    clients,
-    connections,
-    connectionIdCounter,
-    previousConnectionId,
+    chain,
     clientId,
+    previousConnectionId,
     height,
+    counterpartyChainId,
     counterpartyClientId,
     counterpartyConnectionId
 ) ==
+    LET clients == chain.clients IN
+    LET connections == chain.connections IN
+    LET connectionIdCounter == chain.connectionIdCounter IN
+    LET connectionProofs == chain.connectionProofs IN
     \* check if client's claimed height is higher than the chain's height
-    IF height > chainHeight THEN
+    IF height > chain.height THEN
         \* if client's height is too advanced, then set an error outcome
+        \* TODO: in the ICS03, this error also occurs if
+        \*       "height == chain.height", which is not the case in the
+        \*       Rust implementation
         [
             connections |-> connections,
             connectionIdCounter |-> connectionIdCounter,
@@ -84,7 +86,11 @@ ICS03_ConnectionOpenTry(
         \* TODO: add `chain_max_history_size` to the model to be able to also
         \*       return a `ICS03StaleConsensusHeight` error outcome
     ELSE
-        \* check if there's a `previousConnectionId`
+        \* check if there's a `previousConnectionId`. this situation can happen
+        \* where there are two concurrent open init's establishing a connection
+        \* between the same two chains, say chainA and chainB; then, when chainB
+        \* sees the open init from chainA, instead of creating a new connection
+        \* identifier, it can reuse the identifier created by its own open init.
         IF previousConnectionId /= ConnectionIdNone THEN
             \* if so, check if the connection exists
             IF ICS03_ConnectionExists(connections, previousConnectionId) THEN
@@ -97,8 +103,10 @@ ICS03_ConnectionOpenTry(
                 IF /\ connection.state = "Init"
                    /\ connection.clientId = clientId
                    /\ connection.counterpartyClientId = counterpartyClientId
+                   /\ connection.counterpartyConnectionId = counterpartyConnectionId
                 THEN
-                    \* verification passed; update connection
+                    \* verification passed; update the connection state to
+                    \* "TryOpen"
                     LET updatedConnection == [
                         state |-> "TryOpen",
                         clientId |-> clientId,
@@ -133,6 +141,7 @@ ICS03_ConnectionOpenTry(
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
         ELSE
+            \* TODO: check if there was an open init at the remote chain
             \* verification passed; create connection
             LET connection == [
                 state |-> "TryOpen",

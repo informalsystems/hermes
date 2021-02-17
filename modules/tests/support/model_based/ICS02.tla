@@ -14,7 +14,9 @@ ICS02_ClientExists(clients, clientId) ==
 ICS02_SetClient(clients, clientId, client) ==
     [clients EXCEPT ![clientId] = client]
 
-ICS02_CreateClient(clients, clientIdCounter, height) ==
+ICS02_CreateClient(chain, height) ==
+    LET clients == chain.clients IN
+    LET clientIdCounter == chain.clientIdCounter IN
     \* check if the client exists (it shouldn't)
     IF ICS02_ClientExists(clients, clientIdCounter) THEN
         \* if the client to be created already exists,
@@ -36,7 +38,8 @@ ICS02_CreateClient(clients, clientIdCounter, height) ==
             outcome |-> "ICS02CreateOK"
         ]
 
-ICS02_UpdateClient(clients, clientId, height) ==
+ICS02_UpdateClient(chain, clientId, height) ==
+    LET clients == chain.clients IN
     \* check if the client exists
     IF ICS02_ClientExists(clients, clientId) THEN
         \* if the client exists, check its height

@@ -14,10 +14,12 @@ ActionType == [
     clientId |-> Int,
     header |-> Int,
     previousConnectionId |-> Int,
+    counterpartyChainId |-> STRING,
     counterpartyClientId |-> Int,
     counterpartyConnectionId |-> Int
 ]
 AsAction(a) == a <: ActionType
+AsSetAction(S) == S <: {ActionType}
 AsSetInt(S) == S <: {Int}
 (******************* END OF TYPE ANNOTATIONS FOR APALACHE ********************)
 
