@@ -7,7 +7,7 @@ use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
 pub(crate) fn process(
@@ -82,7 +82,7 @@ pub(crate) fn process(
 
     let result = ConnectionResult {
         connection_id: msg.connection_id().clone(),
-        prev_connection_id: None,
+        connection_id_state: ConnectionIdState::Reused,
         connection_end: new_conn_end,
     };
 
