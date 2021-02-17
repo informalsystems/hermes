@@ -14,6 +14,10 @@ use crate::Height;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
 pub struct MockHeader(pub Height);
+// pub struct MockHeader{
+//     pub height: Height,
+//     pub timestamp: Time,
+// }
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 

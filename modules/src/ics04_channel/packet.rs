@@ -50,7 +50,7 @@ impl std::fmt::Display for Sequence {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Deserialize, Serialize, Hash, Clone)]
 pub struct Packet {
     pub sequence: Sequence,
     pub source_port: PortId,

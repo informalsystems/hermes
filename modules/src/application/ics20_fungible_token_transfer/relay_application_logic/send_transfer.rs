@@ -1,132 +1,130 @@
 use crate::application::ics20_fungible_token_transfer::context::ICS20Context;
-use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
-use crate::ics04_channel::packet::{Packet,Sequence};
+use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
+use crate::handler::HandlerOutput;
+use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics04_channel::packet_handler::send_packet::send_packet;
+use crate::ics04_channel::packet_handler::PacketResult;
 // use crate::ics04_channel::error::Error as ICS04Error;
 // use crate::ics04_channel::error::Kind as ICS04Kind;
 
-
-pub(crate) fn send_transfer<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<(), Error>
+pub(crate) fn send_transfer<Ctx>(
+    ctx: &Ctx,
+    msg: MsgTransfer,
+) -> Result<HandlerOutput<PacketResult>, Error>
 where
     Ctx: ICS20Context,
 {
+    let source_channel_end = ctx
+        .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .ok_or_else(|| {
+            Kind::ChannelNotFound(msg.source_port.clone(), msg.source_channel.clone())
+        })?;
 
+    let destination_port = source_channel_end.counterparty().port_id().clone();
+    let destination_channel = source_channel_end.counterparty().channel_id();
 
-    let sourceChannelEnd = ctx.channel_end(&(
-						msg.source_port.clone(), 
-						msg.source_channel.clone()
-					));
-	if sourceChannelEnd.is_none() {
-		return Err(Kind::ChannelNotFound(msg.source_port.clone(), msg.source_channel.clone()).into());
-	}
+    if destination_channel.is_none() {
+        return Err(Kind::DestinationChannelNotFound(
+            msg.source_port.clone(),
+            msg.source_channel,
+        )
+        .into());
+    }
 
+    // get the next sequence
+    let sequence = ctx
+        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()))
+        .ok_or_else(|| {
+            Kind::SequenceSendNotFound(msg.source_port.clone(), msg.source_channel.clone())
+        })?;
 
-	let destination_port = sourceChannelEnd.unwrap().counterparty().port_id().clone();
-	let destination_channel =  sourceChannelEnd.unwrap().counterparty().channel_id().clone();
+    // begin createOutgoingPacket logic
+    let _channel_cap = ctx
+        .lookup_module_by_port(&msg.source_port.clone())
+        .ok_or_else(|| Kind::ChannelCapabilityNotFound)?;
 
-	if destination_channel.is_none() {
-		return Err(Kind::DestinationChannelNotFound(msg.source_port.clone(), msg.source_channel.clone()).into());
-	}
+    // // NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
+    // fullDenomPath := token.Denom
 
-	// get the next sequence
-	let sequence = ctx.get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel.clone()));
-	if sequence.is_none() {
-		return Err(Kind::SequenceSendNotFound(msg.source_port,msg.source_channel).clone().into());
-	}
+    // var err error
 
-	// begin createOutgoingPacket logic
-	let channel_cap = ctx.lookup_module_by_port(&msg.source_port.clone());
-	// k.scopedKeeper.GetCapability(ctx, host.ChannelCapabilityPath(sourcePort, sourceChannel))
-	if channel_cap.is_none() {
-		return Err(Kind::ChannelCapabilityNotFound.into());
-	}
+    // // deconstruct the token denomination into the denomination trace info
+    // // to determine if the sender is the source chain
+    // if strings.HasPrefix(token.Denom, "ibc/") {
+    // 	fullDenomPath, err = k.DenomPathFromHash(ctx, token.Denom)
+    // 	if err != nil {
+    // 		return err
+    // 	}
+    // }
 
-	// // NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
-	// fullDenomPath := token.Denom
+    // labels := []metrics.Label{
+    // 	telemetry.NewLabel("destination-port", destinationPort),
+    // 	telemetry.NewLabel("destination-channel", destinationChannel),
+    // }
 
-	// var err error
+    // // NOTE: SendTransfer simply sends the denomination as it exists on its own
+    // // chain inside the packet data. The receiving chain will perform denom
+    // // prefixing as necessary.
 
-	// // deconstruct the token denomination into the denomination trace info
-	// // to determine if the sender is the source chain
-	// if strings.HasPrefix(token.Denom, "ibc/") {
-	// 	fullDenomPath, err = k.DenomPathFromHash(ctx, token.Denom)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+    // if types.SenderChainIsSource(sourcePort, sourceChannel, fullDenomPath) {
+    // 	labels = append(labels, telemetry.NewLabel("source", "true"))
 
-	// labels := []metrics.Label{
-	// 	telemetry.NewLabel("destination-port", destinationPort),
-	// 	telemetry.NewLabel("destination-channel", destinationChannel),
-	// }
+    // 	// create the escrow address for the tokens
+    // 	escrowAddress := types.GetEscrowAddress(sourcePort, sourceChannel)
 
-	// // NOTE: SendTransfer simply sends the denomination as it exists on its own
-	// // chain inside the packet data. The receiving chain will perform denom
-	// // prefixing as necessary.
+    // 	// escrow source tokens. It fails if balance insufficient.
+    // 	if err := k.bankKeeper.SendCoins(
+    // 		ctx, sender, escrowAddress, sdk.NewCoins(token),
+    // 	); err != nil {
+    // 		return err
+    // 	}
 
-	// if types.SenderChainIsSource(sourcePort, sourceChannel, fullDenomPath) {
-	// 	labels = append(labels, telemetry.NewLabel("source", "true"))
+    // } else {
+    // 	labels = append(labels, telemetry.NewLabel("source", "false"))
 
-	// 	// create the escrow address for the tokens
-	// 	escrowAddress := types.GetEscrowAddress(sourcePort, sourceChannel)
+    // 	// transfer the coins to the module account and burn them
+    // 	if err := k.bankKeeper.SendCoinsFromAccountToModule(
+    // 		ctx, sender, types.ModuleName, sdk.NewCoins(token),
+    // 	); err != nil {
+    // 		return err
+    // 	}
 
-	// 	// escrow source tokens. It fails if balance insufficient.
-	// 	if err := k.bankKeeper.SendCoins(
-	// 		ctx, sender, escrowAddress, sdk.NewCoins(token),
-	// 	); err != nil {
-	// 		return err
-	// 	}
+    // 	if err := k.bankKeeper.BurnCoins(
+    // 		ctx, types.ModuleName, sdk.NewCoins(token),
+    // 	); err != nil {
+    // 		// NOTE: should not happen as the module account was
+    // 		// retrieved on the step above and it has enough balace
+    // 		// to burn.
+    // 		panic(fmt.Sprintf("cannot burn coins after a successful send to a module account: %v", err))
+    // 	}
+    // }
 
-	// } else {
-	// 	labels = append(labels, telemetry.NewLabel("source", "false"))
+    // packetData := types.NewFungibleTokenPacketData(
+    // 	fullDenomPath, token.Amount.Uint64(), sender.String(), receiver,
+    // )
 
-	// 	// transfer the coins to the module account and burn them
-	// 	if err := k.bankKeeper.SendCoinsFromAccountToModule(
-	// 		ctx, sender, types.ModuleName, sdk.NewCoins(token),
-	// 	); err != nil {
-	// 		return err
-	// 	}
+    let packet = Packet {
+        sequence: <Sequence as From<u64>>::from(*sequence),
+        source_port: msg.source_port,
+        source_channel: msg.source_channel,
+        destination_port,
+        destination_channel: destination_channel.unwrap().clone(),
+        data: vec![],
+        timeout_height: msg.timeout_height,
+        timeout_timestamp: msg.timeout_timestamp,
+    };
 
-	// 	if err := k.bankKeeper.BurnCoins(
-	// 		ctx, types.ModuleName, sdk.NewCoins(token),
-	// 	); err != nil {
-	// 		// NOTE: should not happen as the module account was
-	// 		// retrieved on the step above and it has enough balace
-	// 		// to burn.
-	// 		panic(fmt.Sprintf("cannot burn coins after a successful send to a module account: %v", err))
-	// 	}
-	// }
+    let handler_output =
+        send_packet(ctx, packet).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-	// packetData := types.NewFungibleTokenPacketData(
-	// 	fullDenomPath, token.Amount.Uint64(), sender.String(), receiver,
-	// )
+    // if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
+    // 	return err
+    // }
+    // ctx.store_packet_result(handler_output.result)
+    // .map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
+    //do the  writting on the store  here  or give it to the handler send_transfer in the dispach ... that is in send_transfer ?
 
-	let packet =  Packet {
-		sequence: <Sequence as From<u64>>::from(sequence.unwrap().clone()),
-		source_port: msg.source_port, 
-		source_channel:  msg.source_channel,
-		destination_port,  
-		destination_channel: destination_channel.unwrap().clone(),  
-		data: vec![],
-		timeout_height: msg.timeout_height.clone(),
-		timeout_timestamp: msg.timeout_timestamp.clone(),
-	};
-
-
-
-   let handler_output = send_packet(ctx, channel_cap.unwrap().clone(), packet)
-        .map_err(|e| Kind::HandlerRaisedError.context(e))?;
-    
-	// if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
-	// 	return err
-	// }
-	// ctx.store_packet_result(handler_output.result)
-	// .map_err(|e| Kind::KeeperRaisedError.context(e))?;
-
-
-	//do the  writting on the store  here  or give it to the handler send_transfer in the dispach ... that is in send_transfer ? 
-
-    Ok(())
+    Ok(handler_output)
 }

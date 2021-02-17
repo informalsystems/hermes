@@ -4,7 +4,12 @@ use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::{Height, ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}};
+use crate::{
+    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    Height,
+};
+
+use super::packet::Sequence;
 
 #[derive(Clone, Debug, Error)]
 pub enum Kind {
@@ -21,7 +26,7 @@ pub enum Kind {
     InvalidConnectionHopsLength,
 
     #[error("packet destination port/channel doesn't match the counterparty's port/channel")]
-    InvalidPacketCounterparty(PortId,ChannelId),
+    InvalidPacketCounterparty(PortId, ChannelId),
 
     #[error("invalid version")]
     InvalidVersion,
@@ -74,7 +79,6 @@ pub enum Kind {
     #[error("Missing channel")]
     ChannelNotFound,
 
-
     #[error(
         "a different channel exists (was initialized) already for the same channel identifier {0}"
     )]
@@ -92,6 +96,9 @@ pub enum Kind {
     #[error("No client state associated with the channel")]
     MissingClientState,
 
+    #[error("No consensus state associated with the host chain")]
+    MissingHostConsensusState,
+
     #[error("the client {0} running locally is frozen")]
     FrozenClient(ClientId),
 
@@ -102,13 +109,13 @@ pub enum Kind {
     MissingNextSendSeq,
 
     #[error("Invalid packet sequence {0} ≠ next send sequence {1}")]
-    InvalidPacketSequence(u64,u64),
+    InvalidPacketSequence(Sequence, Sequence),
 
     #[error("Receiving chain block height {0} >= packet timeout height {1}")]
-    LowPacketHeight(Height,Height),
+    LowPacketHeight(Height, Height),
 
     #[error("Receiving chain block timestamp {0} >= packet timeout timestamp {1}")]
-    LowPacketTimestamp(Time,Time),
+    LowPacketTimestamp(Time, Time),
 
     #[error("Missing client consensus state")]
     MissingClientConsensusState,

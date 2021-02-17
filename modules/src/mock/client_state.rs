@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
 use serde::Serialize;
-use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -100,7 +99,6 @@ impl From<MockConsensusState> for MockClientState {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
-
 
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 

@@ -94,6 +94,7 @@ pub struct MockContext {
 
     /// Counter for channel identifiers (see `next_channel_id`).
     channel_ids_counter: u32,
+    //packetCommitment: HashMap<(PortId, ChannelId, u64),
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -397,10 +398,16 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn get_next_sequence_send(
-        &self, port_channel_id: &(PortId, ChannelId),
-    ) -> Option<&u64> {
-        return self.next_sequence_send.get(port_channel_id);
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64> {
+        self.next_sequence_send.get(port_channel_id)
+    }
+
+    fn channel_host_consensus_state(&self) -> Option<AnyConsensusState> {
+        todo!()
+    }
+
+    fn channel_host_current_height(&self) -> Height {
+        todo!()
     }
 }
 

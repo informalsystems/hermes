@@ -31,8 +31,13 @@ pub trait ChannelReader {
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
 
-    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<
-    &u64>;
+    fn get_next_sequence_send(&self, port_channel_id: &(PortId, ChannelId)) -> Option<&u64>;
+
+    /// Returns the current ConsensusState of the host (local) chain
+    fn channel_host_consensus_state(&self) -> Option<AnyConsensusState>;
+
+    /// Returns the current height of the local chain.
+    fn channel_host_current_height(&self) -> Height;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)

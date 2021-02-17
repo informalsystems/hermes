@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 
 use prost_types::Any;
 use serde::Serialize;
-use tendermint::Time;
+//use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use crate::downcast;
@@ -283,15 +283,14 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
+    // pub fn latest_timestamp(&self) -> Time {
+    //     match self {
+    //         Self::Tendermint(tm_state) => tm_state.timestamp,
 
-    pub fn latest_timestamp(&self) -> Time {
-        match self {
-            Self::Tendermint(tm_state) => tm_state.timestamp,
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.timestamp,
-        }
-    }
+    //         #[cfg(any(test, feature = "mocks"))]
+    //         Self::Mock(mock_state) => mock_state.timestamp,
+    //     }
+    // }
 
     pub fn client_type(&self) -> ClientType {
         match self {
