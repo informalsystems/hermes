@@ -13,7 +13,7 @@
   - Listen to channel close initialization event and perform the close handshake ([#560])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Proposed ADR 006 to describe Hermes v0.2.0 use-cases ([#637])
 
 ### IMPROVEMENTS
 
@@ -57,6 +57,7 @@
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#637]: https://github.com/informalsystems/ibc-rs/issues/637
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
 
