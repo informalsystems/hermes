@@ -55,6 +55,7 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
+    use tendermint::Time;
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
@@ -79,10 +80,11 @@ mod tests {
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 42);
+        let timestamp = Time::now();
 
         let msg = MsgCreateAnyClient::new(
-            MockClientState(MockHeader(height)).into(),
-            MockConsensusState(MockHeader(height)).into(),
+            MockClientState(MockHeader(height,timestamp )).into(),
+            MockConsensusState(MockHeader(height,timestamp)).into(),
             signer,
         )
         .unwrap();
@@ -122,6 +124,7 @@ mod tests {
         let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
+        let timestamp = Time::now();
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 
@@ -130,12 +133,12 @@ mod tests {
                 MockClientState(MockHeader(Height {
                     revision_height: 42,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 MockConsensusState(MockHeader(Height {
                     revision_height: 42,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 signer,
             )
@@ -144,12 +147,12 @@ mod tests {
                 MockClientState(MockHeader(Height {
                     revision_height: 42,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 MockConsensusState(MockHeader(Height {
                     revision_height: 42,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 signer,
             )
@@ -158,12 +161,12 @@ mod tests {
                 MockClientState(MockHeader(Height {
                     revision_height: 50,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 MockConsensusState(MockHeader(Height {
                     revision_height: 50,
                     ..height
-                }))
+                },timestamp))
                 .into(),
                 signer,
             )

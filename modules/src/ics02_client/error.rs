@@ -57,6 +57,9 @@ pub enum Kind {
     #[error("invalid raw header")]
     InvalidRawHeader,
 
+    #[error("invalid raw timestamp")]
+    InvalidRawTimestamp,
+
     #[error("invalid height result")]
     InvalidHeightResult,
 

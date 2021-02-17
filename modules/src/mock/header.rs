@@ -1,6 +1,8 @@
 use std::convert::{TryFrom, TryInto};
 
+use chrono::{TimeZone, Utc};
 use serde::Serialize;
+use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -12,12 +14,8 @@ use crate::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
-pub struct MockHeader(pub Height);
-// pub struct MockHeader{
-//     pub height: Height,
-//     pub timestamp: Time,
-// }
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct MockHeader(pub Height, pub Time);
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 
@@ -25,11 +23,16 @@ impl TryFrom<RawMockHeader> for MockHeader {
     type Error = Error;
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
+        let proto_timestamp = raw
+            .timestamp
+            .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing timestamp"))?;
+
         Ok(MockHeader(
             raw.height
                 .ok_or_else(|| error::Kind::InvalidRawHeader.context("missing height in header"))?
                 .try_into()
                 .map_err(|e| error::Kind::InvalidRawHeader.context(e))?,
+                Utc.timestamp(proto_timestamp.seconds, proto_timestamp.nanos as u32).into(),
         ))
     }
 }
@@ -43,6 +46,9 @@ impl From<MockHeader> for RawMockHeader {
 impl MockHeader {
     pub fn height(&self) -> Height {
         self.0
+    }
+    pub fn timestamp(&self) -> Time {
+        self.1
     }
 }
 

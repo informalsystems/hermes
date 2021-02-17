@@ -37,6 +37,10 @@ impl crate::ics02_client::state::ConsensusState for ConsensusState {
     fn root(&self) -> &CommitmentRoot {
         &self.root
     }
+    
+    // fn latest_timestamp(&self) -> Time{
+    //    self.timestamp
+    // }
 
     fn validate_basic(&self) -> Result<(), Box<dyn std::error::Error>> {
         unimplemented!()

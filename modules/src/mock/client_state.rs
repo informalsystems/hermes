@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
+//use chrono::{TimeZone, Utc};
 use serde::Serialize;
+use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -33,7 +35,7 @@ pub struct MockClientRecord {
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
 /// `ClientState` of ics07_tendermint/client_state.rs.
 // TODO: `MockClientState` should evolve, at the very least needs a `is_frozen` boolean field.
-#[derive(Copy, Clone, Default, Debug, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockClientState(pub MockHeader);
 
 impl Protobuf<RawMockClientState> for MockClientState {}
@@ -63,6 +65,7 @@ impl From<MockClientState> for RawMockClientState {
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
+                timestamp: Some(value.0.timestamp().to_system_time().unwrap().into()),
             }),
         }
     }
@@ -100,6 +103,8 @@ impl From<MockConsensusState> for MockClientState {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct MockConsensusState(pub MockHeader);
 
+//pub struct MockConsensusState(pub MockHeader);
+
 impl Protobuf<RawMockConsensusState> for MockConsensusState {}
 
 impl TryFrom<RawMockConsensusState> for MockConsensusState {
@@ -110,7 +115,13 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
             .header
             .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing header"))?;
 
-        Ok(Self(MockHeader::try_from(raw_header)?))
+        Ok(Self(MockHeader::try_from(raw_header)?).into())
+    }
+}
+
+impl MockConsensusState {
+    pub fn latest_timestamp(&self) -> Time {
+        (self.0).1
     }
 }
 
@@ -119,6 +130,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
+                timestamp: Some(value.0.timestamp().to_system_time().unwrap().into()),
             }),
         }
     }

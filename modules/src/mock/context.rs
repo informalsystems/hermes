@@ -6,12 +6,15 @@ use std::error::Error;
 use std::str::FromStr;
 
 use prost_types::Any;
-use tendermint::account::Id;
+use tendermint::{Time, account::Id};
 
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader};
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
+use crate::{
+    ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
+    ics04_channel::packet::Sequence,
+};
 
 use crate::ics05_port::capabilities::Capability;
 use crate::ics05_port::context::PortReader;
@@ -89,6 +92,9 @@ pub struct MockContext {
     /// Maps ports to their capabilities
     port_capabilities: HashMap<PortId, Capability>,
 
+    /// Constant-size commitments to packets data fields
+    packet_commitment: HashMap<(PortId, ChannelId, Sequence), u64>,
+
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
 
@@ -163,6 +169,7 @@ impl MockContext {
             next_sequence_recv: Default::default(),
             next_sequence_ack: Default::default(),
             port_capabilities: Default::default(),
+            packet_commitment: Default::default(),
             connection_ids_counter: 0,
             channel_ids_counter: 0,
         }
@@ -190,12 +197,13 @@ impl MockContext {
     ) -> Self {
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
+        let cs_timestamp = Time::now();
         let client_type = client_type.unwrap_or(ClientType::Mock);
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                Some(MockClientState(MockHeader(client_state_height)).into()),
-                MockConsensusState(MockHeader(cs_height)).into(),
+                Some(MockClientState(MockHeader(client_state_height, cs_timestamp)).into()),
+                MockConsensusState(MockHeader(cs_height, cs_timestamp)).into(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {

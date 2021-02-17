@@ -25,11 +25,9 @@ where
     let destination_channel = source_channel_end.counterparty().channel_id();
 
     if destination_channel.is_none() {
-        return Err(Kind::DestinationChannelNotFound(
-            msg.source_port.clone(),
-            msg.source_channel,
-        )
-        .into());
+        return Err(
+            Kind::DestinationChannelNotFound(msg.source_port.clone(), msg.source_channel).into(),
+        );
     }
 
     // get the next sequence
