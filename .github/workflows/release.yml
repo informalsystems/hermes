@@ -38,6 +38,14 @@ jobs:
           # (optional) On which platform to distribute the `.zip` file.
           # [default value: windows]
           # [possible values: all, unix, windows, none]
+          zip: unix
+          # (optional) Archive name (non-extension portion of filename) to be uploaded.
+          # [default value: $bin-$target]
+          # [possible values: the following variables and any string]
+          #   variables:
+          #     - $bin - Binary name (non-extension portion of filename).
+          #     - $target - Target triple.
+          #     - $tag - Tag of this release.
           archive: $bin-$tag-$target
         env:
           # (required)
