@@ -14,11 +14,18 @@ ICS03_ConnectionExists(connections, connectionId) ==
 ICS03_SetConnection(connections, connectionId, connection) ==
     [connections EXCEPT ![connectionId] = connection]
 
-ICS03_ConnectionOpenInit(chain, chainId, clientId, counterpartyClientId) ==
+ICS03_ConnectionOpenInit(
+    chain,
+    chainId,
+    clientId,
+    counterpartyChainId,
+    counterpartyClientId
+) ==
     LET action == AsAction([
         type |-> "ICS03ConnectionOpenInit",
         chainId |-> chainId,
         clientId |-> clientId,
+        counterpartyChainId |-> counterpartyChainId,
         counterpartyClientId |-> counterpartyClientId
     ]) IN
     LET clients == chain.clients IN
