@@ -93,14 +93,14 @@ pub struct MockContext {
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), u64>,
+    packet_commitment: HashMap<(PortId, ChannelId, Sequence), CommitmentPrefix>,
 
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
 
     /// Counter for channel identifiers (see `next_channel_id`).
     channel_ids_counter: u32,
-    //packetCommitment: HashMap<(PortId, ChannelId, u64),
+    
 }
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no channels are
@@ -447,12 +447,13 @@ impl ChannelKeeper for MockContext {
             .insert(port_channel_id.clone(), channel_end.clone());
         Ok(())
     }
+
     fn store_next_sequence_send(
         &mut self,
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
     ) -> Result<(), ICS4Error> {
-        self.next_sequence_send.insert(port_channel_id.clone(), seq);
+        self.next_sequence_send.insert(port_channel_id.clone(),seq);
         Ok(())
     }
 
@@ -494,6 +495,15 @@ impl ChannelKeeper for MockContext {
         }
         Ok(())
     }
+
+    fn store_packet_commitment(
+        &mut self,
+        key: &(PortId, ChannelId, Sequence),
+        value: CommitmentPrefix )-> Result<(), ICS4Error>{      
+            self.packet_commitment.insert(key.clone(), value);
+            Ok(())
+        }
+
 }
 
 impl ConnectionReader for MockContext {

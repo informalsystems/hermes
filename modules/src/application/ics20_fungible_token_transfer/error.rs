@@ -15,6 +15,9 @@ pub enum Kind {
     #[error("error raised by message handler")]
     HandlerRaisedError,
 
+    #[error("error raised when writting to the store")]
+    KeeperRaisedError,
+
     #[error("Sending sequence number not found for port {0} and channel {1}")]
     SequenceSendNotFound(PortId, ChannelId),
 

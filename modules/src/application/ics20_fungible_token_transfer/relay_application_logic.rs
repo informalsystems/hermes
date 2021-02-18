@@ -18,7 +18,7 @@ where
     Ctx: ICS20Context,
 {
     // Create a clone, which will store each intermediary stage of applying txs.
-    let ctx_interim = ctx.clone();
+    let mut ctx_interim = ctx.clone();
     let mut res: Vec<IBCEvent> = vec![];
 
     for any_msg in messages {
@@ -33,7 +33,7 @@ where
             }
             _ => Err(Kind::UnknownMessageTypeURL(any_msg.type_url)),
         }?;
-        let mut output = dispatch(&ctx_interim, env)?;
+        let mut output = dispatch(&mut ctx_interim, env)?;
         res.append(&mut output.events);
     }
     *ctx = ctx_interim;
@@ -41,32 +41,18 @@ where
 }
 
 /// Entry point for processing a transfer message in ICS20 token transfrom
-pub fn dispatch<Ctx>(ctx: &Ctx, msg: MsgTransfer) -> Result<HandlerOutput<()>, Error>
-// //() - > SendTransferResult ?
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: MsgTransfer) -> Result<HandlerOutput<()>, Error>
 where
     Ctx: ICS20Context,
 {
-    //     // 	// sender, err := sdk.AccAddressFromBech32(msg.Sender)
-    //     // 	// if err != nil {
-    //     // 	// 	return nil, err
-    //     // 	// }
-    
+ 
+   //TODO: application logic 
+
     let handler_output = relay_application_logic::send_transfer::send_transfer(ctx, msg)
         .map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
-    //     // 	k.Logger(ctx).Info("IBC fungible token transfer", "token", msg.Token.Denom, "amount", msg.Token.Amount.String(), "sender", msg.Sender, "receiver", msg.Receiver)
+    ctx.store_packet_result(handler_output.result).map_err(|e| Kind::KeeperRaisedError.context(e))?;
 
-    //     // 	ctx.EventManager().EmitEvents(sdk.Events{
-    //     // 		sdk.NewEvent(
-    //     // 			types.EventTypeTransfer,
-    //     // 			sdk.NewAttribute(sdk.AttributeKeySender, msg.Sender),
-    //     // 			sdk.NewAttribute(types.AttributeKeyReceiver, msg.Receiver),
-    //     // 		),
-    //     // 		sdk.NewEvent(
-    //     // 			sdk.EventTypeMessage,
-    //     // 			sdk.NewAttribute(sdk.AttributeKeyModule, types.ModuleName),
-    //     // 		),
-    //     // 	})
     let output = HandlerOutput::builder()
         .with_log(handler_output.log)
         .with_events(handler_output.events)

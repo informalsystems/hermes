@@ -119,7 +119,9 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     output.log("success: packet send ");
 
     let result = PacketResult {
-        send_seq_number: next_seq_send + 1,
+        port_id:packet.source_port.clone(),
+        channel_id:packet.source_channel.clone(),
+        send_seq_number: Sequence::from(*next_seq_send+1),
         commitment,
     };
 

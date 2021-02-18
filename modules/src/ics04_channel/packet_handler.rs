@@ -1,9 +1,13 @@
-use crate::ics23_commitment::commitment::CommitmentPrefix;
+use crate::{ics23_commitment::commitment::CommitmentPrefix, ics24_host::identifier::{PortId,ChannelId}};
+
+use super::packet::Sequence;
 
 pub mod send_packet;
 
 #[derive(Clone, Debug)]
 pub struct PacketResult {
-    pub send_seq_number: u64,
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub send_seq_number: Sequence,
     pub commitment: CommitmentPrefix,
 }

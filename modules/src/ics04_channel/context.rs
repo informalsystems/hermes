@@ -1,7 +1,7 @@
 //! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
-use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
+use crate::{ics02_client::client_def::{AnyClientState, AnyConsensusState}, ics23_commitment::commitment::CommitmentPrefix};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::Error;
@@ -9,6 +9,8 @@ use crate::ics04_channel::handler::ChannelResult;
 use crate::ics05_port::capabilities::Capability;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::Height;
+
+use super::{packet::Sequence, packet_handler::PacketResult};
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -76,6 +78,24 @@ pub trait ChannelKeeper {
         }
         Ok(())
     }
+
+
+    fn store_packet_result(&mut self, result: PacketResult) -> Result<(), Error> {
+        self.store_next_sequence_send(
+            &(result.port_id.clone(), result.channel_id.clone()),
+            From::<Sequence>::from(result.send_seq_number)
+            )?;
+        self.store_packet_commitment(
+            &(result.port_id.clone(), result.channel_id.clone(), result.send_seq_number.clone()), 
+            result.commitment.clone())?;  
+        Ok(())
+    }
+
+
+    fn store_packet_commitment(
+        &mut self,
+        key: &(PortId, ChannelId, Sequence),
+        value: CommitmentPrefix)-> Result<(), Error>;
 
     fn store_connection_channels(
         &mut self,
