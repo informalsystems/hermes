@@ -16,6 +16,9 @@ description = """
     This crate is a CLI wrapper over the `ibc-relayer` library.
 """
 
+[[bin]]
+name = "hermes"
+
 [features]
 profiling = ["ibc-relayer/profiling"]
 
