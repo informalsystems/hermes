@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint::Time;
@@ -15,7 +16,7 @@ use crate::ics24_host::identifier::{ChainId, ClientId};
 use crate::Height;
 
 /// Tendermint consensus header
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once present in tendermint-rs
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)] // TODO: Add Eq bound once present in tendermint-rs
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header

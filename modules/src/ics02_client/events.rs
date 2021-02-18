@@ -28,9 +28,10 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
         CREATE_EVENT_TYPE => Some(IBCEvent::CreateClient(CreateClient(
             extract_attributes_from_tx(event),
         ))),
-        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient(
-            extract_attributes_from_tx(event),
-        ))),
+        UPDATE_EVENT_TYPE => Some(IBCEvent::UpdateClient(UpdateClient {
+            common: extract_attributes_from_tx(event),
+            header: "".to_string(), // TODO fix
+        })),
         _ => None,
     }
 }
@@ -140,41 +141,56 @@ impl From<CreateClient> for IBCEvent {
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct UpdateClient(Attributes);
+pub struct UpdateClient {
+    pub common: Attributes,
+    pub header: String,
+}
 
 impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
-        &self.0.client_id
+        &self.common.client_id
+    }
+    pub fn client_type(&self) -> ClientType {
+        self.common.client_type
     }
 
     pub fn height(&self) -> &Height {
-        &self.0.height
+        &self.common.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
+        self.common.height = height;
     }
 
     pub fn consensus_height(&self) -> &Height {
-        &self.0.consensus_height
+        &self.common.consensus_height
     }
 }
 
 impl From<Attributes> for UpdateClient {
     fn from(attrs: Attributes) -> Self {
-        UpdateClient(attrs)
+        UpdateClient {
+            common: attrs,
+            header: "".to_string(),
+        }
     }
 }
 
 impl TryFrom<RawObject> for UpdateClient {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        // let str_header: String = attribute!(obj, "update_client.header");
+        // println!("str_header: {:?}", str_header);
+
         let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
-        Ok(UpdateClient(Attributes {
-            height: obj.height,
-            client_id: attribute!(obj, "update_client.client_id"),
-            client_type: attribute!(obj, "update_client.client_type"),
-            consensus_height: consensus_height_str.as_str().try_into()?,
-        }))
+        Ok(UpdateClient {
+            common: Attributes {
+                height: obj.height,
+                client_id: attribute!(obj, "update_client.client_id"),
+                client_type: attribute!(obj, "update_client.client_type"),
+                consensus_height: consensus_height_str.as_str().try_into()?,
+            },
+            header: attribute!(obj, "update_client.header"),
+        })
     }
 }
 
