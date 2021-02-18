@@ -307,7 +307,7 @@ impl Channel {
         })
     }
 
-    pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_open_init(&mut self) -> Result<Vec<Any>, ChannelError> {
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ChannelError::Failed(format!(
                 "failed while fetching the signer for dst chain ({}) with error: {}",
@@ -347,7 +347,7 @@ impl Channel {
         Ok(vec![new_msg.to_any::<RawMsgChannelOpenInit>()])
     }
 
-    pub fn build_chan_open_init_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_init_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_init()?;
 
         let events = self
@@ -438,11 +438,14 @@ impl Channel {
         Ok(dst_expected_channel)
     }
 
-    pub fn build_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_open_try(&mut self) -> Result<Vec<Any>, ChannelError> {
         let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+
+        // Set the ordering to the order of the counterparty
+        self.ordering = *src_channel.ordering();
 
         // Retrieve the connection
         let _dst_connection = self
@@ -510,7 +513,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_try_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_try_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_try()?;
 
         let events = self
@@ -538,14 +541,17 @@ impl Channel {
         }
     }
 
-    pub fn build_chan_open_ack(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_open_ack(&mut self) -> Result<Vec<Any>, ChannelError> {
         // Check that the destination chain will accept the message
         let _dst_expected_channel = self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
-        let _src_channel = self
+        let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+
+        // Set the ordering to the order of the counterparty
+        self.ordering = *src_channel.ordering();
 
         // Retrieve the connection
         let _dst_connection = self
@@ -599,7 +605,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_ack_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_ack_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_ack()?;
 
         let events = self
@@ -627,14 +633,17 @@ impl Channel {
         }
     }
 
-    pub fn build_chan_open_confirm(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_open_confirm(&mut self) -> Result<Vec<Any>, ChannelError> {
         // Check that the destination chain will accept the message
         let _dst_expected_channel = self.validated_expected_channel(ChannelMsgType::OpenConfirm)?;
 
-        let _src_channel = self
+        let src_channel = self
             .src_chain()
             .query_channel(self.src_port_id(), self.src_channel_id(), Height::default())
             .map_err(|e| ChannelError::QueryError(self.src_chain().id(), e))?;
+
+        // Set the ordering to the order of the counterparty
+        self.ordering = *src_channel.ordering();
 
         // Retrieve the connection
         let _dst_connection = self
@@ -676,7 +685,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_open_confirm_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_open_confirm_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_open_confirm()?;
 
         let events = self
@@ -704,7 +713,15 @@ impl Channel {
         }
     }
 
-    pub fn build_chan_close_init(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_close_init(&mut self) -> Result<Vec<Any>, ChannelError> {
+        let channel = self
+            .dst_chain()
+            .query_channel(self.dst_port_id(), self.dst_channel_id(), Height::default())
+            .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+
+        // Set the ordering to the order of the counterparty
+        self.ordering = *channel.ordering();
+
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ChannelError::Failed(format!(
                 "failed while fetching the signer for dst chain ({}) with error: {}",
@@ -723,7 +740,7 @@ impl Channel {
         Ok(vec![new_msg.to_any::<RawMsgChannelCloseInit>()])
     }
 
-    pub fn build_chan_close_init_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_close_init_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_init()?;
 
         let events = self
@@ -752,10 +769,12 @@ impl Channel {
         }
     }
 
-    pub fn build_chan_close_confirm(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_chan_close_confirm(&mut self) -> Result<Vec<Any>, ChannelError> {
         // Check that the destination chain will accept the message
-        let _dst_expected_channel =
-            self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
+        let dst_expected_channel = self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
+
+        // Set the ordering to the order of the counterparty
+        self.ordering = *dst_expected_channel.ordering();
 
         let _src_channel = self
             .src_chain()
@@ -802,7 +821,7 @@ impl Channel {
         Ok(msgs)
     }
 
-    pub fn build_chan_close_confirm_and_send(&self) -> Result<IBCEvent, ChannelError> {
+    pub fn build_chan_close_confirm_and_send(&mut self) -> Result<IBCEvent, ChannelError> {
         let dst_msgs = self.build_chan_close_confirm()?;
 
         let events = self

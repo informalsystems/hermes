@@ -37,7 +37,7 @@ macro_rules! tx_chan_cmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let channel = $chan(chains, dst_connection);
+        let mut channel = $chan(chains, dst_connection);
 
         info!("Message {}: {:?}", $dbg_string, channel);
 
@@ -66,6 +66,12 @@ pub struct TxRawChanOpenInitCmd {
 
     #[options(free, required, help = "identifier of the source port")]
     src_port_id: PortId,
+
+    #[options(
+        help = "the channel order: `UNORDERED` or `ORDERED`, default `UNORDERED`",
+        short = "o"
+    )]
+    ordering: Order,
 }
 
 impl Runnable for TxRawChanOpenInitCmd {
@@ -76,7 +82,7 @@ impl Runnable for TxRawChanOpenInitCmd {
             self,
             |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
                 Channel {
-                    ordering: Order::default(),
+                    ordering: self.ordering,
                     a_side: ChannelSide::new(
                         chains.src,
                         ClientId::default(),

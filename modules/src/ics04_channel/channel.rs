@@ -249,7 +249,7 @@ pub enum Order {
 
 impl Default for Order {
     fn default() -> Self {
-        Order::Unordered
+        Order::Ordered
     }
 }
 

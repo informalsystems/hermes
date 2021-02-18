@@ -676,11 +676,12 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
+        let mut response = self
             .block_on(client.unreceived_packets(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
+        response.sequences.sort_unstable();
         Ok(response.sequences)
     }
 
@@ -734,11 +735,12 @@ impl Chain for CosmosSDKChain {
 
         let request = tonic::Request::new(request);
 
-        let response = self
+        let mut response = self
             .block_on(client.unreceived_acks(request))
             .map_err(|e| Kind::Grpc.context(e))?
             .into_inner();
 
+        response.sequences.sort_unstable();
         Ok(response.sequences)
     }
 

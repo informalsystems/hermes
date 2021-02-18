@@ -2,7 +2,7 @@
 # Copied from https://github.com/cosmos/relayer/tree/master/scripts
 
 usage() {
-  echo "Usage: $0 [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT] [SAMOLEANS]"
+  echo "Usage: $0 [BINARY] [CHAIN_ID] [CHAIN_DIR] [RPC_PORT] [P2P_PORT] [PROFILING_PORT] [GRPC_PORT] [GRPC_PORT2] [SAMOLEANS]"
   echo "Example: $0 gaiad ibc-0 ./data 26657 26656 6060 9090 100"
   exit 1
 }
@@ -41,10 +41,14 @@ if [ -z "$7" ]; then
 fi
 
 if [ -z "$8" ]; then
+  missing "[GRPC_PORT2]"
+fi
+
+if [ -z "$9" ]; then
   missing "[SAMOLEANS]"
 fi
 
-if [ "$#" -gt 8 ]; then
+if [ "$#" -gt 9 ]; then
   echo "Incorrect number of parameters."
   usage
 fi
@@ -56,7 +60,8 @@ RPC_PORT=$4
 P2P_PORT=$5
 PROF_PORT=$6
 GRPC_PORT=$7
-SAMOLEANS=$8
+GRPC_PORT2=$8
+SAMOLEANS=$9
 
 echo "Creating $BINARY instance: home=$CHAIN_DIR | chain-id=$CHAIN_ID | p2p=:$P2P_PORT | rpc=:$RPC_PORT | profiling=:$PROF_PORT | grpc=:$GRPC_PORT | samoleans=:$SAMOLEANS"
 
@@ -114,6 +119,11 @@ if [ $platform = 'linux' ]; then
   # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
 else
   sed -i '' 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2P_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+
+  sed -i '' 's#"0.0.0.0:9090"#"0.0.0.0:'"$GRPC_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
+  sed -i '' 's#"0.0.0.0:9091"#"0.0.0.0:'"$GRPC_PORT2"'"#g' $CHAIN_DIR/$CHAIN_ID/config/app.toml
+
   sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2P_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's#"localhost:6060"#"localhost:'"$PROF_PORT"'"#g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAIN_DIR/$CHAIN_ID/config/config.toml
