@@ -132,3 +132,131 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     Ok(output.with_result(result))
 }
+
+
+#[cfg(test)]
+mod tests {
+    use std::convert::TryFrom;
+    use std::str::FromStr;
+
+    use crate::{events::IBCEvent, ics04_channel::packet::Packet};
+    use crate::ics03_connection::connection::ConnectionEnd;
+    use crate::ics03_connection::connection::State as ConnectionState;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+    use crate::ics03_connection::version::get_compatible_versions;
+    use crate::ics04_channel::channel::State;
+    use crate::ics04_channel::packet::PacketResult;
+    use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
+    use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+    use crate::ics04_channel::msgs::ChannelMsg;
+    use crate::ics24_host::identifier::ConnectionId;
+    use crate::mock::context::MockContext;
+
+    #[test]
+    fn send_packet_processing() {
+        struct Test {
+            name: String,
+            ctx: MockContext,
+            packet: Packet,
+            want_pass: bool,
+        }
+
+        let msg_chan_init =
+            MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
+
+        let context = MockContext::default();
+
+        let msg_conn_init =
+            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+
+        let init_conn_end = ConnectionEnd::new(
+            ConnectionState::Init,
+            msg_conn_init.client_id().clone(),
+            msg_conn_init.counterparty().clone(),
+            get_compatible_versions(),
+            msg_conn_init.delay_period,
+        );
+
+        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
+        let cid = match ccid {
+            Ok(v) => v,
+            Err(_e) => ConnectionId::default(),
+        };
+
+        let tests: Vec<Test> = vec![
+            Test {
+                name: "Processing fails because no connection exists in the context".to_string(),
+                ctx: context.clone(),
+                packet: packet.clone(),
+                want_pass: false,
+            },
+            Test {
+                name: "Processing fails because port does not have a capability associated"
+                    .to_string(),
+                ctx: context
+                    .clone()
+                    .with_connection(cid.clone(), init_conn_end.clone()),
+                    packet: packet.clone(),
+                want_pass: false,
+            },
+            Test {
+                name: "Good parameters".to_string(),
+                ctx: context
+                    .with_connection(cid, init_conn_end)
+                    .with_port_capability(
+                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
+                            .unwrap()
+                            .port_id()
+                            .clone(),
+                    ),
+                packet: packet,
+                want_pass: true,
+            },
+        ]
+        .into_iter()
+        .collect();
+
+        for test in tests {
+            let res = send_packet(&test.ctx, test.packet);
+            // Additionally check the events and the output objects in the result.
+            match res {
+                Ok(proto_output) => {
+                    assert_eq!(
+                        test.want_pass,
+                        true,
+                        "send_packet: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
+                        test.name,
+                        test.packet.clone(),
+                        test.ctx.clone()
+                    );
+                    assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
+
+                    // The object in the output is a ChannelEnd, should have init state.
+                    let res: PacketResult = proto_output.result;
+                    assert_eq!(res.channel_end.state().clone(), State::Init);
+                    let msg_init = test.msg.clone();
+
+                    if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {
+                        assert_eq!(res.port_id.clone(), msg_init.port_id().clone());
+                    }
+
+                    for e in proto_output.events.iter() {
+                        assert!(matches!(e, &IBCEvent::OpenInitChannel(_)));
+                    }
+                }
+                Err(e) => {
+                    assert_eq!(
+                        test.want_pass,
+                        false,
+                        "send_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
+                        test.name,
+                        test.msg,
+                        test.ctx.clone(),
+                        e,
+                    );
+                }
+            }
+        }
+    }
+}
