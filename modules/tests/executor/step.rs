@@ -43,7 +43,7 @@ pub enum Action {
         client_id: u64,
 
         #[serde(alias = "counterpartyChainId")]
-        counterparty_chain_id: u64,
+        counterparty_chain_id: String,
 
         #[serde(alias = "counterpartyClientId")]
         counterparty_client_id: u64,
@@ -63,7 +63,7 @@ pub enum Action {
         client_state: u64,
 
         #[serde(alias = "counterpartyChainId")]
-        counterparty_chain_id: u64,
+        counterparty_chain_id: String,
 
         #[serde(alias = "counterpartyClientId")]
         counterparty_client_id: u64,

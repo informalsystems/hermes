@@ -130,7 +130,7 @@
             "state": "Uninit"
           }
         },
-        "height": 2
+        "height": 3
       },
       "chainB": {
         "clientIdCounter": 0,
