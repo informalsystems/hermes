@@ -76,6 +76,7 @@ involving packet acks in a 3-chain setup. More details below.
 ### FEATURES
 - [ibc-relayer]
   - Listen to channel close initialization event and perform the close handshake ([#560])
+  - Updated to tendermint-rs `v0.18.1` ([#682], [#671])
 
 ### IMPROVEMENTS
 
@@ -115,7 +116,9 @@ involving packet acks in a 3-chain setup. More details below.
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#671]: https://github.com/informalsystems/ibc-rs/pull/671
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 ## v0.1.0
 *February 4, 2021*

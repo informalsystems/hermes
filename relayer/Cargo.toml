@@ -18,9 +18,10 @@ description = """
 profiling = []
 
 [dependencies]
+ibc       = { version = "0.1.1", path = "../modules" }
+ibc-proto = { version = "0.7.1", path = "../proto" }
+
 subtle-encoding = "0.5"
-ibc = { version = "0.1.1", path = "../modules" }
-ibc-proto = { version = "0.7.0", path = "../proto" }
 anomaly = "0.2.0"
 async-trait = "0.1.24"
 humantime-serde = "1.0.0"
