@@ -51,14 +51,10 @@
     "action": {
       "chainId": "chainA",
       "clientId": 0,
-      "clientState": 1,
-      "counterpartyChainId": "chainA",
-      "counterpartyClientId": 0,
-      "counterpartyConnectionId": 0,
-      "previousConnectionId": -1,
-      "type": "ICS03ConnectionOpenTry"
+      "header": 1,
+      "type": "ICS02UpdateClient"
     },
-    "actionOutcome": "ICS03ConnectionOpenTryOK",
+    "actionOutcome": "ICS02ClientNotFound",
     "chains": {
       "chainA": {
         "clientIdCounter": 0,
@@ -68,18 +64,7 @@
           }
         },
         "connectionIdCounter": 0,
-        "connectionProofs": [
-          {
-            "chainId": "chainA",
-            "clientId": 0,
-            "clientState": 1,
-            "counterpartyChainId": "chainA",
-            "counterpartyClientId": 0,
-            "counterpartyConnectionId": 0,
-            "previousConnectionId": -1,
-            "type": "ICS03ConnectionOpenTry"
-          }
-        ],
+        "connectionProofs": [],
         "connections": {
           "0": {
             "clientId": -1,

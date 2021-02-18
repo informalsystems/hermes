@@ -1,67 +1,102 @@
 [
-    {
-        "action": {
-            "type": "None"
-        },
-        "actionOutcome": "None",
-        "chains": {
-            "chainA": {
-                "height": 0
-            },
-            "chainB": {
-                "height": 0
-            }
-        }
+  {
+    "action": {
+      "type": "None"
     },
-    {
-        "action": {
-            "chainId": "chainA",
-            "clientState": 1,
-            "consensusState": 1,
-            "type": "ICS02CreateClient"
+    "actionOutcome": "None",
+    "chains": {
+      "chainA": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
         },
-        "actionOutcome": "ICS02CreateOK",
-        "chains": {
-            "chainA": {
-                "height": 1
-            },
-            "chainB": {
-                "height": 0
-            }
-        }
-    },
-    {
-        "action": {
-            "chainId": "chainA",
-            "clientState": 1,
-            "consensusState": 1,
-            "type": "ICS02CreateClient"
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
         },
-        "actionOutcome": "ICS02CreateOK",
-        "chains": {
-            "chainA": {
-                "height": 2
-            },
-            "chainB": {
-                "height": 0
-            }
-        }
-    },
-    {
-        "action": {
-            "chainId": "chainB",
-            "clientId": 0,
-            "counterpartyClientId": 0,
-            "type": "ICS03ConnectionOpenInit"
+        "height": 1
+      },
+      "chainB": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
         },
-        "actionOutcome": "ICS03MissingClient",
-        "chains": {
-            "chainA": {
-                "height": 2
-            },
-            "chainB": {
-                "height": 0
-            }
-        }
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 1
+      }
     }
+  },
+  {
+    "action": {
+      "chainId": "chainA",
+      "clientId": 0,
+      "counterpartyChainId": "chainA",
+      "counterpartyClientId": 0,
+      "type": "ICS03ConnectionOpenInit"
+    },
+    "actionOutcome": "ICS03MissingClient",
+    "chains": {
+      "chainA": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 1
+      },
+      "chainB": {
+        "clientIdCounter": 0,
+        "clients": {
+          "0": {
+            "heights": []
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 1
+      }
+    }
+  }
 ]

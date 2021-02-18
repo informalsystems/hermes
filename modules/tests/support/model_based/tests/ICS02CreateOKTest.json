@@ -50,36 +50,23 @@
   {
     "action": {
       "chainId": "chainA",
-      "clientId": 0,
       "clientState": 1,
-      "counterpartyChainId": "chainA",
-      "counterpartyClientId": 0,
-      "counterpartyConnectionId": 0,
-      "previousConnectionId": -1,
-      "type": "ICS03ConnectionOpenTry"
+      "consensusState": 1,
+      "type": "ICS02CreateClient"
     },
-    "actionOutcome": "ICS03ConnectionOpenTryOK",
+    "actionOutcome": "ICS02CreateOK",
     "chains": {
       "chainA": {
-        "clientIdCounter": 0,
+        "clientIdCounter": 1,
         "clients": {
           "0": {
-            "heights": []
+            "heights": [
+              1
+            ]
           }
         },
         "connectionIdCounter": 0,
-        "connectionProofs": [
-          {
-            "chainId": "chainA",
-            "clientId": 0,
-            "clientState": 1,
-            "counterpartyChainId": "chainA",
-            "counterpartyClientId": 0,
-            "counterpartyConnectionId": 0,
-            "previousConnectionId": -1,
-            "type": "ICS03ConnectionOpenTry"
-          }
-        ],
+        "connectionProofs": [],
         "connections": {
           "0": {
             "clientId": -1,
@@ -89,7 +76,7 @@
             "state": "Uninit"
           }
         },
-        "height": 1
+        "height": 2
       },
       "chainB": {
         "clientIdCounter": 0,

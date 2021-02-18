@@ -239,6 +239,7 @@ impl IBCTestExecutor {
             Action::ICS03ConnectionOpenInit {
                 chain_id,
                 client_id,
+                counterparty_chain_id: _,
                 counterparty_client_id,
             } => {
                 // get chain's context
@@ -261,6 +262,7 @@ impl IBCTestExecutor {
                 previous_connection_id,
                 client_id,
                 client_state,
+                counterparty_chain_id: _,
                 counterparty_client_id,
                 counterparty_connection_id,
             } => {
