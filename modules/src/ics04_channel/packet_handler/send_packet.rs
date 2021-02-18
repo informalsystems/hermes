@@ -1,5 +1,5 @@
 use std::{cmp::Ordering, convert::TryFrom, ops::Add, time::Duration};
-use tendermint::{block::Height, Time};
+use tendermint::{block::Height,Time};
 
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -10,8 +10,8 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
+//use sha2::{Sha256, Digest};
 
-use crate::ics23_commitment::commitment::CommitmentPrefix;
 
 use super::PacketResult;
 
@@ -110,11 +110,20 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         );
     }
 
-    let commitment = CommitmentPrefix::get_prefix(
-        packet.clone().data,
-        packet.clone().timeout_height,
-        packet.clone().timeout_timestamp,
-    );
+    //let mut sha =  Sha256::default();
+    //let res = sha2::Sha256::digest(packet.clone().timeout_timestamp);
+    //sha.update(packet.clone().timeout_timestamp);
+    // //+packet.clone().timeout_height+packet.clone().data
+    //let commitment = sha2::Sha256::digest(packet.clone().timeout_timestamp);
+    //commitment.
+    //sha2.result_bytes();
+
+    let commitment = packet.clone().timeout_timestamp;
+    // let commitment = CommitmentPrefix::get_prefix(
+    //     packet.clone().data,
+    //     packet.clone().timeout_height,
+    //     packet.clone().timeout_timestamp,
+    // );
 
     output.log("success: packet send ");
 
@@ -122,16 +131,8 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         port_id:packet.source_port.clone(),
         channel_id:packet.source_channel.clone(),
         send_seq_number: Sequence::from(*next_seq_send+1),
-        commitment,
+        commitment
     };
-
-    // let event_attributes = Attributes {
-    //     // SendPacket {
-    //     //     height: Default::default(),
-    //     //     packet,
-    //     // },
-    //      ..Default::default()
-    // };
 
     let height = <Height as TryFrom<u64>>::try_from(packet_height.revision_height).unwrap();
 

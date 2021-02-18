@@ -283,6 +283,7 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
+
     pub fn latest_timestamp(&self) -> Time {
         match self {
             Self::Tendermint(tm_state) => tm_state.timestamp,

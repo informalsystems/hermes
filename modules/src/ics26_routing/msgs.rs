@@ -1,4 +1,4 @@
-use crate::ics02_client::msgs::ClientMsg;
+use crate::{application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer, ics02_client::msgs::ClientMsg};
 use crate::ics03_connection::msgs::ConnectionMsg;
 use crate::ics04_channel::msgs::ChannelMsg;
 
@@ -8,4 +8,5 @@ pub enum ICS26Envelope {
     ICS2Msg(ClientMsg),
     ICS3Msg(ConnectionMsg),
     ICS4Msg(ChannelMsg),
+    ICS20Msg(MsgTransfer),
 }

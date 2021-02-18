@@ -5,10 +5,7 @@ use serde::Serialize;
 
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
-use crate::{
-    ics02_client::height::Height,
-    ics23_commitment::error::{Error, Kind},
-};
+use crate::ics23_commitment::error::{Error, Kind};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(transparent)]
@@ -107,10 +104,6 @@ impl CommitmentPrefix {
 
     pub fn is_empty(&self) -> bool {
         self.bytes.len() == 0
-    }
-
-    pub fn get_prefix(_data: Vec<u8>, _h: Height, _t: u64) -> CommitmentPrefix {
-        CommitmentPrefix::from(vec![])
     }
 
     pub fn as_bytes(&self) -> &[u8] {

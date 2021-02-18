@@ -8,7 +8,7 @@ use std::str::FromStr;
 use prost_types::Any;
 use tendermint::{account::Id, Time};
 
-use crate::ics02_client::client_type::ClientType;
+use crate::{ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix};
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::ics02_client::error::Error as ICS2Error;
 use crate::{
@@ -32,7 +32,6 @@ use crate::ics04_channel::error::Kind as ICS4Kind;
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::ics18_relayer::context::ICS18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
-use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
@@ -93,7 +92,7 @@ pub struct MockContext {
     port_capabilities: HashMap<PortId, Capability>,
 
     /// Constant-size commitments to packets data fields
-    packet_commitment: HashMap<(PortId, ChannelId, Sequence), CommitmentPrefix>,
+    packet_commitment: HashMap<(PortId, ChannelId, Sequence), u64>,
 
     /// Counter for connection identifiers (see `next_connection_id`).
     connection_ids_counter: u32,
@@ -499,7 +498,7 @@ impl ChannelKeeper for MockContext {
     fn store_packet_commitment(
         &mut self,
         key: &(PortId, ChannelId, Sequence),
-        value: CommitmentPrefix )-> Result<(), ICS4Error>{      
+        value: u64 )-> Result<(), ICS4Error>{      
             self.packet_commitment.insert(key.clone(), value);
             Ok(())
         }

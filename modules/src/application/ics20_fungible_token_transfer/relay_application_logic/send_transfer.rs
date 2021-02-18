@@ -1,19 +1,17 @@
-use crate::application::ics20_fungible_token_transfer::context::ICS20Context;
+use crate::ics26_routing::context::ICS26Context;
 use crate::application::ics20_fungible_token_transfer::error::{Error, Kind};
 use crate::application::ics20_fungible_token_transfer::msgs::transfer::MsgTransfer;
 use crate::handler::HandlerOutput;
 use crate::ics04_channel::packet::{Packet, Sequence};
 use crate::ics04_channel::packet_handler::send_packet::send_packet;
 use crate::ics04_channel::packet_handler::PacketResult;
-// use crate::ics04_channel::error::Error as ICS04Error;
-// use crate::ics04_channel::error::Kind as ICS04Kind;
 
 pub(crate) fn send_transfer<Ctx>(
     ctx: &Ctx,
     msg: MsgTransfer,
 ) -> Result<HandlerOutput<PacketResult>, Error>
 where
-    Ctx: ICS20Context,
+    Ctx: ICS26Context,
 {
     let source_channel_end = ctx
         .channel_end(&(msg.source_port.clone(), msg.source_channel.clone()))
