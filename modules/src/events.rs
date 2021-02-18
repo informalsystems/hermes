@@ -36,7 +36,7 @@ pub enum IBCEvent {
 
     CreateClient(ClientEvents::CreateClient),
     UpdateClient(ClientEvents::UpdateClient),
-    ClientMisbehavior(ClientEvents::ClientMisbehavior),
+    ClientMisbehaviour(ClientEvents::ClientMisbehaviour),
 
     OpenInitConnection(ConnectionEvents::OpenInit),
     OpenTryConnection(ConnectionEvents::OpenTry),
@@ -59,6 +59,7 @@ pub enum IBCEvent {
 
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
+    UpdateClient2(ClientEvents::UpdateClient2), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
 // This is tendermint specific
@@ -88,7 +89,7 @@ impl IBCEvent {
             IBCEvent::NewBlock(bl) => bl.height(),
             IBCEvent::CreateClient(ev) => ev.height(),
             IBCEvent::UpdateClient(ev) => ev.height(),
-            IBCEvent::ClientMisbehavior(ev) => ev.height(),
+            IBCEvent::ClientMisbehaviour(ev) => ev.height(),
             IBCEvent::OpenInitConnection(ev) => ev.height(),
             IBCEvent::OpenTryConnection(ev) => ev.height(),
             IBCEvent::OpenAckConnection(ev) => ev.height(),
@@ -113,7 +114,7 @@ impl IBCEvent {
             IBCEvent::NewBlock(ev) => ev.set_height(height),
             IBCEvent::CreateClient(ev) => ev.set_height(height),
             IBCEvent::UpdateClient(ev) => ev.set_height(height),
-            IBCEvent::ClientMisbehavior(ev) => ev.set_height(height),
+            IBCEvent::ClientMisbehaviour(ev) => ev.set_height(height),
             IBCEvent::OpenInitConnection(ev) => ev.set_height(height),
             IBCEvent::OpenTryConnection(ev) => ev.set_height(height),
             IBCEvent::OpenAckConnection(ev) => ev.set_height(height),

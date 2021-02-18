@@ -45,6 +45,9 @@ pub enum Kind {
     #[error("unknown header type: {0}")]
     UnknownHeaderType(String),
 
+    #[error("unknown misbehaviour type: {0}")]
+    UnknownMisbehaviourType(String),
+
     #[error("invalid raw client state")]
     InvalidRawClientState,
 
@@ -56,6 +59,9 @@ pub enum Kind {
 
     #[error("invalid raw header")]
     InvalidRawHeader,
+
+    #[error("invalid raw misbehaviour")]
+    InvalidRawMisbehaviour,
 
     #[error("invalid height result")]
     InvalidHeightResult,

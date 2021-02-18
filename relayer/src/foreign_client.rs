@@ -4,17 +4,23 @@ use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
+use ibc::downcast;
 use ibc::events::IBCEvent;
 use ibc::ics02_client::client_consensus::ConsensusState;
-use ibc::ics02_client::client_header::Header;
+use ibc::ics02_client::client_header::{AnyHeader, Header};
+use ibc::ics02_client::client_misbehaviour::{AnyMisbehaviour, Misbehaviour};
 use ibc::ics02_client::client_state::ClientState;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use ibc::ics24_host::identifier::ClientId;
 use ibc::tx_msg::Msg;
 use ibc::Height;
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
+use ibc_proto::ibc::core::client::v1::{
+    MsgCreateClient as RawMsgCreateClient, MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour,
+    MsgUpdateClient as RawMsgUpdateClient,
+};
 
 use crate::chain::handle::ChainHandle;
 
@@ -25,6 +31,9 @@ pub enum ForeignClientError {
 
     #[error("error raised while updating client: {0}")]
     ClientUpdate(String),
+
+    #[error("error raised while submitting the misbehaviour evidence: {0}")]
+    Misbehaviour(String),
 }
 
 #[derive(Clone, Debug)]
@@ -67,6 +76,95 @@ impl ForeignClient {
 
         Ok(client)
     }
+
+    pub fn restore_client(
+        dst_chain: Box<dyn ChainHandle>,
+        src_chain: Box<dyn ChainHandle>,
+        client_id: &ClientId,
+    ) -> ForeignClient {
+        ForeignClient {
+            id: client_id.clone(),
+            dst_chain: dst_chain.clone(),
+            src_chain: src_chain.clone(),
+        }
+    }
+
+    pub fn handle_misbehaviour(
+        &self,
+        consensus_height: &Height,
+        chain_header: AnyHeader,
+    ) -> Result<Vec<IBCEvent>, ForeignClientError> {
+        let tm_chain_header =
+            downcast!(chain_header => AnyHeader::Tendermint).ok_or_else(|| {
+                ForeignClientError::Misbehaviour(format!(
+                    "client type not supported for {}",
+                    self.dst_chain.id()
+                ))
+            })?;
+
+        // Get the latest trusted height from the chain header.
+        let trusted_height = tm_chain_header.trusted_height;
+
+        let local_header = self
+            .src_chain
+            .build_header(trusted_height, *consensus_height)
+            .map_err(|e| {
+                ForeignClientError::Misbehaviour(format!(
+                    "error {} while building local header at height {} from src chain ({})",
+                    e,
+                    *consensus_height,
+                    self.dst_chain.id(),
+                ))
+            })?;
+
+        let tm_local_header =
+            downcast!(local_header => AnyHeader::Tendermint).ok_or_else(|| {
+                ForeignClientError::Misbehaviour(format!(
+                    "client type not supported for {}",
+                    self.dst_chain.id()
+                ))
+            })?;
+
+        // 5 - verify that the headers are the same
+        // TODO - remove comments
+        // Commented out temporarily for testing, we submit evidence with two identical headers
+        // if tm_chain_header == tm_local_header {
+        //     return Ok(vec![]);
+        // }
+
+        // 6 - submit evidence
+        error!("local and chain headers are different, submitting evidence");
+
+        let signer = self.dst_chain().get_signer().map_err(|e| {
+            ForeignClientError::Misbehaviour(format!(
+                "failed getting signer for dst chain ({}) with error: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
+
+        let new_msg = MsgSubmitAnyMisbehaviour {
+            client_id: self.id.clone(),
+            misbehaviour: AnyMisbehaviour::Tendermint(TmMisbehaviour {
+                client_id: self.id().clone(),
+                header1: tm_chain_header,
+                header2: tm_local_header,
+            })
+            .wrap_any(),
+            signer,
+        };
+
+        let msg = new_msg.to_any::<RawMsgSubmitMisbehaviour>();
+        let events = self.dst_chain().send_msgs(vec![msg]).map_err(|e| {
+            ForeignClientError::Misbehaviour(format!(
+                "failed sending message to dst chain ({}) with err: {}",
+                self.dst_chain.id(),
+                e
+            ))
+        })?;
+        Ok(events)
+    }
+
     /// Returns a handle to the chain hosting this client.
     pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
         self.dst_chain.clone()
@@ -204,8 +302,6 @@ impl ForeignClient {
                 ))
             })?
             .wrap_any();
-
-        println!("\nHeader for update {:?}", header);
 
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::ClientUpdate(format!(

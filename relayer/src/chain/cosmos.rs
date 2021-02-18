@@ -8,7 +8,6 @@ use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
 use prost::Message;
 use prost_types::Any;
-use subtle_encoding::{Encoding, Hex};
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::account::Id as AccountId;
 use tendermint::block::Height;
@@ -24,7 +23,8 @@ use ibc::downcast;
 use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::ics02_client::client_state::AnyClientState;
-use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::ics02_client::client_type::ClientType;
+use ibc::ics02_client::events::UpdateClient2;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
 use ibc::ics04_channel::events as ChannelEvents;
@@ -820,6 +820,7 @@ impl Chain for CosmosSDKChain {
                 Ok(result)
             }
 
+            // TODO - to be replaced with query for update client event
             QueryTxRequest::Header(request) => {
                 let response = self
                     .block_on(self.rpc_client.tx_search(
@@ -830,23 +831,14 @@ impl Chain for CosmosSDKChain {
                         Order::Ascending,
                     ))
                     .unwrap(); // todo
+
                 if response.txs.is_empty() {
                     return Ok(vec![]);
                 }
                 assert!(response.txs.len() == 1);
 
-                println!("tx hash: {:?}", response.txs[0].hash);
-                println!("tx height: {:?}", response.txs[0].height);
-                println!(
-                    "tx bytes: {:?}",
-                    Hex::upper_case()
-                        .encode_to_string(response.txs[0].tx.clone())
-                        .unwrap()
-                );
-
                 let tx_bytes = response.txs[0].tx.clone();
                 let res = self.decode_tx(tx_bytes.as_bytes()).unwrap();
-                println!("decoded tx: {:?}", res);
 
                 let update_raw = res
                     .iter()
@@ -854,11 +846,18 @@ impl Chain for CosmosSDKChain {
                     .unwrap();
 
                 let raw_update_client: ibc_proto::ibc::core::client::v1::MsgUpdateClient =
-                    prost::Message::decode(&*update_raw.value).unwrap();
-                let update_client = MsgUpdateAnyClient::try_from(raw_update_client).unwrap();
-                println!("decoded message: {:?}", update_client);
+                    prost::Message::decode(update_raw.value.as_ref()).unwrap();
+                let header_bytes = raw_update_client.header.unwrap().value;
 
-                unimplemented!("decoding of transactions")
+                let event = UpdateClient2 {
+                    height: request.height,
+                    client_id: request.client_id,
+                    client_type: ClientType::Tendermint,
+                    consensus_height: request.consensus_height,
+                    header_bytes,
+                };
+
+                Ok(vec![IBCEvent::UpdateClient2(event)])
             }
         }
     }

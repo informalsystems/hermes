@@ -77,6 +77,24 @@ fn spawn_chain_runtimes(
     Ok(ChainHandlePair { src, dst })
 }
 
+pub fn spawn_chain_runtime(
+    spawn_options: &SpawnOptions,
+    config: &config::Reader<CliApp>,
+    chain_id: &ChainId,
+) -> Result<Box<dyn ChainHandle>, Error> {
+    let mut chain_config = config
+        .find_chain(chain_id)
+        .cloned()
+        .ok_or_else(|| "missing destination chain configuration file".to_string())
+        .map_err(|e| Kind::Config.context(e))?;
+
+    spawn_options.apply(&mut chain_config);
+
+    Ok(ChainRuntime::<CosmosSDKChain>::spawn(chain_config)
+        .map_err(|e| Kind::Runtime.context(e))
+        .map(|(handle, _)| handle)?)
+}
+
 /// Allows override the chain configuration just before
 /// spawning a new runtime instance.
 ///

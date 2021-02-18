@@ -16,6 +16,7 @@ use self::{
     keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
     version::VersionCmd,
 };
+use crate::commands::misbehaviour::MisbehaviourCmd;
 
 mod channel;
 mod cli_utils;
@@ -23,6 +24,7 @@ mod config;
 mod keys;
 mod light;
 mod listen;
+mod misbehaviour;
 mod query;
 mod start;
 mod tx;
@@ -72,6 +74,10 @@ pub enum CliCmd {
     /// The `listen` subcommand
     #[options(help = "Listen to and display IBC events emitted by a chain")]
     Listen(ListenCmd),
+
+    /// The `misbehaviour` subcommand
+    #[options(help = "Listen to client update IBC events and handles misbehaviour")]
+    Misbehaviour(MisbehaviourCmd),
 
     /// The `version` subcommand
     #[options(help = "Display version information")]

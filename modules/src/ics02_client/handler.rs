@@ -22,5 +22,8 @@ where
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),
         ClientMsg::UpdateClient(msg) => update_client::process(ctx, msg),
+        _ => {
+            unimplemented!()
+        }
     }
 }

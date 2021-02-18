@@ -1,13 +1,14 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
+use std::convert::{TryFrom, TryInto};
+
+use anomaly::BoxError;
+use serde_derive::{Deserialize, Serialize};
+
 use crate::attribute;
 use crate::events::{IBCEvent, RawObject};
 use crate::ics02_client::client_type::ClientType;
-use crate::ics24_host::identifier::ClientId;
-use anomaly::BoxError;
-
 use crate::ics02_client::height::Height;
-use serde_derive::{Deserialize, Serialize};
-use std::convert::{TryFrom, TryInto};
+use crate::ics24_host::identifier::ClientId;
 
 /// The content of the `type` field for the event that a chain produces upon executing the create client transaction.
 const CREATE_EVENT_TYPE: &str = "create_client";
@@ -152,6 +153,10 @@ impl UpdateClient {
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
     }
+
+    pub fn consensus_height(&self) -> &Height {
+        &self.0.consensus_height
+    }
 }
 
 impl From<Attributes> for UpdateClient {
@@ -179,12 +184,68 @@ impl From<UpdateClient> for IBCEvent {
     }
 }
 
-/// ClientMisbehavior event signals the update of an on-chain client (IBC Client) with evidence of
-/// misbehavior.
+/// UpdateClient event signals a recent update of an on-chain client (IBC Client).
 #[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct ClientMisbehavior(Attributes);
+pub struct UpdateClient2 {
+    pub height: Height,
+    pub client_id: ClientId,
+    pub client_type: ClientType,
+    pub consensus_height: Height,
+    pub header_bytes: Vec<u8>,
+}
 
-impl ClientMisbehavior {
+/// Upcoming new update client event to replace UpdateClient
+impl UpdateClient2 {
+    pub fn client_id(&self) -> &ClientId {
+        &self.client_id
+    }
+
+    pub fn height(&self) -> &Height {
+        &self.height
+    }
+    pub fn set_height(&mut self, height: Height) {
+        self.height = height;
+    }
+
+    pub fn consensus_height(&self) -> &Height {
+        &self.consensus_height
+    }
+    pub fn header_bytes(&self) -> &Vec<u8> {
+        &self.header_bytes
+    }
+}
+
+impl TryFrom<RawObject> for UpdateClient2 {
+    type Error = BoxError;
+    fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
+        let consensus_height_str: String = attribute!(obj, "update_client.consensus_height");
+        Ok(UpdateClient2 {
+            height: obj.height,
+            client_id: attribute!(obj, "update_client.client_id"),
+            client_type: attribute!(obj, "update_client.client_type"),
+            consensus_height: consensus_height_str.as_str().try_into()?,
+            header_bytes: obj
+                .events
+                .get("update_client.header_bytes")
+                .ok_or("update_client.header_bytes")?[obj.idx]
+                .as_bytes()
+                .to_vec(),
+        })
+    }
+}
+
+impl From<UpdateClient2> for IBCEvent {
+    fn from(v: UpdateClient2) -> Self {
+        IBCEvent::UpdateClient2(v)
+    }
+}
+
+/// ClientMisbehaviour event signals the update of an on-chain client (IBC Client) with evidence of
+/// misbehaviour.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ClientMisbehaviour(Attributes);
+
+impl ClientMisbehaviour {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
@@ -196,11 +257,11 @@ impl ClientMisbehavior {
     }
 }
 
-impl TryFrom<RawObject> for ClientMisbehavior {
+impl TryFrom<RawObject> for ClientMisbehaviour {
     type Error = BoxError;
     fn try_from(obj: RawObject) -> Result<Self, Self::Error> {
         let consensus_height_str: String = attribute!(obj, "client_misbehaviour.consensus_height");
-        Ok(ClientMisbehavior(Attributes {
+        Ok(ClientMisbehaviour(Attributes {
             height: obj.height,
             client_id: attribute!(obj, "client_misbehaviour.client_id"),
             client_type: attribute!(obj, "client_misbehaviour.client_type"),
@@ -209,8 +270,8 @@ impl TryFrom<RawObject> for ClientMisbehavior {
     }
 }
 
-impl From<ClientMisbehavior> for IBCEvent {
-    fn from(v: ClientMisbehavior) -> Self {
-        IBCEvent::ClientMisbehavior(v)
+impl From<ClientMisbehaviour> for IBCEvent {
+    fn from(v: ClientMisbehaviour) -> Self {
+        IBCEvent::ClientMisbehaviour(v)
     }
 }
