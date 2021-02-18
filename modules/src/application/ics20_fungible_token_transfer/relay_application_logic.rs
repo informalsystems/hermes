@@ -50,11 +50,7 @@ where
     //     // 	// if err != nil {
     //     // 	// 	return nil, err
     //     // 	// }
-    //     // 	if err := relay::send_transfer(
-    //     // 		ctx, msg.SourcePort, msg.SourceChannel, msg.Token, sender, msg.Receiver, msg.TimeoutHeight, msg.TimeoutTimestamp,
-    //     // 	); err != nil {
-    //     // 		return nil, err
-    //     // 	}
+    
     let handler_output = relay_application_logic::send_transfer::send_transfer(ctx, msg)
         .map_err(|e| Kind::HandlerRaisedError.context(e))?;
 

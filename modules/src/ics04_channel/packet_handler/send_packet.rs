@@ -1,12 +1,5 @@
-// use std::{cmp::Ordering, convert::TryFrom, ops::Add, time::Duration};
-
-// //use ics23::Hash;
-// use tendermint::{Time, block::Height};
-
-use std::{cmp::Ordering, convert::TryFrom};
-
-//use ics23::Hash;
-use tendermint::block::Height;
+use std::{cmp::Ordering, convert::TryFrom, ops::Add, time::Duration};
+use tendermint::{block::Height, Time};
 
 use crate::events::IBCEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -17,15 +10,15 @@ use crate::ics04_channel::channel::State;
 use crate::ics04_channel::events::SendPacket;
 use crate::ics04_channel::packet::Sequence;
 use crate::ics04_channel::{context::ChannelReader, error::Error, error::Kind, packet::Packet};
-//use crate::ics05_port::capabilities::Capability;
-//use crate::Height;
+
+use crate::ics23_commitment::commitment::CommitmentPrefix;
 
 use super::PacketResult;
 
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // TODO: check if there is a validate basic.
+    // TODO: check if there is a validate basic. Maybe it should be in the message.
 
     let source_channel_end = ctx
         .channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))
@@ -82,40 +75,52 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Kind::LowPacketHeight(latest_height, packet.timeout_height).into());
     }
 
-    // check if packet timestamp timeouted on the receiving chain
-    // let consensus_state = ctx.channel_client_consensus_state(&(packet.source_port.clone(),
-    // packet.source_channel.clone()), latest_height).ok_or_else(|| Kind::MissingClientConsensusState)?;
+    //check if packet timestamp timeouted on the receiving chain
+    let consensus_state = ctx
+        .channel_client_consensus_state(
+            &(packet.source_port.clone(), packet.source_channel.clone()),
+            latest_height,
+        )
+        .ok_or_else(|| Kind::MissingClientConsensusState)?;
 
-    //     let latest_timestamp =  consensus_state.latest_timestamp();
+    let latest_timestamp = consensus_state.latest_timestamp();
 
-    //     let host_consensus_state = ctx.channel_host_consensus_state().ok_or_else(|| Kind::MissingHostConsensusState)?;
-    //     let mut packet_timestamp = host_consensus_state.latest_timestamp();
-    //     packet_timestamp = <Time as Add<Duration>>::add(packet_timestamp, Duration::from_nanos(packet.timeout_timestamp));
+    let host_consensus_state = ctx
+        .channel_host_consensus_state()
+        .ok_or_else(|| Kind::MissingHostConsensusState)?;
+    let mut packet_timestamp = host_consensus_state.latest_timestamp();
+    packet_timestamp = <Time as Add<Duration>>::add(
+        packet_timestamp,
+        Duration::from_nanos(packet.timeout_timestamp),
+    );
 
-    //     if !packet.timeout_timestamp == 0 &&
-    //     packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
-    //    {
-    //    return Err(Kind::LowPacketTimestamp(latest_timestamp, packet_timestamp).into());
-    //    }
+    if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
+    {
+        return Err(Kind::LowPacketTimestamp(latest_timestamp, packet_timestamp).into());
+    }
 
     // check sequence number
     let next_seq_send = ctx
         .get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))
         .ok_or_else(|| Kind::MissingNextSendSeq)?;
 
-    if packet.sequence.eq(&Sequence::from(*next_seq_send)) {
+    if !packet.sequence.eq(&Sequence::from(*next_seq_send)) {
         return Err(
             Kind::InvalidPacketSequence(packet.sequence, Sequence::from(*next_seq_send)).into(),
         );
     }
 
-    //let commitment = hash(packet.data,packet.timeout_height,packet.timeout_timestamp);
+    let commitment = CommitmentPrefix::get_prefix(
+        packet.clone().data,
+        packet.clone().timeout_height,
+        packet.clone().timeout_timestamp,
+    );
 
     output.log("success: packet send ");
 
     let result = PacketResult {
         send_seq_number: next_seq_send + 1,
-        //commitment,
+        commitment,
     };
 
     // let event_attributes = Attributes {
@@ -133,25 +138,22 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     Ok(output.with_result(result))
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::convert::TryFrom;
-    use std::str::FromStr;
 
-    use crate::{events::IBCEvent, ics04_channel::packet::Packet};
+    use crate::ics02_client::height::Height;
     use crate::ics03_connection::connection::ConnectionEnd;
+    use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
-    use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::version::get_compatible_versions;
-    use crate::ics04_channel::channel::State;
-    use crate::ics04_channel::packet::PacketResult;
-    use crate::ics04_channel::msgs::chan_open_init::test_util::get_dummy_raw_msg_chan_open_init;
-    use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-    use crate::ics04_channel::msgs::ChannelMsg;
-    use crate::ics24_host::identifier::ConnectionId;
+    use crate::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
+    use crate::ics04_channel::packet_handler::send_packet::send_packet;
+    use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
     use crate::mock::context::MockContext;
+    use crate::{
+        events::IBCEvent,
+        ics04_channel::packet::{Packet, Sequence},
+    };
 
     #[test]
     fn send_packet_processing() {
@@ -162,54 +164,65 @@ mod tests {
             want_pass: bool,
         }
 
-        let msg_chan_init =
-            MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init()).unwrap();
-
         let context = MockContext::default();
 
-        let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+        let packet = Packet {
+            sequence: <Sequence as From<u64>>::from(1),
+            source_port: PortId::default(),
+            source_channel: ChannelId::default(),
+            destination_port: PortId::default(),
+            destination_channel: ChannelId::default(),
+            data: vec![],
+            timeout_height: Height::default(),
+            timeout_timestamp: 0,
+        };
 
-        let init_conn_end = ConnectionEnd::new(
-            ConnectionState::Init,
-            msg_conn_init.client_id().clone(),
-            msg_conn_init.counterparty().clone(),
-            get_compatible_versions(),
-            msg_conn_init.delay_period,
+        let channel_end = ChannelEnd::new(
+            State::TryOpen,
+            Order::default(),
+            Counterparty::new(PortId::default(), Some(ChannelId::default())),
+            vec![ConnectionId::default()],
+            "ics20".to_string(),
         );
 
-        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
-        let cid = match ccid {
-            Ok(v) => v,
-            Err(_e) => ConnectionId::default(),
-        };
+        let connection_end = ConnectionEnd::new(
+            ConnectionState::Open,
+            ClientId::default(),
+            ConnectionCounterparty::new(
+                ClientId::default(),
+                Some(ConnectionId::default()),
+                Default::default(),
+            ),
+            get_compatible_versions(),
+            0,
+        );
 
         let tests: Vec<Test> = vec![
             Test {
-                name: "Processing fails because no connection exists in the context".to_string(),
+                name: "Processing fails because no channel exists in the context".to_string(),
                 ctx: context.clone(),
                 packet: packet.clone(),
                 want_pass: false,
             },
             Test {
-                name: "Processing fails because port does not have a capability associated"
+                name: "Processing fails because the port does not have a capability associated"
                     .to_string(),
-                ctx: context
-                    .clone()
-                    .with_connection(cid.clone(), init_conn_end.clone()),
-                    packet: packet.clone(),
+                ctx: context.clone().with_channel_init(
+                    PortId::default(),
+                    ChannelId::default(),
+                    channel_end.clone(),
+                ),
+                packet: packet.clone(),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
                 ctx: context
-                    .with_connection(cid, init_conn_end)
-                    .with_port_capability(
-                        MsgChannelOpenInit::try_from(get_dummy_raw_msg_chan_open_init())
-                            .unwrap()
-                            .port_id()
-                            .clone(),
-                    ),
+                    .with_client(&ClientId::default(), Height::default())
+                    .with_connection(ConnectionId::default(), connection_end)
+                    .with_port_capability(PortId::default())
+                    .with_channel_init(PortId::default(), ChannelId::default(), channel_end)
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1),
                 packet: packet,
                 want_pass: true,
             },
@@ -218,7 +231,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = send_packet(&test.ctx, test.packet);
+            let res = send_packet(&test.ctx, test.packet.clone());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -232,17 +245,10 @@ mod tests {
                     );
                     assert_ne!(proto_output.events.is_empty(), true); // Some events must exist.
 
-                    // The object in the output is a ChannelEnd, should have init state.
-                    let res: PacketResult = proto_output.result;
-                    assert_eq!(res.channel_end.state().clone(), State::Init);
-                    let msg_init = test.msg.clone();
-
-                    if let ChannelMsg::ChannelOpenInit(msg_init) = msg_init {
-                        assert_eq!(res.port_id.clone(), msg_init.port_id().clone());
-                    }
-
+                    // TODO: The object in the output is a PacketResult what can we check on it?
+                   
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenInitChannel(_)));
+                        assert!(matches!(e, &IBCEvent::SendPacketChannel(_)));
                     }
                 }
                 Err(e) => {
@@ -251,7 +257,7 @@ mod tests {
                         false,
                         "send_packet: did not pass test: {}, \nparams {:?} {:?} error: {:?}",
                         test.name,
-                        test.msg,
+                        test.packet.clone(),
                         test.ctx.clone(),
                         e,
                     );

@@ -42,65 +42,7 @@ where
         .lookup_module_by_port(&msg.source_port.clone())
         .ok_or_else(|| Kind::ChannelCapabilityNotFound)?;
 
-    // // NOTE: denomination and hex hash correctness checked during msg.ValidateBasic
-    // fullDenomPath := token.Denom
-
-    // var err error
-
-    // // deconstruct the token denomination into the denomination trace info
-    // // to determine if the sender is the source chain
-    // if strings.HasPrefix(token.Denom, "ibc/") {
-    // 	fullDenomPath, err = k.DenomPathFromHash(ctx, token.Denom)
-    // 	if err != nil {
-    // 		return err
-    // 	}
-    // }
-
-    // labels := []metrics.Label{
-    // 	telemetry.NewLabel("destination-port", destinationPort),
-    // 	telemetry.NewLabel("destination-channel", destinationChannel),
-    // }
-
-    // // NOTE: SendTransfer simply sends the denomination as it exists on its own
-    // // chain inside the packet data. The receiving chain will perform denom
-    // // prefixing as necessary.
-
-    // if types.SenderChainIsSource(sourcePort, sourceChannel, fullDenomPath) {
-    // 	labels = append(labels, telemetry.NewLabel("source", "true"))
-
-    // 	// create the escrow address for the tokens
-    // 	escrowAddress := types.GetEscrowAddress(sourcePort, sourceChannel)
-
-    // 	// escrow source tokens. It fails if balance insufficient.
-    // 	if err := k.bankKeeper.SendCoins(
-    // 		ctx, sender, escrowAddress, sdk.NewCoins(token),
-    // 	); err != nil {
-    // 		return err
-    // 	}
-
-    // } else {
-    // 	labels = append(labels, telemetry.NewLabel("source", "false"))
-
-    // 	// transfer the coins to the module account and burn them
-    // 	if err := k.bankKeeper.SendCoinsFromAccountToModule(
-    // 		ctx, sender, types.ModuleName, sdk.NewCoins(token),
-    // 	); err != nil {
-    // 		return err
-    // 	}
-
-    // 	if err := k.bankKeeper.BurnCoins(
-    // 		ctx, types.ModuleName, sdk.NewCoins(token),
-    // 	); err != nil {
-    // 		// NOTE: should not happen as the module account was
-    // 		// retrieved on the step above and it has enough balace
-    // 		// to burn.
-    // 		panic(fmt.Sprintf("cannot burn coins after a successful send to a module account: %v", err))
-    // 	}
-    // }
-
-    // packetData := types.NewFungibleTokenPacketData(
-    // 	fullDenomPath, token.Amount.Uint64(), sender.String(), receiver,
-    // )
+    //TODO: Application LOGIC. 
 
     let packet = Packet {
         sequence: <Sequence as From<u64>>::from(*sequence),
@@ -115,14 +57,6 @@ where
 
     let handler_output =
         send_packet(ctx, packet).map_err(|e| Kind::HandlerRaisedError.context(e))?;
-
-    // if err := k.channelKeeper.SendPacket(ctx, channelCap, packet); err != nil {
-    // 	return err
-    // }
-    // ctx.store_packet_result(handler_output.result)
-    // .map_err(|e| Kind::KeeperRaisedError.context(e))?;
-
-    //do the  writting on the store  here  or give it to the handler send_transfer in the dispach ... that is in send_transfer ?
-
+    //TODO:  add event/atributes and write issued by the application logic from the sending of the packet 
     Ok(handler_output)
 }

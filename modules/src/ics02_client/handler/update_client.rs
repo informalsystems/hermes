@@ -99,7 +99,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46),Time::now()).into(),
+            header: MockHeader(Height::new(0, 46), Time::now()).into(),
             signer,
         };
 
@@ -123,7 +123,10 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState(MockHeader(msg.header.height(),Time::now())))
+                            AnyClientState::Mock(MockClientState(MockHeader(
+                                msg.header.height(),
+                                Time::now()
+                            )))
                         )
                     }
                     Create(_) => panic!("update handler result has type CreateResult"),
@@ -144,7 +147,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            header: MockHeader(Height::new(0, 46),Time::now()).into(),
+            header: MockHeader(Height::new(0, 46), Time::now()).into(),
             signer,
         };
 
@@ -181,7 +184,7 @@ mod tests {
         for cid in &client_ids {
             let msg = MsgUpdateAnyClient {
                 client_id: cid.clone(),
-                header: MockHeader(update_height,timestamp).into(),
+                header: MockHeader(update_height, timestamp).into(),
                 signer,
             };
 

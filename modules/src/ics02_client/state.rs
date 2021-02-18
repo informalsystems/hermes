@@ -1,4 +1,3 @@
-
 use super::{
     client_def::{AnyClientState, AnyConsensusState},
     client_type::ClientType,
@@ -13,7 +12,7 @@ pub trait ConsensusState: Clone + std::fmt::Debug + Send + Sync {
 
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
-  
+
     /// Latest timestamp of consensus state
     //fn latest_timestamp(&self) -> Time;
 

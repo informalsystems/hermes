@@ -11,7 +11,6 @@ use crate::ics02_client::msgs::ClientMsg;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
 
-
 use crate::ics26_routing::context::ICS26Context;
 use crate::ics26_routing::error::{Error, Kind};
 use crate::ics26_routing::msgs::ICS26Envelope;
@@ -180,8 +179,14 @@ mod tests {
         let update_client_height = Height::new(0, 34);
 
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState(MockHeader(start_client_height,Time::now()))),
-            AnyConsensusState::from(MockConsensusState(MockHeader(start_client_height,Time::now()))),
+            AnyClientState::from(MockClientState(MockHeader(
+                start_client_height,
+                Time::now(),
+            ))),
+            AnyConsensusState::from(MockConsensusState(MockHeader(
+                start_client_height,
+                Time::now(),
+            ))),
             get_dummy_account_id(),
         )
         .unwrap();
@@ -281,7 +286,7 @@ mod tests {
                 name: "Client update fails due to stale header".to_string(),
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height,Time::now()).into(),
+                    header: MockHeader(update_client_height, Time::now()).into(),
                     signer: default_signer,
                 })),
                 want_pass: false,

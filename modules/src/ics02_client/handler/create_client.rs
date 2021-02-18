@@ -83,8 +83,8 @@ mod tests {
         let timestamp = Time::now();
 
         let msg = MsgCreateAnyClient::new(
-            MockClientState(MockHeader(height,timestamp )).into(),
-            MockConsensusState(MockHeader(height,timestamp)).into(),
+            MockClientState(MockHeader(height, timestamp)).into(),
+            MockConsensusState(MockHeader(height, timestamp)).into(),
             signer,
         )
         .unwrap();
@@ -130,43 +130,61 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                },timestamp))
+                MockClientState(MockHeader(
+                    Height {
+                        revision_height: 42,
+                        ..height
+                    },
+                    timestamp,
+                ))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                },timestamp))
-                .into(),
-                signer,
-            )
-            .unwrap(),
-            MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                },timestamp))
-                .into(),
-                MockConsensusState(MockHeader(Height {
-                    revision_height: 42,
-                    ..height
-                },timestamp))
+                MockConsensusState(MockHeader(
+                    Height {
+                        revision_height: 42,
+                        ..height
+                    },
+                    timestamp,
+                ))
                 .into(),
                 signer,
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState(MockHeader(Height {
-                    revision_height: 50,
-                    ..height
-                },timestamp))
+                MockClientState(MockHeader(
+                    Height {
+                        revision_height: 42,
+                        ..height
+                    },
+                    timestamp,
+                ))
                 .into(),
-                MockConsensusState(MockHeader(Height {
-                    revision_height: 50,
-                    ..height
-                },timestamp))
+                MockConsensusState(MockHeader(
+                    Height {
+                        revision_height: 42,
+                        ..height
+                    },
+                    timestamp,
+                ))
+                .into(),
+                signer,
+            )
+            .unwrap(),
+            MsgCreateAnyClient::new(
+                MockClientState(MockHeader(
+                    Height {
+                        revision_height: 50,
+                        ..height
+                    },
+                    timestamp,
+                ))
+                .into(),
+                MockConsensusState(MockHeader(
+                    Height {
+                        revision_height: 50,
+                        ..height
+                    },
+                    timestamp,
+                ))
                 .into(),
                 signer,
             )

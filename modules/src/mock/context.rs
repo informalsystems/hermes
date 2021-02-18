@@ -6,7 +6,7 @@ use std::error::Error;
 use std::str::FromStr;
 
 use prost_types::Any;
-use tendermint::{Time, account::Id};
+use tendermint::{account::Id, Time};
 
 use crate::ics02_client::client_type::ClientType;
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -256,6 +256,15 @@ impl MockContext {
         Self { channels, ..self }
     }
 
+    pub fn with_send_sequence(self, port_id: PortId, chan_id: ChannelId, seq_number: u64) -> Self {
+        let mut next_sequence_send = self.next_sequence_send.clone();
+        next_sequence_send.insert((port_id, chan_id), seq_number);
+        Self {
+            next_sequence_send,
+            ..self
+        }
+    }
+
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
@@ -411,11 +420,12 @@ impl ChannelReader for MockContext {
     }
 
     fn channel_host_consensus_state(&self) -> Option<AnyConsensusState> {
-        todo!()
+        let h = ConnectionReader::host_current_height(self);
+        ConnectionReader::host_consensus_state(self, h)
     }
 
     fn channel_host_current_height(&self) -> Height {
-        todo!()
+        ConnectionReader::host_current_height(self)
     }
 }
 
