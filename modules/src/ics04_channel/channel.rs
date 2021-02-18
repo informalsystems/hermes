@@ -118,6 +118,10 @@ impl ChannelEnd {
         self.version = v;
     }
 
+    pub fn set_counterparty_channel_id(&mut self, c: ChannelId) {
+        self.remote.channel_id = Some(c);
+    }
+
     pub fn state(&self) -> &State {
         &self.state
     }
@@ -161,6 +165,7 @@ impl ChannelEnd {
     pub fn order_matches(&self, other: &Order) -> bool {
         self.ordering.eq(other)
     }
+
     #[allow(clippy::ptr_arg)]
     pub fn connection_hops_matches(&self, other: &Vec<ConnectionId>) -> bool {
         self.connection_hops.eq(other)
