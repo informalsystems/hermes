@@ -14,7 +14,13 @@ ICS03_ConnectionExists(connections, connectionId) ==
 ICS03_SetConnection(connections, connectionId, connection) ==
     [connections EXCEPT ![connectionId] = connection]
 
-ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
+ICS03_ConnectionOpenInit(chain, chainId, clientId, counterpartyClientId) ==
+    LET action == AsAction([
+        type |-> "ICS03ConnectionOpenInit",
+        chainId |-> chainId,
+        clientId |-> clientId,
+        counterpartyClientId |-> counterpartyClientId
+    ]) IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionIdCounter == chain.connectionIdCounter IN
@@ -28,6 +34,7 @@ ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
             [
                 connections |-> connections,
                 connectionIdCounter |-> connectionIdCounter,
+                action |-> action,
                 outcome |-> "ModelError"
             ]
         ELSE
@@ -47,6 +54,7 @@ ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
                     connection
                 ),
                 connectionIdCounter |-> connectionIdCounter + 1,
+                action |-> action,
                 outcome |-> "ICS03ConnectionOpenInitOK"
             ]
     ELSE
@@ -54,6 +62,7 @@ ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
         [
             connections |-> connections,
             connectionIdCounter |-> connectionIdCounter,
+            action |-> action,
             outcome |-> "ICS03MissingClient"
         ]
 
@@ -61,6 +70,7 @@ ICS03_ConnectionOpenInit(chain, clientId, counterpartyClientId) ==
 \*       model
 ICS03_ConnectionOpenTry(
     chain,
+    chainId,
     clientId,
     previousConnectionId,
     height,
@@ -68,6 +78,16 @@ ICS03_ConnectionOpenTry(
     counterpartyClientId,
     counterpartyConnectionId
 ) ==
+    LET action == AsAction([
+        type |-> "ICS03ConnectionOpenTry",
+        chainId |-> chainId,
+        clientId |-> clientId,
+        previousConnectionId |-> previousConnectionId,
+        clientState |-> height,
+        counterpartyChainId |-> counterpartyChainId,
+        counterpartyClientId |-> counterpartyClientId,
+        counterpartyConnectionId |-> counterpartyConnectionId
+    ]) IN
     LET clients == chain.clients IN
     LET connections == chain.connections IN
     LET connectionIdCounter == chain.connectionIdCounter IN
@@ -81,6 +101,7 @@ ICS03_ConnectionOpenTry(
         [
             connections |-> connections,
             connectionIdCounter |-> connectionIdCounter,
+            action |-> action,
             outcome |-> "ICS03InvalidConsensusHeight"
         ]
         \* TODO: add `chain_max_history_size` to the model to be able to also
@@ -125,12 +146,14 @@ ICS03_ConnectionOpenTry(
                         \* created, here we do not update the
                         \* `connectionIdCounter`
                         connectionIdCounter |-> connectionIdCounter,
+                        action |-> action,
                         outcome |-> "ICS03ConnectionOpenTryOK"
                     ]
                 ELSE
                     [
                         connections |-> connections,
                         connectionIdCounter |-> connectionIdCounter,
+                        action |-> action,
                         outcome |-> "ICS03ConnectionMismatch"
                     ]
             ELSE
@@ -138,6 +161,7 @@ ICS03_ConnectionOpenTry(
                 [
                     connections |-> connections,
                     connectionIdCounter |-> connectionIdCounter,
+                    action |-> action,
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
         ELSE
@@ -161,6 +185,7 @@ ICS03_ConnectionOpenTry(
                 \* since a new connection identifier has been created, here we
                 \* update the `connectionIdCounter`
                 connectionIdCounter |-> connectionIdCounter + 1,
+                action |-> action,
                 outcome |-> "ICS03ConnectionOpenTryOK"
             ]
 

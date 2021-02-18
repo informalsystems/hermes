@@ -149,13 +149,7 @@ UpdateChainHeight(height, outcome, okOutcome) ==
 
 CreateClient(chainId, height) ==
     LET chain == chains[chainId] IN
-    LET result == ICS02_CreateClient(chain, height) IN
-    LET newAction == AsAction([
-        type |-> "ICS02CreateClient",
-        chainId |-> chainId,
-        clientState |-> height,
-        consensusState |-> height
-    ]) IN
+    LET result == ICS02_CreateClient(chain, chainId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
         !.height = UpdateChainHeight(@, result.outcome, "ICS02CreateOK"),
@@ -164,18 +158,12 @@ CreateClient(chainId, height) ==
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-    /\ action' = newAction
+    /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
 UpdateClient(chainId, clientId, height) ==
     LET chain == chains[chainId] IN
-    LET result == ICS02_UpdateClient(chain, clientId, height) IN
-    LET newAction == AsAction([
-        type |-> "ICS02UpdateClient",
-        chainId |-> chainId,
-        clientId |-> clientId,
-        header |-> height
-    ]) IN
+    LET result == ICS02_UpdateClient(chain, chainId, clientId, height) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
         !.height = UpdateChainHeight(@, result.outcome, "ICS03CreateOK"),
@@ -183,22 +171,17 @@ UpdateClient(chainId, clientId, height) ==
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-    /\ action' = newAction
+    /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
 ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     LET chain == chains[chainId] IN
     LET result == ICS03_ConnectionOpenInit(
         chain,
+        chainId,
         clientId,
         counterpartyClientId
     ) IN
-    LET newAction == AsAction([
-        type |-> "ICS03ConnectionOpenInit",
-        chainId |-> chainId,
-        clientId |-> clientId,
-        counterpartyClientId |-> counterpartyClientId
-    ]) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
         !.height = UpdateChainHeight(@, result.outcome, "ICS03ConnectionOpenInitOK"),
@@ -207,7 +190,7 @@ ConnectionOpenInit(chainId, clientId, counterpartyClientId) ==
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-    /\ action' = newAction
+    /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
 ConnectionOpenTry(
@@ -220,11 +203,9 @@ ConnectionOpenTry(
     counterpartyConnectionId
 ) ==
     LET chain == chains[chainId] IN
-    \* pass all the `chains` so that the model can check that the open try is
-    \* valid (i.e. there has been an open init on the counterparty chain);
-    \* the implementation uses proofs for this
     LET result == ICS03_ConnectionOpenTry(
         chain,
+        chainId,
         clientId,
         previousConnectionId,
         height,
@@ -232,16 +213,6 @@ ConnectionOpenTry(
         counterpartyClientId,
         counterpartyConnectionId
     ) IN
-    LET newAction == AsAction([
-        type |-> "ICS03ConnectionOpenTry",
-        chainId |-> chainId,
-        clientId |-> clientId,
-        previousConnectionId |-> previousConnectionId,
-        clientState |-> height,
-        counterpartyChainId |-> counterpartyChainId,
-        counterpartyClientId |-> counterpartyClientId,
-        counterpartyConnectionId |-> counterpartyConnectionId
-    ]) IN
     \* update the chain
     LET updatedChain == [chain EXCEPT
         !.height = UpdateChainHeight(@, result.outcome, "ICS03ConnectionOpenTryOK"),
@@ -250,7 +221,7 @@ ConnectionOpenTry(
     ] IN
     \* update `chains`, set the `action` and its `actionOutcome`
     /\ chains' = [chains EXCEPT ![chainId] = updatedChain]
-    /\ action' = newAction
+    /\ action' = result.action
     /\ actionOutcome' = result.outcome
 
 CreateClientAction(chainId) ==

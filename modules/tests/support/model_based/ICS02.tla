@@ -14,7 +14,13 @@ ICS02_ClientExists(clients, clientId) ==
 ICS02_SetClient(clients, clientId, client) ==
     [clients EXCEPT ![clientId] = client]
 
-ICS02_CreateClient(chain, height) ==
+ICS02_CreateClient(chain, chainId, height) ==
+    LET action == AsAction([
+        type |-> "ICS02CreateClient",
+        chainId |-> chainId,
+        clientState |-> height,
+        consensusState |-> height
+    ]) IN
     LET clients == chain.clients IN
     LET clientIdCounter == chain.clientIdCounter IN
     \* check if the client exists (it shouldn't)
@@ -24,6 +30,7 @@ ICS02_CreateClient(chain, height) ==
         [
             clients |-> clients,
             clientIdCounter |-> clientIdCounter,
+            action |-> action,
             outcome |-> "ModelError"
         ]
     ELSE
@@ -35,10 +42,17 @@ ICS02_CreateClient(chain, height) ==
         [
             clients |-> ICS02_SetClient(clients, clientIdCounter, client),
             clientIdCounter |-> clientIdCounter + 1,
+            action |-> action,
             outcome |-> "ICS02CreateOK"
         ]
 
-ICS02_UpdateClient(chain, clientId, height) ==
+ICS02_UpdateClient(chain, chainId, clientId, height) ==
+    LET action == AsAction([
+        type |-> "ICS02UpdateClient",
+        chainId |-> chainId,
+        clientId |-> clientId,
+        header |-> height
+    ]) IN
     LET clients == chain.clients IN
     \* check if the client exists
     IF ICS02_ClientExists(clients, clientId) THEN
@@ -54,6 +68,7 @@ ICS02_UpdateClient(chain, clientId, height) ==
             \* return result with updated state
             [
                 clients |-> ICS02_SetClient(clients, clientId, updatedClient),
+                action |-> action,
                 outcome |-> "ICS02UpdateOK"
             ]
         ELSE
@@ -61,12 +76,14 @@ ICS02_UpdateClient(chain, clientId, height) ==
             \* updated to, then set an error outcome
             [
                 clients |-> clients,
+                action |-> action,
                 outcome |-> "ICS02HeaderVerificationFailure"
             ]
     ELSE
         \* if the client does not exist, then set an error outcome
         [
             clients |-> clients,
+            action |-> action,
             outcome |-> "ICS02ClientNotFound"
         ]
 
