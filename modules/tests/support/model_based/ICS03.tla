@@ -177,10 +177,10 @@ ICS03_ConnectionOpenTry(
             LET openInitProofs == {
                 proof \in chain.connectionProofs :
                     /\ proof.type = "ICS03ConnectionOpenInit"
-                    /\ chainId = counterpartyChainId
-                    /\ clientId = counterpartyClientId
-                    /\ counterpartyChainId = chainId
-                    /\ counterpartyClientId = clientId
+                    /\ proof.chainId = counterpartyChainId
+                    /\ proof.clientId = counterpartyClientId
+                    /\ proof.counterpartyChainId = chainId
+                    /\ proof.counterpartyClientId = clientId
             } IN
             IF Cardinality(openInitProofs) > 0 THEN
                 \* verification passed; create connection

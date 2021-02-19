@@ -35,12 +35,19 @@ ICS03ConnectionMismatchTest ==
 ICS03InvalidProofTest ==
     /\ actionOutcome = "ICS03InvalidProof"
 
+\* ICS02CreateClient tests
 ICS02CreateOKTestNeg == ~ICS02CreateOKTest
+
+\* ICS02UpdateClient tests
 ICS02UpdateOKTestNeg == ~ICS02UpdateOKTest
 ICS02ClientNotFoundTestNeg == ~ICS02ClientNotFoundTest
 ICS02HeaderVerificationFailureTestNeg == ~ICS02HeaderVerificationFailureTest
+
+\* ICS03ConnectionOpenInit tests
 ICS03ConnectionOpenInitOKTestNeg == ~ICS03ConnectionOpenInitOKTest
 ICS03MissingClientTestNeg == ~ICS03MissingClientTest
+
+\* ICS03ConnectionOpenTry tests
 ICS03ConnectionOpenTryOKTestNeg == ~ICS03ConnectionOpenTryOKTest
 ICS03InvalidConsensusHeightTestNeg == ~ICS03InvalidConsensusHeightTest
 ICS03ConnectionNotFoundTestNeg == ~ICS03ConnectionNotFoundTest
