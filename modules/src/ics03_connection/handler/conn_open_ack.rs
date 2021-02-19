@@ -7,7 +7,7 @@ use crate::ics03_connection::context::ConnectionReader;
 use crate::ics03_connection::error::{Error, Kind};
 use crate::ics03_connection::events::Attributes;
 use crate::ics03_connection::handler::verify::{check_client_consensus_height, verify_proofs};
-use crate::ics03_connection::handler::ConnectionResult;
+use crate::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 
 pub(crate) fn process(
@@ -81,12 +81,13 @@ pub(crate) fn process(
     new_conn_end.set_version(msg.version().clone());
 
     let result = ConnectionResult {
+        connection_id: msg.connection_id().clone(),
+        connection_id_state: ConnectionIdState::Reused,
         connection_end: new_conn_end,
-        connection_id: Some(msg.connection_id().clone()),
     };
 
     let event_attributes = Attributes {
-        connection_id: result.connection_id.clone(),
+        connection_id: Some(result.connection_id.clone()),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenAckConnection(event_attributes.into()));
@@ -103,7 +104,7 @@ mod tests {
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::error::Kind;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
-    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_msg_conn_open_ack;
+    use crate::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
     use crate::ics03_connection::msgs::ConnectionMsg;
     use crate::ics23_commitment::commitment::CommitmentPrefix;
@@ -122,7 +123,8 @@ mod tests {
             error_kind: Option<Kind>,
         }
 
-        let msg_ack = MsgConnectionOpenAck::try_from(get_dummy_msg_conn_open_ack()).unwrap();
+        let msg_ack =
+            MsgConnectionOpenAck::try_from(get_dummy_raw_msg_conn_open_ack(10, 10)).unwrap();
         let conn_id = msg_ack.connection_id.clone();
 
         // Client parameters -- identifier and correct height (matching the proof height)
@@ -257,7 +259,6 @@ mod tests {
                     }
                 }
                 Err(e) => {
-                    println!("Error for {:?} was {:#?}", test.name, e.kind());
                     assert_eq!(
                         test.want_pass,
                         false,

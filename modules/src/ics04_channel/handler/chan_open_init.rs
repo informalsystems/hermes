@@ -6,8 +6,9 @@ use crate::ics04_channel::channel::{ChannelEnd, State};
 use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use crate::ics24_host::identifier::ChannelId;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -19,11 +20,12 @@ pub(crate) fn process(
     let channel_cap = ctx.authenticated_capability(&msg.port_id().clone())?;
 
     if msg.channel().connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, msg.channel().connection_hops().len()).into(),
+        );
     }
 
     // An IBC connection running on the local (host) chain should exist.
-
     let connection_end = ctx.connection_end(&msg.channel().connection_hops()[0]);
 
     let conn = connection_end
@@ -45,6 +47,15 @@ pub(crate) fn process(
         return Err(Kind::InvalidVersion.into());
     }
 
+    // Channel identifier construction.
+    let id_counter = ctx.channel_counter();
+    let chan_id = ChannelId::new(id_counter);
+
+    output.log(format!(
+        "success: generated new channel identifier: {}",
+        chan_id
+    ));
+
     let new_channel_end = ChannelEnd::new(
         State::Init,
         *msg.channel().ordering(),
@@ -57,13 +68,14 @@ pub(crate) fn process(
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: None,
+        channel_id: chan_id.clone(),
         channel_end: new_channel_end,
+        channel_id_state: ChannelIdState::Generated,
         channel_cap,
     };
 
     let event_attributes = Attributes {
-        channel_id: None,
+        channel_id: Some(chan_id),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitChannel(event_attributes.into()));
@@ -74,12 +86,11 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     use crate::events::IbcEvent;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::ics03_connection::version::get_compatible_versions;
     use crate::ics04_channel::channel::State;
@@ -105,7 +116,7 @@ mod tests {
         let context = MockContext::default();
 
         let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
 
         let init_conn_end = ConnectionEnd::new(
             ConnectionState::Init,
@@ -115,11 +126,7 @@ mod tests {
             msg_conn_init.delay_period,
         );
 
-        let ccid = <ConnectionId as FromStr>::from_str("defaultConnection-0");
-        let cid = match ccid {
-            Ok(v) => v,
-            Err(_e) => ConnectionId::default(),
-        };
+        let cid = ConnectionId::default();
 
         let tests: Vec<Test> = vec![
             Test {

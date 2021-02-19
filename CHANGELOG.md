@@ -7,7 +7,7 @@
 ### FEATURES
 
 - [ibc]
-  - [nothing yet]
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
 
@@ -101,6 +101,7 @@ involving packet acks in a 3-chain setup. More details below.
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
 [#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
+[#622]: https://github.com/informalsystems/ibc-rs/issues/622
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
@@ -108,6 +109,9 @@ involving packet acks in a 3-chain setup. More details below.
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
 [#672]: https://github.com/informalsystems/ibc-rs/issues/672
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
+
+[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*
