@@ -6,7 +6,6 @@ use std::{
 use anomaly::fail;
 use bitcoin::hashes::hex::ToHex;
 use crossbeam_channel as channel;
-use ibc::ics04_channel::events as ChannelEvents;
 use prost::Message;
 use prost_types::Any;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -23,15 +22,16 @@ use tonic::codegen::http::Uri;
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IBCEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
-use ibc::ics03_connection::raw::ConnectionIds;
-use ibc::ics04_channel::channel::QueryPacketEventDataRequest;
-use ibc::ics04_channel::packet::Sequence;
+use ibc::ics03_connection::connection::ConnectionEnd;
+use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
+use ibc::ics04_channel::events as ChannelEvents;
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
-use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
+use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
 use ibc::ics24_host::{Path, IBC_QUERY_PATH};
@@ -48,7 +48,9 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsRequest;
+use ibc_proto::ibc::core::connection::v1::{
+    QueryClientConnectionsRequest, QueryConnectionsRequest,
+};
 
 use crate::chain::QueryResponse;
 use crate::config::ChainConfig;
@@ -221,7 +223,7 @@ impl CosmosSDKChain {
             .block_on(broadcast_tx_commit(self, txraw_buf))
             .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
 
-        let res = tx_result_to_event(response)?;
+        let res = tx_result_to_event(&self.config.id, response)?;
 
         Ok(res)
     }
@@ -236,6 +238,28 @@ impl CosmosSDKChain {
 
     fn max_tx_size(&self) -> usize {
         self.config.max_tx_size.unwrap_or(DEFAULT_MAX_TX_SIZE)
+    }
+
+    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
+        crate::time!("query");
+
+        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
+
+        let height =
+            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
+
+        if !data.is_provable() & prove {
+            return Err(Kind::Store
+                .context("requested proof for a path in the privateStore")
+                .into());
+        }
+
+        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
+
+        // TODO - Verify response proof, if requested.
+        if prove {}
+
+        Ok(response)
     }
 }
 
@@ -304,28 +328,6 @@ impl Chain for CosmosSDKChain {
         &self.keybase
     }
 
-    fn query(&self, data: Path, height: ICSHeight, prove: bool) -> Result<QueryResponse, Error> {
-        crate::time!("query");
-
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH).unwrap();
-
-        let height =
-            Height::try_from(height.revision_height).map_err(|e| Kind::InvalidHeight.context(e))?;
-
-        if !data.is_provable() & prove {
-            return Err(Kind::Store
-                .context("requested proof for a path in the privateStore")
-                .into());
-        }
-
-        let response = self.block_on(abci_query(&self, path, data.to_string(), height, prove))?;
-
-        // TODO - Verify response proof, if requested.
-        if prove {}
-
-        Ok(response)
-    }
-
     /// Send one or more transactions that include all the specified messages
     fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
         crate::time!("send_msgs");
@@ -360,166 +362,6 @@ impl Chain for CosmosSDKChain {
         Ok(res)
     }
 
-    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
-        // Build the client state.
-        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
-            self.id().to_string(),
-            self.config.trust_threshold,
-            self.config.trusting_period,
-            self.unbonding_period()?,
-            Duration::from_millis(3000), // TODO - get it from src config when avail
-            height,
-            ICSHeight::zero(),
-            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
-            false,
-            false,
-        )
-        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
-    }
-
-    /// Query the latest height the chain is at via a RPC query
-    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
-        crate::time!("query_latest_height");
-
-        let status = self
-            .block_on(self.rpc_client().status())
-            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
-
-        if status.sync_info.catching_up {
-            fail!(
-                Kind::LightClientSupervisor(self.config.id.clone()),
-                "node at {} running chain {} not caught up",
-                self.config().rpc_addr,
-                self.config().id,
-            );
-        }
-
-        Ok(ICSHeight {
-            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
-            revision_height: u64::from(status.sync_info.latest_block_height),
-        })
-    }
-
-    fn query_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<Self::ClientState, Error> {
-        crate::time!("query_client_state");
-
-        let client_state = self
-            .query(ClientStatePath(client_id.clone()), height, false)
-            .map_err(|e| Kind::Query("client state".into()).context(e))
-            .and_then(|v| {
-                AnyClientState::decode_vec(&v.value)
-                    .map_err(|e| Kind::Query("client state".into()).context(e))
-            })?;
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Kind::Query("client state".into()).context("unexpected client state type")
-            })?;
-        Ok(client_state)
-    }
-
-    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
-        crate::time!("query_commitment_prefix");
-
-        // TODO - do a real chain query
-        Ok(CommitmentPrefix::from(
-            self.config().store_prefix.as_bytes().to_vec(),
-        ))
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: ICSHeight,
-    ) -> Result<(Self::ClientState, MerkleProof), Error> {
-        crate::time!("proven_client_state");
-
-        let res = self
-            .query(ClientStatePath(client_id.clone()), height, true)
-            .map_err(|e| Kind::Query("client state".into()).context(e))?;
-
-        let client_state = AnyClientState::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("client state".into()).context(e))?;
-
-        let client_state =
-            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
-                Kind::Query("client state".into()).context("unexpected client state type")
-            })?;
-
-        Ok((
-            client_state,
-            res.proof.ok_or_else(|| {
-                Kind::Query("client state".into()).context("empty proof".to_string())
-            })?,
-        ))
-    }
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: ICSHeight,
-        height: ICSHeight,
-    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
-        crate::time!("proven_client_consensus");
-
-        let res = self
-            .query(
-                ClientConsensusPath {
-                    client_id: client_id.clone(),
-                    epoch: consensus_height.revision_number,
-                    height: consensus_height.revision_height,
-                },
-                height,
-                true,
-            )
-            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
-
-        let consensus_state = AnyConsensusState::decode_vec(&res.value)
-            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
-
-        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
-            .ok_or_else(|| {
-                Kind::Query("client consensus".into()).context("unexpected client consensus type")
-            })?;
-
-        Ok((
-            consensus_state,
-            res.proof.ok_or_else(|| {
-                Kind::Query("client consensus".into()).context("empty proof".to_string())
-            })?,
-        ))
-    }
-
-    fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error> {
-        crate::time!("build_consensus_state");
-
-        Ok(TMConsensusState::from(light_block.signed_header.header))
-    }
-
-    fn build_header(
-        &self,
-        trusted_light_block: Self::LightBlock,
-        target_light_block: Self::LightBlock,
-    ) -> Result<Self::Header, Error> {
-        crate::time!("build_header");
-
-        let trusted_height =
-            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
-
-        Ok(TMHeader {
-            trusted_height,
-            signed_header: target_light_block.signed_header.clone(),
-            validator_set: target_light_block.validators,
-            trusted_validator_set: trusted_light_block.validators,
-        })
-    }
-
     /// Get the account for the signer
     fn get_signer(&mut self) -> Result<AccountId, Error> {
         crate::time!("get_signer");
@@ -547,6 +389,241 @@ impl Chain for CosmosSDKChain {
             .map_err(|e| Kind::KeyBase.context(e))?;
 
         Ok(key)
+    }
+
+    fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
+        crate::time!("query_commitment_prefix");
+
+        // TODO - do a real chain query
+        Ok(CommitmentPrefix::from(
+            self.config().store_prefix.as_bytes().to_vec(),
+        ))
+    }
+
+    /// Query the latest height the chain is at via a RPC query
+    fn query_latest_height(&self) -> Result<ICSHeight, Error> {
+        crate::time!("query_latest_height");
+
+        let status = self
+            .block_on(self.rpc_client().status())
+            .map_err(|e| Kind::Rpc(self.config.rpc_addr.clone()).context(e))?;
+
+        if status.sync_info.catching_up {
+            fail!(
+                Kind::LightClientSupervisor(self.config.id.clone()),
+                "node at {} running chain {} not caught up",
+                self.config().rpc_addr,
+                self.config().id,
+            );
+        }
+
+        Ok(ICSHeight {
+            revision_number: ChainId::chain_version(status.node_info.network.as_str()),
+            revision_height: u64::from(status.sync_info.latest_block_height),
+        })
+    }
+
+    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
+        crate::time!("query_chain_clients");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+        let response = self
+            .block_on(client.client_states(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        let vec_ids = response
+            .client_states
+            .iter()
+            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
+            .collect();
+
+        Ok(vec_ids)
+    }
+
+    fn query_client_state(
+        &self,
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<Self::ClientState, Error> {
+        crate::time!("query_client_state");
+
+        let client_state = self
+            .query(ClientStatePath(client_id.clone()), height, false)
+            .map_err(|e| Kind::Query("client state".into()).context(e))
+            .and_then(|v| {
+                AnyClientState::decode_vec(&v.value)
+                    .map_err(|e| Kind::Query("client state".into()).context(e))
+            })?;
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
+        Ok(client_state)
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_client_connections(
+        &self,
+        request: QueryClientConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error> {
+        crate::time!("query_connections");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.client_connections(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let ids = response
+            .connection_paths
+            .iter()
+            .filter_map(|id| ConnectionId::from_str(id).ok())
+            .collect();
+
+        Ok(ids)
+    }
+
+    fn query_connections(
+        &self,
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<ConnectionId>, Error> {
+        crate::time!("query_connections");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connections(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let ids = response
+            .connections
+            .iter()
+            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
+            .collect();
+
+        Ok(ids)
+    }
+
+    fn query_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<ConnectionEnd, Error> {
+        let res = self.query(Path::Connections(connection_id.clone()), height, false)?;
+        Ok(ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("connection".into()).context(e))?)
+    }
+
+    fn query_connection_channels(
+        &self,
+        request: QueryConnectionChannelsRequest,
+    ) -> Result<Vec<ChannelId>, Error> {
+        crate::time!("query_connection_channels");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.connection_channels(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
+
+        let vec_ids = response
+            .channels
+            .iter()
+            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
+            .collect();
+
+        Ok(vec_ids)
+    }
+
+    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
+        crate::time!("query_connections");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.channels(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let ids = response
+            .channels
+            .iter()
+            .filter_map(|ch| ChannelId::from_str(ch.channel_id.as_str()).ok())
+            .collect();
+
+        Ok(ids)
+    }
+
+    fn query_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<ChannelEnd, Error> {
+        let res = self.query(
+            Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+            height,
+            false,
+        )?;
+        Ok(ChannelEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("channel".into()).context(e))?)
     }
 
     /// Queries the packet commitment hashes associated with a channel.
@@ -689,131 +766,204 @@ impl Chain for CosmosSDKChain {
                 ))
                 .unwrap(); // todo
 
-            let mut events = packet_from_tx_search_response(&request, *seq, response)
+            let mut events = packet_from_tx_search_response(self.id(), &request, *seq, response)
                 .map_or(vec![], |v| vec![v]);
             result.append(&mut events);
         }
         Ok(result)
     }
 
-    fn query_clients(&self, request: QueryClientStatesRequest) -> Result<Vec<ClientId>, Error> {
-        crate::time!("query_chain_clients");
-
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr),
-            )
-            .map_err(|e| Kind::Grpc.context(e))?;
-
-        let request = tonic::Request::new(request);
-        let response = self
-            .block_on(client.client_states(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
-
-        let vec_ids = response
-            .client_states
-            .iter()
-            .filter_map(|ic| ClientId::from_str(ic.client_id.as_str()).ok())
-            .collect();
-
-        Ok(vec_ids)
-    }
-
-    fn query_connection_channels(
+    fn proven_client_state(
         &self,
-        request: QueryConnectionChannelsRequest,
-    ) -> Result<Vec<ChannelId>, Error> {
-        crate::time!("query_connection_channels");
+        client_id: &ClientId,
+        height: ICSHeight,
+    ) -> Result<(Self::ClientState, MerkleProof), Error> {
+        crate::time!("proven_client_state");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
-            )
-            .map_err(|e| Kind::Grpc.context(e))?;
+        let res = self
+            .query(ClientStatePath(client_id.clone()), height, true)
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
 
-        let request = tonic::Request::new(request);
+        let client_state = AnyClientState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client state".into()).context(e))?;
 
-        let response = self
-            .block_on(client.connection_channels(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
+        let client_state =
+            downcast!(client_state => AnyClientState::Tendermint).ok_or_else(|| {
+                Kind::Query("client state".into()).context("unexpected client state type")
+            })?;
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
-
-        let vec_ids = response
-            .channels
-            .iter()
-            .filter_map(|ic| ChannelId::from_str(ic.channel_id.as_str()).ok())
-            .collect();
-
-        Ok(vec_ids)
+        Ok((
+            client_state,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client state".into()).context("empty proof".to_string())
+            })?,
+        ))
     }
 
-    fn query_connections(&self, request: QueryConnectionsRequest) -> Result<ConnectionIds, Error> {
-        crate::time!("query_connections");
+    fn proven_client_consensus(
+        &self,
+        client_id: &ClientId,
+        consensus_height: ICSHeight,
+        height: ICSHeight,
+    ) -> Result<(Self::ConsensusState, MerkleProof), Error> {
+        crate::time!("proven_client_consensus");
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(grpc_addr),
+        let res = self
+            .query(
+                ClientConsensusPath {
+                    client_id: client_id.clone(),
+                    epoch: consensus_height.revision_number,
+                    height: consensus_height.revision_height,
+                },
+                height,
+                true,
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
-        let request = tonic::Request::new(request);
+        let consensus_state = AnyConsensusState::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("client consensus".into()).context(e))?;
 
-        let response = self
-            .block_on(client.connections(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
+        let consensus_state = downcast!(consensus_state => AnyConsensusState::Tendermint)
+            .ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("unexpected client consensus type")
+            })?;
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
-        let ids = response
-            .connections
-            .iter()
-            .filter_map(|ic| ConnectionId::from_str(ic.id.as_str()).ok())
-            .collect();
-
-        Ok(ids)
+        Ok((
+            consensus_state,
+            res.proof.ok_or_else(|| {
+                Kind::Query("client consensus".into()).context("empty proof".to_string())
+            })?,
+        ))
     }
 
-    fn query_channels(&self, request: QueryChannelsRequest) -> Result<Vec<ChannelId>, Error> {
-        crate::time!("query_connections");
+    fn proven_connection(
+        &self,
+        connection_id: &ConnectionId,
+        height: ICSHeight,
+    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
+        let res = self
+            .query(Path::Connections(connection_id.clone()), height, true)
+            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
+        let connection_end = ConnectionEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("proven connection".into()).context(e))?;
 
-        let grpc_addr =
-            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+        Ok((
+            connection_end,
+            res.proof.ok_or_else(|| {
+                Kind::Query("proven connection".into()).context("empty proof".to_string())
+            })?,
+        ))
+    }
+
+    fn proven_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        height: ICSHeight,
+    ) -> Result<(ChannelEnd, MerkleProof), Error> {
+        let res = self
+            .query(
+                Path::ChannelEnds(port_id.clone(), channel_id.clone()),
+                height,
+                true,
             )
-            .map_err(|e| Kind::Grpc.context(e))?;
+            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
-        let request = tonic::Request::new(request);
+        let channel_end = ChannelEnd::decode_vec(&res.value)
+            .map_err(|e| Kind::Query("proven channel".into()).context(e))?;
 
-        let response = self
-            .block_on(client.channels(request))
-            .map_err(|e| Kind::Grpc.context(e))?
-            .into_inner();
+        Ok((
+            channel_end,
+            res.proof.ok_or_else(|| {
+                Kind::Query("proven channel".into()).context("empty proof".to_string())
+            })?,
+        ))
+    }
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
+    fn proven_packet(
+        &self,
+        packet_type: PacketMsgType,
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        height: ICSHeight,
+    ) -> Result<(Vec<u8>, MerkleProof), Error> {
+        let data = match packet_type {
+            PacketMsgType::Recv => Path::Commitments {
+                port_id,
+                channel_id,
+                sequence,
+            },
+            PacketMsgType::Ack => Path::Acks {
+                port_id,
+                channel_id,
+                sequence,
+            },
+            PacketMsgType::Timeout => Path::Receipts {
+                port_id,
+                channel_id,
+                sequence,
+            },
+            PacketMsgType::TimeoutOnClose => Path::Receipts {
+                port_id,
+                channel_id,
+                sequence,
+            },
+        };
 
-        let ids = response
-            .channels
-            .iter()
-            .filter_map(|ch| ChannelId::from_str(ch.channel_id.as_str()).ok())
-            .collect();
+        let res = self
+            .query(data, height, true)
+            .map_err(|e| Kind::Query(packet_type.to_string()).context(e))?;
 
-        Ok(ids)
+        let commitment_proof_bytes = res.proof.ok_or_else(|| {
+            Kind::Query(packet_type.to_string()).context("empty proof".to_string())
+        })?;
+
+        Ok((res.value, commitment_proof_bytes))
+    }
+
+    fn build_client_state(&self, height: ICSHeight) -> Result<Self::ClientState, Error> {
+        // Build the client state.
+        Ok(ibc::ics07_tendermint::client_state::ClientState::new(
+            self.id().to_string(),
+            self.config.trust_threshold,
+            self.config.trusting_period,
+            self.unbonding_period()?,
+            Duration::from_millis(3000), // TODO - get it from src config when avail
+            height,
+            ICSHeight::zero(),
+            vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
+            false,
+            false,
+        )
+        .map_err(|e| Kind::BuildClientStateFailure.context(e))?)
+    }
+
+    fn build_consensus_state(
+        &self,
+        light_block: Self::LightBlock,
+    ) -> Result<Self::ConsensusState, Error> {
+        crate::time!("build_consensus_state");
+
+        Ok(TMConsensusState::from(light_block.signed_header.header))
+    }
+
+    fn build_header(
+        &self,
+        trusted_light_block: Self::LightBlock,
+        target_light_block: Self::LightBlock,
+    ) -> Result<Self::Header, Error> {
+        crate::time!("build_header");
+
+        let trusted_height =
+            ICSHeight::new(self.id().version(), trusted_light_block.height().into());
+
+        Ok(TMHeader {
+            trusted_height,
+            signed_header: target_light_block.signed_header.clone(),
+            validator_set: target_light_block.validators,
+            trusted_validator_set: trusted_light_block.validators,
+        })
     }
 }
 
@@ -848,6 +998,7 @@ fn packet_query(request: &QueryPacketEventDataRequest, seq: &Sequence) -> Query 
 // will include both packets. For this reason, we iterate all packets in the Tx,
 // searching for those that match (which must be a single one).
 fn packet_from_tx_search_response(
+    chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     mut response: tendermint_rpc::endpoint::tx_search::Response,
@@ -857,8 +1008,8 @@ fn packet_from_tx_search_response(
         "packet_from_tx_search_response: unexpected number of txs"
     );
     if let Some(r) = response.txs.pop() {
-        let height = r.height;
-        if height.value() > request.height.revision_height {
+        let height = ICSHeight::new(chain_id.version(), u64::from(r.height));
+        if height > request.height {
             return None;
         }
 
@@ -991,7 +1142,10 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
     Ok(base_account)
 }
 
-pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+pub fn tx_result_to_event(
+    chain_id: &ChainId,
+    response: Response,
+) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
 
     // Verify the return codes from check_tx and deliver_tx
@@ -1008,8 +1162,9 @@ pub fn tx_result_to_event(response: Response) -> Result<Vec<IBCEvent>, anomaly::
         ))]);
     }
 
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
     for event in response.deliver_tx.events {
-        if let Some(ibc_ev) = from_tx_response_event(&event) {
+        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
             result.push(ibc_ev);
         }
     }

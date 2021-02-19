@@ -1,17 +1,13 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 
 use anomaly::BoxError;
 use serde_derive::{Deserialize, Serialize};
 
-use tendermint::block::Height;
-
-use crate::application::ics20_fungible_token_transfer::events as TransferEvents;
 use crate::ics02_client::events as ClientEvents;
 use crate::ics02_client::events::NewBlock;
 use crate::ics03_connection::events as ConnectionEvents;
 use crate::ics04_channel::events as ChannelEvents;
-use crate::Height as ICSHeight;
+use crate::Height;
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -59,22 +55,21 @@ pub enum IBCEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
-    TimeoutTransfer(TransferEvents::Timeout),
-    PacketTransfer(TransferEvents::Packet),
-    ChannelClosedTransfer(TransferEvents::ChannelClosed),
-
     Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
 // This is tendermint specific
-pub fn from_tx_response_event(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IBCEvent> {
     // Return the first hit we find
-    if let Some(client_res) = ClientEvents::try_from_tx(event) {
+    if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
+        client_res.set_height(height);
         Some(client_res)
-    } else if let Some(conn_res) = ConnectionEvents::try_from_tx(event) {
+    } else if let Some(mut conn_res) = ConnectionEvents::try_from_tx(event) {
+        conn_res.set_height(height);
         Some(conn_res)
-    } else if let Some(chan_res) = ChannelEvents::try_from_tx(event) {
+    } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
+        chan_res.set_height(height);
         Some(chan_res)
     } else {
         None
@@ -86,42 +81,52 @@ impl IBCEvent {
         serde_json::to_string(self).unwrap()
     }
 
-    // TODO - change to ICSHeight
     pub fn height(&self) -> &Height {
         match self {
-            IBCEvent::NewBlock(ev) => &ev.height,
+            IBCEvent::NewBlock(bl) => bl.height(),
+            IBCEvent::CreateClient(ev) => ev.height(),
             IBCEvent::UpdateClient(ev) => ev.height(),
-            IBCEvent::SendPacket(ev) => &ev.height,
-            IBCEvent::ReceivePacket(ev) => &ev.height,
-            IBCEvent::WriteAcknowledgement(ev) => &ev.height,
-            IBCEvent::AcknowledgePacket(ev) => &ev.height,
-            IBCEvent::TimeoutPacket(ev) => &ev.height,
+            IBCEvent::ClientMisbehavior(ev) => ev.height(),
+            IBCEvent::OpenInitConnection(ev) => ev.height(),
+            IBCEvent::OpenTryConnection(ev) => ev.height(),
+            IBCEvent::OpenAckConnection(ev) => ev.height(),
+            IBCEvent::OpenConfirmConnection(ev) => ev.height(),
+            IBCEvent::OpenInitChannel(ev) => ev.height(),
+            IBCEvent::OpenTryChannel(ev) => ev.height(),
+            IBCEvent::OpenAckChannel(ev) => ev.height(),
+            IBCEvent::OpenConfirmChannel(ev) => ev.height(),
             IBCEvent::CloseInitChannel(ev) => ev.height(),
-
+            IBCEvent::CloseConfirmChannel(ev) => ev.height(),
+            IBCEvent::SendPacket(ev) => ev.height(),
+            IBCEvent::ReceivePacket(ev) => ev.height(),
+            IBCEvent::WriteAcknowledgement(ev) => ev.height(),
+            IBCEvent::AcknowledgePacket(ev) => ev.height(),
+            IBCEvent::TimeoutPacket(ev) => ev.height(),
             _ => unimplemented!(),
         }
     }
 
-    pub fn set_height(&mut self, height: &ICSHeight) {
+    pub fn set_height(&mut self, height: Height) {
         match self {
-            IBCEvent::SendPacket(ev) => {
-                ev.height = Height::try_from(height.revision_height).unwrap()
-            }
-            IBCEvent::ReceivePacket(ev) => {
-                ev.height = Height::try_from(height.revision_height).unwrap()
-            }
-            IBCEvent::WriteAcknowledgement(ev) => {
-                ev.height = Height::try_from(height.revision_height).unwrap()
-            }
-            IBCEvent::AcknowledgePacket(ev) => {
-                ev.height = Height::try_from(height.revision_height).unwrap()
-            }
-            IBCEvent::TimeoutPacket(ev) => {
-                ev.height = Height::try_from(height.revision_height).unwrap()
-            }
-            IBCEvent::CloseInitChannel(ev) => {
-                ev.set_height(Height::try_from(height.revision_height).unwrap())
-            }
+            IBCEvent::NewBlock(ev) => ev.set_height(height),
+            IBCEvent::CreateClient(ev) => ev.set_height(height),
+            IBCEvent::UpdateClient(ev) => ev.set_height(height),
+            IBCEvent::ClientMisbehavior(ev) => ev.set_height(height),
+            IBCEvent::OpenInitConnection(ev) => ev.set_height(height),
+            IBCEvent::OpenTryConnection(ev) => ev.set_height(height),
+            IBCEvent::OpenAckConnection(ev) => ev.set_height(height),
+            IBCEvent::OpenConfirmConnection(ev) => ev.set_height(height),
+            IBCEvent::OpenInitChannel(ev) => ev.set_height(height),
+            IBCEvent::OpenTryChannel(ev) => ev.set_height(height),
+            IBCEvent::OpenAckChannel(ev) => ev.set_height(height),
+            IBCEvent::OpenConfirmChannel(ev) => ev.set_height(height),
+            IBCEvent::CloseInitChannel(ev) => ev.set_height(height),
+            IBCEvent::CloseConfirmChannel(ev) => ev.set_height(height),
+            IBCEvent::SendPacket(ev) => ev.set_height(height),
+            IBCEvent::ReceivePacket(ev) => ev.set_height(height),
+            IBCEvent::WriteAcknowledgement(ev) => ev.set_height(height),
+            IBCEvent::AcknowledgePacket(ev) => ev.set_height(height),
+            IBCEvent::TimeoutPacket(ev) => ev.set_height(height),
             _ => unimplemented!(),
         }
     }

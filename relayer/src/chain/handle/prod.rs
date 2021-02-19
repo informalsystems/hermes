@@ -1,12 +1,10 @@
 use std::fmt::Debug;
 
 use crossbeam_channel as channel;
+// FIXME: the handle should not depend on tendermint-specific types
+use tendermint::account::Id as AccountId;
 
-use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-};
-
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -20,20 +18,19 @@ use ibc::{
     proofs::Proofs,
     Height,
 };
+use ibc_proto::ibc::core::channel::v1::{
+    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-// FIXME: the handle should not depend on tendermint-specific types
-use tendermint::account::Id as AccountId;
-
-use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
-
 use crate::{
-    chain::QueryResponse,
     connection::ConnectionMsgType,
     error::{Error, Kind},
     keyring::store::KeyEntry,
 };
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+
+use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {
@@ -71,20 +68,6 @@ impl ProdChainHandle {
 impl ChainHandle for ProdChainHandle {
     fn id(&self) -> ChainId {
         self.chain_id.clone()
-    }
-
-    fn query(
-        &self,
-        path: ibc::ics24_host::Path,
-        height: Height,
-        prove: bool,
-    ) -> Result<QueryResponse, Error> {
-        self.send(|reply_to| ChainRequest::Query {
-            path,
-            height,
-            prove,
-            reply_to,
-        })
     }
 
     fn subscribe(&self) -> Result<Subscription, Error> {
