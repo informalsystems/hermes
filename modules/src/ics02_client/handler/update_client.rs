@@ -72,7 +72,7 @@ pub fn process(
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
-    use tendermint::Time;
+    use chrono::Utc;
 
     use crate::events::IBCEvent;
     use crate::handler::HandlerOutput;
@@ -99,7 +99,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader(Height::new(0, 46), Time::now()).into(),
+            header: MockHeader(Height::new(0, 46), Utc::now()).into(),
             signer,
         };
 
@@ -125,7 +125,7 @@ mod tests {
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState(MockHeader(
                                 msg.header.height(),
-                                Time::now()
+                                Utc::now()
                             )))
                         )
                     }
@@ -147,7 +147,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
-            header: MockHeader(Height::new(0, 46), Time::now()).into(),
+            header: MockHeader(Height::new(0, 46), Utc::now()).into(),
             signer,
         };
 
@@ -173,7 +173,7 @@ mod tests {
         let signer = get_dummy_account_id();
         let initial_height = Height::new(0, 45);
         let update_height = Height::new(0, 49);
-        let timestamp = Time::now();
+        let timestamp = Utc::now();
 
         let mut ctx = MockContext::default();
 

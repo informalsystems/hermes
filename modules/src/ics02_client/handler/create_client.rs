@@ -55,8 +55,7 @@ pub fn process(
 mod tests {
     use std::convert::TryInto;
     use std::time::Duration;
-    use tendermint::Time;
-
+    use chrono::Utc;
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
     use crate::events::IBCEvent;
@@ -80,7 +79,7 @@ mod tests {
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 42);
-        let timestamp = Time::now();
+        let timestamp = Utc::now();
 
         let msg = MsgCreateAnyClient::new(
             MockClientState(MockHeader(height, timestamp)).into(),
@@ -124,7 +123,7 @@ mod tests {
         let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
         let height = Height::new(0, 80);
-        let timestamp = Time::now();
+        let timestamp = Utc::now();
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 

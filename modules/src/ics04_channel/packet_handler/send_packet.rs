@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, convert::TryFrom, ops::Add, time::Duration};
-use tendermint::{block::Height,Time};
+use tendermint::block::Height;
 
-use crate::events::IBCEvent;
+use crate::{events::IBCEvent, ics02_client::client_def::AnyTime};
 use crate::handler::{HandlerOutput, HandlerResult};
 
 use crate::ics02_client::state::ClientState;
@@ -89,14 +89,15 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         .channel_host_consensus_state()
         .ok_or_else(|| Kind::MissingHostConsensusState)?;
     let mut packet_timestamp = host_consensus_state.latest_timestamp();
-    packet_timestamp = <Time as Add<Duration>>::add(
+
+    packet_timestamp = <AnyTime as Add<Duration>>::add(
         packet_timestamp,
         Duration::from_nanos(packet.timeout_timestamp),
     );
 
     if !packet.timeout_timestamp == 0 && packet_timestamp.cmp(&latest_timestamp).eq(&Ordering::Less)
     {
-        return Err(Kind::LowPacketTimestamp(latest_timestamp, packet_timestamp).into());
+        return Err(Kind::LowPacketTimestamp.into());
     }
 
     // check sequence number
@@ -180,6 +181,17 @@ mod tests {
             timeout_timestamp: 0,
         };
 
+        let packet_timed = Packet {
+            sequence: <Sequence as From<u64>>::from(1),
+            source_port: PortId::default(),
+            source_channel: ChannelId::default(),
+            destination_port: PortId::default(),
+            destination_channel: ChannelId::default(),
+            data: vec![],
+            timeout_height: Height::default(),
+            timeout_timestamp: 6,
+        };
+
         let channel_end = ChannelEnd::new(
             State::TryOpen,
             Order::default(),
@@ -220,13 +232,24 @@ mod tests {
             },
             Test {
                 name: "Good parameters".to_string(),
+                ctx: context.clone()
+                    .with_client(&ClientId::default(), Height::default())
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_port_capability(PortId::default())
+                    .with_channel_init(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1),
+                packet: packet,
+                want_pass: true,
+            },
+            Test {
+                name: "Good parameters with time".to_string(),
                 ctx: context
                     .with_client(&ClientId::default(), Height::default())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_port_capability(PortId::default())
                     .with_channel_init(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1),
-                packet: packet,
+                packet: packet_timed,
                 want_pass: true,
             },
         ]

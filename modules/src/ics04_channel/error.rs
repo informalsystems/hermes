@@ -1,13 +1,9 @@
 use anomaly::{BoxError, Context};
-use tendermint::Time;
 use thiserror::Error;
 
 pub type Error = anomaly::Error<Kind>;
 
-use crate::{
-    ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-    Height,
-};
+use crate::{Height, ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId}};
 
 use super::packet::Sequence;
 
@@ -114,8 +110,8 @@ pub enum Kind {
     #[error("Receiving chain block height {0} >= packet timeout height {1}")]
     LowPacketHeight(Height, Height),
 
-    #[error("Receiving chain block timestamp {0} >= packet timeout timestamp {1}")]
-    LowPacketTimestamp(Time, Time),
+    #[error("Receiving chain block timestamp >= packet timeout timestamp")]
+    LowPacketTimestamp,
 
     #[error("Missing client consensus state")]
     MissingClientConsensusState,

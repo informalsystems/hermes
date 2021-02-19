@@ -5,8 +5,9 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::str::FromStr;
 
+use chrono::Utc;
 use prost_types::Any;
-use tendermint::{account::Id, Time};
+use tendermint::account::Id;
 
 use crate::{ics02_client::client_type::ClientType, ics23_commitment::commitment::CommitmentPrefix};
 use crate::ics02_client::context::{ClientKeeper, ClientReader};
@@ -196,7 +197,7 @@ impl MockContext {
     ) -> Self {
         let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
-        let cs_timestamp = Time::now();
+        let cs_timestamp = Utc::now();
         let client_type = client_type.unwrap_or(ClientType::Mock);
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.

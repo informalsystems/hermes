@@ -6,7 +6,8 @@ use crate::ics07_tendermint::header::Header as TMHeader;
 use crate::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::Height;
-use tendermint::Time;
+
+use chrono::Utc;
 
 use tendermint::chain::Id as TMChainId;
 use tendermint_testgen::light_block::TMLightBlock;
@@ -50,7 +51,7 @@ impl HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader(
                 Height::new(chain_id.version(), height),
-                Time::now(),
+                Utc::now(),
             )),
             HostType::SyntheticTendermint => {
                 HostBlock::SyntheticTendermint(Box::new(Self::generate_tm_block(chain_id, height)))

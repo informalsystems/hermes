@@ -60,6 +60,9 @@ pub enum Kind {
     #[error("invalid raw timestamp")]
     InvalidRawTimestamp,
 
+    #[error("time value Value outof-range")]
+    OutOfRange,
+
     #[error("invalid height result")]
     InvalidHeightResult,
 

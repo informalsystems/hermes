@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, time::UNIX_EPOCH};
 use std::convert::{TryFrom, TryInto};
 
-//use chrono::{TimeZone, Utc};
+
+use chrono::{DateTime, Utc};
+use std::time::Duration;
 use serde::Serialize;
-use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -11,8 +12,8 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
+use crate::ics02_client::error::Kind as ClientKind;
 use crate::ics02_client::error::Error;
-use crate::ics02_client::error::Kind;
 use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock::header::MockHeader;
@@ -62,10 +63,20 @@ impl TryFrom<RawMockClientState> for MockClientState {
 
 impl From<MockClientState> for RawMockClientState {
     fn from(value: MockClientState) -> Self {
+        let tvalue = value.0.timestamp();
+        let epoch = UNIX_EPOCH;
+
+        let duration_since_epoch: Result<Duration, ClientKind> = tvalue.signed_duration_since(DateTime::<Utc>::from(epoch))
+        .to_std()
+        .map_err(|_| ClientKind::OutOfRange.into());
+
+        let time_value= epoch + duration_since_epoch.unwrap();
+        
+
         RawMockClientState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: Some(value.0.timestamp().to_system_time().unwrap().into()),
+                timestamp: Some(time_value.into()),
             }),
         }
     }
@@ -113,24 +124,33 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
     fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
         let raw_header = raw
             .header
-            .ok_or_else(|| Kind::InvalidRawConsensusState.context("missing header"))?;
+            .ok_or_else(|| ClientKind::InvalidRawConsensusState.context("missing header"))?;
 
         Ok(Self(MockHeader::try_from(raw_header)?).into())
     }
 }
 
 impl MockConsensusState {
-    pub fn latest_timestamp(&self) -> Time {
+    pub fn latest_timestamp(&self) -> DateTime<Utc> {
         (self.0).1
     }
 }
 
 impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
+        let tvalue = value.0.timestamp();
+        let epoch = UNIX_EPOCH;
+
+        let duration_since_epoch: Result<Duration, ClientKind> = tvalue.signed_duration_since(DateTime::<Utc>::from(epoch))
+        .to_std()
+        .map_err(|_| ClientKind::OutOfRange.into());
+
+        let time_value= epoch + duration_since_epoch.unwrap();
+        
         RawMockConsensusState {
             header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.0.height().into()),
-                timestamp: Some(value.0.timestamp().to_system_time().unwrap().into()),
+                timestamp: Some(time_value.into()),
             }),
         }
     }

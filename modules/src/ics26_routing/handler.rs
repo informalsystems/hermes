@@ -214,8 +214,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use tendermint::Time;
-
+    use chrono::Utc;
     use crate::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::ics02_client::msgs::ClientMsg;
@@ -276,11 +275,11 @@ mod tests {
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState(MockHeader(
                 start_client_height,
-                Time::now(),
+                Utc::now(),
             ))),
             AnyConsensusState::from(MockConsensusState(MockHeader(
                 start_client_height,
-                Time::now(),
+                Utc::now(),
             ))),
             get_dummy_account_id(),
         )
@@ -372,7 +371,7 @@ mod tests {
                 name: "Client update successful".to_string(),
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height, Time::now()).into(),
+                    header: MockHeader(update_client_height, Utc::now()).into(),
                     signer: default_signer,
                 })),
                 want_pass: true,
@@ -381,7 +380,7 @@ mod tests {
                 name: "Client update fails due to stale header".to_string(),
                 msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
-                    header: MockHeader(update_client_height, Time::now()).into(),
+                    header: MockHeader(update_client_height, Utc::now()).into(),
                     signer: default_signer,
                 })),
                 want_pass: false,

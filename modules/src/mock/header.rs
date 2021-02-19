@@ -1,8 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
-use chrono::{TimeZone, Utc};
+use chrono::{DateTime, TimeZone, Utc};
 use serde::Serialize;
-use tendermint::Time;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -15,7 +14,7 @@ use crate::mock::client_state::MockConsensusState;
 use crate::Height;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockHeader(pub Height, pub Time);
+pub struct MockHeader(pub Height, pub DateTime<Utc>);
 
 impl Protobuf<RawMockHeader> for MockHeader {}
 
@@ -48,7 +47,7 @@ impl MockHeader {
     pub fn height(&self) -> Height {
         self.0
     }
-    pub fn timestamp(&self) -> Time {
+    pub fn timestamp(&self) -> DateTime<Utc> {
         self.1
     }
 }
