@@ -48,7 +48,8 @@ impl IBCTestExecutor {
     /// Panic if a context for `chain_id` already exists.
     pub fn init_chain_context(&mut self, chain_id: String, initial_height: u64) {
         let chain_id = Self::chain_id(chain_id);
-        let max_history_size = 1;
+        // never GC blocks
+        let max_history_size = usize::MAX;
         let ctx = MockContext::new(
             chain_id.clone(),
             HostType::Mock,
@@ -194,6 +195,11 @@ impl IBCTestExecutor {
     }
 
     /// Check that chain heights match the ones in the model.
+    pub fn validate_chains(&self) -> bool {
+        self.contexts.values().all(|ctx| ctx.validate().is_ok())
+    }
+
+    /// Check that chain heights match the ones in the model.
     pub fn check_chain_heights(&self, chains: HashMap<String, Chain>) -> bool {
         chains.into_iter().all(|(chain_id, chain)| {
             let ctx = self.chain_context(chain_id);
@@ -310,6 +316,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
 
     fn next_step(&mut self, step: Step) -> bool {
         let result = self.apply(step.action);
+        println!("{:?}", result);
         let outcome_matches = match step.action_outcome {
             ActionOutcome::None => panic!("unexpected action outcome"),
             ActionOutcome::ICS02CreateOK => result.is_ok(),
@@ -340,8 +347,12 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::ConnectionMismatch(_)
             ),
+            ActionOutcome::ICS03InvalidProof => matches!(
+                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
+                ICS03ErrorKind::InvalidProof
+            ),
         };
-        // also check that chain heights match
-        outcome_matches && self.check_chain_heights(step.chains)
+        // also check the state of chains
+        outcome_matches && self.validate_chains() && self.check_chain_heights(step.chains)
     }
 }

@@ -25,7 +25,7 @@ tests = [
     "ICS03InvalidConsensusHeightTest",
     "ICS03ConnectionNotFoundTest",
     "ICS03ConnectionMismatchTest",
-    "ICS03InvalidProof",
+    "ICS03InvalidProofTest",
 ]
 
 for test in tests:
