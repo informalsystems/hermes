@@ -1,6 +1,6 @@
 # Changelog
 
-[comment]: <> (## Unreleased Changes)
+## Unreleased Changes
 
 [comment]: <> (> [high level summary])
 
