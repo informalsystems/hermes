@@ -119,6 +119,7 @@ pub enum ActionOutcome {
     ICS03ConnectionMismatch,
     ICS03MissingClientConsensusState,
     ICS03InvalidProof,
+    ICS03ConnectionOpenAckOK,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]

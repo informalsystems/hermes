@@ -382,6 +382,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::InvalidProof
             ),
+            ActionOutcome::ICS03ConnectionOpenAckOK => result.is_ok(),
         };
         // also check the state of chains
         outcome_matches && self.validate_chains() && self.check_chain_heights(step.chains)
