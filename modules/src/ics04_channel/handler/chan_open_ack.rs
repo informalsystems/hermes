@@ -7,9 +7,8 @@ use crate::ics04_channel::context::ChannelReader;
 use crate::ics04_channel::error::{Error, Kind};
 use crate::ics04_channel::events::Attributes;
 use crate::ics04_channel::handler::verify::verify_proofs;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use Kind::ConnectionNotOpen;
 
 pub(crate) fn process(
     ctx: &dyn ChannelReader,
@@ -18,15 +17,13 @@ pub(crate) fn process(
     let mut output = HandlerOutput::builder();
 
     // Unwrap the old channel end and validate it against the message.
-
     let mut channel_end = ctx
         .channel_end(&(msg.port_id().clone(), msg.channel_id().clone()))
-        .ok_or_else(|| Kind::ChannelNotFound.context(msg.channel_id().clone().to_string()))?;
+        .ok_or_else(|| Kind::ChannelNotFound(msg.port_id.clone(), msg.channel_id().clone()))?;
 
     // Validate that the channel end is in a state where it can be ack.
-
     if !channel_end.state_matches(&State::Init) && !channel_end.state_matches(&State::TryOpen) {
-        return Err(Kind::InvalidChannelState(msg.channel_id().clone()).into());
+        return Err(Kind::InvalidChannelState(msg.channel_id().clone(), channel_end.state).into());
     }
 
     // Channel capabilities
@@ -35,7 +32,9 @@ pub(crate) fn process(
     // An OPEN IBC connection running on the local (host) chain should exist.
 
     if channel_end.connection_hops().len() != 1 {
-        return Err(Kind::InvalidConnectionHopsLength.into());
+        return Err(
+            Kind::InvalidConnectionHopsLength(1, channel_end.connection_hops().len()).into(),
+        );
     }
 
     let conn = ctx
@@ -43,7 +42,7 @@ pub(crate) fn process(
         .ok_or_else(|| Kind::MissingConnection(channel_end.connection_hops()[0].clone()))?;
 
     if !conn.state_matches(&ConnectionState::Open) {
-        return Err(ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
+        return Err(Kind::ConnectionNotOpen(channel_end.connection_hops()[0].clone()).into());
     }
 
     // Proof verification in two steps:
@@ -74,17 +73,19 @@ pub(crate) fn process(
         &expected_channel_end,
         &msg.proofs(),
     )
-    .map_err(|e| Kind::FailedChanneOpenAckVerification.context(e))?;
+    .map_err(|e| Kind::ChanOpenAckProofVerification.context(e))?;
 
-    output.log("success: channel open try ");
+    output.log("success: channel open ack ");
 
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Open);
     channel_end.set_version(msg.counterparty_version().clone());
+    channel_end.set_counterparty_channel_id(msg.counterparty_channel_id.clone());
 
     let result = ChannelResult {
         port_id: msg.port_id().clone(),
-        channel_id: Some(msg.channel_id().clone()),
+        channel_id: msg.channel_id().clone(),
+        channel_id_state: ChannelIdState::Reused,
         channel_cap,
         channel_end,
     };
@@ -100,20 +101,18 @@ pub(crate) fn process(
 
 #[cfg(test)]
 mod tests {
-
-    use crate::events::IbcEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
 
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
     use crate::ics03_connection::connection::State as ConnectionState;
-    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_msg_conn_open_init;
+    use crate::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;
     use crate::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_msg_conn_open_try;
+    use crate::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::ics03_connection::version::get_compatible_versions;
-
     use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
     use crate::ics04_channel::handler::{dispatch, ChannelResult};
     use crate::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
@@ -121,11 +120,12 @@ mod tests {
     use crate::ics04_channel::msgs::chan_open_try::test_util::get_dummy_raw_msg_chan_open_try;
     use crate::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
     use crate::ics04_channel::msgs::ChannelMsg;
-
     use crate::ics24_host::identifier::ConnectionId;
     use crate::mock::context::MockContext;
     use crate::Height;
 
+    // TODO: The tests here are very fragile and complex.
+    //  Should be adapted to use the same structure as `handler::chan_open_try::tests`.
     #[test]
     fn chan_open_ack_msg_processing() {
         struct Test {
@@ -136,12 +136,12 @@ mod tests {
         }
         let proof_height = 10;
         let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(1, 35);
+        let host_chain_height = Height::new(0, 35);
 
         let context = MockContext::default();
 
         let msg_conn_init =
-            MsgConnectionOpenInit::try_from(get_dummy_msg_conn_open_init()).unwrap();
+            MsgConnectionOpenInit::try_from(get_dummy_raw_msg_conn_open_init()).unwrap();
 
         let conn_end = ConnectionEnd::new(
             ConnectionState::Open,
@@ -170,7 +170,7 @@ mod tests {
             },
         );
 
-        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_msg_conn_open_try(
+        let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
             host_chain_height.revision_height,
         ))
@@ -217,10 +217,10 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         failed_chan_end,
@@ -235,10 +235,10 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid.clone(), conn_end.clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -252,10 +252,10 @@ mod tests {
                     .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -269,7 +269,7 @@ mod tests {
                     .clone()
                     .with_connection(cid.clone(), conn_end.clone())
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end.clone(),
@@ -282,11 +282,11 @@ mod tests {
                 ctx: context //  .clone()
                     .with_client(
                         msg_conn_try.client_id(),
-                        Height::new(1, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height),
                     )
                     .with_connection(cid, conn_end)
                     .with_port_capability(msg_chan_ack.port_id().clone())
-                    .with_channel_init(
+                    .with_channel(
                         msg_chan_ack.port_id().clone(),
                         msg_chan_ack.channel_id().clone(),
                         chan_end,

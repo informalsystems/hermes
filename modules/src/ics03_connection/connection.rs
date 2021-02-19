@@ -86,7 +86,7 @@ impl ConnectionEnd {
         state: State,
         client_id: ClientId,
         counterparty: Counterparty,
-        versions: Vec<Version>, // TODO: Use Newtype for aliasing the version to a string
+        versions: Vec<Version>,
         delay_period: u64,
     ) -> Self {
         Self {

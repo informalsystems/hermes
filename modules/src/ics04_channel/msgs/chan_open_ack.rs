@@ -122,32 +122,17 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
+    use crate::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
         RawMsgChannelOpenAck {
-            port_id: "port".to_string(),
-            channel_id: "channel-0".to_string(),
-            counterparty_channel_id: "channel-1".to_string(),
-            counterparty_version: "v1".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 1,
-                revision_height: proof_height,
-            }),
-            signer: get_dummy_bech32_account(),
-        }
-    }
-
-    /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
-    pub fn get_dummy_raw_msg_chan_open_ack_ics26(proof_height: u64) -> RawMsgChannelOpenAck {
-        RawMsgChannelOpenAck {
-            port_id: "port".to_string(),
-            channel_id: "defaultChannel-0".to_string(),
-            counterparty_channel_id: "defaultChannel-0".to_string(),
-            counterparty_version: "v1".to_string(),
+            port_id: PortId::default().to_string(),
+            channel_id: ChannelId::default().to_string(),
+            counterparty_channel_id: ChannelId::default().to_string(),
+            counterparty_version: "".to_string(),
             proof_try: get_dummy_proof(),
             proof_height: Some(Height {
                 revision_number: 0,

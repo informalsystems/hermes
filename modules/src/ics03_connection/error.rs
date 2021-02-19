@@ -1,10 +1,10 @@
-// TODO: Update error types for Connection!!
 use anomaly::{BoxError, Context};
 use thiserror::Error;
-pub type Error = anomaly::Error<Kind>;
 
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::Height;
+
+pub type Error = anomaly::Error<Kind>;
 
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum Kind {
