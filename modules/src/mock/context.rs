@@ -102,10 +102,10 @@ pub struct MockContext {
 impl Default for MockContext {
     fn default() -> Self {
         Self::new(
-            ChainId::new("mockgaia".to_string(), 1),
+            ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
             5,
-            Height::new(1, 5),
+            Height::new(0, 5),
         )
     }
 }
