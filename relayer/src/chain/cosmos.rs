@@ -14,13 +14,14 @@ use tendermint::block::Height;
 use tendermint::consensus::Params;
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_proto::Protobuf;
+use tendermint_rpc::{Client, endpoint::broadcast::tx_commit::Response, HttpClient, Order};
 use tendermint_rpc::query::Query;
-use tendermint_rpc::{endpoint::broadcast::tx_commit::Response, Client, HttpClient, Order};
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 
 use ibc::downcast;
 use ibc::events::{from_tx_response_event, IBCEvent};
+use ibc::Height as ICSHeight;
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -31,20 +32,19 @@ use ibc::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::ics07_tendermint::header::Header as TMHeader;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
+use ibc::ics24_host::{IBC_QUERY_PATH, Path};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::ics24_host::Path::ClientConsensusState as ClientConsensusPath;
 use ibc::ics24_host::Path::ClientState as ClientStatePath;
-use ibc::ics24_host::{Path, IBC_QUERY_PATH};
-use ibc::Height as ICSHeight;
 // Support for GRPC
 use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -57,8 +57,8 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::{EventBatch, EventMonitor};
 use crate::keyring::store::{KeyEntry, KeyRing, KeyRingOperations, StoreBackend};
-use crate::light_client::tendermint::LightClient as TMLightClient;
 use crate::light_client::LightClient;
+use crate::light_client::tendermint::LightClient as TMLightClient;
 
 use super::Chain;
 
@@ -744,6 +744,30 @@ impl Chain for CosmosSDKChain {
         Ok(response.sequences)
     }
 
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
+        crate::time!("query_next_sequence_receive");
+
+        let grpc_addr =
+            Uri::from_str(&self.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(grpc_addr),
+            )
+            .map_err(|e| Kind::Grpc.context(e))?;
+
+        let request = tonic::Request::new(request);
+
+        let response = self
+            .block_on(client.next_sequence_receive(request))
+            .map_err(|e| Kind::Grpc.context(e))?
+            .into_inner();
+
+        Ok(Sequence::from(response.next_sequence_receive))
+    }
+
     /// Queries the packet data for all packets with sequences included in the request.
     /// Note - there is no way to format the query such that it asks for Tx-es with either
     /// sequence (the query conditions can only be AND-ed)
@@ -901,10 +925,14 @@ impl Chain for CosmosSDKChain {
                 channel_id,
                 sequence,
             },
-            PacketMsgType::Timeout => Path::Receipts {
+            PacketMsgType::TimeoutUnordered => Path::Receipts {
                 port_id,
                 channel_id,
                 sequence,
+            },
+            PacketMsgType::TimeoutOrdered => Path::SeqRecvs {
+                0: port_id,
+                1: channel_id,
             },
             PacketMsgType::TimeoutOnClose => Path::Receipts {
                 port_id,

@@ -5,9 +5,9 @@ use crossbeam_channel as channel;
 use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
     events::IBCEvent,
+    Height,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
@@ -17,15 +17,15 @@ use ibc::{
     ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
+    ics24_host::identifier::{ClientId, ConnectionId},
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
-    ics24_host::identifier::{ClientId, ConnectionId},
     proofs::Proofs,
-    Height,
 };
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -39,8 +39,8 @@ use crate::{
 };
 
 use super::{
-    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
     Chain,
+    handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
 };
 
 pub struct Threads {
@@ -262,6 +262,10 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
 
                         Ok(ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to }) => {
                             self.query_unreceived_acknowledgement(request, reply_to)?
+                        },
+
+                        Ok(ChainRequest::QueryNextSequenceReceive { request, reply_to }) => {
+                            self.query_next_sequence_receive(request, reply_to)?
                         },
 
                         Ok(ChainRequest::QueryPacketEventData { request, reply_to }) => {
@@ -650,6 +654,20 @@ impl<C: Chain + Send + 'static> ChainRuntime<C> {
         reply_to: ReplyTo<Vec<u64>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_unreceived_acknowledgements(request);
+
+        reply_to
+            .send(result)
+            .map_err(|e| Kind::Channel.context(e))?;
+
+        Ok(())
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_next_sequence_receive(request);
 
         reply_to
             .send(result)

@@ -9,6 +9,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
+use ibc::Height as ICSHeight;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -18,11 +19,10 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -193,6 +193,11 @@ pub trait Chain: Sized {
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
 
     fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error>;
 

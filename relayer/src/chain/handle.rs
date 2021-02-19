@@ -7,8 +7,6 @@ use serde::{Serialize, Serializer};
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc::{
     events::IBCEvent,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
@@ -18,17 +16,19 @@ use ibc::{
     ics24_host::identifier::{ChannelId, ConnectionId, PortId},
     proofs::Proofs,
 };
-use ibc::{ics23_commitment::commitment::CommitmentPrefix, Height};
+use ibc::{Height, ics23_commitment::commitment::CommitmentPrefix};
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::ics24_host::{identifier::ChainId, identifier::ClientId};
 use ibc_proto::ibc::core::channel::v1::{
-    PacketState, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 pub use prod::ProdChainHandle;
 
+use crate::{error::Error, event::monitor::EventBatch};
 use crate::connection::ConnectionMsgType;
 use crate::keyring::store::KeyEntry;
-use crate::{error::Error, event::monitor::EventBatch};
 
 mod prod;
 
@@ -131,6 +131,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<ChannelEnd>,
     },
 
+    QueryNextSequenceReceive {
+        request: QueryNextSequenceReceiveRequest,
+        reply_to: ReplyTo<Sequence>,
+    },
+
     ProvenClientState {
         client_id: ClientId,
         height: Height,
@@ -228,6 +233,11 @@ pub trait ChainHandle: DynClone + Send + Sync + Debug {
         connection_id: &ConnectionId,
         height: Height,
     ) -> Result<ConnectionEnd, Error>;
+
+    fn query_next_sequence_receive(
+        &self,
+        request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error>;
 
     fn query_channel(
         &self,

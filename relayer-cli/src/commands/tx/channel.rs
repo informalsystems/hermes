@@ -1,10 +1,10 @@
 use abscissa_core::{Command, Options, Runnable};
 
 use ibc::events::IBCEvent;
+use ibc::Height;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::Order;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::Height;
 use ibc_relayer::channel::{Channel, ChannelSide};
 use ibc_relayer::config::StoreConfig;
 
@@ -37,7 +37,7 @@ macro_rules! tx_chan_cmd {
             Err(e) => return Output::error(format!("{}", e)).exit(),
         };
 
-        let mut channel = $chan(chains, dst_connection);
+        let channel = $chan(chains, dst_connection);
 
         info!("Message {}: {:?}", $dbg_string, channel);
 

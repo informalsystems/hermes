@@ -11,6 +11,7 @@ use tokio::runtime::Runtime;
 
 use ibc::downcast;
 use ibc::events::IBCEvent;
+use ibc::Height;
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -24,11 +25,10 @@ use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, Po
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::test_utils::get_dummy_account_id;
-use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
@@ -41,7 +41,7 @@ use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::event::monitor::EventBatch;
 use crate::keyring::store::{KeyEntry, KeyRing};
-use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
+use crate::light_client::{LightClient, mock::LightClient as MockLightClient};
 
 /// The representation of a mocked chain as the relayer sees it.
 /// The relayer runtime and the light client will engage with the MockChain to query/send tx; the
@@ -51,6 +51,7 @@ pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
 }
+
 impl Chain for MockChain {
     type LightBlock = TMLightBlock;
     type Header = TendermintHeader;
@@ -213,6 +214,13 @@ impl Chain for MockChain {
         &self,
         _request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<u64>, Error> {
+        unimplemented!()
+    }
+
+    fn query_next_sequence_receive(
+        &self,
+        _request: QueryNextSequenceReceiveRequest,
+    ) -> Result<Sequence, Error> {
         unimplemented!()
     }
 
