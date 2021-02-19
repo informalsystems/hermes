@@ -1,5 +1,5 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the channels module.
-use crate::events::{IBCEvent, RawObject};
+use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::packet::Packet;
 use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -42,31 +42,31 @@ const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 //const PKT_TIMEOUT_STAMP_ATTRIBUTE_KEY: &str = "packet_timeout_stamp";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_str() {
-        OPEN_INIT_EVENT_TYPE => Some(IBCEvent::OpenInitChannel(OpenInit::from(
+        OPEN_INIT_EVENT_TYPE => Some(IbcEvent::OpenInitChannel(OpenInit::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_TRY_EVENT_TYPE => Some(IBCEvent::OpenTryChannel(OpenTry::from(
+        OPEN_TRY_EVENT_TYPE => Some(IbcEvent::OpenTryChannel(OpenTry::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_ACK_EVENT_TYPE => Some(IBCEvent::OpenAckChannel(OpenAck::from(
+        OPEN_ACK_EVENT_TYPE => Some(IbcEvent::OpenAckChannel(OpenAck::from(
             extract_attributes_from_tx(event),
         ))),
-        OPEN_CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmChannel(OpenConfirm::from(
+        OPEN_CONFIRM_EVENT_TYPE => Some(IbcEvent::OpenConfirmChannel(OpenConfirm::from(
             extract_attributes_from_tx(event),
         ))),
-        CLOSE_INIT_EVENT_TYPE => Some(IBCEvent::CloseInitChannel(CloseInit::from(
+        CLOSE_INIT_EVENT_TYPE => Some(IbcEvent::CloseInitChannel(CloseInit::from(
             extract_attributes_from_tx(event),
         ))),
-        CLOSE_CONFIRM_EVENT_TYPE => Some(IBCEvent::CloseConfirmChannel(CloseConfirm::from(
+        CLOSE_CONFIRM_EVENT_TYPE => Some(IbcEvent::CloseConfirmChannel(CloseConfirm::from(
             extract_attributes_from_tx(event),
         ))),
         SEND_PACKET => {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::SendPacket(SendPacket {
+            Some(IbcEvent::SendPacket(SendPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -75,7 +75,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should have a write ack.
             let write_ack = write_ack.unwrap();
-            Some(IBCEvent::WriteAcknowledgement(WriteAcknowledgement {
+            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
                 height: Default::default(),
                 packet,
                 ack: write_ack,
@@ -85,7 +85,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::AcknowledgePacket(AcknowledgePacket {
+            Some(IbcEvent::AcknowledgePacket(AcknowledgePacket {
                 height: Default::default(),
                 packet,
             }))
@@ -94,7 +94,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(event);
             // This event should not have a write ack.
             assert!(write_ack.is_none());
-            Some(IBCEvent::TimeoutPacket(TimeoutPacket {
+            Some(IbcEvent::TimeoutPacket(TimeoutPacket {
                 height: Default::default(),
                 packet,
             }))
@@ -212,9 +212,9 @@ impl TryFrom<RawObject> for OpenInit {
     }
 }
 
-impl From<OpenInit> for IBCEvent {
+impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
-        IBCEvent::OpenInitChannel(v)
+        IbcEvent::OpenInitChannel(v)
     }
 }
 
@@ -256,9 +256,9 @@ impl TryFrom<RawObject> for OpenTry {
     }
 }
 
-impl From<OpenTry> for IBCEvent {
+impl From<OpenTry> for IbcEvent {
     fn from(v: OpenTry) -> Self {
-        IBCEvent::OpenTryChannel(v)
+        IbcEvent::OpenTryChannel(v)
     }
 }
 
@@ -300,9 +300,9 @@ impl TryFrom<RawObject> for OpenAck {
     }
 }
 
-impl From<OpenAck> for IBCEvent {
+impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
-        IBCEvent::OpenAckChannel(v)
+        IbcEvent::OpenAckChannel(v)
     }
 }
 
@@ -344,9 +344,9 @@ impl TryFrom<RawObject> for OpenConfirm {
     }
 }
 
-impl From<OpenConfirm> for IBCEvent {
+impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
-        IBCEvent::OpenConfirmChannel(v)
+        IbcEvent::OpenConfirmChannel(v)
     }
 }
 
@@ -391,9 +391,9 @@ impl TryFrom<RawObject> for CloseInit {
     }
 }
 
-impl From<CloseInit> for IBCEvent {
+impl From<CloseInit> for IbcEvent {
     fn from(v: CloseInit) -> Self {
-        IBCEvent::CloseInitChannel(v)
+        IbcEvent::CloseInitChannel(v)
     }
 }
 
@@ -447,9 +447,9 @@ impl TryFrom<RawObject> for CloseConfirm {
     }
 }
 
-impl From<CloseConfirm> for IBCEvent {
+impl From<CloseConfirm> for IbcEvent {
     fn from(v: CloseConfirm) -> Self {
-        IBCEvent::CloseConfirmChannel(v)
+        IbcEvent::CloseConfirmChannel(v)
     }
 }
 
@@ -505,9 +505,9 @@ impl TryFrom<RawObject> for SendPacket {
     }
 }
 
-impl From<SendPacket> for IBCEvent {
+impl From<SendPacket> for IbcEvent {
     fn from(v: SendPacket) -> Self {
-        IBCEvent::SendPacket(v)
+        IbcEvent::SendPacket(v)
     }
 }
 
@@ -543,9 +543,9 @@ impl TryFrom<RawObject> for ReceivePacket {
     }
 }
 
-impl From<ReceivePacket> for IBCEvent {
+impl From<ReceivePacket> for IbcEvent {
     fn from(v: ReceivePacket) -> Self {
-        IBCEvent::ReceivePacket(v)
+        IbcEvent::ReceivePacket(v)
     }
 }
 
@@ -588,9 +588,9 @@ impl TryFrom<RawObject> for WriteAcknowledgement {
     }
 }
 
-impl From<WriteAcknowledgement> for IBCEvent {
+impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
-        IBCEvent::WriteAcknowledgement(v)
+        IbcEvent::WriteAcknowledgement(v)
     }
 }
 
@@ -624,9 +624,9 @@ impl TryFrom<RawObject> for AcknowledgePacket {
     }
 }
 
-impl From<AcknowledgePacket> for IBCEvent {
+impl From<AcknowledgePacket> for IbcEvent {
     fn from(v: AcknowledgePacket) -> Self {
-        IBCEvent::AcknowledgePacket(v)
+        IbcEvent::AcknowledgePacket(v)
     }
 }
 
@@ -661,9 +661,9 @@ impl TryFrom<RawObject> for TimeoutPacket {
     }
 }
 
-impl From<TimeoutPacket> for IBCEvent {
+impl From<TimeoutPacket> for IbcEvent {
     fn from(v: TimeoutPacket) -> Self {
-        IBCEvent::TimeoutPacket(v)
+        IbcEvent::TimeoutPacket(v)
     }
 }
 
@@ -698,9 +698,9 @@ impl TryFrom<RawObject> for TimeoutOnClosePacket {
     }
 }
 
-impl From<TimeoutOnClosePacket> for IBCEvent {
+impl From<TimeoutOnClosePacket> for IbcEvent {
     fn from(v: TimeoutOnClosePacket) -> Self {
-        IBCEvent::TimeoutOnClosePacket(v)
+        IbcEvent::TimeoutOnClosePacket(v)
     }
 }
 

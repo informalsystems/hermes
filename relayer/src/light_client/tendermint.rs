@@ -7,7 +7,7 @@ use tendermint_light_client::{
 use tendermint_rpc as rpc;
 
 use crate::{
-    chain::CosmosSDKChain,
+    chain::CosmosSdkChain,
     config::{ChainConfig, LightClientConfig, StoreConfig},
     error,
 };
@@ -18,7 +18,7 @@ pub struct LightClient {
     chain_id: ChainId,
 }
 
-impl super::LightClient<CosmosSDKChain> for LightClient {
+impl super::LightClient<CosmosSdkChain> for LightClient {
     fn latest_trusted(&self) -> Result<Option<LightBlock>, error::Error> {
         self.handle.latest_trusted().map_err(|e| {
             error::Kind::LightClientSupervisor(self.chain_id.clone())

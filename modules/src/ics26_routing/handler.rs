@@ -2,7 +2,7 @@ use prost_types::Any;
 use tendermint_proto::Protobuf;
 
 // use crate::handler;
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::HandlerOutput;
 use crate::ics02_client::handler::dispatch as ics2_msg_dispatcher;
 use crate::ics02_client::msgs::create_client;
@@ -11,24 +11,24 @@ use crate::ics02_client::msgs::ClientMsg;
 use crate::ics03_connection::handler::dispatch as ics3_msg_dispatcher;
 use crate::ics04_channel::handler::dispatch as ics4_msg_dispatcher;
 
-use crate::ics26_routing::context::ICS26Context;
+use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::error::{Error, Kind};
-use crate::ics26_routing::msgs::ICS26Envelope;
-use crate::ics26_routing::msgs::ICS26Envelope::{ICS2Msg, ICS3Msg, ICS4Msg};
+use crate::ics26_routing::msgs::Ics26Envelope;
+use crate::ics26_routing::msgs::Ics26Envelope::{Ics2Msg, Ics3Msg, Ics4Msg};
 
 /// Mimics the DeliverTx ABCI interface, but a slightly lower level. No need for authentication
 /// info or signature checks here.
 /// https://github.com/cosmos/cosmos-sdk/tree/master/docs/basics
 /// Returns a vector of all events that got generated as a byproduct of processing `messages`.
-pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IBCEvent>, Error>
+pub fn deliver<Ctx>(ctx: &mut Ctx, messages: Vec<Any>) -> Result<Vec<IbcEvent>, Error>
 where
-    Ctx: ICS26Context,
+    Ctx: Ics26Context,
 {
     // Create a clone, which will store each intermediary stage of applying txs.
     let mut ctx_interim = ctx.clone();
 
     // A buffer for all the events, to be used as return value.
-    let mut res: Vec<IBCEvent> = vec![];
+    let mut res: Vec<IbcEvent> = vec![];
 
     for any_msg in messages {
         // Decode the proto message into a domain message, creating an ICS26 envelope.
@@ -38,15 +38,15 @@ where
                 // Pop out the message and then wrap it in the corresponding type.
                 let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(ICS2Msg(ClientMsg::CreateClient(domain_msg)))
+                Ok(Ics2Msg(ClientMsg::CreateClient(domain_msg)))
             }
             update_client::TYPE_URL => {
                 let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
                     .map_err(|e| Kind::MalformedMessageBytes.context(e))?;
-                Ok(ICS2Msg(ClientMsg::UpdateClient(domain_msg)))
+                Ok(Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
             // TODO: ICS3 messages
-            _ => Err(Kind::UnknownMessageTypeURL(any_msg.type_url)),
+            _ => Err(Kind::UnknownMessageTypeUrl(any_msg.type_url)),
         }?;
 
         // Process the envelope, and accumulate any events that were generated.
@@ -63,12 +63,12 @@ where
 /// Top-level ICS dispatch function. Routes incoming IBC messages to their corresponding module.
 /// Returns a handler output with empty result of type `HandlerOutput<()>` which contains the log
 /// and events produced after processing the input `msg`.
-pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: ICS26Envelope) -> Result<HandlerOutput<()>, Error>
+pub fn dispatch<Ctx>(ctx: &mut Ctx, msg: Ics26Envelope) -> Result<HandlerOutput<()>, Error>
 where
-    Ctx: ICS26Context,
+    Ctx: Ics26Context,
 {
     let output = match msg {
-        ICS2Msg(msg) => {
+        Ics2Msg(msg) => {
             let handler_output =
                 ics2_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
@@ -82,7 +82,7 @@ where
                 .with_result(())
         }
 
-        ICS3Msg(msg) => {
+        Ics3Msg(msg) => {
             let handler_output =
                 ics3_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
@@ -96,7 +96,7 @@ where
                 .with_result(())
         }
 
-        ICS4Msg(msg) => {
+        Ics4Msg(msg) => {
             let handler_output =
                 ics4_msg_dispatcher(ctx, msg).map_err(|e| Kind::HandlerRaisedError.context(e))?;
 
@@ -151,9 +151,9 @@ mod tests {
     use crate::ics04_channel::msgs::ChannelMsg;
     use crate::ics24_host::identifier::ChannelId;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics26_routing::handler::dispatch;
-    use crate::ics26_routing::msgs::ICS26Envelope;
+    use crate::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
@@ -169,7 +169,7 @@ mod tests {
         // Test parameters
         struct Test {
             name: String,
-            msg: ICS26Envelope,
+            msg: Ics26Envelope,
             want_pass: bool,
         }
         let default_signer = get_dummy_account_id();
@@ -235,7 +235,7 @@ mod tests {
         // First, create a client..
         let res = dispatch(
             &mut ctx,
-            ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
+            Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(create_client_msg.clone())),
         );
 
         assert_eq!(
@@ -256,7 +256,7 @@ mod tests {
             "There was no event generated for client creation!"
         );
         let client_id = match client_id_event.unwrap() {
-            IBCEvent::CreateClient(create_client) => create_client.client_id().clone(),
+            IbcEvent::CreateClient(create_client) => create_client.client_id().clone(),
             event => panic!("unexpected IBC event: {:?}", event),
         };
 
@@ -267,7 +267,7 @@ mod tests {
             // Test some ICS2 client functionality.
             Test {
                 name: "Client update successful".to_string(),
-                msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader(update_client_height).into(),
                     signer: default_signer,
@@ -276,7 +276,7 @@ mod tests {
             },
             Test {
                 name: "Client update fails due to stale header".to_string(),
-                msg: ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: client_id.clone(),
                     header: MockHeader(update_client_height).into(),
                     signer: default_signer,
@@ -285,7 +285,7 @@ mod tests {
             },
             Test {
                 name: "Connection open init it succeeds".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
+                msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
                     msg_conn_init.with_client_id(client_id),
                 )),
                 want_pass: true,
@@ -293,28 +293,28 @@ mod tests {
             Test {
                 name: "Connection open try fails due to InvalidConsensusHeight (too high)"
                     .to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     incorrect_msg_conn_try,
                 ))),
                 want_pass: false,
             },
             Test {
                 name: "Connection open try succeeds".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     correct_msg_conn_try,
                 ))),
                 want_pass: true,
             },
             Test {
                 name: "Connection open ack succeeds".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     msg_conn_ack,
                 ))),
                 want_pass: true,
             },
             Test {
                 name: "Connection open try fails due to mismatching connection ends".to_string(),
-                msg: ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                msg: Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     msg_conn_try_good_height,
                 ))),
                 want_pass: false,
@@ -322,32 +322,32 @@ mod tests {
             // ICS04
             Test {
                 name: "Channel open init succeeds".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init)),
                 want_pass: true,
             },
             Test {
                 name: "Channel open init fail due to missing connection".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init2)),
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenInit(msg_chan_init2)),
                 want_pass: false,
             },
             Test {
                 name: "Channel open try succedes".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenTry(msg_chan_try2)),
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenTry(msg_chan_try2)),
                 want_pass: true,
             },
             Test {
                 name: "Channel open ack succedes".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelOpenAck(msg_chan_ack)),
                 want_pass: true,
             },
             Test {
                 name: "Channel close init succedes".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseInit(msg_chan_close_init)),
                 want_pass: true,
             },
             Test {
                 name: "Channel close confirm fails cause channel is already closed".to_string(),
-                msg: ICS26Envelope::ICS4Msg(ChannelMsg::ChannelCloseConfirm(
+                msg: Ics26Envelope::Ics4Msg(ChannelMsg::ChannelCloseConfirm(
                     msg_chan_close_confirm,
                 )),
                 want_pass: false,

@@ -10,7 +10,7 @@ use tendermint_testgen::light_block::TMLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::downcast;
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics02_client::client_def::AnyClientState;
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -18,7 +18,7 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use ibc::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::mock::context::MockContext;
@@ -100,7 +100,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self
             .context
@@ -216,7 +216,7 @@ impl Chain for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+    fn query_txs(&self, _request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
         unimplemented!()
     }
 

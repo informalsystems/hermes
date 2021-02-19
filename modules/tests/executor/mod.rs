@@ -14,12 +14,12 @@ use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
 use ibc::ics03_connection::version::Version;
-use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
-use ibc::ics26_routing::msgs::ICS26Envelope;
+use ibc::ics26_routing::msgs::Ics26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
@@ -220,7 +220,7 @@ impl IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state: Self::client_state(client_state),
                     consensus_state: Self::consensus_state(consensus_state),
                     signer: Self::signer(),
@@ -236,7 +236,7 @@ impl IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
                     header: Self::header(header),
                     signer: Self::signer(),
@@ -253,7 +253,7 @@ impl IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenInit(
+                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenInit(
                     MsgConnectionOpenInit {
                         client_id: Self::client_id(client_id),
                         counterparty: Self::counterparty(counterparty_client_id, None),
@@ -277,7 +277,7 @@ impl IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
+                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     MsgConnectionOpenTry {
                         previous_connection_id: previous_connection_id.map(Self::connection_id),
                         client_id: Self::client_id(client_id),
@@ -306,7 +306,7 @@ impl IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
                     MsgConnectionOpenAck {
                         connection_id: Self::connection_id(connection_id),
                         // TODO: the following should not be an option

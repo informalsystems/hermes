@@ -1,4 +1,4 @@
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use std::marker::PhantomData;
 
 pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
@@ -7,7 +7,7 @@ pub type HandlerResult<T, E> = Result<HandlerOutput<T>, E>;
 pub struct HandlerOutput<T> {
     pub result: T,
     pub log: Vec<String>,
-    pub events: Vec<IBCEvent>,
+    pub events: Vec<IbcEvent>,
 }
 
 impl<T> HandlerOutput<T> {
@@ -19,7 +19,7 @@ impl<T> HandlerOutput<T> {
 #[derive(Clone, Debug, Default)]
 pub struct HandlerOutputBuilder<T> {
     log: Vec<String>,
-    events: Vec<IBCEvent>,
+    events: Vec<IbcEvent>,
     marker: PhantomData<T>,
 }
 
@@ -41,12 +41,12 @@ impl<T> HandlerOutputBuilder<T> {
         self.log.push(log.into());
     }
 
-    pub fn with_events(mut self, mut events: Vec<IBCEvent>) -> Self {
+    pub fn with_events(mut self, mut events: Vec<IbcEvent>) -> Self {
         self.events.append(&mut events);
         self
     }
 
-    pub fn emit(&mut self, event: IBCEvent) {
+    pub fn emit(&mut self, event: IbcEvent) {
         self.events.push(event);
     }
 

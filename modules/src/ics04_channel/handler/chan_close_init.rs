@@ -1,5 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelCloseInit`.
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::State;
@@ -62,7 +62,7 @@ pub(crate) fn process(
         channel_id: Some(msg.channel_id().clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::CloseInitChannel(event_attributes.into()));
+    output.emit(IbcEvent::CloseInitChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }

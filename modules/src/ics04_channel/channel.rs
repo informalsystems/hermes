@@ -7,7 +7,7 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::{Channel as RawChannel, Counterparty as RawCounterparty};
 
-use crate::events::IBCEventType;
+use crate::events::IbcEventType;
 use crate::ics02_client::height::Height;
 use crate::ics04_channel::{
     error::{self, Error, Kind},
@@ -324,7 +324,7 @@ impl State {
 /// Used for queries and not yet standardized in channel's query.proto
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
-    pub event_id: IBCEventType,
+    pub event_id: IbcEventType,
     pub source_channel_id: ChannelId,
     pub source_port_id: PortId,
     pub destination_channel_id: ChannelId,
