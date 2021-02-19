@@ -181,8 +181,8 @@ impl OpenInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -225,8 +225,8 @@ impl OpenTry {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -269,8 +269,8 @@ impl OpenAck {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -313,8 +313,8 @@ impl OpenConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -360,8 +360,8 @@ impl CloseInit {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -416,8 +416,8 @@ impl CloseConfirm {
     pub fn channel_id(&self) -> &Option<ChannelId> {
         &self.0.channel_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -486,8 +486,8 @@ pub struct SendPacket {
 }
 
 impl SendPacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -524,8 +524,8 @@ pub struct ReceivePacket {
 }
 
 impl ReceivePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -564,8 +564,8 @@ pub struct WriteAcknowledgement {
 }
 
 impl WriteAcknowledgement {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -607,8 +607,8 @@ pub struct AcknowledgePacket {
 }
 
 impl AcknowledgePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
@@ -643,8 +643,8 @@ pub struct TimeoutPacket {
 }
 
 impl TimeoutPacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height
@@ -686,8 +686,8 @@ pub struct TimeoutOnClosePacket {
 }
 
 impl TimeoutOnClosePacket {
-    pub fn height(&self) -> &Height {
-        &self.height
+    pub fn height(&self) -> Height {
+        self.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;

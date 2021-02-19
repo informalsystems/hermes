@@ -264,7 +264,7 @@ impl RelayPath {
     fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
         let proofs = self
             .src_chain()
-            .build_channel_proofs(self.src_port_id(), self.src_channel_id(), *event.height())
+            .build_channel_proofs(self.src_port_id(), self.src_channel_id(), event.height())
             .map_err(|e| ChannelError::Failed(format!("failed to build channel proofs: {}", e)))?;
 
         // Build the domain type message
@@ -337,7 +337,7 @@ impl RelayPath {
 
         if !self.all_events.is_empty() {
             // All events are at the same height
-            self.src_height = *self.all_events[0].height();
+            self.src_height = self.all_events[0].height();
         }
     }
 
@@ -349,7 +349,8 @@ impl RelayPath {
         if self.all_events.is_empty() {
             return Ok(());
         }
-        let event_height = &self.src_height;
+
+        let event_height = self.src_height;
 
         // Check if a consensus state at event_height + 1 exists on destination chain already
         // and update src_height
@@ -362,7 +363,7 @@ impl RelayPath {
             )
             .is_ok()
         {
-            self.src_height = *event_height;
+            self.src_height = event_height;
             return Ok(());
         }
 
@@ -468,6 +469,7 @@ impl RelayPath {
 
         // Clear all_events and collect the src and dst input events if Tx-es fail
         self.all_events = vec![];
+
         if !self.packet_msgs.is_empty() {
             let update_height = self.src_height.increment();
             let mut msgs_to_send = vec![];

@@ -88,8 +88,8 @@ impl OpenInit {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -131,8 +131,8 @@ impl OpenTry {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -174,8 +174,8 @@ impl OpenAck {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;
@@ -217,8 +217,8 @@ impl OpenConfirm {
     pub fn connection_id(&self) -> &Option<ConnectionId> {
         &self.0.connection_id
     }
-    pub fn height(&self) -> &Height {
-        &self.0.height
+    pub fn height(&self) -> Height {
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
         self.0.height = height;

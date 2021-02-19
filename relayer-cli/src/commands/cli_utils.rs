@@ -1,14 +1,12 @@
-use abscissa_core::config;
-
 use ibc::ics24_host::identifier::ChainId;
-use ibc_relayer::chain::CosmosSdkChain;
 use ibc_relayer::{chain::handle::ChainHandle, config::StoreConfig};
 use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
+use ibc_relayer::{chain::CosmosSdkChain, config::Config};
 
-use crate::application::CliApp;
 use crate::error::{Error, Kind};
 
 /// Pair of chain handlers that are used by most CLIs.
+#[derive(Clone, Debug)]
 pub struct ChainHandlePair {
     /// Source chain handle
     pub src: Box<dyn ChainHandle>,
@@ -20,7 +18,7 @@ impl ChainHandlePair {
     /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
     /// and return the pair of associated handles.
     pub fn spawn(
-        config: &config::Reader<CliApp>,
+        config: &Config,
         src_chain_id: &ChainId,
         dst_chain_id: &ChainId,
     ) -> Result<Self, Error> {
@@ -32,7 +30,7 @@ impl ChainHandlePair {
     /// is used to override each chain configuration before spawning its runtime.
     pub fn spawn_with(
         options: SpawnOptions,
-        config: &config::Reader<CliApp>,
+        config: &Config,
         src_chain_id: &ChainId,
         dst_chain_id: &ChainId,
     ) -> Result<Self, Error> {
@@ -44,7 +42,7 @@ impl ChainHandlePair {
 /// and return the pair of associated handles.
 fn spawn_chain_runtimes(
     spawn_options: SpawnOptions,
-    config: &config::Reader<CliApp>,
+    config: &Config,
     src_chain_id: &ChainId,
     dst_chain_id: &ChainId,
 ) -> Result<ChainHandlePair, Error> {
