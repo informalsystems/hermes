@@ -35,7 +35,7 @@
 ### BUG FIXES
 
 - [ibc]
-  - Overflow if `ctx.host_current_height().revision_height < ctx.host_chain_history_size()` ([#685])
+  - Fix overflow bug in ICS03 client consensus height verification method ([#685])
 
 [comment]: <> (- [ibc-relayer])
 
