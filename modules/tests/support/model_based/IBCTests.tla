@@ -38,6 +38,9 @@ ICS03MissingClientConsensusStateTest ==
 ICS03InvalidProofTest ==
     /\ actionOutcome = "ICS03InvalidProof"
 
+ICS03ConnectionOpenAckOKTest ==
+    /\ actionOutcome = "ICS03ConnectionOpenAckOK"
+
 \* ICS02CreateClient tests
 ICS02CreateOKTestNeg == ~ICS02CreateOKTest
 
@@ -57,5 +60,8 @@ ICS03ConnectionNotFoundTestNeg == ~ICS03ConnectionNotFoundTest
 ICS03ConnectionMismatchTestNeg == ~ICS03ConnectionMismatchTest
 ICS03MissingClientConsensusStateTestNeg == ~ICS03MissingClientConsensusStateTest
 ICS03InvalidProofTestNeg == ~ICS03InvalidProofTest
+
+\* ICS03ConnectionOpenAck tests
+ICS03ConnectionOpenAckOKTestNeg == ~ICS03ConnectionOpenAckOKTest
 
 ===============================================================================

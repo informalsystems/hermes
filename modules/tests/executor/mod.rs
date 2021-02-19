@@ -9,6 +9,7 @@ use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
 use ibc::ics03_connection::connection::Counterparty;
 use ibc::ics03_connection::error::Kind as ICS03ErrorKind;
+use ibc::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
 use ibc::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
 use ibc::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
 use ibc::ics03_connection::msgs::ConnectionMsg;
@@ -280,9 +281,8 @@ impl IBCTestExecutor {
                     MsgConnectionOpenTry {
                         previous_connection_id: previous_connection_id.map(Self::connection_id),
                         client_id: Self::client_id(client_id),
+                        // TODO: is this ever needed?
                         client_state: None,
-                        // TODO: it should be like this:
-                        // client_state: Some(Self::client_state(client_state)),
                         counterparty: Self::counterparty(
                             counterparty_client_id,
                             Some(counterparty_connection_id),
@@ -290,6 +290,33 @@ impl IBCTestExecutor {
                         counterparty_versions: Self::versions(),
                         proofs: Self::proofs(client_state),
                         delay_period: Self::delay_period(),
+                        signer: Self::signer(),
+                    },
+                )));
+                ctx.deliver(msg)
+            }
+            Action::ICS03ConnectionOpenAck {
+                chain_id,
+                connection_id,
+                client_state,
+                counterparty_chain_id: _,
+                counterparty_connection_id,
+            } => {
+                // get chain's context
+                let ctx = self.chain_context_mut(chain_id);
+
+                // create ICS26 message and deliver it
+                let msg = ICS26Envelope::ICS3Msg(ConnectionMsg::ConnectionOpenAck(Box::new(
+                    MsgConnectionOpenAck {
+                        connection_id: Self::connection_id(connection_id),
+                        // TODO: the following should not be an option
+                        counterparty_connection_id: Some(Self::connection_id(
+                            counterparty_connection_id,
+                        )),
+                        // TODO: is this ever needed?
+                        client_state: None,
+                        proofs: Self::proofs(client_state),
+                        version: Self::version(),
                         signer: Self::signer(),
                     },
                 )));

@@ -238,4 +238,28 @@ ICS03_ConnectionOpenTry(
                     outcome |-> "ICS03MissingClient"
                 ]
 
+ICS03_ConnectionOpenAck(
+    chain,
+    chainId,
+    connectionId,
+    height,
+    counterpartyChainId,
+    counterpartyConnectionId
+) ==
+    LET action == AsAction([
+        type |-> "ICS03ConnectionOpenAck",
+        chainId |-> chainId,
+        connectionId |-> connectionId,
+        clientState |-> height,
+        counterpartyChainId |-> counterpartyChainId,
+        counterpartyConnectionId |-> counterpartyConnectionId
+    ]) IN
+    LET connections == chain.connections IN
+    LET connectionProofs == chain.connectionProofs IN
+    [
+        connections |-> connections,
+        action |-> action,
+        outcome |-> "ICS03ConnectionOpenAckOK"
+    ]
+
 ===============================================================================

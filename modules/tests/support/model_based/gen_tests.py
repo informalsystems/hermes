@@ -15,18 +15,19 @@ NEXT Next
 """
 
 tests = [
-    "ICS02CreateOKTest",
-    "ICS02UpdateOKTest",
-    "ICS02ClientNotFoundTest",
-    "ICS02HeaderVerificationFailureTest",
-    "ICS03ConnectionOpenInitOKTest",
-    "ICS03MissingClientTest",
-    "ICS03ConnectionOpenTryOKTest",
-    "ICS03InvalidConsensusHeightTest",
-    "ICS03ConnectionNotFoundTest",
-    "ICS03ConnectionMismatchTest",
-    "ICS03MissingClientConsensusStateTest",
-    "ICS03InvalidProofTest",
+    # "ICS02CreateOKTest",
+    # "ICS02UpdateOKTest",
+    # "ICS02ClientNotFoundTest",
+    # "ICS02HeaderVerificationFailureTest",
+    # "ICS03ConnectionOpenInitOKTest",
+    # "ICS03MissingClientTest",
+    # "ICS03ConnectionOpenTryOKTest",
+    # "ICS03InvalidConsensusHeightTest",
+    # "ICS03ConnectionNotFoundTest",
+    # "ICS03ConnectionMismatchTest",
+    # "ICS03MissingClientConsensusStateTest",
+    # "ICS03InvalidProofTest",
+    "ICS03ConnectionOpenAckOKTest",
 ]
 
 for test in tests:
