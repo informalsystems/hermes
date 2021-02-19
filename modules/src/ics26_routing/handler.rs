@@ -116,6 +116,7 @@ where
 mod tests {
     use std::convert::TryFrom;
 
+    use crate::events::IbcEvent;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient, ClientMsg,
@@ -137,7 +138,6 @@ mod tests {
         ChannelMsg,
     };
     use crate::ics24_host::identifier::ConnectionId;
-    use crate::events::IbcEvent;
     use crate::ics26_routing::handler::dispatch;
     use crate::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::client_state::{MockClientState, MockConsensusState};
