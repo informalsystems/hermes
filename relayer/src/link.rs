@@ -180,6 +180,14 @@ impl RelayPath {
             .map_err(|e| LinkError::QueryError(self.dst_chain.id(), e))
     }
 
+    fn unordered_channel(&self) -> bool {
+        self.channel.ordering == Order::Unordered
+    }
+
+    fn ordered_channel(&self) -> bool {
+        self.channel.ordering == Order::Ordered
+    }
+
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = ForeignClient {
             id: self.dst_client_id().clone(),
@@ -217,9 +225,12 @@ impl RelayPath {
                 ))
             }
             IBCEvent::TimeoutPacket(timeout_ev) => {
-                if self.channel.ordering == Order::Ordered
-                    && self.src_channel()?.state_matches(&State::Closed)
-                {
+                // When a timeout packet for an ordered channel is processed on-chain (src here)
+                // the chain closes the channel but no close init event is emitted, instead
+                // we get a timeout packet event (this happens for both unordered and ordered channels)
+                // Here we check it the channel is closed on src and send a channel close confirm
+                // to the counterparty.
+                if self.ordered_channel() && self.src_channel()?.state_matches(&State::Closed) {
                     info!(
                         "{} => event {} closes the channel",
                         self.src_chain.id(),
@@ -273,7 +284,7 @@ impl RelayPath {
         if let Some(msg) = timeout {
             // For Ordered channels a single timeout event should be sent as this closes the channel.
             // Otherwise a multi message transaction will fail.
-            if self.channel.ordering == Order::Unordered || self.timeout_msgs.is_empty() {
+            if self.unordered_channel() || self.timeout_msgs.is_empty() {
                 self.timeout_msgs.push(msg);
                 self.src_msgs_input_events.push(event.clone());
             }
@@ -721,7 +732,7 @@ impl RelayPath {
 
     fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
         let (packet_type, next_sequence_received) =
-            if self.dst_channel()?.order_matches(&Order::Ordered) {
+            if self.ordered_channel() {
                 let next_seq = self
                     .dst_chain()
                     .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
