@@ -182,7 +182,7 @@ mod tests {
                 ctx: default_context
                     .clone()
                     .with_client(&client_id, proof_height)
-                    .with_connection(conn_id.clone(), default_conn_end.clone()),
+                    .with_connection(conn_id.clone(), default_conn_end),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
                 want_pass: true,
                 error_kind: None,
@@ -217,7 +217,6 @@ mod tests {
             Test {
                 name: "Processing fails due to mismatching counterparty conn id".to_string(),
                 ctx: default_context
-                    .clone()
                     .with_client(&client_id, proof_height)
                     .with_connection(conn_id.clone(), conn_end_cparty),
                 msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
