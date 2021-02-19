@@ -20,7 +20,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 
 use ibc::downcast;
-use ibc::events::{from_tx_response_event, IBCEvent};
+use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use ibc::ics03_connection::connection::ConnectionEnd;
 use ibc::ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest};
@@ -67,14 +67,14 @@ const DEFAULT_MAX_GAS: u64 = 300000;
 const DEFAULT_MAX_MSG_NUM: usize = 30;
 const DEFAULT_MAX_TX_SIZE: usize = 2 * 1048576; // 2 MBytes
 
-pub struct CosmosSDKChain {
+pub struct CosmosSdkChain {
     config: ChainConfig,
     rpc_client: HttpClient,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
 }
 
-impl CosmosSDKChain {
+impl CosmosSdkChain {
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
@@ -131,7 +131,7 @@ impl CosmosSDKChain {
         self.rt.block_on(f)
     }
 
-    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_tx(&self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_tx");
 
         let key = self
@@ -263,7 +263,7 @@ impl CosmosSDKChain {
     }
 }
 
-impl Chain for CosmosSDKChain {
+impl Chain for CosmosSdkChain {
     type LightBlock = TMLightBlock;
     type Header = TMHeader;
     type ConsensusState = TMConsensusState;
@@ -329,11 +329,11 @@ impl Chain for CosmosSDKChain {
     }
 
     /// Send one or more transactions that include all the specified messages
-    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IBCEvent>, Error> {
+    fn send_msgs(&mut self, proto_msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("send_msgs");
 
         if proto_msgs.is_empty() {
-            return Ok(vec![IBCEvent::Empty("No messages to send".to_string())]);
+            return Ok(vec![IbcEvent::Empty("No messages to send".to_string())]);
         }
         let mut res = vec![];
 
@@ -749,10 +749,10 @@ impl Chain for CosmosSDKChain {
     /// string attributes (sequence is emmitted as a string).
     /// Therefore, here we perform one tx_search for each query. Alternatively, a single query
     /// for all packets could be performed but it would return all packets ever sent.
-    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IBCEvent>, Error> {
+    fn query_txs(&self, request: QueryPacketEventDataRequest) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("query_txs");
 
-        let mut result: Vec<IBCEvent> = vec![];
+        let mut result: Vec<IbcEvent> = vec![];
 
         for seq in request.sequences.iter() {
             // query all Tx-es that include events related to packet with given port, channel and sequence
@@ -1002,7 +1002,7 @@ fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     mut response: tendermint_rpc::endpoint::tx_search::Response,
-) -> Option<IBCEvent> {
+) -> Option<IbcEvent> {
     assert!(
         response.txs.len() <= 1,
         "packet_from_tx_search_response: unexpected number of txs"
@@ -1025,8 +1025,8 @@ fn packet_from_tx_search_response(
             }
             let event = res.unwrap();
             let packet = match &event {
-                IBCEvent::SendPacket(send_ev) => Some(&send_ev.packet),
-                IBCEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
+                IbcEvent::SendPacket(send_ev) => Some(&send_ev.packet),
+                IbcEvent::WriteAcknowledgement(ack_ev) => Some(&ack_ev.packet),
                 _ => None,
             };
 
@@ -1060,7 +1060,7 @@ fn packet_from_tx_search_response(
 
 /// Perform a generic `abci_query`, and return the corresponding deserialized response data.
 async fn abci_query(
-    chain: &CosmosSDKChain,
+    chain: &CosmosSdkChain,
     path: TendermintABCIPath,
     data: String,
     height: Height,
@@ -1104,7 +1104,7 @@ async fn abci_query(
 
 /// Perform a `broadcast_tx_commit`, and return the corresponding deserialized response data.
 async fn broadcast_tx_commit(
-    chain: &CosmosSDKChain,
+    chain: &CosmosSdkChain,
     data: Vec<u8>,
 ) -> Result<Response, anomaly::Error<Kind>> {
     let response = chain
@@ -1117,7 +1117,7 @@ async fn broadcast_tx_commit(
 }
 
 /// Uses the GRPC client to retrieve the account sequence
-async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAccount, Error> {
+async fn query_account(chain: &CosmosSdkChain, address: String) -> Result<BaseAccount, Error> {
     let grpc_addr = Uri::from_str(&chain.config().grpc_addr).map_err(|e| Kind::Grpc.context(e))?;
     let mut client =
         ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient::connect(grpc_addr)
@@ -1145,18 +1145,18 @@ async fn query_account(chain: &CosmosSDKChain, address: String) -> Result<BaseAc
 pub fn tx_result_to_event(
     chain_id: &ChainId,
     response: Response,
-) -> Result<Vec<IBCEvent>, anomaly::Error<Kind>> {
+) -> Result<Vec<IbcEvent>, anomaly::Error<Kind>> {
     let mut result = vec![];
 
     // Verify the return codes from check_tx and deliver_tx
     if response.check_tx.code.is_err() {
-        return Ok(vec![IBCEvent::ChainError(format!(
+        return Ok(vec![IbcEvent::ChainError(format!(
             "check_tx reports error: log={:?}",
             response.check_tx.log
         ))]);
     }
     if response.deliver_tx.code.is_err() {
-        return Ok(vec![IBCEvent::ChainError(format!(
+        return Ok(vec![IbcEvent::ChainError(format!(
             "deliver_tx reports error: log={:?}",
             response.deliver_tx.log
         ))]);

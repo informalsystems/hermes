@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use crate::chain::{Chain, CosmosSDKChain};
+use crate::chain::{Chain, CosmosSdkChain};
 use crate::config::ChainConfig;
 use crate::error::{Error, Kind};
 use crate::keyring::store::KeyRingOperations;
@@ -16,7 +16,7 @@ pub fn list_keys(opts: KeysListOptions) -> Result<String, Error> {
     let rt = TokioRuntime::new().unwrap();
 
     // Get the destination chain
-    let chain = CosmosSDKChain::bootstrap(opts.chain_config, Arc::new(rt))?;
+    let chain = CosmosSdkChain::bootstrap(opts.chain_config, Arc::new(rt))?;
 
     let key_entry = chain.keybase().get_key();
 

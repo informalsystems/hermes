@@ -2,7 +2,7 @@
 
 use Kind::ConnectionNotOpen;
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
@@ -148,14 +148,14 @@ pub(crate) fn process(
         channel_id: None,
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenTryChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenTryChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
 
@@ -445,7 +445,7 @@ mod tests {
                     assert_eq!(res.channel_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenTryChannel(_)));
+                        assert!(matches!(e, &IbcEvent::OpenTryChannel(_)));
                     }
                 }
                 Err(e) => {

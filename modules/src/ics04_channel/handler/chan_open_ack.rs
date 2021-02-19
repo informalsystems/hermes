@@ -1,5 +1,5 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenAck`.
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
@@ -93,7 +93,7 @@ pub(crate) fn process(
         channel_id: Some(msg.channel_id().clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenAckChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenAckChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -101,7 +101,7 @@ pub(crate) fn process(
 #[cfg(test)]
 mod tests {
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use std::convert::TryFrom;
     use std::str::FromStr;
 
@@ -319,7 +319,7 @@ mod tests {
                     assert_eq!(res.channel_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenAckChannel(_)));
+                        assert!(matches!(e, &IbcEvent::OpenAckChannel(_)));
                     }
                 }
                 Err(e) => {

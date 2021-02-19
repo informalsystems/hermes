@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenTry`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -96,7 +96,7 @@ pub(crate) fn process(
         connection_id: result.connection_id.clone(),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenTryConnection(event_attributes.into()));
+    output.emit(IbcEvent::OpenTryConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -105,7 +105,7 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::State;
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
@@ -227,7 +227,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::TryOpen);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenTryConnection(_)));
+                        assert!(matches!(e, &IbcEvent::OpenTryConnection(_)));
                     }
                 }
                 Err(e) => {

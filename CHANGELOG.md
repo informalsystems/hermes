@@ -1,64 +1,53 @@
 # Changelog
 
-[comment]: <> (## Unreleased Changes)
+## Unreleased Changes
 
-[comment]: <> (> [high level summary])
+- [high level summary]
 
-[comment]: <> (### FEATURES)
+### FEATURES
 
-[comment]: <> (- [ibc])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+### IMPROVEMENTS
 
-[comment]: <> (- [ibc-relayer-cli])
+- [ibc]
+  - Follow Rust guidelines naming conventions ([#689])
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (### IMPROVEMENTS)
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (- [ibc])
+### BUG FIXES
 
-[comment]: <> (  - [nothing yet])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer])
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (- [ibc-relayer-cli])
+### BREAKING CHANGES
 
-[comment]: <> (  - [nothing yet])
+- [ibc]
+  - [nothing yet]
 
-[comment]: <> (### BUG FIXES)
+- [ibc-relayer]
+  - [nothing yet]
 
-[comment]: <> (- [ibc])
+- [ibc-relayer-cli]
+  - [nothing yet]
 
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (### BREAKING CHANGES)
-
-[comment]: <> (- [ibc])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer])
-
-[comment]: <> (  - [nothing yet])
-
-[comment]: <> (- [ibc-relayer-cli])
-
-[comment]: <> (  - [nothing yet])
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
 
 ## v0.1.1
 *February 17, 2021*

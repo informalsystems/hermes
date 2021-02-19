@@ -7,11 +7,11 @@ use ibc::ics02_client::error::Kind as ICS02ErrorKind;
 use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::msgs::ClientMsg;
-use ibc::ics18_relayer::context::ICS18Context;
+use ibc::ics18_relayer::context::Ics18Context;
 use ibc::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::ics26_routing::error::{Error as ICS26Error, Kind as ICS26ErrorKind};
-use ibc::ics26_routing::msgs::ICS26Envelope;
+use ibc::ics26_routing::msgs::Ics26Envelope;
 use ibc::mock::client_state::{MockClientState, MockConsensusState};
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
@@ -176,7 +176,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state: Self::client_state(client_height),
                     consensus_state: Self::consensus_state(client_height),
                     signer: Self::signer(),
@@ -211,7 +211,7 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = ICS26Envelope::ICS2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
                     header: Self::header(client_height),
                     signer: Self::signer(),

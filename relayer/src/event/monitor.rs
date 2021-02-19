@@ -11,7 +11,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tokio::task::JoinHandle;
 use tracing::{debug, error, info};
 
-use ibc::{events::IBCEvent, ics24_host::identifier::ChainId};
+use ibc::{events::IbcEvent, ics24_host::identifier::ChainId};
 
 use crate::error::{Error, Kind};
 use ibc::ics02_client::height::Height;
@@ -21,7 +21,7 @@ use ibc::ics02_client::height::Height;
 pub struct EventBatch {
     pub chain_id: ChainId,
     pub height: Height,
-    pub events: Vec<IBCEvent>,
+    pub events: Vec<IbcEvent>,
 }
 
 type SubscriptionResult = Result<tendermint_rpc::event::Event, tendermint_rpc::Error>;
