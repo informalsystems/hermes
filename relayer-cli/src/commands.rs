@@ -15,6 +15,7 @@ use crate::config::Config;
 use self::{
     keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
     version::VersionCmd,
+    create::CreateCmds,
 };
 
 mod channel;
@@ -27,6 +28,7 @@ mod query;
 mod start;
 mod tx;
 mod version;
+mod create;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {
@@ -52,6 +54,10 @@ pub enum CliCmd {
     /// The `light` subcommand
     #[options(help = "Basic functionality for managing the light clients")]
     Light(LightCmd),
+
+    /// The `create` subcommand
+    #[options(help = "Create objects on chains")]
+    Create(CreateCmds),
 
     /// The `start` subcommand
     #[options(help = "Start the relayer")]

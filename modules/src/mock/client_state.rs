@@ -15,6 +15,7 @@ use crate::ics02_client::state::{ClientState, ConsensusState};
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock::header::MockHeader;
 use crate::Height;
+use crate::ics24_host::identifier::ChainId;
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
@@ -69,7 +70,7 @@ impl From<MockClientState> for RawMockClientState {
 }
 
 impl ClientState for MockClientState {
-    fn chain_id(&self) -> String {
+    fn chain_id(&self) -> ChainId {
         todo!()
     }
 

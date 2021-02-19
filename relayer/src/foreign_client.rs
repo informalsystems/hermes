@@ -9,7 +9,7 @@ use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::state::ClientState;
 use ibc::ics02_client::state::ConsensusState;
-use ibc::ics24_host::identifier::ClientId;
+use ibc::ics24_host::identifier::{ClientId, ChainId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
@@ -24,6 +24,12 @@ pub enum ForeignClientError {
 
     #[error("error raised while updating client: {0}")]
     ClientUpdate(String),
+
+    #[error("failed while querying for client {0} on chain id: {1}")]
+    ClientQuery(ClientId, ChainId),
+
+    #[error("failed while finding client {0}: expected chain_id: {1}; actual chain_id: {2}")]
+    ClientFind(ClientId, ChainId, ChainId),
 }
 
 #[derive(Clone, Debug)]
@@ -66,6 +72,39 @@ impl ForeignClient {
 
         Ok(client)
     }
+
+    /// Queries chain `dst_chain` to verify that a client with identifier `expected_id`
+    /// exists on that chain, and that this client is indeed serving chain `src_chain`.
+    pub fn find(
+        dst_chain: Box<dyn ChainHandle>,
+        src_chain: Box<dyn ChainHandle>,
+        expected_client_id: ClientId
+    ) -> Result<ForeignClient, ForeignClientError> {
+        let height = Height::new(dst_chain.id().version(), 0);
+
+        match dst_chain.query_client_state(&expected_client_id, height) {
+            Ok(cs) =>
+                if cs.chain_id() != src_chain.id() {
+                    Err(ForeignClientError::ClientFind(
+                        expected_client_id,
+                        src_chain.id(),
+                        cs.chain_id(),
+                    ))
+                } else {
+                    // TODO: Any additional checks?
+                    Ok(ForeignClient {
+                        id: expected_client_id,
+                        dst_chain: dst_chain.clone(),
+                        src_chain: src_chain.clone(),
+                    })
+                }
+            Err(_e) => Err(ForeignClientError::ClientQuery(
+                expected_client_id,
+                dst_chain.id()
+            )),
+        }
+    }
+
     /// Returns a handle to the chain hosting this client.
     pub fn dst_chain(&self) -> Box<dyn ChainHandle> {
         self.dst_chain.clone()

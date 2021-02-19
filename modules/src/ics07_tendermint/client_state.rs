@@ -2,22 +2,22 @@ use std::convert::{TryFrom, TryInto};
 use std::time::Duration;
 
 use serde::Serialize;
-
 use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
 
+use crate::Height;
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
-use crate::Height;
+use crate::ics24_host::identifier::ChainId;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
-    pub chain_id: String,
+    pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
@@ -35,7 +35,7 @@ impl Protobuf<RawClientState> for ClientState {}
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        chain_id: String,
+        chain_id: ChainId,
         trust_level: TrustThreshold,
         trusting_period: Duration,
         unbonding_period: Duration,
@@ -106,7 +106,7 @@ impl ClientState {
 }
 
 impl crate::ics02_client::state::ClientState for ClientState {
-    fn chain_id(&self) -> String {
+    fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
 
@@ -134,10 +134,16 @@ impl TryFrom<RawClientState> for ClientState {
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         let trust_level = raw
             .trust_level
+            .clone()
             .ok_or_else(|| Kind::InvalidRawClientState.context("missing trusting period"))?;
 
+        let chain_id = raw
+            .chain_id
+            .clone()
+            .try_into().map_err(|e| Kind::InvalidChainId(raw.chain_id.clone(), e))?;
+
         Ok(Self {
-            chain_id: raw.chain_id,
+            chain_id,
             trust_level: TrustThreshold {
                 numerator: trust_level.numerator,
                 denominator: trust_level.denominator,
@@ -177,7 +183,7 @@ impl TryFrom<RawClientState> for ClientState {
 impl From<ClientState> for RawClientState {
     fn from(value: ClientState) -> Self {
         RawClientState {
-            chain_id: value.chain_id.clone(),
+            chain_id: value.chain_id.to_string(),
             trust_level: Some(Fraction {
                 numerator: value.trust_level.numerator,
                 denominator: value.trust_level.denominator,
@@ -202,9 +208,10 @@ mod tests {
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::ics07_tendermint::client_state::ClientState;
-    use crate::test::test_serialization_roundtrip;
     use crate::Height;
+    use crate::ics07_tendermint::client_state::ClientState;
+    use crate::ics24_host::identifier::ChainId;
+    use crate::test::test_serialization_roundtrip;
 
     #[test]
     fn serialization_roundtrip_no_proof() {
@@ -225,7 +232,7 @@ mod tests {
     fn client_state_new() {
         #[derive(Clone, Debug, PartialEq)]
         struct ClientStateParams {
-            id: String,
+            id: ChainId,
             trust_level: TrustThreshold,
             trusting_period: Duration,
             unbonding_period: Duration,
@@ -239,7 +246,7 @@ mod tests {
 
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
-            id: "thisisthechainid".to_string(),
+            id: ChainId::default(),
             trust_level: TrustThreshold {
                 numerator: 1,
                 denominator: 3,
@@ -333,6 +340,7 @@ mod tests {
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
+    use std::convert::TryInto;
     use std::time::Duration;
 
     use tendermint::block::Header;
@@ -343,9 +351,11 @@ pub mod test_util {
     use crate::ics24_host::identifier::ChainId;
 
     pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
+        let chain_id: ChainId = tm_header.chain_id.clone().try_into().unwrap();
+
         AnyClientState::Tendermint(
             ClientState::new(
-                tm_header.chain_id.to_string(),
+                chain_id,
                 Default::default(),
                 Duration::from_secs(64000),
                 Duration::from_secs(128000),

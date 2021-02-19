@@ -16,7 +16,7 @@ use crate::ics07_tendermint::client_state::ClientState as TendermintClientState;
 use crate::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use crate::ics07_tendermint::header::Header as TendermintHeader;
 use crate::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes, CommitmentRoot};
-use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId, ChainId};
 use crate::Height;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -246,8 +246,13 @@ impl From<AnyClientState> for Any {
 }
 
 impl ClientState for AnyClientState {
-    fn chain_id(&self) -> String {
-        todo!()
+    fn chain_id(&self) -> ChainId {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
+        }
     }
 
     fn client_type(&self) -> ClientType {
