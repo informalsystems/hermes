@@ -1,41 +1,102 @@
 # Changelog
 
-## Unreleased Changes
+[comment]: <> (## Unreleased Changes)
 
-> [high level summary]
+[comment]: <> (> [high level summary])
+
+[comment]: <> (### FEATURES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### IMPROVEMENTS)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### BUG FIXES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (### BREAKING CHANGES)
+
+[comment]: <> (- [ibc])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer])
+
+[comment]: <> (  - [nothing yet])
+
+[comment]: <> (- [ibc-relayer-cli])
+
+[comment]: <> (  - [nothing yet])
+
+## v0.1.1
+*February 17, 2021*
+
+This release brings a quick fix for a problem with a dependency of crate
+`ibc-relayer`, which causes build & installation issues. Many thanks to 
+@Fraccaman for bringing this problem to our attention! ([#672])
+
+
+Additionally, this release also introduces initial implementation for most of
+ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
+some CLI code, refactored the Height type in the IBC Events, and a bug fix
+involving packet acks in a 3-chain setup. More details below. 
 
 ### FEATURES
-
-- [ibc]
-  - [nothing yet]
-
 - [ibc-relayer]
   - Listen to channel close initialization event and perform the close handshake ([#560])
-
-- [ibc-relayer-cli]
-  - [nothing yet]
+  - Updated to tendermint-rs `v0.18.1` ([#682], [#671])
 
 ### IMPROVEMENTS
 
 - [ibc]
-  - [nothing yet]
-
-- [ibc-relayer]
-  - [nothing yet]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Cleanup CLI code ([#572])
 
 ### BUG FIXES
 
 - [ibc]
-  - [nothing yet]
+  - Fix panic in conn open try when no connection id is provided ([#626])
+  - Disable MBT tests if the "mocks" feature is not enabled ([#643])
 
 - [ibc-relayer]
-  - [nothing yet]
+  - Quick fix for `funty` breaking change bug ([#665])
 
 - [ibc-relayer-cli]
-  - [nothing yet]
+  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
 
 ### BREAKING CHANGES
 
@@ -43,29 +104,21 @@
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
   - Remove dependency on `tendermint-rpc` ([#624])
 
-- [ibc-relayer]
-  - [nothing yet]
-
 - [ibc-relayer-cli]
-  - [nothing yet]
-
-### BUG FIXES
-
-- [ibc]
-  - Fix panic in conn open try when no connection id is provided ([#626])
-
-- [ibc-relayer]
-  - [nothing yet]
-
-- [ibc-relayer-cli]
-  - Fix wrong acks sent with `tx raw packet-ack` in a 3-chain setup ([#614])
-
+  - Remove the `proof` option from CLI ([#572])
 
 [#316]: https://github.com/informalsystems/ibc-rs/issues/316
+[#549]: https://github.com/informalsystems/ibc-rs/issues/549
 [#560]: https://github.com/informalsystems/ibc-rs/issues/560
+[#572]: https://github.com/informalsystems/ibc-rs/issues/572
 [#614]: https://github.com/informalsystems/ibc-rs/issues/614
 [#624]: https://github.com/informalsystems/ibc-rs/issues/624
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
+[#643]: https://github.com/informalsystems/ibc-rs/issues/643
+[#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#671]: https://github.com/informalsystems/ibc-rs/pull/671
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 ## v0.1.0
 *February 4, 2021*

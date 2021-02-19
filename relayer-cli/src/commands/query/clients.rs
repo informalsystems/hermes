@@ -6,7 +6,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc::ics24_host::identifier::ChainId;
 use ibc_proto::ibc::core::client::v1::QueryClientStatesRequest;
 use ibc_relayer::chain::{Chain, CosmosSDKChain};
-use ibc_relayer::config::{ChainConfig, Config};
 
 use crate::conclude::Output;
 use crate::error::{Error, Kind};
@@ -19,33 +18,27 @@ pub struct QueryAllClientsCmd {
     chain_id: ChainId,
 }
 
-impl QueryAllClientsCmd {
-    fn validate_options(&self, config: &Config) -> Result<ChainConfig, String> {
-        let chain_id = self.chain_id.clone();
-
-        let chain_config = config
-            .find_chain(&chain_id)
-            .ok_or_else(|| "missing chain configuration for the given chain id".to_string())?;
-
-        Ok(chain_config.clone())
-    }
-}
-
 /// Command for querying all clients.
 /// hermes -c cfg.toml query clients ibc-1  
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();
 
-        let chain_config = match self.validate_options(&config) {
-            Err(err) => {
-                return Output::error(err).exit();
+        let chain_config = match config.find_chain(&self.chain_id) {
+            None => {
+                return Output::error(format!(
+                    "chain '{}' not found in configuration file",
+                    self.chain_id
+                ))
+                .exit()
             }
-            Ok(result) => result,
+            Some(chain_config) => chain_config,
         };
 
+        info!("Options {:?}", self);
+
         let rt = Arc::new(TokioRuntime::new().unwrap());
-        let chain = CosmosSDKChain::bootstrap(chain_config, rt).unwrap();
+        let chain = CosmosSDKChain::bootstrap(chain_config.clone(), rt).unwrap();
 
         let req = QueryClientStatesRequest { pagination: None };
 

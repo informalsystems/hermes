@@ -1,6 +1,6 @@
 [package]
 name       = "ibc"
-version    = "0.1.0"
+version    = "0.1.1"
 edition    = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -22,7 +22,7 @@ mocks = [ "tendermint-testgen" ]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
-ibc-proto = { version = "0.7.0", path = "../proto" }
+ibc-proto = { version = "0.7.1", path = "../proto" }
 ics23 = "0.6.0"
 anomaly = "0.2.0"
 chrono = "0.4"
@@ -36,20 +36,25 @@ prost-types = "0.7"
 bytes = "1.0.0"
 dyn-clonable = "0.9.0"
 regex = "1"
-bech32 = "0.7.2"
+bech32 = "0.8.0"
 subtle-encoding = "0.5"
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-testgen]
-version = "=0.18.0"
+version = "=0.18.1"
 optional = true
 
 [dev-dependencies]
 tokio = { version = "1.0", features = ["macros"] }
-tendermint-rpc = { version = "=0.18.0", features = ["http-client", "websocket-client"] }
-tendermint-testgen = { version = "=0.18.0" } # Needed for generating (synthetic) light blocks.
+tendermint-rpc = { version = "=0.18.1", features = ["http-client", "websocket-client"] }
+tendermint-testgen = { version = "=0.18.1" } # Needed for generating (synthetic) light blocks.
+
+[[test]]
+name = "mbt"
+path = "tests/mbt.rs"
+required-features = ["mocks"]

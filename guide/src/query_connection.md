@@ -70,7 +70,6 @@ POSITIONAL ARGUMENTS:
 
 FLAGS:
     -h, --height HEIGHT       height of the state to query
-    -p, --proof PROOF         whether proof is required; default: false (no proof)
 ```
 
 __Example__

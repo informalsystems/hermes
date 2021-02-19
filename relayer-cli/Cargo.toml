@@ -1,6 +1,6 @@
 [package]
 name    = "ibc-relayer-cli"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -16,13 +16,16 @@ description = """
     This crate is a CLI wrapper over the `ibc-relayer` library.
 """
 
+[[bin]]
+name = "hermes"
+
 [features]
 profiling = ["ibc-relayer/profiling"]
 
 [dependencies]
-ibc         = { version = "0.1.0", path = "../modules" }
-ibc-relayer = { version = "0.1.0", path = "../relayer" }
-ibc-proto   = { version = "0.7.0", path = "../proto" }
+ibc         = { version = "0.1.1", path = "../modules" }
+ibc-relayer = { version = "0.1.1", path = "../relayer" }
+ibc-proto   = { version = "0.7.1", path = "../proto" }
 
 anomaly = "0.2.0"
 gumdrop = "0.7"
@@ -44,17 +47,17 @@ subtle-encoding = "0.5"
 dirs-next = "2.0.0"
 
 [dependencies.tendermint-proto]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint]
-version = "=0.18.0"
+version = "=0.18.1"
 
 [dependencies.tendermint-rpc]
-version = "=0.18.0"
+version = "=0.18.1"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.18.0"
+version = "=0.18.1"
 features = ["unstable"]
 
 [dependencies.abscissa_core]
