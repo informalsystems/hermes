@@ -51,7 +51,7 @@
     "action": {
       "chainId": "chainA",
       "clientId": 0,
-      "counterpartyChainId": "chainA",
+      "counterpartyChainId": "chainB",
       "counterpartyClientId": 0,
       "type": "ICS03ConnectionOpenInit"
     },

@@ -105,7 +105,8 @@ ActionOutcomes == {
     "ICS03ConnectionOpenTryOK",
     "ICS03InvalidConsensusHeight",
     "ICS03ConnectionNotFound",
-    "ICS03ConnectionMismatch"
+    "ICS03ConnectionMismatch",
+    "ICS03InvalidProof"
 }
 
 \* data kept per client
@@ -260,7 +261,8 @@ CreateClientAction(chainId) ==
     \E height \in Heights:
         \* only create client if the model constant `MaxClientsPerChain` allows
         \* it
-        IF chains[chainId].clientIdCounter < MaxClientsPerChain THEN
+        LET allowed == chains[chainId].clientIdCounter < MaxClientsPerChain IN
+        IF allowed THEN
             CreateClient(chainId, height)
         ELSE
             UNCHANGED vars
@@ -281,7 +283,9 @@ ConnectionOpenInitAction(chainId) ==
     \E counterpartyClientId \in ClientIds:
         \* only create connection if the model constant `MaxConnectionsPerChain`
         \* allows it
-        IF chains[chainId].connectionIdCounter < MaxConnectionsPerChain THEN
+        LET allowed ==
+            chains[chainId].connectionIdCounter < MaxConnectionsPerChain IN
+        IF chainId /= counterpartyChainId /\ allowed THEN
             ConnectionOpenInit(
                 chainId,
                 clientId,
@@ -307,8 +311,10 @@ ConnectionOpenTryAction(chainId) ==
         \* only perform action if there was a previous connection or if the
         \* model constant `MaxConnectionsPerChain` allows that a new connection
         \* is created
-        IF \/ previousConnectionId /= ConnectionIdNone
-           \/ chains[chainId].connectionIdCounter < MaxConnectionsPerChain THEN
+        LET allowed ==
+            \/ previousConnectionId /= ConnectionIdNone
+            \/ chains[chainId].connectionIdCounter < MaxConnectionsPerChain IN
+        IF chainId /= counterpartyChainId /\ allowed THEN
             ConnectionOpenTry(
                 chainId,
                 clientId,

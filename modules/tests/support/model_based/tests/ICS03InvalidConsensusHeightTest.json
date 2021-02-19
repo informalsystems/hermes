@@ -52,7 +52,7 @@
       "chainId": "chainA",
       "clientId": 0,
       "clientState": 2,
-      "counterpartyChainId": "chainA",
+      "counterpartyChainId": "chainB",
       "counterpartyClientId": 0,
       "counterpartyConnectionId": 0,
       "previousConnectionId": -1,

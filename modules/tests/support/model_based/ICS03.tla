@@ -75,6 +75,7 @@ ICS03_ConnectionOpenInit(
 
 \* TODO: errors generated when verifying proofs are never an outcome of this
 \*       model
+\* TODO: check for a missing client?
 ICS03_ConnectionOpenTry(
     chain,
     chainId,
@@ -172,28 +173,44 @@ ICS03_ConnectionOpenTry(
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
         ELSE
-            \* TODO: check if there was an open init at the remote chain
-            \* verification passed; create connection
-            LET connection == [
-                state |-> "TryOpen",
-                clientId |-> clientId,
-                \* generate a new connection identifier
-                connectionId |-> connectionIdCounter,
-                counterpartyClientId |-> counterpartyClientId,
-                counterpartyConnectionId |-> counterpartyConnectionId
-            ] IN
-            \* return result with updated state
-            [
-                connections |-> ICS03_SetConnection(
-                    connections,
-                    connectionIdCounter,
-                    connection
-                ),
-                \* since a new connection identifier has been created, here we
-                \* update the `connectionIdCounter`
-                connectionIdCounter |-> connectionIdCounter + 1,
-                action |-> action,
-                outcome |-> "ICS03ConnectionOpenTryOK"
-            ]
+            \* check if there was an open init at the remote chain
+            LET openInitProofs == {
+                proof \in chain.connectionProofs :
+                    /\ proof.type = "ICS03ConnectionOpenInit"
+                    /\ chainId = counterpartyChainId
+                    /\ clientId = counterpartyClientId
+                    /\ counterpartyChainId = chainId
+                    /\ counterpartyClientId = clientId
+            } IN
+            IF Cardinality(openInitProofs) > 0 THEN
+                \* verification passed; create connection
+                LET connection == [
+                    state |-> "TryOpen",
+                    clientId |-> clientId,
+                    \* generate a new connection identifier
+                    connectionId |-> connectionIdCounter,
+                    counterpartyClientId |-> counterpartyClientId,
+                    counterpartyConnectionId |-> counterpartyConnectionId
+                ] IN
+                \* return result with updated state
+                [
+                    connections |-> ICS03_SetConnection(
+                        connections,
+                        connectionIdCounter,
+                        connection
+                    ),
+                    \* since a new connection identifier has been created, here we
+                    \* update the `connectionIdCounter`
+                    connectionIdCounter |-> connectionIdCounter + 1,
+                    action |-> action,
+                    outcome |-> "ICS03ConnectionOpenTryOK"
+                ]
+            ELSE
+                [
+                    connections |-> connections,
+                    connectionIdCounter |-> connectionIdCounter,
+                    action |-> action,
+                    outcome |-> "ICS03InvalidProof"
+                ]
 
 ===============================================================================
