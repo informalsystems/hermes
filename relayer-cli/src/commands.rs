@@ -13,14 +13,14 @@ use crate::commands::channel::ChannelCmds;
 use crate::config::Config;
 
 use self::{
-    keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd, start::StartCmd, tx::TxCmd,
-    version::VersionCmd,
-    create::CreateCmds,
+    create::CreateCmds, keys::KeysCmd, light::LightCmd, listen::ListenCmd, query::QueryCmd,
+    start::StartCmd, tx::TxCmd, version::VersionCmd,
 };
 
 mod channel;
 mod cli_utils;
 mod config;
+mod create;
 mod keys;
 mod light;
 mod listen;
@@ -28,7 +28,6 @@ mod query;
 mod start;
 mod tx;
 mod version;
-mod create;
 
 /// Default configuration file path
 pub fn default_config_file() -> Option<PathBuf> {

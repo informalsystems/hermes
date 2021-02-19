@@ -1,6 +1,6 @@
-use crate::Height;
 use crate::ics23_commitment::commitment::CommitmentRoot;
 use crate::ics24_host::identifier::ChainId;
+use crate::Height;
 
 use super::{
     client_def::{AnyClientState, AnyConsensusState},

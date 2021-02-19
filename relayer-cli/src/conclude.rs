@@ -56,6 +56,9 @@
 use serde::Serialize;
 use tracing::error;
 
+use ibc_relayer::util::Unrecoverable;
+use std::fmt::Display;
+
 /// Functional-style method to exit a program.
 ///
 /// ## Note: See `Output::exit()` for the preferred method of exiting a relayer command.
@@ -71,6 +74,19 @@ pub fn exit_with(out: Output) {
         std::process::exit(0);
     }
 }
+
+/// Exits the program. Useful when a type produces an error which can no longer be propagated, and
+/// must be handled instead.
+///
+pub fn exit_with_unrecoverable_error<T: Unrecoverable, E: Display>(err: E) -> T {
+    Output::error(format!("{}", err)).exit();
+    T::conclude()
+}
+
+// pub fn exit_with_output(e: ForeignClientError) -> Result<(), ()> {
+//     Output::error(format!("{}", e)).exit();
+//     Ok(())
+// }
 
 /// A CLI output with support for JSON serialization. The only mandatory field is the `status`,
 /// which typically signals a success (UNIX process return code `0`) or an error (code `1`). An

@@ -1,5 +1,6 @@
-use prost_types::Any;
 use std::{thread, time::Duration};
+
+use prost_types::Any;
 use thiserror::Error;
 use tracing::{error, info};
 
@@ -9,13 +10,14 @@ use ibc::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use ibc::ics02_client::state::ClientState;
 use ibc::ics02_client::state::ConsensusState;
-use ibc::ics24_host::identifier::{ClientId, ChainId};
+use ibc::ics24_host::identifier::{ChainId, ClientId};
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
 use crate::chain::handle::ChainHandle;
+use crate::util::Unrecoverable;
 
 #[derive(Debug, Error)]
 pub enum ForeignClientError {
@@ -78,12 +80,12 @@ impl ForeignClient {
     pub fn find(
         dst_chain: Box<dyn ChainHandle>,
         src_chain: Box<dyn ChainHandle>,
-        expected_client_id: ClientId
+        expected_client_id: ClientId,
     ) -> Result<ForeignClient, ForeignClientError> {
         let height = Height::new(dst_chain.id().version(), 0);
 
         match dst_chain.query_client_state(&expected_client_id, height) {
-            Ok(cs) =>
+            Ok(cs) => {
                 if cs.chain_id() != src_chain.id() {
                     Err(ForeignClientError::ClientFind(
                         expected_client_id,
@@ -98,9 +100,10 @@ impl ForeignClient {
                         src_chain: src_chain.clone(),
                     })
                 }
+            }
             Err(_e) => Err(ForeignClientError::ClientQuery(
                 expected_client_id,
-                dst_chain.id()
+                dst_chain.id(),
             )),
         }
     }
@@ -297,6 +300,8 @@ impl ForeignClient {
         Ok(())
     }
 }
+
+impl Unrecoverable for ForeignClient {}
 
 pub fn extract_client_id(event: &IBCEvent) -> Result<&ClientId, ForeignClientError> {
     match event {

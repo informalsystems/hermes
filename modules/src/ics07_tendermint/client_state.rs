@@ -7,13 +7,13 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::{ClientState as RawClientState, Fraction};
 
-use crate::Height;
 use crate::ics02_client::client_def::AnyClientState;
 use crate::ics02_client::client_type::ClientType;
 use crate::ics07_tendermint::error::{Error, Kind};
 use crate::ics07_tendermint::header::Header;
 use crate::ics23_commitment::merkle::cosmos_specs;
 use crate::ics24_host::identifier::ChainId;
+use crate::Height;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ClientState {
@@ -140,7 +140,8 @@ impl TryFrom<RawClientState> for ClientState {
         let chain_id = raw
             .chain_id
             .clone()
-            .try_into().map_err(|e| Kind::InvalidChainId(raw.chain_id.clone(), e))?;
+            .try_into()
+            .map_err(|e| Kind::InvalidChainId(raw.chain_id.clone(), e))?;
 
         Ok(Self {
             chain_id,
@@ -208,10 +209,10 @@ mod tests {
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::Height;
     use crate::ics07_tendermint::client_state::ClientState;
     use crate::ics24_host::identifier::ChainId;
     use crate::test::test_serialization_roundtrip;
+    use crate::Height;
 
     #[test]
     fn serialization_roundtrip_no_proof() {

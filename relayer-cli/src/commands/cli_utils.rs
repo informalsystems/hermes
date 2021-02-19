@@ -7,6 +7,7 @@ use ibc_relayer::{chain::runtime::ChainRuntime, config::ChainConfig};
 
 use crate::application::CliApp;
 use crate::error::{Error, Kind};
+use ibc_relayer::util::Unrecoverable;
 
 /// Pair of chain handlers that are used by most CLIs.
 pub struct ChainHandlePair {
@@ -39,6 +40,8 @@ impl ChainHandlePair {
         spawn_chain_runtimes(options, config, src_chain_id, dst_chain_id)
     }
 }
+
+impl Unrecoverable for ChainHandlePair {}
 
 /// Spawn the source and destination chain runtime from the configuration and chain identifiers,
 /// and return the pair of associated handles.
