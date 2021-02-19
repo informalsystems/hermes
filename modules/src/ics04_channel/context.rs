@@ -5,9 +5,9 @@ use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::error::Error;
-use crate::ics04_channel::handler::ChannelResult;
+use crate::ics04_channel::handler::{ChannelIdState, ChannelResult};
 use crate::ics05_port::capabilities::Capability;
-use crate::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::Height;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
@@ -20,52 +20,51 @@ pub trait ChannelReader {
 
     fn connection_channels(&self, cid: &ConnectionId) -> Option<Vec<(PortId, ChannelId)>>;
 
-    fn channel_client_state(&self, port_channel_id: &(PortId, ChannelId))
-        -> Option<AnyClientState>;
+    /// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
+    /// proof verification.
+    fn client_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
 
-    fn channel_client_consensus_state(
+    fn client_consensus_state(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        client_id: &ClientId,
         height: Height,
     ) -> Option<AnyConsensusState>;
 
     fn authenticated_capability(&self, port_id: &PortId) -> Result<Capability, Error>;
+
+    /// Returns a counter on the number of channel ids have been created thus far.
+    /// The value of this counter should increase only via method
+    /// `ChannelKeeper::increase_channel_counter`.
+    fn channel_counter(&self) -> u64;
 }
 
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {
-    fn next_channel_id(&mut self) -> ChannelId;
-
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
-        if result.channel_id.is_none() {
-            // If this is the first time the handler processed this channel
-            let channel_id = self.next_channel_id();
+        // The handler processed this channel & some modifications occurred, store the new end.
+        self.store_channel(
+            &(result.port_id.clone(), result.channel_id.clone()),
+            &result.channel_end,
+        )?;
 
-            self.store_channel(
-                &(result.port_id.clone(), channel_id.clone()),
-                &result.channel_end,
-            )?;
+        // The channel identifier was freshly brewed.
+        // Increase counter & initialize seq. nrs.
+        if matches!(result.channel_id_state, ChannelIdState::Generated) {
+            self.increase_channel_counter();
 
-            // associate also the channel end to its connection
+            // Associate also the channel end to its connection.
             self.store_connection_channels(
                 &result.channel_end.connection_hops()[0].clone(),
-                &(result.port_id.clone(), channel_id.clone()),
+                &(result.port_id.clone(), result.channel_id.clone()),
             )?;
 
-            // initialize send sequence number
-            self.store_next_sequence_send(&(result.port_id.clone(), channel_id.clone()), 1)?;
-            // initialize recv sequence number
-            self.store_next_sequence_recv(&(result.port_id.clone(), channel_id.clone()), 1)?;
-            // initialize ack sequence number
-            self.store_next_sequence_ack(&(result.port_id, channel_id), 1)?;
-        } else {
-            //the handler processed this channel for channel open init
-            self.store_channel(
-                &(result.port_id.clone(), result.channel_id.clone().unwrap()),
-                &result.channel_end,
-            )?;
+            // Initialize send, recv, and ack sequence numbers.
+            self.store_next_sequence_send(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_recv(&(result.port_id.clone(), result.channel_id.clone()), 1)?;
+            self.store_next_sequence_ack(&(result.port_id, result.channel_id), 1)?;
         }
+
         Ok(())
     }
 
@@ -99,4 +98,9 @@ pub trait ChannelKeeper {
         port_channel_id: &(PortId, ChannelId),
         seq: u64,
     ) -> Result<(), Error>;
+
+    /// Called upon channel identifier creation (Init or Try message processing).
+    /// Increases the counter which keeps track of how many channels have been created.
+    /// Should never fail.
+    fn increase_channel_counter(&mut self);
 }
