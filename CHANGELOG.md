@@ -32,11 +32,10 @@
 
 [comment]: <> (  - [nothing yet])
 
-[comment]: <> (### BUG FIXES)
+### BUG FIXES
 
-[comment]: <> (- [ibc])
-
-[comment]: <> (  - [nothing yet])
+- [ibc]
+  - Overflow if `ctx.host_current_height().revision_height < ctx.host_chain_history_size()` ([#685])
 
 [comment]: <> (- [ibc-relayer])
 
@@ -59,6 +58,8 @@
 [comment]: <> (- [ibc-relayer-cli])
 
 [comment]: <> (  - [nothing yet])
+
+[#685]: https://github.com/informalsystems/ibc-rs/issues/685
 
 ## v0.1.1
 *February 17, 2021*
