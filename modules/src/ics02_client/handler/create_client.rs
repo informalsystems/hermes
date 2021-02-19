@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
 use crate::ics02_client::client_type::ClientType;
@@ -49,7 +49,7 @@ pub fn process(
         client_id,
         ..Default::default()
     };
-    output.emit(IBCEvent::CreateClient(event_attributes.into()));
+    output.emit(IbcEvent::CreateClient(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -61,7 +61,7 @@ mod tests {
 
     use tendermint::trust_threshold::TrustThresholdFraction as TrustThreshold;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
     use crate::ics02_client::client_def::{AnyClientState, AnyConsensusState};
     use crate::ics02_client::client_type::ClientType;
@@ -100,7 +100,7 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Mock, 0).unwrap();
                 assert!(
-                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                 );
                 match result {
                     ClientResult::Create(create_result) => {
@@ -190,7 +190,7 @@ mod tests {
                     assert_eq!(events.len(), 1);
                     let event = events.pop().unwrap();
                     assert!(
-                        matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                        matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                     );
                     match result {
                         ClientResult::Create(create_res) => {
@@ -251,7 +251,7 @@ mod tests {
                 let event = events.pop().unwrap();
                 let expected_client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
                 assert!(
-                    matches!(event, IBCEvent::CreateClient(e) if e.client_id() == &expected_client_id)
+                    matches!(event, IbcEvent::CreateClient(e) if e.client_id() == &expected_client_id)
                 );
                 match result {
                     ClientResult::Create(create_res) => {

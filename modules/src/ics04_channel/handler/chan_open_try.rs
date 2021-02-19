@@ -1,6 +1,6 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenTry`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::State as ConnectionState;
 use crate::ics04_channel::channel::{ChannelEnd, Counterparty, State};
@@ -157,7 +157,7 @@ pub(crate) fn process(
         channel_id: Some(channel_id),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenTryChannel(event_attributes.into()));
+    output.emit(IbcEvent::OpenTryChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -166,7 +166,7 @@ pub(crate) fn process(
 mod tests {
     use std::convert::TryFrom;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics02_client::client_type::ClientType;
     use crate::ics03_connection::connection::ConnectionEnd;
     use crate::ics03_connection::connection::Counterparty as ConnectionCounterparty;
@@ -376,7 +376,7 @@ mod tests {
                     assert_eq!(res.channel_end.state().clone(), State::TryOpen);
 
                     for e in handler_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenTryChannel(_)));
+                        assert!(matches!(e, &IbcEvent::OpenTryChannel(_)));
                     }
                 }
                 Err(e) => {

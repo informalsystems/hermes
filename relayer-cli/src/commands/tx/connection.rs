@@ -1,6 +1,6 @@
 use abscissa_core::{Command, Options, Runnable};
 
-use ibc::events::IBCEvent;
+use ibc::events::IbcEvent;
 use ibc::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc_relayer::config::StoreConfig;
 use ibc_relayer::connection::{Connection, ConnectionSide};
@@ -29,7 +29,7 @@ macro_rules! conn_open_cmd {
 
         info!("Message {}: {:?}", $dbg_string, connection);
 
-        let res: Result<IBCEvent, Error> =
+        let res: Result<IbcEvent, Error> =
             connection.$func().map_err(|e| Kind::Tx.context(e).into());
 
         match res {

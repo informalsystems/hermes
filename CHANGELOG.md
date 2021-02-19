@@ -2,7 +2,7 @@
 
 ## Unreleased Changes
 
-> [high level summary]
+- [high level summary]
 
 ### FEATURES
 
@@ -10,7 +10,6 @@
   - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
 
 - [ibc-relayer]
-  - Listen to channel close initialization event and perform the close handshake ([#560])
 
 - [ibc-relayer-cli]
   - [nothing yet]
@@ -18,10 +17,60 @@
 ### IMPROVEMENTS
 
 - [ibc]
-  - Change event height to ICS height ([#549])
+  - Follow Rust guidelines naming conventions ([#689])
 
 - [ibc-relayer]
   - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
+
+### BUG FIXES
+
+- [ibc]
+  - [nothing yet]
+
+- [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
+
+### BREAKING CHANGES
+
+- [ibc]
+  - [nothing yet]
+
+- [ibc-relayer]
+  - [nothing yet]
+
+- [ibc-relayer-cli]
+  - [nothing yet]
+
+[#689]: https://github.com/informalsystems/ibc-rs/issues/689
+
+## v0.1.1
+*February 17, 2021*
+
+This release brings a quick fix for a problem with a dependency of crate
+`ibc-relayer`, which causes build & installation issues. Many thanks to 
+@Fraccaman for bringing this problem to our attention! ([#672])
+
+
+Additionally, this release also introduces initial implementation for most of
+ICS 004 handlers, and several bug fixes and improvements, e.g., refactored
+some CLI code, refactored the Height type in the IBC Events, and a bug fix
+involving packet acks in a 3-chain setup. More details below. 
+
+### FEATURES
+- [ibc-relayer]
+  - Listen to channel close initialization event and perform the close handshake ([#560])
+  - Updated to tendermint-rs `v0.18.1` ([#682], [#671])
+
+### IMPROVEMENTS
+
+- [ibc]
+  - Change event height to ICS height ([#549])
 
 - [ibc-relayer-cli]
   - Cleanup CLI code ([#572])
@@ -44,9 +93,6 @@
   - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
   - Remove dependency on `tendermint-rpc` ([#624])
 
-- [ibc-relayer]
-  - [nothing yet]
-
 - [ibc-relayer-cli]
   - Remove the `proof` option from CLI ([#572])
 
@@ -60,6 +106,9 @@
 [#626]: https://github.com/informalsystems/ibc-rs/issues/626
 [#643]: https://github.com/informalsystems/ibc-rs/issues/643
 [#665]: https://github.com/informalsystems/ibc-rs/issues/665
+[#671]: https://github.com/informalsystems/ibc-rs/pull/671
+[#672]: https://github.com/informalsystems/ibc-rs/issues/672
+[#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
 [ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
 [ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli

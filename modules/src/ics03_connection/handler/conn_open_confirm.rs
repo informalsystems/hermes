@@ -1,6 +1,6 @@
 //! Protocol logic specific to processing ICS3 messages of type `MsgConnectionOpenConfirm`.
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::ics03_connection::context::ConnectionReader;
@@ -69,7 +69,7 @@ pub(crate) fn process(
         connection_id: Some(result.connection_id.clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::OpenConfirmConnection(event_attributes.into()));
+    output.emit(IbcEvent::OpenConfirmConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
 }
@@ -79,7 +79,7 @@ mod tests {
     use std::convert::TryFrom;
     use std::str::FromStr;
 
-    use crate::events::IBCEvent;
+    use crate::events::IbcEvent;
     use crate::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
     use crate::ics03_connection::context::ConnectionReader;
     use crate::ics03_connection::handler::{dispatch, ConnectionResult};
@@ -173,7 +173,7 @@ mod tests {
                     assert_eq!(res.connection_end.state().clone(), State::Open);
 
                     for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IBCEvent::OpenConfirmConnection(_)));
+                        assert!(matches!(e, &IbcEvent::OpenConfirmConnection(_)));
                     }
                 }
                 Err(e) => {
