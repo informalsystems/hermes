@@ -220,9 +220,9 @@ mod tests {
                     .clone()
                     .with_client(&client_id, proof_height)
                     .with_connection(conn_id.clone(), conn_end_cparty),
-                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack.clone())),
+                msg: ConnectionMsg::ConnectionOpenAck(Box::new(msg_ack)),
                 want_pass: false,
-                error_kind: Some(Kind::ConnectionMismatch(conn_id.clone()))
+                error_kind: Some(Kind::ConnectionMismatch(conn_id))
             },
             /*
             Test {
