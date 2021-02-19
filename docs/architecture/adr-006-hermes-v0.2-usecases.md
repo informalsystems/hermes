@@ -5,30 +5,29 @@
 
 ## Context
 
-One major problem with planning for the evolution of Hermes (the relayer
-binary), is that presently there is insufficient clarity regarding its
-requirements.
-Some basic question here would be: who are the Hermes users, what are
-their primary use-cases, and what are the primary design goals which Hermes 
-should adopt towards satisfying these requirements?
+One major problem with planning for the evolution of Hermes, is that presently
+there is insufficient clarity regarding its requirements.
+It is not known who are the typical Hermes users (is it human operators or
+automated pipelines?), and what are their primary use-cases.
 
-In this document we do not aim to answer the above questions.
-Instead, we propose a few use-cases that seem interesting from the point
+This ADR proposes a few use-cases that seem interesting from the point
 of view of a general target base of users, and which will
-hopefully be a subset of the requirements of future users.
+hopefully be a subset of the requirements of (any) future users.
 
 Three elements that provide further context for this discussion are:
 
-1. Hermes is still at an early implementation stage and release v0.2.0 is 
+1. Hermes is still at an early stage of implementation, so these use-cases are
+   not set in stone.
 
-2. Some use-cases are starting to emerge ([#628][628]), which we either do not
-cover altogether, or cover poorly (e.g., because of inconsistent UX).
+2. Some concrete use-cases are starting to emerge ([#628][628]), which we either
+   do not cover altogether, or cover poorly (e.g., because of inconsistent UX),
+   thus informing this proposal. 
 
-3. Hermes is one of three relayer binaries that are being developed roughly in
+3. Hermes is one of _three_ relayer binaries that are being developed roughly in
 parallel. The other two are being developed in Go and Typescript, 
 respectively (see the [references](#references) section).
 In this context, it is plausible that Hermes will focus on performance,
-robustness, and richness of features.
+robustness, and richness of features on a longer term.
 
 ## Decision
 
@@ -41,22 +40,22 @@ obscure to the user, and then the user could consequently be stuck.
 
 The first of the patterns below seeks to help "unblock" a user.
 The second pattern is a variation on the first; this permits more efficiency
-because it allows the reuse of previously-created object in the
-creation of new objects (e.g., reuse a client in the creation of a connection).
+because it allows the reuse of previously-created objects in the
+creation of new objects on a chain (e.g., reuse a client in the creation of a
+connection).
 
 ### Patterns
 
 We propose two basic patterns that Hermes should be able to fulfil.
 
-1. Simple invocations to perform common actions (assuming minimal prior
-   knowledge).
-    - By _action_ here we mean a command such as creating an object 
-      (specifically connection or channel) on a chain, or relaying packets
-      between two chains.
+1. Simple invocations to perform basic actions.
+    - By _action_ here we mean doing the complete handshake for an object
+      (specifically _connection_ or _channel_) on two chains, or relaying
+      packets between two chains.
     - The focus here is for the command to include retrying mechanisms 
-      (perform it _robustly_) and have a simple interface.
+      (perform it _robustly_) and have the simplest interface.
 
-2. Allow reusing of pre-existing state for common commands.
+2. Allow reusing of pre-existing state for basic commands.
     - The pre-existing state could be a client with some specific trust options,
       for instance, and in this case Hermes would provide support for creating
       a connection that uses this specific client.
@@ -71,17 +70,23 @@ commands that Hermes v0.2.0 should fulfil.
 
 - Minimal invocation: this will create the connection using _new_ clients:
 
-> hermes create connection ibc-0 ibc-1 [--delay <delay>]
+```
+hermes create connection ibc-0 ibc-1 [--delay <delay>]
+```
 
-**Details:** Starts a transaction to perform the connection open handshake protocol between
+**Details:**
+Starts a transaction to perform the connection open handshake protocol between
 chains `ibc-0` and `ibc-1`. The optional parameter `--delay` is the delay period
 that the new connection should have.
 
 - Reusing pre-existing state, concretely, with _existing_ clients:
 
-> hermes create connection ibc-0 --src-client-id <client-id> --dst-client-id <client-id> [--delay <delay>]
+```
+hermes create connection ibc-0 --src-client-id <client-id> --dst-client-id <client-id> [--delay <delay>]
+```
 
-**Details:** Similar to the previous command, but will reuse the client with identifier from
+**Details:**
+Similar to the previous command, but will reuse the client with identifier from
 option `--src-client-id` which is expected to exist on chain `ibc-0`. The
 [client state][client-state] from this client will also provide the identifier 
 for the destination chain (this is the "chain_id" field from the client state).
@@ -93,30 +98,43 @@ be verifying headers for the source chain.
 
 - With _new_ connection and clients:
 
-> hermes create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+```
+hermes create channel ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+```
 
 - With _existing_ specific connection:
 
-> hermes create channel ibc-0 --src-connection <connection-id> -src-port <port-id> --dst-port <port-id> --order <order>
---version <version>
+```
+hermes create channel ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+```
 
 ##### Packet Relaying
 
 - relay packets over a _new_ channel, _new_ connection, and _new_ clients:
 
-> hermes start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>
+```
+hermes start ibc-0 ibc-1 --src-port <port-id> --dst-port <port-id>
+```
 
 - relay packets over an _existing_ channel:
 
-> hermes start ibc-0 --src-channel <channel-id>
+```
+hermes start ibc-0 --src-channel <channel-id>
+```
 
 - relay packets over a _new_ channel that uses an _existing_ connection:
 
-> hermes start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order> --version <version>
+```
+hermes start ibc-0 --src-connection <connection-id> --src-port <port-id> --dst-port <port-id> --order <order>
+--version <version>
+```
 
-- relay packets over a _new_ channel that uses a _new_ connection that build on an _existing_ client:
+- relay packets over a _new_ channel that uses a _new_ connection that builds
+  on an _existing_ client:
 
-> hermes start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>
+```
+hermes start ibc-0 --src-client-id <client-id> --dst-client-id <client-id> --delay <delay>
+```
 
 ##### Finishing partially complete handshakes:
 
@@ -125,11 +143,15 @@ handshake may be partially started.
 
 - Finalize handshake for _partially established_ connection:
 
-> hermes create connection ibc-0 --src-connection <connection-id>
+```
+hermes create connection ibc-0 --src-connection <connection-id>
+```
 
 - Finalize handshake for _partially established_ channel:
 
-> hermes create channel ibc-0 --src-channel <channel-id>
+```
+hermes create channel ibc-0 --src-channel <channel-id>
+```
 
 
 ### Command Output
