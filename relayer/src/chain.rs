@@ -9,7 +9,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 pub use cosmos::CosmosSDKChain;
 use ibc::events::IBCEvent;
-use ibc::Height as ICSHeight;
 use ibc::ics02_client::header::Header;
 use ibc::ics02_client::state::{ClientState, ConsensusState};
 use ibc::ics03_connection::connection::{ConnectionEnd, State};
@@ -19,6 +18,7 @@ use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::proofs::{ConsensusProof, Proofs};
+use ibc::Height as ICSHeight;
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryChannelsRequest, QueryConnectionChannelsRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,

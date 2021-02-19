@@ -6,10 +6,12 @@ use tendermint::account::Id;
 use thiserror::Error;
 use tracing::{error, info};
 
+use ibc::ics04_channel::channel::{ChannelEnd, State};
+use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc::{
     downcast,
     events::{IBCEvent, IBCEventType},
-    Height,
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::channel::{Order, QueryPacketEventDataRequest, State as ChannelState},
     ics04_channel::events::{SendPacket, WriteAcknowledgement},
@@ -19,10 +21,8 @@ use ibc::{
     ics04_channel::packet::{Packet, PacketMsgType, Sequence},
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     tx_msg::Msg,
+    Height,
 };
-use ibc::ics04_channel::channel::{ChannelEnd, State};
-use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
 use ibc_proto::ibc::core::channel::v1::{
     MsgAcknowledgement as RawMsgAck, MsgChannelCloseConfirm as RawMsgChannelCloseConfirm,
     MsgRecvPacket as RawMsgRecvPacket, MsgTimeout as RawMsgTimeout,
@@ -731,19 +731,18 @@ impl RelayPath {
     }
 
     fn build_timeout_packet(&self, packet: &Packet, height: Height) -> Result<Any, LinkError> {
-        let (packet_type, next_sequence_received) =
-            if self.ordered_channel() {
-                let next_seq = self
-                    .dst_chain()
-                    .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
-                        port_id: self.dst_port_id().to_string(),
-                        channel_id: self.dst_channel_id().to_string(),
-                    })
-                    .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
-                (PacketMsgType::TimeoutOrdered, next_seq)
-            } else {
-                (PacketMsgType::TimeoutUnordered, packet.sequence)
-            };
+        let (packet_type, next_sequence_received) = if self.ordered_channel() {
+            let next_seq = self
+                .dst_chain()
+                .query_next_sequence_receive(QueryNextSequenceReceiveRequest {
+                    port_id: self.dst_port_id().to_string(),
+                    channel_id: self.dst_channel_id().to_string(),
+                })
+                .map_err(|e| ChannelError::QueryError(self.dst_chain().id(), e))?;
+            (PacketMsgType::TimeoutOrdered, next_seq)
+        } else {
+            (PacketMsgType::TimeoutUnordered, packet.sequence)
+        };
 
         let (_, proofs) = self
             .dst_chain

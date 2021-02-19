@@ -5,9 +5,9 @@ use crossbeam_channel as channel;
 use tendermint::account::Id as AccountId;
 use tokio::runtime::Runtime as TokioRuntime;
 
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
     events::IBCEvent,
-    Height,
     ics02_client::{
         client_def::{AnyClientState, AnyConsensusState, AnyHeader},
         header::Header,
@@ -17,12 +17,12 @@ use ibc::{
     ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ClientId, ConnectionId},
     ics24_host::identifier::ChannelId,
     ics24_host::identifier::PortId,
+    ics24_host::identifier::{ClientId, ConnectionId},
     proofs::Proofs,
+    Height,
 };
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -39,8 +39,8 @@ use crate::{
 };
 
 use super::{
-    Chain,
     handle::{ChainHandle, ChainRequest, ProdChainHandle, ReplyTo, Subscription},
+    Chain,
 };
 
 pub struct Threads {

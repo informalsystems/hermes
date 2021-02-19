@@ -4,20 +4,20 @@ use crossbeam_channel as channel;
 // FIXME: the handle should not depend on tendermint-specific types
 use tendermint::account::Id as AccountId;
 
+use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::{
     events::IBCEvent,
-    Height,
     ics02_client::client_def::{AnyClientState, AnyConsensusState, AnyHeader},
     ics03_connection::connection::ConnectionEnd,
     ics03_connection::version::Version,
     ics04_channel::channel::{ChannelEnd, QueryPacketEventDataRequest},
     ics23_commitment::commitment::CommitmentPrefix,
-    ics24_host::identifier::{ClientId, ConnectionId, PortId},
     ics24_host::identifier::ChainId,
     ics24_host::identifier::ChannelId,
+    ics24_host::identifier::{ClientId, ConnectionId, PortId},
     proofs::Proofs,
+    Height,
 };
-use ibc::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc_proto::ibc::core::channel::v1::{
     PacketState, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -30,7 +30,7 @@ use crate::{
     keyring::store::KeyEntry,
 };
 
-use super::{ChainHandle, ChainRequest, reply_channel, ReplyTo, Subscription};
+use super::{reply_channel, ChainHandle, ChainRequest, ReplyTo, Subscription};
 
 #[derive(Debug, Clone)]
 pub struct ProdChainHandle {

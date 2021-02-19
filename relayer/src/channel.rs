@@ -4,7 +4,6 @@ use thiserror::Error;
 use tracing::error;
 
 use ibc::events::IBCEvent;
-use ibc::Height;
 use ibc::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
 use ibc::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -14,6 +13,7 @@ use ibc::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use ibc::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::tx_msg::Msg;
+use ibc::Height;
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseInit as RawMsgChannelCloseInit;
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
