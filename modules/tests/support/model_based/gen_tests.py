@@ -25,6 +25,7 @@ tests = [
     "ICS03InvalidConsensusHeightTest",
     "ICS03ConnectionNotFoundTest",
     "ICS03ConnectionMismatchTest",
+    "ICS03MissingClientConsensusStateTest",
     "ICS03InvalidProofTest",
 ]
 

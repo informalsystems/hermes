@@ -347,6 +347,10 @@ impl modelator::TestExecutor<Step> for IBCTestExecutor {
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::ConnectionMismatch(_)
             ),
+            ActionOutcome::ICS03MissingClientConsensusState => matches!(
+                Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
+                ICS03ErrorKind::MissingClientConsensusState(_, _)
+            ),
             ActionOutcome::ICS03InvalidProof => matches!(
                 Self::extract_handler_error_kind::<ICS03ErrorKind>(result),
                 ICS03ErrorKind::InvalidProof

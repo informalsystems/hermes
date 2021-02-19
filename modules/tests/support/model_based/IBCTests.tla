@@ -32,6 +32,9 @@ ICS03ConnectionNotFoundTest ==
 ICS03ConnectionMismatchTest ==
     /\ actionOutcome = "ICS03ConnectionMismatch"
 
+ICS03MissingClientConsensusStateTest ==
+    /\ actionOutcome = "ICS03MissingClientConsensusState"
+
 ICS03InvalidProofTest ==
     /\ actionOutcome = "ICS03InvalidProof"
 
@@ -52,6 +55,7 @@ ICS03ConnectionOpenTryOKTestNeg == ~ICS03ConnectionOpenTryOKTest
 ICS03InvalidConsensusHeightTestNeg == ~ICS03InvalidConsensusHeightTest
 ICS03ConnectionNotFoundTestNeg == ~ICS03ConnectionNotFoundTest
 ICS03ConnectionMismatchTestNeg == ~ICS03ConnectionMismatchTest
+ICS03MissingClientConsensusStateTestNeg == ~ICS03MissingClientConsensusStateTest
 ICS03InvalidProofTestNeg == ~ICS03InvalidProofTest
 
 ===============================================================================

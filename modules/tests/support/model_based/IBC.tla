@@ -106,6 +106,8 @@ ActionOutcomes == {
     "ICS03InvalidConsensusHeight",
     "ICS03ConnectionNotFound",
     "ICS03ConnectionMismatch",
+    \* TODO: "ICS03MissingClient" is also an outcome
+    "ICS03MissingClientConsensusState",
     "ICS03InvalidProof"
 }
 

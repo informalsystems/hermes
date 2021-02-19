@@ -50,8 +50,8 @@
   {
     "action": {
       "chainId": "chainA",
-      "clientState": 1,
-      "consensusState": 1,
+      "clientState": 2,
+      "consensusState": 2,
       "type": "ICS02CreateClient"
     },
     "actionOutcome": "ICS02CreateOK",
@@ -61,7 +61,7 @@
         "clients": {
           "0": {
             "heights": [
-              1
+              2
             ]
           }
         },
@@ -115,7 +115,7 @@
         "clients": {
           "0": {
             "heights": [
-              1
+              2
             ]
           }
         },
@@ -165,6 +165,69 @@
   {
     "action": {
       "chainId": "chainB",
+      "clientState": 1,
+      "consensusState": 1,
+      "type": "ICS02CreateClient"
+    },
+    "actionOutcome": "ICS02CreateOK",
+    "chains": {
+      "chainA": {
+        "clientIdCounter": 1,
+        "clients": {
+          "0": {
+            "heights": [
+              2
+            ]
+          }
+        },
+        "connectionIdCounter": 1,
+        "connectionProofs": [],
+        "connections": {
+          "0": {
+            "clientId": 0,
+            "connectionId": 0,
+            "counterpartyClientId": 0,
+            "counterpartyConnectionId": -1,
+            "state": "Init"
+          }
+        },
+        "height": 3
+      },
+      "chainB": {
+        "clientIdCounter": 1,
+        "clients": {
+          "0": {
+            "heights": [
+              1
+            ]
+          }
+        },
+        "connectionIdCounter": 0,
+        "connectionProofs": [
+          {
+            "chainId": "chainA",
+            "clientId": 0,
+            "counterpartyChainId": "chainB",
+            "counterpartyClientId": 0,
+            "type": "ICS03ConnectionOpenInit"
+          }
+        ],
+        "connections": {
+          "0": {
+            "clientId": -1,
+            "connectionId": -1,
+            "counterpartyClientId": -1,
+            "counterpartyConnectionId": -1,
+            "state": "Uninit"
+          }
+        },
+        "height": 2
+      }
+    }
+  },
+  {
+    "action": {
+      "chainId": "chainB",
       "clientId": 0,
       "clientState": 1,
       "counterpartyChainId": "chainA",
@@ -180,7 +243,7 @@
         "clients": {
           "0": {
             "heights": [
-              1
+              2
             ]
           }
         },
@@ -209,10 +272,12 @@
         "height": 3
       },
       "chainB": {
-        "clientIdCounter": 0,
+        "clientIdCounter": 1,
         "clients": {
           "0": {
-            "heights": []
+            "heights": [
+              1
+            ]
           }
         },
         "connectionIdCounter": 1,
@@ -234,7 +299,7 @@
             "state": "TryOpen"
           }
         },
-        "height": 2
+        "height": 3
       }
     }
   }

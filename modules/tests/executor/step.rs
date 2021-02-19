@@ -101,6 +101,7 @@ pub enum ActionOutcome {
     ICS03InvalidConsensusHeight,
     ICS03ConnectionNotFound,
     ICS03ConnectionMismatch,
+    ICS03MissingClientConsensusState,
     ICS03InvalidProof,
 }
 

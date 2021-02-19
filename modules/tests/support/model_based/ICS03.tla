@@ -73,9 +73,6 @@ ICS03_ConnectionOpenInit(
             outcome |-> "ICS03MissingClient"
         ]
 
-\* TODO: errors generated when verifying proofs are never an outcome of this
-\*       model
-\* TODO: check for a missing client?
 ICS03_ConnectionOpenTry(
     chain,
     chainId,
@@ -173,44 +170,72 @@ ICS03_ConnectionOpenTry(
                     outcome |-> "ICS03ConnectionNotFound"
                 ]
         ELSE
-            \* check if there was an open init at the remote chain
-            LET openInitProofs == {
-                proof \in chain.connectionProofs :
-                    /\ proof.type = "ICS03ConnectionOpenInit"
-                    /\ proof.chainId = counterpartyChainId
-                    /\ proof.clientId = counterpartyClientId
-                    /\ proof.counterpartyChainId = chainId
-                    /\ proof.counterpartyClientId = clientId
-            } IN
-            IF Cardinality(openInitProofs) > 0 THEN
-                \* verification passed; create connection
-                LET connection == [
-                    state |-> "TryOpen",
-                    clientId |-> clientId,
-                    \* generate a new connection identifier
-                    connectionId |-> connectionIdCounter,
-                    counterpartyClientId |-> counterpartyClientId,
-                    counterpartyConnectionId |-> counterpartyConnectionId
-                ] IN
-                \* return result with updated state
-                [
-                    connections |-> ICS03_SetConnection(
-                        connections,
-                        connectionIdCounter,
-                        connection
-                    ),
-                    \* since a new connection identifier has been created, here we
-                    \* update the `connectionIdCounter`
-                    connectionIdCounter |-> connectionIdCounter + 1,
-                    action |-> action,
-                    outcome |-> "ICS03ConnectionOpenTryOK"
-                ]
+            \* check if the client exists
+            IF ICS02_ClientExists(clients, clientId) THEN
+                \* check if the client has a consensus state with this height
+                LET client == ICS02_GetClient(clients, clientId) IN
+                IF height \in client.heights THEN
+                    \* check if there was an open init at the remote chain
+                    LET openInitProofs == {
+                        proof \in chain.connectionProofs :
+                            /\ proof.type = "ICS03ConnectionOpenInit"
+                            /\ proof.chainId = counterpartyChainId
+                            /\ proof.clientId = counterpartyClientId
+                            /\ proof.counterpartyChainId = chainId
+                            /\ proof.counterpartyClientId = clientId
+                    } IN
+                    IF Cardinality(openInitProofs) > 0 THEN
+                        \* verification passed; create connection
+                        LET connection == [
+                            state |-> "TryOpen",
+                            clientId |-> clientId,
+                            \* generate a new connection identifier
+                            connectionId |-> connectionIdCounter,
+                            counterpartyClientId |-> counterpartyClientId,
+                            counterpartyConnectionId |-> counterpartyConnectionId
+                        ] IN
+                        \* return result with updated state
+                        [
+                            connections |-> ICS03_SetConnection(
+                                connections,
+                                connectionIdCounter,
+                                connection
+                            ),
+                            \* since a new connection identifier has been
+                            \* created, here we update the `connectionIdCounter`
+                            connectionIdCounter |-> connectionIdCounter + 1,
+                            action |-> action,
+                            outcome |-> "ICS03ConnectionOpenTryOK"
+                        ]
+                    ELSE
+                        \* if there wasn't an open init at the remote chain,
+                        \* then set an error outcome
+                        [
+                            connections |-> connections,
+                            connectionIdCounter |-> connectionIdCounter,
+                            action |-> action,
+                            outcome |-> "ICS03InvalidProof"
+                        ]
+                ELSE
+                    \* if the client does have a consensus state with this
+                    \* height, then set an error outcome
+                    [
+                        connections |-> connections,
+                        connectionIdCounter |-> connectionIdCounter,
+                        action |-> action,
+                        outcome |-> "ICS03MissingClientConsensusState"
+                    ]
             ELSE
+                \* if the client does not exist, then set an error outcome
+                \* TODO: the generation of tests cannot distinguish between an
+                \*       an error here and an error in
+                \*       `ICS03_ConnectionOpenInit`; we can solve this with in
+                \*       history variable, like in the light client tests.
                 [
                     connections |-> connections,
                     connectionIdCounter |-> connectionIdCounter,
                     action |-> action,
-                    outcome |-> "ICS03InvalidProof"
+                    outcome |-> "ICS03MissingClient"
                 ]
 
 ===============================================================================

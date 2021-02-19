@@ -50,8 +50,8 @@
   {
     "action": {
       "chainId": "chainA",
-      "clientState": 2,
-      "consensusState": 2,
+      "clientState": 3,
+      "consensusState": 3,
       "type": "ICS02CreateClient"
     },
     "actionOutcome": "ICS02CreateOK",
@@ -61,7 +61,7 @@
         "clients": {
           "0": {
             "heights": [
-              2
+              3
             ]
           }
         },
@@ -118,7 +118,7 @@
         "clients": {
           "0": {
             "heights": [
-              2
+              3
             ]
           }
         },
