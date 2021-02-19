@@ -9,7 +9,7 @@ use crate::ics04_channel::handler::verify::verify_proofs;
 use crate::ics04_channel::handler::ChannelResult;
 use crate::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use crate::{
-    events::IBCEvent,
+    events::IbcEvent,
     ics04_channel::channel::{ChannelEnd, Counterparty},
 };
 use Kind::ConnectionNotOpen;
@@ -91,7 +91,7 @@ pub(crate) fn process(
         channel_id: Some(msg.channel_id().clone()),
         ..Default::default()
     };
-    output.emit(IBCEvent::CloseConfirmChannel(event_attributes.into()));
+    output.emit(IbcEvent::CloseConfirmChannel(event_attributes.into()));
 
     Ok(output.with_result(result))
 }

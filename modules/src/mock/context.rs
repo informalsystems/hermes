@@ -20,20 +20,20 @@ use crate::ics03_connection::connection::ConnectionEnd;
 use crate::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::ics03_connection::error::Error as ICS3Error;
 
-use crate::events::IBCEvent;
+use crate::events::IbcEvent;
 use crate::ics04_channel::channel::ChannelEnd;
 use crate::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::ics04_channel::error::Error as ICS4Error;
 use crate::ics04_channel::error::Kind as ICS4Kind;
 
 use crate::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-use crate::ics18_relayer::context::ICS18Context;
+use crate::ics18_relayer::context::Ics18Context;
 use crate::ics18_relayer::error::{Error as ICS18Error, Kind as ICS18ErrorKind};
 use crate::ics23_commitment::commitment::CommitmentPrefix;
 use crate::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use crate::ics26_routing::context::ICS26Context;
+use crate::ics26_routing::context::Ics26Context;
 use crate::ics26_routing::handler::{deliver, dispatch};
-use crate::ics26_routing::msgs::ICS26Envelope;
+use crate::ics26_routing::msgs::Ics26Envelope;
 use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
@@ -284,7 +284,7 @@ impl MockContext {
     /// A datagram passes from the relayer to the IBC module (on host chain).
     /// Alternative method to `ICS18Context::send` that does not exercise any serialization.
     /// Used in testing the ICS18 algorithms, hence this may return a ICS18Error.
-    pub fn deliver(&mut self, msg: ICS26Envelope) -> Result<(), ICS18Error> {
+    pub fn deliver(&mut self, msg: Ics26Envelope) -> Result<(), ICS18Error> {
         dispatch(self, msg).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;
         // Create a new block.
         self.advance_host_chain_height();
@@ -324,7 +324,7 @@ impl MockContext {
     }
 }
 
-impl ICS26Context for MockContext {}
+impl Ics26Context for MockContext {}
 
 impl PortReader for MockContext {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Option<Capability> {
@@ -608,7 +608,7 @@ impl ClientKeeper for MockContext {
     }
 }
 
-impl ICS18Context for MockContext {
+impl Ics18Context for MockContext {
     fn query_latest_height(&self) -> Height {
         self.host_current_height()
     }
@@ -623,7 +623,7 @@ impl ICS18Context for MockContext {
         block_ref.cloned().map(Into::into)
     }
 
-    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IBCEvent>, ICS18Error> {
+    fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, ICS18Error> {
         // Forward call to ICS26 delivery method.
         let events =
             deliver(self, msgs).map_err(|e| ICS18ErrorKind::TransactionFailed.context(e))?;

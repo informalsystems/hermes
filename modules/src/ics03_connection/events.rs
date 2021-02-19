@@ -1,5 +1,5 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
-use crate::events::{IBCEvent, RawObject};
+use crate::events::{IbcEvent, RawObject};
 use crate::ics02_client::height::Height;
 use crate::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::{attribute, some_attribute};
@@ -19,18 +19,18 @@ const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IBCEvent> {
+pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.as_ref() {
-        INIT_EVENT_TYPE => Some(IBCEvent::OpenInitConnection(OpenInit::from(
+        INIT_EVENT_TYPE => Some(IbcEvent::OpenInitConnection(OpenInit::from(
             extract_attributes_from_tx(event),
         ))),
-        TRY_EVENT_TYPE => Some(IBCEvent::OpenTryConnection(OpenTry::from(
+        TRY_EVENT_TYPE => Some(IbcEvent::OpenTryConnection(OpenTry::from(
             extract_attributes_from_tx(event),
         ))),
-        ACK_EVENT_TYPE => Some(IBCEvent::OpenAckConnection(OpenAck::from(
+        ACK_EVENT_TYPE => Some(IbcEvent::OpenAckConnection(OpenAck::from(
             extract_attributes_from_tx(event),
         ))),
-        CONFIRM_EVENT_TYPE => Some(IBCEvent::OpenConfirmConnection(OpenConfirm::from(
+        CONFIRM_EVENT_TYPE => Some(IbcEvent::OpenConfirmConnection(OpenConfirm::from(
             extract_attributes_from_tx(event),
         ))),
         _ => None,
@@ -118,9 +118,9 @@ impl TryFrom<RawObject> for OpenInit {
     }
 }
 
-impl From<OpenInit> for IBCEvent {
+impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
-        IBCEvent::OpenInitConnection(v)
+        IbcEvent::OpenInitConnection(v)
     }
 }
 
@@ -161,9 +161,9 @@ impl TryFrom<RawObject> for OpenTry {
     }
 }
 
-impl From<OpenTry> for IBCEvent {
+impl From<OpenTry> for IbcEvent {
     fn from(v: OpenTry) -> Self {
-        IBCEvent::OpenTryConnection(v)
+        IbcEvent::OpenTryConnection(v)
     }
 }
 
@@ -204,9 +204,9 @@ impl TryFrom<RawObject> for OpenAck {
     }
 }
 
-impl From<OpenAck> for IBCEvent {
+impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
-        IBCEvent::OpenAckConnection(v)
+        IbcEvent::OpenAckConnection(v)
     }
 }
 
@@ -250,8 +250,8 @@ impl TryFrom<RawObject> for OpenConfirm {
     }
 }
 
-impl From<OpenConfirm> for IBCEvent {
+impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
-        IBCEvent::OpenConfirmConnection(v)
+        IbcEvent::OpenConfirmConnection(v)
     }
 }
